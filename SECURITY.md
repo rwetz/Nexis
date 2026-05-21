@@ -1,46 +1,47 @@
 # Security
 
-Nexis runs shells, reads/writes files, and talks to AI providers — so security bugs matter. If you find one, please tell us before posting it publicly.
+Nexis runs real shells, reads and writes files, and talks to AI providers. Security issues matter here — please report them privately before going public.
 
-## Reporting
+## How to report
 
-Email **rwetz00@gmail.com** with subject `[Nexis security]`. Include:
+Email **rwetz00@gmail.com** — subject `[Nexis security]`.
 
-- What the issue is and what it lets an attacker do
-- Steps to reproduce (a small PoC is great)
-- Version, OS, arch
+Tell me:
+- What the vulnerability is and what an attacker could do with it
+- How to reproduce it (even a rough PoC helps a lot)
+- Your version, OS, and architecture
 
-We'll get back to you within a few days. Once it's fixed, we'll credit you in the release notes — unless you'd rather stay anonymous.
+I'll acknowledge within a few days. Once fixed, I'll credit you in the release notes unless you'd prefer to stay anonymous.
 
-Please **don't** open a public GitHub issue for security reports.
+**Please don't open a public GitHub issue for security reports.**
 
 ## Supported versions
 
-Until `1.0.0`, only the latest minor gets security fixes. Right now that's `0.7.x`.
+Pre-1.0, only the latest minor release gets patched. That's currently `0.7.x`.
 
-## What's in scope
+## In scope
 
-- The Rust backend in `src-tauri/` (PTY, FS, IPC, plugins)
-- The frontend in `src/` — anywhere untrusted input lands (terminal output, file content, AI tool results, credentials)
-- Release artifacts on GitHub
-- The auto-updater
+- Rust backend (`src-tauri/`) — PTY, FS access, IPC, plugins
+- Frontend (`src/`) — anywhere untrusted data lands: terminal output, file content, AI tool results, credentials
+- Release binaries published to GitHub
+- The auto-updater pipeline
 
-## What's not
+## Out of scope
 
-- Bugs in upstream deps (Tauri, xterm.js, CodeMirror, AI SDKs…) — report those upstream. We'll ship the fix once it's released.
-- Anything that needs an already-compromised machine or a local attacker with shell access
-- Older versions (`< 0.7`)
+- Vulnerabilities in upstream dependencies (Tauri, xterm.js, CodeMirror, AI SDKs) — report those to the respective projects; I'll ship the fix once it lands upstream
+- Issues that require an already-compromised machine or existing shell access
+- Versions older than `0.7`
 
-## What we do to keep things safe
+## How Nexis handles security
 
-- **API keys** live in the OS keychain via `keyring` — not on disk, not in `localStorage`, not in logs.
-- **No telemetry.** Nexis only talks to the network when you ask it to (AI requests, update checks, web preview).
-- **AI tool approval.** File writes and shell commands from the agent need your OK before they run.
-- **No Node in the renderer.** The frontend only reaches the host through the allow-listed Tauri commands.
-- **Signed releases.** Updates are verified before they're applied.
+- **API keys** are stored in the OS keychain via the `keyring` crate. They never touch disk, localStorage, or logs.
+- **No telemetry.** Network calls only happen when you initiate them — AI requests, update checks, and web preview. Nothing else.
+- **Tool approval.** The AI agent can't write files or run shell commands without you explicitly approving each action.
+- **IPC sandboxing.** The frontend can only call allow-listed Tauri commands — no direct OS access from the webview.
+- **Verified updates.** Release artifacts are signed; the updater checks signatures before applying anything.
 
-## What we can't promise
+## Honest limitations
 
-- Nexis runs whatever you (or the agent) tell it to run, with your permissions. That's kind of the point of a terminal.
-- AI providers see whatever you send them. Read their retention policies.
-- Local LLM endpoints (LM Studio, OpenAI-compatible) are trusted at the network level — only point Nexis at servers you control.
+- Nexis runs whatever you or the agent tell it to run, with your user permissions. That's the whole point of a terminal.
+- AI providers receive the content of your messages. Check their data retention policies.
+- Local model endpoints (LM Studio, OpenAI-compatible) are trusted at the network level — only connect to servers you own or control.

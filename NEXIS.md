@@ -1,125 +1,153 @@
 # NEXIS.md
 
-Nexis loads `NEXIS.md` from the workspace root as agent memory (similar to AGENTS.md / CLAUDE.md). This file is also the project's living architecture doc — read it before making changes.
+Drop this file in a project root and Nexis will load it as persistent AI context — similar to how Claude Code uses `CLAUDE.md` or OpenAI uses `AGENTS.md`. It's also the canonical architecture reference for the Nexis codebase itself.
 
-## Project
+---
 
-**Nexis** — open-source AI-native terminal emulator. Tauri 2 + Rust (`portable-pty`) backend, React 19 + TypeScript + xterm.js (webgl) client, BYOK AI via Vercel AI SDK v6.
+## Project snapshot
 
-- Bundle id: `app.nexis.nexis`
-- Package manager: **pnpm**
-- Platforms: macOS, Linux, Windows
-- Frontend type-check: `pnpm exec tsc --noEmit`
-- Rust checks: `cd src-tauri && cargo check && cargo clippy`
+**Nexis** — open-source AI-native terminal. Rust + Tauri 2 backend, React 19 + TypeScript + xterm.js frontend, multi-provider AI via Vercel AI SDK v6.
+
+| Thing | Value |
+|---|---|
+| Bundle ID | `app.nexis.nexis` |
+| Package manager | pnpm |
+| Platforms | macOS, Linux, Windows |
+| Frontend check | `pnpm exec tsc --noEmit` |
+| Rust check | `cd src-tauri && cargo check && cargo clippy` |
+
+---
 
 ## Architecture
 
-### Two-process model
+### Two processes, clear boundary
 
-**Rust (`src-tauri/`)** owns all OS access. The webview never touches the FS, processes, or shells directly — everything goes through `invoke()` calls to commands registered in `src-tauri/src/lib.rs`:
+The **Rust process** (`src-tauri/`) owns everything OS-level. The webview has no direct FS, process, or shell access — it goes through `invoke()` to named commands registered in `src-tauri/src/lib.rs`.
 
-- `pty::pty_*` — long-lived interactive PTY sessions (xterm ↔ portable-pty), managed by `PtyState` (`RwLock<HashMap<id, Session>>`). Output streams via a Tauri `Channel<PtyEvent>`.
-- `fs::tree::*`, `fs::file::*`, `fs::mutate::*` — file explorer + editor IO.
-- `fs::search::*`, `fs::grep::*` — fuzzy file finder + content search (powered by `ignore` + `grep-*` crates).
-- `shell::shell_run_command` — **one-shot** subshell exec used by AI tools. Distinct from PTY sessions; not the user's interactive terminal. On Windows it shells out via PowerShell (`-NoProfile -Command`); on Unix via `$SHELL -lc`. Shared helper `build_oneshot_command`.
-- `shell::shell_session_*` — persistent agent shell with state across calls.
-- `shell::shell_bg_*` — long-running background processes (dev servers etc.) with bounded ring-buffer log capture.
-- `secrets::secrets_*` — OS keychain via the `keyring` crate. Service constant `nexis-ai`. Linux uses a file-based fallback gated behind `#[cfg(target_os = "linux")]`.
-- `open_settings_window` — separate webview window for Settings.
+Key command groups:
 
-### PTY shell integration
+- `pty::pty_*` — long-lived interactive PTY sessions. Each session is a `portable-pty` pair tracked in `PtyState` (`RwLock<HashMap<id, Session>>`). Output streams to the frontend via a Tauri `Channel<PtyEvent>`.
+- `fs::tree::*`, `fs::file::*`, `fs::mutate::*` — file explorer reads and writes.
+- `fs::search::*`, `fs::grep::*` — fuzzy file finder and content search, backed by the `ignore` and `grep-*` crates.
+- `shell::shell_run_command` — one-shot subshell exec for AI tool calls. Not the user's interactive terminal. Windows uses `powershell -NoProfile -Command`, Unix uses `$SHELL -lc`.
+- `shell::shell_session_*` — stateful persistent shell for the agent (survives across tool calls).
+- `shell::shell_bg_*` — long-running background processes (e.g. dev servers) with ring-buffer log capture.
+- `secrets::secrets_*` — OS keychain via `keyring`. Service name: `nexis-ai`. Linux falls back to a file-based store on systems without a keychain daemon.
+- `open_settings_window` — spawns the settings webview window.
 
-PTY shells are bootstrapped via injected init scripts in `src-tauri/src/modules/pty/scripts/`:
+### Shell integration
 
-- **Unix** (`zshenv.zsh`, `zprofile.zsh`, `zlogin.zsh`, `zshrc.zsh`, `bashrc.bash`) — installed via `ZDOTDIR` (zsh) or `--rcfile` (bash). Emit OSC 7 (cwd) and OSC 133 A/B/C/D (prompt boundaries + exit code) so the host can track cwd and detect command boundaries without re-parsing the prompt.
-- **Windows** (`profile.ps1`) — passed via `pwsh -NoLogo -NoExit -ExecutionPolicy Bypass -File <path>`. Wraps the user's existing `prompt` function (after their `$PROFILE` runs) to emit OSC 7 + OSC 133 A/B/D. Shell priority: `pwsh.exe` (PS 7+) → `powershell.exe` (PS 5.1) → `cmd.exe` (no integration). cwd is normalized to backslashes before being passed to ConPTY (`CreateProcessW` misbehaves with forward-slash cwd).
+Init scripts live in `src-tauri/src/modules/pty/scripts/` and are injected at shell start:
 
-`pty/shell_init.rs` is split into `#[cfg(unix)]` / `#[cfg(windows)]` modules — keep new platform-specific code in the right cfg arm.
+**Unix** — `zshenv.zsh`, `zprofile.zsh`, `zlogin.zsh`, `zshrc.zsh`, `bashrc.bash`. Installed via `ZDOTDIR` override (zsh) or `--rcfile` (bash). They emit:
+- **OSC 7** — current working directory
+- **OSC 133 A/B/C/D** — prompt start/end and command start/end markers, plus exit code
 
-ConPTY on Windows requires `SPAWN_LOCK` (Mutex) around `openpty + spawn_command` in `session.rs`. Concurrent spawns leave one of the resulting PTYs with a stalled output pipe. Don't remove the lock without verifying first-tab stability under fast tab spam.
+**Windows** — `profile.ps1`, passed to `pwsh -NoLogo -NoExit -ExecutionPolicy Bypass -File <path>`. Wraps the existing `prompt` function after `$PROFILE` runs. Same OSC 7 + 133 output. Shell priority: `pwsh.exe` → `powershell.exe` → `cmd.exe`. cwd gets normalized to backslashes before going to ConPTY — `CreateProcessW` chokes on forward slashes.
 
-Each ConPTY child is also assigned to a per-session **Job Object** with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` (`pty/job.rs`). When the Job HANDLE drops — clean shutdown, panic, or even SIGKILL'd Nexis process — the kernel kills every descendant of the shell (e.g. `npm run dev` spawned from inside pwsh). Without this Windows orphans the entire process subtree because `TerminateProcess` only kills the immediate child. macOS/Linux rely on `Drop for Session → killer.kill()`; on dev-`Ctrl-C` of `cargo run` destructors don't fire and orphans are possible there too — acceptable for now since dev only.
+`pty/shell_init.rs` is split by `#[cfg(unix)]` / `#[cfg(windows)]` — new platform code goes in the right arm.
 
-`AiComposerProvider` is mounted unconditionally at the App.tsx root: a conditional wrapper would change the parent element type when keys load, remounting the entire tree (and re-spawning every PTY) the moment `getAllKeys()` resolves. Production happened to dodge this because keychain reads can land in the same paint frame; dev didn't. Keep the unconditional wrap.
+**Windows-specific PTY notes:**
+- `SPAWN_LOCK` (Mutex) wraps `openpty + spawn_command`. Concurrent spawns without it produce PTYs with stalled output pipes. Don't remove the lock.
+- Each ConPTY child joins a **Job Object** with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` (see `pty/job.rs`). When the Nexis process exits — clean or otherwise — the kernel kills all shell descendants. Without this, Windows orphans the entire process subtree since `TerminateProcess` only kills the direct child.
 
-### Frontend (`src/`)
+**`AiComposerProvider` mount:** it wraps App.tsx unconditionally. Making it conditional causes a parent element type change when keys load, which remounts the entire tree and re-spawns every PTY. Keep it unconditional.
 
-Single-window React app. Path alias `@/*` → `src/*`. Tabs are tagged-union (`{ kind: "terminal" | "editor" | "preview" | "ai-diff", … }`) and **not** unmounted on switch — they're hidden via `invisible pointer-events-none` so PTYs and dev servers keep streaming in the background.
+### Frontend
 
-`App.tsx` wires modules together — keep it a coordinator. New features go inside the appropriate `modules/<area>/`.
+Single-window React app. `@/*` maps to `src/*`.
 
-### Module layout (`src/modules/`)
+Tabs are a tagged union: `{ kind: "terminal" | "editor" | "preview" | "ai-diff", … }`. Tabs are **never unmounted on switch** — they go `invisible pointer-events-none` so PTYs and dev servers keep running in the background.
 
-Each module is self-contained, exports a thin barrel via `index.ts`, and owns its hooks under `lib/`.
+`App.tsx` is a coordinator. New features belong inside `modules/<area>/`, not in App.tsx.
 
-- **terminal/** — `TerminalStack` keeps one mounted xterm per tab via `useTerminalSession` + `pty-bridge`. `osc-handlers.ts` parses OSC 7 (with Windows drive-letter normalization: `/C:/Users/foo` → `C:/Users/foo`) and OSC 133 markers. Themes in `themes.ts`.
-- **editor/** — CodeMirror 6 stack (`EditorStack` mirrors `TerminalStack`). `extensions.ts` configures language modes; supports vim mode and prebuilt themes (Tokyo Night, Nord, GitHub, Atom One, Aura, Copilot, Xcode).
-- **explorer/** — file tree with Material/Catppuccin icons (`iconResolver.ts`), fuzzy search, keyboard nav, inline rename, context actions. Backslash-aware `basename`.
-- **preview/** — auto-detected dev-server preview tab (status-bar pill suggests opening when a localhost URL is detected).
-- **tabs/** — `useTabs` is the source of truth for tab list + active id. `useWorkspaceCwd` derives explorer root + inherited cwd for new tabs from active tab. `basename` splits on both `/` and `\`.
-- **header/** — top bar + inline search (`SearchInline` adapts to terminal vs editor via `SearchTarget`). `WindowControls` rendered when `USE_CUSTOM_WINDOW_CONTROLS` is true (Linux + Windows; macOS uses native traffic lights).
-- **statusbar/** — bottom bar, `CwdBreadcrumb` (handles Unix paths, Windows drive letters, and home `~` segments via `pathUtils.segmentsFromCwd`), AI tools indicator.
-- **shortcuts/** — keymap registry (`shortcuts.ts`) + `useGlobalShortcuts`. Handlers live in `App.tsx` and are passed in by id (`tab.new`, `ai.toggle`, …). `metaKey || ctrlKey` for cross-platform Cmd/Ctrl.
-- **settings/** — settings store (`store.ts` via `tauri-plugin-store`), preferences hook, settings window opener.
-- **shell-integration/** — frontend bridge for OSC events and shell session lifecycle.
-- **theme/** — `next-themes` provider.
-- **updater/** — auto-updater UI built on `tauri-plugin-updater`.
-- **ai/** — see below.
+### Module map (`src/modules/`)
+
+Each module is self-contained with a barrel export at `index.ts` and hooks under `lib/`.
+
+**terminal/** — `TerminalStack` mounts one xterm instance per tab via `useTerminalSession` and `pty-bridge`. OSC 7 and OSC 133 parsing in `osc-handlers.ts`. Windows drive-letter normalization happens here: `/C:/Users/foo` → `C:/Users/foo`.
+
+**editor/** — CodeMirror 6 editor stack. `extensions.ts` handles language detection. Supports vim mode and all bundled themes.
+
+**explorer/** — file tree with Catppuccin/Material icons. Fuzzy search, keyboard nav, inline rename, context menu. `basename` handles both `/` and `\`.
+
+**preview/** — dev-server preview tab. Status bar auto-detects a localhost URL and suggests opening it.
+
+**tabs/** — `useTabs` owns the tab list and active id. `useWorkspaceCwd` derives the explorer root and default cwd for new tabs from the currently active tab.
+
+**header/** — top bar and `SearchInline` (adapts to terminal vs editor context). `WindowControls` renders on Linux and Windows; macOS uses native traffic lights.
+
+**statusbar/** — bottom bar with `CwdBreadcrumb`. Handles Unix paths, Windows drive letters, and `~` expansion via `pathUtils.segmentsFromCwd`.
+
+**shortcuts/** — keymap registry and `useGlobalShortcuts`. All handlers are registered in App.tsx and referenced by string id. Uses `metaKey || ctrlKey` for Cmd/Ctrl cross-platform.
+
+**settings/** — settings store (`tauri-plugin-store`), preferences hook, settings window opener.
+
+**updater/** — auto-updater UI on top of `tauri-plugin-updater`.
+
+**ai/** — see below.
 
 ### AI subsystem (`src/modules/ai/`)
 
-BYOK. Multi-provider via `@ai-sdk/*`: **OpenAI, Anthropic, Google, Groq, xAI, Cerebras, OpenAI-compatible** (LM Studio for local/offline). Provider list in `config.ts` (`PROVIDERS`); model registry includes `DEFAULT_MODEL_ID` + `DEFAULT_AUTOCOMPLETE_MODEL`.
+BYOK, multi-provider via `@ai-sdk/*`: OpenAI, Anthropic, Google, Groq, xAI, Cerebras, OpenAI-compatible (covers LM Studio and any OpenRouter-style endpoint).
 
-- **Key storage**: OS keychain via `keyring` (Rust). Frontend reads/writes through `secrets_*` commands. Service `KEYRING_SERVICE = "nexis-ai"`. Never persist keys to disk, settings store, or `localStorage`.
-- **Agent** (`lib/agent.ts`): `Experimental_Agent` with `stopWhen: stepCountIs(MAX_AGENT_STEPS)` and the system prompt from `config.ts`. Provider branching happens here — keep the `Agent` / `DirectChatTransport` shape; the rest of the system depends on AI SDK v6 chat semantics.
-- **Sub-agents** (`agents/registry.ts`, `agents/runSubagent.ts`): named sub-agents with their own system prompts and tool subsets, invoked by the main agent via `run_subagent` tool.
-- **Sessions** (`lib/sessions.ts` + `store/chatStore.ts`): conversations are organized into named sessions, persisted via `tauri-plugin-store` at `nexis-ai-sessions.json` (list + `activeId` + per-session `messages:<id>` keys). `chatStore.ts` keeps a module-scoped `Map<sessionId, Chat<UIMessage>>`; `getOrCreateChat(apiKey, sessionId)` lazily constructs a `Chat`, seeded with messages from a hydration map populated by `hydrateSessions()` (called once from `App.tsx`). `AgentRunBridge` mirrors active-session messages to disk on every change and auto-derives titles from the first user message. Switching the API key wipes the chat map; sessions persist.
-- **Composer** (`lib/composer.tsx`): React context providing shared input state (text, attachments, voice) for both the docked `AiInputBar` and any other surface. Attachments include image, text-file, and `selection` kinds — selections come from `useChatStore.attachSelection(text, source)` (drained into chips, not pasted into the textarea) and are wrapped as `<selection source="terminal|editor">…</selection>` blocks at submit. Composer derives `isBusy` from `agentMeta.status` so it can mount safely before sessions hydrate.
-- **Voice input**: streamed transcription pipeline. Toggled from the composer.
-- **Live context bridge**: `App.tsx` calls `setLive({ getCwd, getTerminalContext, … })` so tools can read the *currently active* terminal's cwd + last 300 lines of buffer. Lazy by design — don't pre-snapshot.
-- **Tools** (`tools/tools.ts`): `read_file`, `list_directory`, `fs_search`, `fs_grep` auto-execute. `write_file`, `create_directory`, `rename`, `delete`, `run_command`, `shell_session_run`, `shell_bg_spawn` set `needsApproval: true` and the AI SDK pauses for an in-UI confirmation card. Auto-send after approval uses `lastAssistantMessageIsCompleteWithApprovalResponses`. `lib/security.ts` is a deny-list refusing obvious secret paths (`.env*`, `.ssh/`, credentials, keychain dirs) — apply on **both** read and write paths and don't bypass it.
-- **Edit diffs**: AI-proposed edits open in a side-by-side diff tab (`ai-diff` tab kind); user accepts/rejects per hunk before the write tool actually runs.
-- **Skills / snippets**: reusable prompt fragments + tool-bundles surfaced in the composer.
+Provider list and model defaults live in `config.ts`.
 
-### UI conventions
+**Keys** — read/written through `secrets_*` Rust commands. Keyring service: `nexis-ai`. Never persist to disk, settings store, or localStorage.
 
-- **shadcn/ui** is configured (`components.json`, style `radix-luma`, base `mist`, icon lib **hugeicons**). Primitives in `src/components/ui/` — don't hand-edit; re-run `pnpm dlx shadcn add` to upgrade.
-- **AI Elements** (Vercel) live in `src/components/ai-elements/` from the `@ai-elements` registry in `components.json`. Same rule: regenerate, don't hand-patch — composition wrappers belong in `modules/ai/components/`.
-- **Tailwind v4** — no `tailwind.config.*`, config is in `src/App.css` via `@theme`. Use `cn()` from `@/lib/utils`.
-- Animation: `motion` (Framer Motion successor). Resizable layout: `react-resizable-panels`.
-- Path imports: always `@/…`, never relative across modules.
-- Cross-platform paths: anywhere a path may originate from OSC 7, the explorer, or the OS, normalize separators with `.split(/[\\/]/)` rather than `.split("/")`.
-- Canonical path form on the frontend is **forward-slash**. `homeDir()` returns backslashes on Windows; convert at the boundary (App.tsx setHome). OSC 7 already arrives as forward-slash. Equal canonical strings keep `useFileTree` from wiping its tree and flashing the explorer when `tab.cwd` first arrives.
+**Agent** (`lib/agent.ts`) — `Experimental_Agent` from the AI SDK. Uses `stopWhen: stepCountIs(MAX_AGENT_STEPS)`. System prompt from `config.ts`. Provider branching lives here.
 
-### Window styling
+**Sub-agents** (`agents/registry.ts`, `agents/runSubagent.ts`) — named sub-agents with isolated system prompts and tool subsets. Invoked by the main agent via `run_subagent` tool.
 
-- macOS: `titleBarStyle: Overlay` + `hiddenTitle: true` in `tauri.conf.json` (native traffic lights via overlay).
-- Linux: `decorations: false` + `transparent: true` from `tauri.linux.conf.json`; re-asserted post-realize for GNOME/Mutter CSD.
-- Windows: same as Linux via `tauri.windows.conf.json`. React renders custom `WindowControls`.
+**Sessions** (`lib/sessions.ts` + `store/chatStore.ts`) — named conversation sessions. Persisted to `nexis-ai-sessions.json` via `tauri-plugin-store`. The chat store is a module-scoped `Map<sessionId, Chat<UIMessage>>`; `getOrCreateChat()` lazily hydrates from disk. `AgentRunBridge` syncs active session messages to disk continuously and derives titles from the first user message. Swapping the API key clears the in-memory map; sessions on disk survive.
 
-### Tauri capabilities
+**Composer** (`lib/composer.tsx`) — React context managing shared input state (text, file attachments, selections, voice). Selections are attached via `attachSelection(text, source)` and serialized as `<selection source="terminal|editor">…</selection>` at submit. Derives `isBusy` from agent status — safe to mount before sessions hydrate.
 
-`src-tauri/capabilities/default.json` is the allowlist for plugin APIs available to the webview. New plugins (dialog, autostart, updater, window-state, store, opener, os, log are wired in `lib.rs`) typically need:
-1. `Cargo.toml` dependency
-2. `.plugin(...)` call in `lib.rs` `run()`
-3. capability entry in `default.json`
+**Tools** (`tools/tools.ts`) — `read_file`, `list_directory`, `fs_search`, `fs_grep` run automatically. `write_file`, `create_directory`, `rename`, `delete`, `run_command`, `shell_session_run`, `shell_bg_spawn` gate on `needsApproval: true` and pause for an in-UI approval card. `lib/security.ts` is a path deny-list (`.env*`, `.ssh/`, credentials, keychain dirs) — applied on both read and write paths. Don't bypass it.
 
-### Cross-platform conventions
+**Edit diffs** — AI-proposed file edits open in a side-by-side `ai-diff` tab. The user accepts or rejects per hunk before the actual write fires.
 
-- HOME / cache dirs: use the `dirs` crate (`dirs::home_dir()`, `dirs::cache_dir()`), never raw `$HOME` / `%USERPROFILE%`.
-- Shell init scripts: gate Unix-only logic behind `#[cfg(unix)]`; Windows arm in `pty::shell_init::windows`.
-- Terminal input: send `\r` (CR) for Enter, not `\n` (LF) — PowerShell on Windows requires CR.
+### UI
 
-### Bundle config
+- **shadcn/ui** — primitives in `src/components/ui/`. Regenerate with `pnpm dlx shadcn add`, don't hand-edit. Composition wrappers go in `modules/ai/components/`.
+- **Tailwind v4** — configured in `src/App.css` via `@theme`. Use `cn()` from `@/lib/utils`. No `tailwind.config.*`.
+- **Icons** — HugeIcons via the `hugeicons` library.
+- **Animation** — `motion` (Framer Motion v11+). Resizable panels — `react-resizable-panels`.
+- **Path imports** — always `@/…`, never relative across module boundaries.
+- **Path separators** — use `.split(/[\\/]/)` anywhere a path might come from OSC 7, the OS, or the explorer. Canonical form on the frontend is forward-slash. Convert Windows backslashes at the boundary (App.tsx `setHome`).
 
-- `bundle.targets: "all"` plus per-platform sections in `tauri.conf.json`:
-  - **macOS**: `minimumSystemVersion: 10.15`.
-  - **Linux**: deb depends `libwebkit2gtk-4.1-0`, `libgtk-3-0`; rpm `webkit2gtk4.1`, `gtk3`; AppImage bundles its media framework.
-  - **Windows**: NSIS installer in `currentUser` mode (no admin required), WebView2 via `embedBootstrapper` (offline install).
-- Auto-updater configured with a public minisign key; release artifacts at `https://github.com/rwetz/Nexis/releases/latest/download/latest.json`.
+### Window chrome
 
-### Known gotchas
+- **macOS** — `titleBarStyle: Overlay` + `hiddenTitle: true` for native traffic lights.
+- **Linux** — `decorations: false` + `transparent: true`, re-asserted after window realize for GNOME/Mutter CSD.
+- **Windows** — same flags as Linux. Custom `WindowControls` component renders min/max/close buttons.
 
-- **React 19 strict mode** double-mounts `useEffect` in dev → terminals spawn twice on first render. The first PTY is cleaned up almost immediately. The `SPAWN_LOCK` mutex serializes this; don't be alarmed by `pty opened id=1` followed by `pty closed id=1` in dev logs.
-- **Windows PowerShell process lifecycle**: `killer.kill()` from `portable-pty` only kills the immediate child. Descendants (e.g. `npm run dev` started inside pwsh) survive unless something else takes them down. The Job Object in `pty/job.rs` handles this for the Nexis-process-death case; an explicit `pty_close` from JS also kills only the immediate child + relies on the Job to take the rest. Don't disable the Job without a replacement.
-- **Tab `cwd` storage**: comes from OSC 7 with forward slashes (after `parseOsc7` strips `/C:` → `C:`). Anything that consumes `tab.cwd` and passes it to a Rust fs command on Windows must normalize separators or accept both forms — `apply_common` in `pty::shell_init` handles this for PTY spawn; other call sites must do their own.
+### Adding a plugin
+
+When you add a new Tauri plugin, three things need updating:
+1. `Cargo.toml` — add the dependency
+2. `src-tauri/src/lib.rs` — call `.plugin(...)` in `run()`
+3. `src-tauri/capabilities/default.json` — add the permission entry
+
+### Cross-platform notes
+
+- Use the `dirs` crate for home/cache dirs. Never hardcode `$HOME` or `%USERPROFILE%`.
+- New platform-specific shell init code goes in the right `#[cfg(unix)]` / `#[cfg(windows)]` arm.
+- Send `\r` (CR) for Enter in the terminal — PowerShell requires CR, not LF.
+
+### Bundle targets
+
+- **macOS** — min version `10.15`
+- **Linux** — deb: `libwebkit2gtk-4.1-0`, `libgtk-3-0` / rpm: `webkit2gtk4.1`, `gtk3` / AppImage bundles its own media stack
+- **Windows** — NSIS in `currentUser` mode (no admin required), WebView2 via `embedBootstrapper`
+- **Auto-updater** — minisign-verified; latest manifest at `https://github.com/rwetz/Nexis/releases/latest/download/latest.json`
+
+---
+
+## Known gotchas
+
+**React 19 Strict Mode in dev** — effects double-mount, so you'll see `pty opened id=1` then `pty closed id=1` immediately. The `SPAWN_LOCK` serializes the race. Normal, ignore it.
+
+**Windows process cleanup** — `killer.kill()` from `portable-pty` only kills the direct child. The Job Object in `pty/job.rs` handles cascading kills when Nexis itself exits. An explicit `pty_close` from JS still only kills the direct child and relies on the Job for the rest. Don't remove the Job Object.
+
+**Tab cwd on Windows** — OSC 7 delivers cwd with forward slashes (after `parseOsc7` strips the leading `/C:` → `C:`). Any code that passes `tab.cwd` into a Rust FS call on Windows needs to normalize separators — `pty::shell_init::apply_common` does this for PTY spawn; other call sites handle their own.

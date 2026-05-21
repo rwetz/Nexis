@@ -13,7 +13,13 @@
 
 ---
 
-Nexis is a fast, lightweight AI terminal (ADE) built on Tauri 2 + Rust and React 19. It pairs a native PTY backend with a modern UI — multi-tab terminals, an integrated code editor, a file explorer, and a first-class AI side-panel that works with your own API keys (or fully local models via LM Studio). Under 10 MB on disk, no telemetry, keys stored in the OS keychain.
+Nexis is a lightweight, AI-first terminal built on Tauri 2, Rust, and React 19. It gives you a native PTY backend, multi-tab terminals, a built-in code editor, a file explorer, and an AI panel that runs on your own API keys — or entirely offline with LM Studio. Stays under 10 MB, stores keys in your OS keychain, and collects zero telemetry.
+
+## Based on Terax
+
+Nexis started as a personal fork of [terax-ai](https://github.com/crynta/terax-ai) — a great open-source AI terminal by [@crynta](https://github.com/crynta). The core architecture, PTY backend, and AI tooling are all rooted in that work. Nexis builds on top of it with my own branding, logo, tweaks, and direction going forward.
+
+If you're looking for the upstream project, head over to [crynta/terax-ai](https://github.com/crynta/terax-ai). If you want my personal take on it, you're in the right place.
 
 ## Screenshots
 
@@ -27,87 +33,83 @@ Nexis is a fast, lightweight AI terminal (ADE) built on Tauri 2 + Rust and React
   </tr>
 </table>
 
-## Features
+## What's inside
 
 **Terminal**
-- xterm.js + WebGL renderer, multi-tab with background streaming
-- Native PTY backend via `portable-pty` (zsh, bash, pwsh, …)
-- Shell integration (cwd reporting, prompt markers) via injected init scripts
-- Inline search, link detection, true-color
+- xterm.js with WebGL rendering, multiple tabs, background streaming
+- Native PTY via `portable-pty` — works with zsh, bash, pwsh, fish, cmd
+- Shell integration for cwd tracking and prompt markers
+- Inline search, clickable links, full true-color support
 
 **Editor**
-- CodeMirror 6 with language support for TS/JS, Rust, Python, HTML/CSS, JSON, Markdown
-- Inline AI autocomplete and AI edit diffs
-- Vim mode
-- Prebuilt themes: Tokyo Night, Nord, GitHub, Atom One, Aura, Copilot, Xcode
+- CodeMirror 6 with syntax highlighting for TS/JS, Rust, Python, HTML/CSS, JSON, Markdown, and more
+- AI-powered inline autocomplete and diff-based edits
+- Vim keybindings
+- Themes: Tokyo Night, Nord, GitHub, Atom One, Aura, Copilot, Xcode
 
 **File Explorer**
-- Catppuccin icon theme (Material Icon Theme resolver)
-- Fuzzy search, keyboard navigation, inline rename, context actions
+- Catppuccin icon theme
+- Fuzzy search, keyboard nav, inline rename, right-click context actions
 
 **Web Preview**
-- Auto-detects local dev servers and opens them in a preview tab
+- Automatically picks up running local dev servers and opens them in a tab
 
-**AI (BYOK)**
-- Providers: OpenAI, Anthropic, Google, Groq, xAI, Cerebras, OpenAI-compatible
-- Local / offline models via LM Studio
-- Voice input, edit diffs, multi-agent and sub-agents
-- Snippets / skills, customizable system prompt
-- `NEXIS.md` for project memory and configuration
-- Tasks, plans, search, file read/write tools with approval flow
+**AI — bring your own keys**
+- Works with OpenAI, Anthropic, Google, Groq, xAI, Cerebras, or any OpenAI-compatible endpoint
+- Fully offline via LM Studio
+- Voice input, multi-agent support, slash commands, skills
+- Drop a `NEXIS.md` in your project root for persistent AI context
+- All file/shell operations require your approval before running
 
-**Quality**
-- Lightweight and fast (~7 MB bundle)
-- API keys stored in the OS keychain
-- No telemetry, no account required
+**General**
+- ~7 MB bundle
+- API keys live in your OS keychain, never on disk
+- No accounts, no telemetry
 
-## Windows notes
+## Platform notes
 
-- **SmartScreen warning**: Windows will show "Windows protected your PC" on first launch because we (temporarily) don't have a code-signing certificate yet. Click **More info** → **Run anyway**. This is normal for unsigned open-source apps.
+**Windows**
+- First launch may show a SmartScreen warning since there's no code-signing cert yet. Hit **More info → Run anyway** — this is expected for unsigned open-source software.
+- Shell detection order: `pwsh.exe` → `powershell.exe` → `cmd.exe`
 
-The default shell is detected in this order: `pwsh.exe` (PowerShell 7+) → `powershell.exe` (Windows PowerShell 5.1) → `cmd.exe`.
+**Linux**
+- AppImage requires FUSE. No FUSE? Run with `--appimage-extract-and-run`. Wayland rendering issues? Try `WEBKIT_DISABLE_DMABUF_RENDERER=1`. The `.deb` / `.rpm` builds are usually smoother on desktop Linux.
 
-## Linux notes
+## Setting up AI
 
-- **Arch / AUR**: install via `yay -S nexis-bin` (or `paru`, etc.). Tracks the latest release.
-- **AppImage**: needs FUSE. Without it: `./Nexis_*.AppImage --appimage-extract-and-run`. On Wayland with rendering glitches, try `WEBKIT_DISABLE_DMABUF_RENDERER=1`; otherwise use the `.deb` / `.rpm` which link against the system's GTK stack.
+1. Go to **Settings → AI**
+2. Choose a provider and drop in your API key
+3. For local models, point it at your LM Studio URL
 
-## Configure AI
+Keys are stored in the OS keychain via Rust's `keyring` crate — they never hit disk or localStorage.
 
-1. Open **Settings → AI**.
-2. Pick a provider and paste your API key. For local inference, point Nexis at your LM Studio endpoint.
-3. Keys are written to the OS keychain via `keyring` — they never touch disk or `localStorage`.
+## Building from source
 
-## Build from source
-
-**Prerequisites**
+**You'll need:**
 - Rust (stable) — https://rustup.rs
 - Node 20+ and [pnpm](https://pnpm.io)
-- Platform-specific Tauri prerequisites — https://tauri.app/start/prerequisites/
-
-**Run**
+- Tauri platform prerequisites — https://tauri.app/start/prerequisites/
 
 ```bash
 pnpm install
-pnpm tauri dev          # development
-pnpm tauri build        # production bundle
+pnpm tauri dev        # dev mode
+pnpm tauri build      # production build
 ```
 
-**Checks**
-
+**Type and lint checks:**
 ```bash
-pnpm exec tsc --noEmit          # frontend type-check
-cd src-tauri && cargo clippy    # Rust lint
+pnpm exec tsc --noEmit
+cd src-tauri && cargo clippy
 ```
 
-## Tech stack
+## Stack
 
 Tauri 2 · Rust · `portable-pty` · React 19 · TypeScript · xterm.js · CodeMirror 6 · Vercel AI SDK v6 · Tailwind v4 · shadcn/ui · Zustand
 
 ## Contributing
 
-Issues and PRs are welcome! Feel free to open issues, suggest features, or submit pull requests. See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+PRs and issues are welcome. Check [CONTRIBUTING.md](CONTRIBUTING.md) before opening anything non-trivial.
 
 ## License
 
-Nexis is licensed under the Apache-2.0 License. For more information on our dependencies, see [Apache License 2.0](LICENSE).
+Apache-2.0. See [LICENSE](LICENSE).

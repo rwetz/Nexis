@@ -1,218 +1,114 @@
 # Contributing to Nexis
 
-Nexis is a solo-maintained project with a strong product direction. Contributions are welcome, but **alignment matters more than volume**.
+Nexis is a personal project I maintain in my spare time. Contributions are genuinely welcome, but I want to be upfront about how this works so nobody wastes their time.
 
-This document helps you decide *whether* and *how* to contribute in a way that's likely to get merged, so neither of us wastes time.
+## How I run this
 
-## How this project is run
+One maintainer (me, [@rwetz](https://github.com/rwetz)), limited review time. PRs can sit for a bit. Not everything gets merged — code quality matters, but so does fit. Before doing anything significant, check [ROADMAP.md](ROADMAP.md) to understand where this is going.
 
-- Nexis has one active maintainer ([@rwetz](https://github.com/rwetz)).
-- Review bandwidth is limited.
-- Not every contribution can be accepted, even if it's technically correct. Alignment with project direction matters as much as code quality.
-- For scope and direction, see [ROADMAP.md](ROADMAP.md). Read it before opening anything non-trivial.
+A "no" isn't personal.
 
-This is normal for a solo project. A "no" on a PR is not personal.
-
-## Quick start
+## Getting started
 
 ```bash
 pnpm install
 pnpm tauri dev
 ```
 
-Prereqs: Rust (stable), Node 20+, pnpm, plus your platform's [Tauri prerequisites](https://tauri.app/start/prerequisites/).
+You'll need Rust (stable), Node 20+, pnpm, and the [Tauri platform dependencies](https://tauri.app/start/prerequisites/).
 
-## Where to discuss
+## What to discuss first
 
-Use GitHub Issues for tracking concrete bugs and features. For design discussion, scope questions, "should I work on X?", and quick feedback, open a discussion or comment on the relevant issue.
+For anything beyond a small, obvious fix — open an issue before writing code. This covers:
 
-## What makes a good contribution
-
-These get merged fast:
-
-- **Bug fixes** with clear reproduction steps.
-- **Docs / typos / small UX fixes** - open a PR directly.
-- **Pre-discussed features** - alignment in an issue first.
-- **Small, focused changes** - easy to review, low risk.
-
-If your change is small and obvious (typo, narrow bugfix, small docs change), open a PR directly. No issue required.
-
-## Keep changes focused
-
-**Only change what's needed to accomplish your stated goal.**
-
-If you're fixing a bug in `terminal.tsx`, don't also:
-
-- Reformat other files
-- Clean up unrelated code
-- Fix lint issues in files you didn't need to touch
-- Combine multiple unrelated fixes in one PR
-
-Even when these changes are "improvements", they make review harder and slow everything down. If you want to clean things up, open a separate PR after discussion.
-
-**One PR = one logical change.** Multi-concern PRs will be asked to split.
-
-## Discuss first (required for larger changes)
-
-For anything beyond a small fix, **discussion is required before opening a PR**. This includes:
-
-- New features
-- UI/UX changes or changes to default behavior
-- Refactors or "cleanup" work
-- Performance rewrites
+- New features or AI providers
+- UI/UX changes
+- Refactors touching multiple files
 - Architectural changes
-- Anything touching many files or systems
-- New AI providers
 
-Pull requests with significant unsolicited changes will be closed without detailed review. This isn't meant to discourage contribution. It ensures alignment before significant work goes in.
+A quick conversation upfront is better than a big PR that doesn't fit where things are going. Small stuff (typos, narrow bug fixes, docs tweaks) — just open a PR, no issue needed.
 
-A 10-minute conversation saves a 500-line PR that doesn't fit the roadmap.
+## Keeping PRs clean
 
-## Quality bar
+**One PR, one thing.** If you're fixing a bug in the terminal module, don't also clean up unrelated files, reformat code you didn't need to touch, or bundle in a separate improvement. Split it out. Mixed-concern PRs are harder to review and slower to merge.
 
-Nexis positions itself as **lightweight, fast, production-grade**. Every PR is reviewed against:
+## What I'm looking for
 
-- `pnpm exec tsc --noEmit` clean
-- `cargo clippy` clean, `cargo fmt` applied
+Every PR gets checked against:
+
+- `pnpm exec tsc --noEmit` passes
+- `cargo clippy` and `cargo fmt` clean
 - `pnpm test` and `cargo test` pass
-- No perf regressions in known hot paths: terminal renderer, PTY stream, AI streaming, source control, file explorer
-- No new heavy dependencies (>50KB gzip in client bundle, >5MB compiled on Rust side) without justification
-- Platform parity preserved (macOS / Linux / Windows / WSL still work)
-- Security review for changes to AI tool surface, file system access, network paths, IPC commands
+- No obvious performance regressions in hot paths (terminal renderer, PTY stream, AI streaming, file explorer)
+- No heavy new dependencies without a good reason
+- Works on macOS, Linux, Windows, and WSL
+- Security-sensitive changes (AI tools, FS access, IPC, network) get extra scrutiny
 
-If you're not sure how to measure perf or what counts as a hot path, ask in an issue. Better to confirm than get bounced.
+## What this project isn't trying to be
 
-## What Nexis is not
+- A full IDE. No integrated debugger, no LSP, no refactoring engine.
+- A web browser. The preview pane is for local dev servers only.
+- An extension platform. Not building a marketplace.
+- A good "first open source contribution" project — beginners are welcome but expect real feedback.
 
-To set expectations:
+## Branch and commit conventions
 
-- Nexis is not trying to be a full IDE replacement (VS Code, Cursor, Zed).
-- Not building: full LSP support, Jupyter notebooks, integrated debugger UI, package manager UI, full web browser.
-- This is not a curated "first open-source contribution" project. Beginners are welcome but expect normal review.
-- Mechanical refactors, broad style changes, drive-by rewrites are not helpful.
-- AI-assisted contributions are welcome, but the PR must reflect understanding of the existing patterns. Low-effort AI-generated code that wasn't read by the author will be closed.
+Branch off `main`. Prefix your branch:
 
-## Branches
+| Prefix | Use |
+|---|---|
+| `feat/` | New feature |
+| `fix/` | Bug fix |
+| `chore/` | Tooling, deps, refactor |
+| `docs/` | Documentation |
+| `perf/` | Performance |
+| `security/` | Security fix |
 
-Branch off `main`. Use these prefixes (kebab-case):
-
-| Prefix       | Use for                                  |
-| ------------ | ---------------------------------------- |
-| `feat/`      | New feature                              |
-| `fix/`       | Bug fix                                  |
-| `chore/`     | Refactor, tooling, config, dependencies  |
-| `docs/`      | Docs-only changes                        |
-| `perf/`      | Performance work                         |
-| `security/`  | Security fix or hardening                |
-
-Examples: `feat/split-panes`, `fix/explorer-focus`, `security/path-guard`.
-
-Don't open PRs from your fork's `main` branch. Work on a feature branch.
-
-## Commits & PRs
-
-The **PR title becomes the squash commit** for most PRs. Multi-commit PRs with well-crafted atomic commits may be merged with a merge commit at the maintainer's discretion (security audits, multi-step refactors). Title must follow [Conventional Commits](https://www.conventionalcommits.org/):
+PR titles should follow [Conventional Commits](https://www.conventionalcommits.org/) — they become the squash commit message:
 
 ```
-feat(terminal): add split panes
-fix(explorer): prevent input from disappearing on create
-chore(deps): bump tauri to 2.x
-security(ai): tighten path guard
+feat(terminal): add persistent session restore
+fix(explorer): rename input disappears on blur
+chore(deps): update tauri to 2.11
 ```
 
-Types: `feat`, `fix`, `chore`, `docs`, `perf`, `refactor`, `test`, `build`, `ci`, `security`.
-
-Common scopes: `terminal`, `editor`, `explorer`, `pty`, `ai`, `agents`, `settings`, `tabs`, `shortcuts`, `ui`, `git`, `preview`, `windows`, `linux`, `macos`, `wsl`.
-
-Within a PR, individual commit messages can be free-form (they get squashed or grouped).
-
-**Fill out the PR template.** Include: what changed, why, how you tested. Screenshots/GIFs for UI changes. "Tested manually by ..." is the bare minimum.
-
-**Open a draft PR early** if you want feedback mid-flight. Mark "Ready for review" when done.
-
-### What gets merged faster
-
-- Clear problem statement
-- Small, focused diff
-- Follows existing patterns (read 2-3 nearby files before writing yours)
-- All type-checks / lints / tests pass
-- Manual testing notes describing the steps you took
-
-### What gets bounced back
-
-- Mixed-concern PRs
-- Large architectural PRs without prior discussion
-- New dependencies without justification
-- Breaking changes without migration notes
-- Incidental reformatting unrelated to the change
-- AI-generated code that obviously wasn't read by the author
+Fill out the PR description. What changed, why, how you tested it. UI changes need screenshots or a short recording.
 
 ## Code style
 
-- Follow existing patterns. Read 2-3 adjacent files before adding new ones.
-- TypeScript: no `any` unless you really mean it. Strict mode is on.
-- Rust: `cargo fmt` + `clippy` clean.
-- Comments: only for *why*, not *what*. Code should explain itself. No multi-paragraph docstrings.
-- No emojis in code or commit messages.
+- Follow what's already there. Read nearby files before writing new ones.
+- TypeScript strict mode is on. No `any` without a real reason.
+- Rust: `cargo fmt` before committing, `clippy` must be clean.
+- Comments explain *why*, not *what*.
 - American English in user-facing strings.
 
 ## Project layout
 
 ```
-src-tauri/                  Rust backend
-  src/modules/
-    pty/                    Terminal sessions, shell integration, DA filter
-    fs/                     File system commands
-    git/                    Source control
-    net/                    AI HTTP proxy with SSRF guard
-    workspace/              WSL bridge, workspace env
+src-tauri/src/modules/
+  pty/          PTY sessions, shell init scripts, DA filter
+  fs/           File system access
+  git/          Source control operations
+  net/          Outbound HTTP proxy (AI requests) with SSRF guard
+  workspace/    WSL support, workspace environment
 
-src/
-  modules/
-    terminal/               xterm.js sessions, OSC handlers, renderer pool
-    editor/                 CodeMirror stack, AI autocomplete
-    explorer/               File tree
-    tabs/                   Tab/split model
-    ai/                     Agents, sessions, tools, providers, mini-window
-    git-history/            Git graph and history pane
-    source-control/         Source control panel
-    preview/                Image / Markdown / web preview
-    settings/               Settings UI and preferences store
-    shortcuts/              Keymap
-  app/                      Top-level App.tsx
-  components/               shadcn/ui + AI Elements
+src/modules/
+  terminal/     xterm.js, OSC handlers, renderer pool
+  editor/       CodeMirror 6, AI autocomplete, themes
+  explorer/     File tree, icons, search
+  tabs/         Tab model, workspace cwd tracking
+  ai/           Agents, sessions, tools, providers, UI
+  git-history/  Commit graph and history viewer
+  source-control/ Staging, commits, branches
+  preview/      Web, image, and Markdown preview
+  settings/     Preferences and settings window
+  shortcuts/    Global keymap
 ```
-
-## FAQ
-
-**Q: Should I ask before fixing a typo or obvious bug?**
-A: No, open a PR directly.
-
-**Q: I have an idea for a new feature.**
-A: Open a GitHub issue. Don't open a PR without prior discussion.
-
-**Q: My PR was closed without detailed feedback.**
-A: Usually means it didn't align with project direction, or scope was too large to review responsibly. This is normal for a solo project. Reopen is welcome if you want to take another pass at a smaller scope.
-
-**Q: Can I work on an open issue?**
-A: Comment first to confirm it's still relevant and nobody else is on it. For anything non-trivial, discuss approach before implementing.
-
-**Q: I noticed cleaner code I could write while working on my fix.**
-A: Focus on your stated goal. Submit cleanup as a separate PR after discussion if it matters.
-
-**Q: How long does review take?**
-A: Depends. Small bug fix or docs: usually within a few days. Larger feature: maybe a week or two. Pre-discussed work moves faster.
-
-**Q: Why did my PR for a new AI provider get closed?**
-A: Most provider requests are now covered by the `openai-compatible` provider (point it at any OpenAI-compatible base URL) or OpenRouter. New built-in providers must justify unique value beyond what those cover.
-
-**Q: My PR conflicts after main moved. Should I rebase?**
-A: If the change is still relevant and reasonably small, yes. If it's a large stale PR, expect it to be closed with an offer to reopen after rebase. Rotting velocity is real, not personal.
 
 ## Security issues
 
-Don't file them as public issues. See [SECURITY.md](SECURITY.md).
+Don't open a public issue — see [SECURITY.md](SECURITY.md).
 
 ## License
 
-By contributing you agree your work is licensed under [Apache-2.0](LICENSE). No CLA required.
+Contributions go in under [Apache-2.0](LICENSE). No CLA.

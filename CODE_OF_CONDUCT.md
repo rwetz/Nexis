@@ -1,34 +1,25 @@
-# Code of conduct
+# Code of Conduct
 
-Nexis is a small open-source project and we want it to stay a place people enjoy contributing to.
+Pretty simple: be decent.
 
-## The rules, briefly
+Nexis is a personal project and I want it to be a place where people feel comfortable contributing. That means treating each other like adults — disagreement is fine, being a jerk is not.
 
-- **Be respectful.** Disagreement is fine; rudeness, condescension, and personal attacks are not.
-- **Assume good faith.** Most miscommunication isn't malicious — clarify before escalating.
-- **Stay on topic.** Issues, PRs, and discussions are about Nexis. Take off-topic conversations elsewhere.
-- **No harassment.** Targeted insults, slurs, sustained disruption, sexualized comments, doxxing, or threats are not tolerated — anywhere, against anyone.
-- **No spam.** That includes promotional links, irrelevant cross-posting, and AI-generated noise that doesn't engage with the actual conversation.
+## The short version
 
-This applies to everything inside the project: issues, PRs, discussions, commits, and any community space we create later (Discord, etc.).
+- Respect people even when you disagree with them
+- Don't assume the worst — ask before escalating
+- Keep discussions on topic
+- No harassment, threats, slurs, or sustained bad-faith behavior
+- No spam or off-topic promotion
 
-## Enforcement
+These expectations apply to GitHub issues, PRs, discussions, and anywhere else tied to this project.
 
-If you see a violation — or experience one — email **rwetz00@gmail.com** with subject `[Nexis conduct]`. Include links and context.
+## If something goes wrong
 
-Maintainers may, at their discretion:
+Email **rwetz00@gmail.com** with subject `[Nexis conduct]`. Give me enough context to understand what happened — links help.
 
-1. Edit or delete the offending content
-2. Issue a private warning
-3. Lock the thread
-4. Block the account from the project
+From there I'll use the lightest response that actually resolves the problem. For serious or repeat issues that escalates quickly.
 
-We default to the lightest action that resolves the situation. Severe or repeat violations skip steps.
+## What I'm responsible for
 
-## Scope
-
-Maintainers act in this project's spaces. We don't police behavior outside the project, but we do consider patterns of behavior elsewhere when deciding on enforcement here.
-
----
-
-*This document is intentionally short. It is inspired by the [Contributor Covenant](https://www.contributor-covenant.org/) but kept compact for a small project.*
+I'll act on problems that happen in this project's spaces. I'm not here to moderate the internet, but if someone's conduct elsewhere is directly relevant to how they behave here, that's fair game too.
