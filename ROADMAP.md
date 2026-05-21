@@ -89,24 +89,36 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 ## What's coming
 
 ### Near-term
-- [ ] SSH — PTY sessions over SSH (auth + known_hosts first; SFTP later)
+- [ ] Shell history search — fuzzy Ctrl+R overlay sourced from shell history, keyboard-navigable, fast and local
+- [ ] Terminal color themes — built-in palette switcher (Catppuccin, Dracula, Nord, Solarized, One Dark, etc.) separate from editor themes
+- [ ] Tab and layout persistence — restore open tabs, split state, and working directories on relaunch
+- [ ] Quick file open — Cmd+P fuzzy file picker scoped to the workspace, respects `.gitignore`
+- [ ] SSH — PTY sessions over SSH (auth + known_hosts first; SFTP and port forwarding later)
 - [ ] Inline terminal suggestions — history-based to start, AI-powered as opt-in
-- [ ] Theming — terminal color schemes, UI accents, custom keybindings
-- [ ] Smarter AI autocomplete — project-aware, lower latency
-- [ ] Drag and drop into terminal — files as quoted paths, files into AI context
-- [ ] Agent orchestration — Nexis spawning and coordinating external agents (Claude Code, OpenCode, etc.)
+- [ ] Smarter AI autocomplete — project-aware context, lower latency
+- [ ] Drag and drop into terminal — files as quoted paths, files as AI context attachments
+- [ ] Agent orchestration — Nexis spawning and coordinating external coding agents (Claude Code, OpenCode, etc.)
+- [ ] AI context inspector — transparency panel showing exactly what context is being sent to the model
+- [ ] Per-project AI system prompt — override the default system prompt via `NEXIS.md`
 - [ ] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
-- [ ] Persistent session and layout restore
+- [ ] Environment variable panel — view, edit, and persist env vars per workspace
+- [ ] Background process manager — visibility into shell background jobs and dev servers running in Nexis
+- [ ] Syntax-highlighted git diffs — richer diff view with language-aware highlighting
 
 ### Longer term
-- [ ] Release tooling (automated CHANGELOG, version bumps, tag flow)
-- [ ] Bundle size work — tree-shaking, lazy language packs
-- [ ] Selective TS → Rust for measurable hot-path wins
-- [ ] AI skill bundles as installable packages
-- [ ] Live file system sync in explorer and editor
-- [ ] Debugger and debugging tools — integrated step-through debugging, breakpoints, variable inspection, and call stack viewer for common runtimes (Node.js, Python, Rust via LLDB). Terminal-native feel, not a VS Code clone.
 - [ ] Full LSP support — go-to-definition, hover docs, diagnostics, and completion powered by language servers
-- [ ] Refactoring engine — rename symbols, extract functions, and other structured code edits across a project
+- [ ] Debugger and debugging tools — step-through debugging, breakpoints, variable inspection, and call stack viewer for common runtimes (Node.js, Python, Rust via LLDB)
+- [ ] Refactoring engine — rename symbols, extract functions, and structured code edits across a project
+- [ ] Remote workspaces — open a remote directory over SSH with the editor, explorer, and terminal all pointed at the same host
+- [ ] Container-aware environments — detect and work inside Docker/devcontainer setups, surface container context in the status bar
+- [ ] Database query tab — run queries against local SQLite, PostgreSQL, and MySQL databases directly in Nexis
+- [ ] AI skill bundles — installable packages that add new agent tools and slash commands
+- [ ] Tab groups / named workspaces — group tabs by project and switch between workspace sets
+- [ ] Collaborative sessions — shared terminal and editor sessions for pair programming
+- [ ] Release tooling — automated CHANGELOG generation, version bumps, and tag flow
+- [ ] Bundle size work — tree-shaking, lazy language packs, targeted dependency replacements
+- [ ] Selective TS → Rust migration for measurable hot-path wins
+- [ ] Live file system sync — explorer and editor update in real time as files change on disk
 
 ---
 
