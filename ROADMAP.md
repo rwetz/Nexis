@@ -14,7 +14,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 
 ## Hard limits (things that won't be built)
 
-- **Not a VS Code replacement.** No full LSP, no integrated debugger, no refactoring engine. Use a real IDE for that.
+- **Not a VS Code replacement.** No full LSP, no refactoring engine. Use a real IDE for those — though a lightweight debugger is on the longer-term roadmap.
 - **Not a browser.** The preview pane exists for local dev servers only.
 - **Not a document editor.** This is terminal-first.
 - **Not a package manager UI.** Use `npm`, `cargo`, `pip` in the terminal like normal.
@@ -104,6 +104,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Selective TS → Rust for measurable hot-path wins
 - [ ] AI skill bundles as installable packages
 - [ ] Live file system sync in explorer and editor
+- [ ] Debugger and debugging tools — integrated step-through debugging, breakpoints, variable inspection, and call stack viewer for common runtimes (Node.js, Python, Rust via LLDB). Terminal-native feel, not a VS Code clone.
 
 ---
 
