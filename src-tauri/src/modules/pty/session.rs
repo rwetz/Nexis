@@ -56,10 +56,16 @@ impl Drop for Session {
         }
     }
 }
-// Windows ConPTY has a documented race when two `CreatePseudoConsole` calls
-// interleave. Unix openpty/fork is fine in parallel.
+// Serializes ConPTY create and close: overlapping pseudoconsole lifecycle
+// calls corrupt the new console so its shell never pumps output (issue #356).
 #[cfg(windows)]
-static SPAWN_LOCK: Mutex<()> = Mutex::new(());
+static CONPTY_LIFECYCLE_LOCK: Mutex<()> = Mutex::new(());
+
+pub(super) fn drop_session(session: Arc<Session>) {
+    #[cfg(windows)]
+    let _guard = CONPTY_LIFECYCLE_LOCK.lock().unwrap();
+    drop(session);
+}
 
 struct ChildKillGuard {
     killer: Option<Box<dyn ChildKiller + Send + Sync>>,
@@ -92,7 +98,7 @@ pub fn spawn(
     on_exit: Channel<i32>,
 ) -> Result<(Arc<Session>, PtySize), String> {
     #[cfg(windows)]
-    let _spawn_guard = SPAWN_LOCK.lock().unwrap();
+    let _spawn_guard = CONPTY_LIFECYCLE_LOCK.lock().unwrap();
 
     let pty_system = native_pty_system();
     let size = PtySize {
