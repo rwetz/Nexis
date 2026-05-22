@@ -121,6 +121,24 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Full LSP support — go-to-definition, hover docs, diagnostics, and completion powered by language servers
 - [ ] Debugger and debugging tools — step-through debugging, breakpoints, variable inspection, and call stack viewer for common runtimes (Node.js, Python, Rust via LLDB)
 - [ ] Refactoring engine — rename symbols, extract functions, and structured code edits across a project
+- [ ] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with output captured in a dedicated panel and errors linked to source lines
+- [ ] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
+- [ ] Snippets library — user-defined code snippets with tab-stop placeholders, scoped by language
+- [ ] Multi-cursor and column select — advanced editing modes for bulk edits across lines
+- [ ] Find and replace across project — workspace-wide search and replace with regex, preview, and per-file confirmation
+- [ ] Minimap — optional code minimap in the editor for navigating large files
+- [ ] Breadcrumb navigation — file path + symbol breadcrumbs at the top of the editor pane
+- [ ] Symbol outline panel — file-level function/class/variable tree in the sidebar
+- [ ] Bookmarks — mark lines across files and jump between them quickly
+- [ ] Code folding improvements — fold by indent, by region comments, and by language constructs
+- [ ] Word wrap toggle — per-file and global word wrap setting in the editor
+- [ ] AI commit message generation — one-click AI-written commit messages based on staged diff
+- [ ] AI PR description generation — draft pull request titles and bodies from branch diff
+- [ ] AI-powered rename — rename a symbol across the project with AI verifying correctness
+- [ ] Workspace templates — scaffold new projects from built-in or custom templates
+- [ ] Keybinding editor — visual UI for remapping any shortcut, with import/export
+- [ ] Command palette — fuzzy-searchable palette for every action in the app (Ctrl+Shift+P)
+- [ ] Notifications center — in-app log of agent actions, build results, and background task completions
 - [ ] Remote workspaces — open a remote directory over SSH with the editor, explorer, and terminal all pointed at the same host
 - [ ] Container-aware environments — detect and work inside Docker/devcontainer setups, surface container context in the status bar
 - [ ] Database query tab — run queries against local SQLite, PostgreSQL, and MySQL databases directly in Nexis
@@ -131,6 +149,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Bundle size work — tree-shaking, lazy language packs, targeted dependency replacements
 - [ ] Selective TS → Rust migration for measurable hot-path wins
 - [ ] Live file system sync — explorer and editor update in real time as files change on disk
+- [ ] Plugin API — stable internal API surface so features can be built and loaded as first-party plugins
+- [ ] Mobile companion — read-only terminal and AI chat view for iOS/Android
 
 ---
 
