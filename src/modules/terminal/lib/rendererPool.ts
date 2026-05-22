@@ -86,7 +86,7 @@ function termOptions() {
     fontFamily: prefs.terminalFontFamily || detectMonoFontFamily(),
     letterSpacing: prefs.terminalLetterSpacing,
     fontSize: Math.max(4, Math.round(prefs.terminalFontSize * prefs.zoomLevel)),
-    theme: buildTerminalTheme(),
+    theme: buildTerminalTheme(prefs.terminalColorTheme),
     cursorBlink: false,
     cursorStyle: "bar" as const,
     cursorInactiveStyle: "outline" as const,
@@ -142,6 +142,24 @@ function createSlot(): Slot {
     if (leafId === null) return false;
     const bridge = adapter?.resolveLeaf(leafId);
     if (!bridge) return true;
+
+    // Intercept Ctrl+R before it reaches the PTY so we can show the history
+    // overlay. Dispatch a DOM custom event that the React tree can listen to.
+    if (
+      event.type === "keydown" &&
+      event.key === "r" &&
+      event.ctrlKey &&
+      !event.altKey &&
+      !event.shiftKey &&
+      !event.metaKey
+    ) {
+      event.preventDefault();
+      window.dispatchEvent(
+        new CustomEvent("nexis:history-open", { detail: { leafId } }),
+      );
+      return false;
+    }
+
     const wordNavigation = terminalWordNavigationSequence(event);
     if (wordNavigation) {
       event.preventDefault();
@@ -597,7 +615,8 @@ export function applyScrollback(value: number): void {
 }
 
 export function applyTheme(): void {
-  const theme = buildTerminalTheme();
+  const { terminalColorTheme } = usePreferencesStore.getState();
+  const theme = buildTerminalTheme(terminalColorTheme);
   for (const slot of slots) {
     slot.term.options.theme = theme;
   }
@@ -622,6 +641,11 @@ function applyCursorBlinkOnSlot(slot: Slot, focused: boolean): void {
 
 export function getSlotForLeaf(leafId: number): Slot | null {
   return slots.find((s) => s.currentLeafId === leafId) ?? null;
+}
+
+/** Write data directly into the PTY for a given leaf. Used by overlays. */
+export function writeToLeaf(leafId: number, data: string): void {
+  adapter?.resolveLeaf(leafId)?.writeToPty(data);
 }
 
 function isCtrlBackspace(e: KeyboardEvent): boolean {

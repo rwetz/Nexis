@@ -1,3 +1,4 @@
+import { usePreferencesStore } from "@/modules/settings/preferences";
 import { useTheme } from "@/modules/theme";
 import type { SearchAddon } from "@xterm/addon-search";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
@@ -38,6 +39,7 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const { resolvedTheme } = useTheme();
+    const terminalColorTheme = usePreferencesStore((s) => s.terminalColorTheme);
 
     const session = useTerminalSession({
       leafId,
@@ -54,7 +56,7 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
       // Defer one frame so CSS-variable token resolution sees the new class.
       const id = requestAnimationFrame(() => session.applyTheme());
       return () => cancelAnimationFrame(id);
-    }, [resolvedTheme, session]);
+    }, [resolvedTheme, terminalColorTheme, session]);
 
     useImperativeHandle(
       ref,

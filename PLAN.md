@@ -23,7 +23,7 @@ Patch releases should be frequent and low-risk. Minor releases are bigger and ge
 ---
 
 ### 0.7.1 — Terminal quality + session persistence
-> Target: next release
+> Released: 2026-05-22
 
 The goal of 0.7.1 is two things: make the terminal feel smarter day-to-day, and make the app feel like it actually remembers where you were. Small surface area, high daily impact.
 

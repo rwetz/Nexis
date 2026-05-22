@@ -3,6 +3,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { QuickFilePicker } from "@/components/QuickFilePicker";
+import { ShellHistoryOverlay } from "@/components/ShellHistoryOverlay";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   AlertDialog,
@@ -66,7 +68,7 @@ import {
   useSourceControl,
 } from "@/modules/source-control";
 import { StatusBar } from "@/modules/statusbar";
-import { MAX_PANES_PER_TAB, useTabs, useWorkspaceCwd } from "@/modules/tabs";
+import { MAX_PANES_PER_TAB, useTabs, useWorkspaceCwd, setSavedTabsEnabled } from "@/modules/tabs";
 import {
   disposeSession,
   findLeafCwd,
@@ -358,6 +360,8 @@ export default function App() {
 
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [newEditorOpen, setNewEditorOpen] = useState(false);
+  const [quickFilePickerOpen, setQuickFilePickerOpen] = useState(false);
+  const [historyLeafId, setHistoryLeafId] = useState<number | null>(null);
   const miniOpen = useChatStore((s) => s.mini.open);
   const openMini = useChatStore((s) => s.openMini);
   const focusInput = useChatStore((s) => s.focusInput);
@@ -411,6 +415,7 @@ export default function App() {
   const initPrefs = usePreferencesStore((s) => s.init);
   const prefDefaultModel = usePreferencesStore((s) => s.defaultModelId);
   const prefsHydrated = usePreferencesStore((s) => s.hydrated);
+  const prefRestoreTabs = usePreferencesStore((s) => s.restoreTabs);
   useEffect(() => {
     void initPrefs();
   }, [initPrefs]);
@@ -418,6 +423,22 @@ export default function App() {
     if (!prefsHydrated) return;
     setSelectedModelId(prefDefaultModel);
   }, [prefsHydrated, prefDefaultModel, setSelectedModelId]);
+  // Keep the localStorage restore-tabs flag in sync with the Tauri preference.
+  // When disabled, this also clears any saved tab state.
+  useEffect(() => {
+    if (!prefsHydrated) return;
+    setSavedTabsEnabled(prefRestoreTabs);
+  }, [prefsHydrated, prefRestoreTabs]);
+
+  // Listen for Ctrl+R intercepts from the terminal renderer pool.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { leafId } = (e as CustomEvent<{ leafId: number }>).detail;
+      setHistoryLeafId(leafId);
+    };
+    window.addEventListener("nexis:history-open", handler);
+    return () => window.removeEventListener("nexis:history-open", handler);
+  }, []);
 
   const hydrateSessions = useChatStore((s) => s.hydrateSessions);
   useEffect(() => {
@@ -911,6 +932,7 @@ export default function App() {
       "search.focus": () => searchInlineRef.current?.focus(),
       "ai.toggle": togglePanelAndFocus,
       "ai.askSelection": askFromSelection,
+      "files.quickOpen": () => setQuickFilePickerOpen((v) => !v),
       "shortcuts.open": () => setShortcutsOpen((v) => !v),
       "settings.open": () => void openSettingsWindow(),
       "sidebar.toggle": toggleSidebar,
@@ -1344,6 +1366,21 @@ export default function App() {
               />
             ) : null}
           </AnimatePresence>
+
+          {quickFilePickerOpen && (
+            <QuickFilePicker
+              root={explorerRoot}
+              onSelect={(path) => openFileTab(path)}
+              onClose={() => setQuickFilePickerOpen(false)}
+            />
+          )}
+
+          {historyLeafId !== null && (
+            <ShellHistoryOverlay
+              leafId={historyLeafId}
+              onClose={() => setHistoryLeafId(null)}
+            />
+          )}
 
           <ShortcutsDialog
             open={shortcutsOpen}

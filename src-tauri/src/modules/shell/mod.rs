@@ -320,6 +320,101 @@ pub(crate) fn build_oneshot_command(
     }
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// Shell history reader
+// ──────────────────────────────────────────────────────────────────────────
+
+/// Reads the user's shell history file and returns deduplicated entries,
+/// newest first. Handles zsh, bash, fish, and PowerShell history formats.
+/// Returns an empty list on any error (missing file, permission denied, etc.).
+#[tauri::command]
+pub fn read_shell_history() -> Vec<String> {
+    let home = match dirs::home_dir() {
+        Some(h) => h,
+        None => return Vec::new(),
+    };
+
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    // zsh
+    candidates.push(home.join(".zsh_history"));
+    // bash
+    candidates.push(home.join(".bash_history"));
+    // fish
+    candidates.push(home.join(".local/share/fish/fish_history"));
+    // PowerShell (Windows)
+    #[cfg(windows)]
+    if let Some(appdata) = std::env::var_os("APPDATA") {
+        let ps_hist = PathBuf::from(appdata)
+            .join("Microsoft/Windows/PowerShell/PSReadLine/ConsoleHost_history.txt");
+        candidates.push(ps_hist);
+    }
+
+    let mut all: Vec<String> = Vec::new();
+
+    for path in &candidates {
+        if !path.is_file() {
+            continue;
+        }
+        let content = match std::fs::read(path) {
+            Ok(b) => String::from_utf8_lossy(&b).into_owned(),
+            Err(_) => continue,
+        };
+
+        let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
+        let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+
+        let entries: Vec<String> = if name == "fish_history" {
+            // Fish history: lines starting with "- cmd: " hold the command.
+            content
+                .lines()
+                .filter_map(|l| l.trim().strip_prefix("- cmd: "))
+                .map(|s| s.to_string())
+                .collect()
+        } else if name.ends_with("zsh_history") || ext.is_empty() {
+            // zsh extended history: `: timestamp:elapsed;command`
+            // Plain history: one command per line.
+            content
+                .lines()
+                .filter_map(|l| {
+                    if let Some(rest) = l.strip_prefix(": ") {
+                        // `: timestamp:elapsed;command`
+                        rest.split_once(';').map(|(_, cmd)| cmd.to_string())
+                    } else if !l.is_empty() {
+                        Some(l.to_string())
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        } else {
+            // bash / PowerShell: one command per line.
+            content
+                .lines()
+                .filter(|l| !l.is_empty())
+                .map(|l| l.to_string())
+                .collect()
+        };
+
+        all.extend(entries);
+    }
+
+    // Deduplicate while preserving order (keep last occurrence = most recent).
+    // Iterate in reverse so we drop earlier duplicates.
+    let mut seen = std::collections::HashSet::new();
+    let mut out: Vec<String> = all
+        .into_iter()
+        .rev()
+        .filter(|cmd| {
+            let trimmed = cmd.trim().to_string();
+            !trimmed.is_empty() && seen.insert(trimmed)
+        })
+        .collect();
+    // Limit to 5 000 entries to keep IPC payload small.
+    out.truncate(5_000);
+    out
+}
+
 fn drain<R: Read>(reader: &mut R) -> (Vec<u8>, bool) {
     let mut out = Vec::new();
     let mut buf = [0u8; 8192];

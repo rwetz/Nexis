@@ -68,9 +68,10 @@ async fn open_settings_window(app: tauri::AppHandle, tab: Option<String>) -> Res
         .hidden_title(true);
 
     // On Linux/Windows we render our own titlebar, so drop native chrome
-    // and make the window transparent.
+    // and make the window transparent. shadow(false) removes the 1px DWM
+    // border on Windows 10 (same fix applied to the main window).
     #[cfg(any(target_os = "linux", target_os = "windows"))]
-    let builder = builder.decorations(false).transparent(true);
+    let builder = builder.decorations(false).transparent(true).shadow(false);
 
     let window = builder.build().map_err(|e| e.to_string())?;
 
@@ -153,6 +154,7 @@ pub fn run() {
             git::commands::git_commit_file_diff,
             git::commands::git_remote_url,
             shell::shell_run_command,
+            shell::read_shell_history,
             shell::shell_session_open,
             shell::shell_session_run,
             shell::shell_session_close,

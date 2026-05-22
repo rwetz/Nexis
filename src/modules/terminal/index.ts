@@ -4,6 +4,7 @@ export {
   disposeSession,
   respawnSession,
 } from "./lib/useTerminalSession";
+export { writeToLeaf } from "./lib/rendererPool";
 export {
   findLeafCwd,
   hasLeaf,

@@ -2,6 +2,7 @@ export { TabBar } from "./TabBar";
 export {
   MAX_PANES_PER_TAB,
   useTabs,
+  setSavedTabsEnabled,
   type Tab,
   type TerminalTab,
   type EditorTab,

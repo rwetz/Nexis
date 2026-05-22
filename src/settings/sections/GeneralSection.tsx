@@ -22,8 +22,10 @@ import {
   TERMINAL_SCROLLBACK_PRESETS,
   setAutostart,
   setEditorTheme,
+  setRestoreTabs,
   setRestoreWindowState,
   setShowHidden,
+  setTerminalColorTheme,
   setTerminalFontFamily,
   setTerminalLetterSpacing,
   setTerminalFontSize,
@@ -31,7 +33,12 @@ import {
   setTerminalWebglEnabled,
   setVimMode,
   type EditorThemeId,
+  type TerminalColorThemeId,
 } from "@/modules/settings/store";
+import {
+  TERMINAL_COLOR_THEME_LABELS,
+  TERMINAL_COLOR_THEMES,
+} from "@/styles/terminalTheme";
 import { useTheme } from "@/modules/theme";
 import {
   ArrowDown01Icon,
@@ -65,7 +72,9 @@ export function GeneralSection() {
   const terminalWebglEnabled = usePreferencesStore(
     (s) => s.terminalWebglEnabled,
   );
+  const terminalColorTheme = usePreferencesStore((s) => s.terminalColorTheme);
   const terminalFontFamily = usePreferencesStore((s) => s.terminalFontFamily);
+  const restoreTabs = usePreferencesStore((s) => s.restoreTabs);
   const terminalLetterSpacing = usePreferencesStore((s) => s.terminalLetterSpacing);
   const terminalFontSize = usePreferencesStore((s) => s.terminalFontSize);
   const terminalScrollback = usePreferencesStore((s) => s.terminalScrollback);
@@ -108,6 +117,9 @@ export function GeneralSection() {
   const onPickTerminalFontSize = (size: number) => void setTerminalFontSize(size);
 
   const onPickScrollback = (lines: number) => void setTerminalScrollback(lines);
+
+  const onPickColorTheme = (id: TerminalColorThemeId) =>
+    void setTerminalColorTheme(id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -223,6 +235,44 @@ export function GeneralSection() {
             checked={terminalWebglEnabled}
             onCheckedChange={onToggleTerminalWebgl}
           />
+        </SettingRow>
+        <SettingRow
+          title="Color theme"
+          description="ANSI 16-color palette used for terminal output. The app chrome (background, foreground, cursor) always follows the app theme."
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-8 justify-between gap-2 rounded-none px-2.5 text-[12px]"
+              >
+                <span>{TERMINAL_COLOR_THEME_LABELS[terminalColorTheme]}</span>
+                <HugeiconsIcon
+                  icon={ArrowDown01Icon}
+                  size={12}
+                  strokeWidth={2}
+                  className="opacity-70"
+                />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="min-w-[180px] rounded-none border border-border bg-popover p-0 shadow-none ring-0"
+            >
+              {TERMINAL_COLOR_THEMES.map((id) => (
+                <DropdownMenuItem
+                  key={id}
+                  onSelect={() => onPickColorTheme(id)}
+                  className={cn(
+                    "rounded-none px-3 py-1.5 text-[12px]",
+                    id === terminalColorTheme && "bg-accent/50",
+                  )}
+                >
+                  {TERMINAL_COLOR_THEME_LABELS[id]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </SettingRow>
         <SettingRow
           title="Font family"
@@ -360,6 +410,15 @@ export function GeneralSection() {
             <Switch
               checked={restoreWindowState}
               onCheckedChange={(v) => void setRestoreWindowState(v)}
+            />
+          </SettingRow>
+          <SettingRow
+            title="Restore tabs on launch"
+            description="Reopen terminal tabs (at their last working directory) and editor tabs on next launch."
+          >
+            <Switch
+              checked={restoreTabs}
+              onCheckedChange={(v) => void setRestoreTabs(v)}
             />
           </SettingRow>
         </div>

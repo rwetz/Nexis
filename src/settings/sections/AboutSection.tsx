@@ -1,3 +1,4 @@
+import { NexisLogo } from "@/components/NexisLogo";
 import { Button } from "@/components/ui/button";
 import { useUpdater } from "@/modules/updater";
 import { GithubIcon, Globe02Icon } from "@hugeicons/core-free-icons";
@@ -69,7 +70,7 @@ export function AboutSection() {
       <SectionHeader title="About" description="" />
 
       <div className="flex items-center gap-4 rounded-xl border border-border/60 bg-card/60 p-5">
-        <img src="/logo.png" alt="" className="size-12" draggable={false} />
+        <NexisLogo />
         <div className="flex min-w-0 flex-col">
           <span className="text-[15px] font-semibold tracking-tight">
             {name}
