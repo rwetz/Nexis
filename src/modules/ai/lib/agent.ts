@@ -1,5 +1,6 @@
 import {
   convertToModelMessages,
+  pruneMessages,
   stepCountIs,
   streamText,
   type LanguageModel,
@@ -374,8 +375,13 @@ export async function runAgentStream(opts: RunAgentOptions) {
   );
 
   const history = await convertToModelMessages(opts.uiMessages);
+  const prunedHistory = pruneMessages({
+    messages: history,
+    reasoning: "all",
+    emptyMessages: "remove",
+  });
   const compact = compactModelMessagesDetailed(
-    history,
+    prunedHistory,
     getModelContextLimit(getModel(modelId).id, opts.openaiCompatibleContextLimit),
   );
   const compactedHistory = compact.messages;
