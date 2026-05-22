@@ -89,6 +89,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 ## What's coming
 
 ### Near-term
+- [ ] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
+- [ ] Run files — execute the current file or project directly from the editor (Java, Rust, C++, Python, etc.) with output captured in a terminal tab and build errors surfaced inline
 - [ ] Shell history search — fuzzy Ctrl+R overlay sourced from shell history, keyboard-navigable, fast and local
 - [ ] Terminal color themes — built-in palette switcher (Catppuccin, Dracula, Nord, Solarized, One Dark, etc.) separate from editor themes
 - [ ] Tab and layout persistence — restore open tabs, split state, and working directories on relaunch
