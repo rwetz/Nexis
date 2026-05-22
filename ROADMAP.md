@@ -89,6 +89,14 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 ## What's coming
 
 ### Near-term
+- [ ] Custom themes, presets, and background images — theme editor, built-in presets, and custom background image support for the terminal and app chrome
+- [ ] Ollama and MLX local model providers — run models fully offline without any API key
+- [ ] Redesigned sidebar, source control panel, and git graph — visual refresh of the left panel and git history view
+- [ ] Redesigned Models settings tab — cleaner model picker with better scroll and layout
+- [ ] Configurable font family — per-user font selection in terminal settings
+- [ ] Markdown preview tab — right-click a .md file in the explorer to open a rendered preview
+- [ ] SQL, JSONC, and Ruby syntax highlighting — additional language support in the editor
+- [ ] Windows subprocess and ConPTY fixes — suppress console window flash on spawns, serialize ConPTY lifecycle
 - [ ] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
 - [ ] Run files — execute the current file or project directly from the editor (Java, Rust, C++, Python, etc.) with output captured in a terminal tab and build errors surfaced inline
 - [ ] Draggable/dockable panels — resizable bottom output panel to start, with drag-to-dock for floating and snapping panels (simpler drawer toggle first, full docking layout later)
