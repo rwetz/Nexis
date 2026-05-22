@@ -159,7 +159,6 @@ html[data-chrome="borderless"] #settings-root {
   height: 100%;
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--border);
   background: var(--background);
 }
 
