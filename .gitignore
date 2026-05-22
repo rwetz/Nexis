@@ -29,4 +29,3 @@ dist-ssr
 src-tauri/target
 
 # Leftover source archives
-terax-ai-main/tauri.build.override.json
