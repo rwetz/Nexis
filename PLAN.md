@@ -77,6 +77,7 @@ File exploration with the sidebar is fine for browsing, but jumping directly to 
 - Agent orchestration — spawn and coordinate external agents (Claude Code, OpenCode)
 - Per-project AI system prompt via `NEXIS.md`
 - Smarter AI autocomplete in the editor (project-aware)
+- Fix "Check for updates" button in About — currently does nothing; wire up the updater plugin properly or replace with a direct GitHub releases check
 
 ---
 
