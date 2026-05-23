@@ -78,7 +78,14 @@ import {
   TerminalStack,
   type TerminalPaneHandle,
 } from "@/modules/terminal";
-import { ThemeProvider } from "@/modules/theme";
+import {
+  ThemeProvider,
+  onThemeEdit,
+  starterTheme,
+  writeThemeFile,
+  themeFilePath,
+} from "@/modules/theme";
+import { saveCustomTheme } from "@/modules/theme/customThemes";
 import { UpdaterDialog } from "@/modules/updater";
 import {
   getWslHome,
@@ -446,6 +453,27 @@ export default function App() {
     void useAgentsStore.getState().hydrate();
     void useSnippetsStore.getState().hydrate();
   }, [hydrateSessions]);
+
+  useEffect(() => {
+    const unlistenP = onThemeEdit(async (req) => {
+      try {
+        let path: string;
+        if (req.action === "create") {
+          const theme = starterTheme();
+          path = await writeThemeFile(theme);
+          await saveCustomTheme(theme);
+        } else {
+          path = await themeFilePath(req.id);
+        }
+        openFileTab(path, true);
+      } catch (e) {
+        console.error("theme-edit:", e);
+      }
+    });
+    return () => {
+      void unlistenP.then((fn) => fn());
+    };
+  }, [openFileTab]);
 
   const activeTab = tabs.find((t) => t.id === activeId);
   const isTerminalTab = activeTab?.kind === "terminal";
