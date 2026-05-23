@@ -45,7 +45,11 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 **Root cause:** `std::process::Command` on Windows inherits the parent's console by default. GUI apps have no console, so Windows creates a temporary one — visible as a flash.
 
-**Fix in place:** `crate::modules::proc::hide_console(&mut cmd)` sets `CREATE_NO_WINDOW` before spawning. It is called in both `src-tauri/src/modules/git/process.rs` (run_git_uncached) and `src-tauri/src/modules/shell/mod.rs` (run_blocking).
+**Fix in place:** `crate::modules::proc::hide_console(&mut cmd)` sets `CREATE_NO_WINDOW` before spawning. Applied in:
+- `src-tauri/src/modules/git/process.rs` — `run_git_uncached`
+- `src-tauri/src/modules/shell/mod.rs` — `run_blocking`
+- `src-tauri/src/modules/shell/background.rs` — `spawn` (agent background processes)
+- `src-tauri/src/modules/workspace.rs` — `run_wsl` and `wsl_exec_capture` (WSL listing and home-dir probes)
 
 **Future danger:** Any new `Command::new(...).spawn()` call on Windows that is not a PTY session needs `hide_console`. PTY sessions go through `portable_pty` which handles this internally — do not add it there.
 
