@@ -111,7 +111,76 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 ---
 
+### 8. PTY thread panic propagation via poisoned mutex
+**Symptom:** Terminal goes permanently silent (no more output) after an internal panic, with no error shown.
+
+**Root cause:** The reader, flusher, and waiter threads all share a `Mutex<Vec<u8>>` called `pending`. If any thread panics while holding the lock, the mutex becomes poisoned. Any subsequent `.lock().unwrap()` call in another thread also panics, cascading the failure.
+
+**Fix in place:** All `lock().unwrap()` calls on `pending` in `session.rs` now use `.unwrap_or_else(|e| e.into_inner())`, which recovers the data from a poisoned mutex instead of panicking. Same for the `Condvar::wait_timeout(...).unwrap_or_else(...)`.
+
+**Future danger:** Any new code that shares the `pending` Arc and calls `.lock().unwrap()` will re-introduce panic cascading. Always use `unwrap_or_else(|e| e.into_inner())` for shared PTY thread mutexes.
+
+---
+
+### 9. `pty_close` panic on killer mutex poison or thread exhaustion
+**Symptom:** Closing a terminal tab crashes the entire app process.
+
+**Root cause (A):** `pty_close` previously called `s.killer.lock().unwrap()` — if the killer mutex was poisoned (child thread panicked while holding it), this panics in the Tauri worker thread, crashing the app.
+
+**Root cause (B):** `thread::Builder::new()...spawn(...).expect("spawn pty drop thread")` panics if the OS refuses to spawn a thread (OOM, thread limit hit).
+
+**Fix in place:** Killer lock now uses `if let Ok(mut k) = s.killer.lock()` (skips kill on poison — harmless, child already dead). Thread spawn now uses `.map_err(...)? ` which returns an error to the frontend instead of panicking.
+
+**Future danger:** Do not add `.unwrap()` or `.expect()` to the drop-thread spawn path. It runs on a Tauri worker thread and any panic there propagates to the runtime.
+
+---
+
+### 10. Shell agent session not retried after open failure
+**Symptom:** After an initial `bash_run` tool call fails (e.g. cwd doesn't exist, Rust returns an error), all subsequent `bash_run` calls in the same chat session also fail with the same error, even if the underlying cause is gone.
+
+**Root cause:** `getSessionShell()` in `tools/shell.ts` stores the promise in `sessionShells` even if it rejects. Subsequent calls retrieve the same rejected promise and re-throw without ever retrying `shellSessionOpen`.
+
+**Fix in place:** The promise's `.catch()` handler deletes the `sessionId` entry from `sessionShells` before re-throwing, so the next call starts a fresh open attempt.
+
+**Future danger:** Any code that memoizes Promises must handle rejection — a rejected promise cached in a Map is indistinguishable from a resolved one until awaited.
+
+---
+
+### 11. `approxBytes` panic on circular tool output
+**Symptom:** Context compaction throws an unhandled exception mid-conversation, preventing further AI turns.
+
+**Root cause:** `approxBytes` in `compact.ts` called `JSON.stringify(part.output)` directly. If a tool returns an output with circular object references (unusual but possible if a native object is accidentally returned), `JSON.stringify` throws a `TypeError`.
+
+**Fix in place:** `safeJsonLength()` wrapper catches the exception and returns a conservative 256-byte estimate instead of throwing.
+
+**Future danger:** Any place that serializes tool output for estimation must be wrapped defensively. Tool results are untrusted objects.
+
+---
+
+### 12. `dirname()` returns wrong path for Windows drive roots
+**Symptom:** `dirname("C:/file.txt")` returns `"C:"` instead of `"C:/"`, causing git operations or path-based navigation to fail on files in drive roots.
+
+**Root cause:** The original `dirname` in `App.tsx` sliced up to the last `/` unconditionally. For `"C:/file"` the last `/` is at index 2, so `.slice(0, 2)` = `"C:"` (missing the trailing slash).
+
+**Fix in place:** Special-case: if `idx === 2` and `normalized[1] === ':'`, return `normalized.slice(0, 3)` to preserve the trailing slash. Also fixed `idx === 0` to return `"/"` (Unix root) instead of the original path.
+
+**Future danger:** Use Node's `path.dirname` equivalent (via `@tauri-apps/api/path`) for any path manipulation that must handle all OS forms. The inline `dirname` helper is only safe for known-well-formed paths.
+
+---
+
+### 13. Git stdout silently discards non-UTF-8 bytes
+**Symptom:** Git commands return empty or truncated output when filenames or commit messages contain non-UTF-8 bytes (e.g. Latin-1 encoded commit messages, binary filenames).
+
+**Root cause:** `git_stdout_line_opt` and `git_stdout_lines` in `process.rs` used `std::str::from_utf8(...).unwrap_or("")` — on invalid UTF-8 this returns an empty string, silently discarding all output.
+
+**Fix in place:** Both functions now use `String::from_utf8_lossy(...)` which replaces invalid bytes with `U+FFFD` rather than dropping all output. This matches the behavior already used in `check_git_availability` and `ensure_success`.
+
+**Future danger:** Any new git output parsing that uses `std::str::from_utf8(...).unwrap_or(...)` will silently lose data. Always use `from_utf8_lossy` or explicitly handle the Err case.
+
+---
+
 ## Build / dev notes
 - `cargo check` is fast but does not produce a binary. Run `pnpm tauri dev` to see Rust changes take effect.
 - The PS profile at `~/.cache/nexis/shell-integration/powershell/profile.ps1` is written on first terminal open and only updated when the embedded content changes. Kill the running app and delete the file to force a refresh during development.
 - Thread names in the PTY subsystem are prefixed `nexis-pty-*` — searchable in logs.
+- `authorize_spawn_cwd_blocks_symlink_escape` test in `workspace.rs` requires `SeCreateSymbolicLinkPrivilege` — it will fail on non-admin Windows 10 (`code: 1314`). This is expected; run as admin or on Windows 11+ to validate.

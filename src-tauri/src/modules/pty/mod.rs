@@ -132,10 +132,12 @@ pub fn pty_resize(
 pub fn pty_close(state: tauri::State<PtyState>, id: u32) -> Result<(), String> {
     let session = state.sessions.write().unwrap().remove(&id);
     if let Some(s) = session {
-        if let Err(e) = s.killer.lock().unwrap().kill() {
-            // Non-fatal: the child may already have exited on its own (e.g. the
-            // user ran `exit`). Log so this isn't invisible during debugging.
-            log::debug!("pty_close: kill id={id} returned {e}");
+        if let Ok(mut k) = s.killer.lock() {
+            if let Err(e) = k.kill() {
+                // Non-fatal: the child may already have exited on its own (e.g. the
+                // user ran `exit`). Log so this isn't invisible during debugging.
+                log::debug!("pty_close: kill id={id} returned {e}");
+            }
         }
         log::info!("pty closed id={id}");
         // Detached: on Windows `ClosePseudoConsole` can block until conhost
@@ -150,7 +152,10 @@ pub fn pty_close(state: tauri::State<PtyState>, id: u32) -> Result<(), String> {
                     t0.elapsed().as_millis()
                 );
             })
-            .expect("spawn pty drop thread");
+            .map_err(|e| {
+                log::error!("pty_close: failed to spawn drop thread for id={id}: {e}");
+                format!("spawn pty drop thread: {e}")
+            })?;
     } else {
         log::debug!("pty_close: unknown id={id}");
     }

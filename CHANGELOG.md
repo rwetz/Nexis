@@ -2,6 +2,21 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [Unreleased] — bug-fix sweep
+
+### Fixed
+
+**Rust backend**
+- **PTY thread panic propagation** — All `.lock().unwrap()` calls on the shared `pending` mutex in `session.rs` (reader, flusher, waiter threads) now use `.unwrap_or_else(|e| e.into_inner())`. A panic in one thread no longer poisons the mutex and silently kills output in all other threads.
+- **`pty_close` killer-lock panic** — `s.killer.lock().unwrap()` in `pty_close` replaced with `if let Ok(mut k) = s.killer.lock()`. A poisoned killer mutex (child process had already crashed) no longer panics the Tauri worker thread.
+- **`pty_close` thread-spawn panic** — `thread::spawn(...).expect("spawn pty drop thread")` replaced with `.map_err(...)? `. Out-of-memory or thread-limit conditions now return an error to the frontend instead of aborting the process.
+- **Git stdout silent UTF-8 data loss** — `git_stdout_line_opt` and `git_stdout_lines` in `process.rs` used `std::str::from_utf8(&output.stdout).unwrap_or("")`, which discards all output on invalid UTF-8 (e.g. Latin-1 encoded commit messages, binary filenames). Changed to `String::from_utf8_lossy(...)` to replace invalid bytes with `U+FFFD` instead of returning empty results.
+
+**TypeScript / Frontend**
+- **Shell agent session permanently broken after open failure** — `getSessionShell()` in `tools/shell.ts` cached rejected promises in `sessionShells`. If `shellSessionOpen` failed, every subsequent `bash_run` in that session re-threw the original error forever. The promise's `.catch()` handler now deletes the map entry before re-throwing, so the next call retries cleanly.
+- **`approxBytes` throws on circular tool output** — `JSON.stringify(part.output)` in `compact.ts` throws a `TypeError` on circular object references. Replaced with a `safeJsonLength()` wrapper that catches the exception and returns a conservative estimate, preventing context compaction from crashing mid-conversation.
+- **`dirname()` wrong result for Windows drive roots** — `dirname("C:/file.txt")` returned `"C:"` instead of `"C:/"`, breaking any path-based git or navigation operation for files at the drive root. Fixed by special-casing `idx === 2 && path[1] === ':'` to preserve the trailing slash. Also fixed `idx === 0` to return `"/"` (Unix root) instead of the full path.
+
 ## [0.7.3] — 2026-05-22
 
 ### Added

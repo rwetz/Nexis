@@ -168,7 +168,7 @@ where
     if output.exit_code != Some(0) {
         return Ok(None);
     }
-    let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
+    let stdout = String::from_utf8_lossy(&output.stdout);
     let line = stdout.lines().next().unwrap_or("").trim();
     if line.is_empty() {
         Ok(None)
@@ -190,7 +190,7 @@ where
     if output.exit_code != Some(0) {
         return Ok(Vec::new());
     }
-    let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
+    let stdout = String::from_utf8_lossy(&output.stdout);
     Ok(stdout
         .lines()
         .map(|line| line.trim_end_matches('\r').to_string())

@@ -12,6 +12,14 @@ type ToolPart = {
   [k: string]: unknown;
 };
 
+function safeJsonLength(v: unknown): number {
+  try {
+    return JSON.stringify(v ?? "").length;
+  } catch {
+    return 256;
+  }
+}
+
 function approxBytes(messages: ModelMessage[]): number {
   let n = 0;
   for (const m of messages) {
@@ -21,9 +29,9 @@ function approxBytes(messages: ModelMessage[]): number {
         if (part.type === "text" && typeof part.text === "string")
           n += (part.text as string).length;
         else if (part.type === "tool-result")
-          n += JSON.stringify(part.output ?? "").length;
+          n += safeJsonLength(part.output);
         else if (part.type === "tool-call")
-          n += JSON.stringify(part.input ?? "").length;
+          n += safeJsonLength(part.input);
         else n += 64;
       }
     }

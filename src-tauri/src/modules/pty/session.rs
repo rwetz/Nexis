@@ -178,7 +178,7 @@ pub fn spawn(
                             continue;
                         }
                         let (lock, cv) = &*pending_r;
-                        let mut g = lock.lock().unwrap();
+                        let mut g = lock.lock().unwrap_or_else(|e| e.into_inner());
                         if g.len() + filtered.len() > MAX_PENDING {
                             dropped_bytes += g.len() as u64;
                             g.clear();
@@ -209,18 +209,21 @@ pub fn spawn(
             let (lock, cv) = &*pending_f;
             loop {
                 {
-                    let mut g = lock.lock().unwrap();
+                    let mut g = lock.lock().unwrap_or_else(|e| e.into_inner());
                     while g.is_empty() {
                         if done_f.load(Ordering::Acquire) {
                             return;
                         }
-                        let (next, _) = cv.wait_timeout(g, FLUSH_MAX_IDLE).unwrap();
+                        let (next, _) = cv
+                            .wait_timeout(g, FLUSH_MAX_IDLE)
+                            .unwrap_or_else(|e| e.into_inner());
                         g = next;
                     }
                 }
                 // Coalesce a short window so a burst flushes as one chunk.
                 thread::sleep(FLUSH_COALESCE);
-                let chunk = std::mem::take(&mut *lock.lock().unwrap());
+                let chunk =
+                    std::mem::take(&mut *lock.lock().unwrap_or_else(|e| e.into_inner()));
                 if chunk.is_empty() {
                     continue;
                 }
@@ -259,7 +262,7 @@ pub fn spawn(
                 log::error!("pty reader thread panicked: {e:?}");
             }
             let (lock, cv) = &*pending_e;
-            let tail = std::mem::take(&mut *lock.lock().unwrap());
+            let tail = std::mem::take(&mut *lock.lock().unwrap_or_else(|e| e.into_inner()));
             if !tail.is_empty() {
                 if let Err(e) = on_data_exit.send(Response::new(tail)) {
                     log::debug!("pty final-data send failed (channel closed): {e}");

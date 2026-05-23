@@ -104,7 +104,10 @@ function dirname(path: string | null): string | null {
   if (!path) return null;
   const normalized = path.replace(/\\/g, "/");
   const idx = normalized.lastIndexOf("/");
-  if (idx <= 0) return normalized;
+  if (idx < 0) return normalized;
+  if (idx === 0) return "/";
+  // Windows drive root: "C:/file" → "C:/"
+  if (idx === 2 && normalized[1] === ":") return normalized.slice(0, 3);
   return normalized.slice(0, idx);
 }
 
