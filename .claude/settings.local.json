@@ -57,7 +57,8 @@
       "Bash(node -e \"const m = require\\('@hugeicons/core-free-icons'\\); const keys = Object.keys\\(m\\); ['Chat','Ai','Brain','Side','Layout','Panel','Robot','Spark','Message','Home','Grid','Menu','Dots'].forEach\\(k => { const matches = keys.filter\\(n => n.toLowerCase\\(\\).includes\\(k.toLowerCase\\(\\)\\)\\).slice\\(0,4\\); if\\(matches.length\\) console.log\\(k+':', matches.join\\(', '\\)\\); }\\)\")",
       "Bash(node -e \"const m = require\\('@hugeicons/core-free-icons'\\); const keys = Object.keys\\(m\\); console.log\\('Total:', keys.length\\); console.log\\(keys.filter\\(k => /chat|ai|brain|robot|spark|menu|sidebar|layout|panel/i.test\\(k\\)\\).slice\\(0,20\\).join\\('\\\\n'\\)\\)\")",
       "Bash(node -e \"try { const m = require\\('@hugeicons/core-free-icons'\\); console.log\\(typeof m, Object.keys\\(m\\).length\\); } catch\\(e\\) { console.log\\('ERR', e.message\\); }\")",
-      "Bash(node -e \"const p = require\\('./node_modules/@hugeicons/core-free-icons/package.json'\\); console.log\\(p.main, p.module, p.exports\\)\")"
+      "Bash(node -e \"const p = require\\('./node_modules/@hugeicons/core-free-icons/package.json'\\); console.log\\(p.main, p.module, p.exports\\)\")",
+      "Bash(pnpm exec *)"
     ]
   }
 }

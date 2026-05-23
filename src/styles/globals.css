@@ -139,6 +139,29 @@
 
 :root {
   --app-zoom: 1;
+
+  /* Terminal palette defaults — overridden per-theme by applyTheme() */
+  --terminal-background: var(--background);
+  --terminal-foreground: var(--foreground);
+  --terminal-cursor: var(--foreground);
+  --terminal-cursor-accent: var(--background);
+  --terminal-selection: var(--accent);
+  --terminal-ansi-black: #18181b;
+  --terminal-ansi-red: #ef4444;
+  --terminal-ansi-green: #22c55e;
+  --terminal-ansi-yellow: #eab308;
+  --terminal-ansi-blue: #3b82f6;
+  --terminal-ansi-magenta: #a855f7;
+  --terminal-ansi-cyan: #06b6d4;
+  --terminal-ansi-white: #e4e4e7;
+  --terminal-ansi-bright-black: #52525b;
+  --terminal-ansi-bright-red: #f87171;
+  --terminal-ansi-bright-green: #4ade80;
+  --terminal-ansi-bright-yellow: #facc15;
+  --terminal-ansi-bright-blue: #60a5fa;
+  --terminal-ansi-bright-magenta: #c084fc;
+  --terminal-ansi-bright-cyan: #22d3ee;
+  --terminal-ansi-bright-white: #fafafa;
 }
 .zoom-content {
   zoom: var(--app-zoom);
@@ -160,6 +183,9 @@ html[data-chrome="borderless"] #settings-root {
   border-radius: 12px;
   overflow: hidden;
   background: var(--background);
+}
+html[data-chrome="borderless"] .nexis-bg-surface {
+  border-radius: 12px;
 }
 
 /*

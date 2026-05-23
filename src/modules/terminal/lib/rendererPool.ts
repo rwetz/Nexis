@@ -86,7 +86,7 @@ function termOptions() {
     fontFamily: prefs.terminalFontFamily || detectMonoFontFamily(),
     letterSpacing: prefs.terminalLetterSpacing,
     fontSize: Math.max(4, Math.round(prefs.terminalFontSize * prefs.zoomLevel)),
-    theme: buildTerminalTheme(prefs.terminalColorTheme),
+    theme: buildTerminalTheme(),
     cursorBlink: false,
     cursorStyle: "bar" as const,
     cursorInactiveStyle: "outline" as const,
@@ -615,8 +615,7 @@ export function applyScrollback(value: number): void {
 }
 
 export function applyTheme(): void {
-  const { terminalColorTheme } = usePreferencesStore.getState();
-  const theme = buildTerminalTheme(terminalColorTheme);
+  const theme = buildTerminalTheme();
   for (const slot of slots) {
     slot.term.options.theme = theme;
   }

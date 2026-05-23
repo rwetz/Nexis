@@ -9,14 +9,14 @@ import {
   type ModelId,
 } from "@/modules/ai/config";
 import type { KeyBinding, ShortcutId } from "@/modules/shortcuts/shortcuts";
-import {
-  TERMINAL_COLOR_THEMES,
-  type TerminalColorThemeId,
-} from "@/styles/terminalTheme";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { LazyStore } from "@tauri-apps/plugin-store";
 
 export type ThemePref = "system" | "light" | "dark";
+
+export const DEFAULT_THEME_ID = "nexis-default";
+
+export type BackgroundKind = "none" | "image";
 
 export const EDITOR_THEMES = [
   "atomone",
@@ -44,11 +44,13 @@ export const EDITOR_THEME_LABELS: Record<EditorThemeId, string> = {
   "xcode-light": "Xcode Light",
 };
 
-export type { TerminalColorThemeId };
-export { TERMINAL_COLOR_THEMES };
-
 export type Preferences = {
   theme: ThemePref;
+  themeId: string;
+  backgroundKind: BackgroundKind;
+  backgroundImageId: string | null;
+  backgroundOpacity: number;
+  backgroundBlur: number;
   defaultModelId: ModelId;
   editorTheme: EditorThemeId;
   customInstructions: string;
@@ -72,7 +74,6 @@ export type Preferences = {
   vimMode: boolean;
   showHidden: boolean;
   terminalWebglEnabled: boolean;
-  terminalColorTheme: TerminalColorThemeId;
   terminalFontFamily: string;
   terminalLetterSpacing: number;
   terminalFontSize: number;
@@ -84,6 +85,11 @@ export type Preferences = {
 
 const STORE_PATH = "nexis-settings.json";
 const KEY_THEME = "theme";
+const KEY_THEME_ID = "themeId";
+const KEY_BG_KIND = "backgroundKind";
+const KEY_BG_IMAGE_ID = "backgroundImageId";
+const KEY_BG_OPACITY = "backgroundOpacity";
+const KEY_BG_BLUR = "backgroundBlur";
 const KEY_DEFAULT_MODEL = "defaultModelId";
 const KEY_EDITOR_THEME = "editorTheme";
 const KEY_CUSTOM_INSTRUCTIONS = "customInstructions";
@@ -108,7 +114,6 @@ const KEY_VIM_MODE = "vimMode";
 const KEY_SHOW_HIDDEN = "showHidden";
 const LEGACY_KEY_SHOW_HIDDEN_DIRS = "showHiddenDirectories";
 const KEY_TERMINAL_WEBGL_ENABLED = "terminalWebglEnabled";
-const KEY_TERMINAL_COLOR_THEME = "terminalColorTheme";
 const KEY_TERMINAL_FONT_FAMILY = "terminalFontFamily";
 const KEY_TERMINAL_LETTER_SPACING = "terminalLetterSpacing";
 const KEY_TERMINAL_FONT_SIZE = "terminalFontSize";
@@ -134,6 +139,11 @@ export const TERMINAL_SCROLLBACK_PRESETS = [
 
 export const DEFAULT_PREFERENCES: Preferences = {
   theme: "system",
+  themeId: DEFAULT_THEME_ID,
+  backgroundKind: "none",
+  backgroundImageId: null,
+  backgroundOpacity: 0.5,
+  backgroundBlur: 0,
   defaultModelId: DEFAULT_MODEL_ID,
   editorTheme: "atomone",
   customInstructions: "",
@@ -157,7 +167,6 @@ export const DEFAULT_PREFERENCES: Preferences = {
   vimMode: false,
   showHidden: false,
   terminalWebglEnabled: true,
-  terminalColorTheme: "default",
   terminalFontFamily: "",
   terminalLetterSpacing: 0,
   terminalFontSize: TERMINAL_FONT_SIZE_DEFAULT,
@@ -189,6 +198,18 @@ export async function loadPreferences(): Promise<Preferences> {
   const get = <T>(k: string): T | undefined => map.get(k) as T | undefined;
   return {
     theme: get<ThemePref>(KEY_THEME) ?? DEFAULT_PREFERENCES.theme,
+    themeId: get<string>(KEY_THEME_ID) ?? DEFAULT_PREFERENCES.themeId,
+    backgroundKind:
+      get<BackgroundKind>(KEY_BG_KIND) ?? DEFAULT_PREFERENCES.backgroundKind,
+    backgroundImageId:
+      get<string | null>(KEY_BG_IMAGE_ID) ??
+      DEFAULT_PREFERENCES.backgroundImageId,
+    backgroundOpacity: clampBgOpacity(
+      get<number>(KEY_BG_OPACITY) ?? DEFAULT_PREFERENCES.backgroundOpacity,
+    ),
+    backgroundBlur: clampBlur(
+      get<number>(KEY_BG_BLUR) ?? DEFAULT_PREFERENCES.backgroundBlur,
+    ),
     defaultModelId:
       get<ModelId>(KEY_DEFAULT_MODEL) ?? DEFAULT_PREFERENCES.defaultModelId,
     editorTheme:
@@ -245,12 +266,6 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalWebglEnabled:
       get<boolean>(KEY_TERMINAL_WEBGL_ENABLED) ??
       DEFAULT_PREFERENCES.terminalWebglEnabled,
-    terminalColorTheme: (() => {
-      const stored = get<string>(KEY_TERMINAL_COLOR_THEME);
-      return (stored && (TERMINAL_COLOR_THEMES as readonly string[]).includes(stored)
-        ? stored
-        : DEFAULT_PREFERENCES.terminalColorTheme) as TerminalColorThemeId;
-    })(),
     terminalFontFamily:
       get<string>(KEY_TERMINAL_FONT_FAMILY) ??
       DEFAULT_PREFERENCES.terminalFontFamily,
@@ -278,6 +293,40 @@ export async function setTheme(value: ThemePref): Promise<void> {
   await writePref(KEY_THEME, value);
 }
 
+export async function setThemeId(value: string): Promise<void> {
+  await writePref(KEY_THEME_ID, value);
+}
+
+/** Slider stores 0..1. Actual rendered opacity is halved in SurfaceLayer
+ *  so the image never exceeds 50% — keeps UI/terminal readable at any setting. */
+export const BG_OPACITY_RENDER_FACTOR = 0.5;
+
+function clampBgOpacity(v: number): number {
+  if (!Number.isFinite(v)) return 0.7;
+  return Math.min(1, Math.max(0, v));
+}
+
+function clampBlur(v: number): number {
+  if (!Number.isFinite(v)) return 16;
+  return Math.min(64, Math.max(0, Math.round(v)));
+}
+
+export async function setBackgroundKind(value: BackgroundKind): Promise<void> {
+  await writePref(KEY_BG_KIND, value);
+}
+
+export async function setBackgroundImageId(value: string | null): Promise<void> {
+  await writePref(KEY_BG_IMAGE_ID, value);
+}
+
+export async function setBackgroundOpacity(value: number): Promise<void> {
+  await writePref(KEY_BG_OPACITY, clampBgOpacity(value));
+}
+
+export async function setBackgroundBlur(value: number): Promise<void> {
+  await writePref(KEY_BG_BLUR, clampBlur(value));
+}
+
 export async function setDefaultModel(value: ModelId): Promise<void> {
   await writePref(KEY_DEFAULT_MODEL, value);
 }
@@ -296,6 +345,10 @@ export async function setAutostart(value: boolean): Promise<void> {
 
 export async function setRestoreWindowState(value: boolean): Promise<void> {
   await writePref(KEY_RESTORE_WINDOW, value);
+}
+
+export async function setRestoreTabs(value: boolean): Promise<void> {
+  await writePref(KEY_RESTORE_TABS, value);
 }
 
 export async function setAutocompleteEnabled(value: boolean): Promise<void> {
@@ -373,16 +426,6 @@ export async function setTerminalWebglEnabled(value: boolean): Promise<void> {
   await writePref(KEY_TERMINAL_WEBGL_ENABLED, value);
 }
 
-export async function setTerminalColorTheme(
-  value: TerminalColorThemeId,
-): Promise<void> {
-  await writePref(KEY_TERMINAL_COLOR_THEME, value);
-}
-
-export async function setRestoreTabs(value: boolean): Promise<void> {
-  await writePref(KEY_RESTORE_TABS, value);
-}
-
 export async function setTerminalFontFamily(value: string): Promise<void> {
   await writePref(KEY_TERMINAL_FONT_FAMILY, value.trim());
 }
@@ -440,6 +483,11 @@ export async function onPreferencesChange(
 ): Promise<UnlistenFn> {
   const map: Record<string, PrefKey> = {
     [KEY_THEME]: "theme",
+    [KEY_THEME_ID]: "themeId",
+    [KEY_BG_KIND]: "backgroundKind",
+    [KEY_BG_IMAGE_ID]: "backgroundImageId",
+    [KEY_BG_OPACITY]: "backgroundOpacity",
+    [KEY_BG_BLUR]: "backgroundBlur",
     [KEY_DEFAULT_MODEL]: "defaultModelId",
     [KEY_EDITOR_THEME]: "editorTheme",
     [KEY_CUSTOM_INSTRUCTIONS]: "customInstructions",
@@ -463,7 +511,6 @@ export async function onPreferencesChange(
     [KEY_VIM_MODE]: "vimMode",
     [KEY_SHOW_HIDDEN]: "showHidden",
     [KEY_TERMINAL_WEBGL_ENABLED]: "terminalWebglEnabled",
-    [KEY_TERMINAL_COLOR_THEME]: "terminalColorTheme",
     [KEY_TERMINAL_FONT_FAMILY]: "terminalFontFamily",
     [KEY_TERMINAL_LETTER_SPACING]: "terminalLetterSpacing",
     [KEY_TERMINAL_FONT_SIZE]: "terminalFontSize",

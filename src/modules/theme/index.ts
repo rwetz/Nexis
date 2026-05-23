@@ -1,1 +1,6 @@
-export { ThemeProvider, useTheme, type Theme } from "./ThemeProvider";
+export { ThemeProvider, useTheme, type Theme, type ThemeModePref } from "./ThemeProvider";
+export { listBuiltinThemes, getBuiltinTheme, getDefaultTheme } from "./themes";
+export { validateTheme, type ValidationResult } from "./validateTheme";
+export { parseThemeFile, writeThemeFile, deleteThemeFile, emitThemeEdit, onThemeEdit, isThemeFilePath, starterTheme, type ThemeEditRequest } from "./themeFiles";
+export { saveCustomTheme, deleteCustomTheme, listCustomThemes, onCustomThemesChange } from "./customThemes";
+export { DEFAULT_THEME_ID, type ThemeColors, type TerminalPalette, type ThemeVariant } from "./types";

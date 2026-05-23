@@ -1,10 +1,11 @@
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
@@ -16,32 +17,22 @@ import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import type { ThemePref } from "@/modules/settings/store";
 import {
-  EDITOR_THEME_LABELS,
-  EDITOR_THEMES,
   TERMINAL_FONT_SIZES,
   TERMINAL_SCROLLBACK_PRESETS,
   setAutostart,
-  setEditorTheme,
   setRestoreTabs,
   setRestoreWindowState,
   setShowHidden,
-  setTerminalColorTheme,
   setTerminalFontFamily,
   setTerminalLetterSpacing,
   setTerminalFontSize,
   setTerminalScrollback,
   setTerminalWebglEnabled,
   setVimMode,
-  type EditorThemeId,
-  type TerminalColorThemeId,
+  setZoomLevel,
 } from "@/modules/settings/store";
-import {
-  TERMINAL_COLOR_THEME_LABELS,
-  TERMINAL_COLOR_THEMES,
-} from "@/styles/terminalTheme";
 import { useTheme } from "@/modules/theme";
 import {
-  ArrowDown01Icon,
   ComputerIcon,
   Moon02Icon,
   Sun03Icon,
@@ -62,25 +53,31 @@ const APPEARANCE: {
   { id: "dark", label: "Dark", icon: Moon02Icon },
 ];
 
+const LETTER_SPACINGS = [-4, -3, -2, -1, 0, 1, 2, 3, 4] as const;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2.0;
+const ZOOM_STEP = 0.05;
+
 export function GeneralSection() {
-  const { theme, setTheme } = useTheme();
-  const editorTheme = usePreferencesStore((s) => s.editorTheme);
+  const { mode, setMode } = useTheme();
+
   const autostart = usePreferencesStore((s) => s.autostart);
   const restoreWindowState = usePreferencesStore((s) => s.restoreWindowState);
+  const restoreTabs = usePreferencesStore((s) => s.restoreTabs);
   const vimMode = usePreferencesStore((s) => s.vimMode);
   const showHidden = usePreferencesStore((s) => s.showHidden);
   const terminalWebglEnabled = usePreferencesStore(
     (s) => s.terminalWebglEnabled,
   );
-  const terminalColorTheme = usePreferencesStore((s) => s.terminalColorTheme);
   const terminalFontFamily = usePreferencesStore((s) => s.terminalFontFamily);
-  const restoreTabs = usePreferencesStore((s) => s.restoreTabs);
-  const terminalLetterSpacing = usePreferencesStore((s) => s.terminalLetterSpacing);
+  const terminalLetterSpacing = usePreferencesStore(
+    (s) => s.terminalLetterSpacing,
+  );
   const terminalFontSize = usePreferencesStore((s) => s.terminalFontSize);
   const terminalScrollback = usePreferencesStore((s) => s.terminalScrollback);
+  const zoomLevel = usePreferencesStore((s) => s.zoomLevel);
 
-  // Reconcile autostart pref with the actual OS state on mount — the user may
-  // have toggled it from System Settings.
+  // Reconcile autostart pref with the actual OS state on mount.
   useEffect(() => {
     let alive = true;
     void isEnabled()
@@ -106,26 +103,11 @@ export function GeneralSection() {
     }
   };
 
-  const onPickEditor = (id: EditorThemeId) => void setEditorTheme(id);
-
-  const onToggleTerminalWebgl = (next: boolean) => {
-    void setTerminalWebglEnabled(next).catch((e) =>
-      console.error("terminal WebGL preference update failed", e),
-    );
-  };
-
-  const onPickTerminalFontSize = (size: number) => void setTerminalFontSize(size);
-
-  const onPickScrollback = (lines: number) => void setTerminalScrollback(lines);
-
-  const onPickColorTheme = (id: TerminalColorThemeId) =>
-    void setTerminalColorTheme(id);
-
   return (
     <div className="flex flex-col gap-6">
       <SectionHeader
         title="General"
-        description="Appearance, editor, and startup."
+        description="Mode, editor, and startup."
       />
 
       <div className="flex flex-col gap-2">
@@ -135,10 +117,10 @@ export function GeneralSection() {
             <button
               key={o.id}
               type="button"
-              onClick={() => setTheme(o.id)}
+              onClick={() => setMode(o.id)}
               className={cn(
                 "group flex h-20 flex-col items-center justify-center gap-1.5 rounded-lg border bg-card transition-all",
-                theme === o.id
+                mode === o.id
                   ? "border-foreground/60 ring-1 ring-foreground/20"
                   : "border-border/60 hover:border-border",
               )}
@@ -148,40 +130,35 @@ export function GeneralSection() {
             </button>
           ))}
         </div>
+        <p className="text-[11px] text-muted-foreground">
+          For theme, background and customization, see the{" "}
+          <strong className="font-medium text-foreground">Themes</strong> tab.
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label>Editor theme</Label>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              className="h-9 justify-between gap-2 px-2.5 text-[12px]"
-            >
-              <span>{EDITOR_THEME_LABELS[editorTheme]}</span>
-              <HugeiconsIcon
-                icon={ArrowDown01Icon}
-                size={12}
-                strokeWidth={2}
-                className="opacity-70"
-              />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-[220px]">
-            {EDITOR_THEMES.map((t) => (
-              <DropdownMenuItem
-                key={t}
-                onSelect={() => onPickEditor(t)}
-                className={cn(
-                  "text-[12px]",
-                  t === editorTheme && "bg-accent/50",
-                )}
-              >
-                {EDITOR_THEME_LABELS[t]}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Label>Zoom</Label>
+        <div className="flex flex-col gap-3 rounded-lg border border-border/60 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[11.5px] text-muted-foreground">
+              UI zoom level
+            </span>
+            <span className="tabular-nums text-[11px] text-muted-foreground">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+          </div>
+          <Slider
+            value={[zoomLevel]}
+            min={ZOOM_MIN}
+            max={ZOOM_MAX}
+            step={ZOOM_STEP}
+            onValueChange={(v) => void setZoomLevel(v[0] ?? 1)}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label>Editor</Label>
         <SettingRow
           title="Vim mode"
           description="Enable Vim keybindings in the code editor."
@@ -222,8 +199,15 @@ export function GeneralSection() {
                       ⓘ
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-[260px] text-[11px]">
-                    xterm's WebGL renderer caches glyphs in a GPU texture atlas. On some macOS setups (especially with Nerd Fonts), the atlas corrupts and terminal text becomes unreadable. Turn this off as a fallback — performance dips slightly, but text renders correctly via the DOM renderer.
+                  <TooltipContent
+                    side="top"
+                    className="max-w-65 text-[11px]"
+                  >
+                    xterm's WebGL renderer caches glyphs in a GPU texture
+                    atlas. On some macOS setups (especially with Nerd Fonts),
+                    the atlas corrupts and terminal text becomes unreadable.
+                    Turn this off as a fallback — performance dips slightly,
+                    but text renders correctly via the DOM renderer.
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -233,46 +217,8 @@ export function GeneralSection() {
         >
           <Switch
             checked={terminalWebglEnabled}
-            onCheckedChange={onToggleTerminalWebgl}
+            onCheckedChange={(v) => void setTerminalWebglEnabled(v)}
           />
-        </SettingRow>
-        <SettingRow
-          title="Color theme"
-          description="ANSI 16-color palette used for terminal output. The app chrome (background, foreground, cursor) always follows the app theme."
-        >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-8 justify-between gap-2 rounded-none px-2.5 text-[12px]"
-              >
-                <span>{TERMINAL_COLOR_THEME_LABELS[terminalColorTheme]}</span>
-                <HugeiconsIcon
-                  icon={ArrowDown01Icon}
-                  size={12}
-                  strokeWidth={2}
-                  className="opacity-70"
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="min-w-[180px] rounded-none border border-border bg-popover p-0 shadow-none ring-0"
-            >
-              {TERMINAL_COLOR_THEMES.map((id) => (
-                <DropdownMenuItem
-                  key={id}
-                  onSelect={() => onPickColorTheme(id)}
-                  className={cn(
-                    "rounded-none px-3 py-1.5 text-[12px]",
-                    id === terminalColorTheme && "bg-accent/50",
-                  )}
-                >
-                  {TERMINAL_COLOR_THEME_LABELS[id]}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </SettingRow>
         <SettingRow
           title="Font family"
@@ -283,111 +229,69 @@ export function GeneralSection() {
             value={terminalFontFamily}
             placeholder="Auto-detect"
             onChange={(e) => void setTerminalFontFamily(e.target.value)}
-            className="h-8 w-48 rounded-none border border-border bg-background px-2.5 text-[12px] outline-none focus:border-foreground/40"
+            className="h-8 w-48 rounded-md border border-border bg-background px-2.5 text-[12px] outline-none focus:border-foreground/40"
           />
         </SettingRow>
         <SettingRow
           title="Letter spacing"
           description="Extra horizontal space between characters (px). Use negative values to tighten Nerd Fonts."
         >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-8 justify-between gap-2 rounded-none px-2.5 text-[12px]"
-              >
-                <span>{terminalLetterSpacing > 0 ? `+${terminalLetterSpacing}` : terminalLetterSpacing} px</span>
-                <HugeiconsIcon icon={ArrowDown01Icon} size={12} strokeWidth={2} className="opacity-70" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[100px] rounded-none border border-border bg-popover p-0 shadow-none ring-0">
-              {[-4, -3, -2, -1, 0, 1, 2, 3, 4].map((v) => (
-                <DropdownMenuItem
-                  key={v}
-                  onSelect={() => void setTerminalLetterSpacing(v)}
-                  className={cn("rounded-none px-3 py-1.5 text-[12px]", v === terminalLetterSpacing && "bg-accent/50")}
-                >
+          <Select
+            value={String(terminalLetterSpacing)}
+            onValueChange={(v) => void setTerminalLetterSpacing(Number(v))}
+          >
+            <SelectTrigger size="sm" className="h-8 w-28 text-[12px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LETTER_SPACINGS.map((v) => (
+                <SelectItem key={v} value={String(v)} className="text-[12px]">
                   {v > 0 ? `+${v}` : v} px
-                </DropdownMenuItem>
+                </SelectItem>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </SelectContent>
+          </Select>
         </SettingRow>
-        <SettingRow
-          title="Font size"
-          description="Terminal text size."
-        >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-8 justify-between gap-2 rounded-none px-2.5 text-[12px]"
-              >
-                <span>{terminalFontSize} px</span>
-                <HugeiconsIcon
-                  icon={ArrowDown01Icon}
-                  size={12}
-                  strokeWidth={2}
-                  className="opacity-70"
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="min-w-[80px] rounded-none border border-border bg-popover p-0 shadow-none ring-0"
-            >
+        <SettingRow title="Font size" description="Terminal text size.">
+          <Select
+            value={String(terminalFontSize)}
+            onValueChange={(v) => void setTerminalFontSize(Number(v))}
+          >
+            <SelectTrigger size="sm" className="h-8 w-28 text-[12px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
               {TERMINAL_FONT_SIZES.map((size) => (
-                <DropdownMenuItem
-                  key={size}
-                  onSelect={() => onPickTerminalFontSize(size)}
-                  className={cn(
-                    "rounded-none px-3 py-1.5 text-[12px]",
-                    size === terminalFontSize && "bg-accent/50",
-                  )}
-                >
+                <SelectItem key={size} value={String(size)} className="text-[12px]">
                   {size} px
-                </DropdownMenuItem>
+                </SelectItem>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </SelectContent>
+          </Select>
         </SettingRow>
         <SettingRow
           title="Scrollback"
           description="Lines of history kept per terminal. Higher uses more RAM (~3 KB / line)."
         >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-8 justify-between gap-2 rounded-none px-2.5 text-[12px]"
-              >
-                <span>{terminalScrollback.toLocaleString()} lines</span>
-                <HugeiconsIcon
-                  icon={ArrowDown01Icon}
-                  size={12}
-                  strokeWidth={2}
-                  className="opacity-70"
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="min-w-[140px] rounded-none border border-border bg-popover p-0 shadow-none ring-0"
-            >
+          <Select
+            value={String(terminalScrollback)}
+            onValueChange={(v) => void setTerminalScrollback(Number(v))}
+          >
+            <SelectTrigger size="sm" className="h-8 w-36 text-[12px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
               {TERMINAL_SCROLLBACK_PRESETS.map((lines) => (
-                <DropdownMenuItem
+                <SelectItem
                   key={lines}
-                  onSelect={() => onPickScrollback(lines)}
-                  className={cn(
-                    "rounded-none px-3 py-1.5 text-[12px]",
-                    lines === terminalScrollback && "bg-accent/50",
-                  )}
+                  value={String(lines)}
+                  className="text-[12px]"
                 >
                   {lines.toLocaleString()} lines
-                </DropdownMenuItem>
+                </SelectItem>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </SelectContent>
+          </Select>
         </SettingRow>
       </div>
 

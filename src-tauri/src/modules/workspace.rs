@@ -147,6 +147,9 @@ fn is_usable_launch_dir(path: &Path) -> bool {
     if !path.is_dir() || path == Path::new("/") {
         return false;
     }
+    if is_executable_dir(path) {
+        return false;
+    }
     let s = path.to_string_lossy();
     if s.contains(".app/Contents/") {
         return false;
@@ -155,6 +158,19 @@ fn is_usable_launch_dir(path: &Path) -> bool {
         return false;
     }
     true
+}
+
+fn is_executable_dir(path: &Path) -> bool {
+    let Ok(exe) = std::env::current_exe() else {
+        return false;
+    };
+    let Some(exe_dir) = exe.parent() else {
+        return false;
+    };
+    match (std::fs::canonicalize(path), std::fs::canonicalize(exe_dir)) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => false,
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
