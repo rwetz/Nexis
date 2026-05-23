@@ -41,17 +41,31 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Inline search, link detection, true-color
 - [x] Private tabs with AI context redaction
 - [x] WSL as a first-class workspace environment
+- [x] Shell history search — fuzzy Ctrl+R overlay sourced from shell history, keyboard-navigable
+- [x] Tab and layout persistence — terminal tabs (with working directory) and editor tabs restored on relaunch
+- [x] Configurable terminal font family, size, letter spacing, and scrollback buffer
 
 ### Editor
-- [x] CodeMirror 6 with broad language support (TS/JS, Rust, Python, HTML/CSS, JSON, Markdown, Go, C/C++/Java/C#, PHP)
+- [x] CodeMirror 6 with broad language support (TS/JS, Rust, Python, HTML/CSS, JSON/JSONC, Markdown, Go, C/C++, Java, C#, PHP, Ruby, SQL dialects (PostgreSQL/MySQL/SQLite/MSSQL/PL-SQL), YAML, TOML, Shell/Bash, Dockerfile)
 - [x] Inline AI autocomplete
 - [x] AI-proposed edit diffs with per-hunk approval
 - [x] Vim mode
-- [x] Prebuilt themes
+- [x] Prebuilt editor themes
+
+### Themes
+- [x] Custom themes — create, import, and delete `.nexis-theme` files with live swatch preview
+- [x] Built-in presets — Nexis Default, Catppuccin Mocha, Nord, Tokyo Night, Rosé Pine, Gruvbox, Caffeine, Claude, Sage, Tide
+- [x] Background images with adjustable opacity and blur controls
+- [x] Terminal color palettes built into each theme
+- [x] Theme editor — Create/Edit opens the `.nexis-theme` file directly in the code editor
 
 ### File Explorer
 - [x] Catppuccin / Material icon theme
 - [x] Fuzzy search, keyboard navigation, inline rename, context menu
+- [x] Quick file open (Cmd+P / Ctrl+P) — fuzzy workspace file picker, respects `.gitignore`
+
+### Markdown
+- [x] Markdown preview tab — right-click any `.md` file in the explorer to open a rendered preview
 
 ### Git & Source Control
 - [x] Stage, unstage, commit, branch
@@ -59,12 +73,12 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Per-file diffs
 
 ### AI
-- [x] Multi-provider BYOK — OpenAI, Anthropic, Google, Groq, xAI, Cerebras, OpenAI-compatible
-- [x] Offline models via LM Studio
+- [x] Multi-provider BYOK — OpenAI, Anthropic, Google, Groq, xAI, Cerebras, DeepSeek, Mistral, OpenRouter, OpenAI-compatible
+- [x] Offline models via LM Studio, MLX, and Ollama — no API key required
 - [x] Multi-agent and sub-agents
 - [x] Voice input
 - [x] Slash commands and skills
-- [x] Project memory via `NEXIS.md`
+- [x] Project memory and per-project AI system prompt via `NEXIS.md`
 - [x] File, shell, search, and plan tools with approval flow
 - [x] Workspace file picker
 - [x] Auto-compaction for long sessions
@@ -83,39 +97,30 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] OS keychain for API keys
 - [x] SSRF and DNS rebinding protection
 - [x] Sandboxed AI tool surface
+- [x] Windows subprocess console flash suppressed (`CREATE_NO_WINDOW` on all spawned commands)
+- [x] ConPTY lifecycle race fixed — create and close serialized to prevent blank-terminal bug
 
 ---
 
 ## What's coming
 
 ### Near-term
-- [ ] Custom themes, presets, and background images — theme editor, built-in presets, and custom background image support for the terminal and app chrome
-- [ ] Ollama and MLX local model providers — run models fully offline without any API key
 - [ ] Redesigned sidebar, source control panel, and git graph — visual refresh of the left panel and git history view
 - [ ] Redesigned Models settings tab — cleaner model picker with better scroll and layout
-- [ ] Configurable font family — per-user font selection in terminal settings
-- [ ] Markdown preview tab — right-click a .md file in the explorer to open a rendered preview
-- [ ] SQL, JSONC, and Ruby syntax highlighting — additional language support in the editor
-- [ ] Windows subprocess and ConPTY fixes — suppress console window flash on spawns, serialize ConPTY lifecycle
-- [ ] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
-- [ ] Run files — execute the current file or project directly from the editor (Java, Rust, C++, Python, etc.) with output captured in a terminal tab and build errors surfaced inline
-- [ ] Draggable/dockable panels — resizable bottom output panel to start, with drag-to-dock for floating and snapping panels (simpler drawer toggle first, full docking layout later)
-- [ ] Inline linting and diagnostics — real-time error and warning markers in the editor gutter via @codemirror/lint, backed by standalone linters (ESLint, Clippy, etc.) with LSP diagnostics as the longer-term path
-- [ ] Shell history search — fuzzy Ctrl+R overlay sourced from shell history, keyboard-navigable, fast and local
-- [ ] Terminal color themes — built-in palette switcher (Catppuccin, Dracula, Nord, Solarized, One Dark, etc.) separate from editor themes
-- [ ] Tab and layout persistence — restore open tabs, split state, and working directories on relaunch
-- [ ] Quick file open — Cmd+P fuzzy file picker scoped to the workspace, respects `.gitignore`
 - [ ] SSH — PTY sessions over SSH (auth + known_hosts first; SFTP and port forwarding later)
 - [ ] Inline terminal suggestions — history-based to start, AI-powered as opt-in
 - [ ] Smarter AI autocomplete — project-aware context, lower latency
 - [ ] Drag and drop into terminal — files as quoted paths, files as AI context attachments
 - [ ] Agent orchestration — Nexis spawning and coordinating external coding agents (Claude Code, OpenCode, etc.)
 - [ ] AI context inspector — transparency panel showing exactly what context is being sent to the model
-- [ ] Per-project AI system prompt — override the default system prompt via `NEXIS.md`
 - [ ] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
 - [ ] Environment variable panel — view, edit, and persist env vars per workspace
 - [ ] Background process manager — visibility into shell background jobs and dev servers running in Nexis
 - [ ] Syntax-highlighted git diffs — richer diff view with language-aware highlighting
+- [ ] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
+- [ ] Run files — execute the current file or project directly from the editor with output captured in a terminal tab
+- [ ] Draggable/dockable panels — resizable bottom output panel to start, with drag-to-dock for floating and snapping panels
+- [ ] Inline linting and diagnostics — real-time error and warning markers in the editor gutter via @codemirror/lint, backed by standalone linters (ESLint, Clippy, etc.)
 
 ### Longer term
 - [ ] Full LSP support — go-to-definition, hover docs, diagnostics, and completion powered by language servers
