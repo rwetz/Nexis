@@ -10,11 +10,36 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 ### 1. ConPTY lifecycle race (Windows — CRITICAL)
 **Symptom:** New terminal opens blank — cursor visible but shell never prints output.
 
-**Root cause:** On Windows, `CreatePseudoConsole` and `ClosePseudoConsole` must not run concurrently. An overlapping close corrupts the newly-created console so the child process spawns but never pumps output.
+**Root cause (A):** On Windows, `CreatePseudoConsole` and `ClosePseudoConsole` must not run concurrently. An overlapping close corrupts the newly-created console so the child process spawns but never pumps output.
 
-**Fix in place:** `CONPTY_LIFECYCLE_LOCK` in `src-tauri/src/modules/pty/session.rs` serializes both operations. `spawn()` holds the lock while creating, and `drop_session()` holds it while dropping (which triggers `ClosePseudoConsole`). `pty_close` calls `session::drop_session(s)` on a detached thread — **never call `drop(s)` directly in `pty_close`**.
+**Fix in place (A):** `CONPTY_LIFECYCLE_LOCK` in `src-tauri/src/modules/pty/session.rs` serializes both operations. `spawn()` holds the lock while creating, and `drop_session()` holds it while dropping (which triggers `ClosePseudoConsole`). `pty_close` calls `session::drop_session(s)` on a detached thread — **never call `drop(s)` directly in `pty_close`**.
 
-**Future danger:** If you refactor `pty_close`, `pty_open`, or the session drop path, make sure both the create side (`spawn`) and the close side (`drop_session`) still share `CONPTY_LIFECYCLE_LOCK`. Removing or splitting the lock re-introduces the race. Affected commits: `fix(pty): serialize ConPTY create+close with shared lifecycle lock`.
+**Future danger (A):** If you refactor `pty_close`, `pty_open`, or the session drop path, make sure both the create side (`spawn`) and the close side (`drop_session`) still share `CONPTY_LIFECYCLE_LOCK`. Removing or splitting the lock re-introduces the race. Affected commits: `fix(pty): serialize ConPTY create+close with shared lifecycle lock`.
+
+**Root cause (B):** Launching PowerShell with `-File profile.ps1 -NoExit` starts the shell in script-execution mode and then transitions to interactive. During that transition the ConPTY output stream is not yet fully initialized, so the first prompt is silently dropped.
+
+**Fix in place (B):** `src-tauri/src/modules/pty/shell_init.rs` (Windows `build` fn) now launches PowerShell with `-Command "if ($env:NEXIS_PWSH_PROFILE) { . $env:NEXIS_PWSH_PROFILE }"` and sets `NEXIS_PWSH_PROFILE` as an environment variable. This keeps PowerShell interactive from the very first byte and avoids path-quoting issues.
+
+**Future danger (B):** Do not revert to `-File profile.ps1`. If you need to change the profile launch, keep `-Command` (not `-File`) and keep the path in an env var.
+
+**Root cause (C):** `authorize_spawn_cwd` in `pty_open` (Rust) rejects cwds that are not under an authorized workspace root (home dir or launch dir). When a user `cd`s to a different drive (e.g. `E:\Projects`) and opens a new tab, `inheritedCwdForNewTab()` returns that path. The `pty_open` IPC call fails silently in the JS `.catch()`, leaving a blank terminal with only the cursor visible.
+
+**Fix in place (C):** `src/modules/terminal/lib/pty-bridge.ts` `openPty` now calls `workspace_authorize` on the cwd before calling `pty_open`. This adds the path to the authorized roots so the subsequent `authorize_spawn_cwd` check passes. If the path doesn't exist, `workspace_authorize` fails (swallowed), and `pty_open` will also fail with "cwd not accessible".
+
+**Future danger (C):** If you add another code path that calls `pty_open` with a user-supplied cwd (e.g. from a tab restore, split pane, or deep-link), make sure `workspace_authorize` is called first. Skipping it will silently produce a blank terminal on any path outside `~` or the app launch directory.
+
+**Root cause (D):** Any `Command::new().spawn()` call on Windows that lacks `CREATE_NO_WINDOW` briefly creates a visible console. If a ConPTY session is active at that moment, the console creation races with ConPTY I/O and can corrupt the active pseudoconsole — the shell in the open terminal goes silent even though it is still running.
+
+**Fix in place (D):** `crate::modules::proc::hide_console(&mut cmd)` is now applied to every non-PTY spawn site: `run_git_uncached`, `run_blocking`, `background::spawn`, `run_wsl`, and `wsl_exec_capture`. See pitfall #4 for the full list.
+
+**Future danger (D):** Any new `Command::new().spawn()` that runs while a terminal tab is open and lacks `hide_console` can blank an active terminal. This is silent — the user just sees the prompt disappear. PTY sessions go through `portable_pty` which sets the flag internally; everywhere else you must add it manually.
+
+**Checklist when a blank terminal is reported:**
+1. Does it happen after closing another tab? → Root cause A (ConPTY lock)
+2. Does it happen only with PowerShell, not cmd? → Root cause B (-Command flag)
+3. Does it happen when `cd`-ing outside home/launch dir then opening a new tab? → Root cause C (workspace_authorize)
+4. Did you recently add a new `Command::new().spawn()` in Rust? → Root cause D (hide_console)
+5. Check the Tauri devtools console for `[nexis] openPty failed:` — this is always logged when pty_open returns an error.
 
 ---
 
@@ -40,10 +65,10 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 ---
 
-### 4. Windows subprocess console flash
-**Symptom:** A black console window briefly flashes on screen whenever Nexis spawns a git command or one-shot shell command.
+### 4. Windows subprocess console flash (also causes blank terminals)
+**Symptom:** A black console window briefly flashes on screen whenever Nexis spawns a git command or one-shot shell command. **Secondary symptom:** an active terminal tab goes blank / loses its shell output — the visible flash races with ConPTY I/O and can corrupt the active pseudoconsole (see pitfall #1 root cause D).
 
-**Root cause:** `std::process::Command` on Windows inherits the parent's console by default. GUI apps have no console, so Windows creates a temporary one — visible as a flash.
+**Root cause:** `std::process::Command` on Windows inherits the parent's console by default. GUI apps have no console, so Windows creates a temporary one — visible as a flash, and destructive to any live ConPTY.
 
 **Fix in place:** `crate::modules::proc::hide_console(&mut cmd)` sets `CREATE_NO_WINDOW` before spawning. Applied in:
 - `src-tauri/src/modules/git/process.rs` — `run_git_uncached`

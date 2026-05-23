@@ -5,7 +5,7 @@
   <p><strong>Open-source lightweight cross-platform AI-native terminal (ADE)</strong></p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-0.7.0-blue" alt="version" />
+    <img src="https://img.shields.io/badge/version-0.7.3-blue" alt="version" />
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license" />
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="platform" />
   </p>
@@ -40,12 +40,21 @@ If you're looking for the upstream project, head over to [crynta/terax-ai](https
 - Native PTY via `portable-pty` — works with zsh, bash, pwsh, fish, cmd
 - Shell integration for cwd tracking and prompt markers
 - Inline search, clickable links, full true-color support
+- Shell history search (Ctrl+R) — fuzzy overlay sourced from `~/.zsh_history`, `~/.bash_history`, fish history, or PowerShell history
+- Built-in ANSI palette switcher in Settings → Themes: Default Dark, Catppuccin Mocha, Dracula, Nord, Solarized Dark, One Dark — hot-swaps without restart
 
 **Editor**
 - CodeMirror 6 with syntax highlighting for TS/JS, Rust, Python, HTML/CSS, JSON, Markdown, and more
 - AI-powered inline autocomplete and diff-based edits
 - Vim keybindings
-- Themes: Tokyo Night, Nord, GitHub, Atom One, Aura, Copilot, Xcode
+- Editor themes: Tokyo Night, Nord, GitHub, Atom One, Aura, Copilot, Xcode
+- Quick file open (Ctrl+P / Cmd+P) — fuzzy workspace file picker that respects `.gitignore`
+
+**Themes**
+- Full app theme system with built-in themes: Nexis Default, Catppuccin, Nord, Tokyo Night, Gruvbox, Rose Pine, Sage, Tide, Caffeine, Claude
+- Custom themes — create, import, and delete `.nexis-theme` files from Settings → Themes; live color swatch previews
+- Theme editor — Create/Edit opens `.nexis-theme` directly in the code editor; Create generates a starter file and adds it to custom themes automatically
+- Background images — set a local image with adjustable opacity (0–100%) and blur (0–64px); all stored locally, no cloud dependency
 
 **File Explorer**
 - Catppuccin icon theme
@@ -62,6 +71,7 @@ If you're looking for the upstream project, head over to [crynta/terax-ai](https
 - All file/shell operations require your approval before running
 
 **General**
+- Tab and layout persistence — terminal tabs (with working directory) and editor tabs saved on change and restored on next launch; toggle in Settings → General → Startup
 - ~7 MB bundle
 - API keys live in your OS keychain, never on disk
 - No accounts, no telemetry

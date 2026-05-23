@@ -19,6 +19,18 @@ export async function openPty(
   handlers: PtyHandlers,
   cwd?: string,
 ): Promise<PtySession> {
+  // Pre-authorize the cwd so pty_open doesn't reject paths that are outside
+  // the bootstrap workspace roots. Interactive terminal sessions should be
+  // able to start in any directory the user navigates to. If the path doesn't
+  // exist, workspace_authorize will fail here but pty_open will also reject it
+  // with a clearer "cwd not accessible" error, so we can safely swallow this.
+  if (cwd) {
+    await invoke<string>("workspace_authorize", {
+      path: cwd,
+      workspace: currentWorkspaceEnv(),
+    }).catch(() => {});
+  }
+
   // Raw bytes — no base64/JSON round-trip; messages arrive as ArrayBuffer.
   const onData = new Channel<ArrayBuffer>();
   const onExit = new Channel<number>();

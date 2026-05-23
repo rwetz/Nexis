@@ -328,12 +328,18 @@ mod windows {
         if is_powershell {
             match prepare_ps_profile() {
                 Ok(profile) => {
+                    // Pass the profile path via env var so the command string
+                    // needs no quoting, and PowerShell stays in interactive
+                    // mode from the very first byte (avoiding the script-mode →
+                    // interactive-mode transition that -File causes, which races
+                    // with ConPTY output stream initialization on Windows).
+                    cmd.env("NEXIS_PWSH_PROFILE", profile.as_os_str());
                     cmd.arg("-NoLogo");
                     cmd.arg("-NoExit");
                     cmd.arg("-ExecutionPolicy");
                     cmd.arg("Bypass");
-                    cmd.arg("-File");
-                    cmd.arg(profile);
+                    cmd.arg("-Command");
+                    cmd.arg("if ($env:NEXIS_PWSH_PROFILE) { . $env:NEXIS_PWSH_PROFILE }");
                 }
                 Err(e) => {
                     log::warn!("powershell shell integration disabled: {e}");
