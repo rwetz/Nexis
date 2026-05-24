@@ -71,6 +71,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Stage, unstage, commit, branch
 - [x] Commit graph and history viewer
 - [x] Per-file diffs
+- [x] AI commit message generation — one-click Conventional Commit subject line from the staged diff
+- [x] Syntax-highlighted diffs — language-aware coloring in the CodeMirror unified diff view; colored +/- lines in the binary/large-file patch fallback
 
 ### AI
 - [x] Multi-provider BYOK — OpenAI, Anthropic, Google, Groq, xAI, Cerebras, DeepSeek, Mistral, OpenRouter, OpenAI-compatible
@@ -116,7 +118,6 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
 - [ ] Environment variable panel — view, edit, and persist env vars per workspace
 - [ ] Background process manager — visibility into shell background jobs and dev servers running in Nexis
-- [ ] Syntax-highlighted git diffs — richer diff view with language-aware highlighting
 - [ ] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
 - [ ] Run files — execute the current file or project directly from the editor with output captured in a terminal tab
 - [ ] Draggable/dockable panels — resizable bottom output panel to start, with drag-to-dock for floating and snapping panels
@@ -137,7 +138,6 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Bookmarks — mark lines across files and jump between them quickly
 - [ ] Code folding improvements — fold by indent, by region comments, and by language constructs
 - [ ] Word wrap toggle — per-file and global word wrap setting in the editor
-- [ ] AI commit message generation — one-click AI-written commit messages based on staged diff
 - [ ] AI PR description generation — draft pull request titles and bodies from branch diff
 - [ ] AI-powered rename — rename a symbol across the project with AI verifying correctness
 - [ ] Workspace templates — scaffold new projects from built-in or custom templates

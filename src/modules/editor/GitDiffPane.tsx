@@ -85,6 +85,48 @@ const DIFF_THEME = EditorView.theme({
   },
 });
 
+function DiffPatchView({ patch }: { patch: string }) {
+  if (!patch) {
+    return (
+      <div className="flex h-full items-center justify-center text-[11.5px] text-muted-foreground">
+        Diff preview is not available for this file.
+      </div>
+    );
+  }
+  const lines = patch.split("\n");
+  return (
+    <pre className="min-h-full p-4 font-mono text-[12px] leading-relaxed">
+      {lines.map((line, i) => {
+        let cls = "text-muted-foreground/75";
+        if (line.startsWith("+") && !line.startsWith("+++")) {
+          cls = "text-emerald-600 dark:text-emerald-400 bg-emerald-500/[0.06] block";
+        } else if (line.startsWith("-") && !line.startsWith("---")) {
+          cls = "text-rose-600 dark:text-rose-400 bg-rose-500/[0.06] block";
+        } else if (line.startsWith("@@")) {
+          cls = "text-sky-600/90 dark:text-sky-400/90 block";
+        } else if (
+          line.startsWith("diff ") ||
+          line.startsWith("index ") ||
+          line.startsWith("--- ") ||
+          line.startsWith("+++ ") ||
+          line.startsWith("new file") ||
+          line.startsWith("deleted file") ||
+          line.startsWith("rename ")
+        ) {
+          cls = "text-muted-foreground/50 block";
+        } else {
+          cls = "text-muted-foreground/75 block";
+        }
+        return (
+          <span key={i} className={cls}>
+            {line || " "}
+          </span>
+        );
+      })}
+    </pre>
+  );
+}
+
 function countDiffLines(patch: string): { added: number; removed: number } {
   let added = 0;
   let removed = 0;
@@ -298,9 +340,7 @@ export function GitDiffPane({ source, chipLabel, active }: Props) {
           </div>
         ) : useFallback ? (
           <ScrollArea className="h-full">
-            <pre className="min-h-full whitespace-pre-wrap wrap-break-word p-4 font-mono text-[12px] leading-relaxed text-muted-foreground">
-              {fallbackPatch || "Diff preview is not available for this file."}
-            </pre>
+            <DiffPatchView patch={fallbackPatch} />
           </ScrollArea>
         ) : (
           <CodeMirror

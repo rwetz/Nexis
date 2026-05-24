@@ -5,7 +5,7 @@
   <p><strong>Open-source lightweight cross-platform AI-native terminal (ADE)</strong></p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-0.7.3-blue" alt="version" />
+    <img src="https://img.shields.io/badge/version-0.7.4-blue" alt="version" />
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license" />
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="platform" />
   </p>
@@ -63,6 +63,12 @@ If you're looking for the upstream project, head over to [crynta/terax-ai](https
 **Web Preview**
 - Automatically picks up running local dev servers and opens them in a tab
 
+**Git & Source Control**
+- Stage, unstage, commit, and push without leaving the app
+- AI commit message generation — one-click Conventional Commit subject lines from the staged diff, with auto-repair pass if the first attempt is malformed
+- Syntax-highlighted diff viewer — language-aware coloring for working-tree and commit diffs via CodeMirror's unified merge view; binary and large-file fallback renders colored +/- patch lines
+- Commit graph with branch lanes, author avatars, and per-commit file list popover
+
 **AI — bring your own keys**
 - Works with OpenAI, Anthropic, Google, Groq, xAI, Cerebras, or any OpenAI-compatible endpoint
 - Fully offline via LM Studio
@@ -75,6 +81,79 @@ If you're looking for the upstream project, head over to [crynta/terax-ai](https
 - ~7 MB bundle
 - API keys live in your OS keychain, never on disk
 - No accounts, no telemetry
+
+## Terminal
+
+### Keyboard shortcuts
+
+| Action | macOS | Windows / Linux |
+|---|---|---|
+| New terminal tab | `Cmd+T` | `Ctrl+T` |
+| New private terminal | `Cmd+R` | `Ctrl+R` |
+| New editor tab | `Cmd+E` | `Ctrl+E` |
+| Close tab / pane | `Cmd+W` | `Ctrl+W` |
+| Next tab | `Ctrl+Tab` | `Ctrl+Tab` |
+| Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
+| Jump to tab 1–9 | `Cmd+1`–`Cmd+9` | `Ctrl+1`–`Ctrl+9` |
+| Split pane right | `Cmd+D` | `Ctrl+D` |
+| Split pane down | `Cmd+Shift+D` | `Ctrl+Shift+D` |
+| Focus next pane | `Cmd+]` | `Ctrl+]` |
+| Focus previous pane | `Cmd+[` | `Ctrl+[` |
+| Find in terminal | `Cmd+F` | `Ctrl+F` |
+| Shell history search | `Ctrl+R` | `Ctrl+R` |
+| Word forward | `Alt+→` | `Alt+→` |
+| Word back | `Alt+←` | `Alt+←` |
+| Delete word | `Cmd+Backspace` | `Ctrl+Backspace` |
+| Newline without execute | `Shift+Enter` | `Shift+Enter` |
+| Zoom in | `Cmd+=` | `Ctrl+=` |
+| Zoom out | `Cmd+-` | `Ctrl+-` |
+| Reset zoom | `Cmd+0` | `Ctrl+0` |
+| Toggle sidebar | `Cmd+B` | `Ctrl+B` |
+| Toggle AI panel | `Cmd+I` | `Ctrl+I` |
+| Toggle git panel | `Cmd+G` | `Ctrl+G` |
+| Quick file open | `Cmd+P` | `Ctrl+P` |
+| Search in files | `Cmd+Shift+F` | `Ctrl+Shift+F` |
+| Settings | `Cmd+,` | `Ctrl+,` |
+| Keyboard shortcuts reference | `Cmd+K` | `Ctrl+K` |
+
+### Features
+
+**Tabs & panes**
+- Unlimited tabs; mouse-wheel scrolls the tab bar horizontally
+- Split any tab into side-by-side or stacked panes — each pane is an independent PTY session
+- Tab and pane state (working directory) persists across restarts — toggle in Settings → General → Startup
+
+**Find in terminal**
+- `Enter` — next match; `Shift+Enter` — previous match; `Esc` — dismiss
+- Matches highlighted with decorations; active match shown in orange
+
+**Shell history search (`Ctrl+R`)**
+- Fuzzy overlay over the prompt — does **not** auto-execute; press `Enter` to insert, `Esc` to cancel
+- Sources `~/.zsh_history`, `~/.bash_history`, fish history, or PowerShell `PSReadLine` history automatically
+
+**Shell integration**
+- OSC 7 — tracks the current working directory as you `cd`
+- OSC 133 — marks prompt boundaries so the AI can tell commands from output
+- Supported shells: zsh, bash, fish, PowerShell (`pwsh` / `powershell.exe`), cmd.exe
+
+**Private terminals**
+- Open with `Cmd+R` / `Ctrl+R`; shown with an incognito indicator in the tab bar
+- AI tools cannot read the scrollback or buffer of a private terminal
+
+**Rendering & display**
+- WebGL-accelerated renderer (opt-out in Settings → Terminal)
+- Full true-color (24-bit) and clickable hyperlinks
+- Configurable font family, font size, letter spacing, and scrollback buffer size
+- Cursor style: block when focused, outline when blurred
+
+**Themes**
+- Eight built-in ANSI palettes hot-swap without restart: Default Dark, Catppuccin Mocha, Dracula, Nord, Solarized Dark, One Dark — set in Settings → Themes
+- Background image with adjustable opacity (0–100%) and blur (0–64 px)
+
+**AI integration**
+- AI can read up to 2 000 lines of terminal scrollback via the `get_terminal_output` tool (private tabs excluded)
+- `suggest_command` — AI proposes a command; click to insert at the prompt (never auto-executes)
+- `open_preview` — AI can open a localhost URL in a preview tab
 
 ## Platform notes
 
