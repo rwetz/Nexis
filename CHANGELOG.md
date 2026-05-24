@@ -2,7 +2,12 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
-## [Unreleased] — bug-fix sweep
+## [0.7.5] — 2026-05-23
+
+### Fixed
+- **Installer context-menu entries** — Windows right-click "Open in …" registry entries (for folders, folder backgrounds, and drives) still referenced the old "Terax" app name and executable. Updated `installer-hooks.nsh` to write and clean up `OpenInNexis` keys pointing to `nexis.exe`.
+
+## [0.7.4] — 2026-05-23
 
 ### Fixed
 
