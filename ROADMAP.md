@@ -119,7 +119,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Agent orchestration — Nexis spawning and coordinating external coding agents (Claude Code, OpenCode, etc.)
 - [ ] AI context inspector — transparency panel showing exactly what context is being sent to the model
 - [ ] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
-- [ ] Environment variable panel — view, edit, and persist env vars per workspace
+- [x] Environment variable panel — view, edit, and persist env vars per workspace
 - [ ] Background process manager — visibility into shell background jobs and dev servers running in Nexis
 - [ ] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
 - [ ] Run files — execute the current file or project directly from the editor with output captured in a terminal tab

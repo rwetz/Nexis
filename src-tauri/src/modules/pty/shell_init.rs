@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use portable_pty::CommandBuilder;
@@ -50,15 +51,24 @@ fn fish_init_script() -> &'static str {
 pub fn build_command(
     cwd: Option<String>,
     workspace: WorkspaceEnv,
+    extra_env: HashMap<String, String>,
 ) -> Result<CommandBuilder, String> {
     #[cfg(unix)]
     {
         let _ = workspace;
-        unix::build(cwd)
+        let mut cmd = unix::build(cwd)?;
+        for (k, v) in extra_env {
+            cmd.env(k, v);
+        }
+        Ok(cmd)
     }
     #[cfg(windows)]
     {
-        windows::build(cwd, workspace)
+        let mut cmd = windows::build(cwd, workspace)?;
+        for (k, v) in extra_env {
+            cmd.env(k, v);
+        }
+        Ok(cmd)
     }
 }
 

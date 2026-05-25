@@ -144,6 +144,7 @@ async function openPtyForSession(
 ): Promise<PtySession> {
   const startCols = s.cols > 0 ? s.cols : 80;
   const startRows = s.rows > 0 ? s.rows : 24;
+  const extraEnv = usePreferencesStore.getState().terminalEnvVars;
   return openPty(
     startCols,
     startRows,
@@ -159,6 +160,7 @@ async function openPtyForSession(
       },
     },
     cwd,
+    Object.keys(extraEnv).length > 0 ? extraEnv : undefined,
   );
 }
 

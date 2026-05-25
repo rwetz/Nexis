@@ -18,6 +18,7 @@ export async function openPty(
   rows: number,
   handlers: PtyHandlers,
   cwd?: string,
+  extraEnv?: Record<string, string>,
 ): Promise<PtySession> {
   // Pre-authorize the cwd so pty_open doesn't reject paths that are outside
   // the bootstrap workspace roots. Interactive terminal sessions should be
@@ -55,6 +56,7 @@ export async function openPty(
     rows,
     cwd: cwd ?? null,
     workspace: currentWorkspaceEnv(),
+    extraEnv: extraEnv && Object.keys(extraEnv).length > 0 ? extraEnv : null,
     onData,
     onExit,
   });
