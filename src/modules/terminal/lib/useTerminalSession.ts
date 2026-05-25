@@ -53,6 +53,11 @@ type Session = {
   // at the most recent release. Read once on the next bind to trigger a
   // SIGWINCH-driven repaint instead of replaying dormant bytes.
   altScreenAtRelease: boolean;
+  /**
+   * Input written before the PTY IPC call completed. Drained in-order the
+   * moment `s.pty` is assigned. Each entry already includes the line ending.
+   */
+  pendingWrites: string[];
 };
 
 const sessions = new Map<number, Session>();
@@ -118,6 +123,7 @@ function ensureSession(leafId: number, initialCwd?: string): Session {
     dormantRing: new DormantRing(),
     hasSlot: false,
     altScreenAtRelease: false,
+    pendingWrites: [],
   };
   sessions.set(leafId, session);
 
@@ -243,6 +249,15 @@ function attachSession(
         }
         s.pty = pty;
         if (s.cols > 0 && s.rows > 0) pty.resize(s.cols, s.rows);
+        // Drain writes that arrived before the PTY IPC call completed.
+        if (s.pendingWrites.length > 0) {
+          const queued = s.pendingWrites.splice(0);
+          for (const data of queued) {
+            pty.write(data).catch((e) =>
+              console.warn("[nexis] pendingWrite flush failed:", e),
+            );
+          }
+        }
       })
       .catch((e) => {
         s.ptyOpening = false;
@@ -272,6 +287,7 @@ export async function respawnSession(
   s.shellExited = false;
   s.pendingExit = null;
   s.altScreenAtRelease = false;
+  s.pendingWrites = [];
 
   const slot = getSlotForLeaf(leafId);
   if (slot) {
@@ -394,7 +410,18 @@ export function useTerminalSession({
   }, [leafId, visible, focused]);
 
   const write = useCallback(
-    (data: string) => sessions.get(leafId)?.pty?.write(data),
+    (data: string) => {
+      const s = sessions.get(leafId);
+      if (!s || s.shellExited || s.disposed) return;
+      if (s.pty) {
+        s.pty.write(data).catch((e) =>
+          console.warn("[nexis] pty write failed:", e),
+        );
+      } else {
+        // PTY IPC not yet complete — queue; drained when the PTY opens.
+        s.pendingWrites.push(data);
+      }
+    },
     [leafId],
   );
 
