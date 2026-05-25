@@ -68,7 +68,17 @@ configureRendererPool({
     if (!s) return null;
     return {
       writeToPty: (data) => {
-        s.pty?.write(data);
+        if (s.pty) {
+          // PTY is ready — write immediately.
+          s.pty.write(data).catch((e) =>
+            console.warn("[nexis] pty write failed:", e),
+          );
+        } else if (!s.shellExited && !s.disposed) {
+          // PTY IPC not yet complete — queue; drained when the PTY opens.
+          // Prevents keystrokes typed before the first IPC round-trip from
+          // being silently dropped (same queue used by the write() callback).
+          s.pendingWrites.push(data);
+        }
       },
       resizePty: (cols, rows) => {
         s.cols = cols;

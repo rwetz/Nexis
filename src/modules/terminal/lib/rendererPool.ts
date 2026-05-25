@@ -57,6 +57,25 @@ const slots: Slot[] = [];
 let recyclerEl: HTMLDivElement | null = null;
 let adapter: SlotAdapter | null = null;
 
+// Re-focus the active terminal slot whenever the Tauri window regains OS
+// focus. On Windows, the WebView may receive the OS activation event AFTER
+// React's initial effects + scheduleUnhide RAFs have already run, so the
+// first term.focus() call silently fails (focus returns to document.body).
+// This handler fires once per window-focus transition and re-applies focus.
+if (typeof window !== "undefined") {
+  window.addEventListener("focus", () => {
+    for (const slot of slots) {
+      if (
+        slot.currentLeafId !== null &&
+        (adapter?.isLeafFocused(slot.currentLeafId) ?? false)
+      ) {
+        slot.term.focus();
+        break;
+      }
+    }
+  });
+}
+
 export function configureRendererPool(a: SlotAdapter): void {
   adapter = a;
 }

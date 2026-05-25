@@ -64,7 +64,11 @@ pub async fn pty_open(
         e
     })?;
     let id = state.next_id.fetch_add(1, Ordering::Relaxed);
-    state.sessions.write().unwrap().insert(id, session);
+    state
+        .sessions
+        .write()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(id, session);
     log::info!("pty opened id={id} cols={cols} rows={rows}");
     Ok(id)
 }
@@ -74,7 +78,7 @@ pub fn pty_write(state: tauri::State<PtyState>, id: u32, data: String) -> Result
     let session = state
         .sessions
         .read()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .get(&id)
         .cloned()
         .ok_or_else(|| {
@@ -86,7 +90,7 @@ pub fn pty_write(state: tauri::State<PtyState>, id: u32, data: String) -> Result
     let result = session
         .writer
         .lock()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .write_all(data.as_bytes())
         .map_err(|e| {
             // EPIPE is expected if the child already exited.
@@ -106,7 +110,7 @@ pub fn pty_resize(
     let session = state
         .sessions
         .read()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .get(&id)
         .cloned()
         .ok_or_else(|| {
@@ -116,7 +120,7 @@ pub fn pty_resize(
     let result = session
         .master
         .lock()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .resize(PtySize {
             rows,
             cols,
@@ -132,7 +136,11 @@ pub fn pty_resize(
 
 #[tauri::command]
 pub fn pty_close(state: tauri::State<PtyState>, id: u32) -> Result<(), String> {
-    let session = state.sessions.write().unwrap().remove(&id);
+    let session = state
+        .sessions
+        .write()
+        .unwrap_or_else(|e| e.into_inner())
+        .remove(&id);
     if let Some(s) = session {
         if let Ok(mut k) = s.killer.lock() {
             if let Err(e) = k.kill() {
