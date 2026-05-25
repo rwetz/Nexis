@@ -115,7 +115,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] SSH — PTY sessions over SSH (auth + known_hosts first; SFTP and port forwarding later)
 - [ ] Inline terminal suggestions — history-based to start, AI-powered as opt-in
 - [ ] Smarter AI autocomplete — project-aware context, lower latency
-- [ ] Drag and drop into terminal — files as quoted paths, files as AI context attachments
+- [x] Drag and drop into terminal — files as quoted paths, files as AI context attachments
 - [ ] Agent orchestration — Nexis spawning and coordinating external coding agents (Claude Code, OpenCode, etc.)
 - [ ] AI context inspector — transparency panel showing exactly what context is being sent to the model
 - [ ] Better approval flow — project-scoped auto-approve policies, per-tool trust levels

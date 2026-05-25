@@ -11,7 +11,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useComposer, type FileAttachment } from "../lib/composer";
 import { useWorkspaceFiles } from "../hooks/useWorkspaceFiles";
 import { SLASH_COMMANDS } from "../lib/slashCommands";
@@ -78,6 +78,8 @@ export function AiInputBar() {
   const [trigger, setTrigger] = useState<SnippetTrigger | null>(null);
   const [fileTrigger, setFileTrigger] = useState<FileTrigger | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragCounterRef = useRef(0);
   const workspaceFiles = useWorkspaceFiles(workspaceRoot, fileTrigger !== null);
 
   const [fileQuery, setFileQuery] = useState("");
@@ -213,12 +215,46 @@ export function AiInputBar() {
       ? "Transcribing…"
       : null;
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    setIsDragOver(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+  };
+
+  const handleDragLeave = (_e: React.DragEvent) => {
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDragOver(false);
+    await c.addFiles(e.dataTransfer.files);
+  };
+
   return (
-    <div className="shrink-0 border-t border-border/60 bg-card/40 px-3 py-2">
+    <div
+      className="shrink-0 border-t border-border/60 bg-card/40 px-3 py-2"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={(e) => void handleDrop(e)}
+    >
       <div
         className={cn(
           "flex flex-col gap-1.5 rounded-lg px-1 py-1",
           "transition-colors focus-within:border-border",
+          isDragOver && "ring-2 ring-primary ring-offset-1",
         )}
       >
         <ChipsRow
