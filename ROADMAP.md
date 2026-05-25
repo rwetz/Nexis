@@ -78,12 +78,12 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Multi-provider BYOK — OpenAI, Anthropic, Google, Groq, xAI, Cerebras, DeepSeek, Mistral, OpenRouter, OpenAI-compatible
 - [x] Offline models via LM Studio, MLX, and Ollama — no API key required
 - [x] Multi-agent and sub-agents
-- [x] Voice input
+- [x] Voice input — Whisper transcription via OpenAI key; mic-denied and transcription failures surface actionable alerts
 - [x] Slash commands and skills
 - [x] Project memory and per-project AI system prompt via `NEXIS.md`
 - [x] File, shell, search, and plan tools with approval flow
 - [x] Workspace file picker
-- [x] Auto-compaction for long sessions
+- [x] Auto-compaction for long sessions — stable across long conversations; circular tool output and reasoning blocks handled safely
 
 ### Web Preview
 - [x] Auto-detected local dev server preview
@@ -94,13 +94,16 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] macOS, Linux (.deb / .rpm / AppImage), Windows (NSIS)
 - [x] WSL support
 - [x] AUR package
-- [x] Windows Explorer context menu
+- [x] Windows Explorer context menu — right-click folders, folder backgrounds, and drives to open in Nexis; fully rebranded registry entries (`OpenInNexis` / `nexis.exe`)
+- [x] Windows NSIS installer — branded header image, correct app name and executable throughout
 - [x] Auto-updater
 - [x] OS keychain for API keys
 - [x] SSRF and DNS rebinding protection
 - [x] Sandboxed AI tool surface
 - [x] Windows subprocess console flash suppressed (`CREATE_NO_WINDOW` on all spawned commands)
-- [x] ConPTY lifecycle race fixed — create and close serialized to prevent blank-terminal bug
+- [x] ConPTY lifecycle race fixed — create and close serialized to prevent blank-terminal bug on Windows
+- [x] PTY reliability — mutex-poison recovery, safe `pty_close` drop path, shell session auto-retry after failed open
+- [x] User-visible error feedback — rename, delete, shell history load, autostart toggle, file attach, voice transcription, and reveal-in-file-manager failures all surface actionable alerts instead of silently failing
 
 ---
 
