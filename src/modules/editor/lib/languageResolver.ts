@@ -134,6 +134,7 @@ function isStreamParser(v: unknown): boolean {
   );
 }
 
+const CACHE_MAX = 256;
 const cache = new Map<string, Extension | null>();
 
 function cacheKey(filename: string): string | null {
@@ -174,6 +175,10 @@ export async function resolveLanguage(
     );
   } else {
     ext = result as Extension;
+  }
+  if (cache.size >= CACHE_MAX) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) cache.delete(firstKey);
   }
   cache.set(key, ext);
   return ext;

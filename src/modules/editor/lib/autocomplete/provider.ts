@@ -48,7 +48,13 @@ export async function requestCompletion(
     openaiCompatibleBaseURL: deps.openaiCompatibleBaseURL,
   });
 
-  const isReasoning = /\bgpt-oss\b/i.test(modelId);
+  // Reasoning models spend output tokens on internal thought before producing
+  // visible text. Patterns: OpenAI o1/o3/o4 family, QwQ, DeepSeek Reasoner.
+  const isReasoning =
+    /\bo[1-9](?:-(?:mini|preview|pro))?(?:-\d{4}-\d{2}-\d{2})?\b/i.test(
+      modelId,
+    ) ||
+    /\bqwq\b|\bdeepseek-reasoner\b/i.test(modelId);
   const providerOptions = isReasoning
     ? {
         cerebras: { reasoningEffort: "low" },

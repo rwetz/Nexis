@@ -5,7 +5,7 @@
   <p><strong>Open-source lightweight cross-platform AI-native terminal (ADE)</strong></p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-0.7.9-blue" alt="version" />
+    <img src="https://img.shields.io/badge/version-0.8.0-blue" alt="version" />
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license" />
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="platform" />
   </p>
@@ -46,6 +46,7 @@ If you're looking for the upstream project, head over to [crynta/terax-ai](https
 **Editor**
 - CodeMirror 6 with syntax highlighting for TS/JS, Rust, Python, HTML/CSS, JSON, Markdown, and more
 - AI-powered inline autocomplete and diff-based edits
+- Inline linting — real-time syntax error markers in the gutter for JS/TS, Python, Rust, Go, JSON, HTML, CSS, and Markdown; no external toolchain required
 - Vim keybindings
 - Editor themes: Tokyo Night, Nord, GitHub, Atom One, Aura, Copilot, Xcode
 - Quick file open (Ctrl+P / Cmd+P) — fuzzy workspace file picker that respects `.gitignore`

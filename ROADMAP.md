@@ -124,7 +124,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
 - [x] Run files — execute the current file or project directly from the editor with output captured in a terminal tab
 - [ ] Draggable/dockable panels — resizable bottom output panel to start, with drag-to-dock for floating and snapping panels
-- [ ] Inline linting and diagnostics — real-time error and warning markers in the editor gutter via @codemirror/lint, backed by standalone linters (ESLint, Clippy, etc.)
+- [x] Inline linting and diagnostics — real-time syntax error markers in the editor gutter via @codemirror/lint; Lezer-based parser errors surface for JS/TS, Python, Rust, Go, JSON, HTML, CSS, and Markdown
 
 ### Longer term
 - [ ] Full LSP support — go-to-definition, hover docs, diagnostics, and completion powered by language servers

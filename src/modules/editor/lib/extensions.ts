@@ -43,7 +43,18 @@ export function buildSharedExtensions(): Extension[] {
         color: "var(--muted-foreground)",
       },
       ".cm-gutter-lint": {
-        width: "0px",
+        width: "16px",
+      },
+      ".cm-lint-marker": {
+        width: "10px",
+        height: "10px",
+        marginLeft: "3px",
+      },
+      ".cm-lint-marker-error": {
+        color: "var(--destructive)",
+      },
+      ".cm-lint-marker-warning": {
+        color: "hsl(38 92% 50%)",
       },
       ".cm-gutter": { backgroundColor: "transparent !important" },
       ".cm-lineNumbers .cm-gutterElement": {

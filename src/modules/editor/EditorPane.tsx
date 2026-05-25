@@ -29,6 +29,7 @@ initVimGlobals();
 import { resolveLanguage } from "./lib/languageResolver";
 import { useDocument } from "./lib/useDocument";
 import { inlineCompletion } from "./lib/autocomplete/inlineExtension";
+import { syntaxLinter } from "./lib/linting";
 import { getKey } from "@/modules/ai/lib/keyring";
 import { onKeysChanged } from "@/modules/settings/store";
 
@@ -130,6 +131,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           close: () => onCloseRef.current?.(),
         })),
         ...buildSharedExtensions(),
+        syntaxLinter(),
         languageCompartment.of([]),
         inlineCompletion({
           getPrefs: () => {
