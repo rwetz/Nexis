@@ -99,7 +99,7 @@ export function GeneralSection() {
       else await disable();
       await setAutostart(next);
     } catch (e) {
-      console.error("autostart toggle failed", e);
+      window.alert(`Could not ${next ? "enable" : "disable"} autostart: ${e}`);
     }
   };
 

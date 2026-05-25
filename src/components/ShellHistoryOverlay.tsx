@@ -21,6 +21,7 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
   const [history, setHistory] = useState<string[]>([]);
   const [filtered, setFiltered] = useState<string[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [loadError, setLoadError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -31,7 +32,7 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
         setHistory(entries);
         setFiltered(entries.slice(0, 100));
       })
-      .catch(() => {});
+      .catch(() => setLoadError(true));
   }, []);
 
   // Focus input on mount.
@@ -144,9 +145,11 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
         >
           {filtered.length === 0 && (
             <div className="px-4 py-6 text-center text-[12px] text-muted-foreground">
-              {history.length === 0
-                ? "No shell history found"
-                : "No matches"}
+              {loadError
+                ? "Could not load shell history"
+                : history.length === 0
+                  ? "No shell history found"
+                  : "No matches"}
             </div>
           )}
           {filtered.map((cmd, idx) => (

@@ -18,6 +18,6 @@ export async function revealInFinder(path: string): Promise<void> {
   try {
     await revealItemInDir(path);
   } catch (e) {
-    console.error("revealItemInDir failed:", e);
+    window.alert(`Could not reveal in file manager: ${e}`);
   }
 }

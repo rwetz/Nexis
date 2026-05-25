@@ -2,6 +2,17 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.7.6] — 2026-05-24
+
+### Fixed
+- **Explorer rename failure is now visible** — `fs_rename` errors were silently swallowed; the user now sees an alert describing what went wrong instead of the rename silently reverting.
+- **Explorer delete failure is now visible** — `fs_delete` errors were silently swallowed; the user now sees an alert instead of the file appearing to still exist.
+- **Shell history overlay load error** — `read_shell_history` failures were silently caught and left the overlay showing "No shell history found" with no indication of the real problem. The overlay now shows "Could not load shell history" when the invoke fails.
+- **Autostart toggle failure is now visible** — enabling/disabling launch-at-login could fail silently (e.g. missing OS permission); the user now sees an alert explaining the failure instead of the toggle appearing to have worked.
+- **File attach skips binary/oversized files visibly** — attaching a binary or oversized file to an AI message silently discarded it; the user now sees an alert naming the file and the reason it was skipped.
+- **Whisper mic/transcription errors surfaced** — microphone access denial and Whisper API failures were only logged to the console; the user now sees an actionable alert ("Microphone access denied — allow access in system settings" / "Transcription failed — check your OpenAI key and try again").
+- **Reveal in file manager failure is now visible** — `revealItemInDir` failures were silently logged; the user now sees an alert when the OS can't reveal the file.
+
 ## [0.7.5] — 2026-05-23
 
 ### Fixed

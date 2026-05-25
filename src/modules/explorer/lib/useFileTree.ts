@@ -214,7 +214,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
         options?.onPathRenamed?.(renaming, to);
         await fetchChildren(parent);
       } catch (e) {
-        console.error("fs_rename failed:", e);
+        window.alert(`Rename failed: ${e}`);
       } finally {
         setRenaming(null);
       }
@@ -229,7 +229,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
         options?.onPathDeleted?.(path);
         await fetchChildren(dirname(path));
       } catch (e) {
-        console.error("fs_delete failed:", e);
+        window.alert(`Delete failed: ${e}`);
       }
     },
     [fetchChildren, options],

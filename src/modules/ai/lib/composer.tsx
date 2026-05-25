@@ -141,6 +141,7 @@ export function AiComposerProvider({ children }: ProviderProps) {
       setValue((v) => (v ? `${v} ${transcript}` : transcript));
       requestAnimationFrame(() => textareaRef.current?.focus());
     },
+    onError: (message: string) => window.alert(message),
   });
 
   const addFiles = async (list: FileList | null) => {
@@ -181,8 +182,9 @@ export function AiComposerProvider({ children }: ProviderProps) {
         workspace: currentWorkspaceEnv(),
       });
       if (result.kind !== "text") {
-        // Binary/oversize files: skip (could surface a toast in future).
-        console.warn("attachFileByPath: skipped non-text file", path, result);
+        const name = path.split("/").pop() ?? path;
+        const reason = result.kind === "binary" ? "binary file" : "file too large";
+        window.alert(`Skipped "${name}": ${reason}`);
         return;
       }
       const name = path.split("/").pop() || path;

@@ -32,8 +32,10 @@ type State = "idle" | "recording" | "transcribing";
 
 export function useWhisperRecording({
   onResult,
+  onError,
 }: {
   onResult: (text: string) => void;
+  onError?: (message: string) => void;
 }) {
   const apiKey = useChatStore((s) => s.apiKeys.openai);
   const [state, setState] = useState<State>("idle");
@@ -82,7 +84,7 @@ export function useWhisperRecording({
           const text = await transcribeBlob(blob, apiKey);
           if (text.trim()) onResult(text.trim());
         } catch (e) {
-          console.error("whisper.transcribe", e);
+          onError?.("Transcription failed — check your OpenAI key and try again.");
         } finally {
           setState("idle");
         }
@@ -91,11 +93,11 @@ export function useWhisperRecording({
       rec.start();
       setState("recording");
     } catch (e) {
-      console.error("whisper.getUserMedia", e);
+      onError?.("Microphone access denied — allow access in system settings.");
       teardownStream();
       setState("idle");
     }
-  }, [apiKey, onResult, state, supported]);
+  }, [apiKey, onError, onResult, state, supported]);
 
   useEffect(() => {
     return () => {
