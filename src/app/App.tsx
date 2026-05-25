@@ -765,6 +765,21 @@ export default function App() {
     [newTab],
   );
 
+  const handleRunFile = useCallback(
+    (_path: string, cwd: string, command: string) => {
+      const tabId = newTab(cwd);
+      setTimeout(() => {
+        const tab = tabsRef.current.find((x) => x.id === tabId);
+        if (!tab || tab.kind !== "terminal") return;
+        const t = terminalRefs.current.get(tab.activeLeafId);
+        if (!t) return;
+        t.write(command.endsWith("\n") ? command.replace(/\n$/, "\r") : `${command}\r`);
+        t.focus();
+      }, 500);
+    },
+    [newTab],
+  );
+
   const handleOpenFile = useCallback(
     (path: string, pin?: boolean) => {
       // Explorer defaults to preview (pin=false); explicit actions like
@@ -1194,6 +1209,7 @@ export default function App() {
           registerHandle={registerEditorHandle}
           onDirtyChange={handleEditorDirty}
           onCloseTab={disposeTab}
+          onRunFile={handleRunFile}
         />
       </div>
       <div

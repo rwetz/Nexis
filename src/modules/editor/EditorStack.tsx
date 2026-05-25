@@ -2,6 +2,9 @@ import { cn } from "@/lib/utils";
 import type { EditorTab, Tab } from "@/modules/tabs";
 import { useEffect, useRef } from "react";
 import { EditorPane, type EditorPaneHandle } from "./EditorPane";
+import { buildRunCommand } from "./lib/runCommand";
+import { PlayIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 
 type Props = {
   tabs: Tab[];
@@ -9,6 +12,7 @@ type Props = {
   onDirtyChange: (id: number, dirty: boolean) => void;
   registerHandle: (id: number, handle: EditorPaneHandle | null) => void;
   onCloseTab: (id: number) => void;
+  onRunFile?: (path: string, cwd: string, command: string) => void;
 };
 
 export function EditorStack({
@@ -17,6 +21,7 @@ export function EditorStack({
   onDirtyChange,
   registerHandle,
   onCloseTab,
+  onRunFile,
 }: Props) {
   const editors = tabs.filter((t): t is EditorTab => t.kind === "editor");
 
@@ -96,7 +101,23 @@ export function EditorStack({
             )}
             aria-hidden={!visible}
           >
-            <div className="h-full overflow-hidden rounded-md border border-border/60 bg-background">
+            <div className="flex h-full flex-col overflow-hidden rounded-md border border-border/60 bg-background">
+              {onRunFile && (() => {
+                const rc = buildRunCommand(t.path);
+                return rc ? (
+                  <div className="flex shrink-0 items-center justify-end border-b border-border/40 bg-card/60 px-2 py-0.5">
+                    <button
+                      type="button"
+                      title={`Run: ${rc.command.trim()}`}
+                      onClick={() => onRunFile(t.path, rc.cwd, rc.command)}
+                      className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      <HugeiconsIcon icon={PlayIcon} size={12} strokeWidth={1.75} className="text-green-500" />
+                      <span className="font-mono">{rc.command.trim()}</span>
+                    </button>
+                  </div>
+                ) : null;
+              })()}
               <EditorPane
                 ref={getRefCallback(t.id)}
                 path={t.path}
