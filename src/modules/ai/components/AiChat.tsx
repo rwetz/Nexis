@@ -40,8 +40,34 @@ import type {
   UIMessage,
   UIMessagePart,
 } from "ai";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo } from "react";
 import { AiToolApproval } from "./AiToolApproval";
+import { usePreferencesStore } from "@/modules/settings/preferences";
+
+function AutoApprovalEffect({
+  approvalId,
+  approved,
+  toolName,
+  onApproval,
+}: {
+  approvalId: string;
+  approved: boolean;
+  toolName: string;
+  onApproval: (id: string, ok: boolean) => void;
+}) {
+  useEffect(() => {
+    const t = setTimeout(() => onApproval(approvalId, approved), 0);
+    return () => clearTimeout(t);
+  }, [approvalId, approved, onApproval]);
+  return (
+    <div className="flex items-center gap-1.5 py-0.5 text-[11px] text-muted-foreground">
+      <span className={cn(approved ? "text-emerald-500" : "text-rose-500")}>
+        {approved ? "Auto-approved" : "Auto-denied"}
+      </span>
+      <span className="font-mono">{toolName}</span>
+    </div>
+  );
+}
 
 function CommandSnippet({ name }: { name: string }) {
   const meta = SLASH_COMMANDS[name];
@@ -646,7 +672,21 @@ const RenderedTool = memo(function RenderedTool({
       ? part.toolName
       : part.type.replace(/^tool-/, "");
 
+  const policy = usePreferencesStore(
+    (s) => s.toolApprovalPolicies?.[toolName] ?? "prompt",
+  );
+
   if (part.state === "approval-requested") {
+    if (policy === "auto" || policy === "deny") {
+      return (
+        <AutoApprovalEffect
+          approvalId={part.approval.id}
+          approved={policy === "auto"}
+          toolName={toolName}
+          onApproval={onApproval}
+        />
+      );
+    }
     return (
       <AiToolApproval
         part={part as Extract<ToolUIPart, { state: "approval-requested" }>}

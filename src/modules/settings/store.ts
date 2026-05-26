@@ -62,6 +62,8 @@ export type FormatterConfig = {
   enabled: boolean;
 };
 
+export type ToolApprovalPolicy = "auto" | "prompt" | "deny";
+
 export const FORMATTER_LANGUAGE_LABELS: Record<FormatterLanguage, string> = {
   javascript: "JavaScript / JSX",
   typescript: "TypeScript / TSX",
@@ -131,6 +133,7 @@ export type Preferences = {
   formatters: Record<FormatterLanguage, FormatterConfig>;
   formatOnSave: boolean;
   terminalSuggestionsEnabled: boolean;
+  toolApprovalPolicies: Record<string, ToolApprovalPolicy>;
 };
 
 const STORE_PATH = "nexis-settings.json";
@@ -175,6 +178,7 @@ const KEY_TERMINAL_ENV_VARS = "terminalEnvVars";
 const KEY_FORMATTERS = "formatters";
 const KEY_FORMAT_ON_SAVE = "formatOnSave";
 const KEY_TERMINAL_SUGGESTIONS = "terminalSuggestionsEnabled";
+const KEY_TOOL_APPROVAL_POLICIES = "toolApprovalPolicies";
 
 export const TERMINAL_FONT_SIZE_DEFAULT = 14;
 export const TERMINAL_FONT_SIZE_MIN = 8;
@@ -232,6 +236,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   formatters: DEFAULT_FORMATTERS,
   formatOnSave: false,
   terminalSuggestionsEnabled: true,
+  toolApprovalPolicies: {},
 };
 
 function mergeFormatters(
@@ -364,6 +369,9 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalSuggestionsEnabled:
       get<boolean>(KEY_TERMINAL_SUGGESTIONS) ??
       DEFAULT_PREFERENCES.terminalSuggestionsEnabled,
+    toolApprovalPolicies:
+      get<Record<string, ToolApprovalPolicy>>(KEY_TOOL_APPROVAL_POLICIES) ??
+      DEFAULT_PREFERENCES.toolApprovalPolicies,
   };
 }
 
@@ -561,6 +569,12 @@ export async function setTerminalEnvVars(
 
 export async function setTerminalSuggestionsEnabled(value: boolean): Promise<void> {
   await writePref(KEY_TERMINAL_SUGGESTIONS, value);
+}
+
+export async function setToolApprovalPolicies(
+  value: Record<string, ToolApprovalPolicy>,
+): Promise<void> {
+  await writePref(KEY_TOOL_APPROVAL_POLICIES, value);
 }
 
 export async function setFormatters(

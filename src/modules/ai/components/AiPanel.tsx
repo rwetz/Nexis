@@ -7,6 +7,7 @@ import {
   Cancel01Icon,
   Delete02Icon,
   Add01Icon,
+  EyeIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
@@ -36,6 +37,7 @@ import {
 } from "@/components/ai-elements/context";
 import { AiChatView } from "./AiChat";
 import { AiInputBar } from "./AiInputBar";
+import { AiContextInspector } from "./AiContextInspector";
 import { AgentSwitcher } from "./AgentSwitcher";
 import { PlanDiffReview } from "./PlanDiffReview";
 import { TodoStrip } from "./TodoStrip";
@@ -398,6 +400,8 @@ type PanelHeaderProps = {
   onFloat?: () => void;
   /** undefined → no dock button (already docked) */
   onDock?: () => void;
+  inspectorOpen?: boolean;
+  onToggleInspector?: () => void;
   /** drag handle props for floating mode */
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   className?: string;
@@ -410,6 +414,8 @@ const PanelHeader = memo(function PanelHeader({
   onClose,
   onFloat,
   onDock,
+  inspectorOpen,
+  onToggleInspector,
   dragHandleProps,
   className,
 }: PanelHeaderProps) {
@@ -433,6 +439,22 @@ const PanelHeader = memo(function PanelHeader({
             <Spinner className="size-2.5" />
             <span className="max-w-32 truncate">{step ?? "Thinking…"}</span>
           </span>
+        )}
+        {onToggleInspector && (
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleInspector();
+            }}
+            className={cn("size-5", inspectorOpen && "bg-accent text-foreground")}
+            aria-label="Toggle context inspector"
+            title="Context inspector"
+          >
+            <HugeiconsIcon icon={EyeIcon} size={11} strokeWidth={1.75} />
+          </Button>
         )}
         <SessionPicker />
 
@@ -508,6 +530,7 @@ export function DockedAiPanel() {
       s.agentMeta.status === "thinking" || s.agentMeta.status === "streaming",
   );
   const step = useChatStore((s) => s.agentMeta.step);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
 
   const chat = useMemo(
     () => (sessionId ? getOrCreateChat(sessionId) : null),
@@ -525,7 +548,10 @@ export function DockedAiPanel() {
         step={step}
         onClose={closePanel}
         onFloat={floatPanel}
+        inspectorOpen={inspectorOpen}
+        onToggleInspector={() => setInspectorOpen((o) => !o)}
       />
+      {inspectorOpen && <AiContextInspector messages={messages} />}
       <ChatArea sessionId={sessionId} />
       {sessionId && <TodoStrip sessionId={sessionId} />}
       <AiInputBar />
@@ -567,6 +593,7 @@ export function FloatingAiPanel() {
     return saved;
   });
   const [inSnapZone, setInSnapZone] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
 
   const chat = useMemo(
     () => (sessionId ? getOrCreateChat(sessionId) : null),
@@ -695,10 +722,13 @@ export function FloatingAiPanel() {
         step={step}
         onClose={closePanel}
         onDock={dockPanel}
+        inspectorOpen={inspectorOpen}
+        onToggleInspector={() => setInspectorOpen((o) => !o)}
         dragHandleProps={{
           onMouseDown: onDragStart,
         }}
       />
+      {inspectorOpen && <AiContextInspector messages={messages} />}
       <div className="flex min-h-0 flex-1 flex-col">
         <ChatArea sessionId={sessionId} />
         {sessionId && <TodoStrip sessionId={sessionId} />}

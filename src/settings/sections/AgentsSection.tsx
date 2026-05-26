@@ -26,7 +26,18 @@ import {
   useSnippetsStore,
 } from "@/modules/ai/store/snippetsStore";
 import { usePreferencesStore } from "@/modules/settings/preferences";
-import { setCustomInstructions } from "@/modules/settings/store";
+import {
+  setCustomInstructions,
+  setToolApprovalPolicies,
+  type ToolApprovalPolicy,
+} from "@/modules/settings/store";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Add01Icon,
   CheckmarkCircle02Icon,
@@ -201,6 +212,8 @@ export function AgentsSection() {
           </ul>
         )}
       </section>
+
+      <ToolPoliciesBlock />
 
       <AgentEditorDialog
         agent={editingAgent}
@@ -555,6 +568,70 @@ function CustomInstructionsBlock({ value }: { value: string }) {
         className="min-h-[100px] resize-y bg-card/60 font-sans text-[12px] leading-relaxed border border-border"
       />
     </div>
+  );
+}
+
+const APPROVAL_TOOL_LABELS: { id: string; label: string }[] = [
+  { id: "bash_run", label: "Run shell command" },
+  { id: "bash_background", label: "Spawn background process" },
+  { id: "write_file", label: "Write file" },
+  { id: "edit", label: "Edit file" },
+  { id: "multi_edit", label: "Edit file (batch)" },
+  { id: "create_directory", label: "Create directory" },
+];
+
+const POLICY_OPTIONS: { value: ToolApprovalPolicy; label: string; description: string }[] = [
+  { value: "prompt", label: "Always ask", description: "Show approval dialog (default)" },
+  { value: "auto", label: "Auto-approve", description: "Run without asking" },
+  { value: "deny", label: "Always deny", description: "Block without asking" },
+];
+
+function ToolPoliciesBlock() {
+  const policies = usePreferencesStore((s) => s.toolApprovalPolicies);
+
+  const setPolicy = (toolId: string, policy: ToolApprovalPolicy) => {
+    const updated = { ...policies, [toolId]: policy };
+    void setToolApprovalPolicies(updated);
+  };
+
+  return (
+    <section className="flex flex-col gap-2">
+      <Label>Tool approval policies</Label>
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        Per-tool approval behavior. "Auto-approve" lets the AI run the tool without pausing.
+      </p>
+      <div className="flex flex-col gap-1 rounded-lg border border-border/60 bg-card/40 overflow-hidden">
+        {APPROVAL_TOOL_LABELS.map(({ id, label }) => {
+          const policy = policies[id] ?? "prompt";
+          return (
+            <div
+              key={id}
+              className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/40 last:border-0"
+            >
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-[12px] font-medium text-foreground">{label}</span>
+                <span className="font-mono text-[10px] text-muted-foreground">{id}</span>
+              </div>
+              <Select
+                value={policy}
+                onValueChange={(v) => setPolicy(id, v as ToolApprovalPolicy)}
+              >
+                <SelectTrigger size="sm" className="h-7 w-36 text-[11px] shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {POLICY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value} className="text-[11px]">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

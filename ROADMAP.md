@@ -120,8 +120,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Smarter AI autocomplete — project-aware context, lower latency
 - [x] Drag and drop into terminal — files as quoted paths, files as AI context attachments
 - [ ] Agent orchestration — Nexis spawning and coordinating external coding agents (Claude Code, OpenCode, etc.)
-- [ ] AI context inspector — transparency panel showing exactly what context is being sent to the model
-- [ ] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
+- [x] AI context inspector — transparency panel showing exactly what context is being sent to the model
+- [x] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
 - [x] Environment variable panel — view, edit, and persist env vars per workspace
 - [ ] Background process manager — visibility into shell background jobs and dev servers running in Nexis
 - [x] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
