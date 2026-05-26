@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { IncognitoIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { PythonEnvPill, type PythonEnv } from "@/modules/python";
 import { CwdBreadcrumb } from "./CwdBreadcrumb";
 import { WorkspaceEnvSelector } from "./WorkspaceEnvSelector";
 import type { WorkspaceEnv } from "@/modules/workspace";
@@ -25,6 +26,11 @@ type Props = {
   /** Only rendered when the AI panel is open and a key is loaded. */
   hasComposer: boolean;
   privateActive: boolean;
+  pythonEnvs?: PythonEnv[];
+  activePythonEnv?: PythonEnv | null;
+  pythonLoading?: boolean;
+  onSelectPythonEnv?: (env: PythonEnv | null) => void;
+  onRefreshPythonEnvs?: () => void;
 };
 
 export function StatusBar({
@@ -36,6 +42,11 @@ export function StatusBar({
   onOpenMini,
   hasComposer,
   privateActive,
+  pythonEnvs = [],
+  activePythonEnv = null,
+  pythonLoading = false,
+  onSelectPythonEnv,
+  onRefreshPythonEnvs,
 }: Props) {
   const panelOpen = useChatStore((s) => s.panelOpen);
   const openPanel = useChatStore((s) => s.openPanel);
@@ -61,6 +72,15 @@ export function StatusBar({
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
+        {onSelectPythonEnv && (
+          <PythonEnvPill
+            envs={pythonEnvs}
+            activeEnv={activePythonEnv}
+            loading={pythonLoading}
+            onSelect={onSelectPythonEnv}
+            onRefresh={onRefreshPythonEnvs ?? (() => {})}
+          />
+        )}
         <AgentStatusPill onClick={onOpenMini} />
         {panelOpen && hasComposer ? (
           <AiStatusBarControls />

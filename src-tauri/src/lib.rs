@@ -1,6 +1,6 @@
 mod modules;
 
-use modules::{fs, git, net, pty, secrets, shell, workspace};
+use modules::{fs, git, net, pty, python, secrets, shell, workspace};
 use std::sync::Mutex;
 use tauri::State;
 use tauri_plugin_window_state::StateFlags;
@@ -120,6 +120,7 @@ pub fn run() {
             net::lm_ping,
             net::ai_http_request,
             net::ai_http_stream,
+            python::py_detect_envs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,6 +1,12 @@
 import { MarkdownCode } from "@/components/ai-elements/markdown-code";
 import { cn } from "@/lib/utils";
 import { currentWorkspaceEnv } from "@/modules/workspace";
+import {
+  LayoutLeftIcon,
+  SidebarRight01Icon,
+  SourceCodeIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { Streamdown } from "streamdown";
@@ -17,6 +23,8 @@ type Status =
   | { kind: "toolarge"; size: number; limit: number }
   | { kind: "error"; message: string };
 
+type ViewMode = "preview" | "raw" | "split";
+
 type Props = {
   path: string;
   visible: boolean;
@@ -24,8 +32,34 @@ type Props = {
 
 const components = { code: MarkdownCode };
 
+const STORAGE_KEY = "nexis.markdown.viewMode";
+
+function readViewMode(): ViewMode {
+  try {
+    const v = window.localStorage.getItem(STORAGE_KEY);
+    if (v === "raw" || v === "split") return v;
+  } catch {
+    // ignore
+  }
+  return "preview";
+}
+
+function writeViewMode(mode: ViewMode): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, mode);
+  } catch {
+    // ignore
+  }
+}
+
 export function MarkdownPreviewPane({ path, visible }: Props) {
   const [status, setStatus] = useState<Status>({ kind: "loading" });
+  const [mode, setModeState] = useState<ViewMode>(readViewMode);
+
+  const setMode = (m: ViewMode) => {
+    setModeState(m);
+    writeViewMode(m);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +90,8 @@ export function MarkdownPreviewPane({ path, visible }: Props) {
     };
   }, [path]);
 
+  const content = status.kind === "ready" ? status.content : null;
+
   return (
     <div
       className={cn(
@@ -63,34 +99,135 @@ export function MarkdownPreviewPane({ path, visible }: Props) {
         !visible && "pointer-events-none",
       )}
     >
-      <div className="flex-1 overflow-auto px-6 py-4">
+      {/* Toolbar */}
+      <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-card/60 px-3 py-1">
+        <span className="truncate font-mono text-[10.5px] text-muted-foreground/70">
+          {path.split(/[\\/]/).pop()}
+        </span>
+        <div className="flex items-center gap-0.5">
+          <ModeButton
+            icon={SidebarRight01Icon}
+            label="Preview"
+            active={mode === "preview"}
+            onClick={() => setMode("preview")}
+          />
+          <ModeButton
+            icon={LayoutLeftIcon}
+            label="Split"
+            active={mode === "split"}
+            onClick={() => setMode("split")}
+          />
+          <ModeButton
+            icon={SourceCodeIcon}
+            label="Raw"
+            active={mode === "raw"}
+            onClick={() => setMode("raw")}
+          />
+        </div>
+      </div>
+
+      {/* Content area */}
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         {status.kind === "loading" && (
-          <p className="text-[12px] text-muted-foreground">Loading…</p>
+          <div className="flex h-full items-center justify-center">
+            <p className="text-[12px] text-muted-foreground">Loading…</p>
+          </div>
         )}
         {status.kind === "error" && (
-          <p className="text-[12px] text-destructive">
-            Failed to read file: {status.message}
-          </p>
+          <div className="px-6 py-4">
+            <p className="text-[12px] text-destructive">
+              Failed to read file: {status.message}
+            </p>
+          </div>
         )}
         {status.kind === "binary" && (
-          <p className="text-[12px] text-muted-foreground">
-            Binary file — cannot render as markdown.
-          </p>
+          <div className="px-6 py-4">
+            <p className="text-[12px] text-muted-foreground">
+              Binary file — cannot render as markdown.
+            </p>
+          </div>
         )}
         {status.kind === "toolarge" && (
-          <p className="text-[12px] text-muted-foreground">
-            File is {status.size} bytes; limit {status.limit}.
-          </p>
+          <div className="px-6 py-4">
+            <p className="text-[12px] text-muted-foreground">
+              File is {status.size} bytes; limit {status.limit}.
+            </p>
+          </div>
         )}
-        {status.kind === "ready" && (
-          <Streamdown
-            className="prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-            components={components}
+        {content !== null && (
+          <div
+            className={cn(
+              "flex h-full min-h-0",
+              mode === "split" ? "flex-row" : "flex-col",
+            )}
           >
-            {status.content}
-          </Streamdown>
+            {(mode === "preview" || mode === "split") && (
+              <div
+                className={cn(
+                  "min-h-0 overflow-auto px-6 py-4",
+                  mode === "split"
+                    ? "w-1/2 flex-shrink-0 border-r border-border/40"
+                    : "flex-1",
+                )}
+              >
+                <Streamdown
+                  className="prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                  components={components}
+                >
+                  {content}
+                </Streamdown>
+              </div>
+            )}
+            {(mode === "raw" || mode === "split") && (
+              <div
+                className={cn(
+                  "min-h-0 overflow-auto",
+                  mode === "split" ? "flex-1" : "flex-1 px-6 py-4",
+                )}
+              >
+                <pre
+                  className={cn(
+                    "h-full font-mono text-[12px] leading-relaxed text-foreground/90 whitespace-pre-wrap break-words",
+                    mode === "split" && "px-6 py-4",
+                  )}
+                >
+                  {content}
+                </pre>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
+  );
+}
+
+function ModeButton({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: Parameters<typeof HugeiconsIcon>[0]["icon"];
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={cn(
+        "flex h-6 w-6 cursor-pointer items-center justify-center rounded text-[10.5px] outline-none transition-colors",
+        "focus-visible:ring-1 focus-visible:ring-primary/40",
+        active
+          ? "bg-primary/10 text-primary"
+          : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
+      )}
+    >
+      <HugeiconsIcon icon={icon} size={13} strokeWidth={active ? 2 : 1.75} />
+    </button>
   );
 }

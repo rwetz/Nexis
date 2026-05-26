@@ -78,6 +78,7 @@ import {
   useSourceControl,
 } from "@/modules/source-control";
 import { StatusBar } from "@/modules/statusbar";
+import { usePythonEnv } from "@/modules/python";
 import { MAX_PANES_PER_TAB, useTabs, useWorkspaceCwd, setSavedTabsEnabled } from "@/modules/tabs";
 import {
   disposeSession,
@@ -418,6 +419,14 @@ export default function App() {
     tabs,
     launchCwd ?? home,
   );
+
+  const {
+    envs: pythonEnvs,
+    activeEnv: activePythonEnv,
+    loading: pythonLoading,
+    setActiveEnv: setActivePythonEnv,
+    refresh: refreshPythonEnvs,
+  } = usePythonEnv(explorerRoot);
 
   useEffect(() => {
     setActiveSearchAddon(
@@ -1322,6 +1331,11 @@ export default function App() {
             privateActive={
               activeTab?.kind === "terminal" && activeTab.private === true
             }
+            pythonEnvs={pythonEnvs}
+            activePythonEnv={activePythonEnv}
+            pythonLoading={pythonLoading}
+            onSelectPythonEnv={setActivePythonEnv}
+            onRefreshPythonEnvs={refreshPythonEnvs}
           />
 
           {hasComposer ? (
