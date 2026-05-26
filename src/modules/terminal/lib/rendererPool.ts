@@ -57,6 +57,80 @@ const slots: Slot[] = [];
 let recyclerEl: HTMLDivElement | null = null;
 let adapter: SlotAdapter | null = null;
 
+// Input tracking for terminal suggestions (keyed by leafId)
+const inputBuffers = new Map<number, string>();
+const inputTimers = new Map<number, ReturnType<typeof setTimeout>>();
+const activeSuggestions = new Map<number, string>();
+
+export function setActiveSuggestion(leafId: number, text: string): void {
+  activeSuggestions.set(leafId, text);
+}
+export function clearActiveSuggestion(leafId: number): void {
+  activeSuggestions.delete(leafId);
+}
+
+function applyInputData(current: string, data: string): string {
+  let result = current;
+  let i = 0;
+  while (i < data.length) {
+    const c = data[i];
+    if (c === "\r" || c === "\n") {
+      result = "";
+    } else if (c === "\x03" || c === "\x15") {
+      result = "";
+    } else if (c === "\x7f" || c === "\x08") {
+      result = result.slice(0, -1);
+    } else if (c === "\x1b") {
+      i++;
+      if (i < data.length && (data[i] === "[" || data[i] === "O")) {
+        i++;
+        while (i < data.length && !/[A-Za-z~]/.test(data[i])) i++;
+        // Up/down arrow = navigating history, reset tracking
+        if (i < data.length && (data[i] === "A" || data[i] === "B")) result = "";
+      }
+    } else if (c >= " ") {
+      result += c;
+    }
+    i++;
+  }
+  return result;
+}
+
+function trackInput(leafId: number, data: string, slot: Slot): void {
+  if (isAltScreen(slot)) return;
+  const current = inputBuffers.get(leafId) ?? "";
+  const next = applyInputData(current, data);
+  activeSuggestions.delete(leafId);
+  inputBuffers.set(leafId, next);
+  const timer = inputTimers.get(leafId);
+  if (timer) clearTimeout(timer);
+  if (next.length < 2) {
+    inputTimers.delete(leafId);
+    window.dispatchEvent(
+      new CustomEvent("nexis:input-cleared", { detail: { leafId } }),
+    );
+    return;
+  }
+  const t = setTimeout(() => {
+    inputTimers.delete(leafId);
+    if (slot.currentLeafId !== leafId) return;
+    const container = slot.host.parentElement;
+    if (!container) return;
+    const cols = slot.term.cols || 80;
+    const rows = slot.term.rows || 24;
+    const cellW = container.clientWidth / cols;
+    const cellH = container.clientHeight / rows;
+    const cx = slot.term.buffer.active.cursorX;
+    const cy = slot.term.buffer.active.cursorY;
+    window.dispatchEvent(
+      new CustomEvent("nexis:input-updated", {
+        detail: { leafId, input: next, x: cx * cellW, y: cy * cellH },
+      }),
+    );
+  }, 150);
+  inputTimers.set(leafId, t);
+}
+
 // Re-focus the active terminal slot whenever the Tauri window regains OS
 // focus. On Windows, the WebView may receive the OS activation event AFTER
 // React's initial effects + scheduleUnhide RAFs have already run, so the
@@ -162,6 +236,29 @@ function createSlot(): Slot {
     const bridge = adapter?.resolveLeaf(leafId);
     if (!bridge) return true;
 
+    // Accept inline suggestion on Tab when one is active.
+    if (
+      event.type === "keydown" &&
+      event.key === "Tab" &&
+      !event.shiftKey &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.metaKey
+    ) {
+      const sug = activeSuggestions.get(leafId);
+      if (sug) {
+        event.preventDefault();
+        bridge.writeToPty(sug);
+        activeSuggestions.delete(leafId);
+        const prev = inputBuffers.get(leafId) ?? "";
+        inputBuffers.set(leafId, prev + sug);
+        window.dispatchEvent(
+          new CustomEvent("nexis:suggestion-accepted", { detail: { leafId } }),
+        );
+        return false;
+      }
+    }
+
     // Intercept Ctrl+R before it reaches the PTY so we can show the history
     // overlay. Dispatch a DOM custom event that the React tree can listen to.
     if (
@@ -202,6 +299,7 @@ function createSlot(): Slot {
     const leafId = slot.currentLeafId;
     if (leafId === null) return;
     adapter?.resolveLeaf(leafId)?.writeToPty(data);
+    trackInput(leafId, data, slot);
   });
 
   slots.push(slot);
@@ -283,6 +381,9 @@ export function acquireSlot(params: AcquireParams): Slot {
 function bindSlot(slot: Slot, p: AcquireParams): void {
   slot.currentLeafId = p.leafId;
   slot.lastUsedAt = performance.now();
+  // Start fresh input tracking for the new leaf
+  inputBuffers.delete(p.leafId);
+  activeSuggestions.delete(p.leafId);
 
   cancelPendingUnhide(slot);
   slot.host.style.visibility = "hidden";
@@ -465,6 +566,16 @@ function serializeSlot(slot: Slot): SerializeOutput {
 }
 
 function detachSlotFromLeaf(slot: Slot): void {
+  // Clean up input tracking state for the departing leaf
+  if (slot.currentLeafId !== null) {
+    const leavingId = slot.currentLeafId;
+    const t = inputTimers.get(leavingId);
+    if (t) clearTimeout(t);
+    inputTimers.delete(leavingId);
+    inputBuffers.delete(leavingId);
+    activeSuggestions.delete(leavingId);
+  }
+
   for (const d of slot.oscDisposers) {
     try {
       d();

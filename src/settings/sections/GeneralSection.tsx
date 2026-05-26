@@ -27,6 +27,7 @@ import {
   setTerminalLetterSpacing,
   setTerminalFontSize,
   setTerminalScrollback,
+  setTerminalSuggestionsEnabled,
   setTerminalWebglEnabled,
   setVimMode,
   setZoomLevel,
@@ -75,6 +76,9 @@ export function GeneralSection() {
   );
   const terminalFontSize = usePreferencesStore((s) => s.terminalFontSize);
   const terminalScrollback = usePreferencesStore((s) => s.terminalScrollback);
+  const terminalSuggestionsEnabled = usePreferencesStore(
+    (s) => s.terminalSuggestionsEnabled,
+  );
   const zoomLevel = usePreferencesStore((s) => s.zoomLevel);
 
   // Reconcile autostart pref with the actual OS state on mount.
@@ -218,6 +222,15 @@ export function GeneralSection() {
           <Switch
             checked={terminalWebglEnabled}
             onCheckedChange={(v) => void setTerminalWebglEnabled(v)}
+          />
+        </SettingRow>
+        <SettingRow
+          title="Inline suggestions"
+          description="Show history-based ghost-text hints as you type. Press Tab to accept."
+        >
+          <Switch
+            checked={terminalSuggestionsEnabled}
+            onCheckedChange={(v) => void setTerminalSuggestionsEnabled(v)}
           />
         </SettingRow>
         <SettingRow

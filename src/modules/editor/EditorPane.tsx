@@ -62,6 +62,20 @@ type Props = {
   onClose?: () => void;
 };
 
+function deriveProjectHints(filePath: string): string[] {
+  const hints: string[] = [];
+  const normalized = filePath.replace(/\\/g, "/").toLowerCase();
+  if (/\.(ts|tsx)$/.test(normalized)) hints.push("TypeScript");
+  if (/\.tsx$/.test(normalized) || normalized.includes("/components/") || normalized.includes("/pages/")) hints.push("React");
+  if (/\.rs$/.test(normalized)) hints.push("Rust");
+  if (normalized.includes("tauri") || normalized.includes("src-tauri")) hints.push("Tauri");
+  if (/\.(py|pyw)$/.test(normalized)) hints.push("Python");
+  if (/\.go$/.test(normalized)) hints.push("Go");
+  if (/\.(jsx?|tsx?)$/.test(normalized) && normalized.includes("node_modules")) hints.push("Node.js");
+  if (/\.(css|scss|sass|less)$/.test(normalized)) hints.push("CSS");
+  return hints;
+}
+
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
@@ -123,6 +137,11 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const pathRef = useRef(path);
     pathRef.current = path;
 
+    const projectHintsRef = useRef<string[] | null>(null);
+    useEffect(() => {
+      projectHintsRef.current = deriveProjectHints(path);
+    }, [path]);
+
     const extensions = useMemo(
       () => [
         // basicSetup is added before user extensions by @uiw/react-codemirror,
@@ -169,6 +188,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           },
           getPath: () => pathRef.current,
           getLanguage: () => languageRef.current,
+          getProjectHints: () => projectHintsRef.current,
         }),
         keymap.of([
           {

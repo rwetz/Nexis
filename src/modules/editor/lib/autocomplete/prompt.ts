@@ -3,6 +3,7 @@ export type CompletionRequest = {
   suffix: string;
   language: string | null;
   filename: string | null;
+  projectHints?: string[] | null;
 };
 
 const MAX_PREFIX = 2000;
@@ -60,6 +61,7 @@ export function buildUserPrompt(req: CompletionRequest): string {
   const meta: string[] = [];
   if (req.filename) meta.push(`File: ${req.filename}`);
   if (req.language) meta.push(`Language: ${req.language}`);
+  if (req.projectHints?.length) meta.push(`Project: ${req.projectHints.join(", ")}`);
   const metaBlock = meta.length ? meta.join("\n") + "\n\n" : "";
 
   return `${metaBlock}PREFIX:

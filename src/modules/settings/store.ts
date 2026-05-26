@@ -130,6 +130,7 @@ export type Preferences = {
   terminalEnvVars: Record<string, string>;
   formatters: Record<FormatterLanguage, FormatterConfig>;
   formatOnSave: boolean;
+  terminalSuggestionsEnabled: boolean;
 };
 
 const STORE_PATH = "nexis-settings.json";
@@ -173,6 +174,7 @@ const KEY_SHORTCUTS = "shortcuts";
 const KEY_TERMINAL_ENV_VARS = "terminalEnvVars";
 const KEY_FORMATTERS = "formatters";
 const KEY_FORMAT_ON_SAVE = "formatOnSave";
+const KEY_TERMINAL_SUGGESTIONS = "terminalSuggestionsEnabled";
 
 export const TERMINAL_FONT_SIZE_DEFAULT = 14;
 export const TERMINAL_FONT_SIZE_MIN = 8;
@@ -229,6 +231,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   terminalEnvVars: {},
   formatters: DEFAULT_FORMATTERS,
   formatOnSave: false,
+  terminalSuggestionsEnabled: true,
 };
 
 function mergeFormatters(
@@ -358,6 +361,9 @@ export async function loadPreferences(): Promise<Preferences> {
       get<Partial<Record<FormatterLanguage, FormatterConfig>>>(KEY_FORMATTERS) ?? {},
     ),
     formatOnSave: get<boolean>(KEY_FORMAT_ON_SAVE) ?? DEFAULT_PREFERENCES.formatOnSave,
+    terminalSuggestionsEnabled:
+      get<boolean>(KEY_TERMINAL_SUGGESTIONS) ??
+      DEFAULT_PREFERENCES.terminalSuggestionsEnabled,
   };
 }
 
@@ -551,6 +557,10 @@ export async function setTerminalEnvVars(
   value: Record<string, string>,
 ): Promise<void> {
   await writePref(KEY_TERMINAL_ENV_VARS, value);
+}
+
+export async function setTerminalSuggestionsEnabled(value: boolean): Promise<void> {
+  await writePref(KEY_TERMINAL_SUGGESTIONS, value);
 }
 
 export async function setFormatters(

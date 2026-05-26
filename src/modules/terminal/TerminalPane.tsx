@@ -2,6 +2,8 @@ import { useTheme } from "@/modules/theme";
 import type { SearchAddon } from "@xterm/addon-search";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTerminalSession } from "./lib/useTerminalSession";
+import { useTerminalSuggestions } from "./lib/useTerminalSuggestions";
+import { TerminalSuggestionOverlay } from "./components/TerminalSuggestionOverlay";
 
 export type TerminalPaneHandle = {
   write: (data: string) => void;
@@ -43,6 +45,8 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
     const containerRef = useRef<HTMLDivElement>(null);
     const { resolvedMode, themeId, customThemes } = useTheme();
     const [isDragOver, setIsDragOver] = useState(false);
+
+    const { suggestion } = useTerminalSuggestions(leafId);
 
     const session = useTerminalSession({
       leafId,
@@ -118,6 +122,13 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
               Drop to paste path
             </span>
           </div>
+        )}
+        {suggestion && visible && (
+          <TerminalSuggestionOverlay
+            text={suggestion.text}
+            x={suggestion.x}
+            y={suggestion.y}
+          />
         )}
       </div>
     );
