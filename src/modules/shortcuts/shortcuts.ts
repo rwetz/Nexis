@@ -5,6 +5,7 @@ import { IS_MAC, MOD_PROP } from "@/lib/platform";
  */
 
 export type ShortcutId =
+  | "editor.formatDocument"
   | "tab.new"
   | "tab.newPrivate"
   | "tab.newPreview"
@@ -216,6 +217,12 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Reset zoom",
     group: "View",
     defaultBindings: [{ [MOD_PROP]: true, key: "0" }],
+  },
+  {
+    id: "editor.formatDocument",
+    label: "Format document",
+    group: "Editor",
+    defaultBindings: [{ shift: true, alt: true, key: "f" }],
   },
   // Editor entries are display-only: CodeMirror's historyKeymap binds these
   // keys natively. We register them here so the shortcuts dialog can surface

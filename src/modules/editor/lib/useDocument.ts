@@ -85,6 +85,11 @@ export function useDocument({ path, onDirtyChange }: Options) {
     return true;
   }, []);
 
+  /** Force re-read from disk regardless of dirty state. Used post-format. */
+  const reloadForce = useCallback((): void => {
+    setReloadCounter((n) => n + 1);
+  }, []);
+
   const onChange = useCallback((next: string) => {
     bufferRef.current = next;
     setDirty(next !== savedRef.current);
@@ -103,5 +108,5 @@ export function useDocument({ path, onDirtyChange }: Options) {
     setDirty(false);
   }, [path, dirty]);
 
-  return { doc, dirty, onChange, save, reload };
+  return { doc, dirty, onChange, save, reload, reloadForce };
 }

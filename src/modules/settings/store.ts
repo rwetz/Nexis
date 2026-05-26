@@ -44,6 +44,52 @@ export const EDITOR_THEME_LABELS: Record<EditorThemeId, string> = {
   "xcode-light": "Xcode Light",
 };
 
+export type FormatterLanguage =
+  | "javascript"
+  | "typescript"
+  | "css"
+  | "html"
+  | "json"
+  | "markdown"
+  | "rust"
+  | "c"
+  | "cpp"
+  | "python"
+  | "go";
+
+export type FormatterConfig = {
+  command: string;
+  enabled: boolean;
+};
+
+export const FORMATTER_LANGUAGE_LABELS: Record<FormatterLanguage, string> = {
+  javascript: "JavaScript / JSX",
+  typescript: "TypeScript / TSX",
+  css: "CSS / SCSS / Less",
+  html: "HTML",
+  json: "JSON",
+  markdown: "Markdown",
+  rust: "Rust",
+  c: "C",
+  cpp: "C++",
+  python: "Python",
+  go: "Go",
+};
+
+export const DEFAULT_FORMATTERS: Record<FormatterLanguage, FormatterConfig> = {
+  javascript: { command: 'prettier --write "{file}"', enabled: false },
+  typescript: { command: 'prettier --write "{file}"', enabled: false },
+  css:        { command: 'prettier --write "{file}"', enabled: false },
+  html:       { command: 'prettier --write "{file}"', enabled: false },
+  json:       { command: 'prettier --write "{file}"', enabled: false },
+  markdown:   { command: 'prettier --write "{file}"', enabled: false },
+  rust:       { command: 'rustfmt "{file}"', enabled: false },
+  c:          { command: 'clang-format -i "{file}"', enabled: false },
+  cpp:        { command: 'clang-format -i "{file}"', enabled: false },
+  python:     { command: 'black "{file}"', enabled: false },
+  go:         { command: 'gofmt -w "{file}"', enabled: false },
+};
+
 export type Preferences = {
   theme: ThemePref;
   themeId: string;
@@ -82,6 +128,8 @@ export type Preferences = {
   zoomLevel: number;
   shortcuts: Record<ShortcutId, KeyBinding[]>;
   terminalEnvVars: Record<string, string>;
+  formatters: Record<FormatterLanguage, FormatterConfig>;
+  formatOnSave: boolean;
 };
 
 const STORE_PATH = "nexis-settings.json";
@@ -123,6 +171,8 @@ const KEY_LAST_WSL_DISTRO = "lastWslDistro";
 const KEY_ZOOM_LEVEL = "zoomLevel";
 const KEY_SHORTCUTS = "shortcuts";
 const KEY_TERMINAL_ENV_VARS = "terminalEnvVars";
+const KEY_FORMATTERS = "formatters";
+const KEY_FORMAT_ON_SAVE = "formatOnSave";
 
 export const TERMINAL_FONT_SIZE_DEFAULT = 14;
 export const TERMINAL_FONT_SIZE_MIN = 8;
@@ -177,7 +227,19 @@ export const DEFAULT_PREFERENCES: Preferences = {
   zoomLevel: 1.0,
   shortcuts: {} as Record<ShortcutId, KeyBinding[]>,
   terminalEnvVars: {},
+  formatters: DEFAULT_FORMATTERS,
+  formatOnSave: false,
 };
+
+function mergeFormatters(
+  saved: Partial<Record<FormatterLanguage, FormatterConfig>>,
+): Record<FormatterLanguage, FormatterConfig> {
+  const result = { ...DEFAULT_FORMATTERS };
+  for (const [lang, cfg] of Object.entries(saved)) {
+    if (lang in result && cfg) result[lang as FormatterLanguage] = cfg;
+  }
+  return result;
+}
 
 const store = new LazyStore(STORE_PATH, { defaults: {}, autoSave: 200 });
 
@@ -292,6 +354,10 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalEnvVars:
       get<Record<string, string>>(KEY_TERMINAL_ENV_VARS) ??
       DEFAULT_PREFERENCES.terminalEnvVars,
+    formatters: mergeFormatters(
+      get<Partial<Record<FormatterLanguage, FormatterConfig>>>(KEY_FORMATTERS) ?? {},
+    ),
+    formatOnSave: get<boolean>(KEY_FORMAT_ON_SAVE) ?? DEFAULT_PREFERENCES.formatOnSave,
   };
 }
 
@@ -487,6 +553,16 @@ export async function setTerminalEnvVars(
   await writePref(KEY_TERMINAL_ENV_VARS, value);
 }
 
+export async function setFormatters(
+  value: Record<FormatterLanguage, FormatterConfig>,
+): Promise<void> {
+  await writePref(KEY_FORMATTERS, value);
+}
+
+export async function setFormatOnSave(value: boolean): Promise<void> {
+  await writePref(KEY_FORMAT_ON_SAVE, value);
+}
+
 export type PrefKey = keyof Preferences;
 
 /** Subscribe to changes from any window (settings → main). */
@@ -531,6 +607,8 @@ export async function onPreferencesChange(
     [KEY_ZOOM_LEVEL]: "zoomLevel",
     [KEY_SHORTCUTS]: "shortcuts",
     [KEY_TERMINAL_ENV_VARS]: "terminalEnvVars",
+    [KEY_FORMATTERS]: "formatters",
+    [KEY_FORMAT_ON_SAVE]: "formatOnSave",
   };
   // Same-process writes still fire onChange immediately; cross-window writes
   // arrive via the Tauri event emitted by writePref().

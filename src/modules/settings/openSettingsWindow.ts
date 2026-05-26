@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { useSettingsDialogStore } from "./settingsDialogStore";
 
 export type SettingsTab =
   | "general"
@@ -7,8 +7,9 @@ export type SettingsTab =
   | "models"
   | "agents"
   | "environment"
+  | "formatters"
   | "about";
 
 export async function openSettingsWindow(tab?: SettingsTab): Promise<void> {
-  await invoke("open_settings_window", { tab: tab ?? null });
+  useSettingsDialogStore.getState().show(tab);
 }

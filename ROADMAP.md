@@ -121,7 +121,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
 - [x] Environment variable panel — view, edit, and persist env vars per workspace
 - [ ] Background process manager — visibility into shell background jobs and dev servers running in Nexis
-- [ ] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
+- [x] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
 - [x] Run files — execute the current file or project directly from the editor with output captured in a terminal tab
 - [ ] Draggable/dockable panels — resizable bottom output panel to start, with drag-to-dock for floating and snapping panels
 - [x] Inline linting and diagnostics — real-time syntax error markers in the editor gutter via @codemirror/lint; Lezer-based parser errors surface for JS/TS, Python, Rust, Go, JSON, HTML, CSS, and Markdown

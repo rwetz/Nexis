@@ -2,6 +2,31 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.8.3] — 2026-05-25
+
+### Added
+- **Code formatting** — per-language formatter integration triggered from the editor (`Shift+Alt+F`) or automatically on save. Supports Prettier (JS/TS/CSS/HTML/JSON/Markdown), rustfmt, clang-format (C/C++), black (Python), and gofmt (Go). All commands use a `{file}` placeholder and run in the file's directory.
+- **Settings → Formatters tab** — enable/disable per language, edit the formatter command, and reset to default. "Format on save" toggle applies the configured formatter after every Ctrl+S save.
+
+### Changed
+- **Settings is now an in-app modal dialog** — replaces the separate OS window. Opens centered over the app with a blurred backdrop at 920 × 700 px. Closes on Escape or ×. All existing shortcuts and `openSettingsWindow("tab")` deep-links continue to work.
+
+---
+
+## [0.8.1] — 2026-05-24
+
+### Fixed
+- **Terminal keyboard input on fresh launch** — typing in a new terminal tab immediately after launch was silently dropped until the PTY IPC channel was fully ready. Writes are now queued and flushed once the session is open.
+
+---
+
+## [0.8.0] — 2026-05-24
+
+### Added
+- **Inline linting and diagnostics** — real-time syntax error markers in the editor gutter via `@codemirror/lint`. Lezer parser errors surface for JS/TS, Python, Rust, Go, JSON, HTML, CSS, and Markdown with zero external toolchain required.
+
+---
+
 ## [0.7.6] — 2026-05-24
 
 ### Fixed

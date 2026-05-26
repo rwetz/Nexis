@@ -28,6 +28,7 @@ import { initVimGlobals, vimHandlersExtension } from "./lib/vim";
 initVimGlobals();
 import { resolveLanguage } from "./lib/languageResolver";
 import { useDocument } from "./lib/useDocument";
+import { formatFile } from "./lib/formatter";
 import { inlineCompletion } from "./lib/autocomplete/inlineExtension";
 import { syntaxLinter } from "./lib/linting";
 import { getKey } from "@/modules/ai/lib/keyring";
@@ -43,6 +44,12 @@ export type EditorPaneHandle = {
   getPath: () => string;
   /** Re-read the file from disk. Skips silently if the buffer is dirty. */
   reload: () => boolean;
+  /** Force re-read from disk even if dirty. Used after formatting. */
+  reloadForce: () => void;
+  /** Flush pending edits to disk. No-op if not dirty. */
+  save: () => Promise<void>;
+  /** Save then run the configured formatter, reloading on success. */
+  format: () => Promise<{ ok: boolean; error?: string }>;
   /** Apply CodeMirror's undo/redo commands. */
   undo: () => void;
   redo: () => void;
@@ -63,9 +70,11 @@ function formatBytes(n: number): string {
 
 export const EditorPane = forwardRef<EditorPaneHandle, Props>(
   function EditorPane({ path, onDirtyChange, onSaved, onClose }, ref) {
-    const { doc, onChange, save, reload } = useDocument({ path, onDirtyChange });
+    const { doc, onChange, save, reload, reloadForce } = useDocument({ path, onDirtyChange });
     const reloadRef = useRef(reload);
     reloadRef.current = reload;
+    const reloadForceRef = useRef(reloadForce);
+    reloadForceRef.current = reloadForce;
     const cmRef = useRef<ReactCodeMirrorRef>(null);
     const editorThemeId = usePreferencesStore((s) => s.editorTheme);
     const vimMode = usePreferencesStore((s) => s.vimMode);
@@ -169,6 +178,11 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
               void (async () => {
                 await saveRef.current();
                 onSavedRef.current?.();
+                if (usePreferencesStore.getState().formatOnSave) {
+                  const s = usePreferencesStore.getState();
+                  const result = await formatFile(pathRef.current, s.formatters);
+                  if (result.ok) reloadForceRef.current();
+                }
               })();
               return true;
             },
@@ -245,6 +259,15 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         },
         getPath: () => path,
         reload: () => reloadRef.current(),
+        reloadForce: () => reloadForceRef.current(),
+        save: () => saveRef.current(),
+        format: async () => {
+          await saveRef.current();
+          const s = usePreferencesStore.getState();
+          const result = await formatFile(pathRef.current, s.formatters);
+          if (result.ok) reloadForceRef.current();
+          return result;
+        },
         undo: () => {
           const view = cmRef.current?.view;
           if (view) undo(view);

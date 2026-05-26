@@ -69,15 +69,18 @@ File exploration with the sidebar is fine for browsing, but jumping directly to 
 
 ---
 
-### 0.8.0 — AI depth + SSH (planned)
-> Rough target after 0.7.x stabilizes
+### 0.8.3 — Formatter + settings dialog (shipped 2026-05-25)
 
-- SSH support — PTY sessions over SSH
-- AI context inspector — transparency panel showing what context the agent is working with
-- Agent orchestration — spawn and coordinate external agents (Claude Code, OpenCode)
-- Per-project AI system prompt via `NEXIS.md`
-- Smarter AI autocomplete in the editor (project-aware)
-- Fix "Check for updates" button in About — currently does nothing; wire up the updater plugin properly or replace with a direct GitHub releases check
+- Code formatting — per-language formatter integration (`Shift+Alt+F`, format on save); Prettier, rustfmt, clang-format, black, gofmt; configurable via Settings → Formatters
+- Settings converted from separate OS window to in-app modal dialog (blurred backdrop, centered, 920 × 700)
+
+### 0.8.1 — Terminal keyboard fix (shipped 2026-05-24)
+
+- Terminal keyboard input on fresh launch — writes queued until PTY IPC is ready
+
+### 0.8.0 — Inline linting (shipped 2026-05-24)
+
+- Inline linting and diagnostics — real-time editor gutter markers via `@codemirror/lint` for JS/TS, Python, Rust, Go, JSON, HTML, CSS, Markdown
 
 ---
 

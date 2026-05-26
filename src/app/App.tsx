@@ -54,6 +54,7 @@ import {
 import { MarkdownStack } from "@/modules/markdown";
 import { PreviewStack, type PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
+import { SettingsDialog } from "@/settings/SettingsDialog";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { onKeysChanged } from "@/modules/settings/store";
 import {
@@ -986,6 +987,9 @@ export default function App() {
       "view.zoomIn": zoomIn,
       "view.zoomOut": zoomOut,
       "view.zoomReset": zoomReset,
+      "editor.formatDocument": () => {
+        void editorRefs.current.get(activeId)?.format();
+      },
       "editor.undo": () => editorRefs.current.get(activeId)?.undo(),
       "editor.redo": () => editorRefs.current.get(activeId)?.redo(),
     }),
@@ -1012,7 +1016,7 @@ export default function App() {
 
   const shortcutsDisabled = useCallback(
     (id: ShortcutId, e: KeyboardEvent) => {
-      if (id === "editor.undo" || id === "editor.redo") {
+      if (id === "editor.undo" || id === "editor.redo" || id === "editor.formatDocument") {
         return activeTab?.kind !== "editor";
       }
       if (id === "ai.askSelection") {
@@ -1433,6 +1437,8 @@ export default function App() {
             open={shortcutsOpen}
             onOpenChange={setShortcutsOpen}
           />
+
+          <SettingsDialog />
 
           <NewEditorDialog
             open={newEditorOpen}
