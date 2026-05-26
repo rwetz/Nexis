@@ -17,6 +17,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { dirname } from "@/lib/path";
+import { useSidebarState, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "./useSidebarState";
+import { useDialogCoordinator } from "./useDialogCoordinator";
 import {
   AgentRunBridge,
   AiInputBar,
@@ -63,7 +66,7 @@ import {
   type ShortcutHandlers,
   type ShortcutId,
 } from "@/modules/shortcuts";
-import { SidebarRail, type SidebarViewId } from "@/modules/sidebar";
+import { SidebarRail } from "@/modules/sidebar";
 import {
   SourceControlPanel,
   useSourceControl,
@@ -99,53 +102,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { SearchAddon } from "@xterm/addon-search";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { PanelImperativeHandle } from "react-resizable-panels";
 
-function dirname(path: string | null): string | null {
-  if (!path) return null;
-  const normalized = path.replace(/\\/g, "/");
-  const idx = normalized.lastIndexOf("/");
-  if (idx < 0) return normalized;
-  if (idx === 0) return "/";
-  // Windows drive root: "C:/file" → "C:/"
-  if (idx === 2 && normalized[1] === ":") return normalized.slice(0, 3);
-  return normalized.slice(0, idx);
-}
-
-const SIDEBAR_DEFAULT_WIDTH = 260;
-const SIDEBAR_MIN_WIDTH = 220;
-const SIDEBAR_MAX_WIDTH = 480;
-const SIDEBAR_WIDTH_STORAGE_KEY = "nexis.sidebar.width";
-const SIDEBAR_VIEW_STORAGE_KEY = "nexis.sidebar.view";
-
-function clampSidebarWidth(width: number): number {
-  return Math.min(
-    SIDEBAR_MAX_WIDTH,
-    Math.max(SIDEBAR_MIN_WIDTH, Math.round(width)),
-  );
-}
-
-function readSidebarWidth(): number {
-  try {
-    const stored = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
-    const parsed = stored ? Number.parseInt(stored, 10) : NaN;
-    return Number.isFinite(parsed)
-      ? clampSidebarWidth(parsed)
-      : SIDEBAR_DEFAULT_WIDTH;
-  } catch {
-    return SIDEBAR_DEFAULT_WIDTH;
-  }
-}
-
-function readSidebarView(): SidebarViewId {
-  try {
-    const stored = window.localStorage.getItem(SIDEBAR_VIEW_STORAGE_KEY);
-    if (stored === "explorer" || stored === "source-control") return stored;
-  } catch {
-    // ignore
-  }
-  return "explorer";
-}
 
 export default function App() {
   const {
@@ -199,96 +156,28 @@ export default function App() {
     useState<GitHistorySearchHandle | null>(null);
   const { zoomIn, zoomOut, zoomReset } = useZoom();
   const explorerRef = useRef<FileExplorerHandle>(null);
-  const explorerReturnFocusRef = useRef<HTMLElement | null>(null);
 
-  const sidebarRef = useRef<PanelImperativeHandle | null>(null);
-  const sidebarWidthRef = useRef(readSidebarWidth());
-  const sidebarWidthWriteTimerRef = useRef(0);
-  const [sidebarView, setSidebarViewState] = useState<SidebarViewId>(readSidebarView);
-  const persistSidebarView = useCallback((view: SidebarViewId) => {
-    setSidebarViewState(view);
-    try {
-      window.localStorage.setItem(SIDEBAR_VIEW_STORAGE_KEY, view);
-    } catch {
-      // storage may fail in private mode
-    }
-  }, []);
-  const toggleSidebar = useCallback(() => {
-    const p = sidebarRef.current;
-    if (!p) return;
-    if (p.getSize().asPercentage <= 0) p.expand();
-    else p.collapse();
-  }, []);
-  const cycleSidebarView = useCallback(
-    (view: SidebarViewId) => {
-      const panel = sidebarRef.current;
-      const collapsed = panel ? panel.getSize().asPercentage <= 0 : false;
-      if (collapsed) {
-        if (panel) panel.resize(`${sidebarWidthRef.current}px`);
-        if (view !== sidebarView) persistSidebarView(view);
-        return;
-      }
-      if (view === sidebarView) {
-        panel?.collapse();
-        return;
-      }
-      persistSidebarView(view);
-    },
-    [persistSidebarView, sidebarView],
-  );
-  const persistSidebarWidth = useCallback((next: number) => {
-    sidebarWidthRef.current = next;
-    if (sidebarWidthWriteTimerRef.current) {
-      window.clearTimeout(sidebarWidthWriteTimerRef.current);
-    }
-    sidebarWidthWriteTimerRef.current = window.setTimeout(() => {
-      sidebarWidthWriteTimerRef.current = 0;
-      try {
-        window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(next));
-      } catch {
-        // ignore
-      }
-    }, 200);
-  }, []);
-  useEffect(() => {
-    return () => {
-      if (sidebarWidthWriteTimerRef.current) {
-        window.clearTimeout(sidebarWidthWriteTimerRef.current);
-      }
-    };
-  }, []);
+  const {
+    sidebarRef,
+    sidebarWidthRef,
+    sidebarView,
+    persistSidebarView,
+    toggleSidebar,
+    cycleSidebarView,
+    persistSidebarWidth,
+    toggleExplorerFocus,
+  } = useSidebarState(explorerRef);
 
-  const toggleExplorerFocus = useCallback(() => {
-    const explorer = explorerRef.current;
-    const panel = sidebarRef.current;
-    const collapsed = panel ? panel.getSize().asPercentage <= 0 : false;
-    if (sidebarView !== "explorer" || collapsed) {
-      if (panel && collapsed) panel.resize(`${sidebarWidthRef.current}px`);
-      if (sidebarView !== "explorer") persistSidebarView("explorer");
-      const active = document.activeElement;
-      explorerReturnFocusRef.current =
-        active instanceof HTMLElement && active !== document.body
-          ? active
-          : null;
-      requestAnimationFrame(() => explorerRef.current?.focus());
-      return;
-    }
-    if (!explorer) return;
-    if (explorer.isFocused()) {
-      const target = explorerReturnFocusRef.current;
-      explorerReturnFocusRef.current = null;
-      if (target && document.body.contains(target)) {
-        target.focus();
-      } else {
-        (document.activeElement as HTMLElement | null)?.blur?.();
-      }
-      return;
-    }
-    const active = document.activeElement;
-    explorerReturnFocusRef.current =
-      active instanceof HTMLElement && active !== document.body ? active : null;
-    explorer.focus();
-  }, [persistSidebarView, sidebarView]);
+  const {
+    shortcutsOpen,
+    setShortcutsOpen,
+    newEditorOpen,
+    setNewEditorOpen,
+    quickFilePickerOpen,
+    setQuickFilePickerOpen,
+    historyLeafId,
+    setHistoryLeafId,
+  } = useDialogCoordinator();
 
   const [home, setHome] = useState<string | null>(null);
   const [pendingCloseTab, setPendingCloseTab] = useState<number | null>(null);
@@ -369,10 +258,6 @@ export default function App() {
       .finally(() => setLaunchCwdResolved(true));
   }, []);
 
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [newEditorOpen, setNewEditorOpen] = useState(false);
-  const [quickFilePickerOpen, setQuickFilePickerOpen] = useState(false);
-  const [historyLeafId, setHistoryLeafId] = useState<number | null>(null);
   const miniOpen = useChatStore((s) => s.mini.open);
   const openMini = useChatStore((s) => s.openMini);
   const focusInput = useChatStore((s) => s.focusInput);
@@ -440,16 +325,6 @@ export default function App() {
     if (!prefsHydrated) return;
     setSavedTabsEnabled(prefRestoreTabs);
   }, [prefsHydrated, prefRestoreTabs]);
-
-  // Listen for Ctrl+R intercepts from the terminal renderer pool.
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const { leafId } = (e as CustomEvent<{ leafId: number }>).detail;
-      setHistoryLeafId(leafId);
-    };
-    window.addEventListener("nexis:history-open", handler);
-    return () => window.removeEventListener("nexis:history-open", handler);
-  }, []);
 
   const hydrateSessions = useChatStore((s) => s.hydrateSessions);
   useEffect(() => {

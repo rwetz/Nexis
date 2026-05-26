@@ -22,7 +22,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef } from "react";
-import type { EditorTab, Tab } from "./lib/useTabs";
+import type { EditorTab, Tab } from "./lib/tabTypes";
 
 type Props = {
   tabs: Tab[];

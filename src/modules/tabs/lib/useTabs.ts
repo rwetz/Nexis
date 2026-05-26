@@ -8,265 +8,29 @@ import {
   setLeafCwd as setLeafCwdInTree,
   siblingLeafOf,
   splitLeaf,
-  type PaneNode,
   type SplitDir,
 } from "@/modules/terminal/lib/panes";
 import { disposeSession } from "@/modules/terminal/lib/useTerminalSession";
-
-// ─── Tab persistence ───────────────────────────────────────────────────────────
-
-export const TABS_STORAGE_KEY = "nexis.saved-tabs";
-export const RESTORE_TABS_STORAGE_KEY = "nexis.restore-tabs";
-const SAVE_DEBOUNCE_MS = 600;
-
-type PersistedTerminalTab = {
-  kind: "terminal";
-  title: string;
-  cwd?: string;
-  private?: boolean;
-};
-type PersistedEditorTab = {
-  kind: "editor";
-  path: string;
-};
-type PersistedTab = PersistedTerminalTab | PersistedEditorTab;
-type PersistedTabState = {
-  version: 1;
-  tabs: PersistedTab[];
-  activeIndex: number;
-};
-
-export function clearSavedTabState(): void {
-  try {
-    localStorage.removeItem(TABS_STORAGE_KEY);
-  } catch {}
-}
-
-export function setSavedTabsEnabled(enabled: boolean): void {
-  try {
-    localStorage.setItem(RESTORE_TABS_STORAGE_KEY, enabled ? "true" : "false");
-    if (!enabled) clearSavedTabState();
-  } catch {}
-}
-
-function shouldRestoreTabs(): boolean {
-  try {
-    const v = localStorage.getItem(RESTORE_TABS_STORAGE_KEY);
-    return v === null ? true : v === "true";
-  } catch {
-    return true;
-  }
-}
-
-function loadSavedTabState(): PersistedTabState | null {
-  try {
-    const raw = localStorage.getItem(TABS_STORAGE_KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw) as PersistedTabState;
-    if (s.version !== 1 || !Array.isArray(s.tabs) || !s.tabs.length) return null;
-    return s;
-  } catch {
-    return null;
-  }
-}
-
-function serializeTabState(tabs: Tab[], activeId: number): PersistedTabState {
-  const persisted: PersistedTab[] = [];
-  for (const t of tabs) {
-    if (t.kind === "terminal") {
-      persisted.push({ kind: "terminal", title: t.title, cwd: t.cwd, private: t.private });
-    } else if (t.kind === "editor" && !t.preview) {
-      persisted.push({ kind: "editor", path: t.path });
-    }
-    // Skip: preview, ai-diff, git-diff, git-history, git-commit-file, markdown
-  }
-  const activeTab = tabs.find((t) => t.id === activeId);
-  let activeIndex = 0;
-  if (activeTab) {
-    const serializedIdx = persisted.findIndex(
-      (p) =>
-        (p.kind === "terminal" && activeTab.kind === "terminal") ||
-        (p.kind === "editor" && activeTab.kind === "editor" &&
-          (activeTab as EditorTab).path === p.path),
-    );
-    if (serializedIdx !== -1) activeIndex = serializedIdx;
-  }
-  return { version: 1, tabs: persisted, activeIndex };
-}
-
-function buildTabsFromSaved(
-  saved: PersistedTabState,
-  startId: number,
-): { tabs: Tab[]; activeId: number; nextId: number } {
-  const tabs: Tab[] = [];
-  let id = startId;
-  let activeId = id;
-
-  for (let i = 0; i < saved.tabs.length; i++) {
-    const p = saved.tabs[i];
-    if (p.kind === "terminal") {
-      const tabId = id++;
-      const leafId = id++;
-      const tab: TerminalTab = {
-        id: tabId,
-        kind: "terminal",
-        title: p.title || "shell",
-        cwd: p.cwd,
-        paneTree: { kind: "leaf", id: leafId, cwd: p.cwd },
-        activeLeafId: leafId,
-        ...(p.private && { private: true }),
-      };
-      tabs.push(tab);
-      if (i === saved.activeIndex) activeId = tabId;
-    } else if (p.kind === "editor") {
-      const tabId = id++;
-      const tab: EditorTab = {
-        id: tabId,
-        kind: "editor",
-        title: basename(p.path),
-        path: p.path,
-        dirty: false,
-        preview: false,
-      };
-      tabs.push(tab);
-      if (i === saved.activeIndex) activeId = tabId;
-    }
-  }
-
-  if (!tabs.length) {
-    const tabId = id++;
-    const leafId = id++;
-    tabs.push({
-      id: tabId,
-      kind: "terminal",
-      title: "shell",
-      paneTree: { kind: "leaf", id: leafId },
-      activeLeafId: leafId,
-    });
-    activeId = tabId;
-  }
-
-  return { tabs, activeId, nextId: id };
-}
-
-// Matches the renderer slot pool size — over this we'd evict an active leaf.
-export const MAX_PANES_PER_TAB = 4;
-
-export type TerminalTab = {
-  id: number;
-  kind: "terminal";
-  title: string;
-  cwd?: string;
-  paneTree: PaneNode;
-  activeLeafId: number;
-  /** AI agent cannot read buffer / context of this terminal. */
-  private?: boolean;
-};
-
-export type EditorTab = {
-  id: number;
-  kind: "editor";
-  title: string;
-  path: string;
-  dirty: boolean;
-  /**
-   * True while the tab is in the transient "preview" state — opened by a
-   * single-click in the explorer and not yet pinned by the user. A preview tab
-   * is replaced by the next single-click rather than accumulating.
-   */
-  preview: boolean;
-};
-
-export type PreviewTab = {
-  id: number;
-  kind: "preview";
-  title: string;
-  url: string;
-};
-
-export type MarkdownTab = {
-  id: number;
-  kind: "markdown";
-  title: string;
-  path: string;
-};
-
-export type AiDiffStatus = "pending" | "approved" | "rejected";
-
-export type AiDiffTab = {
-  id: number;
-  kind: "ai-diff";
-  title: string;
-  path: string;
-  /** "" for newly created files. */
-  originalContent: string;
-  proposedContent: string;
-  /** Tool-call approval id used to resolve the AI SDK approval. */
-  approvalId: string;
-  status: AiDiffStatus;
-  isNewFile: boolean;
-};
-
-export type GitDiffTab = {
-  id: number;
-  kind: "git-diff";
-  title: string;
-  path: string;
-  repoRoot: string;
-  mode: "-" | "+";
-  originalPath: string | null;
-};
-
-export type GitHistoryTab = {
-  id: number;
-  kind: "git-history";
-  title: string;
-  repoRoot: string;
-};
-
-export type GitCommitFileDiffTab = {
-  id: number;
-  kind: "git-commit-file";
-  title: string;
-  repoRoot: string;
-  sha: string;
-  shortSha: string;
-  subject: string;
-  path: string;
-  originalPath: string | null;
-};
-
-export type Tab =
-  | TerminalTab
-  | EditorTab
-  | PreviewTab
-  | MarkdownTab
-  | AiDiffTab
-  | GitDiffTab
-  | GitHistoryTab
-  | GitCommitFileDiffTab;
-
-export type TabPatch = Partial<{
-  title: string;
-  cwd: string;
-  path: string;
-  dirty: boolean;
-  url: string;
-}>;
-
-function basename(path: string): string {
-  const parts = path.split(/[\\/]/).filter(Boolean);
-  return parts.length ? parts[parts.length - 1] : path;
-}
-
-function titleFromUrl(url: string): string {
-  try {
-    const u = new URL(url);
-    return u.host || url;
-  } catch {
-    return url || "preview";
-  }
-}
+import {
+  MAX_PANES_PER_TAB,
+  basename,
+  titleFromUrl,
+  type AiDiffStatus,
+  type EditorTab,
+  type GitCommitFileDiffTab,
+  type GitDiffTab,
+  type GitHistoryTab,
+  type Tab,
+  type TabPatch,
+  type TerminalTab,
+} from "./tabTypes";
+import {
+  SAVE_DEBOUNCE_MS,
+  buildTabsFromSaved,
+  loadSavedTabState,
+  saveTabState,
+  shouldRestoreTabs,
+} from "./tabPersistence";
 
 export function useTabs(initial?: Partial<TerminalTab>) {
   const [tabs, setTabs] = useState<Tab[]>(() => {
@@ -305,6 +69,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
       },
     ];
   });
+
   const [activeId, setActiveId] = useState(() => {
     if (!initial?.cwd && shouldRestoreTabs()) {
       const saved = loadSavedTabState();
@@ -315,6 +80,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     }
     return 1;
   });
+
   const nextIdRef = useRef((() => {
     // Count how many IDs were consumed during init.
     if (!initial?.cwd && shouldRestoreTabs()) {
@@ -323,24 +89,20 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     }
     return 3;
   })());
-  const tabsRef = useRef(tabs);
 
+  const tabsRef = useRef(tabs);
   useEffect(() => {
     tabsRef.current = tabs;
   }, [tabs]);
 
-  // Persist tab state to localStorage (debounced). The restore-tabs flag is
-  // read synchronously at init time so new tabs are available immediately.
+  // Persist tab state to localStorage (debounced).
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!shouldRestoreTabs()) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
-      try {
-        const state = serializeTabState(tabs, activeId);
-        localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(state));
-      } catch {}
+      saveTabState(tabs, activeId);
     }, SAVE_DEBOUNCE_MS);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -798,11 +560,11 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     [tabs],
   );
 
-  /** Update a leaf's cwd; mirror to the tab's `cwd` when the leaf is active.
+  /**
+   * Update a leaf's cwd; mirror to the tab's `cwd` when the leaf is active.
    * Bails out without setTabs when nothing actually changed — shell integration
-   * re-emits OSC 7 on every prompt, including empty Enters, so this fires at
-   * keystroke rate. Always-setTabs there cascades a paneTree re-render across
-   * every open tab. */
+   * re-emits OSC 7 on every prompt, so this fires at keystroke rate.
+   */
   const setLeafCwd = useCallback((leafId: number, cwd: string) => {
     setTabs((curr) => {
       let changed = false;
@@ -993,3 +755,4 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     resetWorkspace,
   };
 }
+

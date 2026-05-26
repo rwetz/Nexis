@@ -110,6 +110,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 ## What's coming
 
 ### Near-term
+- [ ] Markdown raw/preview toggle — switch between rendered preview and raw source in the same tab without reopening the file; split-pane side-by-side mode as opt-in
+- [ ] Python environment awareness — auto-detect virtualenvs, conda environments, and pyproject.toml; surface the active env in the status bar with a quick-switch picker; seamless library resolution so AI tools and the editor see the same interpreter and installed packages as the terminal
 - [ ] Redesigned sidebar, source control panel, and git graph — visual refresh of the left panel and git history view
 - [ ] Redesigned Models settings tab — cleaner model picker with better scroll and layout
 - [ ] SSH — PTY sessions over SSH (auth + known_hosts first; SFTP and port forwarding later)
@@ -149,7 +151,9 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Notifications center — in-app log of agent actions, build results, and background task completions
 - [ ] Remote workspaces — open a remote directory over SSH with the editor, explorer, and terminal all pointed at the same host
 - [ ] Container-aware environments — detect and work inside Docker/devcontainer setups, surface container context in the status bar
-- [ ] Database query tab — run queries against local SQLite, PostgreSQL, and MySQL databases directly in Nexis
+- [ ] Database integration — full connection manager for SQLite, PostgreSQL, MySQL, and other databases; schema browser, table viewer, query editor with syntax highlighting, and AI-assisted query generation directly in Nexis
+- [ ] Hugging Face integration — BYOK with the HF Inference API for running hosted models; browse the Hub, pull model cards into context, and use HF-hosted models alongside existing providers without leaving Nexis
+- [ ] Jupyter notebook support — open, edit, and run `.ipynb` files with kernel management, inline cell output rendering (text, plots, tables), and AI-assisted cell generation and explanation
 - [ ] AI skill bundles — installable packages that add new agent tools and slash commands
 - [ ] Tab groups / named workspaces — group tabs by project and switch between workspace sets
 - [ ] Collaborative sessions — shared terminal and editor sessions for pair programming
