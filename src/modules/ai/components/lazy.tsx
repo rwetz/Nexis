@@ -24,6 +24,16 @@ const SelectionAskAiInner = lazy(() =>
   import("./SelectionAskAi").then((m) => ({ default: m.SelectionAskAi })),
 );
 
+const AiPanelModule = () => import("./AiPanel");
+
+const DockedAiPanelInner = lazy(() =>
+  AiPanelModule().then((m) => ({ default: m.DockedAiPanel })),
+);
+
+const FloatingAiPanelInner = lazy(() =>
+  AiPanelModule().then((m) => ({ default: m.FloatingAiPanel })),
+);
+
 export function AgentRunBridge(props: AgentRunBridgeProps) {
   return (
     <Suspense fallback={null}>
@@ -60,6 +70,22 @@ export function SelectionAskAi(props: SelectionAskAiProps) {
   return (
     <Suspense fallback={null}>
       <SelectionAskAiInner {...props} />
+    </Suspense>
+  );
+}
+
+export function DockedAiPanel() {
+  return (
+    <Suspense fallback={null}>
+      <DockedAiPanelInner />
+    </Suspense>
+  );
+}
+
+export function FloatingAiPanel() {
+  return (
+    <Suspense fallback={null}>
+      <FloatingAiPanelInner />
     </Suspense>
   );
 }

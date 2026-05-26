@@ -84,6 +84,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] File, shell, search, and plan tools with approval flow
 - [x] Workspace file picker
 - [x] Auto-compaction for long sessions — stable across long conversations; circular tool output and reasoning blocks handled safely
+- [x] Dockable AI panel — resizable bottom panel with full chat history and input; detach to a draggable floating window, snap back to dock by dropping near the bottom edge
 
 ### Web Preview
 - [x] Auto-detected local dev server preview
@@ -125,7 +126,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Background process manager — visibility into shell background jobs and dev servers running in Nexis
 - [x] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
 - [x] Run files — execute the current file or project directly from the editor with output captured in a terminal tab
-- [ ] Draggable/dockable panels — resizable bottom output panel to start, with drag-to-dock for floating and snapping panels
+- [x] Draggable/dockable panels — resizable bottom output panel, drag-to-float with snap-to-dock; full chat history + input in both modes
 - [x] Inline linting and diagnostics — real-time syntax error markers in the editor gutter via @codemirror/lint; Lezer-based parser errors surface for JS/TS, Python, Rust, Go, JSON, HTML, CSS, and Markdown
 
 ### Longer term
@@ -155,14 +156,11 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Hugging Face integration — BYOK with the HF Inference API for running hosted models; browse the Hub, pull model cards into context, and use HF-hosted models alongside existing providers without leaving Nexis
 - [ ] Jupyter notebook support — open, edit, and run `.ipynb` files with kernel management, inline cell output rendering (text, plots, tables), and AI-assisted cell generation and explanation
 - [ ] AI skill bundles — installable packages that add new agent tools and slash commands
-- [ ] Tab groups / named workspaces — group tabs by project and switch between workspace sets
-- [ ] Collaborative sessions — shared terminal and editor sessions for pair programming
 - [ ] Release tooling — automated CHANGELOG generation, version bumps, and tag flow
 - [ ] Bundle size work — tree-shaking, lazy language packs, targeted dependency replacements
 - [ ] Selective TS → Rust migration for measurable hot-path wins
 - [ ] Live file system sync — explorer and editor update in real time as files change on disk
 - [ ] Plugin API — stable internal API surface so features can be built and loaded as first-party plugins
-- [ ] Mobile companion — read-only terminal and AI chat view for iOS/Android
 
 ---
 

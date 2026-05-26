@@ -19,17 +19,23 @@ import {
 import { cn } from "@/lib/utils";
 import { dirname } from "@/lib/path";
 import { useSidebarState, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "./useSidebarState";
+import type { PanelImperativeHandle } from "react-resizable-panels";
 import { useDialogCoordinator } from "./useDialogCoordinator";
 import {
   AgentRunBridge,
-  AiInputBar,
   AiInputBarConnect,
   AiMiniWindow,
+  DockedAiPanel,
+  FloatingAiPanel,
   getAllKeys,
   hasAnyKey,
   SelectionAskAi,
   useChatStore,
 } from "@/modules/ai";
+import {
+  readAiPanelHeight,
+  saveAiPanelHeight,
+} from "@/modules/ai/lib/panelStorage";
 import { AiComposerProvider } from "@/modules/ai/lib/composer";
 import { redactSensitive } from "@/modules/ai/lib/redact";
 import { native } from "@/modules/ai/lib/native";
@@ -100,7 +106,7 @@ import {
 import { homeDir } from "@tauri-apps/api/path";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { SearchAddon } from "@xterm/addon-search";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 
@@ -263,6 +269,9 @@ export default function App() {
   const focusInput = useChatStore((s) => s.focusInput);
   const openPanel = useChatStore((s) => s.openPanel);
   const panelOpen = useChatStore((s) => s.panelOpen);
+  const panelMode = useChatStore((s) => s.panelMode);
+  const aiPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const aiPanelHeightRef = useRef(readAiPanelHeight(280));
   const apiKeys = useChatStore((s) => s.apiKeys);
   const setApiKeys = useChatStore((s) => s.setApiKeys);
   const setSelectedModelId = useChatStore((s) => s.setSelectedModelId);
@@ -502,6 +511,18 @@ export default function App() {
     }
     return null;
   }, [tabs, activeId]);
+
+  // Sync panel open/mode state with the ResizablePanel imperative API
+  useEffect(() => {
+    const panel = aiPanelRef.current;
+    if (!panel) return;
+    const shouldExpand = panelOpen && panelMode === "docked";
+    if (shouldExpand) {
+      panel.expand();
+    } else {
+      panel.collapse();
+    }
+  }, [panelOpen, panelMode]);
 
   const togglePanelAndFocus = useCallback(() => {
     if (!hasComposer) {
@@ -1229,33 +1250,62 @@ export default function App() {
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel id="workspace" defaultSize="78%" minSize="30%">
-                <div className="flex h-full min-h-0 flex-col">
-                  <div className="relative min-h-0 flex-1">
+                <ResizablePanelGroup orientation="vertical" className="h-full">
+                  <ResizablePanel id="workspace-main" minSize="20%">
                     {workspaceSurface}
-                  </div>
+                  </ResizablePanel>
 
-                  {keysLoaded ? (
-                    <motion.div
-                      data-ai-input-bar
-                      initial={false}
-                      animate={{
-                        height: panelOpen ? "auto" : 0,
-                        opacity: panelOpen ? 1 : 0,
-                      }}
-                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                      className="overflow-hidden"
-                      aria-hidden={!panelOpen}
-                    >
-                      {hasComposer ? (
-                        <AiInputBar />
-                      ) : (
-                        <AiInputBarConnect
-                          onAdd={() => void openSettingsWindow("models")}
-                        />
-                      )}
-                    </motion.div>
-                  ) : null}
-                </div>
+                  {keysLoaded && (
+                    <>
+                      <ResizableHandle
+                        withHandle
+                        className={cn(
+                          "transition-opacity",
+                          !(panelOpen && panelMode === "docked") &&
+                            "pointer-events-none opacity-0",
+                        )}
+                      />
+                      <ResizablePanel
+                        id="ai-panel"
+                        panelRef={aiPanelRef}
+                        collapsible
+                        collapsedSize={0}
+                        defaultSize={
+                          panelOpen && panelMode === "docked"
+                            ? `${aiPanelHeightRef.current}px`
+                            : "0px"
+                        }
+                        minSize="120px"
+                        maxSize="75%"
+                        onResize={(size) => {
+                          if (size.inPixels > 0) {
+                            aiPanelHeightRef.current = size.inPixels;
+                            saveAiPanelHeight(size.inPixels);
+                          }
+                        }}
+                      >
+                        {panelOpen && panelMode === "docked" && (
+                          <>
+                            {hasComposer ? (
+                              <DockedAiPanel />
+                            ) : (
+                              <AiInputBarConnect
+                                onAdd={() =>
+                                  void openSettingsWindow("models")
+                                }
+                              />
+                            )}
+                          </>
+                        )}
+                      </ResizablePanel>
+                    </>
+                  )}
+                </ResizablePanelGroup>
+
+                {/* Floating panel overlay — rendered when panelMode === "floating" */}
+                {keysLoaded && panelOpen && panelMode === "floating" && hasComposer && (
+                  <FloatingAiPanel />
+                )}
               </ResizablePanel>
             </ResizablePanelGroup>
           </main>

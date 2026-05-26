@@ -121,9 +121,16 @@ type StoreState = {
   toggleMini: () => void;
 
   panelOpen: boolean;
+  panelMode: "docked" | "floating";
+  floatPos: { x: number; y: number };
+  floatSize: { w: number; h: number };
   openPanel: () => void;
   closePanel: () => void;
   togglePanel: () => void;
+  floatPanel: () => void;
+  dockPanel: () => void;
+  setFloatPos: (pos: { x: number; y: number }) => void;
+  setFloatSize: (size: { w: number; h: number }) => void;
 
   focusSignal: number;
   pendingPrefill: string | null;
@@ -328,9 +335,17 @@ export const useChatStore = create<StoreState>((set, get) => ({
   toggleMini: () => set((s) => ({ mini: { open: !s.mini.open } })),
 
   panelOpen: false,
-  openPanel: () => set({ panelOpen: true }),
-  closePanel: () => set({ panelOpen: false }),
-  togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen })),
+  panelMode: "docked" as "docked" | "floating",
+  floatPos: { x: 0, y: 0 },
+  floatSize: { w: 480, h: 560 },
+  openPanel: () => set({ panelOpen: true, panelMode: "docked" }),
+  closePanel: () => set({ panelOpen: false, panelMode: "docked" }),
+  togglePanel: () =>
+    set((s) => ({ panelOpen: !s.panelOpen, panelMode: "docked" })),
+  floatPanel: () => set({ panelOpen: true, panelMode: "floating" }),
+  dockPanel: () => set({ panelMode: "docked" }),
+  setFloatPos: (pos) => set({ floatPos: pos }),
+  setFloatSize: (size) => set({ floatSize: size }),
 
   focusSignal: 0,
   pendingPrefill: null,
