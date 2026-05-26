@@ -1,12 +1,12 @@
 import { memo, type ReactElement } from "react";
 import type { GraphEdge, GraphRow } from "./lib/graph";
 
-export const LANE_WIDTH = 14;
+export const LANE_WIDTH = 16;
 export const RAIL_PADDING_X = 8;
 export const MAX_VISIBLE_LANES = 6;
 
-const STRAIGHT_WIDTH = 1.5;
-const CURVE_WIDTH = 1.5;
+const STRAIGHT_WIDTH = 1.8;
+const CURVE_WIDTH = 1.8;
 
 function laneX(lane: number): number {
   return RAIL_PADDING_X + lane * LANE_WIDTH;
@@ -123,20 +123,20 @@ export const GraphRail = memo(function GraphRail({
       <circle
         cx={nodeX}
         cy={midY}
-        r={active ? 4.6 : 3.6}
+        r={active ? 5 : 4}
         fill={row.nodeColor}
         stroke="var(--background)"
-        strokeWidth={1.5}
+        strokeWidth={1.8}
       />
       {active ? (
         <circle
           cx={nodeX}
           cy={midY}
-          r={6.5}
+          r={7}
           fill="none"
           stroke={row.nodeColor}
-          strokeOpacity={0.35}
-          strokeWidth={1.4}
+          strokeOpacity={0.3}
+          strokeWidth={1.6}
         />
       ) : null}
       {overflow ? (

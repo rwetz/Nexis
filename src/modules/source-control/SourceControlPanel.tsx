@@ -72,14 +72,22 @@ const SOURCE_CONTROL_TOOLTIP_CLASS =
 
 const ROW_HEIGHTS = {
   banner: 32,
-  header: 30,
+  "section-header": 28,
   entry: 30,
 } as const;
 
+type SectionId = "staged" | "unstaged";
+
 type RowDescriptor =
   | { kind: "banner-diverged"; key: string }
-  | { kind: "list-header"; key: string; count: number }
-  | { kind: "entry"; key: string; entry: SourceControlFileEntry };
+  | {
+      kind: "section-header";
+      key: string;
+      sectionId: SectionId;
+      label: string;
+      count: number;
+    }
+  | { kind: "entry"; key: string; entry: SourceControlFileEntry; sectionId: SectionId };
 
 function basename(path: string): string {
   const parts = path.split(/[\\/]/).filter(Boolean);
@@ -174,7 +182,6 @@ export const SourceControlPanel = memo(function SourceControlPanel({
     ? "Wait for the current Git action to finish."
     : pushHint;
   const stagedCount = scm.stagedEntries.length;
-  const changedCount = scm.fileEntries.length;
   const pushStatusLabel = upstreamBadgeLabel(scm.status?.upstream);
   const hasUpstream = !!scm.status?.upstream;
   const isDiverged =
@@ -245,18 +252,44 @@ export const SourceControlPanel = memo(function SourceControlPanel({
     if (isDiverged) {
       result.push({ kind: "banner-diverged", key: "banner-diverged" });
     }
-    if (changedCount > 0) {
+    const stagedFiles = scm.fileEntries.filter((e) => e.staged);
+    const unstagedFiles = scm.fileEntries.filter((e) => e.unstaged);
+    if (stagedFiles.length > 0) {
       result.push({
-        kind: "list-header",
-        key: "list-header",
-        count: changedCount,
+        kind: "section-header",
+        key: "section-staged",
+        sectionId: "staged",
+        label: "Staged Changes",
+        count: stagedFiles.length,
       });
-      for (const entry of scm.fileEntries) {
-        result.push({ kind: "entry", key: entry.key, entry });
+      for (const entry of stagedFiles) {
+        result.push({
+          kind: "entry",
+          key: `s:${entry.key}`,
+          entry,
+          sectionId: "staged",
+        });
+      }
+    }
+    if (unstagedFiles.length > 0) {
+      result.push({
+        kind: "section-header",
+        key: "section-unstaged",
+        sectionId: "unstaged",
+        label: "Changes",
+        count: unstagedFiles.length,
+      });
+      for (const entry of unstagedFiles) {
+        result.push({
+          kind: "entry",
+          key: `u:${entry.key}`,
+          entry,
+          sectionId: "unstaged",
+        });
       }
     }
     return result;
-  }, [changedCount, isDiverged, scm.fileEntries]);
+  }, [isDiverged, scm.fileEntries]);
 
   const rowKeyToIndex = useMemo(() => {
     const map = new Map<string, number>();
@@ -286,8 +319,8 @@ export const SourceControlPanel = memo(function SourceControlPanel({
       switch (row.kind) {
         case "banner-diverged":
           return ROW_HEIGHTS.banner;
-        case "list-header":
-          return ROW_HEIGHTS.header;
+        case "section-header":
+          return ROW_HEIGHTS["section-header"];
         case "entry":
           return ROW_HEIGHTS.entry;
       }
@@ -841,8 +874,8 @@ const RowRenderer = memo(function RowRenderer(props: RowRendererProps) {
   switch (row.kind) {
     case "banner-diverged":
       return <DivergedBanner />;
-    case "list-header":
-      return <ListHeader {...props} row={row} />;
+    case "section-header":
+      return <SectionHeader row={row} />;
     case "entry":
       return <EntryRow {...props} row={row} />;
   }
@@ -867,32 +900,30 @@ function DivergedBanner() {
   );
 }
 
-function ListHeader({
+function SectionHeader({
   row,
-  actionBusy,
-  headerCheckState,
-  onToggleAll,
-}: RowRendererProps & {
-  row: Extract<RowDescriptor, { kind: "list-header" }>;
+}: {
+  row: Extract<RowDescriptor, { kind: "section-header" }>;
 }) {
+  const isStaged = row.sectionId === "staged";
   return (
-    <div className="flex h-7 items-center gap-2 px-3">
-      <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/85">
-        Changes
+    <div
+      className={cn(
+        "flex h-7 items-center gap-2 px-3",
+        isStaged ? "mt-0" : "border-t border-border/30 pt-px",
+      )}
+    >
+      <span
+        className={cn(
+          "text-[9.5px] font-semibold uppercase tracking-[0.18em]",
+          isStaged ? "text-emerald-600/80 dark:text-emerald-400/70" : "text-muted-foreground/75",
+        )}
+      >
+        {row.label}
       </span>
-      <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-border/60 px-1 text-[9.5px] font-semibold tabular-nums text-muted-foreground">
+      <span className="inline-flex h-[14px] min-w-[14px] items-center justify-center rounded-full border border-border/55 px-1 text-[9px] font-semibold tabular-nums text-muted-foreground/80">
         {row.count}
       </span>
-      <label className="ml-auto flex shrink-0 cursor-pointer select-none items-center gap-1.5 text-[10.5px] font-medium text-muted-foreground hover:text-foreground">
-        <span>All</span>
-        <Checkbox
-          aria-label="Stage all changes"
-          checked={checkboxValue(headerCheckState)}
-          disabled={actionBusy !== null}
-          onCheckedChange={() => void onToggleAll()}
-          className="size-3.5"
-        />
-      </label>
     </div>
   );
 }

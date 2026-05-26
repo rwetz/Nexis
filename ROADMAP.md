@@ -113,8 +113,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 ### Near-term
 - [ ] Markdown raw/preview toggle — switch between rendered preview and raw source in the same tab without reopening the file; split-pane side-by-side mode as opt-in
 - [ ] Python environment awareness — auto-detect virtualenvs, conda environments, and pyproject.toml; surface the active env in the status bar with a quick-switch picker; seamless library resolution so AI tools and the editor see the same interpreter and installed packages as the terminal
-- [ ] Redesigned sidebar, source control panel, and git graph — visual refresh of the left panel and git history view
-- [ ] Redesigned Models settings tab — cleaner model picker with better scroll and layout
+- [x] Redesigned sidebar, source control panel, and git graph — visual refresh of the left panel and git history view
+- [x] Redesigned Models settings tab — cleaner model picker with better scroll and layout
 - [ ] SSH — PTY sessions over SSH (auth + known_hosts first; SFTP and port forwarding later)
 - [ ] Inline terminal suggestions — history-based to start, AI-powered as opt-in
 - [ ] Smarter AI autocomplete — project-aware context, lower latency

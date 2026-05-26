@@ -1245,6 +1245,7 @@ export default function App() {
                     activeView={sidebarView}
                     onSelectView={persistSidebarView}
                     changedCount={sourceControl.changedCount}
+                    onOpenHistory={openGitGraphFromContext}
                   />
                 </div>
               </ResizablePanel>

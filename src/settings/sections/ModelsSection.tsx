@@ -229,7 +229,14 @@ export function ModelsSection() {
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <Label>Providers</Label>
+          <div className="flex items-center gap-2">
+            <Label>Providers</Label>
+            {visibleProviders.length > 0 ? (
+              <span className="inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full border border-border/55 px-1 text-[9px] font-semibold tabular-nums text-muted-foreground/80">
+                {visibleProviders.length}
+              </span>
+            ) : null}
+          </div>
           <AddProviderMenu
             providers={addableProviders}
             onAdd={addProvider}
@@ -237,41 +244,75 @@ export function ModelsSection() {
         </div>
 
         {visibleProviders.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border/60 bg-card/40 px-4 py-8 text-center">
-            <p className="text-[12px] text-muted-foreground">
-              No providers connected yet.
+          <div className="rounded-lg border border-dashed border-border/55 bg-card/30 px-4 py-10 text-center">
+            <div className="mx-auto mb-2 flex size-8 items-center justify-center rounded-full border border-border/50 text-muted-foreground/50">
+              <HugeiconsIcon icon={Add01Icon} size={15} strokeWidth={1.75} />
+            </div>
+            <p className="text-[12px] font-medium text-foreground/70">
+              No providers connected yet
             </p>
-            <p className="mt-0.5 text-[10.5px] text-muted-foreground/70">
-              Click “Add provider” to connect a cloud or local model source.
+            <p className="mt-1 text-[10.5px] leading-relaxed text-muted-foreground/65">
+              Click &quot;Add provider&quot; to connect a cloud or local model source.
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            {visibleProviders.map((p) =>
-              isLocalProvider(p.id) ? (
-                <LocalProviderCard
-                  key={p.id}
-                  provider={p}
-                  configured={configuredIds.has(p.id)}
-                  config={localConfig(p.id)!}
-                  meta={LOCAL_META[p.id]!}
-                  compatKey={p.id === "openai-compatible" ? keys[p.id] : undefined}
-                  onSaveKey={(v) => onSaveKey(p.id, v)}
-                  onClearKey={() => onClearKey(p.id)}
-                  onRemove={() => removeProvider(p.id)}
-                />
-              ) : (
-                <ProviderKeyCard
-                  key={p.id}
-                  provider={p}
-                  currentKey={keys[p.id]}
-                  onSave={(v) => onSaveKey(p.id, v)}
-                  onClear={() => onClearKey(p.id)}
-                  onRemove={() => removeProvider(p.id)}
-                />
-              ),
-            )}
-          </div>
+          <>
+            {(() => {
+              const cloudProviders = visibleProviders.filter((p) => !isLocalProvider(p.id));
+              const localProviders = visibleProviders.filter((p) => isLocalProvider(p.id));
+              return (
+                <>
+                  {cloudProviders.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      {cloudProviders.length > 0 && localProviders.length > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                            Cloud
+                          </span>
+                          <div className="h-px flex-1 bg-border/35" />
+                        </div>
+                      ) : null}
+                      {cloudProviders.map((p) => (
+                        <ProviderKeyCard
+                          key={p.id}
+                          provider={p}
+                          currentKey={keys[p.id]}
+                          onSave={(v) => onSaveKey(p.id, v)}
+                          onClear={() => onClearKey(p.id)}
+                          onRemove={() => removeProvider(p.id)}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                  {localProviders.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      {cloudProviders.length > 0 && localProviders.length > 0 ? (
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                            Local & custom
+                          </span>
+                          <div className="h-px flex-1 bg-border/35" />
+                        </div>
+                      ) : null}
+                      {localProviders.map((p) => (
+                        <LocalProviderCard
+                          key={p.id}
+                          provider={p}
+                          configured={configuredIds.has(p.id)}
+                          config={localConfig(p.id)!}
+                          meta={LOCAL_META[p.id]!}
+                          compatKey={p.id === "openai-compatible" ? keys[p.id] : undefined}
+                          onSaveKey={(v) => onSaveKey(p.id, v)}
+                          onClearKey={() => onClearKey(p.id)}
+                          onRemove={() => removeProvider(p.id)}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                </>
+              );
+            })()}
+          </>
         )}
       </div>
     </div>
@@ -366,15 +407,26 @@ function DefaultsBlock({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <Label>Defaults</Label>
-      <div className="flex flex-col gap-2.5 rounded-lg border border-border/60 bg-card/60 px-3 py-2.5">
-        <FieldRow label="Chat model">
-          <DefaultModelPicker
-            defaultModel={defaultModel}
-            configuredIds={configuredIds}
-          />
-        </FieldRow>
-        <AutocompleteRow keys={keys} configuredIds={configuredIds} />
+      <div className="flex items-center gap-2">
+        <Label>Defaults</Label>
+        {configuredIds.size === 0 ? (
+          <span className="text-[10px] text-muted-foreground/60">
+            — add a provider below first
+          </span>
+        ) : null}
+      </div>
+      <div className="flex flex-col gap-0 divide-y divide-border/40 rounded-lg border border-border/60 bg-card/60 overflow-hidden">
+        <div className="px-3 py-2.5">
+          <FieldRow label="Chat model">
+            <DefaultModelPicker
+              defaultModel={defaultModel}
+              configuredIds={configuredIds}
+            />
+          </FieldRow>
+        </div>
+        <div className="px-3 py-2.5">
+          <AutocompleteRow keys={keys} configuredIds={configuredIds} />
+        </div>
       </div>
     </div>
   );
