@@ -133,7 +133,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Debugger and debugging tools — step-through debugging, breakpoints, variable inspection, and call stack viewer for common runtimes (Node.js, Python, Rust via LLDB)
 - [ ] Refactoring engine — rename symbols, extract functions, and structured code edits across a project
 - [ ] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with output captured in a dedicated panel and errors linked to source lines
-- [ ] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
+- [x] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
 - [x] Snippets library — user-defined code snippets with tab-stop placeholders, scoped by language
 - [x] Find and replace across project — workspace-wide search and replace with regex, preview, and per-file confirmation
 - [ ] Minimap — optional code minimap in the editor for navigating large files
@@ -154,7 +154,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Release tooling — automated CHANGELOG generation, version bumps, and tag flow
 - [ ] Bundle size work — tree-shaking, lazy language packs, targeted dependency replacements
 - [ ] Selective TS → Rust migration for measurable hot-path wins
-- [ ] Live file system sync — explorer and editor update in real time as files change on disk
+- [x] Live file system sync — explorer and editor update in real time as files change on disk
 - [ ] Plugin API — stable internal API surface so features can be built and loaded as first-party plugins
 
 ---

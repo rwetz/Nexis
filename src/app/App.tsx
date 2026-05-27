@@ -80,6 +80,7 @@ import { SidebarRail } from "@/modules/sidebar";
 import { BackgroundProcessPanel, useBackgroundProcesses } from "@/modules/processes";
 import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
 import { SnippetsPanel } from "@/modules/snippets";
+import { TestRunnerPanel } from "@/modules/testrunner";
 import {
   SourceControlPanel,
   useSourceControl,
@@ -1292,6 +1293,8 @@ export default function App() {
                       <SymbolOutlinePanel filePath={tabs.find(t => t.id === activeId && t.kind === "editor") ? (tabs.find(t => t.id === activeId) as { path: string }).path : null} />
                     ) : sidebarView === "snippets" ? (
                       <SnippetsPanel />
+                    ) : sidebarView === "tests" ? (
+                      <TestRunnerPanel workspaceRoot={explorerRoot} />
                     ) : (
                       <SourceControlPanel
                         open

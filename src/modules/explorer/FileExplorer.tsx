@@ -233,6 +233,46 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
       },
     });
 
+    // Live sync: poll for file changes every 3 seconds when the window is focused.
+    const treeRefreshRef = useRef(tree.refresh);
+    treeRefreshRef.current = tree.refresh;
+    useEffect(() => {
+      if (!rootPath) return;
+      const INTERVAL_MS = 3000;
+      let intervalId: ReturnType<typeof setInterval> | null = null;
+
+      const start = () => {
+        if (intervalId !== null) return;
+        intervalId = setInterval(() => {
+          if (document.visibilityState === "visible") {
+            treeRefreshRef.current(rootPath);
+          }
+        }, INTERVAL_MS);
+      };
+      const stop = () => {
+        if (intervalId !== null) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      };
+
+      if (document.hasFocus()) start();
+      window.addEventListener("focus", start);
+      window.addEventListener("blur", stop);
+      const onVisChange = () => {
+        if (document.visibilityState === "visible") start();
+        else stop();
+      };
+      document.addEventListener("visibilitychange", onVisChange);
+
+      return () => {
+        stop();
+        window.removeEventListener("focus", start);
+        window.removeEventListener("blur", stop);
+        document.removeEventListener("visibilitychange", onVisChange);
+      };
+    }, [rootPath]);
+
     if (!rootPath) {
       const folderColor = getFolderColor(themeId, resolvedMode);
       return (

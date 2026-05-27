@@ -5,6 +5,7 @@ import {
   FolderTreeIcon,
   ListViewIcon,
   TaskAdd01Icon,
+  TestTube01Icon,
   Time01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -50,6 +51,7 @@ export function SidebarRail({
     },
     { id: "outline", label: "Outline", icon: ListViewIcon },
     { id: "snippets", label: "Snippets", icon: FileCodeIcon },
+    { id: "tests", label: "Tests", icon: TestTube01Icon },
   ];
 
   return (

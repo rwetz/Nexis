@@ -2,6 +2,14 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.8] — 2026-05-27
+
+### Added
+- **Live file system sync** — the file explorer now auto-refreshes every 3 seconds when the app is focused and the window is visible. Files created, renamed, or deleted by terminal commands or external tools appear immediately without requiring a manual refresh click.
+- **Test runner panel** — new **Tests** tab in the sidebar. Auto-detects the test framework from your workspace (Vitest, Jest, Cargo Test, pytest, Go Test, Gradle). Run tests with one click; live output streams into the panel as the suite runs. Stop the run at any time. Test results show pass/fail status with a summary line parsed from the test output.
+
+---
+
 ## [0.9.7] — 2026-05-27
 
 ### Added
