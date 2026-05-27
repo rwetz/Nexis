@@ -115,7 +115,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Python environment awareness — auto-detect virtualenvs, conda environments, and pyproject.toml; surface the active env in the status bar with a quick-switch picker; seamless library resolution so AI tools and the editor see the same interpreter and installed packages as the terminal
 - [x] Redesigned sidebar, source control panel, and git graph — visual refresh of the left panel and git history view
 - [x] Redesigned Models settings tab — cleaner model picker with better scroll and layout
-- [ ] SSH — PTY sessions over SSH (auth + known_hosts first; SFTP and port forwarding later)
+- [x] SSH — PTY sessions over SSH (auth + known_hosts first; SFTP and port forwarding later)
 - [x] Inline terminal suggestions — history-based to start, AI-powered as opt-in
 - [x] Smarter AI autocomplete — project-aware context, lower latency
 - [x] Drag and drop into terminal — files as quoted paths, files as AI context attachments
@@ -136,7 +136,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
 - [x] Snippets library — user-defined code snippets with tab-stop placeholders, scoped by language
 - [x] Find and replace across project — workspace-wide search and replace with regex, preview, and per-file confirmation
-- [ ] Minimap — optional code minimap in the editor for navigating large files
+- [x] Minimap — optional code minimap in the editor for navigating large files
 - [x] Breadcrumb navigation — file path + symbol breadcrumbs at the top of the editor pane
 - [x] Symbol outline panel — file-level function/class/variable tree in the sidebar
 - [x] Code folding improvements — fold by indent, by region comments, and by language constructs

@@ -83,6 +83,7 @@ import { SnippetsPanel } from "@/modules/snippets";
 import { TestRunnerPanel } from "@/modules/testrunner";
 import { DatabasePanel } from "@/modules/database/DatabasePanel";
 import { BuildPanel } from "@/modules/build/BuildPanel";
+import { SshPanel } from "@/modules/ssh";
 import {
   SourceControlPanel,
   useSourceControl,
@@ -700,6 +701,22 @@ export default function App() {
     [newTab],
   );
 
+  const handleOpenSshSession = useCallback(
+    (command: string, label: string) => {
+      const tabId = newTab();
+      setTimeout(() => {
+        const tab = tabsRef.current.find((x) => x.id === tabId);
+        if (!tab || tab.kind !== "terminal") return;
+        const t = terminalRefs.current.get(tab.activeLeafId);
+        if (!t) return;
+        t.write(`${command}\r`);
+        t.focus();
+      }, 500);
+      void label;
+    },
+    [newTab],
+  );
+
   const handleOpenFile = useCallback(
     (path: string, pin?: boolean) => {
       // Explorer defaults to preview (pin=false); explicit actions like
@@ -1301,6 +1318,8 @@ export default function App() {
                       <DatabasePanel />
                     ) : sidebarView === "build" ? (
                       <BuildPanel workspaceRoot={explorerRoot} />
+                    ) : sidebarView === "ssh" ? (
+                      <SshPanel onConnect={handleOpenSshSession} />
                     ) : (
                       <SourceControlPanel
                         open

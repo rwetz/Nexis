@@ -2,6 +2,14 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.13] — 2026-05-27
+
+### Added
+- **SSH connection manager** — a dedicated SSH panel in the sidebar lets you save, edit, and delete SSH connections (host, port, user, identity file). Click **Connect** on any saved connection to open it in a new terminal tab with the correct `ssh` command pre-entered and executed. Connections persist across sessions via the Tauri store.
+- **Code minimap** — the editor now shows a 52 px minimap panel alongside the code. Each line is rendered as a thin strip colored by content type (comments vs. code). Click or drag anywhere on the minimap to jump to that position; a viewport indicator shows your current scroll location.
+
+---
+
 ## [0.9.12] — 2026-05-27
 
 ### Added

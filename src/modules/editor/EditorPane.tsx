@@ -21,7 +21,6 @@ import {
 import { RenameDialog } from "./RenameDialog";
 import { Minimap } from "./Minimap";
 import { useChatStore } from "@/modules/ai/store/chatStore";
-import type { EditorView } from "@codemirror/view";
 import { Prec } from "@codemirror/state";
 import { vim } from "@replit/codemirror-vim";
 import {

@@ -6,6 +6,7 @@ import {
   FolderTreeIcon,
   ListViewIcon,
   TaskAdd01Icon,
+  TerminalIcon,
   TestTube01Icon,
   Time01Icon,
   Wrench01Icon,
@@ -56,6 +57,7 @@ export function SidebarRail({
     { id: "tests", label: "Tests", icon: TestTube01Icon },
     { id: "database", label: "Database", icon: Database01Icon },
     { id: "build", label: "Build", icon: Wrench01Icon },
+    { id: "ssh", label: "SSH", icon: TerminalIcon },
   ];
 
   return (
