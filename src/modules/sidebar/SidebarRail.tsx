@@ -8,6 +8,7 @@ import {
   TaskAdd01Icon,
   TestTube01Icon,
   Time01Icon,
+  Wrench01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { SidebarViewId } from "./types";
@@ -54,6 +55,7 @@ export function SidebarRail({
     { id: "snippets", label: "Snippets", icon: FileCodeIcon },
     { id: "tests", label: "Tests", icon: TestTube01Icon },
     { id: "database", label: "Database", icon: Database01Icon },
+    { id: "build", label: "Build", icon: Wrench01Icon },
   ];
 
   return (

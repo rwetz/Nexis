@@ -132,7 +132,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Full LSP support — go-to-definition, hover docs, diagnostics, and completion powered by language servers
 - [ ] Debugger and debugging tools — step-through debugging, breakpoints, variable inspection, and call stack viewer for common runtimes (Node.js, Python, Rust via LLDB)
 - [ ] Refactoring engine — rename symbols, extract functions, and structured code edits across a project
-- [ ] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with output captured in a dedicated panel and errors linked to source lines
+- [x] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with output captured in a dedicated panel and errors linked to source lines
 - [x] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
 - [x] Snippets library — user-defined code snippets with tab-stop placeholders, scoped by language
 - [x] Find and replace across project — workspace-wide search and replace with regex, preview, and per-file confirmation

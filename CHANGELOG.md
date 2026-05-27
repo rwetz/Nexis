@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.10] — 2026-05-27
+
+### Added
+- **Integrated build system** — new **Build** tab in the sidebar. Auto-detects your build tool from the workspace root (pnpm, Cargo, Make, Gradle, Maven, CMake, Go, Python). Enter any custom command or use the detected one. Click **Build** (or press Enter) to run; live output streams into the panel. Stop the build at any time. Success/failure status is parsed from the output and shown with a summary line.
+
+---
+
 ## [0.9.9] — 2026-05-27
 
 ### Added

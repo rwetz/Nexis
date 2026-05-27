@@ -82,6 +82,7 @@ import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
 import { SnippetsPanel } from "@/modules/snippets";
 import { TestRunnerPanel } from "@/modules/testrunner";
 import { DatabasePanel } from "@/modules/database/DatabasePanel";
+import { BuildPanel } from "@/modules/build/BuildPanel";
 import {
   SourceControlPanel,
   useSourceControl,
@@ -1298,6 +1299,8 @@ export default function App() {
                       <TestRunnerPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "database" ? (
                       <DatabasePanel />
+                    ) : sidebarView === "build" ? (
+                      <BuildPanel workspaceRoot={explorerRoot} />
                     ) : (
                       <SourceControlPanel
                         open
