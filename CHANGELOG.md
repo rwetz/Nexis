@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.7] — 2026-05-27
+
+### Added
+- **AI PR description generation** — **Generate PR Description** button in the Source Control panel opens a dialog that reads the last 20 commits and uses AI to draft a pull request title and Markdown body. The title and body are independently editable before copying. Powered by the same model selected for the AI panel.
+
+---
+
 ## [0.9.6] — 2026-05-27
 
 ### Added

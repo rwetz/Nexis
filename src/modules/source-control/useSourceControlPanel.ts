@@ -108,6 +108,7 @@ type SourceControlPanelState = {
   generateCommitMessage: () => Promise<void>;
   commit: () => Promise<void>;
   push: () => Promise<void>;
+  selectedModelId: string;
 };
 
 function normalizeError(error: unknown): string {
@@ -1016,5 +1017,6 @@ export function useSourceControlPanel(
     generateCommitMessage,
     commit,
     push,
+    selectedModelId,
   };
 }

@@ -55,6 +55,7 @@ import {
   type CheckState,
   type SourceControlFileEntry,
 } from "./useSourceControlPanel";
+import { PrDescriptionDialog } from "./PrDescriptionDialog";
 
 type Props = {
   open: boolean;
@@ -146,6 +147,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
   const { themeId, resolvedMode } = useTheme();
   const refreshAnimationRef = useRef<number | null>(null);
   const [refreshAnimating, setRefreshAnimating] = useState(false);
+  const [prDialogOpen, setPrDialogOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [focusedRowKey, setFocusedRowKey] = useState<string | null>(null);
@@ -729,7 +731,26 @@ export const SourceControlPanel = memo(function SourceControlPanel({
               </div>
 
               <CommitFeedback feedback={footerFeedback} />
+              {scm.repo && (
+                <button
+                  type="button"
+                  onClick={() => setPrDialogOpen(true)}
+                  className="flex w-full items-center justify-center gap-1.5 rounded border border-border/50 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                >
+                  <HugeiconsIcon icon={AiContentGenerator02Icon} size={12} strokeWidth={1.75} />
+                  Generate PR Description
+                </button>
+              )}
             </div>
+
+            {scm.repo && (
+              <PrDescriptionDialog
+                open={prDialogOpen}
+                onClose={() => setPrDialogOpen(false)}
+                repoRoot={scm.repo.repoRoot}
+                selectedModelId={scm.selectedModelId}
+              />
+            )}
 
             {scm.allClean ? (
               <CleanTreeHint repoLabel={repoLabel} />
