@@ -5,6 +5,7 @@ import {
 } from "@/components/ui/resizable";
 import { QuickFilePicker } from "@/components/QuickFilePicker";
 import { WorkspaceSearch } from "@/components/WorkspaceSearch";
+import { CommandPalette, type CommandDef } from "@/components/CommandPalette";
 import { ShellHistoryOverlay } from "@/components/ShellHistoryOverlay";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -190,6 +191,8 @@ export default function App() {
     setHistoryLeafId,
     workspaceSearchOpen,
     setWorkspaceSearchOpen,
+    commandPaletteOpen,
+    setCommandPaletteOpen,
   } = useDialogCoordinator();
 
   const [home, setHome] = useState<string | null>(null);
@@ -866,6 +869,27 @@ export default function App() {
     [activeId, splitActivePane],
   );
 
+  const paletteCommands = useMemo<CommandDef[]>(() => [
+    { id: "tab.new",             label: "New terminal tab",         category: "Tabs",    action: () => newTab() },
+    { id: "tab.close",           label: "Close current tab",        category: "Tabs",    action: () => closeTab(activeId) },
+    { id: "files.quickOpen",     label: "Quick file open",          category: "Files",   action: () => setQuickFilePickerOpen(true), keywords: ["cmd+p", "go to file"] },
+    { id: "search.workspace",    label: "Find & replace in project",category: "Search",  action: () => setWorkspaceSearchOpen(true), keywords: ["grep", "search"] },
+    { id: "sidebar.toggle",      label: "Toggle sidebar",           category: "View",    action: toggleSidebar },
+    { id: "settings.open",       label: "Open settings",            category: "General", action: () => void openSettingsWindow() },
+    { id: "settings.themes",     label: "Open theme settings",      category: "General", action: () => void openSettingsWindow("themes") },
+    { id: "settings.shortcuts",  label: "Open keyboard shortcuts",  category: "General", action: () => setShortcutsOpen(true) },
+    { id: "window.new",          label: "New window",               category: "General", action: () => void openNewWindow() },
+    { id: "ai.toggle",           label: "Toggle AI panel",          category: "AI",      action: togglePanelAndFocus },
+    { id: "view.zoomIn",         label: "Zoom in",                  category: "View",    action: zoomIn },
+    { id: "view.zoomOut",        label: "Zoom out",                 category: "View",    action: zoomOut },
+    { id: "view.zoomReset",      label: "Reset zoom",               category: "View",    action: zoomReset },
+    { id: "pane.splitRight",     label: "Split pane right",         category: "Panes",   action: () => splitActivePaneInActiveTab("row") },
+    { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
+    { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
+    { id: "sidebar.sc",          label: "Show source control",      category: "View",    action: () => persistSidebarView("source-control") },
+    { id: "sidebar.processes",   label: "Show background processes",category: "View",    action: () => persistSidebarView("processes") },
+  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView]);
+
   const handleCloseTabOrPane = useCallback(() => {
     const t = tabsRef.current.find((x) => x.id === activeId);
     if (t?.kind === "terminal" && leafIds(t.paneTree).length > 1) {
@@ -895,6 +919,7 @@ export default function App() {
       "ai.askSelection": askFromSelection,
       "files.quickOpen": () => setQuickFilePickerOpen((v) => !v),
       "search.workspace": () => setWorkspaceSearchOpen((v) => !v),
+      "commands.palette": () => setCommandPaletteOpen((v) => !v),
       "shortcuts.open": () => setShortcutsOpen((v) => !v),
       "window.new": () => void openNewWindow(),
       "settings.open": () => void openSettingsWindow(),
@@ -1388,6 +1413,13 @@ export default function App() {
               root={explorerRoot}
               onOpenFile={(path) => { openFileTab(path); }}
               onClose={() => setWorkspaceSearchOpen(false)}
+            />
+          )}
+
+          {commandPaletteOpen && (
+            <CommandPalette
+              commands={paletteCommands}
+              onClose={() => setCommandPaletteOpen(false)}
             />
           )}
 

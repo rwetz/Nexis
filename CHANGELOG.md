@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.4] — 2026-05-27
+
+### Added
+- **Command palette** — `Ctrl+Shift+P` (`Cmd+Shift+P`) opens a fuzzy-searchable overlay of every app action: open settings, toggle panels, new tab, split panes, change sidebar view, toggle the AI panel, zoom controls, and more. Built on `cmdk` for instant keyboard-driven filtering. Commands are grouped by category and navigable with arrow keys; Enter executes, Escape dismisses.
+
+---
+
 ## [0.9.3] — 2026-05-27
 
 ### Added

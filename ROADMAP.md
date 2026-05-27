@@ -144,7 +144,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] AI PR description generation — draft pull request titles and bodies from branch diff
 - [ ] AI-powered rename — rename a symbol across the project with AI verifying correctness
 - [ ] Keybinding editor — visual UI for remapping any shortcut, with import/export
-- [ ] Command palette — fuzzy-searchable palette for every action in the app (Ctrl+Shift+P)
+- [x] Command palette — fuzzy-searchable palette for every action in the app (Ctrl+Shift+P)
 - [x] Notifications center — in-app log of agent actions, build results, and background task completions
 - [ ] Container-aware environments — detect and work inside Docker/devcontainer setups, surface container context in the status bar
 - [ ] Database integration — full connection manager for SQLite, PostgreSQL, MySQL, and other databases; schema browser, table viewer, query editor with syntax highlighting, and AI-assisted query generation directly in Nexis

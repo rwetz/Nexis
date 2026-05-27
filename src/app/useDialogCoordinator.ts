@@ -14,6 +14,7 @@ export function useDialogCoordinator() {
   const [quickFilePickerOpen, setQuickFilePickerOpen] = useState(false);
   const [historyLeafId, setHistoryLeafId] = useState<number | null>(null);
   const [workspaceSearchOpen, setWorkspaceSearchOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // Listen for Ctrl+R intercepts emitted by the terminal renderer pool.
   useEffect(() => {
@@ -36,5 +37,7 @@ export function useDialogCoordinator() {
     setHistoryLeafId,
     workspaceSearchOpen,
     setWorkspaceSearchOpen,
+    commandPaletteOpen,
+    setCommandPaletteOpen,
   };
 }
