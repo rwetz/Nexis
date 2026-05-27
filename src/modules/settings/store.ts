@@ -137,6 +137,7 @@ export type Preferences = {
   formatOnSave: boolean;
   terminalSuggestionsEnabled: boolean;
   toolApprovalPolicies: Record<string, ToolApprovalPolicy>;
+  wordWrap: boolean;
 };
 
 const STORE_PATH = "nexis-settings.json";
@@ -183,6 +184,7 @@ const KEY_FORMATTERS = "formatters";
 const KEY_FORMAT_ON_SAVE = "formatOnSave";
 const KEY_TERMINAL_SUGGESTIONS = "terminalSuggestionsEnabled";
 const KEY_TOOL_APPROVAL_POLICIES = "toolApprovalPolicies";
+const KEY_WORD_WRAP = "wordWrap";
 
 export const TERMINAL_FONT_SIZE_DEFAULT = 14;
 export const TERMINAL_FONT_SIZE_MIN = 8;
@@ -242,6 +244,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   formatOnSave: false,
   terminalSuggestionsEnabled: true,
   toolApprovalPolicies: {},
+  wordWrap: false,
 };
 
 function mergeFormatters(
@@ -380,6 +383,7 @@ export async function loadPreferences(): Promise<Preferences> {
     toolApprovalPolicies:
       get<Record<string, ToolApprovalPolicy>>(KEY_TOOL_APPROVAL_POLICIES) ??
       DEFAULT_PREFERENCES.toolApprovalPolicies,
+    wordWrap: get<boolean>(KEY_WORD_WRAP) ?? DEFAULT_PREFERENCES.wordWrap,
   };
 }
 
@@ -599,6 +603,10 @@ export async function setFormatOnSave(value: boolean): Promise<void> {
   await writePref(KEY_FORMAT_ON_SAVE, value);
 }
 
+export async function setWordWrap(value: boolean): Promise<void> {
+  await writePref(KEY_WORD_WRAP, value);
+}
+
 export type PrefKey = keyof Preferences;
 
 /** Subscribe to changes from any window (settings → main). */
@@ -648,6 +656,7 @@ export async function onPreferencesChange(
     [KEY_TOOL_APPROVAL_POLICIES]: "toolApprovalPolicies",
     [KEY_FORMATTERS]: "formatters",
     [KEY_FORMAT_ON_SAVE]: "formatOnSave",
+    [KEY_WORD_WRAP]: "wordWrap",
   };
   // Same-process writes still fire onChange immediately; cross-window writes
   // arrive via the Tauri event emitted by writePref().

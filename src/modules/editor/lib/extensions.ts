@@ -1,5 +1,5 @@
 import { detectMonoFontFamily } from "@/lib/fonts";
-import { indentUnit } from "@codemirror/language";
+import { foldService, indentUnit } from "@codemirror/language";
 import { lintGutter } from "@codemirror/lint";
 import { search } from "@codemirror/search";
 import { Compartment, EditorState, type Extension } from "@codemirror/state";
@@ -11,6 +11,24 @@ export const readOnlyCompartment = new Compartment();
 export const wrapCompartment = new Compartment();
 export const vimCompartment = new Compartment();
 
+// Fold // #region … // #endregion blocks (VS Code compatible).
+export const regionFolding = foldService.of((state, lineStart) => {
+  const line = state.doc.lineAt(lineStart);
+  if (!/\/\/\s*#?region\b/i.test(line.text)) return null;
+  let depth = 1;
+  let pos = line.to;
+  while (pos < state.doc.length) {
+    const next = state.doc.lineAt(pos + 1);
+    if (/\/\/\s*#?region\b/i.test(next.text)) depth++;
+    else if (/\/\/\s*#?endregion\b/i.test(next.text)) {
+      if (--depth === 0) return { from: line.to, to: next.from - 1 };
+    }
+    if (next.to >= state.doc.length) break;
+    pos = next.to;
+  }
+  return null;
+});
+
 // Only what basicSetup doesn't already cover, to avoid duplicate extensions.
 // basicSetup gives us line numbers, fold gutter, history, indentOnInput,
 // bracketMatching, closeBrackets, autocompletion, highlightActiveLine,
@@ -21,6 +39,7 @@ export function buildSharedExtensions(): Extension[] {
     EditorState.tabSize.of(2),
     search({ top: true }),
     lintGutter(),
+    regionFolding,
     EditorView.theme({
       "&, &.cm-editor, &.cm-editor.cm-focused": {
         backgroundColor: "transparent !important",

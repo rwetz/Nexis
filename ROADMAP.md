@@ -119,7 +119,6 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Inline terminal suggestions — history-based to start, AI-powered as opt-in
 - [x] Smarter AI autocomplete — project-aware context, lower latency
 - [x] Drag and drop into terminal — files as quoted paths, files as AI context attachments
-- [ ] Agent orchestration — Nexis spawning and coordinating external coding agents (Claude Code, OpenCode, etc.)
 - [x] AI context inspector — transparency panel showing exactly what context is being sent to the model
 - [x] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
 - [x] Environment variable panel — view, edit, and persist env vars per workspace
@@ -136,21 +135,17 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with output captured in a dedicated panel and errors linked to source lines
 - [ ] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
 - [ ] Snippets library — user-defined code snippets with tab-stop placeholders, scoped by language
-- [ ] Multi-cursor and column select — advanced editing modes for bulk edits across lines
 - [ ] Find and replace across project — workspace-wide search and replace with regex, preview, and per-file confirmation
 - [ ] Minimap — optional code minimap in the editor for navigating large files
 - [ ] Breadcrumb navigation — file path + symbol breadcrumbs at the top of the editor pane
 - [ ] Symbol outline panel — file-level function/class/variable tree in the sidebar
-- [ ] Bookmarks — mark lines across files and jump between them quickly
-- [ ] Code folding improvements — fold by indent, by region comments, and by language constructs
-- [ ] Word wrap toggle — per-file and global word wrap setting in the editor
+- [x] Code folding improvements — fold by indent, by region comments, and by language constructs
+- [x] Word wrap toggle — per-file and global word wrap setting in the editor
 - [ ] AI PR description generation — draft pull request titles and bodies from branch diff
 - [ ] AI-powered rename — rename a symbol across the project with AI verifying correctness
-- [ ] Workspace templates — scaffold new projects from built-in or custom templates
 - [ ] Keybinding editor — visual UI for remapping any shortcut, with import/export
 - [ ] Command palette — fuzzy-searchable palette for every action in the app (Ctrl+Shift+P)
 - [ ] Notifications center — in-app log of agent actions, build results, and background task completions
-- [ ] Remote workspaces — open a remote directory over SSH with the editor, explorer, and terminal all pointed at the same host
 - [ ] Container-aware environments — detect and work inside Docker/devcontainer setups, surface container context in the status bar
 - [ ] Database integration — full connection manager for SQLite, PostgreSQL, MySQL, and other databases; schema browser, table viewer, query editor with syntax highlighting, and AI-assisted query generation directly in Nexis
 - [ ] Hugging Face integration — BYOK with the HF Inference API for running hosted models; browse the Hub, pull model cards into context, and use HF-hosted models alongside existing providers without leaving Nexis

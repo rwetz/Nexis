@@ -2,6 +2,14 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.1] — 2026-05-27
+
+### Added
+- **Word wrap toggle** — wrap long lines at the viewport edge instead of scrolling horizontally. Toggle with the **Wrap** button in the editor toolbar or set it permanently in Settings → General → Editor. Persisted across sessions and synced across windows.
+- **Code folding improvements** — fold all regions in the active file with `Ctrl+K Ctrl+0` (`Cmd+K Cmd+0` on macOS); unfold all with `Ctrl+K Ctrl+J`. Region comment folding now collapses `// #region` … `// #endregion` blocks (VS Code–compatible syntax) without any extra toolchain.
+
+---
+
 ## [0.8.3] — 2026-05-25
 
 ### Added

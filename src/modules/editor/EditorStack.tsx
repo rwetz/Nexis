@@ -3,7 +3,9 @@ import type { EditorTab, Tab } from "@/modules/tabs";
 import { useEffect, useRef } from "react";
 import { EditorPane, type EditorPaneHandle } from "./EditorPane";
 import { buildRunCommand } from "./lib/runCommand";
-import { PlayIcon } from "@hugeicons/core-free-icons";
+import { usePreferencesStore } from "@/modules/settings/preferences";
+import { setWordWrap } from "@/modules/settings/store";
+import { PlayIcon, TextAlignLeftIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 type Props = {
@@ -24,6 +26,7 @@ export function EditorStack({
   onRunFile,
 }: Props) {
   const editors = tabs.filter((t): t is EditorTab => t.kind === "editor");
+  const wordWrap = usePreferencesStore((s) => s.wordWrap);
 
   // Stable per-tab callbacks. Inline arrows in `ref` and `onDirtyChange`
   // change identity every render, which makes React detach+reattach the ref
@@ -102,19 +105,37 @@ export function EditorStack({
             aria-hidden={!visible}
           >
             <div className="flex h-full flex-col overflow-hidden rounded-md border border-border/60 bg-background">
-              {onRunFile && (() => {
-                const rc = buildRunCommand(t.path);
-                return rc ? (
-                  <div className="flex shrink-0 items-center justify-end border-b border-border/40 bg-card/60 px-2 py-0.5">
-                    <button
-                      type="button"
-                      title={`Run: ${rc.command.trim()}`}
-                      onClick={() => onRunFile(t.path, rc.cwd, rc.command)}
-                      className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      <HugeiconsIcon icon={PlayIcon} size={12} strokeWidth={1.75} className="text-green-500" />
-                      <span className="font-mono">{rc.command.trim()}</span>
-                    </button>
+              {(() => {
+                const rc = onRunFile ? buildRunCommand(t.path) : null;
+                return (rc || true) ? (
+                  <div className="flex shrink-0 items-center justify-between border-b border-border/40 bg-card/60 px-2 py-0.5">
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        title={wordWrap ? "Disable word wrap (Alt+Z)" : "Enable word wrap (Alt+Z)"}
+                        onClick={() => void setWordWrap(!wordWrap)}
+                        className={cn(
+                          "flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] transition-colors hover:bg-muted",
+                          wordWrap ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <HugeiconsIcon icon={TextAlignLeftIcon} size={12} strokeWidth={1.75} />
+                        <span>Wrap</span>
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {rc && onRunFile && (
+                        <button
+                          type="button"
+                          title={`Run: ${rc.command.trim()}`}
+                          onClick={() => onRunFile(t.path, rc.cwd, rc.command)}
+                          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                          <HugeiconsIcon icon={PlayIcon} size={12} strokeWidth={1.75} className="text-green-500" />
+                          <span className="font-mono">{rc.command.trim()}</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ) : null;
               })()}

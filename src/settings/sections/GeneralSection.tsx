@@ -30,6 +30,7 @@ import {
   setTerminalSuggestionsEnabled,
   setTerminalWebglEnabled,
   setVimMode,
+  setWordWrap,
   setZoomLevel,
 } from "@/modules/settings/store";
 import { useTheme } from "@/modules/theme";
@@ -80,6 +81,7 @@ export function GeneralSection() {
     (s) => s.terminalSuggestionsEnabled,
   );
   const zoomLevel = usePreferencesStore((s) => s.zoomLevel);
+  const wordWrap = usePreferencesStore((s) => s.wordWrap);
 
   // Reconcile autostart pref with the actual OS state on mount.
   useEffect(() => {
@@ -170,6 +172,15 @@ export function GeneralSection() {
           <Switch
             checked={vimMode}
             onCheckedChange={(v) => void setVimMode(v)}
+          />
+        </SettingRow>
+        <SettingRow
+          title="Word wrap"
+          description="Wrap long lines instead of scrolling horizontally. Toggle per-session with the Wrap button in the editor toolbar."
+        >
+          <Switch
+            checked={wordWrap}
+            onCheckedChange={(v) => void setWordWrap(v)}
           />
         </SettingRow>
       </div>

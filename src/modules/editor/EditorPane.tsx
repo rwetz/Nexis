@@ -1,11 +1,12 @@
 import { redo, undo } from "@codemirror/commands";
+import { foldAll, unfoldAll } from "@codemirror/language";
 import {
   findNext,
   findPrevious,
   SearchQuery,
   setSearchQuery,
 } from "@codemirror/search";
-import { keymap } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { EDITOR_THEME_EXT } from "./lib/themes";
@@ -22,6 +23,7 @@ import {
   buildSharedExtensions,
   languageCompartment,
   vimCompartment,
+  wrapCompartment,
 } from "./lib/extensions";
 import { initVimGlobals, vimHandlersExtension } from "./lib/vim";
 
@@ -92,6 +94,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const cmRef = useRef<ReactCodeMirrorRef>(null);
     const editorThemeId = usePreferencesStore((s) => s.editorTheme);
     const vimMode = usePreferencesStore((s) => s.vimMode);
+    const wordWrap = usePreferencesStore((s) => s.wordWrap);
     const languageRef = useRef<string | null>(null);
     const apiKeyRef = useRef<string | null>(null);
 
@@ -148,6 +151,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         // so we must elevate vim's precedence to win the keymap.
         vimCompartment.of(
           usePreferencesStore.getState().vimMode ? Prec.highest(vim()) : [],
+        ),
+        wrapCompartment.of(
+          usePreferencesStore.getState().wordWrap ? EditorView.lineWrapping : [],
         ),
         vimHandlersExtension(() => ({
           save: () => {
@@ -207,6 +213,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
               return true;
             },
           },
+          { key: "Ctrl-k Ctrl-0", mac: "Cmd-k Cmd-0", run: foldAll, preventDefault: true },
+          { key: "Ctrl-k Ctrl-j", mac: "Cmd-k Cmd-j", run: unfoldAll, preventDefault: true },
         ]),
       ],
       [],
@@ -221,6 +229,16 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         ),
       });
     }, [vimMode]);
+
+    useEffect(() => {
+      const view = cmRef.current?.view;
+      if (!view) return;
+      view.dispatch({
+        effects: wrapCompartment.reconfigure(
+          wordWrap ? EditorView.lineWrapping : [],
+        ),
+      });
+    }, [wordWrap]);
 
     useEffect(() => {
       let cancelled = false;
