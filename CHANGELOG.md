@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.12] — 2026-05-27
+
+### Added
+- **Workspace-wide symbol rename** — press **F2** on any identifier in the editor to rename it across all files in the workspace. A dialog shows the symbol, a count of occurrences by file, and an input for the new name. Pressing Enter or clicking Rename applies word-boundary-aware replacement to every matching file simultaneously and reloads the editor. Supports any text file; uses the same fast native grep engine as the AI tools.
+
+---
+
 ## [0.9.11] — 2026-05-27
 
 ### Added

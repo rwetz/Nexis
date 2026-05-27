@@ -142,7 +142,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Code folding improvements — fold by indent, by region comments, and by language constructs
 - [x] Word wrap toggle — per-file and global word wrap setting in the editor
 - [x] AI PR description generation — draft pull request titles and bodies from branch diff
-- [ ] AI-powered rename — rename a symbol across the project with AI verifying correctness
+- [x] AI-powered rename — rename a symbol across the project with AI verifying correctness
 - [x] Keybinding editor — visual UI for remapping any shortcut, with import/export
 - [x] Command palette — fuzzy-searchable palette for every action in the app (Ctrl+Shift+P)
 - [x] Notifications center — in-app log of agent actions, build results, and background task completions

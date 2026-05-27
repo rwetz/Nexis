@@ -16,7 +16,12 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from "react";
+import { RenameDialog } from "./RenameDialog";
+import { Minimap } from "./Minimap";
+import { useChatStore } from "@/modules/ai/store/chatStore";
+import type { EditorView } from "@codemirror/view";
 import { Prec } from "@codemirror/state";
 import { vim } from "@replit/codemirror-vim";
 import {
@@ -142,6 +147,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const pathRef = useRef(path);
     pathRef.current = path;
 
+    const [renameTarget, setRenameTarget] = useState<string | null>(null);
+    const openRenameRef = useRef<((symbol: string) => void) | null>(null);
+    openRenameRef.current = (symbol: string) => setRenameTarget(symbol);
+
+    const [editorView, setEditorView] = useState<EditorView | undefined>(undefined);
+
     const projectHintsRef = useRef<string[] | null>(null);
     useEffect(() => {
       projectHintsRef.current = deriveProjectHints(path);
@@ -224,6 +235,18 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           },
           { key: "Ctrl-k Ctrl-0", mac: "Cmd-k Cmd-0", run: foldAll, preventDefault: true },
           { key: "Ctrl-k Ctrl-j", mac: "Cmd-k Cmd-j", run: unfoldAll, preventDefault: true },
+          {
+            key: "F2",
+            run: (view) => {
+              const cursor = view.state.selection.main.head;
+              const word = view.state.wordAt(cursor);
+              if (!word) return false;
+              const symbol = view.state.sliceDoc(word.from, word.to);
+              if (!symbol.trim()) return false;
+              openRenameRef.current?.(symbol);
+              return true;
+            },
+          },
         ]),
       ],
       [],
@@ -362,28 +385,45 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       );
     }
 
+    const workspaceRoot = useChatStore.getState().live.getWorkspaceRoot();
+
     return (
       <div className="flex h-full min-h-0 flex-col">
-        <CodeMirror
-          ref={cmRef}
-          value={doc.content}
-          onChange={onChange}
-          theme={themeExt}
-          extensions={extensions}
-          height="100%"
-          className="flex-1 min-h-0 overflow-hidden"
-          basicSetup={{
-            lineNumbers: true,
-            highlightActiveLineGutter: true,
-            foldGutter: true,
-            bracketMatching: true,
-            closeBrackets: true,
-            autocompletion: true,
-            highlightActiveLine: true,
-            highlightSelectionMatches: true,
-            searchKeymap: true,
-          }}
-        />
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <CodeMirror
+            ref={cmRef}
+            value={doc.content}
+            onChange={onChange}
+            theme={themeExt}
+            extensions={extensions}
+            onCreateEditor={(view) => setEditorView(view)}
+            height="100%"
+            className="flex-1 min-h-0 overflow-hidden"
+            basicSetup={{
+              lineNumbers: true,
+              highlightActiveLineGutter: true,
+              foldGutter: true,
+              bracketMatching: true,
+              closeBrackets: true,
+              autocompletion: true,
+              highlightActiveLine: true,
+              highlightSelectionMatches: true,
+              searchKeymap: true,
+            }}
+          />
+          <Minimap view={editorView} />
+        </div>
+        {renameTarget && workspaceRoot && (
+          <RenameDialog
+            symbol={renameTarget}
+            workspaceRoot={workspaceRoot}
+            onClose={() => setRenameTarget(null)}
+            onApplied={(_old, _new) => {
+              reloadForceRef.current();
+              setRenameTarget(null);
+            }}
+          />
+        )}
       </div>
     );
   },
