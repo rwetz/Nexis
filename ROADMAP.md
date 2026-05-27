@@ -147,7 +147,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Command palette — fuzzy-searchable palette for every action in the app (Ctrl+Shift+P)
 - [x] Notifications center — in-app log of agent actions, build results, and background task completions
 - [ ] Container-aware environments — detect and work inside Docker/devcontainer setups, surface container context in the status bar
-- [ ] Database integration — full connection manager for SQLite, PostgreSQL, MySQL, and other databases; schema browser, table viewer, query editor with syntax highlighting, and AI-assisted query generation directly in Nexis
+- [x] Database integration — full connection manager for SQLite, PostgreSQL, MySQL, and other databases; schema browser, table viewer, query editor with syntax highlighting, and AI-assisted query generation directly in Nexis
 - [ ] Hugging Face integration — BYOK with the HF Inference API for running hosted models; browse the Hub, pull model cards into context, and use HF-hosted models alongside existing providers without leaving Nexis
 - [ ] Jupyter notebook support — open, edit, and run `.ipynb` files with kernel management, inline cell output rendering (text, plots, tables), and AI-assisted cell generation and explanation
 - [ ] AI skill bundles — installable packages that add new agent tools and slash commands

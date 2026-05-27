@@ -81,6 +81,7 @@ import { BackgroundProcessPanel, useBackgroundProcesses } from "@/modules/proces
 import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
 import { SnippetsPanel } from "@/modules/snippets";
 import { TestRunnerPanel } from "@/modules/testrunner";
+import { DatabasePanel } from "@/modules/database/DatabasePanel";
 import {
   SourceControlPanel,
   useSourceControl,
@@ -1295,6 +1296,8 @@ export default function App() {
                       <SnippetsPanel />
                     ) : sidebarView === "tests" ? (
                       <TestRunnerPanel workspaceRoot={explorerRoot} />
+                    ) : sidebarView === "database" ? (
+                      <DatabasePanel />
                     ) : (
                       <SourceControlPanel
                         open

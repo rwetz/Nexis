@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import {
+  Database01Icon,
   FileCodeIcon,
   FolderGitTwoIcon,
   FolderTreeIcon,
@@ -52,6 +53,7 @@ export function SidebarRail({
     { id: "outline", label: "Outline", icon: ListViewIcon },
     { id: "snippets", label: "Snippets", icon: FileCodeIcon },
     { id: "tests", label: "Tests", icon: TestTube01Icon },
+    { id: "database", label: "Database", icon: Database01Icon },
   ];
 
   return (

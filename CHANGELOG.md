@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.9] — 2026-05-27
+
+### Added
+- **Database panel** — new **Database** tab in the sidebar. Connect to SQLite, PostgreSQL, and MySQL databases. Browse tables with the schema browser; click a table chip to instantly run a `SELECT * … LIMIT 100` query. Write and run arbitrary SQL in the built-in query editor (Ctrl+Enter to run). Results render in a scrollable table with a sticky header. Connections persist across sessions.
+
+---
+
 ## [0.9.8] — 2026-05-27
 
 ### Added
