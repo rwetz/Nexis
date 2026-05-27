@@ -85,6 +85,7 @@ import { TestRunnerPanel } from "@/modules/testrunner";
 import { DatabasePanel } from "@/modules/database/DatabasePanel";
 import { BuildPanel } from "@/modules/build/BuildPanel";
 import { SshPanel } from "@/modules/ssh";
+import { ReleasePanel } from "@/modules/release";
 import {
   SourceControlPanel,
   useSourceControl,
@@ -1343,6 +1344,8 @@ export default function App() {
                       <BuildPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "ssh" ? (
                       <SshPanel onConnect={handleOpenSshSession} />
+                    ) : sidebarView === "release" ? (
+                      <ReleasePanel workspaceRoot={explorerRoot} />
                     ) : (
                       <SourceControlPanel
                         open

@@ -2,6 +2,22 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.0.0] — 2026-05-27
+
+This is the first stable release of Nexis. The milestone closes out the initial feature roadmap with release tooling and represents the full pre-1.0 feature set built across the 0.x series.
+
+### Added
+- **Release tooling panel** — a dedicated **Release** panel in the sidebar surfaces everything needed to ship: current version from `package.json`, the last git tag, all commits since that tag formatted as a conventional changelog entry, one-click copy to clipboard, and buttons to create a git tag for patch/minor/major bumps directly from the UI.
+- **AI skill bundles** — the agent skill system is now extensible. Skill bundles are composable packages of slash commands and agent tools; the foundation for community-installable bundles is in place.
+
+### What's in 1.0
+
+Over the 0.x series, Nexis shipped: multi-tab PTY terminal, CodeMirror 6 editor with AI autocomplete, AI agent panel with 12+ providers (including offline via LM Studio/MLX/Ollama and Hugging Face hosted models), source control, git history, test runner, build system, database panel, SSH connection manager, Jupyter notebook viewer, Python environment awareness, Docker/devcontainer detection, workspace-wide symbol rename, code minimap, snippet library, find-and-replace, command palette, symbol outline, breadcrumb navigation, background process manager, keybinding editor, markdown preview, code formatter, run-file integration, drag-to-float AI panel, notifications center, and more.
+
+No accounts. No telemetry. BYOK or fully offline.
+
+---
+
 ## [0.9.15] — 2026-05-27
 
 ### Added
