@@ -202,6 +202,16 @@ export async function buildLanguageModel(
       })(resolvedModelId);
       break;
     }
+    case "huggingface": {
+      const { createOpenAICompatible } =
+        await import("@ai-sdk/openai-compatible");
+      built = createOpenAICompatible({
+        name: "huggingface",
+        baseURL: "https://api-inference.huggingface.co/v1",
+        apiKey: key,
+      })(resolvedModelId);
+      break;
+    }
     default: {
       const _exhaustive: never = provider;
       throw new Error(`Unsupported provider: ${_exhaustive as ProviderId}`);

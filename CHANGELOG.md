@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.11] — 2026-05-27
+
+### Added
+- **Hugging Face integration** — Hugging Face is now a first-class AI provider. Add your HF access token in Settings → AI and choose from five pre-configured hosted models: Llama 3.1 70B, Llama 3.1 8B, Qwen 2.5 Coder 32B, Phi-4, and Mistral 7B. All models run through the HF Inference API and work in the AI panel, autocomplete, and any other model-using feature.
+
+---
+
 ## [0.9.10] — 2026-05-27
 
 ### Added

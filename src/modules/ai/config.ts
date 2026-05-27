@@ -13,7 +13,8 @@ export type ProviderId =
   | "openai-compatible"
   | "lmstudio"
   | "mlx"
-  | "ollama";
+  | "ollama"
+  | "huggingface";
 
 export type ProviderInfo = {
   id: ProviderId;
@@ -117,6 +118,13 @@ export const PROVIDERS: readonly ProviderInfo[] = [
     keyringAccount: "",
     keyPrefix: null,
     consoleUrl: "https://ollama.com/download",
+  },
+  {
+    id: "huggingface",
+    label: "Hugging Face",
+    keyringAccount: "huggingface-api-key",
+    keyPrefix: "hf_",
+    consoleUrl: "https://huggingface.co/settings/tokens",
   },
 ] as const;
 
@@ -555,6 +563,53 @@ export const MODELS = [
     tags: ["tools", "coding"],
   },
 
+  // ── Hugging Face Inference API ────────────────────────────────────────────
+  {
+    id: "meta-llama/Llama-3.1-70B-Instruct",
+    provider: "huggingface",
+    label: "Llama 3.1 70B",
+    hint: "HF",
+    description: "Meta's flagship open model via HF Inference.",
+    capabilities: { intelligence: 4, speed: 3, cost: 4 },
+    tags: ["tools", "coding"],
+  },
+  {
+    id: "meta-llama/Llama-3.1-8B-Instruct",
+    provider: "huggingface",
+    label: "Llama 3.1 8B",
+    hint: "HF Fast",
+    description: "Small, quick, runs free-tier on HF.",
+    capabilities: { intelligence: 3, speed: 5, cost: 5 },
+    tags: ["tools"],
+  },
+  {
+    id: "Qwen/Qwen2.5-Coder-32B-Instruct",
+    provider: "huggingface",
+    label: "Qwen 2.5 Coder 32B",
+    hint: "HF Code",
+    description: "Top-ranked open coding model.",
+    capabilities: { intelligence: 4, speed: 3, cost: 4 },
+    tags: ["tools", "coding"],
+  },
+  {
+    id: "microsoft/Phi-4",
+    provider: "huggingface",
+    label: "Phi-4",
+    hint: "HF Tiny",
+    description: "Microsoft's small but surprisingly capable model.",
+    capabilities: { intelligence: 3, speed: 5, cost: 5 },
+    tags: ["coding"],
+  },
+  {
+    id: "mistralai/Mistral-7B-Instruct-v0.3",
+    provider: "huggingface",
+    label: "Mistral 7B",
+    hint: "HF",
+    description: "Compact Mistral model, great for quick tasks.",
+    capabilities: { intelligence: 3, speed: 5, cost: 5 },
+    tags: ["tools"],
+  },
+
   // ── Generic OpenAI-compatible (user-defined endpoint) ─────────────────────
   {
     id: "openai-compatible-custom",
@@ -657,6 +712,11 @@ export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   "mistral-large-latest": 131_072,
   "mistral-medium-latest": 32_768,
   "codestral-latest": 256_000,
+  "meta-llama/Llama-3.1-70B-Instruct": 128_000,
+  "meta-llama/Llama-3.1-8B-Instruct": 128_000,
+  "Qwen/Qwen2.5-Coder-32B-Instruct": 131_072,
+  "microsoft/Phi-4": 16_000,
+  "mistralai/Mistral-7B-Instruct-v0.3": 32_000,
 };
 
 export function getModelContextLimit(

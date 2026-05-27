@@ -72,6 +72,7 @@ const PROVIDER_ICON = {
   lmstudio: ComputerIcon,
   mlx: AppleIcon,
   ollama: ServerStack01Icon,
+  huggingface: BrainIcon,
 } as const satisfies Record<ProviderId, typeof ChatGptIcon>;
 
 export function AiOpenButton({ onOpen }: { onOpen: () => void }) {
