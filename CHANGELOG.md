@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.3] — 2026-05-27
+
+### Added
+- **Find & replace across project** — `Ctrl+Shift+H` (`Cmd+Shift+H`) opens a workspace search overlay. Supports plain text and regex search, case sensitivity toggle, and per-file match preview with syntax-highlighted match regions. **Replace all** reads every matching file, applies the replacement, and writes it back — with a confirmation count on completion. Results show file name, relative path, and each match line with its line number. Shortcut also appears in the keyboard shortcuts dialog.
+
+---
+
 ## [0.9.2] — 2026-05-27
 
 ### Added

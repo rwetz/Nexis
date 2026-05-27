@@ -24,6 +24,7 @@ export type ShortcutId =
   | "explorer.search"
   | "explorer.focus"
   | "files.quickOpen"
+  | "search.workspace"
   | "view.zoomIn"
   | "view.zoomOut"
   | "view.zoomReset"
@@ -102,6 +103,12 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Quick file open",
     group: "Search",
     defaultBindings: [{ [MOD_PROP]: true, key: "p" }],
+  },
+  {
+    id: "search.workspace",
+    label: "Find & replace in project",
+    group: "Search",
+    defaultBindings: [{ [MOD_PROP]: true, shift: true, key: "h" }],
   },
   {
     id: "tab.newEditor",

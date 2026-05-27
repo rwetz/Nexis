@@ -135,7 +135,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with output captured in a dedicated panel and errors linked to source lines
 - [ ] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
 - [ ] Snippets library — user-defined code snippets with tab-stop placeholders, scoped by language
-- [ ] Find and replace across project — workspace-wide search and replace with regex, preview, and per-file confirmation
+- [x] Find and replace across project — workspace-wide search and replace with regex, preview, and per-file confirmation
 - [ ] Minimap — optional code minimap in the editor for navigating large files
 - [ ] Breadcrumb navigation — file path + symbol breadcrumbs at the top of the editor pane
 - [ ] Symbol outline panel — file-level function/class/variable tree in the sidebar

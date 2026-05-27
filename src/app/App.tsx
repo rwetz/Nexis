@@ -4,6 +4,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { QuickFilePicker } from "@/components/QuickFilePicker";
+import { WorkspaceSearch } from "@/components/WorkspaceSearch";
 import { ShellHistoryOverlay } from "@/components/ShellHistoryOverlay";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -187,6 +188,8 @@ export default function App() {
     setQuickFilePickerOpen,
     historyLeafId,
     setHistoryLeafId,
+    workspaceSearchOpen,
+    setWorkspaceSearchOpen,
   } = useDialogCoordinator();
 
   const [home, setHome] = useState<string | null>(null);
@@ -891,6 +894,7 @@ export default function App() {
       "ai.toggle": togglePanelAndFocus,
       "ai.askSelection": askFromSelection,
       "files.quickOpen": () => setQuickFilePickerOpen((v) => !v),
+      "search.workspace": () => setWorkspaceSearchOpen((v) => !v),
       "shortcuts.open": () => setShortcutsOpen((v) => !v),
       "window.new": () => void openNewWindow(),
       "settings.open": () => void openSettingsWindow(),
@@ -1376,6 +1380,14 @@ export default function App() {
               root={explorerRoot}
               onSelect={(path) => openFileTab(path)}
               onClose={() => setQuickFilePickerOpen(false)}
+            />
+          )}
+
+          {workspaceSearchOpen && (
+            <WorkspaceSearch
+              root={explorerRoot}
+              onOpenFile={(path) => { openFileTab(path); }}
+              onClose={() => setWorkspaceSearchOpen(false)}
             />
           )}
 
