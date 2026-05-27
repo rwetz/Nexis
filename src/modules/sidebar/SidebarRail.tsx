@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import {
   FolderGitTwoIcon,
   FolderTreeIcon,
+  TaskAdd01Icon,
   Time01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -20,6 +21,7 @@ type Props = {
   activeView: SidebarViewId;
   onSelectView: (view: SidebarViewId) => void;
   changedCount: number;
+  runningProcessCount?: number;
   onOpenHistory?: () => void;
 };
 
@@ -27,6 +29,7 @@ export function SidebarRail({
   activeView,
   onSelectView,
   changedCount,
+  runningProcessCount,
   onOpenHistory,
 }: Props) {
   const items: RailItem[] = [
@@ -36,6 +39,12 @@ export function SidebarRail({
       label: "Source Control",
       icon: FolderGitTwoIcon,
       badge: changedCount,
+    },
+    {
+      id: "processes",
+      label: "Processes",
+      icon: TaskAdd01Icon,
+      badge: runningProcessCount,
     },
   ];
 

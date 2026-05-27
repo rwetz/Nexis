@@ -122,7 +122,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] AI context inspector — transparency panel showing exactly what context is being sent to the model
 - [x] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
 - [x] Environment variable panel — view, edit, and persist env vars per workspace
-- [ ] Background process manager — visibility into shell background jobs and dev servers running in Nexis
+- [x] Background process manager — visibility into shell background jobs and dev servers running in Nexis
 - [x] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
 - [x] Run files — execute the current file or project directly from the editor with output captured in a terminal tab
 - [x] Draggable/dockable panels — resizable bottom output panel, drag-to-float with snap-to-dock; full chat history + input in both modes
@@ -145,7 +145,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] AI-powered rename — rename a symbol across the project with AI verifying correctness
 - [ ] Keybinding editor — visual UI for remapping any shortcut, with import/export
 - [ ] Command palette — fuzzy-searchable palette for every action in the app (Ctrl+Shift+P)
-- [ ] Notifications center — in-app log of agent actions, build results, and background task completions
+- [x] Notifications center — in-app log of agent actions, build results, and background task completions
 - [ ] Container-aware environments — detect and work inside Docker/devcontainer setups, surface container context in the status bar
 - [ ] Database integration — full connection manager for SQLite, PostgreSQL, MySQL, and other databases; schema browser, table viewer, query editor with syntax highlighting, and AI-assisted query generation directly in Nexis
 - [ ] Hugging Face integration — BYOK with the HF Inference API for running hosted models; browse the Hub, pull model cards into context, and use HF-hosted models alongside existing providers without leaving Nexis

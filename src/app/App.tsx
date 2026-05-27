@@ -75,6 +75,7 @@ import {
   type ShortcutId,
 } from "@/modules/shortcuts";
 import { SidebarRail } from "@/modules/sidebar";
+import { BackgroundProcessPanel, useBackgroundProcesses } from "@/modules/processes";
 import {
   SourceControlPanel,
   useSourceControl,
@@ -806,6 +807,9 @@ export default function App() {
     cycleSidebarView("source-control");
   }, [cycleSidebarView]);
 
+  const { processes: bgProcesses } = useBackgroundProcesses(5000);
+  const runningProcessCount = bgProcesses.filter((p) => !p.exited).length;
+
   const openGitGraphFromContext = useCallback(async () => {
     const known = sourceControl.hasRepo ? sourceControl.repo : null;
     if (known) {
@@ -1247,6 +1251,8 @@ export default function App() {
                         onAttachToAgent={handleAttachFileToAgent}
                         onOpenMarkdownPreview={openMarkdownPreview}
                       />
+                    ) : sidebarView === "processes" ? (
+                      <BackgroundProcessPanel />
                     ) : (
                       <SourceControlPanel
                         open
@@ -1260,6 +1266,7 @@ export default function App() {
                     activeView={sidebarView}
                     onSelectView={persistSidebarView}
                     changedCount={sourceControl.changedCount}
+                    runningProcessCount={runningProcessCount || undefined}
                     onOpenHistory={openGitGraphFromContext}
                   />
                 </div>

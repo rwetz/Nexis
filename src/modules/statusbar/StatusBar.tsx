@@ -4,6 +4,7 @@ import {
   AiOpenButton,
   AiStatusBarControls,
 } from "@/modules/ai/components/AiStatusBarControls";
+import { NotificationsCenter } from "@/modules/notifications";
 import {
   Tooltip,
   TooltipContent,
@@ -81,6 +82,7 @@ export function StatusBar({
             onRefresh={onRefreshPythonEnvs ?? (() => {})}
           />
         )}
+        <NotificationsCenter />
         <AgentStatusPill onClick={onOpenMini} />
         {panelOpen && hasComposer ? (
           <AiStatusBarControls />

@@ -6,7 +6,7 @@ import java.util.Map;
 
 public class test {
 
-    // ── Config ────────────────────────────────────────────────────────────────
+      // ── Config ────────────────────────────────────────────────────────────────
 
     static class Config {
         private final String host;
@@ -16,6 +16,7 @@ public class test {
         Config(String host, int port) {
             this.host = host;
             this.port = port;
+          
         }
 
         void set(String key, String value) {

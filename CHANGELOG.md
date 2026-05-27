@@ -2,6 +2,14 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.2] — 2026-05-27
+
+### Added
+- **Background process manager** — new **Processes** panel in the sidebar shows every `bash_background` process with its command, working directory, start time, and live status (running / exited + exit code). Kill any running process with one click. Badge on the rail shows the count of running processes at a glance.
+- **Notifications center** — bell icon in the status bar tracks in-app events (AI completions, errors, background process events). Unread count badge clears on open; individual notifications can be dismissed or bulk-cleared.
+
+---
+
 ## [0.9.1] — 2026-05-27
 
 ### Added

@@ -1,5 +1,4 @@
 import { memo, useEffect, useRef } from "react";
-// @ts-expect-error ogl has no bundled types
 import { Renderer, Program, Mesh, Triangle, Vec2 } from "ogl";
 
 const vertex = /* glsl */`
