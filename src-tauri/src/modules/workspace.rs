@@ -126,6 +126,19 @@ pub fn init_launch_cwd() {
         std::env::current_dir()
             .ok()
             .filter(|p| is_usable_launch_dir(p))
+            .map(|p| {
+                // `GetCurrentDirectoryW` can return `\\?\`-prefixed paths on
+                // Windows. Strip it so the path is usable everywhere
+                // (CreateProcessW cwd, prompt display, git operations).
+                #[cfg(windows)]
+                {
+                    let s = p.to_string_lossy();
+                    if let Some(stripped) = s.strip_prefix(r"\\?\") {
+                        return PathBuf::from(stripped);
+                    }
+                }
+                p
+            })
     });
 }
 

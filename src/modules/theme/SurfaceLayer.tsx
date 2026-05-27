@@ -3,6 +3,14 @@ import {
   usePreferencesStore,
 } from "@/modules/settings/preferences";
 import { BG_OPACITY_RENDER_FACTOR } from "@/modules/settings/store";
+import type { AnimatedBgId } from "@/modules/settings/store";
+import { AuroraBackground } from "@/components/ui/backgrounds/Aurora";
+import { ParticlesBackground } from "@/components/ui/backgrounds/Particles";
+import { ThreadsBackground } from "@/components/ui/backgrounds/Threads";
+import { useTheme } from "@/modules/theme";
+import { getBuiltinTheme } from "@/modules/theme/themes";
+import { DEFAULT_THEME_ID } from "@/modules/theme/types";
+import type { Theme } from "@/modules/theme/types";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -10,15 +18,130 @@ const OVERLAY_Z = 2147483646;
 const RESIZE_IDLE_MS = 280;
 const FADE_IN_MS = 200;
 
+// ─── Theme color helpers ──────────────────────────────────────────────────────
+
+/** Default accent when the theme provides none (nexis-default palette). */
+const FALLBACK_DARK = "#5227FF";
+const FALLBACK_LIGHT = "#4318D6";
+
+function getPrimaryHex(
+  themeId: string,
+  resolvedMode: "dark" | "light",
+  customThemes: Theme[],
+): string {
+  if (themeId === DEFAULT_THEME_ID) {
+    return resolvedMode === "dark" ? FALLBACK_DARK : FALLBACK_LIGHT;
+  }
+  const theme =
+    customThemes.find((t) => t.id === themeId) ?? getBuiltinTheme(themeId);
+  const variant =
+    theme?.variants[resolvedMode] ??
+    theme?.variants.dark ??
+    theme?.variants.light;
+  return (
+    variant?.colors?.primary ??
+    (resolvedMode === "dark" ? FALLBACK_DARK : FALLBACK_LIGHT)
+  );
+}
+
+/** Add `amount` (0–1) to each RGB channel, clamping to [0, 255]. */
+function lightenHex(hex: string, amount: number): string {
+  const h = hex.replace(/^#/, "");
+  const n = parseInt(
+    h.length === 3 ? h.split("").map((c) => c + c).join("") : h,
+    16,
+  );
+  if (isNaN(n)) return hex;
+  const bump = Math.round(amount * 255);
+  const clamp = (v: number) => Math.min(255, Math.max(0, v + bump));
+  const r = clamp(n >> 16 & 255);
+  const g = clamp(n >> 8 & 255);
+  const b = clamp(n & 255);
+  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
+}
+
+function hexToRgbTuple(hex: string): [number, number, number] {
+  const h = hex.replace(/^#/, "");
+  const n = parseInt(
+    h.length === 3 ? h.split("").map((c) => c + c).join("") : h,
+    16,
+  );
+  if (isNaN(n)) return [1, 1, 1];
+  return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+}
+
+// ─── Components ──────────────────────────────────────────────────────────────
+
 export function SurfaceLayer() {
   const [fastPath] = useState(readBgFastPath);
-  const storeActive = usePreferencesStore(
+  const hydrated = usePreferencesStore((s) => s.hydrated);
+  const backgroundKind = usePreferencesStore((s) => s.backgroundKind);
+  const backgroundAnimatedId = usePreferencesStore((s) => s.backgroundAnimatedId);
+  const backgroundOpacity = usePreferencesStore((s) => s.backgroundOpacity);
+  const storeImageActive = usePreferencesStore(
     (s) => s.backgroundKind === "image" && !!s.backgroundImageId,
   );
-  const hydrated = usePreferencesStore((s) => s.hydrated);
-  const active = hydrated ? storeActive : fastPath.active;
-  if (!active) return null;
-  return <BackgroundImage fastImageId={fastPath.imageId} />;
+  const imageActive = hydrated ? storeImageActive : fastPath.active;
+
+  const { themeId, resolvedMode, customThemes } = useTheme();
+
+  // Animated backgrounds — only render after store hydration
+  if (hydrated && backgroundKind === "animated" && backgroundAnimatedId) {
+    const primary = getPrimaryHex(themeId, resolvedMode, customThemes);
+    return (
+      <AnimatedBackground
+        // Re-mount on background type OR theme change so colors refresh
+        key={`${backgroundAnimatedId}-${themeId}-${resolvedMode}`}
+        id={backgroundAnimatedId}
+        primaryHex={primary}
+        opacity={backgroundOpacity * BG_OPACITY_RENDER_FACTOR}
+      />
+    );
+  }
+
+  if (imageActive) {
+    return <BackgroundImage fastImageId={fastPath.imageId} />;
+  }
+
+  return null;
+}
+
+type AnimBgProps = {
+  id: AnimatedBgId;
+  primaryHex: string;
+  opacity: number;
+};
+
+function AnimatedBackground({ id, primaryHex, opacity }: AnimBgProps) {
+  // Derive three tonal variants from the primary for richer visuals
+  const mid = lightenHex(primaryHex, 0.28);
+  const bright = lightenHex(primaryHex, 0.48);
+
+  if (id === "aurora") {
+    return (
+      <AuroraBackground
+        colorStops={[primaryHex, mid, primaryHex]}
+        opacity={opacity}
+      />
+    );
+  }
+  if (id === "particles") {
+    return (
+      <ParticlesBackground
+        particleColors={[primaryHex, mid, bright]}
+        opacity={opacity}
+      />
+    );
+  }
+  if (id === "threads") {
+    return (
+      <ThreadsBackground
+        color={hexToRgbTuple(primaryHex)}
+        opacity={opacity}
+      />
+    );
+  }
+  return null;
 }
 
 function BackgroundImage({ fastImageId }: { fastImageId: string | null }) {

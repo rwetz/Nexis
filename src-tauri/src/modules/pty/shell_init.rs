@@ -105,7 +105,16 @@ fn apply_common(cmd: &mut CommandBuilder, cwd: Option<String>) {
         .or_else(|| dirs::home_dir().filter(|p| p.is_dir()));
     if let Some(cwd) = resolved_cwd {
         #[cfg(windows)]
-        let cwd = PathBuf::from(cwd.to_string_lossy().replace('/', "\\"));
+        let cwd = {
+            let s = cwd.to_string_lossy();
+            // Strip the Windows `\\?\` extended-length prefix before handing
+            // the cwd to ConPTY. If this prefix reaches PowerShell it renders
+            // the full provider path in the prompt instead of the normal
+            // `PS C:\Users\Ryan>` form:
+            //   PS Microsoft.PowerShell.Core\FileSystem::\\?\C:\Users\Ryan>
+            let s = s.strip_prefix(r"\\?\").unwrap_or(&s);
+            PathBuf::from(s.replace('/', "\\"))
+        };
         log::info!("pty cwd: {}", cwd.display());
         cmd.cwd(cwd);
     } else {

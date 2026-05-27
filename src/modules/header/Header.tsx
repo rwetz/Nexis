@@ -47,6 +47,7 @@ type Props = {
   onSplit: (dir: "row" | "col") => void;
   /** Active tab is a terminal and below the per-tab pane cap. */
   canSplit: boolean;
+  onNewWindow: () => void;
   onOpenShortcuts: () => void;
   onOpenSettings: () => void;
   searchTarget: SearchTarget;
@@ -64,6 +65,7 @@ export function Header({
   onNewPreview,
   onNewEditor,
   onNewGitGraph,
+  onNewWindow,
   onClose,
   onPin,
   onToggleSidebar,
@@ -211,6 +213,7 @@ export function Header({
           onNewPreview={onNewPreview}
           onNewEditor={onNewEditor}
           onNewGitGraph={onNewGitGraph}
+          onNewWindow={onNewWindow}
           onClose={onClose}
           onPin={onPin}
           compact={compact}

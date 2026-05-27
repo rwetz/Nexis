@@ -4,6 +4,8 @@ import { getModel, getModelContextLimit } from "../config";
 import { useChatStore } from "../store/chatStore";
 import type { UIMessage } from "@ai-sdk/react";
 import { useMemo, useState } from "react";
+import { ArrowDown01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 
 const APPROVAL_TOOLS = [
   "bash_run",
@@ -79,7 +81,12 @@ function Section({
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center gap-1.5 px-3 py-1.5 text-[10.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
-        <span className="shrink-0 text-[9px]">{open ? "▼" : "▶"}</span>
+        <HugeiconsIcon
+          icon={open ? ArrowDown01Icon : ArrowRight01Icon}
+          size={9}
+          strokeWidth={2}
+          className="shrink-0"
+        />
         {title}
       </button>
       {open && <div className="px-3 pb-2">{children}</div>}
@@ -154,7 +161,7 @@ export function AiContextInspector({ messages }: Props) {
               </span>
             </div>
           )}
-          {tokens.cachedInputTokens > 0 && (
+          {tokens.cachedInputTokens > 0 && tokens.inputTokens > 0 && (
             <div className="flex items-center justify-between text-muted-foreground">
               <span>Cached</span>
               <span className="font-mono text-foreground">

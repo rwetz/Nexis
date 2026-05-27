@@ -27,6 +27,7 @@ import {
 import {
   SAVE_DEBOUNCE_MS,
   buildTabsFromSaved,
+  isFreshWindow,
   loadSavedTabState,
   saveTabState,
   shouldRestoreTabs,
@@ -49,6 +50,8 @@ export function useTabs(initial?: Partial<TerminalTab>) {
         },
       ];
     }
+    // Fresh windows (spawned via New Window) start with no tabs.
+    if (isFreshWindow()) return [];
     // Attempt to restore previously saved tabs.
     if (shouldRestoreTabs()) {
       const saved = loadSavedTabState();
@@ -57,20 +60,12 @@ export function useTabs(initial?: Partial<TerminalTab>) {
         return tabs;
       }
     }
-    const tabId = 1;
-    const leafId = 2;
-    return [
-      {
-        id: tabId,
-        kind: "terminal",
-        title: "shell",
-        paneTree: { kind: "leaf", id: leafId },
-        activeLeafId: leafId,
-      },
-    ];
+    // No saved state — show the welcome screen (tabs.length === 0).
+    return [];
   });
 
   const [activeId, setActiveId] = useState(() => {
+    if (isFreshWindow()) return 0;
     if (!initial?.cwd && shouldRestoreTabs()) {
       const saved = loadSavedTabState();
       if (saved) {
@@ -83,11 +78,12 @@ export function useTabs(initial?: Partial<TerminalTab>) {
 
   const nextIdRef = useRef((() => {
     // Count how many IDs were consumed during init.
+    if (isFreshWindow()) return 1; // no tabs created yet
     if (!initial?.cwd && shouldRestoreTabs()) {
       const saved = loadSavedTabState();
       if (saved) return buildTabsFromSaved(saved, 1).nextId;
     }
-    return 3;
+    return 1; // no tabs created — welcome screen
   })());
 
   const tabsRef = useRef(tabs);
@@ -96,9 +92,10 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   }, [tabs]);
 
   // Persist tab state to localStorage (debounced).
+  // Fresh windows skip saving so they don't overwrite the main window's state.
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!shouldRestoreTabs()) return;
+    if (isFreshWindow() || !shouldRestoreTabs()) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;

@@ -5,6 +5,7 @@ import { IS_MAC, MOD_PROP } from "@/lib/platform";
  */
 
 export type ShortcutId =
+  | "window.new"
   | "editor.formatDocument"
   | "tab.new"
   | "tab.newPrivate"
@@ -60,6 +61,12 @@ export type Shortcut = {
 };
 
 export const SHORTCUTS: Shortcut[] = [
+  {
+    id: "window.new",
+    label: "New window",
+    group: "General",
+    defaultBindings: [{ [MOD_PROP]: true, shift: true, key: "n" }],
+  },
   {
     id: "settings.open",
     label: "Open settings",

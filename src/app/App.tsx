@@ -63,6 +63,8 @@ import {
 import { MarkdownStack } from "@/modules/markdown";
 import { PreviewStack, type PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
+import { openNewWindow } from "@/modules/window/openNewWindow";
+import { WelcomeScreen } from "./WelcomeScreen";
 import { SettingsDialog } from "@/settings/SettingsDialog";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { onKeysChanged } from "@/modules/settings/store";
@@ -886,6 +888,7 @@ export default function App() {
       "ai.askSelection": askFromSelection,
       "files.quickOpen": () => setQuickFilePickerOpen((v) => !v),
       "shortcuts.open": () => setShortcutsOpen((v) => !v),
+      "window.new": () => void openNewWindow(),
       "settings.open": () => void openSettingsWindow(),
       "sidebar.toggle": toggleSidebar,
       "explorer.focus": toggleExplorerFocus,
@@ -1086,7 +1089,9 @@ export default function App() {
     });
   }, [setLive, activeId, tabs, explorerRoot, launchCwd, home, openPreviewTab]);
 
-  const workspaceSurface = (
+  const workspaceSurface = tabs.length === 0 ? (
+    <WelcomeScreen onNewTerminal={openNewTab} />
+  ) : (
     <div className="relative h-full min-h-0">
       <div
         className={cn(
@@ -1197,6 +1202,7 @@ export default function App() {
             onNewPreview={() => openPreviewTab("")}
             onNewEditor={() => setNewEditorOpen(true)}
             onNewGitGraph={openGitGraphFromContext}
+            onNewWindow={() => void openNewWindow()}
             onClose={handleClose}
             onPin={pinTab}
             onToggleSidebar={toggleSidebar}

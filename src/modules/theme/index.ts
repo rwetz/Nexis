@@ -4,3 +4,4 @@ export { validateTheme, type ValidationResult } from "./validateTheme";
 export { parseThemeFile, writeThemeFile, deleteThemeFile, themeFilePath, emitThemeEdit, onThemeEdit, isThemeFilePath, starterTheme, type ThemeEditRequest } from "./themeFiles";
 export { saveCustomTheme, deleteCustomTheme, listCustomThemes, onCustomThemesChange } from "./customThemes";
 export { DEFAULT_THEME_ID, type ThemeColors, type TerminalPalette, type ThemeVariant } from "./types";
+export { getFolderColor } from "./folderColor";

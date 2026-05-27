@@ -28,6 +28,15 @@ type PersistedTabState = {
 
 // ─── Public API ────────────────────────────────────────────────────────────────
 
+/** True when this window was opened via "New Window" and should start fresh. */
+export function isFreshWindow(): boolean {
+  try {
+    return new URLSearchParams(window.location.search).has("fresh");
+  } catch {
+    return false;
+  }
+}
+
 export function clearSavedTabState(): void {
   try {
     localStorage.removeItem(TABS_STORAGE_KEY);

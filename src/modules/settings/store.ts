@@ -16,7 +16,9 @@ export type ThemePref = "system" | "light" | "dark";
 
 export const DEFAULT_THEME_ID = "nexis-default";
 
-export type BackgroundKind = "none" | "image";
+export type BackgroundKind = "none" | "image" | "animated";
+
+export type AnimatedBgId = "aurora" | "particles" | "threads";
 
 export const EDITOR_THEMES = [
   "atomone",
@@ -97,6 +99,7 @@ export type Preferences = {
   themeId: string;
   backgroundKind: BackgroundKind;
   backgroundImageId: string | null;
+  backgroundAnimatedId: AnimatedBgId | null;
   backgroundOpacity: number;
   backgroundBlur: number;
   defaultModelId: ModelId;
@@ -141,6 +144,7 @@ const KEY_THEME = "theme";
 const KEY_THEME_ID = "themeId";
 const KEY_BG_KIND = "backgroundKind";
 const KEY_BG_IMAGE_ID = "backgroundImageId";
+const KEY_BG_ANIMATED_ID = "backgroundAnimatedId";
 const KEY_BG_OPACITY = "backgroundOpacity";
 const KEY_BG_BLUR = "backgroundBlur";
 const KEY_DEFAULT_MODEL = "defaultModelId";
@@ -200,6 +204,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   themeId: DEFAULT_THEME_ID,
   backgroundKind: "none",
   backgroundImageId: null,
+  backgroundAnimatedId: null,
   backgroundOpacity: 0.5,
   backgroundBlur: 0,
   defaultModelId: DEFAULT_MODEL_ID,
@@ -277,6 +282,9 @@ export async function loadPreferences(): Promise<Preferences> {
     backgroundImageId:
       get<string | null>(KEY_BG_IMAGE_ID) ??
       DEFAULT_PREFERENCES.backgroundImageId,
+    backgroundAnimatedId:
+      get<AnimatedBgId | null>(KEY_BG_ANIMATED_ID) ??
+      DEFAULT_PREFERENCES.backgroundAnimatedId,
     backgroundOpacity: clampBgOpacity(
       get<number>(KEY_BG_OPACITY) ?? DEFAULT_PREFERENCES.backgroundOpacity,
     ),
@@ -403,6 +411,10 @@ export async function setBackgroundKind(value: BackgroundKind): Promise<void> {
 
 export async function setBackgroundImageId(value: string | null): Promise<void> {
   await writePref(KEY_BG_IMAGE_ID, value);
+}
+
+export async function setBackgroundAnimatedId(value: AnimatedBgId | null): Promise<void> {
+  await writePref(KEY_BG_ANIMATED_ID, value);
 }
 
 export async function setBackgroundOpacity(value: number): Promise<void> {
@@ -598,6 +610,7 @@ export async function onPreferencesChange(
     [KEY_THEME_ID]: "themeId",
     [KEY_BG_KIND]: "backgroundKind",
     [KEY_BG_IMAGE_ID]: "backgroundImageId",
+    [KEY_BG_ANIMATED_ID]: "backgroundAnimatedId",
     [KEY_BG_OPACITY]: "backgroundOpacity",
     [KEY_BG_BLUR]: "backgroundBlur",
     [KEY_DEFAULT_MODEL]: "defaultModelId",
@@ -631,6 +644,8 @@ export async function onPreferencesChange(
     [KEY_ZOOM_LEVEL]: "zoomLevel",
     [KEY_SHORTCUTS]: "shortcuts",
     [KEY_TERMINAL_ENV_VARS]: "terminalEnvVars",
+    [KEY_TERMINAL_SUGGESTIONS]: "terminalSuggestionsEnabled",
+    [KEY_TOOL_APPROVAL_POLICIES]: "toolApprovalPolicies",
     [KEY_FORMATTERS]: "formatters",
     [KEY_FORMAT_ON_SAVE]: "formatOnSave",
   };

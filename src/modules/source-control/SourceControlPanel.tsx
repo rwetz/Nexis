@@ -18,8 +18,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { AnimatedFolder } from "@/components/ui/AnimatedFolder";
 import { IS_MAC } from "@/lib/platform";
 import { cn } from "@/lib/utils";
+import { getFolderColor, useTheme } from "@/modules/theme";
 import { fileIconUrl } from "@/modules/explorer/lib/iconResolver";
 import {
   AiContentGenerator02Icon,
@@ -141,6 +143,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
   onOpenDiff,
 }: Props) {
   const scm = useSourceControlPanel(open, sourceControl, onOpenDiff);
+  const { themeId, resolvedMode } = useTheme();
   const refreshAnimationRef = useRef<number | null>(null);
   const [refreshAnimating, setRefreshAnimating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -563,10 +566,18 @@ export const SourceControlPanel = memo(function SourceControlPanel({
         ) : null}
 
         {scm.panelState === "no-repo" ? (
-          <PanelCenter
-            title="No repository"
-            body="The active workspace is not inside a Git repository."
-          />
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+            <AnimatedFolder
+              color={getFolderColor(themeId, resolvedMode)}
+              size={1.6}
+            />
+            <div className="space-y-1">
+              <div className="text-sm font-medium">No repository</div>
+              <div className="max-w-56 text-[11px] leading-relaxed text-muted-foreground">
+                The active workspace is not inside a Git repository.
+              </div>
+            </div>
+          </div>
         ) : null}
 
         {scm.panelState === "error" ? (

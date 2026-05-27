@@ -548,14 +548,13 @@ function CustomInstructionsBlock({ value }: { value: string }) {
     }
   }, [value]);
 
+  const isDirty = draft !== value;
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <Label>Custom instructions</Label>
-        {/* {savedTick > 0 ? (
-          <span className="text-[10px] text-muted-foreground">Saved</span>
-        ) : null} */}
-        {draft && (
+        {isDirty && (
           <Button size="xs" onClick={() => void setCustomInstructions(draft)}>
             Save
           </Button>

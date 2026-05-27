@@ -1,3 +1,4 @@
+import { AnimatedFolder } from "@/components/ui/AnimatedFolder";
 import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
@@ -8,12 +9,12 @@ import {
 } from "@/components/ui/context-menu";
 import {
   FileAddIcon,
-  Folder01Icon,
   FolderAddIcon,
   Refresh01Icon,
   Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { getFolderColor, useTheme } from "@/modules/theme";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   forwardRef,
@@ -64,6 +65,7 @@ type Row =
 
 const ROW_HEIGHT = 24;
 const OVERSCAN = 8;
+
 
 function basename(path: string): string {
   const parts = path.split(/[\\/]/).filter(Boolean);
@@ -156,6 +158,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
     },
     ref,
   ) {
+    const { themeId, resolvedMode } = useTheme();
     const tree = useFileTree(rootPath, { onPathRenamed, onPathDeleted });
     const [selectedPath, setSelectedPath] = useState<string | null>(null);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -231,14 +234,10 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
     });
 
     if (!rootPath) {
+      const folderColor = getFolderColor(themeId, resolvedMode);
       return (
-        <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
-          <HugeiconsIcon
-            icon={Folder01Icon}
-            size={24}
-            strokeWidth={1.5}
-            className="text-muted-foreground"
-          />
+        <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+          <AnimatedFolder color={folderColor} size={1.6} />
           <div className="text-xs text-muted-foreground">
             No current directory
           </div>
@@ -384,44 +383,46 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
             {basename(rootPath)}
           </span>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6 text-muted-foreground hover:text-foreground"
-            onClick={() => setIsSearchOpen((v) => !v)}
-            title="Search files"
-            aria-label="Search files"
-          >
-            <HugeiconsIcon icon={Search01Icon} size={13} strokeWidth={2} />
-          </Button>
+          <div className="flex shrink-0 items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 text-muted-foreground hover:text-foreground"
+              onClick={() => setIsSearchOpen((v) => !v)}
+              title="Search files"
+              aria-label="Search files"
+            >
+              <HugeiconsIcon icon={Search01Icon} size={13} strokeWidth={2} />
+            </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6 text-muted-foreground hover:text-foreground"
-            onClick={() => tree.beginCreate(rootPath, "file")}
-            title="New file"
-          >
-            <HugeiconsIcon icon={FileAddIcon} size={13} strokeWidth={2} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6 text-muted-foreground hover:text-foreground"
-            onClick={() => tree.beginCreate(rootPath, "dir")}
-            title="New folder"
-          >
-            <HugeiconsIcon icon={FolderAddIcon} size={13} strokeWidth={2} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6 text-muted-foreground hover:text-foreground"
-            onClick={() => tree.refresh(rootPath)}
-            title="Refresh"
-          >
-            <HugeiconsIcon icon={Refresh01Icon} size={12} strokeWidth={2} />
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 text-muted-foreground hover:text-foreground"
+              onClick={() => tree.beginCreate(rootPath, "file")}
+              title="New file"
+            >
+              <HugeiconsIcon icon={FileAddIcon} size={13} strokeWidth={2} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 text-muted-foreground hover:text-foreground"
+              onClick={() => tree.beginCreate(rootPath, "dir")}
+              title="New folder"
+            >
+              <HugeiconsIcon icon={FolderAddIcon} size={13} strokeWidth={2} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 text-muted-foreground hover:text-foreground"
+              onClick={() => tree.refresh(rootPath)}
+              title="Refresh"
+            >
+              <HugeiconsIcon icon={Refresh01Icon} size={12} strokeWidth={2} />
+            </Button>
+          </div>
         </div>
 
         <ExplorerSearch

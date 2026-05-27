@@ -10,6 +10,7 @@ import { fmtShortcut, MOD_KEY } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { fileIconUrl } from "@/modules/explorer/lib/iconResolver";
 import {
+  AddSquareIcon,
   Cancel01Icon,
   Clock01Icon,
   ComputerTerminal02Icon,
@@ -20,6 +21,7 @@ import {
   PencilEdit02Icon,
   PlusSignIcon,
 } from "@hugeicons/core-free-icons";
+import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef } from "react";
 import type { EditorTab, Tab } from "./lib/tabTypes";
@@ -33,6 +35,7 @@ type Props = {
   onNewPreview: () => void;
   onNewEditor: () => void;
   onNewGitGraph: () => void;
+  onNewWindow?: () => void;
   onClose: (id: number) => void;
   /** Pin (promote) a preview tab to persistent on double-click. */
   onPin: (id: number) => void;
@@ -48,6 +51,7 @@ export function TabBar({
   onNewPreview,
   onNewEditor,
   onNewGitGraph,
+  onNewWindow,
   onClose,
   onPin,
   compact,
@@ -202,6 +206,22 @@ export function TabBar({
               <HugeiconsIcon icon={GitBranchIcon} size={14} strokeWidth={1.75} />
               <span className="flex-1">Git Graph</span>
             </DropdownMenuItem>
+            {onNewWindow && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={onNewWindow}>
+                  <HugeiconsIcon
+                    icon={AddSquareIcon}
+                    size={14}
+                    strokeWidth={1.75}
+                  />
+                  <span className="flex-1">New Window</span>
+                  <span className="text-xs text-muted-foreground">
+                    {fmtShortcut(MOD_KEY, "⇧N")}
+                  </span>
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
