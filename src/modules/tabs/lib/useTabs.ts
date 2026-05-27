@@ -342,6 +342,22 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     return targetId;
   }, []);
 
+  const newNotebookTab = useCallback((path: string) => {
+    let targetId: number | null = null;
+    setTabs((curr) => {
+      const existing = curr.find((t) => t.kind === "notebook" && t.path === path);
+      if (existing) {
+        targetId = existing.id;
+        return curr;
+      }
+      const id = nextIdRef.current++;
+      targetId = id;
+      return [...curr, { id, kind: "notebook", title: basename(path), path }];
+    });
+    if (targetId !== null) setActiveId(targetId);
+    return targetId;
+  }, []);
+
   const openGitDiffTab = useCallback(
     (input: {
       path: string;
@@ -734,6 +750,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     pinTab,
     newPreviewTab,
     newMarkdownTab,
+    newNotebookTab,
     openAiDiffTab,
     openGitDiffTab,
     openCommitHistoryTab,

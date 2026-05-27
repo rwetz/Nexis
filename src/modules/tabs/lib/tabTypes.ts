@@ -42,6 +42,13 @@ export type MarkdownTab = {
   path: string;
 };
 
+export type NotebookTab = {
+  id: number;
+  kind: "notebook";
+  title: string;
+  path: string;
+};
+
 export type AiDiffStatus = "pending" | "approved" | "rejected";
 
 export type AiDiffTab = {
@@ -92,6 +99,7 @@ export type Tab =
   | EditorTab
   | PreviewTab
   | MarkdownTab
+  | NotebookTab
   | AiDiffTab
   | GitDiffTab
   | GitHistoryTab

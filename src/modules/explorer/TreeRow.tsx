@@ -36,10 +36,15 @@ export type EntryRowProps = {
   onRevealInTerminal?: (path: string) => void;
   onAttachToAgent?: (path: string) => void;
   onOpenMarkdownPreview?: (path: string) => void;
+  onOpenNotebook?: (path: string) => void;
 };
 
 function isMarkdownPath(path: string): boolean {
   return /\.(md|markdown|mdx)$/i.test(path);
+}
+
+function isNotebookPath(path: string): boolean {
+  return /\.ipynb$/i.test(path);
 }
 
 function EntryRowImpl(props: EntryRowProps) {
@@ -58,6 +63,7 @@ function EntryRowImpl(props: EntryRowProps) {
     onRevealInTerminal,
     onAttachToAgent,
     onOpenMarkdownPreview,
+    onOpenNotebook,
   } = props;
 
   const [isConfirming, setIsConfirming] = useState(false);
@@ -146,6 +152,14 @@ function EntryRowImpl(props: EntryRowProps) {
             onSelect={() => onOpenMarkdownPreview(path)}
           >
             Open Preview
+          </ContextMenuItem>
+        )}
+        {!isDir && isNotebookPath(path) && onOpenNotebook && (
+          <ContextMenuItem
+            className={COMPACT_ITEM}
+            onSelect={() => onOpenNotebook(path)}
+          >
+            Open Notebook
           </ContextMenuItem>
         )}
         {isDir && onRevealInTerminal && (

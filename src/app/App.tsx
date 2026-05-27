@@ -63,6 +63,7 @@ import {
   type SearchTarget,
 } from "@/modules/header";
 import { MarkdownStack } from "@/modules/markdown";
+import { NotebookStack } from "@/modules/notebook";
 import { PreviewStack, type PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
 import { openNewWindow } from "@/modules/window/openNewWindow";
@@ -134,6 +135,7 @@ export default function App() {
     pinTab,
     newPreviewTab,
     newMarkdownTab,
+    newNotebookTab,
     openAiDiffTab,
     closeAiDiffTab,
     openGitDiffTab,
@@ -385,6 +387,7 @@ export default function App() {
   const isEditorTab = activeTab?.kind === "editor";
   const isPreviewTab = activeTab?.kind === "preview";
   const isMarkdownTab = activeTab?.kind === "markdown";
+  const isNotebookTab = activeTab?.kind === "notebook";
   const isAiDiffTab = activeTab?.kind === "ai-diff";
   const isGitDiffTab =
     activeTab?.kind === "git-diff" || activeTab?.kind === "git-commit-file";
@@ -885,6 +888,13 @@ export default function App() {
     [newMarkdownTab],
   );
 
+  const openNotebookViewer = useCallback(
+    (path: string) => {
+      newNotebookTab(path);
+    },
+    [newNotebookTab],
+  );
+
   const splitActivePaneInActiveTab = useCallback(
     (dir: "row" | "col") => {
       const t = tabsRef.current.find((x) => x.id === activeId);
@@ -1213,6 +1223,15 @@ export default function App() {
       </div>
       <div
         className={cn(
+          "absolute inset-0",
+          !isNotebookTab && "invisible pointer-events-none",
+        )}
+        aria-hidden={!isNotebookTab}
+      >
+        <NotebookStack tabs={tabs} activeId={activeId} />
+      </div>
+      <div
+        className={cn(
           "absolute inset-0 px-3 pt-2 pb-2",
           !isAiDiffTab && "invisible pointer-events-none",
         )}
@@ -1308,6 +1327,7 @@ export default function App() {
                         onRevealInTerminal={cdInNewTab}
                         onAttachToAgent={handleAttachFileToAgent}
                         onOpenMarkdownPreview={openMarkdownPreview}
+                        onOpenNotebook={openNotebookViewer}
                       />
                     ) : sidebarView === "processes" ? (
                       <BackgroundProcessPanel />

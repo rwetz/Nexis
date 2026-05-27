@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.15] — 2026-05-27
+
+### Added
+- **Jupyter notebook viewer** — right-click any `.ipynb` file in the explorer and select **Open Notebook** to view it in a dedicated tab. Code cells render with syntax-aware styling and execution count labels; markdown cells render as formatted text; stream and error outputs are shown below each code cell with ANSI escape stripping. Static read-only view (no kernel required).
+
+---
+
 ## [0.9.14] — 2026-05-27
 
 ### Added
