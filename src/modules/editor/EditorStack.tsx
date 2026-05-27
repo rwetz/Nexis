@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import type { EditorTab, Tab } from "@/modules/tabs";
 import { useEffect, useRef } from "react";
 import { EditorPane, type EditorPaneHandle } from "./EditorPane";
+import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { buildRunCommand } from "./lib/runCommand";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setWordWrap } from "@/modules/settings/store";
@@ -15,6 +16,8 @@ type Props = {
   registerHandle: (id: number, handle: EditorPaneHandle | null) => void;
   onCloseTab: (id: number) => void;
   onRunFile?: (path: string, cwd: string, command: string) => void;
+  root?: string | null;
+  onNavigateToFolder?: (folderPath: string) => void;
 };
 
 export function EditorStack({
@@ -24,6 +27,8 @@ export function EditorStack({
   registerHandle,
   onCloseTab,
   onRunFile,
+  root,
+  onNavigateToFolder,
 }: Props) {
   const editors = tabs.filter((t): t is EditorTab => t.kind === "editor");
   const wordWrap = usePreferencesStore((s) => s.wordWrap);
@@ -107,12 +112,19 @@ export function EditorStack({
             <div className="flex h-full flex-col overflow-hidden rounded-md border border-border/60 bg-background">
               {(() => {
                 const rc = onRunFile ? buildRunCommand(t.path) : null;
-                return (rc || true) ? (
-                  <div className="flex shrink-0 items-center justify-between border-b border-border/40 bg-card/60 px-2 py-0.5">
-                    <div className="flex items-center gap-1">
+                return (
+                  <div className="flex shrink-0 items-center gap-2 border-b border-border/40 bg-card/60 px-2 py-0.5">
+                    {/* Breadcrumb */}
+                    <EditorBreadcrumb
+                      path={t.path}
+                      root={root ?? null}
+                      onNavigate={onNavigateToFolder}
+                    />
+                    {/* Toolbar actions */}
+                    <div className="flex shrink-0 items-center gap-1">
                       <button
                         type="button"
-                        title={wordWrap ? "Disable word wrap (Alt+Z)" : "Enable word wrap (Alt+Z)"}
+                        title={wordWrap ? "Disable word wrap" : "Enable word wrap"}
                         onClick={() => void setWordWrap(!wordWrap)}
                         className={cn(
                           "flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] transition-colors hover:bg-muted",
@@ -120,10 +132,7 @@ export function EditorStack({
                         )}
                       >
                         <HugeiconsIcon icon={TextAlignLeftIcon} size={12} strokeWidth={1.75} />
-                        <span>Wrap</span>
                       </button>
-                    </div>
-                    <div className="flex items-center gap-1">
                       {rc && onRunFile && (
                         <button
                           type="button"
@@ -137,7 +146,7 @@ export function EditorStack({
                       )}
                     </div>
                   </div>
-                ) : null;
+                );
               })()}
               <EditorPane
                 ref={getRefCallback(t.id)}

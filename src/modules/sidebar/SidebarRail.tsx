@@ -1,7 +1,9 @@
 import { cn } from "@/lib/utils";
 import {
+  FileCodeIcon,
   FolderGitTwoIcon,
   FolderTreeIcon,
+  ListViewIcon,
   TaskAdd01Icon,
   Time01Icon,
 } from "@hugeicons/core-free-icons";
@@ -46,6 +48,8 @@ export function SidebarRail({
       icon: TaskAdd01Icon,
       badge: runningProcessCount,
     },
+    { id: "outline", label: "Outline", icon: ListViewIcon },
+    { id: "snippets", label: "Snippets", icon: FileCodeIcon },
   ];
 
   return (

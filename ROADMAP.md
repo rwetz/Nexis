@@ -137,8 +137,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Snippets library — user-defined code snippets with tab-stop placeholders, scoped by language
 - [x] Find and replace across project — workspace-wide search and replace with regex, preview, and per-file confirmation
 - [ ] Minimap — optional code minimap in the editor for navigating large files
-- [ ] Breadcrumb navigation — file path + symbol breadcrumbs at the top of the editor pane
-- [ ] Symbol outline panel — file-level function/class/variable tree in the sidebar
+- [x] Breadcrumb navigation — file path + symbol breadcrumbs at the top of the editor pane
+- [x] Symbol outline panel — file-level function/class/variable tree in the sidebar
 - [x] Code folding improvements — fold by indent, by region comments, and by language constructs
 - [x] Word wrap toggle — per-file and global word wrap setting in the editor
 - [ ] AI PR description generation — draft pull request titles and bodies from branch diff

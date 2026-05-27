@@ -2,6 +2,14 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.5] — 2026-05-27
+
+### Added
+- **Breadcrumb navigation** — the editor toolbar now shows the file's path relative to the workspace root as a row of clickable segments. Clicking any folder segment switches the sidebar to the file explorer. The final segment (filename) is styled differently and non-interactive.
+- **Symbol outline panel** — new **Outline** tab in the sidebar rail shows a live, scrollable tree of symbols in the active file: functions, classes, interfaces, types, enums, and methods. Symbols are extracted via language-aware regex patterns covering TypeScript/JavaScript, Python, Rust, and Go. Each entry shows the symbol kind (with a color-coded icon), name, and line number.
+
+---
+
 ## [0.9.4] — 2026-05-27
 
 ### Added

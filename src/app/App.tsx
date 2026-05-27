@@ -78,6 +78,8 @@ import {
 } from "@/modules/shortcuts";
 import { SidebarRail } from "@/modules/sidebar";
 import { BackgroundProcessPanel, useBackgroundProcesses } from "@/modules/processes";
+import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
+import { SnippetsPanel } from "@/modules/snippets";
 import {
   SourceControlPanel,
   useSourceControl,
@@ -1157,6 +1159,10 @@ export default function App() {
           onDirtyChange={handleEditorDirty}
           onCloseTab={disposeTab}
           onRunFile={handleRunFile}
+          root={explorerRoot}
+          onNavigateToFolder={(_folderPath) => {
+            persistSidebarView("explorer");
+          }}
         />
       </div>
       <div
@@ -1282,6 +1288,10 @@ export default function App() {
                       />
                     ) : sidebarView === "processes" ? (
                       <BackgroundProcessPanel />
+                    ) : sidebarView === "outline" ? (
+                      <SymbolOutlinePanel filePath={tabs.find(t => t.id === activeId && t.kind === "editor") ? (tabs.find(t => t.id === activeId) as { path: string }).path : null} />
+                    ) : sidebarView === "snippets" ? (
+                      <SnippetsPanel />
                     ) : (
                       <SourceControlPanel
                         open
