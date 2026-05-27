@@ -13,6 +13,7 @@ import {
 import { IncognitoIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PythonEnvPill, type PythonEnv } from "@/modules/python";
+import { ContainerPill, type ContainerEnv } from "@/modules/containers";
 import { CwdBreadcrumb } from "./CwdBreadcrumb";
 import { WorkspaceEnvSelector } from "./WorkspaceEnvSelector";
 import type { WorkspaceEnv } from "@/modules/workspace";
@@ -32,6 +33,7 @@ type Props = {
   pythonLoading?: boolean;
   onSelectPythonEnv?: (env: PythonEnv | null) => void;
   onRefreshPythonEnvs?: () => void;
+  containerEnv?: ContainerEnv | null;
 };
 
 export function StatusBar({
@@ -48,6 +50,7 @@ export function StatusBar({
   pythonLoading = false,
   onSelectPythonEnv,
   onRefreshPythonEnvs,
+  containerEnv,
 }: Props) {
   const panelOpen = useChatStore((s) => s.panelOpen);
   const openPanel = useChatStore((s) => s.openPanel);
@@ -57,6 +60,7 @@ export function StatusBar({
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <WorkspaceEnvSelector onSelect={onWorkspaceChange} />
         <CwdBreadcrumb cwd={cwd} filePath={filePath} home={home} onCd={onCd} />
+        {containerEnv ? <ContainerPill env={containerEnv} /> : null}
         {privateActive ? (
           <Tooltip>
             <TooltipTrigger asChild>

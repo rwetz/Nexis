@@ -90,6 +90,7 @@ import {
 } from "@/modules/source-control";
 import { StatusBar } from "@/modules/statusbar";
 import { usePythonEnv } from "@/modules/python";
+import { useContainerEnv } from "@/modules/containers";
 import { MAX_PANES_PER_TAB, useTabs, useWorkspaceCwd, setSavedTabsEnabled } from "@/modules/tabs";
 import {
   disposeSession,
@@ -442,6 +443,8 @@ export default function App() {
     setActiveEnv: setActivePythonEnv,
     refresh: refreshPythonEnvs,
   } = usePythonEnv(explorerRoot);
+
+  const containerEnv = useContainerEnv(explorerRoot);
 
   useEffect(() => {
     setActiveSearchAddon(
@@ -1416,6 +1419,7 @@ export default function App() {
             pythonLoading={pythonLoading}
             onSelectPythonEnv={setActivePythonEnv}
             onRefreshPythonEnvs={refreshPythonEnvs}
+            containerEnv={containerEnv}
           />
 
           {hasComposer ? (

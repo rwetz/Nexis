@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.14] — 2026-05-27
+
+### Added
+- **Container-aware environments** — Nexis now detects Docker and devcontainer configurations in the workspace root (`.devcontainer/devcontainer.json`, `docker-compose.yml`, `Dockerfile`, etc.) and surfaces a **Container** pill in the status bar. The pill shows the detected type (Dev Container, Docker Compose, or Dockerfile) with a tooltip. Detection is automatic and re-runs when the workspace changes.
+
+---
+
 ## [0.9.13] — 2026-05-27
 
 ### Added

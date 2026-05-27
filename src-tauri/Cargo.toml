@@ -1,6 +1,6 @@
 [package]
 name = "nexis"
-version = "0.9.13"
+version = "0.9.14"
 description = "Nexis — an AI-native terminal emulator"
 authors = []
 edition = "2021"
