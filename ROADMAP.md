@@ -134,7 +134,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] Refactoring engine — rename symbols, extract functions, and structured code edits across a project
 - [ ] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with output captured in a dedicated panel and errors linked to source lines
 - [ ] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
-- [ ] Snippets library — user-defined code snippets with tab-stop placeholders, scoped by language
+- [x] Snippets library — user-defined code snippets with tab-stop placeholders, scoped by language
 - [x] Find and replace across project — workspace-wide search and replace with regex, preview, and per-file confirmation
 - [ ] Minimap — optional code minimap in the editor for navigating large files
 - [x] Breadcrumb navigation — file path + symbol breadcrumbs at the top of the editor pane
@@ -143,7 +143,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Word wrap toggle — per-file and global word wrap setting in the editor
 - [ ] AI PR description generation — draft pull request titles and bodies from branch diff
 - [ ] AI-powered rename — rename a symbol across the project with AI verifying correctness
-- [ ] Keybinding editor — visual UI for remapping any shortcut, with import/export
+- [x] Keybinding editor — visual UI for remapping any shortcut, with import/export
 - [x] Command palette — fuzzy-searchable palette for every action in the app (Ctrl+Shift+P)
 - [x] Notifications center — in-app log of agent actions, build results, and background task completions
 - [ ] Container-aware environments — detect and work inside Docker/devcontainer setups, surface container context in the status bar

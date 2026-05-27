@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [0.9.6] — 2026-05-27
+
+### Added
+- **Snippets library** — new **Snippets** tab in the sidebar rail. Create, edit, and delete code snippets with tab-stop placeholders (`$1`, `$2`, …, `$0` for final cursor position), scoped by language. Built-in starter snippets for TypeScript, Python, Rust, and Go. Trigger any snippet in the editor by typing its prefix then pressing **Tab** — the prefix is replaced with the snippet body and the cursor is placed at the first tab stop. Snippets persist across sessions via a local store.
+
+---
+
 ## [0.9.5] — 2026-05-27
 
 ### Added

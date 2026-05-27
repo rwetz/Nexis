@@ -33,6 +33,8 @@ import { useDocument } from "./lib/useDocument";
 import { formatFile } from "./lib/formatter";
 import { inlineCompletion } from "./lib/autocomplete/inlineExtension";
 import { syntaxLinter } from "./lib/linting";
+import { tryExpandSnippet } from "./lib/snippetExpansion";
+import { useCodeSnippetsStore } from "@/modules/snippets/codeSnippetsStore";
 import { getKey } from "@/modules/ai/lib/keyring";
 import { onKeysChanged } from "@/modules/settings/store";
 
@@ -211,6 +213,13 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
                 }
               })();
               return true;
+            },
+          },
+          {
+            key: "Tab",
+            run: (view) => {
+              const snippets = useCodeSnippetsStore.getState().snippets;
+              return tryExpandSnippet(view, snippets, languageRef.current);
             },
           },
           { key: "Ctrl-k Ctrl-0", mac: "Cmd-k Cmd-0", run: foldAll, preventDefault: true },
