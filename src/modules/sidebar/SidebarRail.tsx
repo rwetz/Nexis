@@ -60,8 +60,10 @@ export function SidebarRail({
   return (
     <div
       style={{ height: SIDEBAR_RAIL_HEIGHT }}
-      className="flex shrink-0 items-center gap-0.5 border-t border-border/50 bg-card/90 px-1.5 backdrop-blur"
+      className="flex shrink-0 items-center border-t border-border/50 bg-card/90 px-1.5 backdrop-blur"
     >
+      {/* Scrollable icon strip — hides scrollbar, trackpad/wheel still works */}
+      <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {items.map((item) => {
         const isActive = item.id === activeView;
         const badge = item.badge && item.badge > 0 ? item.badge : null;
@@ -117,9 +119,9 @@ export function SidebarRail({
           </Tooltip>
         );
       })}
+      </div>{/* end scrollable strip */}
 
-      {/* Spacer pushes history button to the right */}
-      <div className="flex-1" />
+      {/* History button always visible at the right edge */}
 
       {onOpenHistory ? (
         <>
