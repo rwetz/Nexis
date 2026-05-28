@@ -1,5 +1,10 @@
 import { cn } from "@/lib/utils";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Database01Icon,
   FileCodeIcon,
   FolderGitTwoIcon,
@@ -41,18 +46,8 @@ export function SidebarRail({
 }: Props) {
   const items: RailItem[] = [
     { id: "explorer", label: "Files", icon: FolderTreeIcon },
-    {
-      id: "source-control",
-      label: "Source Control",
-      icon: FolderGitTwoIcon,
-      badge: changedCount,
-    },
-    {
-      id: "processes",
-      label: "Processes",
-      icon: TaskAdd01Icon,
-      badge: runningProcessCount,
-    },
+    { id: "source-control", label: "Source Control", icon: FolderGitTwoIcon, badge: changedCount },
+    { id: "processes", label: "Processes", icon: TaskAdd01Icon, badge: runningProcessCount },
     { id: "outline", label: "Outline", icon: ListViewIcon },
     { id: "snippets", label: "Snippets", icon: FileCodeIcon },
     { id: "tests", label: "Tests", icon: TestTube01Icon },
@@ -65,71 +60,90 @@ export function SidebarRail({
   return (
     <div
       style={{ height: SIDEBAR_RAIL_HEIGHT }}
-      className="flex shrink-0 items-stretch gap-0.5 border-t border-border/50 bg-card/90 px-1.5 py-1.5 backdrop-blur"
+      className="flex shrink-0 items-center gap-0.5 border-t border-border/50 bg-card/90 px-1.5 backdrop-blur"
     >
       {items.map((item) => {
         const isActive = item.id === activeView;
-        const showBadge = !!item.badge && item.badge > 0;
+        const badge = item.badge && item.badge > 0 ? item.badge : null;
+
         return (
-          <button
-            key={item.id}
-            type="button"
-            aria-label={item.label}
-            aria-pressed={isActive}
-            onClick={() => onSelectView(item.id)}
-            className={cn(
-              "group relative flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md text-[10.5px] font-medium outline-none transition-all duration-150",
-              "focus-visible:ring-2 focus-visible:ring-primary/40",
-              isActive
-                ? "bg-primary/[0.07] text-foreground dark:bg-primary/[0.1]"
-                : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground",
-            )}
-          >
-            <HugeiconsIcon
-              icon={item.icon}
-              size={13}
-              strokeWidth={isActive ? 2 : 1.75}
-              className={cn(
-                "shrink-0 transition-[stroke-width] duration-150",
-                isActive && "text-primary",
-              )}
-            />
-            <span className={cn(isActive && "font-semibold")}>{item.label}</span>
-            {showBadge ? (
-              <span
+          <Tooltip key={item.id} delayDuration={400}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label={item.label}
+                aria-pressed={isActive}
+                onClick={() => onSelectView(item.id)}
                 className={cn(
-                  "inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full px-1 text-[9px] font-semibold leading-none tabular-nums",
+                  "relative flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md outline-none transition-all duration-150",
+                  "focus-visible:ring-2 focus-visible:ring-primary/40",
                   isActive
-                    ? "border border-primary/25 bg-primary/12 text-primary"
-                    : "border border-border/60 bg-muted/60 text-muted-foreground/90",
+                    ? "bg-primary/[0.07] text-foreground dark:bg-primary/[0.1]"
+                    : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground",
                 )}
               >
-                {item.badge! > 99 ? "99+" : item.badge}
-              </span>
-            ) : null}
-            {isActive ? (
-              <span className="absolute inset-x-2.5 bottom-0 h-[1.5px] rounded-full bg-primary/55" />
-            ) : null}
-          </button>
+                <HugeiconsIcon
+                  icon={item.icon}
+                  size={14}
+                  strokeWidth={isActive ? 2 : 1.75}
+                  className={cn(
+                    "shrink-0 transition-[stroke-width] duration-150",
+                    isActive && "text-primary",
+                  )}
+                />
+
+                {/* Badge overlay */}
+                {badge ? (
+                  <span className={cn(
+                    "absolute -right-0.5 -top-0.5 flex h-[14px] min-w-[14px] items-center justify-center rounded-full px-0.5",
+                    "text-[8px] font-bold leading-none tabular-nums",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted-foreground/70 text-background",
+                  )}>
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                ) : null}
+
+                {/* Active underline */}
+                {isActive ? (
+                  <span className="absolute inset-x-1.5 bottom-0.5 h-[1.5px] rounded-full bg-primary/60" />
+                ) : null}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              {item.label}
+            </TooltipContent>
+          </Tooltip>
         );
       })}
 
+      {/* Spacer pushes history button to the right */}
+      <div className="flex-1" />
+
       {onOpenHistory ? (
         <>
-          <div className="mx-0.5 my-1.5 w-px shrink-0 bg-border/40" aria-hidden />
-          <button
-            type="button"
-            aria-label="Open commit history"
-            title="Commit history"
-            onClick={onOpenHistory}
-            className={cn(
-              "group flex w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground outline-none transition-colors duration-150",
-              "hover:bg-foreground/[0.05] hover:text-foreground",
-              "focus-visible:ring-2 focus-visible:ring-primary/40",
-            )}
-          >
-            <HugeiconsIcon icon={Time01Icon} size={13} strokeWidth={1.75} />
-          </button>
+          <div className="mx-0.5 h-4 w-px shrink-0 bg-border/40" aria-hidden />
+          <Tooltip delayDuration={400}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Open commit history"
+                onClick={onOpenHistory}
+                className={cn(
+                  "flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md",
+                  "text-muted-foreground outline-none transition-colors duration-150",
+                  "hover:bg-foreground/[0.05] hover:text-foreground",
+                  "focus-visible:ring-2 focus-visible:ring-primary/40",
+                )}
+              >
+                <HugeiconsIcon icon={Time01Icon} size={14} strokeWidth={1.75} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              Commit history
+            </TooltipContent>
+          </Tooltip>
         </>
       ) : null}
     </div>
