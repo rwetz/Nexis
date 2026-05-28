@@ -5,7 +5,7 @@
   <p><strong>Open-source lightweight cross-platform AI-native terminal (ADE)</strong></p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-0.8.9-blue" alt="version" />
+    <img src="https://img.shields.io/badge/version-1.0.0-blue" alt="version" />
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license" />
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="platform" />
   </p>
@@ -13,13 +13,13 @@
 
 ---
 
-Nexis is a lightweight, AI-first terminal built on Tauri 2, Rust, and React 19. It gives you a native PTY backend, multi-tab terminals, a built-in code editor, a file explorer, and an AI panel that runs on your own API keys — or entirely offline with LM Studio. Stays under 10 MB, stores keys in your OS keychain, and collects zero telemetry.
+Nexis is a lightweight, AI-first terminal and developer environment built on Tauri 2, Rust, and React 19. Native PTY backend, multi-tab terminals, a full code editor, file explorer, source control, and an AI panel that runs on your own API keys — or entirely offline with LM Studio, MLX, or Ollama. Under 10 MB, keys stored in the OS keychain, zero telemetry.
 
 ## Based on Terax
 
-Nexis started as a personal fork of [terax-ai](https://github.com/crynta/terax-ai) — a great open-source AI terminal by [@crynta](https://github.com/crynta). The core architecture, PTY backend, and AI tooling are all rooted in that work. Nexis builds on top of it with my own branding, logo, tweaks, and direction going forward.
+Nexis started as a personal fork of [terax-ai](https://github.com/crynta/terax-ai) — an open-source AI terminal by [@crynta](https://github.com/crynta). The core PTY architecture and AI tooling are rooted in that work. Nexis builds on top with its own direction, branding, and a much expanded feature set.
 
-If you're looking for the upstream project, head over to [crynta/terax-ai](https://github.com/crynta/terax-ai). If you want my personal take on it, you're in the right place.
+If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/terax-ai).
 
 ## Screenshots
 
@@ -35,58 +35,107 @@ If you're looking for the upstream project, head over to [crynta/terax-ai](https
 
 ## What's inside
 
-**Terminal**
-- xterm.js with WebGL rendering, multiple tabs, background streaming
-- Native PTY via `portable-pty` — works with zsh, bash, pwsh, fish, cmd
-- Shell integration for cwd tracking and prompt markers
-- Inline search, clickable links, full true-color support
-- Shell history search (Ctrl+R) — fuzzy overlay sourced from `~/.zsh_history`, `~/.bash_history`, fish history, or PowerShell history
-- Built-in ANSI palette switcher in Settings → Themes: Default Dark, Catppuccin Mocha, Dracula, Nord, Solarized Dark, One Dark — hot-swaps without restart
+### Terminal
+- xterm.js with WebGL rendering, unlimited tabs, split panes
+- Native PTY — works with zsh, bash, pwsh, fish, cmd
+- Shell integration: cwd tracking (OSC 7) and prompt markers (OSC 133)
+- Inline search, clickable links, true-color (24-bit)
+- Shell history search (`Ctrl+R`) — fuzzy overlay over `~/.zsh_history`, `~/.bash_history`, fish, or PSReadLine; inserts without auto-executing
+- Private terminals — AI cannot read scrollback; shown with incognito indicator
+- WSL as a first-class workspace environment
+- Tab and pane layout persists across restarts
+- Configurable font family, font size, letter spacing, scrollback buffer
+- Inline AI command suggestions — history-aware, never auto-execute
+- Drag files into the terminal as quoted paths or AI context attachments
 
-**Editor**
-- CodeMirror 6 with syntax highlighting for TS/JS, Rust, Python, HTML/CSS, JSON, Markdown, and more
-- AI-powered inline autocomplete and diff-based edits
-- Inline linting — real-time syntax error markers in the gutter for JS/TS, Python, Rust, Go, JSON, HTML, CSS, and Markdown; no external toolchain required
-- Code formatting — run Prettier, rustfmt, clang-format, black, or gofmt on the current file with `Shift+Alt+F` or automatically on save; configure per-language commands in Settings → Formatters
-- Vim keybindings
-- Editor themes: Tokyo Night, Nord, GitHub, Atom One, Aura, Copilot, Xcode
-- Quick file open (Ctrl+P / Cmd+P) — fuzzy workspace file picker that respects `.gitignore`
+### Editor
+- CodeMirror 6 with syntax highlighting for TS/JS, Rust, Python, HTML/CSS, JSON/JSONC, Markdown, Go, C/C++, Java, C#, PHP, Ruby, SQL dialects, YAML, TOML, Shell/Bash, Dockerfile
+- **AI inline autocomplete** — context-aware completions with configurable provider and model
+- **AI diff approval** — AI-proposed edits shown as per-hunk diffs; approve or reject each change individually
+- **Workspace-wide symbol rename** (`F2`) — grep-backed rename across every file in the workspace with a preview dialog
+- **Code minimap** — 52 px minimap with line-type coloring and click-to-scroll; viewport indicator
+- **Jupyter notebook viewer** — right-click any `.ipynb` to open a static cell viewer; renders code, markdown, stream, and error outputs without a kernel
+- Vim mode
+- Inline linting — Lezer-based real-time syntax error markers for JS/TS, Python, Rust, Go, JSON, HTML, CSS, Markdown
+- Code formatting — Prettier, rustfmt, clang-format, black, gofmt, and more; configurable per language; runs on save or `Shift+Alt+F`
+- Code folding — fold by indent, region comments, and language constructs
+- Word wrap toggle — per-file and global
+- Snippet library — tab-stop snippets scoped by language
+- Breadcrumb navigation — file path + symbol crumbs at the top of the editor
+- Symbol outline panel — file-level function/class/variable tree in the sidebar
+- Find and replace across the project — workspace-wide regex search with per-file preview and confirmation
+- Quick file open (`Ctrl+P` / `Cmd+P`) — fuzzy workspace picker that respects `.gitignore`
+- Live file system sync — editor and explorer update in real time as files change on disk
+- Run current file — execute via a configured command with output captured in a terminal tab
 
-**Themes**
-- Full app theme system with built-in themes: Nexis Default, Catppuccin, Nord, Tokyo Night, Gruvbox, Rose Pine, Sage, Tide, Caffeine, Claude
-- Custom themes — create, import, and delete `.nexis-theme` files from Settings → Themes; live color swatch previews
-- Theme editor — Create/Edit opens `.nexis-theme` directly in the code editor; Create generates a starter file and adds it to custom themes automatically
-- Background images — set a local image with adjustable opacity (0–100%) and blur (0–64px); all stored locally, no cloud dependency
+### Themes
+- Built-in app themes: Nexis Default, Catppuccin Mocha, Nord, Tokyo Night, Rosé Pine, Gruvbox, Caffeine, Claude, Sage, Tide
+- Custom themes — create, import, and delete `.nexis-theme` files; live swatch preview
+- Theme editor — open any `.nexis-theme` directly in the code editor
+- Background images with adjustable opacity (0–100%) and blur (0–64 px)
+- Terminal color palettes built into each theme
 
-**File Explorer**
-- Catppuccin icon theme
-- Fuzzy search, keyboard nav, inline rename, right-click context actions
+### File Explorer
+- Catppuccin / Material icon themes
+- Fuzzy search, keyboard navigation, inline rename, context menu
+- Right-click `.md` files → **Open Preview** for rendered Markdown
+- Right-click `.ipynb` files → **Open Notebook** for the static cell viewer
 
-**Web Preview**
-- Automatically picks up running local dev servers and opens them in a tab
+### Git & Source Control
+- Stage, unstage, commit, branch — all without leaving the app
+- Commit graph and history viewer with branch lanes
+- Per-file diffs with syntax highlighting
+- **AI commit message generation** — one-click Conventional Commit subject lines from the staged diff
+- **AI PR description generation** — draft pull request titles and bodies from the branch diff
+- Syntax-highlighted unified diff view
 
-**Git & Source Control**
-- Stage, unstage, commit, and push without leaving the app
-- AI commit message generation — one-click Conventional Commit subject lines from the staged diff, with auto-repair pass if the first attempt is malformed
-- Syntax-highlighted diff viewer — language-aware coloring for working-tree and commit diffs via CodeMirror's unified merge view; binary and large-file fallback renders colored +/- patch lines
-- Commit graph with branch lanes, author avatars, and per-commit file list popover
+### AI
+- **12+ providers** — OpenAI, Anthropic, Google, Groq, xAI, Cerebras, DeepSeek, Mistral, OpenRouter, OpenAI-compatible endpoints, **Hugging Face Inference API**
+- **Fully offline** — LM Studio, MLX, and Ollama; no API key required
+- Multi-agent and sub-agents with tool approval flows
+- Voice input — Whisper transcription via OpenAI
+- Slash commands and skills
+- Project memory via `NEXIS.md` in your project root
+- File, shell, search, and plan tools — all require explicit approval before execution
+- Workspace file picker for attaching files as AI context
+- Auto-compaction for long conversations
+- **AI context inspector** — transparency panel showing exactly what context goes to the model
+- Dockable AI panel — resize, float, and snap-to-dock
 
-**AI — bring your own keys**
-- Works with OpenAI, Anthropic, Google, Groq, xAI, Cerebras, or any OpenAI-compatible endpoint
-- Fully offline via LM Studio
-- Voice input, multi-agent support, slash commands, skills
-- Drop a `NEXIS.md` in your project root for persistent AI context
-- All file/shell operations require your approval before running
+### Sidebar Panels
+| Panel | What it does |
+|---|---|
+| **Files** | File explorer with icons, search, and rename |
+| **Source Control** | Git stage / commit / diff |
+| **Processes** | Background jobs and dev servers |
+| **Outline** | Symbol tree for the active file |
+| **Snippets** | Create and manage code snippets |
+| **Tests** | Run Vitest / cargo test / pytest / JUnit with pass/fail tree |
+| **Database** | Connection manager for SQLite, PostgreSQL, MySQL; schema browser, table viewer, AI-assisted query editor |
+| **Build** | Detect and run cargo, pnpm, make, gradle, go, and more |
+| **SSH** | Save SSH connections; **Connect** opens a new terminal tab with the command pre-executed |
+| **Release** | Current version, commits since last tag, one-click changelog copy, git tag creation |
 
-**General**
-- Tab and layout persistence — terminal tabs (with working directory) and editor tabs saved on change and restored on next launch; toggle in Settings → General → Startup
-- ~7 MB bundle
-- API keys live in your OS keychain, never on disk
-- No accounts, no telemetry
+### Web Preview
+- Auto-detected local dev server preview
+- Image and PDF viewers
+- Sandboxed iframe
 
-## Terminal
+### Platform
+- macOS, Linux (.deb / .rpm / AppImage), Windows (NSIS / MSI)
+- AUR package
+- WSL support
+- Windows Explorer context menu — right-click folders and drives to open in Nexis
+- Auto-updater
+- OS keychain for API keys — never written to disk
+- SSRF and DNS rebinding protection
+- Sandboxed AI tool surface
+- **Container-aware environments** — detects `.devcontainer`, `docker-compose.yml`, `Dockerfile` in the workspace; surfaces a status-bar pill
+- **Python environment awareness** — auto-detects virtualenvs, conda, and `pyproject.toml`; surface active env in the status bar with quick-switch
 
-### Keyboard shortcuts
+---
+
+## Keyboard shortcuts
 
 | Action | macOS | Windows / Linux |
 |---|---|---|
@@ -96,95 +145,79 @@ If you're looking for the upstream project, head over to [crynta/terax-ai](https
 | Close tab / pane | `Cmd+W` | `Ctrl+W` |
 | Next tab | `Ctrl+Tab` | `Ctrl+Tab` |
 | Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
-| Jump to tab 1–9 | `Cmd+1`–`Cmd+9` | `Ctrl+1`–`Ctrl+9` |
+| Jump to tab 1–9 | `Cmd+1–9` | `Ctrl+1–9` |
 | Split pane right | `Cmd+D` | `Ctrl+D` |
 | Split pane down | `Cmd+Shift+D` | `Ctrl+Shift+D` |
 | Focus next pane | `Cmd+]` | `Ctrl+]` |
-| Focus previous pane | `Cmd+[` | `Ctrl+[` |
 | Find in terminal | `Cmd+F` | `Ctrl+F` |
 | Shell history search | `Ctrl+R` | `Ctrl+R` |
-| Word forward | `Alt+→` | `Alt+→` |
-| Word back | `Alt+←` | `Alt+←` |
-| Delete word | `Cmd+Backspace` | `Ctrl+Backspace` |
-| Newline without execute | `Shift+Enter` | `Shift+Enter` |
-| Zoom in | `Cmd+=` | `Ctrl+=` |
-| Zoom out | `Cmd+-` | `Ctrl+-` |
-| Reset zoom | `Cmd+0` | `Ctrl+0` |
-| Toggle sidebar | `Cmd+B` | `Ctrl+B` |
-| Toggle AI panel | `Cmd+I` | `Ctrl+I` |
-| Toggle git panel | `Cmd+G` | `Ctrl+G` |
 | Quick file open | `Cmd+P` | `Ctrl+P` |
 | Search in files | `Cmd+Shift+F` | `Ctrl+Shift+F` |
+| Command palette | `Cmd+Shift+P` | `Ctrl+Shift+P` |
 | Format document | `Shift+Alt+F` | `Shift+Alt+F` |
+| Rename symbol | `F2` | `F2` |
+| Fold all | `Cmd+K Cmd+0` | `Ctrl+K Ctrl+0` |
+| Unfold all | `Cmd+K Cmd+J` | `Ctrl+K Ctrl+J` |
+| Toggle sidebar | `Cmd+B` | `Ctrl+B` |
+| Toggle AI panel | `Cmd+I` | `Ctrl+I` |
+| Zoom in / out / reset | `Cmd+=` / `Cmd+-` / `Cmd+0` | `Ctrl+=` / `Ctrl+-` / `Ctrl+0` |
 | Settings | `Cmd+,` | `Ctrl+,` |
-| Keyboard shortcuts reference | `Cmd+K` | `Ctrl+K` |
+| Keyboard shortcuts | `Cmd+K` | `Ctrl+K` |
 
-### Features
+---
 
-**Tabs & panes**
-- Unlimited tabs; mouse-wheel scrolls the tab bar horizontally
-- Split any tab into side-by-side or stacked panes — each pane is an independent PTY session
-- Tab and pane state (working directory) persists across restarts — toggle in Settings → General → Startup
+## Setting up AI
 
-**Find in terminal**
-- `Enter` — next match; `Shift+Enter` — previous match; `Esc` — dismiss
-- Matches highlighted with decorations; active match shown in orange
+1. Open **Settings → AI**
+2. Choose a provider and paste your API key
+3. For local/offline models, point it at your LM Studio, MLX, or Ollama URL
 
-**Shell history search (`Ctrl+R`)**
-- Fuzzy overlay over the prompt — does **not** auto-execute; press `Enter` to insert, `Esc` to cancel
-- Sources `~/.zsh_history`, `~/.bash_history`, fish history, or PowerShell `PSReadLine` history automatically
+Keys are stored in the OS keychain via Rust's `keyring` crate — they never hit disk or localStorage.
 
-**Shell integration**
-- OSC 7 — tracks the current working directory as you `cd`
-- OSC 133 — marks prompt boundaries so the AI can tell commands from output
-- Supported shells: zsh, bash, fish, PowerShell (`pwsh` / `powershell.exe`), cmd.exe
+### Supported providers
 
-**Private terminals**
-- Open with `Cmd+R` / `Ctrl+R`; shown with an incognito indicator in the tab bar
-- AI tools cannot read the scrollback or buffer of a private terminal
+| Provider | Key required |
+|---|---|
+| OpenAI | Yes |
+| Anthropic | Yes |
+| Google Gemini | Yes |
+| Groq | Yes |
+| xAI Grok | Yes |
+| Cerebras | Yes |
+| DeepSeek | Yes |
+| Mistral | Yes |
+| OpenRouter | Yes |
+| Hugging Face | Yes (free tier available) |
+| OpenAI-compatible | Depends on endpoint |
+| LM Studio | No — local only |
+| MLX | No — local only |
+| Ollama | No — local only |
 
-**Rendering & display**
-- WebGL-accelerated renderer (opt-out in Settings → Terminal)
-- Full true-color (24-bit) and clickable hyperlinks
-- Configurable font family, font size, letter spacing, and scrollback buffer size
-- Cursor style: block when focused, outline when blurred
-
-**Themes**
-- Eight built-in ANSI palettes hot-swap without restart: Default Dark, Catppuccin Mocha, Dracula, Nord, Solarized Dark, One Dark — set in Settings → Themes
-- Background image with adjustable opacity (0–100%) and blur (0–64 px)
-
-**AI integration**
-- AI can read up to 2 000 lines of terminal scrollback via the `get_terminal_output` tool (private tabs excluded)
-- `suggest_command` — AI proposes a command; click to insert at the prompt (never auto-executes)
-- `open_preview` — AI can open a localhost URL in a preview tab
+---
 
 ## Platform notes
 
 **Windows**
-- First launch may show a SmartScreen warning since there's no code-signing cert yet. Hit **More info → Run anyway** — this is expected for unsigned open-source software.
+- First launch may show a SmartScreen warning (no code-signing cert yet). Hit **More info → Run anyway**.
 - Shell detection order: `pwsh.exe` → `powershell.exe` → `cmd.exe`
 
 **Linux**
-- AppImage requires FUSE. No FUSE? Run with `--appimage-extract-and-run`. Wayland rendering issues? Try `WEBKIT_DISABLE_DMABUF_RENDERER=1`. The `.deb` / `.rpm` builds are usually smoother on desktop Linux.
+- AppImage requires FUSE. No FUSE? Run with `--appimage-extract-and-run`.
+- Wayland rendering issues? Try `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
+- The `.deb` / `.rpm` builds are usually smoother on desktop Linux.
 
-## Setting up AI
-
-1. Go to **Settings → AI**
-2. Choose a provider and drop in your API key
-3. For local models, point it at your LM Studio URL
-
-Keys are stored in the OS keychain via Rust's `keyring` crate — they never hit disk or localStorage.
+---
 
 ## Building from source
 
-**You'll need:**
+**Prerequisites:**
 - Rust (stable) — https://rustup.rs
 - Node 20+ and [pnpm](https://pnpm.io)
 - Tauri platform prerequisites — https://tauri.app/start/prerequisites/
 
 ```bash
 pnpm install
-pnpm tauri dev        # dev mode
+pnpm tauri dev        # dev with hot reload
 pnpm tauri build      # production build
 ```
 
@@ -194,13 +227,17 @@ pnpm exec tsc --noEmit
 cd src-tauri && cargo clippy
 ```
 
+---
+
 ## Stack
 
 Tauri 2 · Rust · `portable-pty` · React 19 · TypeScript · xterm.js · CodeMirror 6 · Vercel AI SDK v6 · Tailwind v4 · shadcn/ui · Zustand
 
+---
+
 ## Contributing
 
-PRs and issues are welcome. Check [CONTRIBUTING.md](CONTRIBUTING.md) before opening anything non-trivial.
+PRs and issues are welcome. Check [CONTRIBUTING.md](CONTRIBUTING.md) before opening anything non-trivial. See [ROADMAP.md](ROADMAP.md) for what's planned and [good-first-issue](https://github.com/rwetz/Nexis/labels/good-first-issue) / [help-wanted](https://github.com/rwetz/Nexis/labels/help-wanted) labels for tracked tasks.
 
 ## License
 
