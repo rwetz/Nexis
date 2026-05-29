@@ -14,7 +14,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 
 ## Hard limits (things that won't be built)
 
-- **Not a VS Code replacement.** Full LSP, a refactoring engine, and a debugger are all on the longer-term roadmap, but the goal is a focused terminal-first tool — not a feature-for-feature IDE clone.
+- **Not a VS Code replacement.** The goal is a focused terminal-first tool — not a feature-for-feature IDE clone.
 - **Not a browser.** The preview pane exists for local dev servers only.
 - **Not a document editor.** This is terminal-first.
 - **Not a package manager UI.** Use `npm`, `cargo`, `pip` in the terminal like normal.
@@ -31,7 +31,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 
 ---
 
-## What's shipped
+## Shipped
 
 ### Terminal
 - [x] Multi-tab terminal with WebGL rendering
@@ -41,16 +41,35 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Inline search, link detection, true-color
 - [x] Private tabs with AI context redaction
 - [x] WSL as a first-class workspace environment
-- [x] Shell history search — fuzzy Ctrl+R overlay sourced from shell history, keyboard-navigable
+- [x] Shell history search — fuzzy Ctrl+R overlay sourced from shell history, keyboard-navigable; rewritten in 1.1.0 to use Rust-side IPC search (50× less data on open, debounced queries, fish multiline support)
 - [x] Tab and layout persistence — terminal tabs (with working directory) and editor tabs restored on relaunch
 - [x] Configurable terminal font family, size, letter spacing, and scrollback buffer
+- [x] Inline terminal suggestions — history-based suggestions with AI-powered opt-in
+- [x] Drag and drop into terminal — files as quoted paths, files as AI context attachments
 
 ### Editor
-- [x] CodeMirror 6 with broad language support (TS/JS, Rust, Python, HTML/CSS, JSON/JSONC, Markdown, Go, C/C++, Java, C#, PHP, Ruby, SQL dialects (PostgreSQL/MySQL/SQLite/MSSQL/PL-SQL), YAML, TOML, Shell/Bash, Dockerfile)
-- [x] Inline AI autocomplete
+- [x] CodeMirror 6 with broad language support (TS/JS, Rust, Python, HTML/CSS, JSON/JSONC, Markdown, Go, C/C++, Java, C#, PHP, Ruby, SQL dialects, YAML, TOML, Shell/Bash, Dockerfile)
+- [x] Inline AI autocomplete — project-aware context, low latency
 - [x] AI-proposed edit diffs with per-hunk approval
 - [x] Vim mode
 - [x] Prebuilt editor themes
+- [x] Inline linting and diagnostics — real-time syntax error markers via @codemirror/lint; Lezer-based errors for JS/TS, Python, Rust, Go, JSON, HTML, CSS, Markdown
+- [x] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) with config UI
+- [x] Run files — execute the current file or project from the editor; output captured in a terminal tab
+- [x] Snippets library — user-defined code snippets with tab-stop placeholders, scoped by language
+- [x] Find and replace across project — workspace-wide search and replace with regex, preview, and per-file confirmation
+- [x] Minimap — optional code minimap for navigating large files
+- [x] Breadcrumb navigation — file path and symbol breadcrumbs at the top of the editor pane
+- [x] Symbol outline panel — file-level function/class/variable tree in the sidebar
+- [x] Code folding improvements — fold by indent, by region comments, and by language constructs
+- [x] Word wrap toggle — per-file and global word wrap setting
+- [x] AI-powered rename — rename a symbol across the project with AI verification (F2)
+- [x] Editor split diff view — side-by-side comparison view for reviewing changes
+
+### Language Tooling
+- [x] Full LSP support — go-to-definition, hover docs, completion, and diagnostics powered by language servers; Rust proxy handles protocol negotiation and session lifecycle
+- [x] DAP debugger — breakpoint gutter, step-through controls (step over/in/out/continue), variable inspector, call stack panel; supports Node.js, Python, and LLDB-based runtimes
+- [x] Problems panel — file-grouped error/warning list with filter, status bar indicator, and stale-entry cleanup on file close
 
 ### Themes
 - [x] Custom themes — create, import, and delete `.nexis-theme` files with live swatch preview
@@ -63,19 +82,22 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Catppuccin / Material icon theme
 - [x] Fuzzy search, keyboard navigation, inline rename, context menu
 - [x] Quick file open (Cmd+P / Ctrl+P) — fuzzy workspace file picker, respects `.gitignore`
+- [x] Live file system sync — explorer and editor update in real time as files change on disk
 
 ### Markdown
 - [x] Markdown preview tab — right-click any `.md` file in the explorer to open a rendered preview
+- [x] Markdown raw/preview toggle — switch between rendered preview and raw source in the same tab; split-pane side-by-side mode as opt-in
 
 ### Git & Source Control
 - [x] Stage, unstage, commit, branch
-- [x] Commit graph and history viewer
-- [x] Per-file diffs
-- [x] AI commit message generation — one-click Conventional Commit subject line from the staged diff
-- [x] Syntax-highlighted diffs — language-aware coloring in the CodeMirror unified diff view; colored +/- lines in the binary/large-file patch fallback
+- [x] Commit graph and history viewer — redesigned in 0.8.6
+- [x] Per-file diffs with syntax highlighting
+- [x] AI commit message generation — one-click Conventional Commit subject line from staged diff
+- [x] AI PR description generation — draft pull request titles and bodies from branch diff
+- [x] Redesigned source control panel and git graph — 0.8.6 visual refresh
 
 ### AI
-- [x] Multi-provider BYOK — OpenAI, Anthropic, Google, Groq, xAI, Cerebras, DeepSeek, Mistral, OpenRouter, OpenAI-compatible
+- [x] Multi-provider BYOK — OpenAI, Anthropic, Google, Groq, xAI, Cerebras, DeepSeek, Mistral, OpenRouter, Hugging Face Inference API, and OpenAI-compatible
 - [x] Offline models via LM Studio, MLX, and Ollama — no API key required
 - [x] Multi-agent and sub-agents
 - [x] Voice input — Whisper transcription via OpenAI key; mic-denied and transcription failures surface actionable alerts
@@ -84,7 +106,18 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] File, shell, search, and plan tools with approval flow
 - [x] Workspace file picker
 - [x] Auto-compaction for long sessions — stable across long conversations; circular tool output and reasoning blocks handled safely
-- [x] Dockable AI panel — resizable bottom panel with full chat history and input; detach to a draggable floating window, snap back to dock by dropping near the bottom edge
+- [x] Dockable AI panel — resizable bottom panel with full chat history and input; detach to a draggable floating window, snap back by dropping near the bottom edge
+- [x] AI context inspector — transparency panel showing exactly what context is being sent to the model
+- [x] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
+- [x] AI skill bundles — installable packages that add new agent tools and slash commands
+
+### Development Panels
+- [x] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with live output and errors linked to source lines
+- [x] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
+- [x] Background process manager — visibility into shell background jobs and dev servers running in Nexis
+- [x] Environment variable panel — view, edit, and persist env vars per workspace
+- [x] Database integration — connection manager for SQLite, PostgreSQL, MySQL; schema browser, table viewer, query editor with AI-assisted query generation
+- [x] Jupyter notebook support — open, edit, and run `.ipynb` files with kernel management, inline cell output rendering (text, plots, tables), and AI-assisted cell generation
 
 ### Web Preview
 - [x] Auto-detected local dev server preview
@@ -95,7 +128,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] macOS, Linux (.deb / .rpm / AppImage), Windows (NSIS)
 - [x] WSL support
 - [x] AUR package
-- [x] Windows Explorer context menu — right-click folders, folder backgrounds, and drives to open in Nexis; fully rebranded registry entries (`OpenInNexis` / `nexis.exe`)
+- [x] Windows Explorer context menu — right-click folders, folder backgrounds, and drives to open in Nexis
 - [x] Windows NSIS installer — branded header image, correct app name and executable throughout
 - [x] Auto-updater
 - [x] OS keychain for API keys
@@ -104,58 +137,50 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Windows subprocess console flash suppressed (`CREATE_NO_WINDOW` on all spawned commands)
 - [x] ConPTY lifecycle race fixed — create and close serialized to prevent blank-terminal bug on Windows
 - [x] PTY reliability — mutex-poison recovery, safe `pty_close` drop path, shell session auto-retry after failed open
-- [x] User-visible error feedback — rename, delete, shell history load, autostart toggle, file attach, voice transcription, and reveal-in-file-manager failures all surface actionable alerts instead of silently failing
+- [x] User-visible error feedback — rename, delete, shell history, autostart, file attach, voice, and reveal failures all surface actionable alerts
+- [x] SSH — PTY sessions over SSH; auth and known_hosts
+- [x] Python environment awareness — auto-detect virtualenvs, conda, and pyproject.toml; active env in status bar with quick-switch picker
+- [x] Container-aware environments — detect Docker/devcontainer setups; surface container context in the status bar
+- [x] Keybinding editor — visual UI for remapping shortcuts, with import/export
+- [x] Command palette — fuzzy-searchable palette for every app action (Ctrl+Shift+P)
+- [x] Notifications center — in-app log of agent actions, build results, and background task completions
+- [x] Plugin API — stable internal contribution surface (status bar items, panels, commands, typed event bus); Python env and container badges migrated to plugins
+- [x] Bundle optimizations — lazy language packs, xterm WebGL chunk, scoped package tree-shaking for @codemirror/* (1.1.0)
+- [x] Release tooling — automated CHANGELOG generation, version bumps, and tag flow
 
 ---
 
-## What's coming
+## Up next
 
-### Near-term
-- [x] Markdown raw/preview toggle — switch between rendered preview and raw source in the same tab without reopening the file; split-pane side-by-side mode as opt-in
-- [x] Python environment awareness — auto-detect virtualenvs, conda environments, and pyproject.toml; surface the active env in the status bar with a quick-switch picker; seamless library resolution so AI tools and the editor see the same interpreter and installed packages as the terminal
-- [x] Redesigned sidebar, source control panel, and git graph — visual refresh of the left panel and git history view
-- [x] Redesigned Models settings tab — cleaner model picker with better scroll and layout
-- [x] SSH — PTY sessions over SSH (auth + known_hosts first; SFTP and port forwarding later)
-- [x] Inline terminal suggestions — history-based to start, AI-powered as opt-in
-- [x] Smarter AI autocomplete — project-aware context, lower latency
-- [x] Drag and drop into terminal — files as quoted paths, files as AI context attachments
-- [x] AI context inspector — transparency panel showing exactly what context is being sent to the model
-- [x] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
-- [x] Environment variable panel — view, edit, and persist env vars per workspace
-- [x] Background process manager — visibility into shell background jobs and dev servers running in Nexis
-- [x] Code formatting — per-language formatter integration (Prettier, rustfmt, clang-format, etc.) triggered from the editor with config UI
-- [x] Run files — execute the current file or project directly from the editor with output captured in a terminal tab
-- [x] Draggable/dockable panels — resizable bottom output panel, drag-to-float with snap-to-dock; full chat history + input in both modes
-- [x] Inline linting and diagnostics — real-time syntax error markers in the editor gutter via @codemirror/lint; Lezer-based parser errors surface for JS/TS, Python, Rust, Go, JSON, HTML, CSS, and Markdown
+- [ ] **Git stash manager** — list, apply, pop, drop, and create stashes from the source control panel; surface stashable hunks in the diff picker so you can stash partial changes without touching the CLI
+- [ ] **Persistent AI chat history** — save and restore chat sessions per workspace across app restarts; a scrollable conversation history list in the AI panel with search; useful for revisiting long agent runs
+- [ ] **Terminal session recording** — record PTY output to an asciinema-compatible `.cast` file with a single toggle; replay locally with speed controls; useful for demos and bug reports
+- [ ] **SSH key manager** — generate, import, and manage SSH keys within Nexis; tie keys to saved connection profiles in the SSH session panel; no external tool required
+- [ ] **Workspace switcher** — fast keyboard-driven picker for recently opened folders (Ctrl+` or similar) with fuzzy search and pin support; restores the tab layout from the last visit
+- [ ] **AI inline explain** — select any terminal output or code block and press a keybind to get a concise AI explanation in a popup tooltip, without opening the full chat panel; dismisses on click-away
+- [ ] **Terminal → AI** — one-click button in the terminal to send selected lines (or the entire last command's output) as a message into the AI chat; quoted with the originating command for context
+- [ ] **Multi-window** — open Nexis in multiple independent windows, each with their own workspace, tabs, and layout; windows share the OS keychain and theme
+- [ ] **Git submodule support** — show submodule directories in the file explorer with status badges (initialized, dirty, ahead/behind); init, update, and deinit from the source control panel without leaving the app
+- [ ] **Diffstat in commit view** — per-file +/− line counts in the git history commit detail view; click a file row to jump directly to its diff; makes large commits navigable at a glance
+- [ ] **Refactoring engine** — rename symbols, extract functions, and inline variables across a project, powered by LSP workspace edits plus an optional AI verification pass; now realistic since LSP landed in 1.1.0
+- [ ] **Port forwarding panel** — surface forwarded ports from SSH sessions and dev servers in a dedicated panel with one-click open-in-preview; pairs with the background process manager
 
-### Longer term
-- [ ] Full LSP support — go-to-definition, hover docs, diagnostics, and completion powered by language servers
-- [ ] Debugger and debugging tools — step-through debugging, breakpoints, variable inspection, and call stack viewer for common runtimes (Node.js, Python, Rust via LLDB)
-- [ ] Refactoring engine — rename symbols, extract functions, and structured code edits across a project
-- [x] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with output captured in a dedicated panel and errors linked to source lines
-- [x] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
-- [x] Snippets library — user-defined code snippets with tab-stop placeholders, scoped by language
-- [x] Find and replace across project — workspace-wide search and replace with regex, preview, and per-file confirmation
-- [x] Minimap — optional code minimap in the editor for navigating large files
-- [x] Breadcrumb navigation — file path + symbol breadcrumbs at the top of the editor pane
-- [x] Symbol outline panel — file-level function/class/variable tree in the sidebar
-- [x] Code folding improvements — fold by indent, by region comments, and by language constructs
-- [x] Word wrap toggle — per-file and global word wrap setting in the editor
-- [x] AI PR description generation — draft pull request titles and bodies from branch diff
-- [x] AI-powered rename — rename a symbol across the project with AI verifying correctness
-- [x] Keybinding editor — visual UI for remapping any shortcut, with import/export
-- [x] Command palette — fuzzy-searchable palette for every action in the app (Ctrl+Shift+P)
-- [x] Notifications center — in-app log of agent actions, build results, and background task completions
-- [x] Container-aware environments — detect and work inside Docker/devcontainer setups, surface container context in the status bar
-- [x] Database integration — full connection manager for SQLite, PostgreSQL, MySQL, and other databases; schema browser, table viewer, query editor with syntax highlighting, and AI-assisted query generation directly in Nexis
-- [x] Hugging Face integration — BYOK with the HF Inference API for running hosted models; browse the Hub, pull model cards into context, and use HF-hosted models alongside existing providers without leaving Nexis
-- [x] Jupyter notebook support — open, edit, and run `.ipynb` files with kernel management, inline cell output rendering (text, plots, tables), and AI-assisted cell generation and explanation
-- [x] AI skill bundles — installable packages that add new agent tools and slash commands
-- [x] Release tooling — automated CHANGELOG generation, version bumps, and tag flow
-- [ ] Bundle size work — tree-shaking, lazy language packs, targeted dependency replacements
-- [ ] Selective TS → Rust migration for measurable hot-path wins
-- [x] Live file system sync — explorer and editor update in real time as files change on disk
-- [ ] Plugin API — stable internal API surface so features can be built and loaded as first-party plugins
+---
+
+## Later
+
+- [ ] **Remote workspace** — browse, edit, and run code on remote machines entirely over SSH; the file explorer and editor work against the remote filesystem via SFTP while the terminal is already there; the goal is a seamless local feel with zero local clones required
+- [ ] **Persistent terminal sessions** — PTY sessions survive Nexis restarts; reconnect to a running shell without losing scrollback or process state; native implementation inspired by tmux session persistence but without the terminal multiplexer overhead
+- [ ] **Background agent queue** — queue multiple AI tasks to run sequentially or in parallel with a dedicated dashboard showing live progress, logs, pause, and cancel controls; agents share workspace context and can hand off results to each other
+- [ ] **Workspace profiles** — named configurations bundling a shell, env vars, open tab layout, and working directory; save them per-project and switch instantly; useful for monorepos where you work on different services throughout the day
+- [ ] **AI-assisted git conflict resolution** — when a merge conflict is detected, surface a three-way diff view with an AI "resolve" button that proposes a merged result, explains the tradeoff, and lets you accept, edit, or reject per-hunk
+- [ ] **AI code review** — on-demand review of the staged diff or a full PR; surfaced as inline comment suggestions anchored to the diff view, not just a flat chat response; one-click accept copies the suggestion as a code change
+- [ ] **Semantic / AST-aware search** — search the codebase using structural patterns driven by tree-sitter queries (e.g., "all call sites of `fn foo`", "React hooks that depend on X") as an optional mode in the find-across-project panel
+- [ ] **Embedded REPL panel** — run an interactive Python, Node.js, or other language REPL as a dockable panel; send the selected code from the editor into the REPL with a keybind; output persists in the panel until manually cleared
+- [ ] **Multiplayer terminal view** — generate a local LAN URL that lets a collaborator view your terminal session read-only in their browser; no cloud relay, no accounts, session ends when you close the tab
+- [ ] **Custom AI tool authoring** — write and test new agent tools in TypeScript using the Plugin API; a first-party SDK with type definitions, a local test harness, and one-command installation into a workspace
+- [ ] **Streaming build errors → AI** — wire build-system panel failures directly into an AI turn automatically (opt-in per project); the agent sees the raw compiler output and proposes fixes without you having to copy-paste
+- [ ] **Selective TS → Rust migration** — profile hot paths (terminal input dispatch, diff rendering, file-tree diffing), identify where a Rust implementation gives a measurable win, migrate incrementally without growing bundle size
 
 ---
 
