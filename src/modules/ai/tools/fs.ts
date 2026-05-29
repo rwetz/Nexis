@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { native } from "../lib/native";
 import {
+  checkReadable,
   checkReadableCanonical,
   checkWritableCanonical,
 } from "../lib/security";
@@ -42,11 +43,19 @@ export function buildFsTools(ctx: ToolContext) {
       }),
       execute: async ({ path, offset, limit }) => {
         const reqPath = resolvePath(path, ctx.getCwd());
-        const safety = await checkReadableCanonical(reqPath, native.canonicalize);
-        if (!safety.ok) return { error: safety.reason, path: reqPath };
-        const abs = safety.canonical;
+        // Fast JS pre-filter: catch obvious bad paths without an IPC call.
+        const pre = checkReadable(reqPath);
+        if (!pre.ok) return { error: pre.reason, path: reqPath };
+        // Single IPC call: canonicalize + safety re-check + read.
+        let r;
         try {
-          const r = await native.readFile(abs);
+          r = await native.readFileAi(reqPath);
+        } catch (e) {
+          return { error: String(e), path: reqPath };
+        }
+        if (r.kind === "refused") return { error: r.reason, path: reqPath };
+        const abs = r.canonical;
+        try {
           if (r.kind === "binary")
             return { error: "binary file refused", path: abs, size: r.size };
           if (r.kind === "toolarge")

@@ -307,3 +307,65 @@ html *::-webkit-scrollbar {
 .nexis-collapsible-content[data-state="closed"] {
   animation: nexis-collapsible-up 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ── Breakpoint gutter ─────────────────────────────────────────────────────── */
+.cm-breakpoint-gutter {
+  width: 16px;
+  cursor: pointer;
+}
+.cm-breakpoint {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin: 3px auto;
+  cursor: pointer;
+}
+.cm-breakpoint-verified {
+  background: #ef4444;
+  box-shadow: 0 0 4px rgba(239, 68, 68, 0.6);
+}
+.cm-breakpoint-unverified {
+  background: rgba(239, 68, 68, 0.4);
+  border: 1.5px solid #ef4444;
+}
+.cm-current-line-arrow {
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 10px solid #f59e0b;
+  margin: 2px 3px;
+}
+
+/* ── LSP hover tooltip ─────────────────────────────────────────────────────── */
+.cm-lsp-hover {
+  max-width: 480px;
+  max-height: 300px;
+  overflow: auto;
+  padding: 6px 8px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.cm-lsp-hover p {
+  margin: 0 0 4px;
+}
+.cm-lsp-hover pre {
+  margin: 4px 0;
+  padding: 4px 8px;
+  background: var(--muted);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 10.5px;
+}
+.cm-lsp-hover code {
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  padding: 1px 3px;
+  background: var(--muted);
+  border-radius: 3px;
+}
+
+/* Current-line highlight when debugger is stopped */
+.cm-activeLine.cm-debug-current-line {
+  background: rgba(245, 158, 11, 0.12) !important;
+}

@@ -1,5 +1,7 @@
+pub mod dap;
 pub mod fs;
 pub mod git;
+pub mod lsp;
 pub mod net;
 pub mod proc;
 pub mod pty;

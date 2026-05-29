@@ -1,5 +1,8 @@
-import { useMemo } from "react";
-import { DarkVeilBackground } from "@/components/ui/backgrounds/DarkVeil";
+import { lazy, Suspense, useMemo } from "react";
+
+const DarkVeilBackground = lazy(() =>
+  import("@/components/ui/backgrounds/DarkVeil").then((m) => ({ default: m.DarkVeilBackground })),
+);
 import { AnimatedFolder } from "@/components/ui/AnimatedFolder";
 import { Button } from "@/components/ui/button";
 import { fmtShortcut, MOD_KEY, SHIFT_KEY } from "@/lib/platform";
@@ -42,12 +45,14 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-6 text-center select-none overflow-hidden">
-      <DarkVeilBackground
-        hueShift={hueShift}
-        speed={0.4}
-        noiseIntensity={0.025}
-        warpAmount={0.5}
-      />
+      <Suspense fallback={null}>
+        <DarkVeilBackground
+          hueShift={hueShift}
+          speed={0.4}
+          noiseIntensity={0.025}
+          warpAmount={0.5}
+        />
+      </Suspense>
 
       <div
         className="relative z-10 flex flex-col items-center gap-6"

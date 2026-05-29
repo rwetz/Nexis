@@ -1,6 +1,6 @@
 mod modules;
 
-use modules::{fs, git, net, pty, python, secrets, shell, workspace};
+use modules::{dap, fs, git, lsp, net, pty, python, secrets, shell, workspace};
 use std::sync::Mutex;
 use tauri::State;
 use tauri_plugin_window_state::StateFlags;
@@ -61,6 +61,8 @@ pub fn run() {
             workspace::bootstrap_registry(&registry);
             registry
         })
+        .manage(lsp::LspState::default())
+        .manage(dap::DapState::default())
         .manage(LaunchDir(Mutex::new(parse_launch_dir())))
         .invoke_handler(tauri::generate_handler![
             pty::pty_open,
@@ -70,6 +72,7 @@ pub fn run() {
             fs::tree::list_subdirs,
             fs::tree::fs_read_dir,
             fs::file::fs_read_file,
+            fs::file::fs_read_file_ai,
             fs::file::fs_write_file,
             fs::file::fs_stat,
             fs::file::fs_canonicalize,
@@ -100,6 +103,7 @@ pub fn run() {
             git::commands::git_remote_url,
             shell::shell_run_command,
             shell::read_shell_history,
+            shell::search_shell_history,
             shell::shell_session_open,
             shell::shell_session_run,
             shell::shell_session_close,
@@ -117,6 +121,14 @@ pub fn run() {
             secrets::secrets_set,
             secrets::secrets_delete,
             secrets::secrets_get_all,
+            lsp::lsp_start,
+            lsp::lsp_request,
+            lsp::lsp_notify,
+            lsp::lsp_stop,
+            dap::dap_start,
+            dap::dap_request,
+            dap::dap_stop,
+            dap::dap_sessions,
             net::lm_ping,
             net::ai_http_request,
             net::ai_http_stream,

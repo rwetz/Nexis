@@ -1,4 +1,3 @@
-import catppuccinIcons from "@iconify-json/catppuccin/icons.json";
 import { EXT_TO_LANGUAGE_ID } from "./constants";
 import * as fileIconsMod from "./fileIcons";
 import * as folderIconsMod from "./folderIcons";
@@ -15,9 +14,27 @@ type IconifySet = {
   height?: number;
 };
 
-const cat = catppuccinIcons as unknown as IconifySet;
-const CAT_W = cat.width ?? 16;
-const CAT_H = cat.height ?? 16;
+let cat: IconifySet | null = null;
+let CAT_W = 16;
+let CAT_H = 16;
+
+// Lazy-load the 300KB catppuccin JSON off the critical path.
+let loadPromise: Promise<void> | null = null;
+function ensureLoaded(): Promise<void> {
+  if (cat) return Promise.resolve();
+  if (loadPromise) return loadPromise;
+  loadPromise = import("@iconify-json/catppuccin/icons.json").then((mod) => {
+    const data = mod.default as unknown as IconifySet;
+    cat = data;
+    CAT_W = data.width ?? 16;
+    CAT_H = data.height ?? 16;
+  });
+  return loadPromise;
+}
+
+// Kick off the load immediately (but non-blocking) so the JSON is ready
+// before the file tree is visible in most cases.
+void ensureLoaded();
 
 const DEFAULT_FILE = "file";
 const DEFAULT_FOLDER = "folder";
@@ -32,6 +49,7 @@ function toIconifySlug(name: string): string {
 }
 
 function catBody(iconName: string): string | null {
+  if (!cat) return null;
   const slug = toIconifySlug(iconName);
   const direct = cat.icons[slug];
   if (direct) return direct.body;
@@ -108,4 +126,9 @@ export function folderIconUrl(name: string, expanded: boolean): string {
   }
 
   return buildDataUrl(expanded ? DEFAULT_FOLDER_OPEN : DEFAULT_FOLDER) ?? "";
+}
+
+// Exported for callers that want to know icons are ready before first render.
+export function preloadIcons(): Promise<void> {
+  return ensureLoaded();
 }

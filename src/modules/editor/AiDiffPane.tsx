@@ -8,10 +8,10 @@ import { EditorView } from "@codemirror/view";
 import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { buildSharedExtensions, languageCompartment } from "./lib/extensions";
 import { resolveLanguage, resolveLanguageSync } from "./lib/languageResolver";
-import { EDITOR_THEME_EXT } from "./lib/themes";
+import { loadEditorTheme, getCachedEditorTheme } from "./lib/themes";
 
 type Props = {
   path: string;
@@ -93,7 +93,12 @@ export function AiDiffPane({
 }: Props) {
   const cmRef = useRef<ReactCodeMirrorRef>(null);
   const editorThemeId = usePreferencesStore((s) => s.editorTheme);
-  const themeExt = EDITOR_THEME_EXT[editorThemeId] ?? EDITOR_THEME_EXT.atomone;
+  const [themeExt, setThemeExt] = useState(() => getCachedEditorTheme(editorThemeId));
+  useEffect(() => {
+    let cancelled = false;
+    void loadEditorTheme(editorThemeId).then((ext) => { if (!cancelled) setThemeExt(ext); });
+    return () => { cancelled = true; };
+  }, [editorThemeId]);
 
   const initialLang = useMemo(() => resolveLanguageSync(path), [path]);
   const extensions = useMemo(
@@ -193,7 +198,7 @@ export function AiDiffPane({
         <CodeMirror
           ref={cmRef}
           value={proposedContent}
-          theme={themeExt}
+          theme={themeExt ?? "dark"}
           extensions={extensions}
           editable={false}
           height="100%"

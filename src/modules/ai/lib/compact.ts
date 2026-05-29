@@ -20,23 +20,37 @@ function safeJsonLength(v: unknown): number {
   }
 }
 
+/** Cost in approximate bytes for a single message part. */
+function partBytes(part: ToolPart): number {
+  if (part.type === "text" && typeof part.text === "string")
+    return (part.text as string).length;
+  if (part.type === "tool-result") return safeJsonLength(part.output);
+  if (part.type === "tool-call") return safeJsonLength(part.input);
+  return 64;
+}
+
+/** Approximate byte count for the full message array. */
 function approxBytes(messages: ModelMessage[]): number {
   let n = 0;
   for (const m of messages) {
-    if (typeof m.content === "string") n += m.content.length;
-    else if (Array.isArray(m.content)) {
-      for (const part of m.content as ToolPart[]) {
-        if (part.type === "text" && typeof part.text === "string")
-          n += (part.text as string).length;
-        else if (part.type === "tool-result")
-          n += safeJsonLength(part.output);
-        else if (part.type === "tool-call")
-          n += safeJsonLength(part.input);
-        else n += 64;
-      }
+    if (typeof m.content === "string") {
+      n += m.content.length;
+    } else if (Array.isArray(m.content)) {
+      for (const part of m.content as ToolPart[]) n += partBytes(part);
     }
   }
   return n;
+}
+
+/** Compute initial byte totals per message index for incremental tracking. */
+function messageBytes(m: ModelMessage): number {
+  if (typeof m.content === "string") return m.content.length;
+  if (Array.isArray(m.content)) {
+    let n = 0;
+    for (const part of m.content as ToolPart[]) n += partBytes(part);
+    return n;
+  }
+  return 0;
 }
 
 function elideToolResult(part: ToolPart): { changed: boolean; part: ToolPart } {
@@ -185,10 +199,16 @@ export function compactModelMessagesDetailed(
 
   const out = working.slice();
   const stopIdx = Math.max(0, out.length - KEEP_TAIL);
+
+  // Track total bytes incrementally to avoid O(n²) re-scans: for each
+  // elided message we subtract the old size and add the new (tiny) size.
+  let runningBytes = approxBytes(out);
+
   for (let i = 0; i < stopIdx; i++) {
     if (out[i].role === "system") continue;
     if (!Array.isArray(out[i].content)) continue;
     let local = false;
+    const oldBytes = messageBytes(out[i]);
     const next = (out[i].content as ToolPart[]).map((part) => {
       const r = elideToolResult(part);
       if (r.changed) local = true;
@@ -197,7 +217,9 @@ export function compactModelMessagesDetailed(
     if (local) {
       out[i] = { ...out[i], content: next } as ModelMessage;
       dropped++;
-      if (approxBytes(out) / 4 < 0.6 * contextLimit) break;
+      // Incremental update: subtract old message bytes, add new.
+      runningBytes = runningBytes - oldBytes + messageBytes(out[i]);
+      if (runningBytes / 4 < 0.6 * contextLimit) break;
     }
   }
 

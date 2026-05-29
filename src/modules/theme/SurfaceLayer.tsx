@@ -4,15 +4,23 @@ import {
 } from "@/modules/settings/preferences";
 import { BG_OPACITY_RENDER_FACTOR } from "@/modules/settings/store";
 import type { AnimatedBgId } from "@/modules/settings/store";
-import { AuroraBackground } from "@/components/ui/backgrounds/Aurora";
-import { ParticlesBackground } from "@/components/ui/backgrounds/Particles";
-import { ThreadsBackground } from "@/components/ui/backgrounds/Threads";
 import { useTheme } from "@/modules/theme";
 import { getBuiltinTheme } from "@/modules/theme/themes";
 import { DEFAULT_THEME_ID } from "@/modules/theme/types";
 import type { Theme } from "@/modules/theme/types";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+
+// Lazy-load WebGL backgrounds so `ogl` stays off the critical path.
+const AuroraBackground = lazy(() =>
+  import("@/components/ui/backgrounds/Aurora").then((m) => ({ default: m.AuroraBackground })),
+);
+const ParticlesBackground = lazy(() =>
+  import("@/components/ui/backgrounds/Particles").then((m) => ({ default: m.ParticlesBackground })),
+);
+const ThreadsBackground = lazy(() =>
+  import("@/components/ui/backgrounds/Threads").then((m) => ({ default: m.ThreadsBackground })),
+);
 
 const OVERLAY_Z = 2147483646;
 const RESIZE_IDLE_MS = 280;
@@ -119,26 +127,32 @@ function AnimatedBackground({ id, primaryHex, opacity }: AnimBgProps) {
 
   if (id === "aurora") {
     return (
-      <AuroraBackground
-        colorStops={[primaryHex, mid, primaryHex]}
-        opacity={opacity}
-      />
+      <Suspense fallback={null}>
+        <AuroraBackground
+          colorStops={[primaryHex, mid, primaryHex]}
+          opacity={opacity}
+        />
+      </Suspense>
     );
   }
   if (id === "particles") {
     return (
-      <ParticlesBackground
-        particleColors={[primaryHex, mid, bright]}
-        opacity={opacity}
-      />
+      <Suspense fallback={null}>
+        <ParticlesBackground
+          particleColors={[primaryHex, mid, bright]}
+          opacity={opacity}
+        />
+      </Suspense>
     );
   }
   if (id === "threads") {
     return (
-      <ThreadsBackground
-        color={hexToRgbTuple(primaryHex)}
-        opacity={opacity}
-      />
+      <Suspense fallback={null}>
+        <ThreadsBackground
+          color={hexToRgbTuple(primaryHex)}
+          opacity={opacity}
+        />
+      </Suspense>
     );
   }
   return null;

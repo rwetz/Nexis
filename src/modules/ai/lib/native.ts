@@ -6,6 +6,13 @@ export type ReadResult =
   | { kind: "binary"; size: number }
   | { kind: "toolarge"; size: number; limit: number };
 
+/** Result of the combined canonicalize+check+read command used by AI tools. */
+export type ReadAiResult =
+  | { kind: "text"; canonical: string; content: string; size: number }
+  | { kind: "binary"; canonical: string; size: number }
+  | { kind: "toolarge"; canonical: string; size: number; limit: number }
+  | { kind: "refused"; reason: string };
+
 export type DirEntry = {
   name: string;
   kind: "file" | "dir" | "symlink";
@@ -132,6 +139,13 @@ export const native = {
     }),
   readFile: (path: string) =>
     invoke<ReadResult>("fs_read_file", {
+      path,
+      workspace: currentWorkspaceEnv(),
+    }),
+  // Combined canonicalize + AI safety check + read — saves one IPC
+  // round-trip vs the separate fs_canonicalize → fs_read_file pattern.
+  readFileAi: (path: string) =>
+    invoke<ReadAiResult>("fs_read_file_ai", {
       path,
       workspace: currentWorkspaceEnv(),
     }),
@@ -357,4 +371,28 @@ export const native = {
       name: name ?? null,
       workspace: currentWorkspaceEnv(),
     }),
+
+  // ── LSP ────────────────────────────────────────────────────────────────────
+  lspStart: (opts: {
+    serverCmd: string;
+    serverArgs: string[];
+    workspaceRoot: string;
+    initializationOptions?: Record<string, unknown> | null;
+  }) => invoke<number>("lsp_start", { ...opts, initializationOptions: opts.initializationOptions ?? null }),
+  lspRequest: (sessionId: number, method: string, params?: unknown) =>
+    invoke<unknown>("lsp_request", { sessionId, method, params: params ?? null }),
+  lspNotify: (sessionId: number, method: string, params?: unknown) =>
+    invoke<void>("lsp_notify", { sessionId, method, params: params ?? null }),
+  lspStop: (sessionId: number) => invoke<void>("lsp_stop", { sessionId }),
+
+  // ── DAP ────────────────────────────────────────────────────────────────────
+  dapStart: (opts: {
+    adapterCmd: string;
+    adapterArgs: string[];
+    adapterId: string;
+  }) => invoke<number>("dap_start", opts),
+  dapRequest: (sessionId: number, command: string, arguments_?: unknown) =>
+    invoke<unknown>("dap_request", { sessionId, command, arguments: arguments_ ?? null }),
+  dapStop: (sessionId: number) => invoke<void>("dap_stop", { sessionId }),
+  dapSessions: () => invoke<number[]>("dap_sessions"),
 };

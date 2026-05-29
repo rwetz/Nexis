@@ -9,7 +9,7 @@ import {
 import { EditorView, keymap } from "@codemirror/view";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
-import { EDITOR_THEME_EXT } from "./lib/themes";
+import { loadEditorTheme, getCachedEditorTheme } from "./lib/themes";
 import {
   forwardRef,
   useEffect,
@@ -21,7 +21,7 @@ import {
 import { RenameDialog } from "./RenameDialog";
 import { Minimap } from "./Minimap";
 import { useChatStore } from "@/modules/ai/store/chatStore";
-import { Prec } from "@codemirror/state";
+import { EditorSelection, Prec } from "@codemirror/state";
 import { vim } from "@replit/codemirror-vim";
 import {
   buildSharedExtensions,
@@ -30,6 +30,21 @@ import {
   wrapCompartment,
 } from "./lib/extensions";
 import { initVimGlobals, vimHandlersExtension } from "./lib/vim";
+import {
+  createLspCompartment,
+  lspSeedExtension,
+  activateLsp,
+  type LspHandle,
+} from "@/modules/lsp/lspExtension";
+import {
+  breakpointGutter,
+  breakpointField,
+  currentLineField,
+  syncBreakpointsToView,
+  setCurrentLine,
+} from "@/modules/debugger/extensions/breakpointGutter";
+import { useBreakpointStore } from "@/modules/debugger/breakpointStore";
+import { useDebugStore } from "@/modules/debugger/debugSession";
 
 initVimGlobals();
 import { resolveLanguage } from "./lib/languageResolver";
@@ -104,6 +119,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const languageRef = useRef<string | null>(null);
     const apiKeyRef = useRef<string | null>(null);
 
+    // LSP — one stable Compartment per editor pane instance
+    const lspCompartmentRef = useRef(createLspCompartment());
+    const lspHandleRef = useRef<LspHandle | null>(null);
+
     useEffect(() => {
       let cancelled = false;
       const refresh = async () => {
@@ -131,7 +150,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         unsubPrefs();
       };
     }, []);
-    const themeExt = EDITOR_THEME_EXT[editorThemeId] ?? EDITOR_THEME_EXT.atomone;
+    const [themeExt, setThemeExt] = useState(() => getCachedEditorTheme(editorThemeId));
+    useEffect(() => {
+      let cancelled = false;
+      void loadEditorTheme(editorThemeId).then((ext) => { if (!cancelled) setThemeExt(ext); });
+      return () => { cancelled = true; };
+    }, [editorThemeId]);
 
     // Stabilize save + onSaved via refs so the extensions array never changes
     // identity — a new identity makes @uiw/react-codemirror reconfigure the
@@ -157,6 +181,89 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       projectHintsRef.current = deriveProjectHints(path);
     }, [path]);
 
+    // Activate LSP when the editor view is ready and a file is loaded
+    useEffect(() => {
+      if (!editorView || doc.status !== "ready") return;
+      const readyDoc = doc as { status: "ready"; content: string; size: number };
+      let cancelled = false;
+      void activateLsp(editorView, lspCompartmentRef.current, {
+        getPath: () => pathRef.current,
+        getWorkspaceRoot: () => useChatStore.getState().live.getWorkspaceRoot() ?? null,
+        navigateTo: (targetPath, line, _ch) => {
+          // Emit a custom event; tab manager listens for this
+          window.dispatchEvent(
+            new CustomEvent("nexis:open-file", { detail: { path: targetPath, line } }),
+          );
+        },
+      }, readyDoc.content).then((handle) => {
+        if (cancelled) {
+          handle?.close();
+          return;
+        }
+        lspHandleRef.current = handle;
+      });
+
+      return () => {
+        cancelled = true;
+        lspHandleRef.current?.close();
+        lspHandleRef.current = null;
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editorView, path, doc.status === "ready"]);
+
+    // Notify LSP on content changes
+    const onChangeWithLsp = (value: string) => {
+      onChange(value);
+      lspHandleRef.current?.notifyChange(value);
+    };
+
+    // Navigate to a specific line+character when a "nexis:goto-location" event fires.
+    // Fired by the Problems panel (and potentially other features) after opening a file.
+    useEffect(() => {
+      const handler = (e: Event) => {
+        const ev = e as CustomEvent<{ path: string; line: number; character: number }>;
+        if (!editorView) return;
+        // Normalize paths: backslash vs forward slash
+        const evPath = ev.detail.path.replace(/\\/g, "/");
+        const myPath = path.replace(/\\/g, "/");
+        if (evPath !== myPath) return;
+        const { line, character } = ev.detail;
+        const lineInfo = editorView.state.doc.line(
+          Math.max(1, Math.min(line + 1, editorView.state.doc.lines)),
+        );
+        const pos = Math.min(lineInfo.from + character, lineInfo.to);
+        editorView.dispatch({
+          selection: EditorSelection.cursor(pos),
+          effects: EditorView.scrollIntoView(pos, { y: "center" }),
+        });
+        editorView.focus();
+      };
+      window.addEventListener("nexis:goto-location", handler);
+      return () => window.removeEventListener("nexis:goto-location", handler);
+    }, [editorView, path]);
+
+    // Breakpoints — sync store → gutter when path changes or store updates
+    const toggleBreakpoint = useBreakpointStore((s) => s.toggleBreakpoint);
+    const breakpointsForPath = useBreakpointStore((s) => s.breakpointsForPath);
+    const breakpoints = breakpointsForPath(path);
+
+    useEffect(() => {
+      if (!editorView) return;
+      syncBreakpointsToView(editorView, path, breakpoints.map((b) => b.line));
+    }, [editorView, path, breakpoints]);
+
+    // Sync current execution line to this pane
+    const currentDebugPath = useDebugStore((s) => s.currentPath);
+    const currentDebugLine = useDebugStore((s) => s.currentLine);
+    useEffect(() => {
+      if (!editorView) return;
+      if (currentDebugPath === path && currentDebugLine != null) {
+        setCurrentLine(editorView, currentDebugLine);
+      } else {
+        setCurrentLine(editorView, null);
+      }
+    }, [editorView, path, currentDebugPath, currentDebugLine]);
+
     const extensions = useMemo(
       () => [
         // basicSetup is added before user extensions by @uiw/react-codemirror,
@@ -178,6 +285,15 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         })),
         ...buildSharedExtensions(),
         syntaxLinter(),
+        // LSP seed (filled by activateLsp when view is ready)
+        lspSeedExtension(lspCompartmentRef.current),
+        // Breakpoint gutter
+        breakpointField,
+        currentLineField,
+        breakpointGutter(
+          (togglePath, line) => toggleBreakpoint(togglePath, line),
+          () => pathRef.current,
+        ),
         languageCompartment.of([]),
         inlineCompletion({
           getPrefs: () => {
@@ -392,8 +508,8 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           <CodeMirror
             ref={cmRef}
             value={doc.content}
-            onChange={onChange}
-            theme={themeExt}
+            onChange={onChangeWithLsp}
+            theme={themeExt ?? "dark"}
             extensions={extensions}
             onCreateEditor={(view) => setEditorView(view)}
             height="100%"

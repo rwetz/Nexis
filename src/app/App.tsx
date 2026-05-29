@@ -62,8 +62,6 @@ import {
   type SearchInlineHandle,
   type SearchTarget,
 } from "@/modules/header";
-import { MarkdownStack } from "@/modules/markdown";
-import { NotebookStack } from "@/modules/notebook";
 import { PreviewStack, type PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
 import { openNewWindow } from "@/modules/window/openNewWindow";
@@ -79,6 +77,7 @@ import {
 } from "@/modules/shortcuts";
 import { SidebarRail } from "@/modules/sidebar";
 import { BackgroundProcessPanel, useBackgroundProcesses } from "@/modules/processes";
+import { ProblemsPanel } from "@/modules/problems/ProblemsPanel";
 import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
 import { SnippetsPanel } from "@/modules/snippets";
 import { TestRunnerPanel } from "@/modules/testrunner";
@@ -91,8 +90,7 @@ import {
   useSourceControl,
 } from "@/modules/source-control";
 import { StatusBar } from "@/modules/statusbar";
-import { usePythonEnv } from "@/modules/python";
-import { useContainerEnv } from "@/modules/containers";
+import { PluginHost } from "@/lib/plugins/PluginHost";
 import { MAX_PANES_PER_TAB, useTabs, useWorkspaceCwd, setSavedTabsEnabled } from "@/modules/tabs";
 import {
   disposeSession,
@@ -122,7 +120,14 @@ import { homeDir } from "@tauri-apps/api/path";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { SearchAddon } from "@xterm/addon-search";
 import { AnimatePresence } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+const MarkdownStackLazy = lazy(() =>
+  import("@/modules/markdown").then((m) => ({ default: m.MarkdownStack })),
+);
+const NotebookStackLazy = lazy(() =>
+  import("@/modules/notebook").then((m) => ({ default: m.NotebookStack })),
+);
 
 
 export default function App() {
@@ -292,6 +297,8 @@ export default function App() {
   const panelMode = useChatStore((s) => s.panelMode);
   const aiPanelRef = useRef<PanelImperativeHandle | null>(null);
   const aiPanelHeightRef = useRef(readAiPanelHeight(280));
+  const problemsPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const [problemsOpen, setProblemsOpen] = useState(false);
   const apiKeys = useChatStore((s) => s.apiKeys);
   const setApiKeys = useChatStore((s) => s.setApiKeys);
   const setSelectedModelId = useChatStore((s) => s.setSelectedModelId);
@@ -440,15 +447,6 @@ export default function App() {
     launchCwd ?? home,
   );
 
-  const {
-    envs: pythonEnvs,
-    activeEnv: activePythonEnv,
-    loading: pythonLoading,
-    setActiveEnv: setActivePythonEnv,
-    refresh: refreshPythonEnvs,
-  } = usePythonEnv(explorerRoot);
-
-  const containerEnv = useContainerEnv(explorerRoot);
 
   useEffect(() => {
     setActiveSearchAddon(
@@ -653,6 +651,27 @@ export default function App() {
     setAskPopup(null);
   }, [askFromSelection]);
 
+  // Handle LSP go-to-definition cross-file navigation.
+  // EditorPane dispatches "nexis:open-file" when definition is in another file.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent<{ path: string; line?: number }>;
+      const { path: targetPath, line } = ev.detail;
+      openFileTab(targetPath, true);
+      if (line != null) {
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent("nexis:goto-location", {
+              detail: { path: targetPath, line, character: 0 },
+            }),
+          );
+        }, 80);
+      }
+    };
+    window.addEventListener("nexis:open-file", handler);
+    return () => window.removeEventListener("nexis:open-file", handler);
+  }, [openFileTab]);
+
   const openNewTab = useCallback(() => {
     newTab(inheritedCwdForNewTab());
   }, [newTab, inheritedCwdForNewTab]);
@@ -726,11 +745,18 @@ export default function App() {
 
   const handleOpenFile = useCallback(
     (path: string, pin?: boolean) => {
+      // .md / .markdown / .mdx files open as rendered markdown by default.
+      // The context-menu "Open" action still passes pin=true to force the
+      // editor if the user explicitly wants to edit the raw source.
+      if (pin !== true && /\.(md|markdown|mdx)$/i.test(path)) {
+        newMarkdownTab(path);
+        return;
+      }
       // Explorer defaults to preview (pin=false); explicit actions like
       // context-menu "Open" pass pin=true for a persistent tab.
       openFileTab(path, pin ?? false);
     },
-    [openFileTab],
+    [openFileTab, newMarkdownTab],
   );
 
   const handlePathRenamed = useCallback(
@@ -1220,7 +1246,7 @@ export default function App() {
         )}
         aria-hidden={!isMarkdownTab}
       >
-        <MarkdownStack tabs={tabs} activeId={activeId} />
+        <Suspense fallback={null}><MarkdownStackLazy tabs={tabs} activeId={activeId} /></Suspense>
       </div>
       <div
         className={cn(
@@ -1229,7 +1255,7 @@ export default function App() {
         )}
         aria-hidden={!isNotebookTab}
       >
-        <NotebookStack tabs={tabs} activeId={activeId} />
+        <Suspense fallback={null}><NotebookStackLazy tabs={tabs} activeId={activeId} /></Suspense>
       </div>
       <div
         className={cn(
@@ -1371,6 +1397,38 @@ export default function App() {
                     {workspaceSurface}
                   </ResizablePanel>
 
+                  {problemsOpen && (
+                    <>
+                      <ResizableHandle withHandle />
+                      <ResizablePanel
+                        id="problems-panel"
+                        panelRef={problemsPanelRef}
+                        collapsible
+                        collapsedSize={0}
+                        defaultSize="180px"
+                        minSize="80px"
+                        maxSize="50%"
+                        onResize={(size) => {
+                          if (size.inPixels === 0) setProblemsOpen(false);
+                        }}
+                      >
+                        <ProblemsPanel
+                          onNavigate={(path, line, character) => {
+                            openFileTab(path, true);
+                            // Brief delay so the editor has time to mount
+                            setTimeout(() => {
+                              window.dispatchEvent(
+                                new CustomEvent("nexis:goto-location", {
+                                  detail: { path, line, character },
+                                }),
+                              );
+                            }, 80);
+                          }}
+                        />
+                      </ResizablePanel>
+                    </>
+                  )}
+
                   {keysLoaded && (
                     <>
                       <ResizableHandle
@@ -1437,12 +1495,8 @@ export default function App() {
             privateActive={
               activeTab?.kind === "terminal" && activeTab.private === true
             }
-            pythonEnvs={pythonEnvs}
-            activePythonEnv={activePythonEnv}
-            pythonLoading={pythonLoading}
-            onSelectPythonEnv={setActivePythonEnv}
-            onRefreshPythonEnvs={refreshPythonEnvs}
-            containerEnv={containerEnv}
+            problemsOpen={problemsOpen}
+            onToggleProblems={() => setProblemsOpen((v) => !v)}
           />
 
           {hasComposer ? (
@@ -1451,6 +1505,9 @@ export default function App() {
               closeAiDiffTab={closeAiDiffTab}
             />
           ) : null}
+
+          {/* Activates all first-party plugins (status bar items, panels, etc.) */}
+          <PluginHost />
 
           <AnimatePresence>
             {miniOpen && hasComposer ? <AiMiniWindow key="ai-mini" /> : null}

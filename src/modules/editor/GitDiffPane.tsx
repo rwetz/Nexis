@@ -16,7 +16,7 @@ import {
   commitDiffKey,
 } from "./lib/diffCache";
 import { resolveLanguage, resolveLanguageSync } from "./lib/languageResolver";
-import { EDITOR_THEME_EXT } from "./lib/themes";
+import { loadEditorTheme, getCachedEditorTheme } from "./lib/themes";
 
 type WorkingSource = {
   kind: "working";
@@ -170,7 +170,12 @@ function loadStateFromCache(
 export function GitDiffPane({ source, chipLabel, active }: Props) {
   const cmRef = useRef<ReactCodeMirrorRef>(null);
   const editorThemeId = usePreferencesStore((s) => s.editorTheme);
-  const themeExt = EDITOR_THEME_EXT[editorThemeId] ?? EDITOR_THEME_EXT.atomone;
+  const [themeExt, setThemeExt] = useState(() => getCachedEditorTheme(editorThemeId));
+  useEffect(() => {
+    let cancelled = false;
+    void loadEditorTheme(editorThemeId).then((ext) => { if (!cancelled) setThemeExt(ext); });
+    return () => { cancelled = true; };
+  }, [editorThemeId]);
   const [state, setState] = useState<LoadState>(() =>
     active ? loadStateFromCache(source) : { kind: "idle" },
   );
@@ -346,7 +351,7 @@ export function GitDiffPane({ source, chipLabel, active }: Props) {
           <CodeMirror
             ref={cmRef}
             value={modifiedContent}
-            theme={themeExt}
+            theme={themeExt ?? "dark"}
             extensions={extensions}
             editable={false}
             height="100%"
