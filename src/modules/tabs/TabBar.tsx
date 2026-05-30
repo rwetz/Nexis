@@ -17,13 +17,14 @@ import {
   GitBranchIcon,
   GitCompareIcon,
   Globe02Icon,
+  Image01Icon,
   IncognitoIcon,
   PencilEdit02Icon,
   PlusSignIcon,
 } from "@hugeicons/core-free-icons";
 import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { EditorTab, Tab } from "./lib/tabTypes";
 
 type Props = {
@@ -39,6 +40,8 @@ type Props = {
   onClose: (id: number) => void;
   /** Pin (promote) a preview tab to persistent on double-click. */
   onPin: (id: number) => void;
+  /** Commit a fully reordered tab list (called on mouseup after live drag). */
+  onReorder?: (newOrder: number[]) => void;
   compact?: boolean;
 };
 
@@ -54,9 +57,119 @@ export function TabBar({
   onNewWindow,
   onClose,
   onPin,
+  onReorder,
   compact,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Drag-to-reorder — mouse events only (HTML5 drag API conflicts with Tauri's
+  // data-tauri-drag-region on the parent container and silently drops events).
+  //
+  // During a drag we maintain a local `dragOrder` (a reordered copy of `tabs`)
+  // that updates live as the cursor moves — Chrome-style.  On mouseup we commit
+  // the final order by calling onReorder.  All mutable tracking lives in refs
+  // so the global listeners never form stale closures over React state.
+
+  // Keep a stable ref to the latest `tabs` prop for use inside the effect.
+  const tabsRef = useRef(tabs);
+  useEffect(() => { tabsRef.current = tabs; }, [tabs]);
+
+  const dragState = useRef<{
+    fromId: number;
+    startX: number;
+    dragging: boolean;
+  } | null>(null);
+
+  // dragOrderRef mirrors dragOrder state so handlers can read the latest value.
+  const [dragOrder, setDragOrder] = useState<Tab[] | null>(null);
+  const dragOrderRef = useRef<Tab[] | null>(null);
+  useEffect(() => { dragOrderRef.current = dragOrder; }, [dragOrder]);
+
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!onReorder) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const s = dragState.current;
+      if (!s) return;
+
+      // Cross threshold → enter drag mode, snapshot current order
+      if (!s.dragging) {
+        if (Math.abs(e.clientX - s.startX) < 5) return;
+        s.dragging = true;
+        setDraggingId(s.fromId);
+        const initial = [...tabsRef.current];
+        dragOrderRef.current = initial;
+        setDragOrder(initial);
+        return;
+      }
+
+      const order = dragOrderRef.current;
+      if (!order) return;
+
+      const draggedTab = order.find((t) => t.id === s.fromId);
+      if (!draggedTab) return;
+
+      // Query tab triggers in their current DOM (= dragOrder) positions
+      const triggerEls = Array.from(
+        scrollRef.current?.querySelectorAll<HTMLElement>("[data-tab-id]") ?? [],
+      );
+
+      // Compute where to insert: find the first non-dragged tab whose midpoint
+      // is past the cursor — insert before it.  Default: append at the end.
+      const withoutDragged = order.filter((t) => t.id !== s.fromId);
+      let insertIdx = withoutDragged.length;
+
+      for (const el of triggerEls) {
+        const tabId = Number(el.dataset.tabId);
+        if (tabId === s.fromId) continue; // skip the tab being dragged
+        const { left, width } = el.getBoundingClientRect();
+        if (e.clientX < left + width / 2) {
+          insertIdx = withoutDragged.findIndex((t) => t.id === tabId);
+          break;
+        }
+      }
+
+      const newOrder = [...withoutDragged];
+      newOrder.splice(insertIdx, 0, draggedTab);
+
+      // Skip setState if order didn't change (avoids thrashing on every pixel)
+      const changed = newOrder.some((t, i) => t.id !== order[i]?.id);
+      if (changed) {
+        dragOrderRef.current = newOrder;
+        setDragOrder(newOrder);
+      }
+    };
+
+    const onMouseUp = () => {
+      const s = dragState.current;
+      const finalOrder = dragOrderRef.current;
+      if (s?.dragging && finalOrder) {
+        onReorder(finalOrder.map((t) => t.id));
+      }
+      dragState.current = null;
+      dragOrderRef.current = null;
+      setDraggingId(null);
+      setDragOrder(null);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [onReorder]);
+
+  // Apply grabbing cursor to the whole document while a tab drag is in flight,
+  // so the cursor stays correct even when the pointer leaves the source tab.
+  useEffect(() => {
+    if (draggingId === null) return;
+    const prev = document.body.style.cursor;
+    document.body.style.cursor = "url('/cursors/grabbing.png') 10 14, grabbing";
+    return () => { document.body.style.cursor = prev; };
+  }, [draggingId]);
 
   // Horizontal wheel scroll without holding shift.
   useEffect(() => {
@@ -92,7 +205,7 @@ export function TabBar({
           onValueChange={(v) => onSelect(Number(v))}
         >
           <TabsList className="h-7 w-max gap-0.5 bg-transparent p-0">
-            {tabs.map((t) => {
+            {(dragOrder ?? tabs).map((t) => {
               const isPreview = t.kind === "editor" && (t as EditorTab).preview;
               return (
                 <TabsTrigger
@@ -100,15 +213,32 @@ export function TabBar({
                   value={String(t.id)}
                   data-tab-id={t.id}
                   onDoubleClick={() => isPreview && onPin(t.id)}
+                  onAuxClick={(e) => {
+                    if (e.button === 1) { e.preventDefault(); onClose(t.id); }
+                  }}
+                  onMouseDown={(e) => {
+                    if (!onReorder || e.button !== 0) return;
+                    // stopPropagation prevents Tauri's data-tauri-drag-region
+                    // on the parent div from treating this as a window drag.
+                    e.stopPropagation();
+                    dragState.current = {
+                      fromId: t.id,
+                      startX: e.clientX,
+                      dragging: false,
+                    };
+                  }}
                   className={cn(
-                    "group h-7 shrink-0 gap-1.5 rounded-md text-xs text-muted-foreground transition-colors data-[state=active]:bg-accent data-[state=active]:text-foreground hover:text-foreground/80 justify-between",
-                    compact
-                      ? "px-1.5!"
-                      : tabs.length === 1
-                        ? "px-2!"
-                        : "ps-2! pe-1!",
+                    "group relative h-7 shrink-0 gap-1.5 rounded-md text-xs text-muted-foreground transition-colors data-[state=active]:bg-accent data-[state=active]:text-foreground hover:text-foreground/80 justify-between",
+                    compact ? "px-1.5!" : "ps-2! pe-1!",
+                    onReorder && "cursor-grab",
+                    draggingId === t.id && "opacity-50 ring-1 ring-primary/30",
                   )}
                 >
+                  {/* Top accent line on active tab */}
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-2 top-0 h-[1.5px] rounded-full bg-primary opacity-0 transition-opacity group-data-[state=active]:opacity-100"
+                  />
                   <span
                     className={cn(
                       "flex items-center gap-1.5 truncate",
@@ -128,23 +258,21 @@ export function TabBar({
                       />
                     ) : null}
                   </span>
-                  {tabs.length > 1 && (
-                    <span
-                      role="button"
-                      aria-label="Close tab"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onClose(t.id);
-                      }}
-                      className="rounded p-0.5 opacity-0 transition-opacity hover:bg-accent hover:opacity-100 group-hover:opacity-60"
-                    >
-                      <HugeiconsIcon
-                        icon={Cancel01Icon}
-                        size={11}
-                        strokeWidth={2}
-                      />
-                    </span>
-                  )}
+                  <span
+                    role="button"
+                    aria-label="Close tab"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClose(t.id);
+                    }}
+                    className="rounded p-0.5 opacity-0 transition-opacity hover:bg-accent hover:opacity-100 group-hover:opacity-60"
+                  >
+                    <HugeiconsIcon
+                      icon={Cancel01Icon}
+                      size={11}
+                      strokeWidth={2}
+                    />
+                  </span>
                 </TabsTrigger>
               );
             })}
@@ -234,6 +362,16 @@ function TabIcon({ tab }: { tab: Tab }) {
     const url = fileIconUrl(tab.title);
     return url ? <img src={url} alt="" className="size-3.5 shrink-0" /> : null;
   }
+  if (tab.kind === "image") {
+    return (
+      <HugeiconsIcon
+        icon={Image01Icon}
+        size={14}
+        strokeWidth={2}
+        className="shrink-0 text-muted-foreground/70"
+      />
+    );
+  }
   if (tab.kind === "preview") {
     return (
       <HugeiconsIcon
@@ -299,6 +437,7 @@ function labelFor(t: Tab): string {
   if (t.kind === "preview") return t.title;
   if (t.kind === "markdown") return t.title;
   if (t.kind === "notebook") return t.title;
+  if (t.kind === "image") return t.title;
   if (t.kind === "ai-diff") return t.title;
   if (t.kind === "git-diff") return t.title;
   if (t.kind === "git-history") return t.title;

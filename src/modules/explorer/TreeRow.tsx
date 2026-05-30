@@ -37,6 +37,7 @@ export type EntryRowProps = {
   onAttachToAgent?: (path: string) => void;
   onOpenMarkdownPreview?: (path: string) => void;
   onOpenNotebook?: (path: string) => void;
+  onOpenImage?: (path: string) => void;
 };
 
 function isMarkdownPath(path: string): boolean {
@@ -45,6 +46,10 @@ function isMarkdownPath(path: string): boolean {
 
 function isNotebookPath(path: string): boolean {
   return /\.ipynb$/i.test(path);
+}
+
+function isImagePathCheck(path: string): boolean {
+  return /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif|tiff?)$/i.test(path);
 }
 
 function EntryRowImpl(props: EntryRowProps) {
@@ -64,6 +69,7 @@ function EntryRowImpl(props: EntryRowProps) {
     onAttachToAgent,
     onOpenMarkdownPreview,
     onOpenNotebook,
+    onOpenImage,
   } = props;
 
   const [isConfirming, setIsConfirming] = useState(false);
@@ -160,6 +166,14 @@ function EntryRowImpl(props: EntryRowProps) {
             onSelect={() => onOpenNotebook(path)}
           >
             Open Notebook
+          </ContextMenuItem>
+        )}
+        {!isDir && isImagePathCheck(path) && onOpenImage && (
+          <ContextMenuItem
+            className={COMPACT_ITEM}
+            onSelect={() => onOpenImage(path)}
+          >
+            Open Image
           </ContextMenuItem>
         )}
         {isDir && onRevealInTerminal && (

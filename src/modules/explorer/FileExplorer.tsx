@@ -48,6 +48,7 @@ type Props = {
   onAttachToAgent?: (path: string) => void;
   onOpenMarkdownPreview?: (path: string) => void;
   onOpenNotebook?: (path: string) => void;
+  onOpenImage?: (path: string) => void;
 };
 
 type Row =
@@ -157,6 +158,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
       onAttachToAgent,
       onOpenMarkdownPreview,
       onOpenNotebook,
+      onOpenImage,
     },
     ref,
   ) {
@@ -385,6 +387,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
               onAttachToAgent={onAttachToAgent}
               onOpenMarkdownPreview={onOpenMarkdownPreview}
               onOpenNotebook={onOpenNotebook}
+              onOpenImage={onOpenImage}
             />
           );
         }
@@ -430,7 +433,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
             <Button
               variant="ghost"
               size="icon"
-              className="size-6 text-muted-foreground hover:text-foreground"
+              className="size-6 text-muted-foreground hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]"
               onClick={() => setIsSearchOpen((v) => !v)}
               title="Search files"
               aria-label="Search files"
@@ -441,7 +444,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
             <Button
               variant="ghost"
               size="icon"
-              className="size-6 text-muted-foreground hover:text-foreground"
+              className="size-6 text-muted-foreground hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]"
               onClick={() => tree.beginCreate(rootPath, "file")}
               title="New file"
             >
@@ -450,7 +453,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
             <Button
               variant="ghost"
               size="icon"
-              className="size-6 text-muted-foreground hover:text-foreground"
+              className="size-6 text-muted-foreground hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]"
               onClick={() => tree.beginCreate(rootPath, "dir")}
               title="New folder"
             >
@@ -459,7 +462,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
             <Button
               variant="ghost"
               size="icon"
-              className="size-6 text-muted-foreground hover:text-foreground"
+              className="size-6 text-muted-foreground hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]"
               onClick={() => tree.refresh(rootPath)}
               title="Refresh"
             >

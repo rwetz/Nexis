@@ -79,7 +79,7 @@ export function serializeTabState(tabs: Tab[], activeId: number): PersistedTabSt
     } else if (t.kind === "editor" && !t.preview) {
       persisted.push({ kind: "editor", path: t.path });
     }
-    // Skip: preview, ai-diff, git-diff, git-history, git-commit-file, markdown
+    // Skip: preview, ai-diff, git-diff, git-history, git-commit-file, markdown, notebook, image
   }
   const activeTab = tabs.find((t) => t.id === activeId);
   let activeIndex = 0;
@@ -154,6 +154,10 @@ export function buildTabsFromSaved(
 export function saveTabState(tabs: Tab[], activeId: number): void {
   try {
     const state = serializeTabState(tabs, activeId);
+    // Don't overwrite a previously-good saved state with empty when the only
+    // open tabs are non-serializable (ai-diff, git-diff, etc.). That would
+    // wipe the user's terminal/editor tabs if the app reloads mid-session.
+    if (state.tabs.length === 0 && tabs.length > 0) return;
     localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(state));
   } catch {}
 }

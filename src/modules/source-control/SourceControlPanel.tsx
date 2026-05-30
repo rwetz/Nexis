@@ -18,10 +18,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { AnimatedFolder } from "@/components/ui/AnimatedFolder";
 import { IS_MAC } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { getFolderColor, useTheme } from "@/modules/theme";
 import { fileIconUrl } from "@/modules/explorer/lib/iconResolver";
 import {
   AiContentGenerator02Icon,
@@ -144,7 +142,6 @@ export const SourceControlPanel = memo(function SourceControlPanel({
   onOpenDiff,
 }: Props) {
   const scm = useSourceControlPanel(open, sourceControl, onOpenDiff);
-  const { themeId, resolvedMode } = useTheme();
   const refreshAnimationRef = useRef<number | null>(null);
   const [refreshAnimating, setRefreshAnimating] = useState(false);
   const [prDialogOpen, setPrDialogOpen] = useState(false);
@@ -437,7 +434,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
   return (
     <TooltipProvider delayDuration={800} skipDelayDuration={300}>
       <aside className="flex h-full min-w-0 flex-col bg-card/80 backdrop-blur [contain:layout_style]">
-        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 px-3 pb-2.5 pt-3">
+        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-3 pb-2.5 pt-3">
           <div className="flex min-w-0 items-center gap-1.5">
             <div className="inline-flex min-w-0 items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-[11.5px] font-medium leading-none text-foreground transition-colors hover:bg-foreground/10">
               <HugeiconsIcon
@@ -568,14 +565,16 @@ export const SourceControlPanel = memo(function SourceControlPanel({
         ) : null}
 
         {scm.panelState === "no-repo" ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-            <AnimatedFolder
-              color={getFolderColor(themeId, resolvedMode)}
-              size={1.6}
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+            <HugeiconsIcon
+              icon={FolderGitTwoIcon}
+              size={28}
+              strokeWidth={1.25}
+              className="text-muted-foreground/30"
             />
             <div className="space-y-1">
-              <div className="text-sm font-medium">No repository</div>
-              <div className="max-w-56 text-[11px] leading-relaxed text-muted-foreground">
+              <div className="text-[12px] font-medium text-foreground/70">No repository</div>
+              <div className="max-w-56 text-[11px] leading-relaxed text-muted-foreground/60">
                 The active workspace is not inside a Git repository.
               </div>
             </div>

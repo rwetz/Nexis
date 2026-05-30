@@ -5,6 +5,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Clock01Icon,
   Database01Icon,
   FileCodeIcon,
   FolderGitTwoIcon,
@@ -46,6 +47,7 @@ export function SidebarRail({
 }: Props) {
   const items: RailItem[] = [
     { id: "explorer", label: "Files", icon: FolderTreeIcon },
+    { id: "recent-files", label: "Recent Files", icon: Clock01Icon },
     { id: "source-control", label: "Source Control", icon: FolderGitTwoIcon, badge: changedCount },
     { id: "processes", label: "Processes", icon: TaskAdd01Icon, badge: runningProcessCount },
     { id: "outline", label: "Outline", icon: ListViewIcon },
@@ -60,7 +62,7 @@ export function SidebarRail({
   return (
     <div
       style={{ height: SIDEBAR_RAIL_HEIGHT }}
-      className="flex shrink-0 items-center border-t border-border/50 bg-card/90 px-1.5 backdrop-blur"
+      className="flex shrink-0 items-center border-t border-border/50 bg-card px-1.5"
     >
       {/* Scrollable icon strip — hides scrollbar, trackpad/wheel still works */}
       <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -81,7 +83,7 @@ export function SidebarRail({
                   "focus-visible:ring-2 focus-visible:ring-primary/40",
                   isActive
                     ? "bg-primary/[0.07] text-foreground dark:bg-primary/[0.1]"
-                    : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground",
+                    : "text-muted-foreground hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]",
                 )}
               >
                 <HugeiconsIcon
@@ -89,7 +91,7 @@ export function SidebarRail({
                   size={14}
                   strokeWidth={isActive ? 2 : 1.75}
                   className={cn(
-                    "shrink-0 transition-[stroke-width] duration-150",
+                    "shrink-0 transition-[stroke-width,color] duration-150",
                     isActive && "text-primary",
                   )}
                 />
@@ -107,9 +109,9 @@ export function SidebarRail({
                   </span>
                 ) : null}
 
-                {/* Active underline */}
+                {/* Active left-edge indicator */}
                 {isActive ? (
-                  <span className="absolute inset-x-1.5 bottom-0.5 h-[1.5px] rounded-full bg-primary/60" />
+                  <span className="absolute inset-y-1.5 left-0 w-[2px] rounded-full bg-primary/70" />
                 ) : null}
               </button>
             </TooltipTrigger>
@@ -135,7 +137,7 @@ export function SidebarRail({
                 className={cn(
                   "flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md",
                   "text-muted-foreground outline-none transition-colors duration-150",
-                  "hover:bg-foreground/[0.05] hover:text-foreground",
+                  "hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]",
                   "focus-visible:ring-2 focus-visible:ring-primary/40",
                 )}
               >

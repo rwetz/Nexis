@@ -3,7 +3,6 @@ import { lazy, Suspense, useMemo } from "react";
 const DarkVeilBackground = lazy(() =>
   import("@/components/ui/backgrounds/DarkVeil").then((m) => ({ default: m.DarkVeilBackground })),
 );
-import { AnimatedFolder } from "@/components/ui/AnimatedFolder";
 import { Button } from "@/components/ui/button";
 import { fmtShortcut, MOD_KEY, SHIFT_KEY } from "@/lib/platform";
 import { getFolderColor, useTheme } from "@/modules/theme";
@@ -48,8 +47,8 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
       <Suspense fallback={null}>
         <DarkVeilBackground
           hueShift={hueShift}
-          speed={0.4}
-          noiseIntensity={0.025}
+          speed={0.3}
+          noiseIntensity={0.04}
           warpAmount={0.5}
         />
       </Suspense>
@@ -58,9 +57,22 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
         className="relative z-10 flex flex-col items-center gap-6"
         style={{ animation: "welcome-fadein 0.55s cubic-bezier(0.16,1,0.3,1) both" }}
       >
-        <AnimatedFolder color={folderColor} size={1.5} />
+        {/* Logo + radial glow */}
+        <div className="relative flex items-center justify-center">
+          <div
+            aria-hidden
+            className="absolute size-32 rounded-full"
+            style={{ background: `radial-gradient(ellipse at center, ${folderColor}33 0%, transparent 70%)` }}
+          />
+          <img
+            src="/logo (1) (1).png"
+            alt="Nexis"
+            className="relative size-16 drop-shadow-lg"
+            draggable={false}
+          />
+        </div>
 
-        <div className="mt-8 space-y-2">
+        <div className="mt-4 space-y-2">
           <p className="text-[22px] font-semibold tracking-tight">
             Welcome to Nexis
           </p>
@@ -74,8 +86,11 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
           <span className="ml-1.5 opacity-50">{fmtShortcut(MOD_KEY, "T")}</span>
         </Button>
 
+        {/* Thin divider */}
+        <div aria-hidden className="h-px w-48 bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+
         {/* Shortcut grid */}
-        <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-2">
+        <div className="mt-0 grid grid-cols-2 gap-x-6 gap-y-2">
           {SHORTCUTS.map(({ label, keys }) => (
             <div key={label} className="flex items-center justify-between gap-3 text-[12px]">
               <span className="text-muted-foreground/70">{label}</span>
@@ -84,7 +99,8 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
                   <kbd
                     key={i}
                     className="rounded px-1 py-0.5 text-[11px] font-medium leading-none
-                               bg-white/5 text-muted-foreground/60 border border-white/8"
+                               bg-white/5 text-muted-foreground/60 border border-white/10
+                               shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.15)]"
                   >
                     {k}
                   </kbd>
@@ -99,6 +115,10 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
         @keyframes welcome-fadein {
           from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes darkveil-fadein {
+          from { opacity: 0; }
+          to   { opacity: 1; }
         }
       `}</style>
     </div>

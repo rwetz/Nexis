@@ -70,7 +70,7 @@ function detectFileTrigger(
   return null;
 }
 
-export function AiInputBar() {
+export function AiInputBar({ compact }: { compact?: boolean } = {}) {
   const c = useComposer();
   const snippets = useSnippetsStore((s) => s.snippets);
   const workspaceRoot = useChatStore((s) => s.live.getWorkspaceRoot());
@@ -109,7 +109,10 @@ export function AiInputBar() {
     setFileTrigger(detectFileTrigger(c.value, caret));
   };
 
-  useEffect(updateTrigger, [c.value, c.textareaRef]);
+  // c.textareaRef is a stable ref object — listing it as a dep causes
+  // unnecessary re-runs since its identity never changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(updateTrigger, [c.value]);
 
   const filteredItems = useMemo<PickerItem[]>(() => {
     if (!trigger) return [];
@@ -244,7 +247,7 @@ export function AiInputBar() {
 
   return (
     <div
-      className="shrink-0 border-t border-border/60 bg-card/40 px-3 py-2"
+      className={cn("shrink-0 border-t border-border/60 bg-card/40 px-3", compact ? "flex h-full items-center py-0" : "py-2")}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -252,7 +255,7 @@ export function AiInputBar() {
     >
       <div
         className={cn(
-          "flex flex-col gap-1.5 rounded-lg px-1 py-1",
+          cn("flex flex-col gap-1.5 rounded-lg px-1", compact ? "w-full py-0" : "py-1"),
           "transition-colors focus-within:border-border",
           isDragOver && "ring-2 ring-primary ring-offset-1",
         )}

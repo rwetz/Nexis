@@ -1,9 +1,6 @@
 import { useChatStore } from "@/modules/ai";
 import { AgentStatusPill } from "@/modules/ai/components/AgentStatusPill";
-import {
-  AiOpenButton,
-  AiStatusBarControls,
-} from "@/modules/ai/components/AiStatusBarControls";
+import { AiOpenButton } from "@/modules/ai/components/AiStatusBarControls";
 import { NotificationsCenter } from "@/modules/notifications";
 import {
   Tooltip,
@@ -45,21 +42,21 @@ export function StatusBar({
   problemsOpen = false,
   onToggleProblems,
 }: Props) {
-  const panelOpen = useChatStore((s) => s.panelOpen);
-  const openPanel = useChatStore((s) => s.openPanel);
+  const toggleMini = useChatStore((s) => s.toggleMini);
   const errorCount = useDiagnosticsStore((s) => s.errorCount);
   const warningCount = useDiagnosticsStore((s) => s.warningCount);
 
-  // Plugin-contributed status bar items, sorted by priority (desc).
-  const leftItems = usePluginRegistry((s) =>
-    s.statusBarItems.filter((i) => i.side === "left"),
-  );
-  const rightItems = usePluginRegistry((s) =>
-    s.statusBarItems.filter((i) => i.side === "right"),
-  );
+  // Plugin-contributed status bar items — select the stable array from the
+  // store, then filter locally so the selector never returns a new reference
+  // on every call (which would trigger an infinite useSyncExternalStore loop).
+  const statusBarItems = usePluginRegistry((s) => s.statusBarItems);
+  const leftItems = statusBarItems.filter((i) => i.side === "left");
+  const rightItems = statusBarItems.filter((i) => i.side === "right");
 
   return (
-    <footer className="flex h-8 shrink-0 items-center justify-start gap-3 border-t border-border/60 bg-card/60 px-3 text-[11px]">
+    <footer className="relative flex h-8 shrink-0 items-center justify-start gap-3 bg-card/60 px-3 text-[11px]">
+      {/* Gradient top border */}
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <WorkspaceEnvSelector onSelect={onWorkspaceChange} />
         <CwdBreadcrumb cwd={cwd} filePath={filePath} home={home} onCd={onCd} />
@@ -129,11 +126,7 @@ export function StatusBar({
         })}
         <NotificationsCenter />
         <AgentStatusPill onClick={onOpenMini} />
-        {panelOpen && hasComposer ? (
-          <AiStatusBarControls />
-        ) : (
-          <AiOpenButton onOpen={openPanel} />
-        )}
+        {hasComposer ? <AiOpenButton onOpen={toggleMini} /> : null}
       </div>
     </footer>
   );

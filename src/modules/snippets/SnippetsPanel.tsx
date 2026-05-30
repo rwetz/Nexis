@@ -5,6 +5,7 @@ import {
   CheckmarkCircle01Icon,
   Delete02Icon,
   Edit02Icon,
+  FileCodeIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef, useState } from "react";
@@ -67,7 +68,7 @@ export function SnippetsPanel() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-3 py-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Snippets
         </span>
@@ -158,10 +159,13 @@ export function SnippetsPanel() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto">
+        <div className="nexis-scrollbar flex-1 overflow-y-auto">
           {snippets.length === 0 ? (
             <div className="flex h-full items-center justify-center">
-              <p className="text-[11px] text-muted-foreground/60">No snippets yet</p>
+              <div className="flex flex-col items-center gap-2 text-center">
+                <HugeiconsIcon icon={FileCodeIcon} size={28} strokeWidth={1.25} className="text-muted-foreground/30" />
+                <p className="text-[11px] text-muted-foreground/60">No snippets yet</p>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col">

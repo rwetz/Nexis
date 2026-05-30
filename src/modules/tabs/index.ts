@@ -8,6 +8,7 @@ export type {
   PreviewTab,
   MarkdownTab,
   NotebookTab,
+  ImageTab,
   AiDiffTab,
   GitDiffTab,
   GitHistoryTab,

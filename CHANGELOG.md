@@ -2,6 +2,42 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.2.0] — 2026-05-30
+
+### Added
+- **Image viewer** — open PNG, JPG, GIF, WebP, SVG, BMP, ICO, AVIF, and TIFF files directly in a new tab. Supports fit-to-window mode, zoom in/out (scroll wheel or toolbar), pixel-perfect rendering at high zoom, fullscreen toggle, and animated GIF/WebP playback pause during window resize or when the tab is hidden.
+- **Tab drag-to-reorder** — drag any tab left or right to reorder the tab strip. Chrome-style live preview: the tab slides to its new position in real-time as you drag. Grab cursor on hover, grabbing cursor during drag.
+- **Custom cursor set (Tailless Smooth)** — app-wide custom cursors using the Tailless Smooth set. All 29 cursor states are covered (arrow, pointer, text, resize handles, grab/grabbing, crosshair, wait, not-allowed, zoom, and more). Hotspot coordinates read directly from the original `.cur` file headers.
+- **Source Control panel icon** — replaced the animated folder in the "No repository" empty state with a static `FolderGitTwo` icon for a cleaner look.
+
+### Changed
+- **Welcome screen** — replaced the animated folder with the Nexis logo PNG backed by a theme-colored radial glow. DarkVeil background tuned (speed `0.4 → 0.3`, noise `0.025 → 0.04`). Added a gradient horizontal rule between the CTA and shortcuts grid. `<kbd>` chips now have an inset bevel shadow for a keycap feel.
+- **Tab bar** — active tab now shows a 1.5 px primary-color accent line along the top edge.
+- **Sidebar rail** — active view indicator changed from a bottom underline to a left-edge 2 px line (matching VS Code / Fleet style).
+- **Panel headers** — subtle `primary/4%` gradient sweep on the header row of Recent Files, Snippets, Database, and Source Control panels.
+- **Status bar** — hard `border-t` replaced with a soft gradient line that fades at the edges.
+- **Scrollbars** — added `.nexis-scrollbar` utility (3 px, semi-transparent thumb) applied to sidebar panel list containers.
+- **Empty states** — Snippets panel now shows a `FileCode` icon above the "No snippets yet" text; Database panel icon normalized to size 28 / `30%` opacity to match Source Control and Snippets.
+
+### Fixed
+- **Tab reorder via HTML5 drag API** — replaced with mouse-event-based drag (pointerdown → global mousemove/mouseup) to avoid conflicts with Tauri's `data-tauri-drag-region` intercepting drag events on the tab bar container.
+
+---
+
+## [1.1.0] — 2026-05-29
+
+### Added
+- **Recent Files panel** — new **Recent Files** entry in the sidebar rail (clock icon, second position after Files). Tracks every file you open through the explorer or that the AI agent writes/edits, persisted across sessions via localStorage (up to 50 entries). Displays filename, directory path, and a relative timestamp ("just now", "3m ago", "2d ago"). Hover any row to reveal a remove button; **Clear** in the panel header wipes the whole list.
+- **Fuzzy search on Recent Files** — a filter input appears in the panel whenever the list is non-empty. Matches against the filename (higher weight) and directory path simultaneously, ranks results by consecutive-character runs and proximity to the start of the name, and highlights matching characters inline. Keyboard-navigable: `↓ / ↑` moves the selection, `Enter` opens the file, `Escape` clears the query. Mouse hover and keyboard selection stay in sync.
+- **AI-edit tracking in Recent Files** — files written by the AI agent via `edit`, `write_file`, and `multi_edit` tools are automatically pushed to the Recent Files list via the `fs:file-written` event, without any manual action needed.
+- **AI mini-window input bar** — the floating AI popup now contains a full text input bar (same `AiInputBar` component as the docked panel). Typing in the mini-window works identically to the main panel; picking a quick-action suggestion pre-fills the input instead of jumping away to the full panel.
+- **AI mini-window logo** — Nexis logo displayed at the top of the mini-window popup.
+
+### Fixed
+- **App reset to welcome page after AI file edits** — when the AI agent wrote a file and the only open tab was a transient `ai-diff` or `git-diff` tab, `saveTabState` serialized an empty tab list and overwrote the previously-saved terminal/editor tabs in localStorage. On next reload the app found no tabs and showed the welcome page. Fixed by skipping the save when the serialized list would be empty but in-memory tabs still exist.
+
+---
+
 ## [1.0.0] — 2026-05-27
 
 This is the first stable release of Nexis. The milestone closes out the initial feature roadmap with release tooling and represents the full pre-1.0 feature set built across the 0.x series.

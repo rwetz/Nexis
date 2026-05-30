@@ -522,39 +522,10 @@ const PanelHeader = memo(function PanelHeader({
 // ── DockedAiPanel ─────────────────────────────────────────────────────────────
 
 export function DockedAiPanel() {
-  const sessionId = useChatStore((s) => s.activeSessionId);
-  const closePanel = useChatStore((s) => s.closePanel);
-  const floatPanel = useChatStore((s) => s.floatPanel);
-  const isBusy = useChatStore(
-    (s) =>
-      s.agentMeta.status === "thinking" || s.agentMeta.status === "streaming",
-  );
-  const step = useChatStore((s) => s.agentMeta.step);
-  const [inspectorOpen, setInspectorOpen] = useState(false);
-
-  const chat = useMemo(
-    () => (sessionId ? getOrCreateChat(sessionId) : null),
-    [sessionId],
-  );
-  const helpers = useChat<UIMessage>({ chat: chat! });
-  const messages = chat ? helpers.messages : [];
-
   return (
-    <div className="flex h-full flex-col bg-card">
+    <div className="flex flex-col bg-card">
       <PlanModeStrip />
-      <PanelHeader
-        messages={messages}
-        isBusy={isBusy}
-        step={step}
-        onClose={closePanel}
-        onFloat={floatPanel}
-        inspectorOpen={inspectorOpen}
-        onToggleInspector={() => setInspectorOpen((o) => !o)}
-      />
-      {inspectorOpen && <AiContextInspector messages={messages} />}
-      <ChatArea sessionId={sessionId} />
-      {sessionId && <TodoStrip sessionId={sessionId} />}
-      <AiInputBar />
+      <AiInputBar compact />
       <PlanDiffReview />
     </div>
   );
@@ -610,16 +581,23 @@ export function FloatingAiPanel() {
     py: number;
   } | null>(null);
 
+  // Refs that always hold the latest pos/size so that mouseup handlers can
+  // read the final values without being listed as effect dependencies (which
+  // would tear down and re-add the mousemove/mouseup listeners on every move).
+  const posRef = useRef(pos);
+  posRef.current = pos;
+  const sizeRef = useRef(size);
+  sizeRef.current = size;
+
   const onDragStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     dragRef.current = {
       mx: e.clientX,
       my: e.clientY,
-      px: pos.x,
-      py: pos.y,
+      px: posRef.current.x,
+      py: posRef.current.y,
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pos.x, pos.y]);
+  }, []); // posRef is a stable ref — no deps needed
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -629,16 +607,17 @@ export function FloatingAiPanel() {
       const nx = dragRef.current.px + dx;
       const ny = dragRef.current.py + dy;
       setPos({ x: nx, y: ny });
-      setInSnapZone(ny + size.h > window.innerHeight - SNAP_ZONE_PX);
+      setInSnapZone(ny + sizeRef.current.h > window.innerHeight - SNAP_ZONE_PX);
     };
     const onUp = () => {
       if (!dragRef.current) return;
-      const wasSnapping = pos.y + size.h > window.innerHeight - SNAP_ZONE_PX;
+      const currentPos = posRef.current;
+      const wasSnapping = currentPos.y + sizeRef.current.h > window.innerHeight - SNAP_ZONE_PX;
       dragRef.current = null;
       if (wasSnapping) {
         dockPanel();
       } else {
-        saveFloatPos(pos);
+        saveFloatPos(currentPos);
       }
       setInSnapZone(false);
     };
@@ -648,7 +627,7 @@ export function FloatingAiPanel() {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, [pos, size.h, dockPanel]);
+  }, [dockPanel]); // stable: dockPanel is a store method; pos/size read via refs
 
   // ── Resize ────────────────────────────────────────────────────────────────
   const resizeRef = useRef<{
@@ -661,9 +640,8 @@ export function FloatingAiPanel() {
   const onResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    resizeRef.current = { mx: e.clientX, my: e.clientY, w: size.w, h: size.h };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [size.w, size.h]);
+    resizeRef.current = { mx: e.clientX, my: e.clientY, w: sizeRef.current.w, h: sizeRef.current.h };
+  }, []); // sizeRef is a stable ref — no deps needed
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -678,7 +656,7 @@ export function FloatingAiPanel() {
     const onUp = () => {
       if (!resizeRef.current) return;
       resizeRef.current = null;
-      saveFloatSize(size);
+      saveFloatSize(sizeRef.current); // read latest size via ref, not stale closure
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
@@ -686,7 +664,7 @@ export function FloatingAiPanel() {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, [size]);
+  }, []); // stable: all dynamic values read through sizeRef
 
   const el = (
     <div

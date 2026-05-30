@@ -25,19 +25,13 @@ import type { PanelImperativeHandle } from "react-resizable-panels";
 import { useDialogCoordinator } from "./useDialogCoordinator";
 import {
   AgentRunBridge,
-  AiInputBarConnect,
   AiMiniWindow,
-  DockedAiPanel,
   FloatingAiPanel,
   getAllKeys,
   hasAnyKey,
   SelectionAskAi,
   useChatStore,
 } from "@/modules/ai";
-import {
-  readAiPanelHeight,
-  saveAiPanelHeight,
-} from "@/modules/ai/lib/panelStorage";
 import { AiComposerProvider } from "@/modules/ai/lib/composer";
 import { redactSensitive } from "@/modules/ai/lib/redact";
 import { native } from "@/modules/ai/lib/native";
@@ -90,6 +84,7 @@ import {
   useSourceControl,
 } from "@/modules/source-control";
 import { StatusBar } from "@/modules/statusbar";
+import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
 import { PluginHost } from "@/lib/plugins/PluginHost";
 import { MAX_PANES_PER_TAB, useTabs, useWorkspaceCwd, setSavedTabsEnabled } from "@/modules/tabs";
 import {
@@ -128,6 +123,9 @@ const MarkdownStackLazy = lazy(() =>
 const NotebookStackLazy = lazy(() =>
   import("@/modules/notebook").then((m) => ({ default: m.NotebookStack })),
 );
+const ImageStackLazy = lazy(() =>
+  import("@/modules/image-viewer").then((m) => ({ default: m.ImageStack })),
+);
 
 
 export default function App() {
@@ -142,6 +140,7 @@ export default function App() {
     newPreviewTab,
     newMarkdownTab,
     newNotebookTab,
+    newImageTab,
     openAiDiffTab,
     closeAiDiffTab,
     openGitDiffTab,
@@ -157,6 +156,7 @@ export default function App() {
     closeActivePane,
     closePaneByLeaf,
     resetWorkspace,
+    reorderTabs,
   } = useTabs(getLaunchDir() ? { cwd: getLaunchDir() } : undefined);
 
   // Mirror `tabs` into a ref so callbacks scheduled with `setTimeout`
@@ -291,12 +291,10 @@ export default function App() {
 
   const miniOpen = useChatStore((s) => s.mini.open);
   const openMini = useChatStore((s) => s.openMini);
+  const toggleMini = useChatStore((s) => s.toggleMini);
   const focusInput = useChatStore((s) => s.focusInput);
-  const openPanel = useChatStore((s) => s.openPanel);
   const panelOpen = useChatStore((s) => s.panelOpen);
   const panelMode = useChatStore((s) => s.panelMode);
-  const aiPanelRef = useRef<PanelImperativeHandle | null>(null);
-  const aiPanelHeightRef = useRef(readAiPanelHeight(280));
   const problemsPanelRef = useRef<PanelImperativeHandle | null>(null);
   const [problemsOpen, setProblemsOpen] = useState(false);
   const apiKeys = useChatStore((s) => s.apiKeys);
@@ -396,6 +394,7 @@ export default function App() {
   const isPreviewTab = activeTab?.kind === "preview";
   const isMarkdownTab = activeTab?.kind === "markdown";
   const isNotebookTab = activeTab?.kind === "notebook";
+  const isImageTab = activeTab?.kind === "image";
   const isAiDiffTab = activeTab?.kind === "ai-diff";
   const isGitDiffTab =
     activeTab?.kind === "git-diff" || activeTab?.kind === "git-commit-file";
@@ -427,6 +426,7 @@ export default function App() {
       (event) => {
         if (event.payload.source === "editor") return;
         const normalizedPath = event.payload.path.replace(/\\/g, "/");
+        pushRecentFile(normalizedPath);
         const currentTabs = tabsRef.current;
         for (const t of currentTabs) {
           if (t.kind !== "editor") continue;
@@ -542,29 +542,13 @@ export default function App() {
   }, [tabs, activeId]);
 
   // Sync panel open/mode state with the ResizablePanel imperative API
-  useEffect(() => {
-    const panel = aiPanelRef.current;
-    if (!panel) return;
-    const shouldExpand = panelOpen && panelMode === "docked";
-    if (shouldExpand) {
-      panel.expand();
-    } else {
-      panel.collapse();
-    }
-  }, [panelOpen, panelMode]);
-
   const togglePanelAndFocus = useCallback(() => {
     if (!hasComposer) {
       void openSettingsWindow("models");
       return;
     }
-    if (panelOpen) {
-      useChatStore.getState().closePanel();
-    } else {
-      openPanel();
-      focusInput(null);
-    }
-  }, [hasComposer, panelOpen, openPanel, focusInput]);
+    toggleMini();
+  }, [hasComposer, toggleMini]);
 
   const attachSelection = useChatStore((s) => s.attachSelection);
 
@@ -579,10 +563,10 @@ export default function App() {
       window.dispatchEvent(
         new CustomEvent<string>("nexis:ai-attach-file", { detail: path }),
       );
-      openPanel();
+      openMini();
       focusInput(null);
     },
-    [hasComposer, openPanel, focusInput],
+    [hasComposer, openMini, focusInput],
   );
 
   const askFromSelection = useCallback(() => {
@@ -745,6 +729,7 @@ export default function App() {
 
   const handleOpenFile = useCallback(
     (path: string, pin?: boolean) => {
+      pushRecentFile(path);
       // .md / .markdown / .mdx files open as rendered markdown by default.
       // The context-menu "Open" action still passes pin=true to force the
       // editor if the user explicitly wants to edit the raw source.
@@ -752,17 +737,28 @@ export default function App() {
         newMarkdownTab(path);
         return;
       }
+      // Image files open in the image viewer by default.
+      if (pin !== true && /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif|tiff?)$/i.test(path)) {
+        newImageTab(path);
+        return;
+      }
       // Explorer defaults to preview (pin=false); explicit actions like
       // context-menu "Open" pass pin=true for a persistent tab.
       openFileTab(path, pin ?? false);
     },
-    [openFileTab, newMarkdownTab],
+    [openFileTab, newMarkdownTab, newImageTab],
   );
 
   const handlePathRenamed = useCallback(
     (from: string, to: string) => {
       for (const t of tabs) {
-        if (t.kind !== "editor") continue;
+        // Handle all tab kinds that carry a .path field (editor, image, markdown, notebook).
+        if (
+          t.kind !== "editor" &&
+          t.kind !== "image" &&
+          t.kind !== "markdown" &&
+          t.kind !== "notebook"
+        ) continue;
         if (t.path === from) {
           const i = to.lastIndexOf("/");
           updateTab(t.id, { path: to, title: i === -1 ? to : to.slice(i + 1) });
@@ -795,6 +791,11 @@ export default function App() {
     (path: string) => {
       const dirty: number[] = [];
       for (const t of tabs) {
+        // image / markdown / notebook tabs have no dirty state — close them immediately.
+        if (t.kind === "image" || t.kind === "markdown" || t.kind === "notebook") {
+          if (t.path === path || t.path.startsWith(`${path}/`)) disposeTab(t.id);
+          continue;
+        }
         if (t.kind !== "editor") continue;
         if (t.path !== path && !t.path.startsWith(`${path}/`)) continue;
         if (t.dirty) {
@@ -817,6 +818,9 @@ export default function App() {
 
   const activeFilePath = (() => {
     if (activeTab?.kind === "editor") return activeTab.path;
+    if (activeTab?.kind === "image") return activeTab.path;
+    if (activeTab?.kind === "markdown") return activeTab.path;
+    if (activeTab?.kind === "notebook") return activeTab.path;
     if (activeTab?.kind === "git-diff") {
       if (/^([A-Za-z]:|\/|\\)/.test(activeTab.path)) return activeTab.path;
       const root = activeTab.repoRoot.replace(/[\\/]+$/, "");
@@ -920,6 +924,13 @@ export default function App() {
       newNotebookTab(path);
     },
     [newNotebookTab],
+  );
+
+  const openImageViewer = useCallback(
+    (path: string) => {
+      newImageTab(path);
+    },
+    [newImageTab],
   );
 
   const splitActivePaneInActiveTab = useCallback(
@@ -1260,6 +1271,15 @@ export default function App() {
       <div
         className={cn(
           "absolute inset-0 px-3 pt-2 pb-2",
+          !isImageTab && "invisible pointer-events-none",
+        )}
+        aria-hidden={!isImageTab}
+      >
+        <Suspense fallback={null}><ImageStackLazy tabs={tabs} activeId={activeId} /></Suspense>
+      </div>
+      <div
+        className={cn(
+          "absolute inset-0 px-3 pt-2 pb-2",
           !isAiDiffTab && "invisible pointer-events-none",
         )}
         aria-hidden={!isAiDiffTab}
@@ -1313,6 +1333,7 @@ export default function App() {
             onNewWindow={() => void openNewWindow()}
             onClose={handleClose}
             onPin={pinTab}
+            onReorder={reorderTabs}
             onToggleSidebar={toggleSidebar}
             onSplit={splitActivePaneInActiveTab}
             canSplit={
@@ -1344,7 +1365,9 @@ export default function App() {
               >
                 <div className="flex h-full min-h-0 flex-col border-r border-border/60 bg-card">
                   <div className="min-h-0 flex-1">
-                    {sidebarView === "explorer" ? (
+                    {sidebarView === "recent-files" ? (
+                      <RecentFilesPanel onOpenFile={handleOpenFile} />
+                    ) : sidebarView === "explorer" ? (
                       <FileExplorer
                         ref={explorerRef}
                         rootPath={explorerRoot}
@@ -1355,6 +1378,7 @@ export default function App() {
                         onAttachToAgent={handleAttachFileToAgent}
                         onOpenMarkdownPreview={openMarkdownPreview}
                         onOpenNotebook={openNotebookViewer}
+                        onOpenImage={openImageViewer}
                       />
                     ) : sidebarView === "processes" ? (
                       <BackgroundProcessPanel />
@@ -1429,51 +1453,6 @@ export default function App() {
                     </>
                   )}
 
-                  {keysLoaded && (
-                    <>
-                      <ResizableHandle
-                        withHandle
-                        className={cn(
-                          "transition-opacity",
-                          !(panelOpen && panelMode === "docked") &&
-                            "pointer-events-none opacity-0",
-                        )}
-                      />
-                      <ResizablePanel
-                        id="ai-panel"
-                        panelRef={aiPanelRef}
-                        collapsible
-                        collapsedSize={0}
-                        defaultSize={
-                          panelOpen && panelMode === "docked"
-                            ? `${aiPanelHeightRef.current}px`
-                            : "0px"
-                        }
-                        minSize="120px"
-                        maxSize="75%"
-                        onResize={(size) => {
-                          if (size.inPixels > 0) {
-                            aiPanelHeightRef.current = size.inPixels;
-                            saveAiPanelHeight(size.inPixels);
-                          }
-                        }}
-                      >
-                        {panelOpen && panelMode === "docked" && (
-                          <>
-                            {hasComposer ? (
-                              <DockedAiPanel />
-                            ) : (
-                              <AiInputBarConnect
-                                onAdd={() =>
-                                  void openSettingsWindow("models")
-                                }
-                              />
-                            )}
-                          </>
-                        )}
-                      </ResizablePanel>
-                    </>
-                  )}
                 </ResizablePanelGroup>
 
                 {/* Floating panel overlay — rendered when panelMode === "floating" */}

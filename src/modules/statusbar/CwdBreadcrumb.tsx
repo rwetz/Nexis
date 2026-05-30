@@ -21,7 +21,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { invoke } from "@tauri-apps/api/core";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { currentWorkspaceEnv } from "@/modules/workspace";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { segmentsFromCwd } from "./lib/pathUtils";
@@ -184,24 +184,19 @@ function CurrentSegmentDropdown({
   const [children, setChildren] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setError(null);
-    try {
-      const dirs = await invoke<string[]>("list_subdirs", {
-        path,
-        showHidden,
-        workspace: currentWorkspaceEnv(),
-      });
-      setChildren(dirs);
-    } catch (e) {
-      setError(String(e));
-      setChildren([]);
-    }
-  }, [path, showHidden]);
-
   useEffect(() => {
-    if (open) load();
-  }, [open, load]);
+    if (!open) return;
+    let cancelled = false;
+    setError(null);
+    invoke<string[]>("list_subdirs", {
+      path,
+      showHidden,
+      workspace: currentWorkspaceEnv(),
+    })
+      .then((dirs) => { if (!cancelled) setChildren(dirs); })
+      .catch((e) => { if (!cancelled) { setError(String(e)); setChildren([]); } });
+    return () => { cancelled = true; };
+  }, [open, path, showHidden]);
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>

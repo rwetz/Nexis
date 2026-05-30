@@ -365,7 +365,109 @@ html *::-webkit-scrollbar {
   border-radius: 3px;
 }
 
+/* ── Custom cursor set — Tailless Smooth ─────────────────────────────────────
+ * PNGs live in /public/cursors/. Hotspot coords read from original .cur file
+ * headers (xHotspot, yHotspot fields), all images are 32×32.                */
+
+/* Default arrow for the whole app */
+html {
+  cursor: url('/cursors/arrow.png') 5 5, default;
+}
+
+/* Pointer — links, buttons, Radix interactive primitives */
+a,
+button,
+[role="button"],
+[role="link"],
+[role="tab"],
+[role="menuitem"],
+[role="option"],
+[role="checkbox"],
+[role="radio"],
+[role="switch"],
+select,
+summary,
+label[for],
+[type="button"],
+[type="submit"],
+[type="reset"],
+.cursor-pointer {
+  cursor: url('/cursors/pointer.png') 6 5, pointer;
+}
+
+/* Text / caret */
+input:not([type="button"]):not([type="submit"]):not([type="reset"])
+      :not([type="checkbox"]):not([type="radio"]):not([type="range"])
+      :not([type="file"]):not([type="color"]),
+textarea,
+[contenteditable="true"],
+[contenteditable=""],
+.cursor-text {
+  cursor: url('/cursors/text.png') 10 14, text;
+}
+
+/* ── Tailwind cursor utility overrides ───────────────────────────────────── */
+/* These selectors match the Tailwind class names so they take precedence via
+ * cascade order (our rules appear after the Tailwind @import).               */
+.cursor-default      { cursor: url('/cursors/arrow.png') 5 5,       default;      }
+.cursor-pointer      { cursor: url('/cursors/pointer.png') 6 5,     pointer;      }
+.cursor-text         { cursor: url('/cursors/text.png') 10 14,      text;         }
+.cursor-vertical-text{ cursor: url('/cursors/text_h.png') 10 14,    vertical-text;}
+.cursor-wait         { cursor: url('/cursors/wait.png') 12 13,      wait;         }
+.cursor-progress     { cursor: url('/cursors/progress.png') 5 5,    progress;     }
+.cursor-help         { cursor: url('/cursors/help.png') 5 5,        help;         }
+.cursor-crosshair    { cursor: url('/cursors/crosshair.png') 9 11,  crosshair;    }
+.cursor-move         { cursor: url('/cursors/all_scroll.png') 16 13,move;         }
+.cursor-all-scroll   { cursor: url('/cursors/all_scroll.png') 16 13,all-scroll;   }
+.cursor-not-allowed  { cursor: url('/cursors/not_allowed.png') 9 11,not-allowed;  }
+.cursor-no-drop      { cursor: url('/cursors/no_drop.png') 5 5,     no-drop;      }
+.cursor-grab         { cursor: url('/cursors/grab.png') 10 14,      grab;         }
+.cursor-grabbing     { cursor: url('/cursors/grabbing.png') 10 14,  grabbing;     }
+.cursor-col-resize   { cursor: url('/cursors/col_resize.png') 16 13,col-resize;   }
+.cursor-row-resize   { cursor: url('/cursors/row_resize.png') 16 13,row-resize;   }
+.cursor-ns-resize    { cursor: url('/cursors/ns_resize.png') 16 13, ns-resize;    }
+.cursor-ew-resize    { cursor: url('/cursors/ew_resize.png') 16 13, ew-resize;    }
+.cursor-nesw-resize  { cursor: url('/cursors/nesw_resize.png') 16 13,nesw-resize; }
+.cursor-nwse-resize  { cursor: url('/cursors/nwse_resize.png') 16 13,nwse-resize; }
+.cursor-zoom-in      { cursor: url('/cursors/zoom_in.png') 9 9,     zoom-in;      }
+.cursor-zoom-out     { cursor: url('/cursors/zoom_out.png') 9 9,    zoom-out;     }
+.cursor-copy         { cursor: url('/cursors/copy.png') 5 5,        copy;         }
+.cursor-alias        { cursor: url('/cursors/alias.png') 5 5,       alias;        }
+
 /* Current-line highlight when debugger is stopped */
 .cm-activeLine.cm-debug-current-line {
   background: rgba(245, 158, 11, 0.12) !important;
+}
+
+/* ── Thin custom scrollbar ─────────────────────────────────────────────────── */
+/* Apply .nexis-scrollbar to any overflow-y-auto container that should show
+ * a minimal 3px track instead of the global "no scrollbar" default.          */
+.nexis-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(1 0 0 / 12%) transparent;
+}
+.nexis-scrollbar::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+  display: block;
+}
+.nexis-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nexis-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(1 0 0 / 12%);
+  border-radius: 99px;
+}
+.nexis-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(1 0 0 / 22%);
+}
+/* Light mode variants */
+:root:not(.dark) .nexis-scrollbar {
+  scrollbar-color: oklch(0 0 0 / 12%) transparent;
+}
+:root:not(.dark) .nexis-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0 0 0 / 12%);
+}
+:root:not(.dark) .nexis-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(0 0 0 / 22%);
 }

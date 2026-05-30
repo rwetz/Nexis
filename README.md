@@ -5,7 +5,7 @@
   <p><strong>Open-source lightweight cross-platform AI-native terminal (ADE)</strong></p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-1.0.0-blue" alt="version" />
+    <img src="https://img.shields.io/badge/version-1.2.0-blue" alt="version" />
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license" />
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="platform" />
   </p>
@@ -106,6 +106,7 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 | Panel | What it does |
 |---|---|
 | **Files** | File explorer with icons, search, and rename |
+| **Recent Files** | MRU list of opened and AI-edited files with fuzzy search, relative timestamps, and per-entry removal |
 | **Source Control** | Git stage / commit / diff |
 | **Processes** | Background jobs and dev servers |
 | **Outline** | Symbol tree for the active file |

@@ -23,7 +23,7 @@ export function DatabasePanel() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-3 py-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Database
         </span>
@@ -47,7 +47,7 @@ export function DatabasePanel() {
       {connections.length === 0 && !showAdd ? (
         <div className="flex h-full items-center justify-center">
           <div className="flex flex-col items-center gap-2 text-center">
-            <HugeiconsIcon icon={Database01Icon} size={24} strokeWidth={1.25} className="text-muted-foreground/40" />
+            <HugeiconsIcon icon={Database01Icon} size={28} strokeWidth={1.25} className="text-muted-foreground/30" />
             <p className="text-[11px] text-muted-foreground/60">No connections</p>
             <p className="text-[10px] text-muted-foreground/40">Click Connect to add one</p>
           </div>
