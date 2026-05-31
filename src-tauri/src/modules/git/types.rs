@@ -141,6 +141,23 @@ pub struct GitSubmoduleEntry {
     pub status: String,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitWorktreeEntry {
+    /// Absolute path to the worktree directory
+    pub path: String,
+    /// HEAD commit SHA (short)
+    pub sha: String,
+    /// Branch name, or empty string for detached HEAD
+    pub branch: String,
+    /// True for the main (primary) worktree
+    pub is_main: bool,
+    /// True if the worktree is in a detached HEAD state
+    pub is_detached: bool,
+    /// True if the worktree is prunable (path no longer exists on disk)
+    pub is_prunable: bool,
+}
+
 pub(crate) enum TextSource {
     Missing,
     Binary,

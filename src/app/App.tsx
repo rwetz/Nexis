@@ -85,6 +85,7 @@ import { SymbolSearchPanel } from "@/modules/symbol-search";
 import { RefactorPanel, setRefactorCode } from "@/modules/refactor";
 import { PromptTemplatesPanel } from "@/modules/prompt-templates";
 import { BookmarksPanel, toggleBookmark } from "@/modules/bookmarks";
+import { WorkspaceNotesPanel } from "@/modules/workspace-notes";
 import { SshPanel } from "@/modules/ssh";
 import { PortsPanel } from "@/modules/ports";
 import { ProfilesPanel } from "@/modules/profiles";
@@ -1533,6 +1534,8 @@ export default function App() {
                           void line;
                         }}
                       />
+                    ) : sidebarView === "notes" ? (
+                      <WorkspaceNotesPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "ssh" ? (
                       <SshPanel onConnect={handleOpenSshSession} />
                     ) : sidebarView === "release" ? (
@@ -1543,6 +1546,7 @@ export default function App() {
                         sourceControl={sourceControl}
                         onOpenDiff={openGitDiffTab}
                         onOpenGitGraph={openGitGraphFromContext}
+                        onOpenWorktree={(path) => void switchWorkspacePath(path)}
                       />
                     )}
                   </div>

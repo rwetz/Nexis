@@ -57,6 +57,7 @@ import { PrDescriptionDialog } from "./PrDescriptionDialog";
 import { StashSection } from "./StashSection";
 import { SubmoduleSection } from "./SubmoduleSection";
 import { ConflictSection } from "./ConflictSection";
+import { WorktreeSection } from "./WorktreeSection";
 
 type Props = {
   open: boolean;
@@ -69,6 +70,8 @@ type Props = {
     originalPath: string | null;
     title?: string;
   }) => void;
+  /** Open a worktree directory as the active workspace */
+  onOpenWorktree?: (path: string) => void;
 };
 
 const SOURCE_CONTROL_TOOLTIP_CLASS =
@@ -143,6 +146,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
   sourceControl,
   onOpenGitGraph,
   onOpenDiff,
+  onOpenWorktree,
 }: Props) {
   const scm = useSourceControlPanel(open, sourceControl, onOpenDiff);
   const refreshAnimationRef = useRef<number | null>(null);
@@ -832,6 +836,13 @@ export const SourceControlPanel = memo(function SourceControlPanel({
 
         {scm.repo && (
           <SubmoduleSection repoRoot={scm.repo.repoRoot} />
+        )}
+
+        {scm.repo && (
+          <WorktreeSection
+            repoRoot={scm.repo.repoRoot}
+            onOpenWorktree={onOpenWorktree}
+          />
         )}
       </aside>
 

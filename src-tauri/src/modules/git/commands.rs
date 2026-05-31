@@ -4,7 +4,7 @@ use crate::modules::git::operations;
 use crate::modules::git::types::{
     DiscardEntry, GitCommitFileChange, GitCommitResult, GitDiffContentResult, GitDiffResult,
     GitLogEntry, GitPanelSnapshot, GitPushResult, GitRepoInfo, GitStashEntry, GitStatusSnapshot,
-    GitSubmoduleEntry,
+    GitSubmoduleEntry, GitWorktreeEntry,
 };
 use crate::modules::workspace::{WorkspaceEnv, WorkspaceRegistry};
 
@@ -361,6 +361,66 @@ pub async fn git_stash_drop(
     let workspace = WorkspaceEnv::from_option(workspace);
     blocking(app, move |r| {
         operations::stash_drop(r, &repo_root, &stash_ref, &workspace).map_err(Into::into)
+    })
+    .await
+}
+
+
+// ── Worktree commands ─────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn git_worktree_list(
+    repo_root: String,
+    workspace: Option<WorkspaceEnv>,
+    app: AppHandle,
+) -> Result<Vec<GitWorktreeEntry>, String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
+    blocking(app, move |_r| {
+        operations::worktree_list(&repo_root, &workspace).map_err(Into::into)
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn git_worktree_add(
+    repo_root: String,
+    path: String,
+    branch: String,
+    new_branch: bool,
+    workspace: Option<WorkspaceEnv>,
+    app: AppHandle,
+) -> Result<(), String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
+    blocking(app, move |_r| {
+        operations::worktree_add(&repo_root, &path, &branch, new_branch, &workspace)
+            .map_err(Into::into)
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn git_worktree_remove(
+    repo_root: String,
+    path: String,
+    workspace: Option<WorkspaceEnv>,
+    app: AppHandle,
+) -> Result<(), String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
+    blocking(app, move |_r| {
+        operations::worktree_remove(&repo_root, &path, &workspace).map_err(Into::into)
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn git_worktree_prune(
+    repo_root: String,
+    workspace: Option<WorkspaceEnv>,
+    app: AppHandle,
+) -> Result<(), String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
+    blocking(app, move |_r| {
+        operations::worktree_prune(&repo_root, &workspace).map_err(Into::into)
     })
     .await
 }

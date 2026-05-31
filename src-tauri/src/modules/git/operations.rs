@@ -10,7 +10,7 @@ use crate::modules::git::process::{
 use crate::modules::git::types::{
     DiscardEntry, GitCommitFileChange, GitCommitResult, GitDiffContentResult, GitDiffResult,
     GitLogEntry, GitOutput, GitPanelSnapshot, GitPushResult, GitRepoInfo, GitStatusSnapshot,
-    GitSubmoduleEntry, TextSource, DEFAULT_TIMEOUT_SECS, NETWORK_TIMEOUT_SECS,
+    GitSubmoduleEntry, GitWorktreeEntry, TextSource, DEFAULT_TIMEOUT_SECS, NETWORK_TIMEOUT_SECS,
 };
 use crate::modules::git::utils::{
     authorized_repo_root, canonical_dir, resolve_within_repo, split_upstream, ResolvedGitDirectory,
@@ -1149,4 +1149,120 @@ pub fn submodule_status(
         entries.push(GitSubmoduleEntry { path, name, sha, status });
     }
     Ok(entries)
+}
+
+// ── Git Worktrees ─────────────────────────────────────────────────────────────
+
+/// List all worktrees for the given repo.
+/// Parses `git worktree list --porcelain` output.
+pub fn worktree_list(
+    repo_root: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<Vec<GitWorktreeEntry>> {
+    let out = run_git(
+        workspace,
+        Some(repo_root),
+        ["worktree", "list", "--porcelain"],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&out, "git worktree list")?;
+    let text = String::from_utf8_lossy(&out.stdout);
+    let mut entries = Vec::new();
+
+    // Each worktree block is separated by a blank line.
+    for block in text.split("\n\n") {
+        let block = block.trim();
+        if block.is_empty() {
+            continue;
+        }
+        let mut path = String::new();
+        let mut sha = String::new();
+        let mut branch = String::new();
+        let mut is_detached = false;
+        let mut is_prunable = false;
+        let mut is_main = false;
+
+        for line in block.lines() {
+            if let Some(v) = line.strip_prefix("worktree ") {
+                path = v.trim().to_string();
+            } else if let Some(v) = line.strip_prefix("HEAD ") {
+                sha = v.trim()[..7.min(v.trim().len())].to_string();
+            } else if let Some(v) = line.strip_prefix("branch ") {
+                branch = v.trim()
+                    .trim_start_matches("refs/heads/")
+                    .to_string();
+            } else if line == "detached" {
+                is_detached = true;
+            } else if line.starts_with("prunable") {
+                is_prunable = true;
+            } else if line == "bare" {
+                // bare repo main worktree — skip
+            }
+        }
+        // The first block is always the main worktree
+        if entries.is_empty() {
+            is_main = true;
+        }
+        if path.is_empty() {
+            continue;
+        }
+        entries.push(GitWorktreeEntry {
+            path,
+            sha,
+            branch,
+            is_main,
+            is_detached,
+            is_prunable,
+        });
+    }
+    Ok(entries)
+}
+
+/// Add a new worktree at `path` checked out at `branch`.
+/// If `new_branch` is true, creates the branch (-b).
+pub fn worktree_add(
+    repo_root: &str,
+    path: &str,
+    branch: &str,
+    new_branch: bool,
+    workspace: &WorkspaceEnv,
+) -> Result<()> {
+    let mut args: Vec<&str> = vec!["worktree", "add"];
+    if new_branch {
+        args.push("-b");
+    }
+    args.push(path);
+    args.push(branch);
+    let out = run_git(workspace, Some(repo_root), args, DEFAULT_TIMEOUT_SECS)?;
+    ensure_success(&out, "git worktree add")?;
+    Ok(())
+}
+
+/// Remove a worktree by path.  Passes `--force` to allow removing
+/// worktrees with uncommitted changes (the user confirmed in the UI).
+pub fn worktree_remove(
+    repo_root: &str,
+    path: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<()> {
+    let out = run_git(
+        workspace,
+        Some(repo_root),
+        ["worktree", "remove", "--force", path],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&out, "git worktree remove")?;
+    Ok(())
+}
+
+/// Prune stale worktree references.
+pub fn worktree_prune(repo_root: &str, workspace: &WorkspaceEnv) -> Result<()> {
+    let out = run_git(
+        workspace,
+        Some(repo_root),
+        ["worktree", "prune"],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&out, "git worktree prune")?;
+    Ok(())
 }

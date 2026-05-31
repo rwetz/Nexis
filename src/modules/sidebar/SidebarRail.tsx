@@ -27,6 +27,7 @@ import {
   FlashIcon,
   Globe02Icon,
   MagicWand01Icon,
+  Note01Icon,
   Queue01Icon,
   SearchCodeIcon,
 } from "@hugeicons/core-free-icons";
@@ -77,6 +78,7 @@ export function SidebarRail({
     { id: "share", label: "Share", icon: Globe02Icon },
     { id: "prompt-templates", label: "Prompt Templates", icon: FlashIcon },
     { id: "bookmarks", label: "Bookmarks", icon: BookmarkAdd01Icon },
+    { id: "notes", label: "Workspace Notes", icon: Note01Icon },
     { id: "ssh", label: "SSH", icon: TerminalIcon },
     { id: "release", label: "Release", icon: RocketIcon },
   ];

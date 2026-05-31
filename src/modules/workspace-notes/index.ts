@@ -1,0 +1,1 @@
+export { WorkspaceNotesPanel } from "./WorkspaceNotesPanel";

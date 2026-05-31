@@ -170,6 +170,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Live terminal streaming — extend LAN share server with Server-Sent Events; browser page auto-updates every 2 s with current terminal output; `/stream` SSE endpoint for real-time viewing on any device on the same network (1.9.0)
 - [x] Prompt templates — reusable named AI prompts stored in localStorage; one-click to send any template to the AI panel; create, edit, and delete from the sidebar; four built-in starter templates (1.9.0)
 - [x] File bookmarks — bookmark any file or line with Alt+D; persistent sidebar panel grouped by file; inline label editing; keyboard-navigable; backed by localStorage (1.9.0)
+- [x] Workspace notes — markdown scratch-pad per workspace saved to `.nexis/NOTES.md`; auto-saves on keystroke; live preview toggle; accessible from the sidebar (1.10.0)
+- [x] Git worktrees — list, add, and remove git worktrees from the source control panel; clicking a worktree switches the workspace; branch creation flag; prune support (1.10.0)
 
 ---
 
