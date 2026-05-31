@@ -19,6 +19,7 @@ import {
   Tick01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { IS_WINDOWS } from "@/lib/platform";
 import { useCallback, useEffect, useState } from "react";
 
 type CommandOutput = {
@@ -88,25 +89,18 @@ export function SshKeyManager() {
   const [genPassphrase, setGenPassphrase] = useState("");
   const [genError, setGenError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [os, setOs] = useState("linux");
-
-  useEffect(() => {
-    invoke<string>("plugin:os|platform")
-      .then((p) => setOs(p))
-      .catch(() => {});
-  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await listKeys(os);
+      const result = await listKeys(IS_WINDOWS ? "windows" : "unix");
       setKeys(result);
     } catch {
       setKeys([]);
     } finally {
       setLoading(false);
     }
-  }, [os]);
+  }, []);
 
   useEffect(() => {
     if (expanded) void refresh();
@@ -114,9 +108,9 @@ export function SshKeyManager() {
 
   const handleGenerate = useCallback(async () => {
     const label = genLabel.trim() || "nexis_key";
-    const sshDir = os === "windows" ? "%USERPROFILE%\\.ssh" : "~/.ssh";
+    const sshDir = IS_WINDOWS ? "%USERPROFILE%\\.ssh" : "~/.ssh";
     const keyPath =
-      os === "windows"
+      IS_WINDOWS
         ? `${sshDir}\\${label}`
         : `${sshDir}/${label}`;
     const passFlag = genPassphrase ? `-N "${genPassphrase}"` : `-N ""`;
@@ -140,7 +134,7 @@ export function SshKeyManager() {
     } finally {
       setGenerating(false);
     }
-  }, [genLabel, genPassphrase, os, refresh]);
+  }, [genLabel, genPassphrase, refresh]);
 
   const handleCopy = useCallback(async (key: SshKey) => {
     await navigator.clipboard.writeText(key.publicKey);

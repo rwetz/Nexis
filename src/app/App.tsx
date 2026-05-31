@@ -81,7 +81,7 @@ import { BuildPanel } from "@/modules/build/BuildPanel";
 import { SshPanel } from "@/modules/ssh";
 import { PortsPanel } from "@/modules/ports";
 import { ProfilesPanel } from "@/modules/profiles";
-import { ReplPanel, sendToRepl, REPL_LEAF_ID } from "@/modules/repl";
+import { ReplPanel, sendToRepl } from "@/modules/repl";
 import { ReleasePanel } from "@/modules/release";
 import {
   SourceControlPanel,
@@ -312,7 +312,9 @@ export default function App() {
         // Non-fatal — path may already be authorized.
       }
       for (const id of liveLeavesRef.current) disposeSession(id);
-      disposeSession(REPL_LEAF_ID);
+      // Send EOF to the REPL if it's running so its PTY exits cleanly.
+      // Don't disposeSession — the ReplPanel's onExit handler manages its state.
+      sendToRepl("\x04");
       searchAddons.current.clear();
       terminalRefs.current.clear();
       editorRefs.current.clear();

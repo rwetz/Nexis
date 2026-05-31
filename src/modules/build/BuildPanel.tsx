@@ -1,6 +1,5 @@
 import { native } from "@/modules/ai/lib/native";
-import { sendMessage } from "@/modules/ai/store/chatStore";
-import { useChatStore } from "@/modules/ai/store/chatStore";
+import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
 import { cn } from "@/lib/utils";
 import {
   Cancel01Icon,

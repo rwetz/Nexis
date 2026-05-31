@@ -18,7 +18,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  disposeSession,
+  respawnSession,
   useTerminalSession,
 } from "@/modules/terminal/lib/useTerminalSession";
 
@@ -82,20 +82,26 @@ export function ReplPanel() {
     };
   }, [session]);
 
-  const startRepl = useCallback(() => {
+  const startRepl = useCallback(async () => {
     setSessionState("starting");
-    // Tiny delay so the PTY is ready before we write the command
+    // If the previous REPL process has exited, we need to respawn the PTY
+    // before we can write a new REPL command into it.
+    if (sessionState === "exited") {
+      await respawnSession(REPL_LEAF_ID);
+    }
+    // Tiny delay so the PTY is ready to accept writes
     setTimeout(() => {
       const cmd = selected.command ? `${selected.command}\r` : "";
       if (cmd) session.write(cmd);
       setSessionState("running");
-    }, 300);
-  }, [selected, session]);
+    }, 400);
+  }, [selected, session, sessionState]);
 
   const stopRepl = useCallback(() => {
-    disposeSession(REPL_LEAF_ID);
-    setSessionState("idle");
-  }, []);
+    // Send EOF (Ctrl+D) — cleanly exits most REPLs (python, node, irb, shells)
+    // The onExit callback will fire and transition state to "exited".
+    session.write("\x04");
+  }, [session]);
 
   const isRunning = sessionState === "running" || sessionState === "starting";
   const isExited = sessionState === "exited";
@@ -121,7 +127,7 @@ export function ReplPanel() {
           ) : (
             <button
               type="button"
-              onClick={startRepl}
+              onClick={() => void startRepl()}
               title={`Start ${selected.label} REPL`}
               className="flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/20"
             >

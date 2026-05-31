@@ -3,6 +3,7 @@
  * a one-click "Open in Preview" button.  Runs `ss` / `lsof` / `netstat`
  * depending on the platform via the existing shell_run_command IPC.
  */
+import { IS_WINDOWS } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -30,12 +31,12 @@ type CommandOutput = {
 // Ports that are unlikely to be developer web servers (skip in the UI badge count).
 const NOISE_PORTS = new Set([22, 25, 53, 110, 143, 443, 445, 587, 993, 995]);
 
-async function detectPorts(os: string): Promise<ListeningPort[]> {
+async function detectPorts(): Promise<ListeningPort[]> {
   const ports: ListeningPort[] = [];
 
   try {
     let stdout = "";
-    if (os === "windows") {
+    if (IS_WINDOWS) {
       // netstat -ano lists all TCP listeners with PID
       const out = await invoke<CommandOutput>("shell_run_command", {
         command: "netstat -ano -p TCP",
@@ -112,25 +113,17 @@ type Props = {
 export function PortsPanel({ onOpenPreview }: Props) {
   const [ports, setPorts] = useState<ListeningPort[]>([]);
   const [loading, setLoading] = useState(false);
-  const [os, setOs] = useState("linux");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Detect OS once
-  useEffect(() => {
-    invoke<string>("plugin:os|platform")
-      .then((p) => setOs(p))
-      .catch(() => {});
-  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await detectPorts(os);
+      const result = await detectPorts();
       setPorts(result);
     } finally {
       setLoading(false);
     }
-  }, [os]);
+  }, []);
 
   // Initial load + polling every 5s
   useEffect(() => {

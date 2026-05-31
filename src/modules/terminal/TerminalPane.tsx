@@ -127,7 +127,7 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
     return (
       <div
         ref={containerRef}
-        className="zoom-exempt relative h-full w-full"
+        className="zoom-exempt group relative h-full w-full"
         style={{
           visibility: visible ? "visible" : "hidden",
           pointerEvents: visible ? "auto" : "none",
@@ -151,9 +151,9 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
           />
         )}
 
-        {/* Recording toggle — top-right corner, only shown on hover or while recording */}
+        {/* Recording toggle — top-right corner, visible on hover or while recording */}
         {visible && (
-          <div className={`absolute right-2 top-2 z-40 transition-opacity duration-150 ${isRecording ? "opacity-100" : "opacity-0 hover:opacity-100 [.zoom-exempt:hover_&]:opacity-100"} group-hover:opacity-100`}>
+          <div className={`absolute right-2 top-2 z-40 transition-opacity duration-150 ${isRecording ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
             <Tooltip delayDuration={400}>
               <TooltipTrigger asChild>
                 <button
