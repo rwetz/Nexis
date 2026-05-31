@@ -172,6 +172,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] File bookmarks — bookmark any file or line with Alt+D; persistent sidebar panel grouped by file; inline label editing; keyboard-navigable; backed by localStorage (1.9.0)
 - [x] Workspace notes — markdown scratch-pad per workspace saved to `.nexis/NOTES.md`; auto-saves on keystroke; live preview toggle; accessible from the sidebar (1.10.0)
 - [x] Git worktrees — list, add, and remove git worktrees from the source control panel; clicking a worktree switches the workspace; branch creation flag; prune support (1.10.0)
+- [x] AI explain commit — "Explain" button in the git history commit detail popover; loads the full diff and sends it to the AI panel with author/SHA context (1.11.0)
+- [x] Shell command snippets — sidebar panel for saving and running frequently-used shell commands; one-click sends to the active terminal; `{VAR}` placeholder support; five built-in starters (1.11.0)
 
 ---
 

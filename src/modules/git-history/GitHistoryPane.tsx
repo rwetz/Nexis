@@ -13,7 +13,9 @@ import {
   type GitLogEntry,
 } from "@/modules/ai/lib/native";
 import { fileIconUrl } from "@/modules/explorer/lib/iconResolver";
+import { sendMessage } from "@/modules/ai/store/chatStore";
 import {
+  AiChat02Icon,
   Copy01Icon,
   File02Icon,
   LinkSquare02Icon,
@@ -662,6 +664,7 @@ export function GitHistoryPane({
                       commit={commit}
                       filesEntry={openFilesEntry}
                       remoteWeb={remoteWeb}
+                      repoRoot={repoRoot}
                       onCopySha={copyToClipboard}
                       onOpenFile={handleFileOpen}
                       onRetryFiles={() => void fetchFiles(openAnchor.sha)}
@@ -809,6 +812,7 @@ type CommitDetailProps = {
   commit: GitLogEntry;
   filesEntry: FilesEntry | null;
   remoteWeb: RemoteWebInfo | null;
+  repoRoot: string;
   onCopySha: (value: string) => Promise<void> | void;
   onOpenFile: (
     commit: GitLogEntry,
@@ -821,6 +825,7 @@ function CommitDetail({
   commit,
   filesEntry,
   remoteWeb,
+  repoRoot,
   onCopySha,
   onOpenFile,
   onRetryFiles,
@@ -828,6 +833,7 @@ function CommitDetail({
   const absolute = absoluteTime(commit.timestampSecs);
   const webUrl = remoteWeb ? commitWebUrl(remoteWeb, commit.sha) : null;
   const [copied, setCopied] = useState(false);
+  const [explaining, setExplaining] = useState(false);
 
   useEffect(() => {
     if (!copied) return;
@@ -890,6 +896,38 @@ function CommitDetail({
               {hostLabel(remoteWeb!)}
             </Button>
           ) : null}
+          <Button
+            size="xs"
+            variant="ghost"
+            disabled={explaining}
+            className="h-6 cursor-pointer gap-1.5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-50"
+            onClick={() => {
+              setExplaining(true);
+              void (async () => {
+                try {
+                  const result = await native.gitShowCommit(repoRoot, commit.sha);
+                  const diff = result.diffText.slice(0, 8000);
+                  sendMessage(
+                    `Explain this git commit:\n\n**${commit.subject}**\n` +
+                    `Author: ${commit.author} <${commit.authorEmail}>\n` +
+                    `SHA: ${commit.shortSha}\n\n` +
+                    `\`\`\`diff\n${diff}\n\`\`\`\n\n` +
+                    `Describe what changed and why, at a high level.`,
+                  );
+                } catch (e) {
+                  sendMessage(
+                    `Explain this git commit: **${commit.subject}** (${commit.shortSha}) by ${commit.author}. ` +
+                    `It changed ${commit.filesChanged} file(s), +${commit.insertions}/-${commit.deletions} lines.`,
+                  );
+                } finally {
+                  setExplaining(false);
+                }
+              })();
+            }}
+          >
+            <HugeiconsIcon icon={AiChat02Icon} size={11} strokeWidth={1.9} />
+            {explaining ? "Loading…" : "Explain"}
+          </Button>
         </div>
       </div>
 

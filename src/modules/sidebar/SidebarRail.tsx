@@ -79,6 +79,7 @@ export function SidebarRail({
     { id: "prompt-templates", label: "Prompt Templates", icon: FlashIcon },
     { id: "bookmarks", label: "Bookmarks", icon: BookmarkAdd01Icon },
     { id: "notes", label: "Workspace Notes", icon: Note01Icon },
+    { id: "shell-snippets", label: "Shell Snippets", icon: ComputerTerminal01Icon },
     { id: "ssh", label: "SSH", icon: TerminalIcon },
     { id: "release", label: "Release", icon: RocketIcon },
   ];

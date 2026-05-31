@@ -86,6 +86,7 @@ import { RefactorPanel, setRefactorCode } from "@/modules/refactor";
 import { PromptTemplatesPanel } from "@/modules/prompt-templates";
 import { BookmarksPanel, toggleBookmark } from "@/modules/bookmarks";
 import { WorkspaceNotesPanel } from "@/modules/workspace-notes";
+import { ShellSnippetsPanel, setShellSnippetSender } from "@/modules/shell-snippets";
 import { SshPanel } from "@/modules/ssh";
 import { PortsPanel } from "@/modules/ports";
 import { ProfilesPanel } from "@/modules/profiles";
@@ -413,6 +414,15 @@ export default function App() {
     void useAgentsStore.getState().hydrate();
     void useSnippetsStore.getState().hydrate();
   }, [hydrateSessions]);
+
+  // Wire shell snippet sender — writes to the active terminal
+  useEffect(() => {
+    setShellSnippetSender((text) => {
+      const tab = tabs.find((t) => t.id === activeId && t.kind === "terminal");
+      if (!tab || tab.kind !== "terminal") return;
+      terminalRefs.current.get(tab.activeLeafId)?.write(text);
+    });
+  }, [activeId, tabs]);
 
   useEffect(() => {
     const unlistenP = onThemeEdit(async (req) => {
@@ -1534,6 +1544,8 @@ export default function App() {
                           void line;
                         }}
                       />
+                    ) : sidebarView === "shell-snippets" ? (
+                      <ShellSnippetsPanel />
                     ) : sidebarView === "notes" ? (
                       <WorkspaceNotesPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "ssh" ? (
