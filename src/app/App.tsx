@@ -80,6 +80,9 @@ import { DatabasePanel } from "@/modules/database/DatabasePanel";
 import { BuildPanel } from "@/modules/build/BuildPanel";
 import { CodeReviewPanel } from "@/modules/code-review";
 import { AgentQueuePanel } from "@/modules/agent-queue";
+import { SharePanel } from "@/modules/share";
+import { SymbolSearchPanel } from "@/modules/symbol-search";
+import { RefactorPanel, setRefactorCode } from "@/modules/refactor";
 import { SshPanel } from "@/modules/ssh";
 import { PortsPanel } from "@/modules/ports";
 import { ProfilesPanel } from "@/modules/profiles";
@@ -1053,6 +1056,13 @@ export default function App() {
           sendToRepl(sel + "\r");
         }
       },
+      "refactor.captureSelection": () => {
+        const sel = captureActiveSelection();
+        if (sel) {
+          persistSidebarView("refactor");
+          setRefactorCode(sel);
+        }
+      },
       "files.quickOpen": () => setQuickFilePickerOpen((v) => !v),
       "search.workspace": () => setWorkspaceSearchOpen((v) => !v),
       "commands.palette": () => setCommandPaletteOpen((v) => !v),
@@ -1484,6 +1494,25 @@ export default function App() {
                       <CodeReviewPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "agent-queue" ? (
                       <AgentQueuePanel />
+                    ) : sidebarView === "symbol-search" ? (
+                      <SymbolSearchPanel
+                        workspaceRoot={explorerRoot}
+                        onOpenFile={(path) => {
+                          openFileTab(path, true);
+                        }}
+                      />
+                    ) : sidebarView === "refactor" ? (
+                      <RefactorPanel />
+                    ) : sidebarView === "share" ? (
+                      <SharePanel
+                        getTerminalBuffer={() => {
+                          const t = tabs.find(
+                            (x) => x.id === activeId && x.kind === "terminal",
+                          );
+                          if (!t || t.kind !== "terminal") return null;
+                          return terminalRefs.current.get(t.activeLeafId)?.getBuffer(500) ?? null;
+                        }}
+                      />
                     ) : sidebarView === "ssh" ? (
                       <SshPanel onConnect={handleOpenSshSession} />
                     ) : sidebarView === "release" ? (

@@ -163,6 +163,9 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] AI code review — on-demand review of staged or all unstaged diff via a dedicated sidebar panel; shows file/line stats and a scrollable diff preview; "Review with AI" sends the diff as a structured prompt (1.7.0)
 - [x] AI-assisted git conflict resolution — conflict files automatically surfaced in the source-control panel; "Resolve with AI" reads the conflicted file and sends a structured three-way resolution prompt including conflict markers and context (1.7.0)
 - [x] Background agent queue — sidebar panel for queuing multiple AI prompts to run sequentially; tasks show queued/running/done/failed status with duration; failed tasks can be retried; clear-completed action (1.7.0)
+- [x] Semantic / AST-aware search — structural symbol search panel with pattern prefixes (fn: class: hook: import: type: const:) that translate to language-aware regexes fed to the existing grep backend (1.8.0)
+- [x] Remote Prompt viewing — local HTTP server (stdlib-only TCP) serves the current AI conversation as a self-contained HTML page accessible from any device on the same LAN; same server also handles terminal snapshots (1.8.0)
+- [x] AI refactoring engine — sidebar panel with Extract Function, Inline Variable, Add Types, Simplify, Add Error Handling, and Add Docs operations; Alt+Shift+X captures the active editor selection; prompts the AI with structured refactoring instructions (1.8.0)
 
 ---
 
@@ -170,7 +173,6 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 
 - [ ] **Multi-window** — open Nexis in multiple independent windows, each with their own workspace, tabs, and layout; windows share the OS keychain and theme
 - [ ] **Refactoring engine** — rename symbols, extract functions, and inline variables across a project, powered by LSP workspace edits plus an optional AI verification pass; now realistic since LSP landed in 1.1.0
-- [ ] **Remote Prompt viewing** — be able to open nexis on phone and view prompts/work being done by agents
 
 
 ---
@@ -179,7 +181,6 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 
 - [ ] **Remote workspace** — browse, edit, and run code on remote machines entirely over SSH; the file explorer and editor work against the remote filesystem via SFTP while the terminal is already there; the goal is a seamless local feel with zero local clones required
 - [ ] **Persistent terminal sessions** — PTY sessions survive Nexis restarts; reconnect to a running shell without losing scrollback or process state; native implementation inspired by tmux session persistence but without the terminal multiplexer overhead
-- [ ] **Semantic / AST-aware search** — search the codebase using structural patterns driven by tree-sitter queries (e.g., "all call sites of `fn foo`", "React hooks that depend on X") as an optional mode in the find-across-project panel
 - [ ] **Multiplayer terminal view** — generate a local LAN URL that lets a collaborator view your terminal session read-only in their browser; no cloud relay, no accounts, session ends when you close the tab
 - [ ] **Custom AI tool authoring** — write and test new agent tools in TypeScript using the Plugin API; a first-party SDK with type definitions, a local test harness, and one-command installation into a workspace
 - [ ] **Selective TS → Rust migration** — profile hot paths (terminal input dispatch, diff rendering, file-tree diffing), identify where a Rust implementation gives a measurable win, migrate incrementally without growing bundle size

@@ -1,6 +1,6 @@
 mod modules;
 
-use modules::{dap, fs, git, lsp, net, pty, python, recording, secrets, shell, workspace};
+use modules::{dap, fs, git, http_share, lsp, net, pty, python, recording, secrets, shell, workspace};
 use std::sync::Mutex;
 use tauri::State;
 use tauri_plugin_window_state::StateFlags;
@@ -63,6 +63,7 @@ pub fn run() {
         })
         .manage(lsp::LspState::default())
         .manage(dap::DapState::default())
+        .manage(http_share::HttpShareState::default())
         .manage(LaunchDir(Mutex::new(parse_launch_dir())))
         .invoke_handler(tauri::generate_handler![
             pty::pty_open,
@@ -140,6 +141,9 @@ pub fn run() {
             net::ai_http_stream,
             python::py_detect_envs,
             recording::save_cast_recording,
+            http_share::http_share_start,
+            http_share::http_share_update,
+            http_share::http_share_stop,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,6 +1,7 @@
 pub mod dap;
 pub mod fs;
 pub mod git;
+pub mod http_share;
 pub mod lsp;
 pub mod net;
 pub mod proc;

@@ -21,7 +21,13 @@ import {
   Time01Icon,
   Wrench01Icon,
 } from "@hugeicons/core-free-icons";
-import { CodeSquareIcon, Queue01Icon } from "@hugeicons/core-free-icons";
+import {
+  CodeSquareIcon,
+  Globe02Icon,
+  MagicWand01Icon,
+  Queue01Icon,
+  SearchCodeIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { SidebarViewId } from "./types";
 
@@ -64,6 +70,9 @@ export function SidebarRail({
     { id: "build", label: "Build", icon: Wrench01Icon },
     { id: "code-review", label: "Code Review", icon: CodeSquareIcon },
     { id: "agent-queue", label: "Agent Queue", icon: Queue01Icon },
+    { id: "symbol-search", label: "Symbol Search", icon: SearchCodeIcon },
+    { id: "refactor", label: "AI Refactor", icon: MagicWand01Icon },
+    { id: "share", label: "Share", icon: Globe02Icon },
     { id: "ssh", label: "SSH", icon: TerminalIcon },
     { id: "release", label: "Release", icon: RocketIcon },
   ];
