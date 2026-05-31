@@ -6,6 +6,7 @@ import { Add01Icon, Delete01Icon, PencilEdit01Icon, TerminalIcon } from "@hugeic
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useState } from "react";
 import { buildSshCommand, newSshId, type SshConnection, useSshStore } from "./sshStore";
+import { SshKeyManager } from "./SshKeyManager";
 
 type Props = {
   onConnect: (command: string, label: string) => void;
@@ -162,7 +163,7 @@ export function SshPanel({ onConnect }: Props) {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto flex flex-col">
         {connections.length === 0 && !isEditing ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
             <HugeiconsIcon icon={TerminalIcon} size={24} strokeWidth={1.5} className="text-muted-foreground/40" />
@@ -224,6 +225,8 @@ export function SshPanel({ onConnect }: Props) {
             })}
           </ul>
         )}
+        {/* SSH key manager lives at the bottom of the connections list */}
+        <SshKeyManager />
       </div>
     </div>
   );

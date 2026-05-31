@@ -153,17 +153,17 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Workspace switcher — Ctrl+` keyboard picker for recently opened folders with fuzzy search; switching resets the workspace and starts a fresh terminal at the selected directory; recent list persists across restarts (1.4.0)
 - [x] Persistent AI chat history — searchable session history popover in the AI panel header; sessions sorted by last updated, filterable by title, with compact timestamps; backed by Tauri store across restarts (1.4.0)
 - [x] Git submodule support — collapsible submodule list in the source control panel with status badges (ok / modified / uninitialized / conflict), short SHA, path display, and per-entry init/update actions (1.4.0)
+- [x] Terminal session recording — record PTY output to an asciinema v2 `.cast` file with a single toggle button; saved to `~/nexis-recordings/`; useful for demos and bug reports (1.5.0)
+- [x] Port forwarding panel — dedicated sidebar panel that detects locally listening TCP ports via `ss`/`lsof`/`netstat`; one-click open-in-preview for web/dev server ports; auto-refreshes every 5 s (1.5.0)
+- [x] SSH key manager — collapsible section in the SSH panel listing `~/.ssh/*.pub` keys; generate new Ed25519 key pairs via `ssh-keygen` with optional passphrase; one-click copy public key to clipboard (1.5.0)
 
 ---
 
 ## Up next
 
-- [ ] **Terminal session recording** — record PTY output to an asciinema-compatible `.cast` file with a single toggle; replay locally with speed controls; useful for demos and bug reports
-- [ ] **SSH key manager** — generate, import, and manage SSH keys within Nexis; tie keys to saved connection profiles in the SSH session panel; no external tool required
 - [ ] **Multi-window** — open Nexis in multiple independent windows, each with their own workspace, tabs, and layout; windows share the OS keychain and theme
 - [ ] **Diffstat in commit view** — per-file +/− line counts in the git history commit detail view; click a file row to jump directly to its diff; makes large commits navigable at a glance
 - [ ] **Refactoring engine** — rename symbols, extract functions, and inline variables across a project, powered by LSP workspace edits plus an optional AI verification pass; now realistic since LSP landed in 1.1.0
-- [ ] **Port forwarding panel** — surface forwarded ports from SSH sessions and dev servers in a dedicated panel with one-click open-in-preview; pairs with the background process manager
 - [ ] **Remote Prompt viewing** — be able to open nexis on phone and view prompts/work being done by agents
 
 

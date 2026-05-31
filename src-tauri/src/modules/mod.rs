@@ -6,6 +6,7 @@ pub mod net;
 pub mod proc;
 pub mod pty;
 pub mod python;
+pub mod recording;
 pub mod secrets;
 pub mod shell;
 pub mod workspace;

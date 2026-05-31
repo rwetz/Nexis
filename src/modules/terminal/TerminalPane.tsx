@@ -1,8 +1,14 @@
 import { useTheme } from "@/modules/theme";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { SearchAddon } from "@xterm/addon-search";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTerminalSession } from "./lib/useTerminalSession";
 import { useTerminalSuggestions } from "./lib/useTerminalSuggestions";
+import { useRecording } from "./lib/useRecording";
 import { TerminalSuggestionOverlay } from "./components/TerminalSuggestionOverlay";
 
 export type TerminalPaneHandle = {
@@ -47,6 +53,8 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
     const [isDragOver, setIsDragOver] = useState(false);
 
     const { suggestion } = useTerminalSuggestions(leafId);
+    const { isRecording, startRecording, stopAndSave } = useRecording(leafId);
+    const [savedToast, setSavedToast] = useState<string | null>(null);
 
     const session = useTerminalSession({
       leafId,
@@ -104,6 +112,18 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
       session.focus();
     };
 
+    const handleRecordToggle = async () => {
+      if (isRecording) {
+        const path = await stopAndSave();
+        if (path) {
+          setSavedToast(path);
+          setTimeout(() => setSavedToast(null), 4000);
+        }
+      } else {
+        startRecording();
+      }
+    };
+
     return (
       <div
         ref={containerRef}
@@ -129,6 +149,43 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
             x={suggestion.x}
             y={suggestion.y}
           />
+        )}
+
+        {/* Recording toggle — top-right corner, only shown on hover or while recording */}
+        {visible && (
+          <div className={`absolute right-2 top-2 z-40 transition-opacity duration-150 ${isRecording ? "opacity-100" : "opacity-0 hover:opacity-100 [.zoom-exempt:hover_&]:opacity-100"} group-hover:opacity-100`}>
+            <Tooltip delayDuration={400}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => void handleRecordToggle()}
+                  aria-label={isRecording ? "Stop recording" : "Start recording"}
+                  className={`flex h-5 w-5 items-center justify-center rounded-full border text-[8px] font-bold shadow-sm transition-colors ${
+                    isRecording
+                      ? "border-red-500/70 bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                      : "border-border/60 bg-card/80 text-muted-foreground hover:border-red-400/60 hover:text-red-400"
+                  }`}
+                >
+                  {isRecording ? (
+                    <span className="h-2 w-2 rounded-sm bg-red-500" />
+                  ) : (
+                    <span className="h-2 w-2 rounded-full bg-current" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="text-xs">
+                {isRecording ? "Stop recording" : "Record terminal session"}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )}
+
+        {/* Saved notification toast */}
+        {savedToast && visible && (
+          <div className="pointer-events-none absolute bottom-3 right-3 z-50 max-w-[280px] rounded-md border border-border/50 bg-card/95 px-3 py-2 shadow-md">
+            <p className="text-[10px] font-medium text-foreground">Recording saved</p>
+            <p className="mt-0.5 truncate font-mono text-[9px] text-muted-foreground">{savedToast}</p>
+          </div>
         )}
       </div>
     );

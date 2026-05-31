@@ -79,6 +79,7 @@ import { TestRunnerPanel } from "@/modules/testrunner";
 import { DatabasePanel } from "@/modules/database/DatabasePanel";
 import { BuildPanel } from "@/modules/build/BuildPanel";
 import { SshPanel } from "@/modules/ssh";
+import { PortsPanel } from "@/modules/ports";
 import { ReleasePanel } from "@/modules/release";
 import {
   SourceControlPanel,
@@ -1431,6 +1432,8 @@ export default function App() {
                       />
                     ) : sidebarView === "processes" ? (
                       <BackgroundProcessPanel />
+                    ) : sidebarView === "ports" ? (
+                      <PortsPanel onOpenPreview={openPreviewTab} />
                     ) : sidebarView === "outline" ? (
                       <SymbolOutlinePanel filePath={tabs.find(t => t.id === activeId && t.kind === "editor") ? (tabs.find(t => t.id === activeId) as { path: string }).path : null} />
                     ) : sidebarView === "snippets" ? (

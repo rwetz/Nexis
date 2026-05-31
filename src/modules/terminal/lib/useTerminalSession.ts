@@ -62,6 +62,22 @@ type Session = {
 
 const sessions = new Map<number, Session>();
 
+/** Per-leaf recording callback. Set via registerRecordingHandler; null when not recording. */
+const recordingHandlers = new Map<number, (bytes: Uint8Array) => void>();
+
+export function registerRecordingHandler(
+  leafId: number,
+  handler: ((bytes: Uint8Array) => void) | null,
+): void {
+  if (handler) recordingHandlers.set(leafId, handler);
+  else recordingHandlers.delete(leafId);
+}
+
+export function getSessionDimensions(leafId: number): { cols: number; rows: number } {
+  const s = sessions.get(leafId);
+  return { cols: s?.cols ?? 80, rows: s?.rows ?? 24 };
+}
+
 configureRendererPool({
   resolveLeaf(leafId) {
     const s = sessions.get(leafId);
@@ -148,6 +164,9 @@ function ensureSession(leafId: number, initialCwd?: string): Session {
 function deliverPtyBytes(leafId: number, bytes: Uint8Array): void {
   const s = sessions.get(leafId);
   if (!s) return;
+  // Feed recording handler before rendering so the cast captures every byte.
+  const rec = recordingHandlers.get(leafId);
+  if (rec) rec(bytes);
   const slot = getSlotForLeaf(leafId);
   if (slot) slot.term.write(bytes);
   else s.dormantRing.push(bytes);
