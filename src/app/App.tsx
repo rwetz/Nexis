@@ -635,6 +635,21 @@ export default function App() {
     setAskPopup(null);
   }, [askFromSelection]);
 
+  const onExplainFromSelection = useCallback(() => {
+    if (!hasComposer) {
+      void openSettingsWindow("models");
+      return;
+    }
+    const selection = captureActiveSelection();
+    if (!selection || !selection.trim()) return;
+    const source: "terminal" | "editor" =
+      activeTab?.kind === "editor" ? "editor" : "terminal";
+    attachSelection(selection, source);
+    openMini();
+    window.dispatchEvent(new CustomEvent("nexis:ai-do-submit", { detail: "Explain this:" }));
+    setAskPopup(null);
+  }, [hasComposer, captureActiveSelection, attachSelection, openMini, activeTab]);
+
   // Handle LSP go-to-definition cross-file navigation.
   // EditorPane dispatches "nexis:open-file" when definition is in another file.
   useEffect(() => {
@@ -1496,6 +1511,7 @@ export default function App() {
                 x={askPopup.x}
                 y={askPopup.y}
                 onAsk={onAskFromSelection}
+                onExplain={onExplainFromSelection}
                 onDismiss={() => setAskPopup(null)}
               />
             ) : null}

@@ -1,7 +1,6 @@
 import {
   Conversation,
   ConversationContent,
-  ConversationEmptyState,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
 import {
@@ -231,16 +230,7 @@ export function AiChatView({
   );
 
   if (messages.length === 0) {
-    return (
-      <Conversation>
-        <ConversationContent>
-          <ConversationEmptyState
-            title="Ask Nexis anything"
-            description="Explain command output, fix errors, generate snippets, or run a task."
-          />
-        </ConversationContent>
-      </Conversation>
-    );
+    return null;
   }
 
   return (

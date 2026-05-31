@@ -168,7 +168,10 @@ export const DarkVeilBackground = memo(function DarkVeilBackground({
   return (
     <div
       aria-hidden
-      style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}
+      style={{
+        position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none",
+        animation: "darkveil-fadein 0.6s ease both",
+      }}
     >
       <canvas
         ref={canvasRef}

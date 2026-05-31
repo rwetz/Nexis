@@ -179,6 +179,27 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 ---
 
+### 14. Zustand selector returning new array/object → infinite `useSyncExternalStore` loop
+**Symptom:** App renders a blank screen. DevTools console shows `The result of getSnapshot should be cached to avoid an infinite loop` followed by `Uncaught Error: Maximum update depth exceeded` with a stack trace pointing into `compose-refs.tsx` (Radix UI internals).
+
+**Root cause:** Zustand uses `useSyncExternalStore` internally. React calls `getSnapshot` (the selector) and compares the result via `Object.is`. If the selector returns a new object or array reference on every call — even with identical contents — `Object.is` fails, React schedules a re-render, the selector runs again, and the loop never terminates. The secondary compose-refs crash is just Radix UI being caught in the re-render storm.
+
+**Fix in place:** `src/modules/statusbar/StatusBar.tsx` had two selectors that called `.filter()` inline:
+```tsx
+// BAD — .filter() creates a new array on every getSnapshot call
+const leftItems = usePluginRegistry((s) => s.statusBarItems.filter((i) => i.side === "left"));
+```
+Fixed by selecting the stable reference and filtering locally in the render body:
+```tsx
+// GOOD — selector returns the same reference until the store changes
+const statusBarItems = usePluginRegistry((s) => s.statusBarItems);
+const leftItems = statusBarItems.filter((i) => i.side === "left");
+```
+
+**Future danger:** Any Zustand selector that calls `.filter()`, `.map()`, `.slice()`, object spread `{ ...s.foo }`, or any other expression that creates a new reference on every call will trigger this. The rule: **selectors must return a stable reference** — either a primitive, or the same object/array reference from the store (not a derived one). Use `useShallow` from `zustand/react/shallow` when you genuinely need a derived array/object from the selector.
+
+---
+
 ## Build / dev notes
 - `cargo check` is fast but does not produce a binary. Run `pnpm tauri dev` to see Rust changes take effect.
 - The PS profile at `~/.cache/nexis/shell-integration/powershell/profile.ps1` is written on first terminal open and only updated when the embedded content changes. Kill the running app and delete the file to force a refresh during development.

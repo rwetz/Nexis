@@ -147,23 +147,25 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Plugin API — stable internal contribution surface (status bar items, panels, commands, typed event bus); Python env and container badges migrated to plugins
 - [x] Bundle optimizations — lazy language packs, xterm WebGL chunk, scoped package tree-shaking for @codemirror/* (1.1.0)
 - [x] Release tooling — automated CHANGELOG generation, version bumps, and tag flow
+- [x] Git stash manager — list, create, apply, pop, and drop stashes from the source control panel; collapsible stash list with message, timestamp, and per-entry actions (1.3.0)
+- [x] AI inline explain — select any terminal output or code and click "Explain"; submits an explanation request to the AI mini window instantly, no full panel required (1.3.0)
+- [x] Terminal → AI — "Explain" and "Ask Nexis" buttons appear on text selection in the terminal or editor; selection is attached as context and the AI responds in the mini window (1.3.0)
 
 ---
 
 ## Up next
 
-- [ ] **Git stash manager** — list, apply, pop, drop, and create stashes from the source control panel; surface stashable hunks in the diff picker so you can stash partial changes without touching the CLI
 - [ ] **Persistent AI chat history** — save and restore chat sessions per workspace across app restarts; a scrollable conversation history list in the AI panel with search; useful for revisiting long agent runs
 - [ ] **Terminal session recording** — record PTY output to an asciinema-compatible `.cast` file with a single toggle; replay locally with speed controls; useful for demos and bug reports
 - [ ] **SSH key manager** — generate, import, and manage SSH keys within Nexis; tie keys to saved connection profiles in the SSH session panel; no external tool required
 - [ ] **Workspace switcher** — fast keyboard-driven picker for recently opened folders (Ctrl+` or similar) with fuzzy search and pin support; restores the tab layout from the last visit
-- [ ] **AI inline explain** — select any terminal output or code block and press a keybind to get a concise AI explanation in a popup tooltip, without opening the full chat panel; dismisses on click-away
-- [ ] **Terminal → AI** — one-click button in the terminal to send selected lines (or the entire last command's output) as a message into the AI chat; quoted with the originating command for context
 - [ ] **Multi-window** — open Nexis in multiple independent windows, each with their own workspace, tabs, and layout; windows share the OS keychain and theme
 - [ ] **Git submodule support** — show submodule directories in the file explorer with status badges (initialized, dirty, ahead/behind); init, update, and deinit from the source control panel without leaving the app
 - [ ] **Diffstat in commit view** — per-file +/− line counts in the git history commit detail view; click a file row to jump directly to its diff; makes large commits navigable at a glance
 - [ ] **Refactoring engine** — rename symbols, extract functions, and inline variables across a project, powered by LSP workspace edits plus an optional AI verification pass; now realistic since LSP landed in 1.1.0
 - [ ] **Port forwarding panel** — surface forwarded ports from SSH sessions and dev servers in a dedicated panel with one-click open-in-preview; pairs with the background process manager
+- [ ] **Remote Prompt viewing** — be able to open nexis on phone and view prompts/work being done by agents
+
 
 ---
 

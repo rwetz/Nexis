@@ -54,6 +54,7 @@ import {
   type SourceControlFileEntry,
 } from "./useSourceControlPanel";
 import { PrDescriptionDialog } from "./PrDescriptionDialog";
+import { StashSection } from "./StashSection";
 
 type Props = {
   open: boolean;
@@ -812,6 +813,13 @@ export const SourceControlPanel = memo(function SourceControlPanel({
             )}
           </>
         ) : null}
+
+        {scm.repo && (
+          <StashSection
+            repoRoot={scm.repo.repoRoot}
+            onStashApplied={() => void sourceControl.refresh()}
+          />
+        )}
       </aside>
 
       <AlertDialog

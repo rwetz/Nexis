@@ -123,6 +123,15 @@ pub(crate) struct GitOutput {
     pub(crate) truncated: bool,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitStashEntry {
+    pub index: u32,
+    pub ref_name: String,
+    pub message: String,
+    pub timestamp_secs: i64,
+}
+
 pub(crate) enum TextSource {
     Missing,
     Binary,

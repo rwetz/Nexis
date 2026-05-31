@@ -136,6 +136,32 @@ export function AiComposerProvider({ children }: ProviderProps) {
     });
   }, [pendingSelections, consumeSelections]);
 
+  // Pending auto-submit flag — set by nexis:ai-do-submit event, cleared after submit fires.
+  const pendingAutoSubmitRef = useRef(false);
+  const submitRef = useRef<() => void>(() => {});
+
+  // Listen for an auto-submit event dispatched by Terminal→AI / Explain flows.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const prefill = (e as CustomEvent<string | undefined>).detail;
+      if (prefill) {
+        setValue(prefill);
+      }
+      pendingAutoSubmitRef.current = true;
+    };
+    window.addEventListener("nexis:ai-do-submit", handler);
+    return () => window.removeEventListener("nexis:ai-do-submit", handler);
+  }, []);
+
+  // Fire the submit once the value state has settled after the auto-submit flag is set.
+  useEffect(() => {
+    if (!pendingAutoSubmitRef.current) return;
+    pendingAutoSubmitRef.current = false;
+    // Defer one tick so React has flushed the setValue update above.
+    const id = window.setTimeout(() => submitRef.current(), 0);
+    return () => window.clearTimeout(id);
+  }, [value]);
+
   const voice = useWhisperRecording({
     onResult: (transcript: string) => {
       setValue((v) => (v ? `${v} ${transcript}` : transcript));
@@ -321,6 +347,9 @@ export function AiComposerProvider({ children }: ProviderProps) {
       files.length > 0 ||
       pickedSnippets.length > 0 ||
       pickedCommands.length > 0);
+
+  // Keep submitRef pointing at the latest submit so the auto-submit timeout can call it.
+  submitRef.current = submit;
 
   const ctx: ComposerCtx = {
     textareaRef,

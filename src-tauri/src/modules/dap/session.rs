@@ -16,12 +16,12 @@ pub struct DapSession {
     stdin: Arc<Mutex<Box<dyn Write + Send>>>,
     pending: Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>,
     next_seq: AtomicU32,
-    pub session_id: u32,
 }
 
 unsafe impl Send for DapSession {}
 unsafe impl Sync for DapSession {}
 
+#[allow(dead_code)]
 impl DapSession {
     pub fn start(
         adapter_cmd: &str,
@@ -60,7 +60,6 @@ impl DapSession {
             stdin,
             pending,
             next_seq: AtomicU32::new(1),
-            session_id,
         })
     }
 

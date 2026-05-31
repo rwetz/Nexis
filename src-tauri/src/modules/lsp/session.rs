@@ -17,7 +17,6 @@ pub struct LspSession {
     stdin: Arc<Mutex<Box<dyn Write + Send>>>,
     pending: Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>,
     next_request_id: AtomicU32,
-    pub workspace_root: String,
 }
 
 // Safety: Child is Send on all platforms. All other fields are Arc<Mutex<...>>.
@@ -69,7 +68,6 @@ impl LspSession {
             stdin,
             pending,
             next_request_id: AtomicU32::new(1),
-            workspace_root: workspace_root.to_string(),
         };
 
         session.do_initialize(workspace_root, initialization_options)?;
@@ -323,25 +321,6 @@ pub fn path_to_uri(path: &str) -> String {
     }
 }
 
-pub fn uri_to_path(uri: &str) -> String {
-    let path = uri
-        .strip_prefix("file:///")
-        .or_else(|| uri.strip_prefix("file://"))
-        .unwrap_or(uri);
-    let decoded = percent_decode(path);
-    // Windows: /C:/foo → C:/foo
-    let fixed = if decoded.starts_with('/') && decoded.len() >= 3 && decoded.as_bytes()[2] == b':' {
-        decoded[1..].to_string()
-    } else {
-        decoded
-    };
-    // Normalise to backslashes on Windows
-    #[cfg(windows)]
-    return fixed.replace('/', "\\");
-    #[cfg(not(windows))]
-    return fixed;
-}
-
 fn percent_encode_path(s: &str) -> String {
     s.chars()
         .flat_map(|c| {
@@ -363,25 +342,3 @@ fn percent_encode_path(s: &str) -> String {
         .collect()
 }
 
-fn percent_decode(s: &str) -> String {
-    let bytes = s.as_bytes();
-    let mut out = Vec::with_capacity(bytes.len());
-    let mut i = 0;
-    while i < bytes.len() {
-        if bytes[i] == b'%' && i + 2 < bytes.len() {
-            if let (Ok(hi), Ok(lo)) = (
-                std::str::from_utf8(&[bytes[i + 1]]).map(|s| u8::from_str_radix(s, 16)),
-                std::str::from_utf8(&[bytes[i + 2]]).map(|s| u8::from_str_radix(s, 16)),
-            ) {
-                if let (Ok(hi), Ok(lo)) = (hi, lo) {
-                    out.push((hi << 4) | lo);
-                    i += 3;
-                    continue;
-                }
-            }
-        }
-        out.push(bytes[i]);
-        i += 1;
-    }
-    String::from_utf8_lossy(&out).into_owned()
-}

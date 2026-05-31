@@ -37,8 +37,10 @@ import { usePreferencesStore } from "@/modules/settings/preferences";
 import { usePlanStore } from "../store/planStore";
 import { AgentSwitcher } from "./AgentSwitcher";
 import { AiChatView } from "./AiChat";
+import { AiInputBar } from "./AiInputBar";
 import { PlanDiffReview } from "./PlanDiffReview";
 import { TodoStrip } from "./TodoStrip";
+import { useComposer } from "../lib/composer";
 
 const SUGGESTIONS = [
   {
@@ -125,13 +127,23 @@ function Body({
   onClose: () => void;
   onExpand: () => void;
 }) {
-  const focusInput = useChatStore((s) => s.focusInput);
   const step = useChatStore((s) => s.agentMeta.step);
+  const composer = useComposer();
 
   const chat = useMemo(() => getOrCreateChat(sessionId), [sessionId]);
   const helpers = useChat<UIMessage>({ chat });
   const isBusy =
     helpers.status === "submitted" || helpers.status === "streaming";
+
+  const onPick = (text: string) => {
+    composer.setValue(text);
+    requestAnimationFrame(() => {
+      const el = composer.textareaRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
+  };
 
   return (
     <>
@@ -147,7 +159,7 @@ function Body({
 
       <div className="flex min-h-0 flex-1 flex-col">
         {helpers.messages.length === 0 ? (
-          <EmptyState onPick={focusInput} />
+          <EmptyState onPick={onPick} />
         ) : (
           <div className="flex min-h-0 flex-1 flex-col [&_.text-sm]:text-[12px] [&_p]:leading-relaxed">
             <AiChatView
@@ -163,6 +175,7 @@ function Body({
       </div>
 
       <TodoStrip sessionId={sessionId} />
+      <AiInputBar />
     </>
   );
 }
@@ -487,7 +500,7 @@ function SessionRow({
 function EmptyState({ onPick }: { onPick: (text: string) => void }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8 py-10 text-center">
-      <img src="/logo.png" alt="Nexis" className="size-14 opacity-90" />
+      <img src="/logo (1) (1).png" alt="Nexis" className="size-14 opacity-90" />
       <div className="space-y-1.5">
         <p className="text-[14px] font-semibold tracking-tight">
           Ask Nexis anything

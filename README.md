@@ -5,7 +5,7 @@
   <p><strong>Open-source lightweight cross-platform AI-native terminal (ADE)</strong></p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-1.2.0-blue" alt="version" />
+    <img src="https://img.shields.io/badge/version-1.3.0-blue" alt="version" />
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license" />
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="platform" />
   </p>
@@ -88,6 +88,7 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 - **AI commit message generation** — one-click Conventional Commit subject lines from the staged diff
 - **AI PR description generation** — draft pull request titles and bodies from the branch diff
 - Syntax-highlighted unified diff view
+- **Git stash manager** — list, create, apply, pop, and drop stashes directly from the source control panel
 
 ### AI
 - **12+ providers** — OpenAI, Anthropic, Google, Groq, xAI, Cerebras, DeepSeek, Mistral, OpenRouter, OpenAI-compatible endpoints, **Hugging Face Inference API**
@@ -100,6 +101,8 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 - Workspace file picker for attaching files as AI context
 - Auto-compaction for long conversations
 - **AI context inspector** — transparency panel showing exactly what context goes to the model
+- **AI inline explain** — select any terminal output or code and click "Explain"; the AI answers in the mini window without disrupting your flow
+- **Terminal → AI** — select terminal output, click "Ask Nexis" or "Explain" to send it to the AI chat
 - Dockable AI panel — resize, float, and snap-to-dock
 
 ### Sidebar Panels

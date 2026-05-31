@@ -125,6 +125,13 @@ export type GitPanelSnapshot = {
   status: GitStatusSnapshot | null;
 };
 
+export type GitStashEntry = {
+  index: number;
+  refName: string;
+  message: string;
+  timestampSecs: number;
+};
+
 export type GitDiscardEntry = {
   path: string;
   untracked: boolean;
@@ -369,6 +376,35 @@ export const native = {
     invoke<string | null>("git_remote_url", {
       repoRoot,
       name: name ?? null,
+      workspace: currentWorkspaceEnv(),
+    }),
+  gitStashList: (repoRoot: string) =>
+    invoke<GitStashEntry[]>("git_stash_list", {
+      repoRoot,
+      workspace: currentWorkspaceEnv(),
+    }),
+  gitStashPush: (repoRoot: string, message?: string) =>
+    invoke<void>("git_stash_push", {
+      repoRoot,
+      message: message ?? null,
+      workspace: currentWorkspaceEnv(),
+    }),
+  gitStashApply: (repoRoot: string, stashRef: string) =>
+    invoke<void>("git_stash_apply", {
+      repoRoot,
+      stashRef,
+      workspace: currentWorkspaceEnv(),
+    }),
+  gitStashPop: (repoRoot: string, stashRef: string) =>
+    invoke<void>("git_stash_pop", {
+      repoRoot,
+      stashRef,
+      workspace: currentWorkspaceEnv(),
+    }),
+  gitStashDrop: (repoRoot: string, stashRef: string) =>
+    invoke<void>("git_stash_drop", {
+      repoRoot,
+      stashRef,
       workspace: currentWorkspaceEnv(),
     }),
 

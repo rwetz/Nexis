@@ -25,6 +25,10 @@ public:
 
     uint16_t port() const { return port_; }
 
+    std::string summary() const {
+        return "Host: " + host_ + ", Port: " + std::to_string(port_);
+    }
+
 private:
     std::string host_;
     uint16_t port_;
