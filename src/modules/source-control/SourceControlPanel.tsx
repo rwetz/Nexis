@@ -56,6 +56,7 @@ import {
 import { PrDescriptionDialog } from "./PrDescriptionDialog";
 import { StashSection } from "./StashSection";
 import { SubmoduleSection } from "./SubmoduleSection";
+import { ConflictSection } from "./ConflictSection";
 
 type Props = {
   open: boolean;
@@ -814,6 +815,13 @@ export const SourceControlPanel = memo(function SourceControlPanel({
             )}
           </>
         ) : null}
+
+        {scm.repo && scm.status && (
+          <ConflictSection
+            repoRoot={scm.repo.repoRoot}
+            changedFiles={scm.status.changedFiles}
+          />
+        )}
 
         {scm.repo && (
           <StashSection

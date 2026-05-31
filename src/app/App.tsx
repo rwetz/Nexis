@@ -78,6 +78,8 @@ import { SnippetsPanel } from "@/modules/snippets";
 import { TestRunnerPanel } from "@/modules/testrunner";
 import { DatabasePanel } from "@/modules/database/DatabasePanel";
 import { BuildPanel } from "@/modules/build/BuildPanel";
+import { CodeReviewPanel } from "@/modules/code-review";
+import { AgentQueuePanel } from "@/modules/agent-queue";
 import { SshPanel } from "@/modules/ssh";
 import { PortsPanel } from "@/modules/ports";
 import { ProfilesPanel } from "@/modules/profiles";
@@ -1478,6 +1480,10 @@ export default function App() {
                       <DatabasePanel />
                     ) : sidebarView === "build" ? (
                       <BuildPanel workspaceRoot={explorerRoot} />
+                    ) : sidebarView === "code-review" ? (
+                      <CodeReviewPanel workspaceRoot={explorerRoot} />
+                    ) : sidebarView === "agent-queue" ? (
+                      <AgentQueuePanel />
                     ) : sidebarView === "ssh" ? (
                       <SshPanel onConnect={handleOpenSshSession} />
                     ) : sidebarView === "release" ? (

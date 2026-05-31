@@ -160,6 +160,9 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Streaming build errors → AI — "Fix with AI" button appears in the Build panel when a build fails; sends the compiler output directly to the AI panel as a pre-filled prompt (1.6.0)
 - [x] Workspace profiles — named configurations storing a root path, env var overrides, and an optional startup command; saved to localStorage; sidebar panel with full CRUD; activating a profile switches workspace, applies env vars, and optionally runs the startup command (1.6.0)
 - [x] Embedded REPL panel — interactive Python, Node.js, Ruby, or shell REPL in the sidebar via a dedicated TerminalPane; Alt+Shift+R sends the active editor or terminal selection directly into the running REPL (1.6.0)
+- [x] AI code review — on-demand review of staged or all unstaged diff via a dedicated sidebar panel; shows file/line stats and a scrollable diff preview; "Review with AI" sends the diff as a structured prompt (1.7.0)
+- [x] AI-assisted git conflict resolution — conflict files automatically surfaced in the source-control panel; "Resolve with AI" reads the conflicted file and sends a structured three-way resolution prompt including conflict markers and context (1.7.0)
+- [x] Background agent queue — sidebar panel for queuing multiple AI prompts to run sequentially; tasks show queued/running/done/failed status with duration; failed tasks can be retried; clear-completed action (1.7.0)
 
 ---
 
@@ -176,9 +179,6 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 
 - [ ] **Remote workspace** — browse, edit, and run code on remote machines entirely over SSH; the file explorer and editor work against the remote filesystem via SFTP while the terminal is already there; the goal is a seamless local feel with zero local clones required
 - [ ] **Persistent terminal sessions** — PTY sessions survive Nexis restarts; reconnect to a running shell without losing scrollback or process state; native implementation inspired by tmux session persistence but without the terminal multiplexer overhead
-- [ ] **Background agent queue** — queue multiple AI tasks to run sequentially or in parallel with a dedicated dashboard showing live progress, logs, pause, and cancel controls; agents share workspace context and can hand off results to each other
-- [ ] **AI-assisted git conflict resolution** — when a merge conflict is detected, surface a three-way diff view with an AI "resolve" button that proposes a merged result, explains the tradeoff, and lets you accept, edit, or reject per-hunk
-- [ ] **AI code review** — on-demand review of the staged diff or a full PR; surfaced as inline comment suggestions anchored to the diff view, not just a flat chat response; one-click accept copies the suggestion as a code change
 - [ ] **Semantic / AST-aware search** — search the codebase using structural patterns driven by tree-sitter queries (e.g., "all call sites of `fn foo`", "React hooks that depend on X") as an optional mode in the find-across-project panel
 - [ ] **Multiplayer terminal view** — generate a local LAN URL that lets a collaborator view your terminal session read-only in their browser; no cloud relay, no accounts, session ends when you close the tab
 - [ ] **Custom AI tool authoring** — write and test new agent tools in TypeScript using the Plugin API; a first-party SDK with type definitions, a local test harness, and one-command installation into a workspace
