@@ -31,6 +31,7 @@ export type ShortcutId =
   | "view.zoomReset"
   | "ai.toggle"
   | "ai.askSelection"
+  | "repl.sendSelection"
   | "shortcuts.open"
   | "settings.open"
   | "sidebar.toggle"
@@ -207,6 +208,12 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Ask AI about selection",
     group: "AI",
     defaultBindings: [{ [MOD_PROP]: true, key: "l" }],
+  },
+  {
+    id: "repl.sendSelection",
+    label: "Send selection to REPL",
+    group: "AI",
+    defaultBindings: [{ alt: true, shift: true, key: "r" }],
   },
   {
     id: "sidebar.toggle",

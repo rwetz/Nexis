@@ -63,7 +63,7 @@ import { openNewWindow } from "@/modules/window/openNewWindow";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { SettingsDialog } from "@/settings/SettingsDialog";
 import { usePreferencesStore } from "@/modules/settings/preferences";
-import { onKeysChanged } from "@/modules/settings/store";
+import { onKeysChanged, setTerminalEnvVars } from "@/modules/settings/store";
 import {
   ShortcutsDialog,
   useGlobalShortcuts,
@@ -80,6 +80,8 @@ import { DatabasePanel } from "@/modules/database/DatabasePanel";
 import { BuildPanel } from "@/modules/build/BuildPanel";
 import { SshPanel } from "@/modules/ssh";
 import { PortsPanel } from "@/modules/ports";
+import { ProfilesPanel } from "@/modules/profiles";
+import { ReplPanel, sendToRepl, REPL_LEAF_ID } from "@/modules/repl";
 import { ReleasePanel } from "@/modules/release";
 import {
   SourceControlPanel,
@@ -310,6 +312,7 @@ export default function App() {
         // Non-fatal — path may already be authorized.
       }
       for (const id of liveLeavesRef.current) disposeSession(id);
+      disposeSession(REPL_LEAF_ID);
       searchAddons.current.clear();
       terminalRefs.current.clear();
       editorRefs.current.clear();
@@ -1039,6 +1042,13 @@ export default function App() {
       "search.focus": () => searchInlineRef.current?.focus(),
       "ai.toggle": togglePanelAndFocus,
       "ai.askSelection": askFromSelection,
+      "repl.sendSelection": () => {
+        const sel = captureActiveSelection();
+        if (sel) {
+          persistSidebarView("repl");
+          sendToRepl(sel + "\r");
+        }
+      },
       "files.quickOpen": () => setQuickFilePickerOpen((v) => !v),
       "search.workspace": () => setWorkspaceSearchOpen((v) => !v),
       "commands.palette": () => setCommandPaletteOpen((v) => !v),
@@ -1434,6 +1444,28 @@ export default function App() {
                       <BackgroundProcessPanel />
                     ) : sidebarView === "ports" ? (
                       <PortsPanel onOpenPreview={openPreviewTab} />
+                    ) : sidebarView === "repl" ? (
+                      <ReplPanel />
+                    ) : sidebarView === "profiles" ? (
+                      <ProfilesPanel
+                        currentPath={launchCwd}
+                        onActivate={({ profile, startupCommand }) => {
+                          void switchWorkspacePath(profile.rootPath).then(() => {
+                            // Apply profile env vars to future terminal sessions
+                            if (Object.keys(profile.envVars).length > 0) {
+                              void setTerminalEnvVars(profile.envVars);
+                            }
+                            // Inject startup command into the active terminal if present
+                            if (startupCommand) {
+                              const t = tabsRef.current.find((x) => x.kind === "terminal");
+                              if (t && t.kind === "terminal") {
+                                const term = terminalRefs.current.get(t.activeLeafId);
+                                if (term) term.write(`${startupCommand}\r`);
+                              }
+                            }
+                          });
+                        }}
+                      />
                     ) : sidebarView === "outline" ? (
                       <SymbolOutlinePanel filePath={tabs.find(t => t.id === activeId && t.kind === "editor") ? (tabs.find(t => t.id === activeId) as { path: string }).path : null} />
                     ) : sidebarView === "snippets" ? (

@@ -156,13 +156,16 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Terminal session recording — record PTY output to an asciinema v2 `.cast` file with a single toggle button; saved to `~/nexis-recordings/`; useful for demos and bug reports (1.5.0)
 - [x] Port forwarding panel — dedicated sidebar panel that detects locally listening TCP ports via `ss`/`lsof`/`netstat`; one-click open-in-preview for web/dev server ports; auto-refreshes every 5 s (1.5.0)
 - [x] SSH key manager — collapsible section in the SSH panel listing `~/.ssh/*.pub` keys; generate new Ed25519 key pairs via `ssh-keygen` with optional passphrase; one-click copy public key to clipboard (1.5.0)
+- [x] Diffstat in commit view — per-file +/− line counts shown in the git history commit detail view for every changed file; already shipped in the `FileRow` component (1.5.0)
+- [x] Streaming build errors → AI — "Fix with AI" button appears in the Build panel when a build fails; sends the compiler output directly to the AI panel as a pre-filled prompt (1.6.0)
+- [x] Workspace profiles — named configurations storing a root path, env var overrides, and an optional startup command; saved to localStorage; sidebar panel with full CRUD; activating a profile switches workspace, applies env vars, and optionally runs the startup command (1.6.0)
+- [x] Embedded REPL panel — interactive Python, Node.js, Ruby, or shell REPL in the sidebar via a dedicated TerminalPane; Alt+Shift+R sends the active editor or terminal selection directly into the running REPL (1.6.0)
 
 ---
 
 ## Up next
 
 - [ ] **Multi-window** — open Nexis in multiple independent windows, each with their own workspace, tabs, and layout; windows share the OS keychain and theme
-- [ ] **Diffstat in commit view** — per-file +/− line counts in the git history commit detail view; click a file row to jump directly to its diff; makes large commits navigable at a glance
 - [ ] **Refactoring engine** — rename symbols, extract functions, and inline variables across a project, powered by LSP workspace edits plus an optional AI verification pass; now realistic since LSP landed in 1.1.0
 - [ ] **Remote Prompt viewing** — be able to open nexis on phone and view prompts/work being done by agents
 
@@ -174,14 +177,11 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] **Remote workspace** — browse, edit, and run code on remote machines entirely over SSH; the file explorer and editor work against the remote filesystem via SFTP while the terminal is already there; the goal is a seamless local feel with zero local clones required
 - [ ] **Persistent terminal sessions** — PTY sessions survive Nexis restarts; reconnect to a running shell without losing scrollback or process state; native implementation inspired by tmux session persistence but without the terminal multiplexer overhead
 - [ ] **Background agent queue** — queue multiple AI tasks to run sequentially or in parallel with a dedicated dashboard showing live progress, logs, pause, and cancel controls; agents share workspace context and can hand off results to each other
-- [ ] **Workspace profiles** — named configurations bundling a shell, env vars, open tab layout, and working directory; save them per-project and switch instantly; useful for monorepos where you work on different services throughout the day
 - [ ] **AI-assisted git conflict resolution** — when a merge conflict is detected, surface a three-way diff view with an AI "resolve" button that proposes a merged result, explains the tradeoff, and lets you accept, edit, or reject per-hunk
 - [ ] **AI code review** — on-demand review of the staged diff or a full PR; surfaced as inline comment suggestions anchored to the diff view, not just a flat chat response; one-click accept copies the suggestion as a code change
 - [ ] **Semantic / AST-aware search** — search the codebase using structural patterns driven by tree-sitter queries (e.g., "all call sites of `fn foo`", "React hooks that depend on X") as an optional mode in the find-across-project panel
-- [ ] **Embedded REPL panel** — run an interactive Python, Node.js, or other language REPL as a dockable panel; send the selected code from the editor into the REPL with a keybind; output persists in the panel until manually cleared
 - [ ] **Multiplayer terminal view** — generate a local LAN URL that lets a collaborator view your terminal session read-only in their browser; no cloud relay, no accounts, session ends when you close the tab
 - [ ] **Custom AI tool authoring** — write and test new agent tools in TypeScript using the Plugin API; a first-party SDK with type definitions, a local test harness, and one-command installation into a workspace
-- [ ] **Streaming build errors → AI** — wire build-system panel failures directly into an AI turn automatically (opt-in per project); the agent sees the raw compiler output and proposes fixes without you having to copy-paste
 - [ ] **Selective TS → Rust migration** — profile hot paths (terminal input dispatch, diff rendering, file-tree diffing), identify where a Rust implementation gives a measurable win, migrate incrementally without growing bundle size
 
 ---

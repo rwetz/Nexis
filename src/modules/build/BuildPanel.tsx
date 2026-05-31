@@ -1,9 +1,12 @@
 import { native } from "@/modules/ai/lib/native";
+import { sendMessage } from "@/modules/ai/store/chatStore";
+import { useChatStore } from "@/modules/ai/store/chatStore";
 import { cn } from "@/lib/utils";
 import {
   Cancel01Icon,
   CheckmarkCircle01Icon,
   Alert02Icon,
+  AiChat02Icon,
   PlayIcon,
   Time01Icon,
   Wrench01Icon,
@@ -161,6 +164,16 @@ export function BuildPanel({ workspaceRoot }: Props) {
 
   const isRunning = result?.status === "running";
   const summary = result ? parseSummary(result.output, result.status) : null;
+  const openAiPanel = useChatStore((s) => s.openPanel);
+
+  const fixWithAi = useCallback(async () => {
+    if (!result?.output) return;
+    const command = customCommand.trim() || tool?.command || "build";
+    const trimmed = result.output.slice(-8000); // cap to avoid token overflow
+    const prompt = `Build command \`${command}\` failed. Here is the output:\n\n\`\`\`\n${trimmed}\n\`\`\`\n\nPlease diagnose the errors and suggest fixes.`;
+    openAiPanel();
+    await sendMessage(prompt);
+  }, [result, customCommand, tool, openAiPanel]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -209,9 +222,21 @@ export function BuildPanel({ workspaceRoot }: Props) {
         </div>
 
         {result && (
-          <div className={cn("flex items-center gap-1.5 text-[11px]", statusColor(result.status))}>
-            <HugeiconsIcon icon={statusIcon(result.status)} size={12} strokeWidth={1.75} />
-            <span>{summary}</span>
+          <div className="flex items-center gap-2">
+            <div className={cn("flex flex-1 items-center gap-1.5 text-[11px]", statusColor(result.status))}>
+              <HugeiconsIcon icon={statusIcon(result.status)} size={12} strokeWidth={1.75} />
+              <span>{summary}</span>
+            </div>
+            {(result.status === "failed" || result.status === "error") && result.output && (
+              <button
+                type="button"
+                onClick={() => void fixWithAi()}
+                className="flex shrink-0 items-center gap-1 rounded border border-primary/30 bg-primary/8 px-2 py-0.5 text-[10.5px] font-medium text-primary/80 transition-colors hover:bg-primary/15 hover:text-primary"
+              >
+                <HugeiconsIcon icon={AiChat02Icon} size={11} strokeWidth={1.75} />
+                Fix with AI
+              </button>
+            )}
           </div>
         )}
       </div>
