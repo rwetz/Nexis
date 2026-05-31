@@ -1,6 +1,7 @@
 <?php
 // Test PHP file — Nexis editor playground
-// Mirrors the structure of test.rs: Config class, greeting, fibonacci, main.
+// Exercises: declare(strict_types=1), final class, constructor property promotion,
+//            readonly properties, null coalescing (??), __toString, type hints.
 
 declare(strict_types=1);
 

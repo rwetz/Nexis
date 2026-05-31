@@ -1,5 +1,6 @@
 /* Test C file — Nexis editor playground
-   Mirrors the structure of test.rs: Config struct, greeting, fibonacci, main. */
+   Exercises: typedef struct, #define macros, fixed-width integers (uint16_t/uint64_t),
+              pointer params, strncpy/snprintf, NULL return, printf format strings. */
 
 #include <stdio.h>
 #include <string.h>

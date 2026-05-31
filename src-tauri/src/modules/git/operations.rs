@@ -10,7 +10,7 @@ use crate::modules::git::process::{
 use crate::modules::git::types::{
     DiscardEntry, GitCommitFileChange, GitCommitResult, GitDiffContentResult, GitDiffResult,
     GitLogEntry, GitOutput, GitPanelSnapshot, GitPushResult, GitRepoInfo, GitStatusSnapshot,
-    TextSource, DEFAULT_TIMEOUT_SECS, NETWORK_TIMEOUT_SECS,
+    GitSubmoduleEntry, TextSource, DEFAULT_TIMEOUT_SECS, NETWORK_TIMEOUT_SECS,
 };
 use crate::modules::git::utils::{
     authorized_repo_root, canonical_dir, resolve_within_repo, split_upstream, ResolvedGitDirectory,
@@ -1096,4 +1096,57 @@ pub fn stash_drop(
         DEFAULT_TIMEOUT_SECS,
     )?;
     ensure_success(&output, "git stash drop failed")
+}
+
+pub fn submodule_status(
+    registry: &WorkspaceRegistry,
+    repo_root: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<Vec<GitSubmoduleEntry>> {
+    let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
+    ensure_git_available(&repo_root.workspace)?;
+    // --recursive is intentionally omitted — we only list top-level submodules.
+    let output = run_git(
+        &repo_root.workspace,
+        Some(&repo_root.git_path),
+        ["submodule", "status"],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    // A missing .gitmodules means no submodules; treat as empty list.
+    if output.exit_code != Some(0) {
+        return Ok(Vec::new());
+    }
+    let text = String::from_utf8_lossy(&output.stdout);
+    let mut entries = Vec::new();
+    for line in text.lines() {
+        // Format: <status_char><sha> <path> (<describe>)
+        // status_char: ' ' = normal, '+' = different, '-' = not initialised, 'U' = conflict
+        if line.len() < 41 {
+            continue;
+        }
+        let status_char = &line[..1];
+        let rest = &line[1..];
+        let mut parts = rest.splitn(2, ' ');
+        let sha = parts.next().unwrap_or("").to_string();
+        let path_and_desc = parts.next().unwrap_or("");
+        // Strip optional trailing " (describe)"
+        let path = if let Some(paren) = path_and_desc.rfind(" (") {
+            path_and_desc[..paren].trim().to_string()
+        } else {
+            path_and_desc.trim().to_string()
+        };
+        if path.is_empty() {
+            continue;
+        }
+        let name = path.rsplit('/').next().unwrap_or(&path).to_string();
+        let status = match status_char {
+            "+" => "modified",
+            "-" => "uninitialized",
+            "U" => "conflict",
+            _ => "ok",
+        }
+        .to_string();
+        entries.push(GitSubmoduleEntry { path, name, sha, status });
+    }
+    Ok(entries)
 }

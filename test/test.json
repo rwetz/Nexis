@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json.schemastore.org/nexis-config.json",
+  "_comment": "Test JSON file — Nexis editor playground (not valid JSON with this comment — see test.jsonc)",
+  "app": {
+    "name": "nexis",
+    "version": "1.3.0",
+    "description": "A Tauri-based IDE with integrated terminal and AI assistant",
+    "homepage": "https://nexis.dev",
+    "license": "MIT"
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "tls": {
+      "enabled": true,
+      "cert": "/etc/ssl/certs/nexis.pem",
+      "key": "/etc/ssl/private/nexis.key",
+      "protocols": ["TLSv1.2", "TLSv1.3"],
+      "ciphers": null
+    },
+    "timeouts": {
+      "read": 30,
+      "write": 30,
+      "idle": 120
+    },
+    "cors": {
+      "origins": ["https://nexis.dev", "http://localhost:5173"],
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      "headers": ["Content-Type", "Authorization", "X-Request-ID"],
+      "maxAge": 86400
+    }
+  },
+  "database": {
+    "driver": "postgresql",
+    "host": "localhost",
+    "port": 5432,
+    "name": "nexis",
+    "user": "nexis_user",
+    "password": null,
+    "pool": {
+      "min": 2,
+      "max": 20,
+      "idleTimeoutMs": 30000,
+      "connectionTimeoutMs": 5000
+    },
+    "ssl": false,
+    "migrations": {
+      "path": "./migrations",
+      "table": "_migrations",
+      "runOnStartup": true
+    }
+  },
+  "features": {
+    "terminal": {
+      "enabled": true,
+      "shells": ["powershell", "bash", "zsh", "cmd"],
+      "defaultShell": "auto",
+      "scrollback": 10000,
+      "fontFamily": "JetBrains Mono",
+      "fontSize": 14
+    },
+    "lsp": {
+      "enabled": true,
+      "languages": {
+        "rust": {
+          "server": "rust-analyzer",
+          "args": [],
+          "checkOnSave": true,
+          "formatOnSave": true
+        },
+        "typescript": {
+          "server": "typescript-language-server",
+          "args": ["--stdio"],
+          "formatOnSave": true
+        },
+        "python": {
+          "server": "pylsp",
+          "args": [],
+          "linters": ["ruff", "mypy"]
+        }
+      }
+    },
+    "debugger": {
+      "enabled": true,
+      "adapters": {
+        "lldb": { "path": "lldb-dap", "port": 1234 },
+        "node": { "path": "node", "port": 9229 }
+      }
+    },
+    "ai": {
+      "enabled": true,
+      "model": "claude-sonnet-4-5",
+      "streaming": true,
+      "maxContextTokens": 200000,
+      "tools": ["bash_run", "file_read", "file_write", "web_search"],
+      "systemPromptOverride": null
+    },
+    "git": {
+      "enabled": true,
+      "autoFetch": true,
+      "fetchInterval": 300,
+      "autoPush": false,
+      "defaultBranch": "main"
+    }
+  },
+  "theme": {
+    "name": "dark",
+    "colors": {
+      "background":  "#0f172a",
+      "surface":     "#1e293b",
+      "border":      "#334155",
+      "foreground":  "#f1f5f9",
+      "muted":       "#94a3b8",
+      "accent":      "#6366f1",
+      "success":     "#22c55e",
+      "warning":     "#f59e0b",
+      "error":       "#ef4444",
+      "info":        "#3b82f6"
+    },
+    "syntax": {
+      "keyword":   "#60a5fa",
+      "string":    "#86efac",
+      "comment":   "#64748b",
+      "number":    "#fb923c",
+      "function":  "#c084fc",
+      "type":      "#34d399",
+      "operator":  "#f1f5f9",
+      "variable":  "#f1f5f9"
+    }
+  },
+  "keybindings": [
+    { "key": "ctrl+p",       "command": "quickOpen",       "when": "editorFocus || !editorFocus" },
+    { "key": "ctrl+shift+p", "command": "commandPalette",  "when": null },
+    { "key": "ctrl+`",       "command": "toggleTerminal",  "when": null },
+    { "key": "f5",           "command": "debugStart",      "when": "!debugActive" },
+    { "key": "shift+f5",     "command": "debugStop",       "when": "debugActive"  },
+    { "key": "f9",           "command": "toggleBreakpoint","when": "editorFocus"  },
+    { "key": "ctrl+l",       "command": "openAiChat",      "when": null           }
+  ],
+  "telemetry": {
+    "enabled": false,
+    "crashReports": false,
+    "usageStats": false
+  },
+  "updates": {
+    "checkOnStartup": true,
+    "channel": "stable",
+    "allowPrerelease": false
+  },
+  "numbers": {
+    "zero":            0,
+    "negative":        -42,
+    "float":           3.14159265358979,
+    "largeInt":        9007199254740991,
+    "smallFloat":      2.220446049250313e-16,
+    "largeFloat":      1.7976931348623157e+308,
+    "minSafeInt":      -9007199254740991,
+    "negativeFloat":   -1.23456789
+  },
+  "types": {
+    "trueValue":    true,
+    "falseValue":   false,
+    "nullValue":    null,
+    "emptyString":  "",
+    "emptyArray":   [],
+    "emptyObject":  {},
+    "nestedArray":  [[1, 2], [3, 4], [5, 6]],
+    "mixedArray":   [1, "two", true, null, { "key": "value" }]
+  },
+  "unicode": {
+    "japanese":  "こんにちは",
+    "arabic":    "مرحباً",
+    "emoji":     "🦀🎉🚀",
+    "escaped":   "Anthropic",
+    "surrogate": "😀",
+    "newline":   "line1\nline2",
+    "tab":       "col1\tcol2",
+    "backslash": "C:\\Users\\Ryan"
+  }
+}

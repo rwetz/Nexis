@@ -1,5 +1,6 @@
 // Test Swift file — Nexis editor playground
-// Mirrors the structure of test.rs: Config class, greeting, fibonacci, main.
+// Exercises: final class, [String: String] dictionary, guard statement, tuple swap,
+//            string interpolation (\()), UInt64 overflow-safe arithmetic (&+).
 
 import Foundation
 

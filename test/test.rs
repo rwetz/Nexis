@@ -1,6 +1,6 @@
-//////////////////////////////////////////////////////////////
-// This is a test rust file for me to use to not only get better at rust, coding, and typing, but also to edit in my own ADE instead of using something else to write code with.
-//////////////////////////////////////////////////////////////
+// Test Rust file — Nexis editor playground
+// Exercises: structs, impl blocks, derive macros, HashMap, Option, match expressions,
+//            format!/println! macros, string slices (&str / String), iterators, fibonacci recursion.
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]

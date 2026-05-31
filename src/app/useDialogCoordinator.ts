@@ -15,6 +15,7 @@ export function useDialogCoordinator() {
   const [historyLeafId, setHistoryLeafId] = useState<number | null>(null);
   const [workspaceSearchOpen, setWorkspaceSearchOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [workspaceSwitcherOpen, setWorkspaceSwitcherOpen] = useState(false);
 
   // Listen for Ctrl+R intercepts emitted by the terminal renderer pool.
   useEffect(() => {
@@ -39,5 +40,7 @@ export function useDialogCoordinator() {
     setWorkspaceSearchOpen,
     commandPaletteOpen,
     setCommandPaletteOpen,
+    workspaceSwitcherOpen,
+    setWorkspaceSwitcherOpen,
   };
 }

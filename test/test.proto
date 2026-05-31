@@ -1,0 +1,336 @@
+// Test Protocol Buffers file — Nexis editor playground
+// Exercises: syntax 3, messages, enums, oneofs, maps, services, stream RPCs, options
+
+syntax = "proto3";
+
+package nexis.v1;
+
+option go_package    = "github.com/rwetz00/nexis/gen/go/nexis/v1";
+option java_package  = "dev.nexis.proto.v1";
+option java_multiple_files = true;
+option csharp_namespace = "Nexis.Proto.V1";
+option objc_class_prefix = "NXS";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+
+enum Role {
+  ROLE_UNSPECIFIED    = 0;
+  ROLE_ADMIN          = 1;
+  ROLE_MEMBER         = 2;
+  ROLE_VIEWER         = 3;
+  ROLE_SERVICE_ACCOUNT = 4;
+}
+
+enum UserStatus {
+  USER_STATUS_UNSPECIFIED         = 0;
+  USER_STATUS_ACTIVE              = 1;
+  USER_STATUS_SUSPENDED           = 2;
+  USER_STATUS_PENDING_VERIFICATION = 3;
+}
+
+enum DiagnosticSeverity {
+  DIAGNOSTIC_SEVERITY_UNSPECIFIED  = 0;
+  DIAGNOSTIC_SEVERITY_ERROR        = 1;
+  DIAGNOSTIC_SEVERITY_WARNING      = 2;
+  DIAGNOSTIC_SEVERITY_INFORMATION  = 3;
+  DIAGNOSTIC_SEVERITY_HINT         = 4;
+}
+
+enum SessionStatus {
+  SESSION_STATUS_UNSPECIFIED = 0;
+  SESSION_STATUS_ACTIVE      = 1;
+  SESSION_STATUS_IDLE        = 2;
+  SESSION_STATUS_CLOSED      = 3;
+}
+
+// ── Messages ──────────────────────────────────────────────────────────────────
+
+message User {
+  string                     id           = 1;
+  string                     email        = 2;
+  string                     display_name = 3;
+  Role                       role         = 4;
+  UserStatus                 status       = 5;
+  google.protobuf.StringValue avatar_url  = 6;
+  google.protobuf.Struct      metadata    = 7;
+  google.protobuf.Timestamp   created_at  = 8;
+  google.protobuf.Timestamp   updated_at  = 9;
+}
+
+message Project {
+  string                   id          = 1;
+  string                   name        = 2;
+  string                   description = 3;
+  string                   root_path   = 4;
+  repeated string          tags        = 5;
+  google.protobuf.Struct   settings    = 6;
+  string                   owner_id    = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+
+  // Nested message
+  message Member {
+    string                    user_id   = 1;
+    Role                      role      = 2;
+    google.protobuf.Timestamp joined_at = 3;
+  }
+
+  repeated Member members = 10;
+}
+
+// ── Oneof ─────────────────────────────────────────────────────────────────────
+
+message FileEntry {
+  string name = 1;
+  string path = 2;
+
+  oneof content {
+    RegularFile file = 3;
+    Directory   dir  = 4;
+    Symlink     link = 5;
+  }
+
+  google.protobuf.Timestamp modified_at = 6;
+}
+
+message RegularFile {
+  int64  size     = 1;
+  string language = 2;
+  string checksum = 3;
+}
+
+message Directory {
+  int32 file_count     = 1;
+  int64 total_size     = 2;
+  repeated FileEntry children = 3;
+}
+
+message Symlink {
+  string target = 1;
+  bool   broken = 2;
+}
+
+// ── Map fields ────────────────────────────────────────────────────────────────
+
+message Config {
+  map<string, string>  env_vars   = 1;
+  map<string, int32>   port_map   = 2;
+  map<string, Feature> features   = 3;
+  map<string, bytes>   binary_map = 4;
+}
+
+message Feature {
+  bool   enabled     = 1;
+  string description = 2;
+  google.protobuf.Struct options = 3;
+}
+
+// ── Terminal / PTY messages ────────────────────────────────────────────────────
+
+message OpenSessionRequest {
+  string project_id = 1;
+  string shell      = 2;
+  string cwd        = 3;
+  map<string, string> env = 4;
+  Dimensions dimensions   = 5;
+}
+
+message Dimensions {
+  uint32 cols = 1;
+  uint32 rows = 2;
+}
+
+message SessionOutput {
+  string session_id = 1;
+  bytes  data       = 2;
+  google.protobuf.Timestamp ts = 3;
+
+  enum OutputKind {
+    OUTPUT_KIND_UNSPECIFIED = 0;
+    OUTPUT_KIND_STDOUT      = 1;
+    OUTPUT_KIND_STDERR      = 2;
+    OUTPUT_KIND_SYSTEM      = 3;
+  }
+
+  OutputKind kind = 4;
+}
+
+message SessionInput {
+  string session_id = 1;
+  bytes  data       = 2;
+}
+
+message ResizeRequest {
+  string     session_id = 1;
+  Dimensions dimensions = 2;
+}
+
+message CloseSessionRequest {
+  string session_id = 1;
+  int32  signal     = 2;
+}
+
+message Session {
+  string                    id         = 1;
+  string                    project_id = 2;
+  string                    user_id    = 3;
+  string                    shell      = 4;
+  string                    cwd        = 5;
+  SessionStatus             status     = 6;
+  google.protobuf.Timestamp started_at = 7;
+  google.protobuf.Timestamp ended_at   = 8;
+  google.protobuf.Duration  duration   = 9;
+}
+
+// ── LSP-style diagnostics ─────────────────────────────────────────────────────
+
+message Position {
+  uint32 line      = 1;
+  uint32 character = 2;
+}
+
+message Range {
+  Position start = 1;
+  Position end   = 2;
+}
+
+message Diagnostic {
+  Range               range    = 1;
+  DiagnosticSeverity  severity = 2;
+  string              message  = 3;
+  string              source   = 4;
+  string              code     = 5;
+  string              file_uri = 6;
+}
+
+message DiagnosticsResponse {
+  string             file_uri    = 1;
+  repeated Diagnostic diagnostics = 2;
+  google.protobuf.Timestamp generated_at = 3;
+}
+
+// ── Request / Response wrappers ───────────────────────────────────────────────
+
+message ListUsersRequest {
+  int32  page_size   = 1;
+  string page_token  = 2;
+  string filter      = 3;
+  string order_by    = 4;
+}
+
+message ListUsersResponse {
+  repeated User users          = 1;
+  string        next_page_token = 2;
+  int32         total_count     = 3;
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message UpdateUserRequest {
+  User                      user        = 1;
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message DeleteUserRequest {
+  string user_id = 1;
+  bool   soft    = 2;
+}
+
+// ── Services ──────────────────────────────────────────────────────────────────
+
+service UserService {
+  rpc GetUser    (GetUserRequest)    returns (User);
+  rpc ListUsers  (ListUsersRequest)  returns (ListUsersResponse);
+  rpc CreateUser (User)              returns (User);
+  rpc UpdateUser (UpdateUserRequest) returns (User);
+  rpc DeleteUser (DeleteUserRequest) returns (google.protobuf.Empty);
+
+  // Server streaming: watch a user for real-time updates
+  rpc WatchUser (GetUserRequest) returns (stream User);
+}
+
+service TerminalService {
+  // Opens a new PTY session (returns session metadata)
+  rpc OpenSession  (OpenSessionRequest)  returns (Session);
+  rpc CloseSession (CloseSessionRequest) returns (Session);
+  rpc ResizeSession(ResizeRequest)       returns (google.protobuf.Empty);
+
+  // Bidirectional stream: client sends input, server sends output
+  rpc AttachSession(stream SessionInput) returns (stream SessionOutput);
+
+  // Server stream: read-only output tail
+  rpc TailSession(GetUserRequest) returns (stream SessionOutput);
+}
+
+service FileService {
+  rpc ListFiles    (ListFilesRequest)    returns (stream FileEntry);
+  rpc ReadFile     (ReadFileRequest)     returns (stream FileChunk);
+  rpc WriteFile    (stream FileChunk)    returns (WriteFileResponse);
+  rpc WatchChanges (WatchChangesRequest) returns (stream FileChangeEvent);
+}
+
+message ListFilesRequest {
+  string project_id  = 1;
+  string path        = 2;
+  bool   recursive   = 3;
+  int32  max_depth   = 4;
+}
+
+message ReadFileRequest {
+  string project_id = 1;
+  string path       = 2;
+  int64  offset     = 3;
+  int64  length     = 4;  // 0 = whole file
+}
+
+message FileChunk {
+  string path   = 1;
+  bytes  data   = 2;
+  int64  offset = 3;
+  bool   eof    = 4;
+}
+
+message WriteFileResponse {
+  string path          = 1;
+  int64  bytes_written = 2;
+  string checksum      = 3;
+}
+
+message WatchChangesRequest {
+  string project_id = 1;
+  repeated string paths = 2;
+}
+
+message FileChangeEvent {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_CREATED     = 1;
+    KIND_MODIFIED    = 2;
+    KIND_DELETED     = 3;
+    KIND_RENAMED     = 4;
+  }
+
+  Kind                      kind      = 1;
+  string                    path      = 2;
+  string                    old_path  = 3;  // for renames
+  google.protobuf.Timestamp ts        = 4;
+}
+
+service DiagnosticsService {
+  rpc GetDiagnostics   (GetDiagnosticsRequest) returns (DiagnosticsResponse);
+  rpc StreamDiagnostics(GetDiagnosticsRequest) returns (stream DiagnosticsResponse);
+}
+
+message GetDiagnosticsRequest {
+  string project_id = 1;
+  string file_uri   = 2;  // empty = all files
+}

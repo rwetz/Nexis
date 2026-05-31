@@ -1,0 +1,195 @@
+# Test YAML file — Nexis editor playground
+# Exercises: scalars, anchors, aliases, multi-line strings, complex keys, tags
+
+---
+# Document 1 — Application config
+
+app:
+  name: Nexis
+  version: "1.3.0"
+  environment: &env production
+
+database:
+  host: &db-host localhost
+  port: 5432
+  name: nexis_db
+  pool:
+    min: 2
+    max: 20
+    idle_timeout: 30s
+  credentials: &db-creds
+    username: nexis_user
+    password: ${DB_PASSWORD}   # environment variable substitution
+
+# Anchor + alias demo
+staging:
+  database:
+    host: *db-host
+    credentials: *db-creds
+    name: nexis_staging
+
+# ── Multi-line strings ───────────────────────────────────────────────────────
+
+readme_literal: |
+  This is a literal block scalar.
+  Newlines are preserved exactly.
+  The trailing newline is included.
+
+readme_folded: >
+  This is a folded block scalar.
+  Long lines are joined by a space,
+  but blank lines still produce newlines.
+
+  A blank line above creates a paragraph break.
+
+sql_query: |
+  SELECT u.id, u.email, COUNT(s.id) AS session_count
+  FROM users u
+  LEFT JOIN sessions s ON s.user_id = u.id
+  WHERE u.created_at > NOW() - INTERVAL '30 days'
+  GROUP BY u.id, u.email
+  ORDER BY session_count DESC
+  LIMIT 100;
+
+# ── Sequences ────────────────────────────────────────────────────────────────
+
+features:
+  - name: terminal
+    enabled: true
+    config:
+      shell: powershell
+      scrollback: 10000
+  - name: lsp
+    enabled: true
+    languages:
+      - rust
+      - typescript
+      - python
+  - name: debugger
+    enabled: false
+
+ports: [8080, 8443, 9090]
+
+# ── Complex mappings ─────────────────────────────────────────────────────────
+
+keybindings:
+  ? "ctrl+p"
+  : command: quickOpen
+  ? "ctrl+shift+p"
+  : command: commandPalette
+  ? "ctrl+`"
+  : command: toggleTerminal
+    args:
+      shell: default
+
+# ── Typed scalars ─────────────────────────────────────────────────────────────
+
+types:
+  a_bool_true:  true
+  a_bool_false: false
+  a_null_1: null
+  a_null_2: ~
+  an_int:   42
+  a_float:  3.14159
+  a_hex:    0xFF
+  an_octal: 0o755
+  a_sci:    1.23e+10
+  a_date:   2025-06-01
+  a_datetime: 2025-06-01T12:00:00Z
+  a_string_forced: !!str 42
+  a_bool_forced: !!bool "yes"
+  binary_data: !!binary |
+    R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7
+
+# ── Deep nesting ──────────────────────────────────────────────────────────────
+
+infrastructure:
+  cloud: aws
+  region: us-east-1
+  services:
+    api:
+      type: ecs
+      replicas: 3
+      resources:
+        requests: { cpu: 256m, memory: 512Mi }
+        limits:   { cpu: 1000m, memory: 2Gi }
+      env:
+        - name: NODE_ENV
+          value: *env
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: host
+    worker:
+      type: ecs
+      replicas: 2
+      autoscaling:
+        enabled: true
+        min: 1
+        max: 10
+        metric: cpu
+        target: 70
+
+---
+# Document 2 — CI/CD pipeline
+
+name: build-and-test
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ["v*.*.*"]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable, beta]
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            coverage: true
+        exclude:
+          - os: macos-latest
+            rust: beta
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: clippy, rustfmt
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.os }}-${{ matrix.rust }}
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Test
+        run: cargo test --all-features
+        env:
+          RUST_LOG: debug
+
+      - name: Upload coverage
+        if: matrix.coverage
+        uses: codecov/codecov-action@v3

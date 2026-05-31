@@ -1,0 +1,310 @@
+// Test SCSS file — Nexis editor playground
+// Exercises: variables, maps, mixins, functions, @each, @for, @while, @extend, modules
+
+@use "sass:math";
+@use "sass:map";
+@use "sass:list";
+@use "sass:color";
+@use "sass:string";
+
+// ── Variables ──────────────────────────────────────────────────────────────
+
+$brand-hue: 243;
+$radius-base: 6px;
+$font-mono: "JetBrains Mono", monospace;
+
+// ── Maps ───────────────────────────────────────────────────────────────────
+
+$palette: (
+  "slate": (
+    50:  hsl(210, 40%, 98%),
+    100: hsl(210, 40%, 96%),
+    500: hsl(215, 16%, 47%),
+    900: hsl(222, 47%, 11%),
+  ),
+  "violet": (
+    50:  hsl(250, 100%, 98%),
+    500: hsl($brand-hue, 80%, 60%),
+    600: hsl($brand-hue, 75%, 50%),
+    900: hsl($brand-hue, 40%, 18%),
+  ),
+  "rose": (
+    50:  hsl(356, 100%, 97%),
+    500: hsl(351, 95%, 61%),
+  ),
+);
+
+$spacing: (1: 4px, 2: 8px, 3: 12px, 4: 16px, 6: 24px, 8: 32px, 12: 48px, 16: 64px);
+
+$breakpoints: (
+  sm: 640px,
+  md: 768px,
+  lg: 1024px,
+  xl: 1280px,
+  2xl: 1536px,
+);
+
+// ── Functions ──────────────────────────────────────────────────────────────
+
+@function palette($name, $shade: 500) {
+  $scale: map.get($palette, $name);
+  @if not $scale {
+    @error "Unknown palette colour '#{$name}'.";
+  }
+  $value: map.get($scale, $shade);
+  @if not $value {
+    @error "Shade #{$shade} not found in palette '#{$name}'.";
+  }
+  @return $value;
+}
+
+@function rem($px) {
+  @return math.div($px, 16px) * 1rem;
+}
+
+@function spacing($key) {
+  @return map.get($spacing, $key);
+}
+
+// ── Mixins ─────────────────────────────────────────────────────────────────
+
+@mixin breakpoint($bp, $dir: "min") {
+  $value: map.get($breakpoints, $bp);
+  @if not $value {
+    @error "Unknown breakpoint '#{$bp}'.";
+  }
+  @if $dir == "min" {
+    @media (min-width: $value) { @content; }
+  } @else if $dir == "max" {
+    @media (max-width: #{$value - 1px}) { @content; }
+  }
+}
+
+@mixin flex-center($direction: row) {
+  display: flex;
+  flex-direction: $direction;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin truncate($lines: 1) {
+  @if $lines == 1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@mixin elevation($level: 1) {
+  $shadows: (
+    1: (0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.24)),
+    2: (0 3px 6px rgba(0,0,0,.16), 0 3px 6px rgba(0,0,0,.23)),
+    3: (0 10px 20px rgba(0,0,0,.19), 0 6px 6px rgba(0,0,0,.23)),
+    4: (0 14px 28px rgba(0,0,0,.25), 0 10px 10px rgba(0,0,0,.22)),
+  );
+  $shadow: map.get($shadows, $level);
+  @if $shadow {
+    box-shadow: $shadow...;
+  }
+}
+
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@mixin focus-ring($color: palette("violet")) {
+  &:focus-visible {
+    outline: 2px solid $color;
+    outline-offset: 2px;
+  }
+}
+
+// ── Placeholder selectors ──────────────────────────────────────────────────
+
+%interactive-base {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 150ms ease, opacity 150ms ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}
+
+// ── @each — generate spacing helpers ──────────────────────────────────────
+
+@each $key, $value in $spacing {
+  .p-#{$key}  { padding: $value; }
+  .px-#{$key} { padding-inline: $value; }
+  .py-#{$key} { padding-block: $value; }
+  .m-#{$key}  { margin: $value; }
+  .gap-#{$key}{ gap: $value; }
+}
+
+// ── @each — generate colour utilities from palette ─────────────────────────
+
+@each $name, $scale in $palette {
+  @each $shade, $value in $scale {
+    .bg-#{$name}-#{$shade}   { background-color: $value; }
+    .text-#{$name}-#{$shade} { color: $value; }
+    .border-#{$name}-#{$shade} { border-color: $value; }
+  }
+}
+
+// ── @for — generate grid column spans ─────────────────────────────────────
+
+.grid { display: grid; }
+
+@for $i from 1 through 12 {
+  .col-span-#{$i} { grid-column: span #{$i} / span #{$i}; }
+  .col-start-#{$i}{ grid-column-start: $i; }
+}
+
+// ── @while — fibonacci-based size scale ───────────────────────────────────
+
+$fib-a: 1;
+$fib-b: 1;
+$fib-i: 1;
+$fib-limit: 89;
+
+@while $fib-a <= $fib-limit {
+  .fib-#{$fib-i} { font-size: rem($fib-a * 1px); }
+  $next: $fib-a + $fib-b;
+  $fib-a: $fib-b;
+  $fib-b: $next;
+  $fib-i: $fib-i + 1;
+}
+
+// ── Components ─────────────────────────────────────────────────────────────
+
+.btn {
+  @extend %interactive-base;
+  @include focus-ring;
+  @include flex-center;
+  gap: spacing(2);
+  padding: spacing(2) spacing(4);
+  border: 1px solid transparent;
+  border-radius: $radius-base;
+  font-weight: 500;
+
+  $variants: (
+    "primary": (
+      bg:   palette("violet", 600),
+      hover: palette("violet", 500),
+      text: #fff,
+    ),
+    "danger": (
+      bg:   palette("rose", 500),
+      hover: color.adjust(palette("rose", 500), $lightness: 8%),
+      text: #fff,
+    ),
+  );
+
+  @each $name, $props in $variants {
+    &--#{$name} {
+      background-color: map.get($props, "bg");
+      color: map.get($props, "text");
+      &:hover:not(:disabled) { background-color: map.get($props, "hover"); }
+    }
+  }
+
+  &--sm { padding: spacing(1) spacing(3); font-size: rem(13px); }
+  &--lg { padding: spacing(3) spacing(6); font-size: rem(18px); }
+}
+
+.card {
+  background: palette("slate", 900);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: $radius-base * 2;
+  padding: spacing(6);
+  @include elevation(2);
+
+  &__header {
+    @include flex-center;
+    justify-content: space-between;
+    margin-bottom: spacing(4);
+  }
+
+  &__title {
+    font-size: rem(18px);
+    font-weight: 600;
+    @include truncate;
+  }
+
+  &__body { color: rgba(255,255,255,.7); }
+
+  &__footer {
+    margin-top: spacing(4);
+    padding-top: spacing(4);
+    border-top: 1px solid rgba(255,255,255,.08);
+  }
+}
+
+// ── Responsive typography ──────────────────────────────────────────────────
+
+.heading {
+  font-weight: 700;
+  line-height: 1.2;
+
+  &--xl { font-size: rem(28px); @include breakpoint(md) { font-size: rem(40px); } }
+  &--lg { font-size: rem(22px); @include breakpoint(md) { font-size: rem(32px); } }
+  &--md { font-size: rem(18px); @include breakpoint(md) { font-size: rem(24px); } }
+}
+
+// ── Keyframes ─────────────────────────────────────────────────────────────
+
+$animations: (
+  "spin":   (from: (transform: rotate(0deg)),   to: (transform: rotate(360deg))),
+  "pulse":  (from: (opacity: 1),                to: (opacity: .4)),
+  "bounce": ("0%,100%": (transform: translateY(0)), "50%": (transform: translateY(-12px))),
+);
+
+@keyframes spin   { from { transform: rotate(0deg);   } to { transform: rotate(360deg); } }
+@keyframes pulse  { from { opacity: 1;                } to { opacity: .4;               } }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+
+.animate {
+  &--spin   { animation: spin   1s linear infinite; }
+  &--pulse  { animation: pulse  1.5s ease-in-out infinite alternate; }
+  &--bounce { animation: bounce 0.6s ease infinite; }
+}
+
+// ── Code block ────────────────────────────────────────────────────────────
+
+.code-block {
+  font-family: $font-mono;
+  font-size: rem(13px);
+  line-height: 1.7;
+  background: palette("slate", 900);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: $radius-base;
+  overflow-x: auto;
+
+  $token-colors: (
+    "keyword":  hsl(204, 90%, 72%),
+    "string":   hsl(95,  70%, 65%),
+    "comment":  hsl(0, 0%, 52%),
+    "number":   hsl(35,  90%, 70%),
+    "function": hsl(270, 80%, 75%),
+    "operator": hsl(0, 0%, 85%),
+  );
+
+  @each $type, $color in $token-colors {
+    .token-#{$type} { color: $color; }
+  }
+}

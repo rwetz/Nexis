@@ -132,6 +132,13 @@ export type GitStashEntry = {
   timestampSecs: number;
 };
 
+export type GitSubmoduleEntry = {
+  path: string;
+  name: string;
+  sha: string;
+  status: "ok" | "modified" | "uninitialized" | "conflict";
+};
+
 export type GitDiscardEntry = {
   path: string;
   untracked: boolean;
@@ -376,6 +383,11 @@ export const native = {
     invoke<string | null>("git_remote_url", {
       repoRoot,
       name: name ?? null,
+      workspace: currentWorkspaceEnv(),
+    }),
+  gitSubmoduleStatus: (repoRoot: string) =>
+    invoke<GitSubmoduleEntry[]>("git_submodule_status", {
+      repoRoot,
       workspace: currentWorkspaceEnv(),
     }),
   gitStashList: (repoRoot: string) =>

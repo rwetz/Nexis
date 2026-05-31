@@ -101,6 +101,7 @@ pub fn run() {
             git::commands::git_commit_files,
             git::commands::git_commit_file_diff,
             git::commands::git_remote_url,
+            git::commands::git_submodule_status,
             git::commands::git_stash_list,
             git::commands::git_stash_push,
             git::commands::git_stash_apply,

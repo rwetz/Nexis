@@ -1,5 +1,6 @@
 -- Test Lua file — Nexis editor playground
--- Mirrors the structure of test.rs: Config table, greeting, fibonacci, main.
+-- Exercises: tables as objects, metatables, __index / __tostring metamethods,
+--            setmetatable, colon method syntax, local functions, string.format.
 
 -- ── Config ────────────────────────────────────────────────────────────────────
 

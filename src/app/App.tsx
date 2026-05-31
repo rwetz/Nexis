@@ -4,6 +4,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { QuickFilePicker } from "@/components/QuickFilePicker";
+import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { WorkspaceSearch } from "@/components/WorkspaceSearch";
 import { CommandPalette, type CommandDef } from "@/components/CommandPalette";
 import { ShellHistoryOverlay } from "@/components/ShellHistoryOverlay";
@@ -85,6 +86,7 @@ import {
 } from "@/modules/source-control";
 import { StatusBar } from "@/modules/statusbar";
 import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
+import { pushRecentWorkspace } from "@/modules/workspace/useRecentWorkspaces";
 import { PluginHost } from "@/lib/plugins/PluginHost";
 import { MAX_PANES_PER_TAB, useTabs, useWorkspaceCwd, setSavedTabsEnabled } from "@/modules/tabs";
 import {
@@ -208,6 +210,8 @@ export default function App() {
     setWorkspaceSearchOpen,
     commandPaletteOpen,
     setCommandPaletteOpen,
+    workspaceSwitcherOpen,
+    setWorkspaceSwitcherOpen,
   } = useDialogCoordinator();
 
   const [home, setHome] = useState<string | null>(null);
@@ -284,10 +288,39 @@ export default function App() {
   useEffect(() => {
     native
       .workspaceCurrentDir()
-      .then(setLaunchCwd)
+      .then((dir) => {
+        setLaunchCwd(dir);
+        if (dir) pushRecentWorkspace(dir);
+      })
       .catch(() => setLaunchCwd(null))
       .finally(() => setLaunchCwdResolved(true));
   }, []);
+
+  const switchWorkspacePath = useCallback(
+    async (path: string) => {
+      const dirty = tabsRef.current.some((t) => t.kind === "editor" && t.dirty);
+      if (dirty) {
+        window.alert("Save or close unsaved editor tabs before switching workspace.");
+        return;
+      }
+      try {
+        await native.workspaceAuthorize(path);
+      } catch {
+        // Non-fatal — path may already be authorized.
+      }
+      for (const id of liveLeavesRef.current) disposeSession(id);
+      searchAddons.current.clear();
+      terminalRefs.current.clear();
+      editorRefs.current.clear();
+      previewRefs.current.clear();
+      setActiveSearchAddon(null);
+      setActiveEditorHandle(null);
+      setLaunchCwd(path);
+      pushRecentWorkspace(path);
+      resetWorkspace(path);
+    },
+    [resetWorkspace],
+  );
 
   const miniOpen = useChatStore((s) => s.mini.open);
   const openMini = useChatStore((s) => s.openMini);
@@ -1008,6 +1041,7 @@ export default function App() {
       "files.quickOpen": () => setQuickFilePickerOpen((v) => !v),
       "search.workspace": () => setWorkspaceSearchOpen((v) => !v),
       "commands.palette": () => setCommandPaletteOpen((v) => !v),
+      "workspace.switch": () => setWorkspaceSwitcherOpen((v) => !v),
       "shortcuts.open": () => setShortcutsOpen((v) => !v),
       "window.new": () => void openNewWindow(),
       "settings.open": () => void openSettingsWindow(),
@@ -1522,6 +1556,14 @@ export default function App() {
               root={explorerRoot}
               onSelect={(path) => openFileTab(path)}
               onClose={() => setQuickFilePickerOpen(false)}
+            />
+          )}
+
+          {workspaceSwitcherOpen && (
+            <WorkspaceSwitcher
+              currentPath={launchCwd}
+              onSelect={(path) => void switchWorkspacePath(path)}
+              onClose={() => setWorkspaceSwitcherOpen(false)}
             />
           )}
 

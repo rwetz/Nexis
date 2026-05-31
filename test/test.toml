@@ -1,0 +1,172 @@
+# Test TOML file — Nexis editor playground
+# Exercises: tables, arrays of tables, inline tables, multi-line strings, datetimes
+
+[package]
+name = "nexis-backend"
+version = "1.3.0"
+edition = "2021"
+rust-version = "1.78"
+authors = ["Ryan Wetzstein <rwetz00@gmail.com>"]
+description = "Tauri backend for the Nexis IDE"
+license = "MIT"
+repository = "https://github.com/rwetz00/nexis"
+keywords = ["ide", "terminal", "tauri", "editor"]
+categories = ["development-tools"]
+readme = "README.md"
+exclude = [".github", "test/"]
+
+# ── Dependencies ─────────────────────────────────────────────────────────────
+
+[dependencies]
+tauri          = { version = "2.0", features = ["protocol-asset", "unstable"] }
+serde          = { version = "1",   features = ["derive"] }
+serde_json     = "1"
+tokio          = { version = "1",   features = ["full"] }
+anyhow         = "1"
+thiserror      = "1"
+tracing        = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+portable-pty   = "0.8"
+reqwest        = { version = "0.11", default-features = false, features = ["rustls-tls", "json", "stream"] }
+uuid           = { version = "1",   features = ["v4", "serde"] }
+chrono         = { version = "0.4", features = ["serde"] }
+regex          = "1"
+once_cell      = "1"
+parking_lot    = "0.12"
+
+[dependencies.sqlx]
+version = "0.7"
+default-features = false
+features = ["runtime-tokio-rustls", "sqlite", "migrate", "macros"]
+
+[dev-dependencies]
+tokio-test  = "0.4"
+tempfile    = "3"
+assert_fs   = "1"
+predicates  = "2"
+criterion   = { version = "0.5", features = ["html_reports"] }
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+# ── Features ─────────────────────────────────────────────────────────────────
+
+[features]
+default = ["updater"]
+updater = ["tauri/updater"]
+devtools = ["tauri/devtools"]
+unstable-api = []
+
+# ── Workspace ─────────────────────────────────────────────────────────────────
+
+[workspace]
+members = [".", "crates/nexis-common", "crates/nexis-lsp"]
+resolver = "2"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+
+# ── Profiles ─────────────────────────────────────────────────────────────────
+
+[profile.release]
+opt-level     = 3
+lto           = "thin"
+codegen-units = 1
+strip         = "symbols"
+panic         = "abort"
+
+[profile.dev]
+opt-level = 0
+debug     = true
+split-debuginfo = "unpacked"
+
+[profile.bench]
+inherits  = "release"
+debug     = true
+
+# ── Cargo config / patch ──────────────────────────────────────────────────────
+
+[patch.crates-io]
+# Pin a patched version of portable-pty for Windows ConPTY fix
+# portable-pty = { path = "../forks/portable-pty" }
+
+# ── Custom sections (TOML supports arbitrary tables) ──────────────────────────
+
+[nexis]
+min-node-version = "20"
+min-pnpm-version = "9"
+auto-update-check = true
+telemetry = false
+
+[nexis.themes]
+default = "dark"
+available = ["dark", "light", "monokai", "solarized-dark", "github-dark"]
+
+[nexis.ai]
+default-model = "claude-sonnet-4-5"
+max-context-tokens = 200_000
+streaming = true
+system-prompt = """
+You are Nexis AI, a coding assistant embedded in the Nexis IDE.
+You help users write, debug, and understand code.
+Be concise. Prefer showing code over lengthy explanations.
+"""
+
+# ── Arrays of tables ──────────────────────────────────────────────────────────
+
+[[nexis.shortcuts]]
+key     = "ctrl+p"
+command = "quickOpen"
+when    = "editorFocus"
+
+[[nexis.shortcuts]]
+key     = "ctrl+shift+p"
+command = "commandPalette"
+when    = "always"
+
+[[nexis.shortcuts]]
+key     = "f5"
+command = "debugStart"
+when    = "!debugActive"
+
+[[nexis.shortcuts]]
+key     = "shift+f5"
+command = "debugStop"
+when    = "debugActive"
+
+# ── Type examples ─────────────────────────────────────────────────────────────
+
+[types]
+string_bare    = "hello world"
+string_literal = 'C:\Users\Ryan\no\escapes\here'
+multiline_basic = """
+First line.
+Second line.\tTabbed.
+"""
+multiline_literal = '''
+Raw \n no escapes
+  indentation preserved
+'''
+integer      = 42
+integer_hex  = 0xDEAD_BEEF
+integer_oct  = 0o755
+integer_bin  = 0b1101_1010
+float_plain  = 3.14159
+float_exp    = 6.626e-34
+float_inf    = inf
+float_nan    = nan
+bool_true    = true
+bool_false   = false
+datetime_tz  = 2025-06-01T12:00:00Z
+datetime_local = 2025-06-01T12:00:00
+date_only    = 2025-06-01
+time_only    = 12:00:00
+array_inline = [1, 2, 3, 4, 5]
+array_typed  = [1.0, 2.0, 3.0]
+array_multi  = [
+  "alpha",
+  "beta",
+  "gamma",
+]
+inline_table = { x = 1.0, y = 2.0, z = 3.0 }

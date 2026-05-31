@@ -8,6 +8,8 @@ import {
   Delete02Icon,
   Add01Icon,
   EyeIcon,
+  Search01Icon,
+  MessageMultiple01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
@@ -21,12 +23,10 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Context,
   ContextContent,
@@ -231,21 +231,71 @@ function ContextIndicator({ messages }: { messages: UIMessage[] }) {
 
 // ── SessionPicker ─────────────────────────────────────────────────────────────
 
+function compactSessionDate(ms: number): string {
+  if (!ms) return "";
+  const d = new Date(ms);
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  if (sameDay) {
+    return d.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  const sameYear = d.getFullYear() === now.getFullYear();
+  if (sameYear) {
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "2-digit",
+  });
+}
+
 function SessionPicker() {
   const sessions = useChatStore((s) => s.sessions);
   const activeId = useChatStore((s) => s.activeSessionId);
   const switchSession = useChatStore((s) => s.switchSession);
   const newSession = useChatStore((s) => s.newSession);
   const deleteSession = useChatStore((s) => s.deleteSession);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  const active = sessions.find((s) => s.id === activeId) ?? null;
+  const active = useMemo(
+    () => sessions.find((s) => s.id === activeId) ?? null,
+    [sessions, activeId],
+  );
+
+  const sorted = useMemo(
+    () => [...sessions].sort((a, b) => b.updatedAt - a.updatedAt),
+    [sessions],
+  );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return sorted;
+    return sorted.filter((s) =>
+      (s.title || "New chat").toLowerCase().includes(q),
+    );
+  }, [sorted, query]);
+
+  useEffect(() => {
+    if (open) {
+      setQuery("");
+      requestAnimationFrame(() => searchRef.current?.focus());
+    }
+  }, [open]);
+
   if (!active) return null;
 
-  const sorted = [...sessions].sort((a, b) => b.updatedAt - a.updatedAt);
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
         <button
           type="button"
           className={cn(
@@ -253,37 +303,93 @@ function SessionPicker() {
             "text-[11px] text-muted-foreground transition-colors",
             "hover:bg-accent hover:text-foreground",
           )}
-          title="Switch session"
+          title="Chat history"
         >
+          <HugeiconsIcon
+            icon={MessageMultiple01Icon}
+            size={11}
+            strokeWidth={1.75}
+            className="shrink-0 opacity-70"
+          />
           <span className="truncate">{active.title || "New chat"}</span>
           <HugeiconsIcon
             icon={ArrowDown01Icon}
             size={10}
             strokeWidth={2}
-            className="opacity-70"
+            className="shrink-0 opacity-70"
           />
         </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-56">
-        <DropdownMenuItem
-          onSelect={() => newSession()}
-          className="gap-2 text-xs"
-        >
-          <HugeiconsIcon icon={Add01Icon} size={12} strokeWidth={1.75} />
-          New session
-        </DropdownMenuItem>
-        {sorted.length > 0 ? <DropdownMenuSeparator /> : null}
-        {sorted.map((s) => (
-          <SessionRow
-            key={s.id}
-            session={s}
-            active={s.id === activeId}
-            onSelect={() => switchSession(s.id)}
-            onDelete={() => deleteSession(s.id)}
+      </PopoverTrigger>
+      <PopoverContent
+        side="bottom"
+        align="start"
+        sideOffset={4}
+        className="w-72 p-0 shadow-xl"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <div className="flex items-center gap-1.5 border-b border-border/40 px-2 py-1.5">
+          <HugeiconsIcon
+            icon={Search01Icon}
+            size={11}
+            strokeWidth={1.75}
+            className="shrink-0 text-muted-foreground/60"
           />
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <input
+            ref={searchRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                if (query) {
+                  setQuery("");
+                } else {
+                  setOpen(false);
+                }
+                e.stopPropagation();
+              }
+            }}
+            placeholder="Search history…"
+            className="min-w-0 flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground/55"
+          />
+        </div>
+
+        <div className="border-b border-border/40 px-1.5 py-1">
+          <button
+            type="button"
+            onClick={() => {
+              newSession();
+              setOpen(false);
+            }}
+            className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <HugeiconsIcon icon={Add01Icon} size={11} strokeWidth={1.75} />
+            New session
+          </button>
+        </div>
+
+        <div className="max-h-64 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-4 text-center text-[11px] text-muted-foreground/60">
+              No sessions found
+            </div>
+          ) : (
+            filtered.map((s) => (
+              <SessionRow
+                key={s.id}
+                session={s}
+                active={s.id === activeId}
+                onSelect={() => {
+                  switchSession(s.id);
+                  setOpen(false);
+                }}
+                onDelete={() => deleteSession(s.id)}
+              />
+            ))
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -299,36 +405,34 @@ function SessionRow({
   onDelete: () => void;
 }) {
   return (
-    <DropdownMenuItem
-      onSelect={(e) => {
-        const target = e.target as HTMLElement | null;
-        if (target?.closest("[data-session-delete]")) {
-          e.preventDefault();
-          return;
-        }
-        onSelect();
-      }}
+    <button
+      type="button"
+      onClick={onSelect}
       className={cn(
-        "group flex items-center justify-between gap-2 text-xs",
-        active && "bg-accent/40",
+        "group flex w-full items-center gap-2 px-2 py-1.5 text-left transition-colors",
+        active ? "bg-accent/50" : "hover:bg-accent/35",
       )}
     >
-      <span className="min-w-0 flex-1 truncate">
-        {session.title || "New chat"}
-      </span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[11.5px] font-medium leading-snug text-foreground/90">
+          {session.title || "New chat"}
+        </div>
+        <div className="text-[10px] tabular-nums text-muted-foreground/60">
+          {compactSessionDate(session.updatedAt)}
+        </div>
+      </div>
       <button
         type="button"
-        data-session-delete
         onClick={(e) => {
           e.stopPropagation();
           onDelete();
         }}
         title="Delete session"
-        className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
       >
         <HugeiconsIcon icon={Delete02Icon} size={11} strokeWidth={1.75} />
       </button>
-    </DropdownMenuItem>
+    </button>
   );
 }
 

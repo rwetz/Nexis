@@ -1,5 +1,6 @@
 // Test C++ file — Nexis editor playground
-// Mirrors the structure of test.rs: Config class, greeting, fibonacci, main.
+// Exercises: class with public/private access, unordered_map, std::optional, std::move,
+//            const-qualified methods, value_or, std::cout chaining.
 
 #include <iostream>
 #include <string>

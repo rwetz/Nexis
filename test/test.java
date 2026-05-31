@@ -1,5 +1,6 @@
 // Test Java file — Nexis editor playground
-// Mirrors the structure of test.rs: Config class, greeting, fibonacci, main.
+// Exercises: static nested class, HashMap<K,V>, getOrDefault, @Override, final fields,
+//            string concatenation, System.out.println, iterative fibonacci.
 
 import java.util.HashMap;
 import java.util.Map;

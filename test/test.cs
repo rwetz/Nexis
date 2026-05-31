@@ -1,5 +1,6 @@
 // Test C# file — Nexis editor playground
-// Mirrors the structure of test.rs: Config class, greeting, fibonacci, main.
+// Exercises: get-only properties, Dictionary<K,V>, expression-bodied members,
+//            tuple deconstruction, string interpolation ($""), TryGetValue.
 
 using System;
 using System.Collections.Generic;

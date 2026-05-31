@@ -35,7 +35,8 @@ export type ShortcutId =
   | "settings.open"
   | "sidebar.toggle"
   | "editor.undo"
-  | "editor.redo";
+  | "editor.redo"
+  | "workspace.switch";
 
 export type ShortcutGroup =
   | "General"
@@ -63,6 +64,12 @@ export type Shortcut = {
 };
 
 export const SHORTCUTS: Shortcut[] = [
+  {
+    id: "workspace.switch",
+    label: "Switch workspace",
+    group: "General",
+    defaultBindings: [{ [MOD_PROP]: true, key: "`" }],
+  },
   {
     id: "window.new",
     label: "New window",

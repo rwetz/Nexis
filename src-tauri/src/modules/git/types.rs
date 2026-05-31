@@ -132,6 +132,15 @@ pub struct GitStashEntry {
     pub timestamp_secs: i64,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitSubmoduleEntry {
+    pub path: String,
+    pub name: String,
+    pub sha: String,
+    pub status: String,
+}
+
 pub(crate) enum TextSource {
     Missing,
     Binary,

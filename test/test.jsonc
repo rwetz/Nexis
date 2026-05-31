@@ -1,0 +1,75 @@
+// Test JSONC file — Nexis editor playground
+// JSONC = JSON with Comments (used by tsconfig, VSCode settings, etc.)
+// Exercises: single-line comments, trailing commas, block comments
+
+/* Project-wide TypeScript configuration */
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+
+  // ── Compiler options ────────────────────────────────────────────────────────
+  "compilerOptions": {
+    /* Target & module */
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+
+    // JSX
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+
+    /* Strict mode — enables all strict checks */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,   // arr[n] is T | undefined
+    "exactOptionalPropertyTypes": true,  // no implicit undefined assignment
+    "noImplicitOverride": true,
+
+    /* Emit */
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+
+    /* Interop */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,            // required for Vite/esbuild
+
+    /* Path aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@/*":           ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@modules/*":    ["./src/modules/*"],
+      "@lib/*":        ["./src/lib/*"],
+    },
+
+    // Experimental (stable in TS 5.0+)
+    "verbatimModuleSyntax": true,       // import type enforcement
+    "noPropertyAccessFromIndexSignature": true,
+    "useUnknownInCatchVariables": true,
+  },
+
+  // ── Include / exclude ───────────────────────────────────────────────────────
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "vite.config.ts",
+    "vitest.config.ts",
+  ],
+
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src-tauri/target",
+    /* auto-generated files */
+    "src/generated/**/*",
+  ],
+
+  // ── References (project references for monorepo) ─────────────────────────
+  "references": [
+    { "path": "./packages/nexis-common" },
+    { "path": "./packages/nexis-ui" },
+  ],
+}

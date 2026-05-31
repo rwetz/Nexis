@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Nexis editor HTML playground — tests tags, attributes, SVG, forms, tables, ARIA" />
+  <title>HTML Playground — Nexis</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <style>
+    :root {
+      --color-primary: #6366f1;
+      --color-bg: #0f172a;
+      --radius: 0.5rem;
+    }
+    body { font-family: system-ui, sans-serif; background: var(--color-bg); color: #f8fafc; margin: 0; }
+    .container { max-width: 64rem; margin: 0 auto; padding: 2rem 1rem; }
+  </style>
+</head>
+<body>
+  <!-- Semantic document structure -->
+  <header role="banner">
+    <nav aria-label="Primary navigation">
+      <ul role="list">
+        <li><a href="#forms">Forms</a></li>
+        <li><a href="#tables">Tables</a></li>
+        <li><a href="#media">Media</a></li>
+        <li><a href="#svg">SVG</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container" id="main-content">
+    <h1>HTML Playground</h1>
+
+    <!-- ── Forms ──────────────────────────────────────────────────── -->
+    <section id="forms" aria-labelledby="forms-heading">
+      <h2 id="forms-heading">Forms &amp; Inputs</h2>
+
+      <form method="post" action="/submit" novalidate>
+        <fieldset>
+          <legend>Personal details</legend>
+
+          <div class="field">
+            <label for="name">Full name <abbr title="required">*</abbr></label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              required
+              autocomplete="name"
+              placeholder="Alice Smith"
+              aria-describedby="name-hint"
+            />
+            <p id="name-hint" class="hint">Enter your legal name as it appears on ID.</p>
+          </div>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" autocomplete="email" />
+          </div>
+
+          <div class="field">
+            <label for="dob">Date of birth</label>
+            <input type="date" id="dob" name="dob" min="1900-01-01" max="2025-12-31" />
+          </div>
+
+          <div class="field">
+            <label for="color">Favourite colour</label>
+            <input type="color" id="color" name="color" value="#6366f1" />
+          </div>
+
+          <div class="field">
+            <label for="range">Satisfaction (1–10)</label>
+            <input type="range" id="range" name="range" min="1" max="10" step="1" value="7" />
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Preferences</legend>
+
+          <div role="group" aria-labelledby="notify-label">
+            <p id="notify-label">Notification method</p>
+            <label><input type="radio" name="notify" value="email" checked /> Email</label>
+            <label><input type="radio" name="notify" value="sms" /> SMS</label>
+            <label><input type="radio" name="notify" value="none" /> None</label>
+          </div>
+
+          <label>
+            <input type="checkbox" name="newsletter" value="yes" />
+            Subscribe to newsletter
+          </label>
+
+          <label for="country">Country</label>
+          <select id="country" name="country">
+            <optgroup label="Americas">
+              <option value="us">United States</option>
+              <option value="ca">Canada</option>
+            </optgroup>
+            <optgroup label="Europe">
+              <option value="gb">United Kingdom</option>
+              <option value="de">Germany</option>
+            </optgroup>
+          </select>
+
+          <label for="bio">Bio</label>
+          <textarea id="bio" name="bio" rows="4" cols="40" maxlength="500" placeholder="Tell us about yourself…"></textarea>
+        </fieldset>
+
+        <button type="submit">Submit</button>
+        <button type="reset">Reset</button>
+      </form>
+    </section>
+
+    <!-- ── Tables ─────────────────────────────────────────────────── -->
+    <section id="tables" aria-labelledby="tables-heading">
+      <h2 id="tables-heading">Data Table</h2>
+      <table>
+        <caption>Q1 2025 Revenue (USD thousands)</caption>
+        <thead>
+          <tr>
+            <th scope="col">Product</th>
+            <th scope="col">Jan</th>
+            <th scope="col">Feb</th>
+            <th scope="col">Mar</th>
+            <th scope="col">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Widget A</th>
+            <td>120</td><td>135</td><td>148</td><td>403</td>
+          </tr>
+          <tr>
+            <th scope="row">Widget B</th>
+            <td>88</td><td>92</td><td>105</td><td>285</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">Total</th>
+            <td>208</td><td>227</td><td>253</td><td>688</td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+
+    <!-- ── Details / Summary ──────────────────────────────────────── -->
+    <section>
+      <h2>Disclosure widget</h2>
+      <details open>
+        <summary>What is Nexis?</summary>
+        <p>Nexis is a Tauri-based desktop IDE with an integrated terminal, AI assistant, and LSP support.</p>
+      </details>
+      <details>
+        <summary>Keyboard shortcuts</summary>
+        <dl>
+          <dt><kbd>Ctrl</kbd>+<kbd>P</kbd></dt><dd>Quick open</dd>
+          <dt><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd></dt><dd>Command palette</dd>
+        </dl>
+      </details>
+    </section>
+
+    <!-- ── Media ──────────────────────────────────────────────────── -->
+    <section id="media">
+      <h2>Media</h2>
+      <figure>
+        <picture>
+          <source srcset="hero.avif" type="image/avif" />
+          <source srcset="hero.webp" type="image/webp" />
+          <img src="hero.png" alt="Nexis editor screenshot" width="1200" height="675" loading="lazy" decoding="async" />
+        </picture>
+        <figcaption>Nexis v1.3 with split-pane debugger</figcaption>
+      </figure>
+
+      <video controls preload="metadata" width="640" height="360" poster="thumb.jpg">
+        <source src="demo.mp4" type="video/mp4" />
+        <source src="demo.webm" type="video/webm" />
+        <track kind="subtitles" src="demo.en.vtt" srclang="en" label="English" default />
+        <p>Your browser does not support HTML video. <a href="demo.mp4">Download the video</a>.</p>
+      </video>
+    </section>
+
+    <!-- ── SVG ────────────────────────────────────────────────────── -->
+    <section id="svg">
+      <h2>Inline SVG</h2>
+      <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" role="img" aria-label="Colourful circles">
+        <defs>
+          <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+          </linearGradient>
+          <clipPath id="clip1">
+            <circle cx="100" cy="100" r="90" />
+          </clipPath>
+        </defs>
+        <circle cx="100" cy="100" r="90" fill="url(#grad1)" />
+        <rect x="40" y="40" width="120" height="120" rx="12" fill="white" fill-opacity="0.15" clip-path="url(#clip1)" />
+        <text x="100" y="108" text-anchor="middle" font-size="24" fill="white" font-family="system-ui">Nexis</text>
+      </svg>
+    </section>
+
+    <!-- ── Misc semantic elements ──────────────────────────────────── -->
+    <section>
+      <h2>Typography &amp; inline elements</h2>
+      <p>
+        The <mark>highlighted term</mark> appears in search results.
+        Press <kbd>Enter</kbd> to confirm. The server returned
+        <code>HTTP 429 Too Many Requests</code>.
+        The result is <var>x</var> = <var>a</var> + <var>b</var>.
+        Water is H<sub>2</sub>O. E = mc<sup>2</sup>.
+        <del>old price $99</del> <ins>new price $79</ins>.
+        <abbr title="HyperText Markup Language">HTML</abbr> is fun.
+        <time datetime="2025-01-01">New Year's Day</time>.
+        <q cite="https://example.com">To be or not to be.</q>
+      </p>
+      <blockquote cite="https://example.com/quote">
+        <p>The best way to predict the future is to invent it.</p>
+        <footer>— <cite>Alan Kay</cite></footer>
+      </blockquote>
+
+      <address>
+        Contact: <a href="mailto:hello@nexis.dev">hello@nexis.dev</a><br />
+        123 Dev Lane, San Francisco, CA 94107
+      </address>
+    </section>
+
+    <!-- ── Interactive / ARIA ──────────────────────────────────────── -->
+    <section>
+      <h2>ARIA live regions</h2>
+      <div role="status" aria-live="polite" id="status-msg"></div>
+      <div role="alert" aria-live="assertive" id="error-msg"></div>
+      <div
+        role="progressbar"
+        aria-valuenow="65"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-label="Upload progress"
+        style="width: 65%; height: 8px; background: var(--color-primary); border-radius: 4px;"
+      ></div>
+
+      <ul role="tablist">
+        <li role="presentation">
+          <button role="tab" aria-selected="true" aria-controls="panel-a" id="tab-a">Tab A</button>
+        </li>
+        <li role="presentation">
+          <button role="tab" aria-selected="false" aria-controls="panel-b" id="tab-b" tabindex="-1">Tab B</button>
+        </li>
+      </ul>
+      <div role="tabpanel" id="panel-a" aria-labelledby="tab-a">Content for Tab A</div>
+      <div role="tabpanel" id="panel-b" aria-labelledby="tab-b" hidden>Content for Tab B</div>
+    </section>
+  </main>
+
+  <footer role="contentinfo">
+    <small>&copy; 2025 Nexis. <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></small>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

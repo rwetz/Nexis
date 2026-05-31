@@ -1,0 +1,385 @@
+# Test GraphQL file — Nexis editor playground
+# Exercises: types, interfaces, unions, enums, inputs, directives, subscriptions, fragments
+
+# ── Directives ────────────────────────────────────────────────────────────────
+
+directive @auth(
+  roles: [Role!] = []
+  scopes: [String!] = []
+) on FIELD_DEFINITION | OBJECT
+
+directive @deprecated(reason: String = "No longer supported") on FIELD_DEFINITION | ENUM_VALUE
+
+directive @cacheControl(
+  maxAge: Int
+  scope: CacheControlScope = PUBLIC
+  inheritMaxAge: Boolean
+) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION
+
+directive @paginate(defaultSize: Int = 20, maxSize: Int = 100) on FIELD_DEFINITION
+
+enum CacheControlScope { PUBLIC PRIVATE }
+
+# ── Scalars ───────────────────────────────────────────────────────────────────
+
+scalar DateTime
+scalar JSON
+scalar UUID
+scalar URL
+scalar Email
+scalar Upload
+
+# ── Enums ─────────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  MEMBER
+  VIEWER
+  SERVICE_ACCOUNT
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+  DELETED
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum LanguageId {
+  RUST
+  TYPESCRIPT
+  PYTHON
+  GO
+  KOTLIN
+  SWIFT
+  JAVA
+  CPP
+  OTHER
+}
+
+# ── Interfaces ────────────────────────────────────────────────────────────────
+
+interface Node {
+  id: UUID!
+}
+
+interface Auditable {
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: User
+}
+
+interface Connection {
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+interface Edge {
+  cursor: String!
+}
+
+# ── Types ─────────────────────────────────────────────────────────────────────
+
+type PageInfo {
+  hasNextPage:     Boolean!
+  hasPreviousPage: Boolean!
+  startCursor:     String
+  endCursor:       String
+}
+
+type User implements Node & Auditable {
+  id:          UUID!
+  email:       Email!
+  displayName: String!
+  avatarUrl:   URL
+  role:        Role!
+  status:      UserStatus!
+  metadata:    JSON
+  createdAt:   DateTime!
+  updatedAt:   DateTime!
+  createdBy:   User
+  projects(
+    first: Int
+    after: String
+    last: Int
+    before: String
+    status: ProjectStatus
+    orderBy: ProjectOrderBy
+  ): ProjectConnection! @paginate @auth(roles: [ADMIN, MEMBER])
+  sessions(last: Int = 10): [Session!]! @auth(roles: [ADMIN])
+}
+
+type UserEdge implements Edge {
+  cursor: String!
+  node:   User!
+}
+
+type UserConnection implements Connection {
+  totalCount: Int!
+  pageInfo:   PageInfo!
+  edges:      [UserEdge!]!
+  nodes:      [User!]!
+}
+
+type Project implements Node & Auditable {
+  id:          UUID!
+  name:        String!
+  description: String
+  status:      ProjectStatus!
+  rootPath:    String! @auth(roles: [ADMIN, MEMBER])
+  tags:        [String!]!
+  settings:    JSON
+  owner:       User!
+  members:     [ProjectMember!]!
+  files(path: String, recursive: Boolean = false): [FileEntry!]!
+  createdAt:   DateTime!
+  updatedAt:   DateTime!
+  createdBy:   User
+}
+
+type ProjectEdge implements Edge {
+  cursor: String!
+  node:   Project!
+}
+
+type ProjectConnection implements Connection {
+  totalCount: Int!
+  pageInfo:   PageInfo!
+  edges:      [ProjectEdge!]!
+  nodes:      [Project!]!
+}
+
+type ProjectMember {
+  user:      User!
+  role:      Role!
+  joinedAt:  DateTime!
+}
+
+type Session implements Node {
+  id:        UUID!
+  project:   Project!
+  user:      User!
+  shell:     String!
+  cwd:       String! @auth(roles: [ADMIN])
+  startedAt: DateTime!
+  endedAt:   DateTime
+  duration:  Int  # milliseconds; null if still active
+  events(kinds: [EventKind!], first: Int = 50): [SessionEvent!]!
+}
+
+type FileEntry {
+  path:       String!
+  name:       String!
+  isDir:      Boolean!
+  size:       Int
+  language:   LanguageId
+  modifiedAt: DateTime
+  children:   [FileEntry!]  # non-null for dirs only
+}
+
+type Diagnostic {
+  file:     String!
+  line:     Int!
+  column:   Int!
+  severity: DiagnosticSeverity!
+  message:  String!
+  source:   String
+  code:     String
+}
+
+enum DiagnosticSeverity { ERROR WARNING INFORMATION HINT }
+enum EventKind { COMMAND OUTPUT ERROR RESIZE }
+
+type SessionEvent {
+  kind:  EventKind!
+  ts:    DateTime!
+  data:  JSON!
+}
+
+# ── Union ─────────────────────────────────────────────────────────────────────
+
+union SearchResult = User | Project | FileEntry
+
+# ── Input types ──────────────────────────────────────────────────────────────
+
+input CreateUserInput {
+  email:       Email!
+  displayName: String!
+  role:        Role = MEMBER
+  metadata:    JSON
+}
+
+input UpdateUserInput {
+  displayName: String
+  avatarUrl:   URL
+  metadata:    JSON
+}
+
+input CreateProjectInput {
+  name:        String!
+  description: String
+  rootPath:    String!
+  tags:        [String!] = []
+  settings:    JSON
+}
+
+input ProjectOrderBy {
+  field: ProjectSortField!
+  order: SortOrder = DESC
+}
+
+enum ProjectSortField {
+  CREATED_AT
+  UPDATED_AT
+  NAME
+  STATUS
+}
+
+input SearchInput {
+  query:   String!
+  types:   [SearchResultType!] = [USER, PROJECT, FILE]
+  first:   Int = 20
+  after:   String
+}
+
+enum SearchResultType { USER PROJECT FILE }
+
+# ── Query ─────────────────────────────────────────────────────────────────────
+
+type Query {
+  "Fetch the authenticated user."
+  me: User @auth
+
+  user(id: UUID!): User @auth(roles: [ADMIN])
+  users(
+    first: Int
+    after: String
+    last: Int
+    before: String
+    status: UserStatus
+    role: Role
+    search: String
+    orderBy: UserOrderBy
+  ): UserConnection! @auth(roles: [ADMIN]) @paginate
+
+  project(id: UUID!): Project @auth
+  projects(
+    first: Int
+    after: String
+    status: ProjectStatus
+    orderBy: ProjectOrderBy
+  ): ProjectConnection! @auth @paginate
+
+  session(id: UUID!): Session @auth
+  diagnostics(projectId: UUID!, file: String): [Diagnostic!]! @auth @cacheControl(maxAge: 30)
+
+  search(input: SearchInput!): [SearchResult!]! @auth
+  node(id: UUID!): Node @auth
+
+  "Health probe — no auth required."
+  ping: String!
+}
+
+input UserOrderBy {
+  field: UserSortField!
+  order: SortOrder = ASC
+}
+enum UserSortField { CREATED_AT EMAIL DISPLAY_NAME }
+
+# ── Mutation ──────────────────────────────────────────────────────────────────
+
+type Mutation {
+  createUser(input: CreateUserInput!): User! @auth(roles: [ADMIN])
+  updateUser(id: UUID!, input: UpdateUserInput!): User! @auth
+  deleteUser(id: UUID!): Boolean! @auth(roles: [ADMIN])
+
+  createProject(input: CreateProjectInput!): Project! @auth
+  updateProject(id: UUID!, input: UpdateProjectInput!): Project! @auth
+  archiveProject(id: UUID!): Project! @auth
+
+  addProjectMember(projectId: UUID!, userId: UUID!, role: Role!): ProjectMember! @auth
+  removeProjectMember(projectId: UUID!, userId: UUID!): Boolean! @auth
+
+  uploadFile(projectId: UUID!, file: Upload!): FileEntry! @auth
+
+  startSession(projectId: UUID!, shell: String, cwd: String): Session! @auth
+  endSession(id: UUID!): Session! @auth
+}
+
+input UpdateProjectInput {
+  name:        String
+  description: String
+  status:      ProjectStatus
+  tags:        [String!]
+  settings:    JSON
+}
+
+# ── Subscription ──────────────────────────────────────────────────────────────
+
+type Subscription {
+  sessionOutput(sessionId: UUID!): SessionEvent! @auth
+  diagnosticsUpdated(projectId: UUID!): [Diagnostic!]! @auth
+  projectActivity(projectId: UUID!): ProjectActivityEvent! @auth
+}
+
+type ProjectActivityEvent {
+  type:    ProjectActivityType!
+  actor:   User!
+  payload: JSON!
+  ts:      DateTime!
+}
+
+enum ProjectActivityType {
+  FILE_CREATED
+  FILE_MODIFIED
+  FILE_DELETED
+  MEMBER_JOINED
+  MEMBER_LEFT
+  SESSION_STARTED
+  SESSION_ENDED
+  BUILD_STARTED
+  BUILD_FINISHED
+}
+
+# ── Fragment definitions (client-side query examples) ─────────────────────────
+
+fragment UserBasic on User {
+  id
+  email
+  displayName
+  avatarUrl
+  role
+  status
+}
+
+fragment PageInfoFull on PageInfo {
+  hasNextPage
+  hasPreviousPage
+  startCursor
+  endCursor
+}
+
+fragment ProjectCard on Project {
+  id
+  name
+  description
+  status
+  tags
+  createdAt
+  owner {
+    ...UserBasic
+  }
+}
