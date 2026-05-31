@@ -22,7 +22,9 @@ import {
   Wrench01Icon,
 } from "@hugeicons/core-free-icons";
 import {
+  BookmarkAdd01Icon,
   CodeSquareIcon,
+  FlashIcon,
   Globe02Icon,
   MagicWand01Icon,
   Queue01Icon,
@@ -73,6 +75,8 @@ export function SidebarRail({
     { id: "symbol-search", label: "Symbol Search", icon: SearchCodeIcon },
     { id: "refactor", label: "AI Refactor", icon: MagicWand01Icon },
     { id: "share", label: "Share", icon: Globe02Icon },
+    { id: "prompt-templates", label: "Prompt Templates", icon: FlashIcon },
+    { id: "bookmarks", label: "Bookmarks", icon: BookmarkAdd01Icon },
     { id: "ssh", label: "SSH", icon: TerminalIcon },
     { id: "release", label: "Release", icon: RocketIcon },
   ];

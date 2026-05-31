@@ -33,6 +33,7 @@ export type ShortcutId =
   | "ai.askSelection"
   | "repl.sendSelection"
   | "refactor.captureSelection"
+  | "bookmark.toggle"
   | "shortcuts.open"
   | "settings.open"
   | "sidebar.toggle"
@@ -221,6 +222,12 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Refactor selection with AI",
     group: "AI",
     defaultBindings: [{ alt: true, shift: true, key: "x" }],
+  },
+  {
+    id: "bookmark.toggle",
+    label: "Toggle bookmark at current position",
+    group: "Editor",
+    defaultBindings: [{ alt: true, key: "d" }],
   },
   {
     id: "sidebar.toggle",

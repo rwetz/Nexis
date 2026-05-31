@@ -166,14 +166,17 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Semantic / AST-aware search — structural symbol search panel with pattern prefixes (fn: class: hook: import: type: const:) that translate to language-aware regexes fed to the existing grep backend (1.8.0)
 - [x] Remote Prompt viewing — local HTTP server (stdlib-only TCP) serves the current AI conversation as a self-contained HTML page accessible from any device on the same LAN; same server also handles terminal snapshots (1.8.0)
 - [x] AI refactoring engine — sidebar panel with Extract Function, Inline Variable, Add Types, Simplify, Add Error Handling, and Add Docs operations; Alt+Shift+X captures the active editor selection; prompts the AI with structured refactoring instructions (1.8.0)
+- [x] Multi-window — open Nexis in multiple independent windows via Ctrl+Shift+N; each window has its own workspace, tabs, and layout; windows share the OS keychain and theme (1.8.0)
+- [x] Live terminal streaming — extend LAN share server with Server-Sent Events; browser page auto-updates every 2 s with current terminal output; `/stream` SSE endpoint for real-time viewing on any device on the same network (1.9.0)
+- [x] Prompt templates — reusable named AI prompts stored in localStorage; one-click to send any template to the AI panel; create, edit, and delete from the sidebar; four built-in starter templates (1.9.0)
+- [x] File bookmarks — bookmark any file or line with Alt+D; persistent sidebar panel grouped by file; inline label editing; keyboard-navigable; backed by localStorage (1.9.0)
 
 ---
 
 ## Up next
 
-- [ ] **Multi-window** — open Nexis in multiple independent windows, each with their own workspace, tabs, and layout; windows share the OS keychain and theme
-- [ ] **Refactoring engine** — rename symbols, extract functions, and inline variables across a project, powered by LSP workspace edits plus an optional AI verification pass; now realistic since LSP landed in 1.1.0
-
+- [ ] **Multiplayer terminal view (full)** — polling-based live terminal view ships; a WebSocket upgrade path would add true push without the 2 s polling delay
+- [ ] **Refactoring engine (LSP)** — rename symbols, extract functions, and inline variables across a project, powered by LSP workspace edits; AI verification pass already ships via the refactor panel
 
 ---
 
@@ -181,7 +184,6 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 
 - [ ] **Remote workspace** — browse, edit, and run code on remote machines entirely over SSH; the file explorer and editor work against the remote filesystem via SFTP while the terminal is already there; the goal is a seamless local feel with zero local clones required
 - [ ] **Persistent terminal sessions** — PTY sessions survive Nexis restarts; reconnect to a running shell without losing scrollback or process state; native implementation inspired by tmux session persistence but without the terminal multiplexer overhead
-- [ ] **Multiplayer terminal view** — generate a local LAN URL that lets a collaborator view your terminal session read-only in their browser; no cloud relay, no accounts, session ends when you close the tab
 - [ ] **Custom AI tool authoring** — write and test new agent tools in TypeScript using the Plugin API; a first-party SDK with type definitions, a local test harness, and one-command installation into a workspace
 - [ ] **Selective TS → Rust migration** — profile hot paths (terminal input dispatch, diff rendering, file-tree diffing), identify where a Rust implementation gives a measurable win, migrate incrementally without growing bundle size
 

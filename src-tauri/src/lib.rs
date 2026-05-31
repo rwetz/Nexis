@@ -144,6 +144,7 @@ pub fn run() {
             http_share::http_share_start,
             http_share::http_share_update,
             http_share::http_share_stop,
+            http_share::http_share_push_stream,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

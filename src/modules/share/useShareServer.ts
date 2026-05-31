@@ -1,7 +1,8 @@
 /**
  * useShareServer — thin wrapper around the http_share Tauri commands.
  *
- * Manages the lifecycle of the LAN HTTP share server (start / update / stop).
+ * Manages the lifecycle of the LAN HTTP share server (start / update / stop)
+ * and exposes a `pushStream` function for live SSE terminal streaming.
  */
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useRef, useState } from "react";
@@ -14,6 +15,7 @@ export type UseShareServerReturn = {
   error: string | null;
   start: (html: string) => Promise<number | null>;
   update: (html: string) => Promise<void>;
+  pushStream: (data: string) => Promise<void>;
   stop: () => Promise<void>;
 };
 
@@ -51,6 +53,14 @@ export function useShareServer(): UseShareServerReturn {
     }
   }, [status]);
 
+  const pushStream = useCallback(async (data: string) => {
+    try {
+      await invoke("http_share_push_stream", { data });
+    } catch {
+      // Ignore — server may be stopped
+    }
+  }, []);
+
   const stop = useCallback(async () => {
     try {
       await invoke("http_share_stop");
@@ -63,7 +73,7 @@ export function useShareServer(): UseShareServerReturn {
     setError(null);
   }, []);
 
-  return { status, port, error, start, update, stop };
+  return { status, port, error, start, update, pushStream, stop };
 }
 
 // ── Conversation → HTML serialization ────────────────────────────────────────
@@ -125,10 +135,43 @@ ${rows}
 
 /**
  * Produce a self-contained HTML snapshot from terminal buffer text.
+ * When `live` is true the page connects to /stream via Server-Sent Events
+ * and updates the terminal output automatically.
  */
-export function terminalToHtml(bufferText: string, title = "Terminal Snapshot"): string {
+export function terminalToHtml(
+  bufferText: string,
+  title = "Terminal Snapshot",
+  live = false,
+): string {
   const escaped = escapeHtml(bufferText);
   const ts = new Date().toLocaleString();
+
+  const liveScript = live
+    ? `<script>
+(function(){
+  var pre = document.getElementById('output');
+  var dot = document.getElementById('live-dot');
+  var es = new EventSource('/stream');
+  es.onmessage = function(e){
+    // data is JSON-escaped newlines → restore
+    pre.textContent = e.data.replace(/\\\\n/g,'\\n');
+    pre.scrollTop = pre.scrollHeight;
+  };
+  es.onerror = function(){
+    if(dot) dot.style.background='#f55';
+  };
+})();
+</script>`
+    : "";
+
+  const liveBadge = live
+    ? `<span id="live-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ade80;margin-right:6px;vertical-align:middle;animation:pulse 1.5s infinite"></span><span style="font-size:10px;color:#4ade80;vertical-align:middle">LIVE</span>`
+    : "";
+
+  const pulseKeyframes = live
+    ? `@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}`
+    : "";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -137,16 +180,21 @@ export function terminalToHtml(bufferText: string, title = "Terminal Snapshot"):
 <title>${escapeHtml(title)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"JetBrains Mono",Consolas,monospace;background:#0f0f0f;color:#e0e0e0;padding:16px}
-header{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #333}
+body{font-family:"JetBrains Mono",Consolas,monospace;background:#0f0f0f;color:#e0e0e0;padding:16px;height:100vh;display:flex;flex-direction:column}
+header{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #333;flex-shrink:0}
 h1{font-size:14px;font-weight:600;color:#aaa}
 .ts{font-size:10px;color:#555;margin-top:3px}
-pre{font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+#output{font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word;flex:1;overflow-y:auto}
+${pulseKeyframes}
 </style>
 </head>
 <body>
-<header><h1>${escapeHtml(title)}</h1><p class="ts">Shared from Nexis · ${escapeHtml(ts)}</p></header>
-<pre>${escaped}</pre>
+<header>
+  <h1>${escapeHtml(title)} ${liveBadge}</h1>
+  <p class="ts">Shared from Nexis · ${escapeHtml(ts)}</p>
+</header>
+<pre id="output">${escaped}</pre>
+${liveScript}
 </body>
 </html>`;
 }

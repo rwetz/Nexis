@@ -3,10 +3,14 @@
  *
  * Starts a local HTTP server (Rust) and shows the URL for opening on other
  * devices (phone, tablet, second monitor) on the same network.
+ *
+ * Terminal snapshot can be made "live" — the browser page connects via
+ * Server-Sent Events and auto-updates as the terminal changes.
  */
 import { cn } from "@/lib/utils";
 import { useChatStore, getChat } from "@/modules/ai/store/chatStore";
 import {
+  Activity01Icon,
   Cancel01Icon,
   Copy01Icon,
   Globe02Icon,
@@ -32,14 +36,13 @@ type Props = {
 };
 
 function getLocalIpHint(): string {
-  // We can't directly get the LAN IP in Tauri without native code.
-  // Show a helpful hint instead.
   return "192.168.x.x";
 }
 
 export function SharePanel({ getTerminalBuffer }: Props) {
   const [target, setTarget] = useState<ShareTarget>("conversation");
   const [copied, setCopied] = useState(false);
+  const [liveMode, setLiveMode] = useState(false);
   const server = useShareServer();
   const sessionId = useChatStore((s) => s.activeSessionId);
 
@@ -63,14 +66,19 @@ export function SharePanel({ getTerminalBuffer }: Props) {
     return conversationToHtml(messages, "Nexis AI Conversation");
   }, [sessionId]);
 
-  const buildTerminalHtml = useCallback((): string => {
-    const buf = getTerminalBuffer?.() ?? "(no terminal buffer available)";
-    return terminalToHtml(buf, "Nexis Terminal Snapshot");
-  }, [getTerminalBuffer]);
+  const buildTerminalHtml = useCallback(
+    (live = false): string => {
+      const buf = getTerminalBuffer?.() ?? "(no terminal buffer available)";
+      return terminalToHtml(buf, "Nexis Terminal", live);
+    },
+    [getTerminalBuffer],
+  );
 
   const buildHtml = useCallback((): string => {
-    return target === "conversation" ? buildConversationHtml() : buildTerminalHtml();
-  }, [target, buildConversationHtml, buildTerminalHtml]);
+    return target === "conversation"
+      ? buildConversationHtml()
+      : buildTerminalHtml(liveMode);
+  }, [target, liveMode, buildConversationHtml, buildTerminalHtml]);
 
   const handleStart = useCallback(async () => {
     await server.start(buildHtml());
@@ -88,14 +96,37 @@ export function SharePanel({ getTerminalBuffer }: Props) {
     setTimeout(() => setCopied(false), 2000);
   }, [server.port]);
 
+  // Live streaming — push terminal buffer to SSE clients every 2 s
+  const liveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (liveIntervalRef.current) {
+      clearInterval(liveIntervalRef.current);
+      liveIntervalRef.current = null;
+    }
+    if (liveMode && server.status === "running" && target === "terminal") {
+      liveIntervalRef.current = setInterval(() => {
+        const buf = getTerminalBuffer?.() ?? "";
+        void server.pushStream(buf);
+      }, 2000);
+    }
+    return () => {
+      if (liveIntervalRef.current) {
+        clearInterval(liveIntervalRef.current);
+        liveIntervalRef.current = null;
+      }
+    };
+  }, [liveMode, server, target, getTerminalBuffer]);
+
+  // Disable live mode when switching away from terminal target
+  useEffect(() => {
+    if (target !== "terminal") setLiveMode(false);
+  }, [target]);
+
   // Auto-stop when unmounted
   const stopRef = useRef(server.stop);
-  useEffect(() => {
-    stopRef.current = server.stop;
-  }, [server.stop]);
-  useEffect(() => {
-    return () => { void stopRef.current(); };
-  }, []);
+  useEffect(() => { stopRef.current = server.stop; }, [server.stop]);
+  useEffect(() => { return () => { void stopRef.current(); }; }, []);
 
   const isRunning = server.status === "running";
 
@@ -103,19 +134,14 @@ export function SharePanel({ getTerminalBuffer }: Props) {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
-        <HugeiconsIcon
-          icon={Globe02Icon}
-          size={13}
-          strokeWidth={1.75}
-          className="text-muted-foreground"
-        />
+        <HugeiconsIcon icon={Globe02Icon} size={13} strokeWidth={1.75} className="text-muted-foreground" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Share
         </span>
         {isRunning && (
           <span className="ml-auto flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[9px] font-bold text-green-500">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
-            Live
+            {liveMode && target === "terminal" ? "Live" : "Running"}
           </span>
         )}
       </div>
@@ -144,11 +170,33 @@ export function SharePanel({ getTerminalBuffer }: Props) {
                   size={11}
                   strokeWidth={1.75}
                 />
-                {t === "conversation" ? "AI Conversation" : "Terminal Snapshot"}
+                {t === "conversation" ? "AI Conversation" : "Terminal"}
               </button>
             ))}
           </div>
         </div>
+
+        {/* Live mode toggle (terminal only) */}
+        {target === "terminal" && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setLiveMode((v) => !v)}
+              className={cn(
+                "flex items-center gap-1.5 rounded px-2 py-1 text-[10.5px] font-medium transition-colors",
+                liveMode
+                  ? "bg-green-500/15 text-green-500"
+                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+              )}
+            >
+              <HugeiconsIcon icon={Activity01Icon} size={11} strokeWidth={1.75} />
+              Live streaming
+            </button>
+            <span className="text-[9.5px] text-muted-foreground/50">
+              Browser auto-updates every 2 s
+            </span>
+          </div>
+        )}
 
         {/* Server controls */}
         {!isRunning ? (
@@ -192,21 +240,25 @@ export function SharePanel({ getTerminalBuffer }: Props) {
               </div>
               <p className="mt-1.5 text-[9.5px] text-muted-foreground/60">
                 Replace <em>{getLocalIpHint()}</em> with this machine's LAN IP.
-                Port <strong>{server.port}</strong> is automatically chosen.
+                {liveMode && target === "terminal" && (
+                  <> Connect to <strong>/stream</strong> for SSE live feed.</>
+                )}
               </p>
             </div>
 
             {/* Actions */}
             <div className="flex gap-1.5">
-              <button
-                type="button"
-                onClick={() => void handleUpdate()}
-                title="Push current content to the server"
-                className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border/50 py-1 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
-              >
-                <HugeiconsIcon icon={Refresh01Icon} size={10} strokeWidth={2} />
-                Refresh content
-              </button>
+              {target === "conversation" && (
+                <button
+                  type="button"
+                  onClick={() => void handleUpdate()}
+                  title="Push current content to the server"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border/50 py-1 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                >
+                  <HugeiconsIcon icon={Refresh01Icon} size={10} strokeWidth={2} />
+                  Refresh content
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => void server.stop()}
@@ -229,9 +281,13 @@ export function SharePanel({ getTerminalBuffer }: Props) {
         {!isRunning && (
           <div className="rounded-md border border-border/30 bg-muted/10 p-2.5">
             <p className="text-[10px] leading-relaxed text-muted-foreground/70">
-              Starts a local HTTP server on your machine. Anyone on the same
-              Wi-Fi network can open the URL in a browser to view a read-only
-              snapshot of your {target === "conversation" ? "AI conversation" : "terminal"}.
+              Starts a local HTTP server. Anyone on the same Wi-Fi can open
+              the URL to view your{" "}
+              {target === "conversation" ? "AI conversation" : "terminal"}{" "}
+              read-only.{" "}
+              {target === "terminal" && (
+                <>Enable <strong>Live streaming</strong> so the browser updates automatically.</>
+              )}
             </p>
           </div>
         )}

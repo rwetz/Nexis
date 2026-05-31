@@ -83,6 +83,8 @@ import { AgentQueuePanel } from "@/modules/agent-queue";
 import { SharePanel } from "@/modules/share";
 import { SymbolSearchPanel } from "@/modules/symbol-search";
 import { RefactorPanel, setRefactorCode } from "@/modules/refactor";
+import { PromptTemplatesPanel } from "@/modules/prompt-templates";
+import { BookmarksPanel, toggleBookmark } from "@/modules/bookmarks";
 import { SshPanel } from "@/modules/ssh";
 import { PortsPanel } from "@/modules/ports";
 import { ProfilesPanel } from "@/modules/profiles";
@@ -1063,6 +1065,13 @@ export default function App() {
           setRefactorCode(sel);
         }
       },
+      "bookmark.toggle": () => {
+        const tab = tabs.find((t) => t.id === activeId);
+        if (!tab || tab.kind !== "editor") return;
+        const handle = editorRefs.current.get(activeId);
+        const line = handle?.getCursorLine?.() ?? 0;
+        toggleBookmark(tab.path, line);
+      },
       "files.quickOpen": () => setQuickFilePickerOpen((v) => !v),
       "search.workspace": () => setWorkspaceSearchOpen((v) => !v),
       "commands.palette": () => setCommandPaletteOpen((v) => !v),
@@ -1511,6 +1520,17 @@ export default function App() {
                           );
                           if (!t || t.kind !== "terminal") return null;
                           return terminalRefs.current.get(t.activeLeafId)?.getBuffer(500) ?? null;
+                        }}
+                      />
+                    ) : sidebarView === "prompt-templates" ? (
+                      <PromptTemplatesPanel />
+                    ) : sidebarView === "bookmarks" ? (
+                      <BookmarksPanel
+                        onNavigate={(path, line) => {
+                          openFileTab(path, true);
+                          // Editor will scroll to line via the editor's own scroll-to mechanism
+                          // when the file opens; line is advisory for now
+                          void line;
                         }}
                       />
                     ) : sidebarView === "ssh" ? (

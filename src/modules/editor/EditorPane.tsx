@@ -65,6 +65,8 @@ export type EditorPaneHandle = {
   focus: () => void;
   getSelection: () => string | null;
   getPath: () => string;
+  /** Return the 1-based line number of the primary cursor, or 0 if no view. */
+  getCursorLine: () => number;
   /** Re-read the file from disk. Skips silently if the buffer is dirty. */
   reload: () => boolean;
   /** Force re-read from disk even if dirty. Used after formatting. */
@@ -443,6 +445,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           return view.state.sliceDoc(from, to);
         },
         getPath: () => path,
+        getCursorLine: () => {
+          const view = cmRef.current?.view;
+          if (!view) return 0;
+          const pos = view.state.selection.main.head;
+          return view.state.doc.lineAt(pos).number;
+        },
         reload: () => reloadRef.current(),
         reloadForce: () => reloadForceRef.current(),
         save: () => saveRef.current(),
