@@ -200,6 +200,13 @@ const leftItems = statusBarItems.filter((i) => i.side === "left");
 
 ---
 
+## Pre-push checklist
+Before any `git push`, always run:
+- `pnpm test` — all Vitest tests must pass
+- `cargo test` in `src-tauri/` — all Rust tests must pass
+
+---
+
 ## Build / dev notes
 - `cargo check` is fast but does not produce a binary. Run `pnpm tauri dev` to see Rust changes take effect.
 - The PS profile at `~/.cache/nexis/shell-integration/powershell/profile.ps1` is written on first terminal open and only updated when the embedded content changes. Kill the running app and delete the file to force a refresh during development.

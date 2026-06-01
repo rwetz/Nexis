@@ -1,3 +1,5 @@
+coverage
+
 # Logs
 logs
 *.log
@@ -27,5 +29,11 @@ dist-ssr
 
 # Rust / Tauri
 src-tauri/target
+
+# E2E test artifacts
+e2e/logs/
+e2e/.wdio-*
+e2e/.drivers/
+wdio-*.json
 
 # Leftover source archives

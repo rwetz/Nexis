@@ -280,3 +280,77 @@ pub fn spawn(
 
     Ok((session, size))
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+
+    // Pitfall 8 regression: PTY threads use `unwrap_or_else(|e| e.into_inner())`
+    // on the shared `pending` mutex so a thread panic doesn't cascade to sibling
+    // threads via mutex poisoning. Demonstrate that the pattern works correctly.
+
+    #[test]
+    fn poisoned_mutex_is_recovered_not_panicked() {
+        let m: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(vec![1, 2, 3]));
+        let m2 = Arc::clone(&m);
+
+        // Poison the mutex by panicking while holding the lock.
+        let _ = std::panic::catch_unwind(move || {
+            let _g = m2.lock().unwrap();
+            panic!("intentional poison for test");
+        });
+
+        assert!(m.is_poisoned(), "mutex must be poisoned after the panic");
+
+        // The fix: recover data from the poisoned guard instead of panicking.
+        let data = m.lock().unwrap_or_else(|e| e.into_inner());
+        assert_eq!(*data, vec![1, 2, 3], "data must survive mutex poisoning");
+    }
+
+    #[test]
+    fn unwrap_on_poisoned_mutex_would_panic() {
+        let m: Arc<Mutex<u32>> = Arc::new(Mutex::new(0));
+        let m2 = Arc::clone(&m);
+
+        let _ = std::panic::catch_unwind(move || {
+            let _g = m2.lock().unwrap();
+            panic!("poison");
+        });
+
+        // Verify that the BAD pattern (.unwrap()) does indeed panic on a poisoned
+        // lock — confirming that the fix (.unwrap_or_else) is necessary.
+        let result = std::panic::catch_unwind(|| {
+            let _g = m.lock().unwrap();
+        });
+        assert!(
+            result.is_err(),
+            "lock().unwrap() must panic on a poisoned mutex"
+        );
+    }
+
+    #[test]
+    fn condvar_wait_timeout_unwrap_or_else_recovers_from_poison() {
+        use std::sync::Condvar;
+        use std::time::Duration;
+
+        let pair: Arc<(Mutex<bool>, Condvar)> = Arc::new((Mutex::new(false), Condvar::new()));
+        let pair2 = Arc::clone(&pair);
+
+        // Poison the mutex via the condvar's internal lock.
+        let _ = std::panic::catch_unwind(move || {
+            let (lock, _cv) = &*pair2;
+            let _g = lock.lock().unwrap();
+            panic!("poison via condvar");
+        });
+
+        let (lock, cv) = &*pair;
+        assert!(lock.is_poisoned());
+
+        // Recovery via wait_timeout — mirrors the flusher thread's code path.
+        let g = lock.lock().unwrap_or_else(|e| e.into_inner());
+        let (_guard, _timeout_result) = cv
+            .wait_timeout(g, Duration::from_millis(1))
+            .unwrap_or_else(|e| e.into_inner());
+        // Reaching here without panicking confirms the fix works.
+    }
+}

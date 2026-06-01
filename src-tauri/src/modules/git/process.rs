@@ -411,11 +411,12 @@ mod tests {
     #[cfg(windows)]
     use super::build_git_command;
     use super::{
-        parse_git_version, prune_expired_availability_entries, version_meets_minimum, Availability,
-        AvailabilityCache, AVAILABILITY_TTL,
+        decode_text, parse_git_version, prune_expired_availability_entries, version_meets_minimum,
+        Availability, AvailabilityCache, AVAILABILITY_TTL,
     };
     #[cfg(windows)]
     use crate::modules::workspace::WorkspaceEnv;
+    use crate::modules::git::types::TextSource;
     use std::collections::HashMap;
     #[cfg(windows)]
     use std::ffi::OsString;
@@ -518,5 +519,59 @@ mod tests {
         )
         .unwrap_err();
         assert!(err.to_string().contains("unsafe WSL distro name"));
+    }
+
+    // Pitfall 13 regression: the old code used `from_utf8(...).unwrap_or("")`
+    // which silently discarded all output when bytes were not valid UTF-8 (e.g.
+    // Latin-1 encoded commit messages). The fix switches to `from_utf8_lossy`,
+    // which replaces invalid bytes with U+FFFD instead of returning empty.
+
+    #[test]
+    fn decode_text_with_latin1_bytes_returns_text_with_replacement_chars() {
+        // 0xE9 is 'é' in Latin-1 but is not a valid UTF-8 sequence on its own.
+        let bytes = vec![b'h', b'i', b' ', 0xE9, b'!'];
+        match decode_text(bytes) {
+            TextSource::Text(s) => {
+                assert!(!s.is_empty(), "output must not be empty for non-UTF-8 input");
+                assert!(s.starts_with("hi "), "valid ASCII prefix must be preserved");
+                // The invalid byte becomes U+FFFD rather than causing data loss.
+                assert!(s.contains('\u{FFFD}'), "replacement char expected for 0xE9");
+            }
+            other => panic!("expected TextSource::Text, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn decode_text_with_valid_utf8_returns_text_unchanged() {
+        let bytes = "hello, world".as_bytes().to_vec();
+        match decode_text(bytes) {
+            TextSource::Text(s) => assert_eq!(s, "hello, world"),
+            other => panic!("expected TextSource::Text, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn decode_text_with_null_byte_returns_binary() {
+        let bytes = vec![b'h', b'i', 0x00, b'!'];
+        assert!(
+            matches!(decode_text(bytes), TextSource::Binary),
+            "bytes containing NUL must be treated as binary"
+        );
+    }
+
+    #[test]
+    fn from_utf8_lossy_does_not_discard_non_utf8_output() {
+        // Documents the invariant behind pitfall 13: from_utf8_lossy must be
+        // used (not from_utf8(...).unwrap_or("")) wherever git stdout is decoded.
+        let latin1: Vec<u8> = vec![b'r', b'e', b'f', b':', b' ', 0xE9, 0xE0];
+        let decoded = String::from_utf8_lossy(&latin1);
+        assert!(
+            !decoded.is_empty(),
+            "from_utf8_lossy must never discard non-UTF-8 bytes"
+        );
+        assert!(
+            decoded.starts_with("ref: "),
+            "valid prefix must survive lossy decode"
+        );
     }
 }

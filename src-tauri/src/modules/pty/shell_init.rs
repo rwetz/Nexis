@@ -281,6 +281,64 @@ mod unix {
             format!("rename {} -> {}: {e}", tmp.display(), path.display())
         })
     }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        fn tmpfile(label: &str) -> PathBuf {
+            let mut p = std::env::temp_dir();
+            let nanos = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0);
+            p.push(format!("nexis-unix-wic-{label}-{nanos}.txt"));
+            p
+        }
+
+        #[test]
+        fn write_if_changed_creates_file_when_absent() {
+            let p = tmpfile("new");
+            write_if_changed(&p, "hello").expect("create");
+            assert_eq!(fs::read_to_string(&p).unwrap(), "hello");
+            let _ = fs::remove_file(&p);
+        }
+
+        #[test]
+        fn write_if_changed_updates_when_content_differs() {
+            let p = tmpfile("upd");
+            fs::write(&p, "old").unwrap();
+            write_if_changed(&p, "new").expect("update");
+            assert_eq!(fs::read_to_string(&p).unwrap(), "new");
+            let _ = fs::remove_file(&p);
+        }
+
+        // Pitfall 6 regression — same invariant as the Windows submodule.
+        #[test]
+        fn write_if_changed_is_idempotent_on_same_content_pitfall_6() {
+            let p = tmpfile("idm");
+            fs::write(&p, "same content").unwrap();
+            let mtime_before = fs::metadata(&p).unwrap().modified().unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(20));
+            write_if_changed(&p, "same content").expect("idempotent");
+            let mtime_after = fs::metadata(&p).unwrap().modified().unwrap();
+            assert_eq!(
+                mtime_before, mtime_after,
+                "file must not be re-written when content has not changed"
+            );
+            let _ = fs::remove_file(&p);
+        }
+
+        #[test]
+        fn write_if_changed_leaves_no_temp_file_after_success() {
+            let p = tmpfile("tmp");
+            write_if_changed(&p, "content").expect("write");
+            let mut tmp_os = p.clone().into_os_string();
+            tmp_os.push(".__nexis_tmp__");
+            assert!(!PathBuf::from(tmp_os).exists());
+            let _ = fs::remove_file(&p);
+        }
+    }
 }
 
 #[cfg(windows)]
@@ -745,6 +803,107 @@ mod windows {
                     "/usr/bin/nu".to_string(),
                 ]
             );
+        }
+
+        // ── normalize_script ──────────────────────────────────────────────
+
+        #[test]
+        fn normalize_script_replaces_crlf_with_lf() {
+            assert_eq!(normalize_script("line1\r\nline2\r\n"), "line1\nline2\n");
+        }
+
+        #[test]
+        fn normalize_script_leaves_lf_unchanged() {
+            assert_eq!(normalize_script("line1\nline2\n"), "line1\nline2\n");
+        }
+
+        #[test]
+        fn normalize_script_handles_mixed_line_endings() {
+            assert_eq!(normalize_script("a\r\nb\nc\r\n"), "a\nb\nc\n");
+        }
+
+        // ── ShellKind ─────────────────────────────────────────────────────
+
+        #[test]
+        fn shell_kind_from_path_detects_zsh() {
+            assert_eq!(ShellKind::from_path("/usr/bin/zsh"), ShellKind::Zsh);
+        }
+
+        #[test]
+        fn shell_kind_from_path_detects_bash() {
+            assert_eq!(ShellKind::from_path("/bin/bash"), ShellKind::Bash);
+        }
+
+        #[test]
+        fn shell_kind_from_path_detects_fish() {
+            assert_eq!(ShellKind::from_path("/usr/bin/fish"), ShellKind::Fish);
+        }
+
+        #[test]
+        fn shell_kind_from_path_returns_other_for_unknown_shell() {
+            assert_eq!(ShellKind::from_path("/usr/bin/nu"), ShellKind::Other);
+        }
+
+        #[test]
+        fn shell_kind_from_path_returns_other_for_empty() {
+            assert_eq!(ShellKind::from_path(""), ShellKind::Other);
+        }
+
+        // ── write_if_changed ──────────────────────────────────────────────
+
+        fn tmpfile(label: &str) -> std::path::PathBuf {
+            let mut p = std::env::temp_dir();
+            let nanos = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0);
+            p.push(format!("nexis-wic-{label}-{nanos}.txt"));
+            p
+        }
+
+        #[test]
+        fn write_if_changed_creates_file_when_absent() {
+            let p = tmpfile("new");
+            write_if_changed(&p, "hello").expect("create");
+            assert_eq!(std::fs::read_to_string(&p).unwrap(), "hello");
+            let _ = std::fs::remove_file(&p);
+        }
+
+        #[test]
+        fn write_if_changed_updates_when_content_differs() {
+            let p = tmpfile("upd");
+            std::fs::write(&p, "old").unwrap();
+            write_if_changed(&p, "new").expect("update");
+            assert_eq!(std::fs::read_to_string(&p).unwrap(), "new");
+            let _ = std::fs::remove_file(&p);
+        }
+
+        // Pitfall 6 regression: write_if_changed must skip the write when
+        // content is unchanged, so a parallel shell can't source a half-written
+        // profile. We verify by checking mtime is untouched.
+        #[test]
+        fn write_if_changed_is_idempotent_on_same_content_pitfall_6() {
+            let p = tmpfile("idm");
+            std::fs::write(&p, "same content").unwrap();
+            let mtime_before = std::fs::metadata(&p).unwrap().modified().unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(20));
+            write_if_changed(&p, "same content").expect("idempotent");
+            let mtime_after = std::fs::metadata(&p).unwrap().modified().unwrap();
+            assert_eq!(
+                mtime_before, mtime_after,
+                "file must not be re-written when content has not changed"
+            );
+            let _ = std::fs::remove_file(&p);
+        }
+
+        #[test]
+        fn write_if_changed_leaves_no_temp_file_after_success() {
+            let p = tmpfile("tmp");
+            write_if_changed(&p, "content").expect("write");
+            let mut tmp_os = p.clone().into_os_string();
+            tmp_os.push(".__nexis_tmp__");
+            assert!(!std::path::PathBuf::from(tmp_os).exists());
+            let _ = std::fs::remove_file(&p);
         }
     }
 }

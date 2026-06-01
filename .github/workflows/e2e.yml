@@ -1,0 +1,60 @@
+name: E2E
+
+# E2E tests require a full Tauri release build (~20 min on a cold runner) plus
+# a running WebDriver server, so they are NOT wired to every push.  Trigger
+# manually from the Actions tab when you need a full integration check, or add
+# a `push: branches: [main]` trigger once the suite is stable.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: E2E tests (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Node / pnpm ──────────────────────────────────────────────────────────
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "11"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Rust ─────────────────────────────────────────────────────────────────
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      # Share the same cache key as test-rust so incremental builds are fast
+      # when both workflows run in the same repo.
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+
+      # ── Build ─────────────────────────────────────────────────────────────────
+      - name: Build Nexis (release)
+        run: pnpm tauri build
+
+      # ── tauri-driver ─────────────────────────────────────────────────────────
+      # tauri-driver wraps msedgedriver (pre-installed on windows-latest) and
+      # acts as the WebDriver server that the WDIO test suite connects to.
+      - name: Install tauri-driver
+        run: cargo install tauri-driver
+
+      # ── E2E ──────────────────────────────────────────────────────────────────
+      - name: Run E2E tests
+        run: pnpm test:e2e

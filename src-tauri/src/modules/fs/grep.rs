@@ -258,3 +258,48 @@ fn display_path(
     }
     to_canon(path)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_globset_with_empty_slice_returns_none() {
+        let result = build_globset(&[]).expect("ok");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn build_globset_with_valid_pattern_returns_some() {
+        let result = build_globset(&["**/*.rs".to_string()]).expect("ok");
+        assert!(result.is_some());
+        let set = result.unwrap();
+        assert!(set.is_match("src/lib.rs"));
+        assert!(!set.is_match("src/lib.ts"));
+    }
+
+    #[test]
+    fn build_globset_matches_multiple_patterns() {
+        let patterns = vec!["**/*.rs".to_string(), "**/*.toml".to_string()];
+        let set = build_globset(&patterns).expect("ok").unwrap();
+        assert!(set.is_match("src/main.rs"));
+        assert!(set.is_match("Cargo.toml"));
+        assert!(!set.is_match("src/app.ts"));
+    }
+
+    #[test]
+    fn build_globset_rejects_invalid_glob_pattern() {
+        // Unmatched `[` is invalid in globset.
+        let result = build_globset(&["**[invalid".to_string()]);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.contains("bad glob"), "got: {err}");
+    }
+
+    #[test]
+    fn build_globset_extension_pattern_matches_correctly() {
+        let set = build_globset(&["*.test.ts".to_string()]).expect("ok").unwrap();
+        assert!(set.is_match("component.test.ts"));
+        assert!(!set.is_match("component.ts"));
+    }
+}

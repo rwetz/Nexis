@@ -158,6 +158,7 @@ pub struct GitWorktreeEntry {
     pub is_prunable: bool,
 }
 
+#[derive(Debug)]
 pub(crate) enum TextSource {
     Missing,
     Binary,
