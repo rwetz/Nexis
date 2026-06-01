@@ -5,7 +5,7 @@
   <p><strong>Open-source lightweight cross-platform AI-native terminal (ADE)</strong></p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-1.3.0-blue" alt="version" />
+    <img src="https://img.shields.io/badge/version-1.13.0-blue" alt="version" />
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license" />
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="platform" />
   </p>
@@ -38,7 +38,8 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 ### Terminal
 - xterm.js with WebGL rendering, unlimited tabs, split panes
 - Native PTY — works with zsh, bash, pwsh, fish, cmd
-- Shell integration: cwd tracking (OSC 7) and prompt markers (OSC 133)
+- Shell integration: cwd tracking (OSC 7), prompt markers (OSC 133), and **OSC 0/2 tab titles** — shells and programs (vim, ssh, htop) update the tab label automatically
+- **Configurable cursor** — choose bar / block / underline and toggle blinking from Settings → General
 - Inline search, clickable links, true-color (24-bit)
 - Shell history search (`Ctrl+R`) — fuzzy overlay over `~/.zsh_history`, `~/.bash_history`, fish, or PSReadLine; inserts without auto-executing
 - Private terminals — AI cannot read scrollback; shown with incognito indicator
@@ -46,6 +47,7 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 - Tab and pane layout persists across restarts
 - Configurable font family, font size, letter spacing, scrollback buffer
 - Inline AI command suggestions — history-aware, never auto-execute
+- **Terminal recording** — capture a session to a file for playback or sharing
 - Drag files into the terminal as quoted paths or AI context attachments
 
 ### Editor
@@ -89,11 +91,16 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 - **AI PR description generation** — draft pull request titles and bodies from the branch diff
 - Syntax-highlighted unified diff view
 - **Git stash manager** — list, create, apply, pop, and drop stashes directly from the source control panel
+- **Conflict resolver** — side-by-side merge editor for resolving merge conflicts without leaving the app
+- **Git worktrees** — create, switch, and remove worktrees from the sidebar
+- **Workspace notes** — per-workspace scratch pad that persists alongside your project
 
 ### AI
 - **12+ providers** — OpenAI, Anthropic, Google, Groq, xAI, Cerebras, DeepSeek, Mistral, OpenRouter, OpenAI-compatible endpoints, **Hugging Face Inference API**
 - **Fully offline** — LM Studio, MLX, and Ollama; no API key required
 - Multi-agent and sub-agents with tool approval flows
+- **Agent queue** — queue follow-up tasks while an agent is running; they execute in order
+- **Semantic search** — embed and search codebase symbols and docs for AI context retrieval
 - Voice input — Whisper transcription via OpenAI
 - Slash commands and skills
 - Project memory via `NEXIS.md` in your project root
@@ -103,6 +110,8 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 - **AI context inspector** — transparency panel showing exactly what context goes to the model
 - **AI inline explain** — select any terminal output or code and click "Explain"; the AI answers in the mini window without disrupting your flow
 - **Terminal → AI** — select terminal output, click "Ask Nexis" or "Explain" to send it to the AI chat
+- **AI explain commit** — click any commit in git history and get a plain-English breakdown of what changed and why
+- **Prompt templates** — save and reuse common AI prompts with `{VAR}` placeholder substitution
 - Dockable AI panel — resize, float, and snap-to-dock
 
 ### Sidebar Panels
@@ -111,7 +120,8 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 | **Files** | File explorer with icons, search, and rename |
 | **Recent Files** | MRU list of opened and AI-edited files with fuzzy search, relative timestamps, and per-entry removal |
 | **Source Control** | Git stage / commit / diff |
-| **Processes** | Background jobs and dev servers |
+| **Processes** | Background jobs and dev servers with live log streaming |
+| **Ports** | Detect listening ports, open in web preview with one click, or forward over SSH |
 | **Outline** | Symbol tree for the active file |
 | **Snippets** | Create and manage code snippets |
 | **Tests** | Run Vitest / cargo test / pytest / JUnit with pass/fail tree |
@@ -136,6 +146,7 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 - Sandboxed AI tool surface
 - **Container-aware environments** — detects `.devcontainer`, `docker-compose.yml`, `Dockerfile` in the workspace; surfaces a status-bar pill
 - **Python environment awareness** — auto-detects virtualenvs, conda, and `pyproject.toml`; surface active env in the status bar with quick-switch
+- **React error boundary** — render crashes in any pane are contained locally; the rest of the UI stays live with a "Try again" reset
 
 ---
 
@@ -216,13 +227,20 @@ Keys are stored in the OS keychain via Rust's `keyring` crate — they never hit
 
 **Prerequisites:**
 - Rust (stable) — https://rustup.rs
-- Node 20+ and [pnpm](https://pnpm.io)
+- Node 22+ and [pnpm](https://pnpm.io) 11+
 - Tauri platform prerequisites — https://tauri.app/start/prerequisites/
 
 ```bash
 pnpm install
 pnpm tauri dev        # dev with hot reload
 pnpm tauri build      # production build
+```
+
+**Tests:**
+```bash
+pnpm test                                   # Vitest unit tests
+cd src-tauri && cargo test                  # Rust unit tests
+pnpm test:e2e                               # WebdriverIO E2E tests (requires a release build)
 ```
 
 **Type and lint checks:**
