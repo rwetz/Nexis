@@ -10,6 +10,10 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+# Required so softprops/action-gh-release can create the release and upload assets.
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     name: Build Windows installer
