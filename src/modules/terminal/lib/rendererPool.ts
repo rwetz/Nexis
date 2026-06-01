@@ -180,8 +180,8 @@ function termOptions() {
     letterSpacing: prefs.terminalLetterSpacing,
     fontSize: Math.max(4, Math.round(prefs.terminalFontSize * prefs.zoomLevel)),
     theme: buildTerminalTheme(),
-    cursorBlink: false,
-    cursorStyle: "bar" as const,
+    cursorBlink: prefs.terminalCursorBlink,
+    cursorStyle: prefs.terminalCursorStyle,
     cursorInactiveStyle: "outline" as const,
     scrollback: prefs.terminalScrollback,
     allowProposedApi: true,
@@ -741,6 +741,22 @@ export function applyScrollback(value: number): void {
   for (const slot of slots) {
     if (slot.term.options.scrollback === value) continue;
     slot.term.options.scrollback = value;
+  }
+}
+
+export function applyCursorStyle(
+  style: "bar" | "block" | "underline",
+): void {
+  for (const slot of slots) {
+    if (slot.term.options.cursorStyle === style) continue;
+    slot.term.options.cursorStyle = style;
+  }
+}
+
+export function applyCursorBlink(blink: boolean): void {
+  for (const slot of slots) {
+    if (slot.term.options.cursorBlink === blink) continue;
+    slot.term.options.cursorBlink = blink;
   }
 }
 

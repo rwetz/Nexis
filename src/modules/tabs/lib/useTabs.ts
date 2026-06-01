@@ -620,6 +620,25 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     });
   }, []);
 
+  /**
+   * Update the tab's OSC title when the active leaf emits an OSC 0/2 title
+   * sequence. Only affects the tab whose `activeLeafId` matches `leafId`.
+   * Bails out without setTabs when the title has not changed.
+   */
+  const setLeafOscTitle = useCallback((leafId: number, title: string) => {
+    setTabs((curr) => {
+      let changed = false;
+      const next = curr.map((t) => {
+        if (t.kind !== "terminal" || t.activeLeafId !== leafId) return t;
+        if (!hasLeaf(t.paneTree, leafId)) return t;
+        if (t.oscTitle === title) return t;
+        changed = true;
+        return { ...t, oscTitle: title };
+      });
+      return changed ? next : curr;
+    });
+  }, []);
+
   const focusPane = useCallback((tabId: number, leafId: number) => {
     setTabs((curr) =>
       curr.map((t) => {
@@ -796,6 +815,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     updateTab,
     selectByIndex,
     setLeafCwd,
+    setLeafOscTitle,
     focusPane,
     focusNextPaneInTab,
     splitActivePane,

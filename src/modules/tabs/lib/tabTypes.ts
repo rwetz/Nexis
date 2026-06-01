@@ -8,6 +8,12 @@ export type TerminalTab = {
   kind: "terminal";
   title: string;
   cwd?: string;
+  /**
+   * Title last set by the active pane via OSC 0 / OSC 2 escape sequences.
+   * Shown in the tab label instead of the cwd basename when present.
+   * Cleared when the active leaf changes or the session is reset.
+   */
+  oscTitle?: string;
   paneTree: PaneNode;
   activeLeafId: number;
   /** AI agent cannot read buffer / context of this terminal. */

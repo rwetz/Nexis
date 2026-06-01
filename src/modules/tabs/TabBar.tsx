@@ -442,6 +442,8 @@ function labelFor(t: Tab): string {
   if (t.kind === "git-diff") return t.title;
   if (t.kind === "git-history") return t.title;
   if (t.kind === "git-commit-file") return t.title;
+  // t is TerminalTab from here — prefer OSC 0/2 title when set by the shell.
+  if (t.oscTitle) return t.oscTitle;
   if (!t.cwd) return t.title;
   const parts = t.cwd.split(/[\\/]/).filter(Boolean);
   return parts.length ? parts[parts.length - 1] : "/";

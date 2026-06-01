@@ -7,6 +7,7 @@ import {
   createShellIntegrationState,
   registerCwdHandler,
   registerPromptTracker,
+  registerTitleHandler,
 } from "./osc-handlers";
 import { openPty, type PtySession } from "./pty-bridge";
 import {
@@ -16,6 +17,8 @@ import {
   applyLetterSpacing,
   applyTheme as applyPoolTheme,
   applyScrollback,
+  applyCursorStyle,
+  applyCursorBlink,
   applyWebglPreference,
   configureRendererPool,
   focusSlot,
@@ -28,6 +31,7 @@ type Callbacks = {
   onSearchReady?: (addon: SearchAddon) => void;
   onExit?: (code: number) => void;
   onCwd?: (cwd: string) => void;
+  onTitle?: (title: string) => void;
 };
 
 type Session = {
@@ -229,7 +233,10 @@ function bindLeafToSlot(leafId: number, s: Session): void {
         },
         shellState,
       );
-      return [prompt.dispose, cwd];
+      const title = registerTitleHandler(term, (t) => {
+        s.callbacks.onTitle?.(t);
+      });
+      return [prompt.dispose, cwd, title];
     },
     onSearchReady: (addon) => s.callbacks.onSearchReady?.(addon),
   });
@@ -363,6 +370,7 @@ type Options = {
   onSearchReady?: (addon: SearchAddon) => void;
   onExit?: (code: number) => void;
   onCwd?: (cwd: string) => void;
+  onTitle?: (title: string) => void;
 };
 
 export function useTerminalSession({
@@ -374,9 +382,10 @@ export function useTerminalSession({
   onSearchReady,
   onExit,
   onCwd,
+  onTitle,
 }: Options) {
-  const cbRef = useRef({ onSearchReady, onExit, onCwd });
-  cbRef.current = { onSearchReady, onExit, onCwd };
+  const cbRef = useRef({ onSearchReady, onExit, onCwd, onTitle });
+  cbRef.current = { onSearchReady, onExit, onCwd, onTitle };
 
   useEffect(() => {
     let cancelled = false;
@@ -389,6 +398,7 @@ export function useTerminalSession({
         onSearchReady: (a) => cbRef.current.onSearchReady?.(a),
         onExit: (c) => cbRef.current.onExit?.(c),
         onCwd: (c) => cbRef.current.onCwd?.(c),
+        onTitle: (t) => cbRef.current.onTitle?.(t),
       });
       if (s.visibleNow && s.focusedNow) focusSlot(leafId);
     });
@@ -423,6 +433,16 @@ export function useTerminalSession({
   useEffect(() => {
     applyWebglPreference(webglPref);
   }, [webglPref]);
+
+  const cursorStyle = usePreferencesStore((p) => p.terminalCursorStyle);
+  useEffect(() => {
+    applyCursorStyle(cursorStyle);
+  }, [cursorStyle]);
+
+  const cursorBlink = usePreferencesStore((p) => p.terminalCursorBlink);
+  useEffect(() => {
+    applyCursorBlink(cursorBlink);
+  }, [cursorBlink]);
 
   useEffect(() => {
     const s = sessions.get(leafId);

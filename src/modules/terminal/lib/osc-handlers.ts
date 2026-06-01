@@ -73,6 +73,35 @@ export function registerPromptTracker(
   };
 }
 
+/**
+ * Register handlers for OSC 0 (set window title + icon name) and OSC 2
+ * (set window title only). Shells and programs like vim, htop, and ssh emit
+ * these to display a meaningful label in the terminal tab/window title bar.
+ *
+ * Unlike OSC 7 (cwd), title sequences are intentionally emitted by running
+ * commands — for example, vim sets the title to the current filename. We do
+ * NOT gate on `inCommand` here.
+ *
+ * Returns a single disposer that tears down both handlers.
+ */
+export function registerTitleHandler(
+  term: Terminal,
+  onTitle: (title: string) => void,
+): () => void {
+  const d0 = term.parser.registerOscHandler(0, (data) => {
+    onTitle(data);
+    return true;
+  });
+  const d2 = term.parser.registerOscHandler(2, (data) => {
+    onTitle(data);
+    return true;
+  });
+  return () => {
+    d0.dispose();
+    d2.dispose();
+  };
+}
+
 function parseOsc7(data: string): string | null {
   const m = data.match(/^file:\/\/[^/]*(\/.*)$/);
   if (!m) return null;

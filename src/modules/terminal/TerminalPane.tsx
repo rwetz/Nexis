@@ -29,6 +29,7 @@ type Props = {
   onSearchReady?: (leafId: number, addon: SearchAddon) => void;
   onExit?: (leafId: number, code: number) => void;
   onCwd?: (leafId: number, cwd: string) => void;
+  onTitle?: (leafId: number, title: string) => void;
 };
 
 function quotePathForShell(p: string): string {
@@ -45,6 +46,7 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
       onSearchReady,
       onExit,
       onCwd,
+      onTitle,
     },
     ref,
   ) {
@@ -65,6 +67,7 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
       onSearchReady: (a) => onSearchReady?.(leafId, a),
       onExit: (c) => onExit?.(leafId, c),
       onCwd: (c) => onCwd?.(leafId, c),
+      onTitle: (t) => onTitle?.(leafId, t),
     });
 
     useEffect(() => {

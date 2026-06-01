@@ -66,6 +66,14 @@ export type FormatterConfig = {
 
 export type ToolApprovalPolicy = "auto" | "prompt" | "deny";
 
+export type TerminalCursorStyle = "bar" | "block" | "underline";
+
+export const TERMINAL_CURSOR_STYLE_LABELS: Record<TerminalCursorStyle, string> = {
+  bar: "Bar",
+  block: "Block",
+  underline: "Underline",
+};
+
 export const FORMATTER_LANGUAGE_LABELS: Record<FormatterLanguage, string> = {
   javascript: "JavaScript / JSX",
   typescript: "TypeScript / TSX",
@@ -136,6 +144,8 @@ export type Preferences = {
   formatters: Record<FormatterLanguage, FormatterConfig>;
   formatOnSave: boolean;
   terminalSuggestionsEnabled: boolean;
+  terminalCursorStyle: TerminalCursorStyle;
+  terminalCursorBlink: boolean;
   toolApprovalPolicies: Record<string, ToolApprovalPolicy>;
   wordWrap: boolean;
 };
@@ -183,6 +193,8 @@ const KEY_TERMINAL_ENV_VARS = "terminalEnvVars";
 const KEY_FORMATTERS = "formatters";
 const KEY_FORMAT_ON_SAVE = "formatOnSave";
 const KEY_TERMINAL_SUGGESTIONS = "terminalSuggestionsEnabled";
+const KEY_TERMINAL_CURSOR_STYLE = "terminalCursorStyle";
+const KEY_TERMINAL_CURSOR_BLINK = "terminalCursorBlink";
 const KEY_TOOL_APPROVAL_POLICIES = "toolApprovalPolicies";
 const KEY_WORD_WRAP = "wordWrap";
 
@@ -243,6 +255,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   formatters: DEFAULT_FORMATTERS,
   formatOnSave: false,
   terminalSuggestionsEnabled: true,
+  terminalCursorStyle: "bar",
+  terminalCursorBlink: false,
   toolApprovalPolicies: {},
   wordWrap: false,
 };
@@ -380,6 +394,12 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalSuggestionsEnabled:
       get<boolean>(KEY_TERMINAL_SUGGESTIONS) ??
       DEFAULT_PREFERENCES.terminalSuggestionsEnabled,
+    terminalCursorStyle:
+      get<TerminalCursorStyle>(KEY_TERMINAL_CURSOR_STYLE) ??
+      DEFAULT_PREFERENCES.terminalCursorStyle,
+    terminalCursorBlink:
+      get<boolean>(KEY_TERMINAL_CURSOR_BLINK) ??
+      DEFAULT_PREFERENCES.terminalCursorBlink,
     toolApprovalPolicies:
       get<Record<string, ToolApprovalPolicy>>(KEY_TOOL_APPROVAL_POLICIES) ??
       DEFAULT_PREFERENCES.toolApprovalPolicies,
@@ -587,6 +607,16 @@ export async function setTerminalSuggestionsEnabled(value: boolean): Promise<voi
   await writePref(KEY_TERMINAL_SUGGESTIONS, value);
 }
 
+export async function setTerminalCursorStyle(
+  value: TerminalCursorStyle,
+): Promise<void> {
+  await writePref(KEY_TERMINAL_CURSOR_STYLE, value);
+}
+
+export async function setTerminalCursorBlink(value: boolean): Promise<void> {
+  await writePref(KEY_TERMINAL_CURSOR_BLINK, value);
+}
+
 export async function setToolApprovalPolicies(
   value: Record<string, ToolApprovalPolicy>,
 ): Promise<void> {
@@ -653,6 +683,8 @@ export async function onPreferencesChange(
     [KEY_SHORTCUTS]: "shortcuts",
     [KEY_TERMINAL_ENV_VARS]: "terminalEnvVars",
     [KEY_TERMINAL_SUGGESTIONS]: "terminalSuggestionsEnabled",
+    [KEY_TERMINAL_CURSOR_STYLE]: "terminalCursorStyle",
+    [KEY_TERMINAL_CURSOR_BLINK]: "terminalCursorBlink",
     [KEY_TOOL_APPROVAL_POLICIES]: "toolApprovalPolicies",
     [KEY_FORMATTERS]: "formatters",
     [KEY_FORMAT_ON_SAVE]: "formatOnSave",

@@ -3,6 +3,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { QuickFilePicker } from "@/components/QuickFilePicker";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { WorkspaceSearch } from "@/components/WorkspaceSearch";
@@ -164,6 +165,7 @@ export default function App() {
     updateTab,
     selectByIndex,
     setLeafCwd,
+    setLeafOscTitle,
     focusPane,
     focusNextPaneInTab,
     splitActivePane,
@@ -1179,6 +1181,11 @@ export default function App() {
     [setLeafCwd],
   );
 
+  const handleTerminalTitle = useCallback(
+    (leafId: number, title: string) => setLeafOscTitle(leafId, title),
+    [setLeafOscTitle],
+  );
+
   const handleFocusLeaf = useCallback(
     (tabId: number, leafId: number) => focusPane(tabId, leafId),
     [focusPane],
@@ -1306,6 +1313,7 @@ export default function App() {
           registerHandle={registerTerminalHandle}
           onSearchReady={handleSearchReady}
           onCwd={handleTerminalCwd}
+          onTitle={handleTerminalTitle}
           onExit={handleLeafExit}
           onFocusLeaf={handleFocusLeaf}
         />
@@ -1459,6 +1467,7 @@ export default function App() {
               >
                 <div className="flex h-full min-h-0 flex-col border-r border-border/60 bg-card">
                   <div className="min-h-0 flex-1">
+                    <ErrorBoundary>
                     {sidebarView === "recent-files" ? (
                       <RecentFilesPanel onOpenFile={handleOpenFile} />
                     ) : sidebarView === "explorer" ? (
@@ -1561,6 +1570,7 @@ export default function App() {
                         onOpenWorktree={(path) => void switchWorkspacePath(path)}
                       />
                     )}
+                    </ErrorBoundary>
                   </div>
                   <SidebarRail
                     activeView={sidebarView}
@@ -1575,7 +1585,7 @@ export default function App() {
               <ResizablePanel id="workspace" defaultSize="78%" minSize="30%">
                 <ResizablePanelGroup orientation="vertical" className="h-full">
                   <ResizablePanel id="workspace-main" minSize="20%">
-                    {workspaceSurface}
+                    <ErrorBoundary>{workspaceSurface}</ErrorBoundary>
                   </ResizablePanel>
 
                   {problemsOpen && (

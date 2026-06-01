@@ -15,14 +15,17 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/modules/settings/preferences";
-import type { ThemePref } from "@/modules/settings/store";
+import type { TerminalCursorStyle, ThemePref } from "@/modules/settings/store";
 import {
+  TERMINAL_CURSOR_STYLE_LABELS,
   TERMINAL_FONT_SIZES,
   TERMINAL_SCROLLBACK_PRESETS,
   setAutostart,
   setRestoreTabs,
   setRestoreWindowState,
   setShowHidden,
+  setTerminalCursorBlink,
+  setTerminalCursorStyle,
   setTerminalFontFamily,
   setTerminalLetterSpacing,
   setTerminalFontSize,
@@ -80,6 +83,8 @@ export function GeneralSection() {
   const terminalSuggestionsEnabled = usePreferencesStore(
     (s) => s.terminalSuggestionsEnabled,
   );
+  const terminalCursorStyle = usePreferencesStore((s) => s.terminalCursorStyle);
+  const terminalCursorBlink = usePreferencesStore((s) => s.terminalCursorBlink);
   const zoomLevel = usePreferencesStore((s) => s.zoomLevel);
   const wordWrap = usePreferencesStore((s) => s.wordWrap);
 
@@ -316,6 +321,42 @@ export function GeneralSection() {
               ))}
             </SelectContent>
           </Select>
+        </SettingRow>
+        <SettingRow
+          title="Cursor style"
+          description="Shape of the terminal cursor."
+        >
+          <Select
+            value={terminalCursorStyle}
+            onValueChange={(v) =>
+              void setTerminalCursorStyle(v as TerminalCursorStyle)
+            }
+          >
+            <SelectTrigger size="sm" className="h-8 w-28 text-[12px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(
+                Object.entries(TERMINAL_CURSOR_STYLE_LABELS) as [
+                  TerminalCursorStyle,
+                  string,
+                ][]
+              ).map(([value, label]) => (
+                <SelectItem key={value} value={value} className="text-[12px]">
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        <SettingRow
+          title="Cursor blink"
+          description="Animate the cursor with a blinking effect."
+        >
+          <Switch
+            checked={terminalCursorBlink}
+            onCheckedChange={(v) => void setTerminalCursorBlink(v)}
+          />
         </SettingRow>
       </div>
 
