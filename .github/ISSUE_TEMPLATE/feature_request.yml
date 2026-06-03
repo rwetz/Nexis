@@ -1,0 +1,49 @@
+name: Feature request
+description: Propose a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [ROADMAP.md](../../ROADMAP.md) first — what's already planned and what's deliberately out of scope is documented there.
+        For anything beyond a small, obvious change, it's worth opening this issue before writing code.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What are you trying to do that Nexis doesn't support today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would you like to see? Be as specific as you can — UI mockups, example workflows, or analogues in other tools all help.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds you're using, or other approaches you thought about.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Area
+      options:
+        - Terminal
+        - Editor
+        - AI agent
+        - Git / source control
+        - Debugger / LSP
+        - File explorer
+        - Themes
+        - Platform / installer
+        - Performance
+        - Other
+    validations:
+      required: true

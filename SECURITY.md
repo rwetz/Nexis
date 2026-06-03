@@ -17,7 +17,7 @@ I'll acknowledge within a few days. Once fixed, I'll credit you in the release n
 
 ## Supported versions
 
-Pre-1.0, only the latest minor release gets patched. That's currently `0.7.x`.
+Only the latest release is actively patched. That's currently `1.13.x`.
 
 ## In scope
 

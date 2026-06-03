@@ -1,0 +1,81 @@
+name: Bug report
+description: Something isn't working correctly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing — search open issues to avoid duplicates. Check [CONTRIBUTING.md](../CONTRIBUTING.md) for known pitfalls first.
+
+  - type: input
+    id: version
+    attributes:
+      label: Nexis version
+      placeholder: "e.g. 1.13.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - WSL
+    validations:
+      required: true
+
+  - type: input
+    id: platform_detail
+    attributes:
+      label: OS version / distro
+      placeholder: "e.g. Windows 11 23H2, Ubuntu 24.04, macOS 15.3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: shell
+    attributes:
+      label: Shell (if terminal-related)
+      options:
+        - Not terminal-related
+        - PowerShell (pwsh)
+        - Windows PowerShell 5.1
+        - cmd
+        - zsh
+        - bash
+        - fish
+        - WSL shell
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: A clear description of the bug. Include what you saw vs. what you expected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a new terminal tab
+        2. Run `...`
+        3. See ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / error output
+      description: |
+        Open Tauri devtools (right-click → Inspect), copy any `[nexis]` console errors.
+        Paste log output here — it will be automatically formatted as code.
+      render: text
