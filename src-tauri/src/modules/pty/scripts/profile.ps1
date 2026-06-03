@@ -10,6 +10,16 @@ try {
     $global:OutputEncoding    = [System.Text.UTF8Encoding]::new($false)
 } catch {}
 
+# PowerShell calls SetConsoleTitleW during startup; ConPTY forwards that as
+# OSC 0, so the tab label shows the executable path. Emit a clean OSC 0 to
+# override it before the first prompt renders.
+try {
+    $_ne = [char]27
+    $_nt = if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh' } else { 'PowerShell' }
+    [Console]::Write("${_ne}]0;${_nt}${_ne}\")
+    Remove-Variable _ne, _nt -ErrorAction SilentlyContinue
+} catch {}
+
 if (Test-Path Function:prompt) {
     Copy-Item Function:prompt Function:__nexis_user_prompt -Force -ErrorAction SilentlyContinue
 }

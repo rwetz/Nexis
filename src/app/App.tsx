@@ -93,6 +93,8 @@ import { PortsPanel } from "@/modules/ports";
 import { ProfilesPanel } from "@/modules/profiles";
 import { ReplPanel, sendToRepl } from "@/modules/repl";
 import { ReleasePanel } from "@/modules/release";
+import { DebuggerPanel } from "@/modules/debugger/DebuggerPanel";
+import { DebugToolbar } from "@/modules/debugger/DebugToolbar";
 import {
   SourceControlPanel,
   useSourceControl,
@@ -1559,6 +1561,15 @@ export default function App() {
                       <WorkspaceNotesPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "ssh" ? (
                       <SshPanel onConnect={handleOpenSshSession} />
+                    ) : sidebarView === "debugger" ? (
+                      <div className="flex h-full flex-col">
+                        <div className="flex shrink-0 items-center border-b border-border/40 px-1 py-1">
+                          <DebugToolbar />
+                        </div>
+                        <div className="min-h-0 flex-1 overflow-hidden">
+                          <DebuggerPanel />
+                        </div>
+                      </div>
                     ) : sidebarView === "release" ? (
                       <ReleasePanel workspaceRoot={explorerRoot} />
                     ) : (

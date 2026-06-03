@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useDebugStore } from "./debugSession";
+import { useBreakpointStore } from "./breakpointStore";
 import type { DapStackFrame, DapScope, DapVariable } from "./dapProtocol";
 
 type PanelTab = "variables" | "callstack" | "console";
@@ -9,7 +10,7 @@ export function DebuggerPanel() {
   const [tab, setTab] = useState<PanelTab>("variables");
   const status = useDebugStore((s) => s.status);
 
-  if (status === "idle") return null;
+  if (status === "idle") return <LaunchForm />;
 
   return (
     <div className="flex h-full flex-col border-t border-border/40 bg-card text-[11px]">
@@ -37,6 +38,108 @@ export function DebuggerPanel() {
         {tab === "callstack" && <CallStackPanel />}
         {tab === "console" && <ConsolePanel />}
       </div>
+    </div>
+  );
+}
+
+// ── Launch form ───────────────────────────────────────────────────────────────
+
+const ADAPTER_PRESETS = [
+  { label: "Node.js", id: "node", cmd: "node", args: [] as string[], launchType: "node" },
+  { label: "Python (debugpy)", id: "python", cmd: "python", args: ["-m", "debugpy", "--listen", "0", "--wait-for-client"], launchType: "python" },
+  { label: "Go (dlv-dap)", id: "go", cmd: "dlv", args: ["dap"], launchType: "go" },
+] as const;
+
+function LaunchForm() {
+  const start = useDebugStore((s) => s.start);
+  const breakpoints = useBreakpointStore((s) => s.asMap)();
+  const [preset, setPreset] = useState(0);
+  const [program, setProgram] = useState("");
+  const [adapterCmd, setAdapterCmd] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [launching, setLaunching] = useState(false);
+
+  const selectedPreset = ADAPTER_PRESETS[preset];
+
+  const handleLaunch = async () => {
+    const cmd = adapterCmd.trim() || selectedPreset.cmd;
+    const prog = program.trim();
+    if (!prog) { setError("Program path is required"); return; }
+    setError(null);
+    setLaunching(true);
+    try {
+      await start(
+        cmd,
+        adapterCmd.trim() ? [] : [...selectedPreset.args],
+        selectedPreset.id,
+        { type: selectedPreset.launchType, request: "launch", program: prog, stopOnEntry: false },
+        breakpoints,
+      );
+    } catch (e) {
+      setError(String(e));
+      setLaunching(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3 p-3 text-[11px]">
+      <p className="text-muted-foreground">Start a debug session</p>
+
+      <label className="flex flex-col gap-1">
+        <span className="font-medium text-foreground/80">Adapter</span>
+        <select
+          value={preset}
+          onChange={(e) => setPreset(Number(e.target.value))}
+          className="rounded border border-border bg-muted px-2 py-1 text-[11px] text-foreground outline-none focus:ring-1 focus:ring-primary"
+        >
+          {ADAPTER_PRESETS.map((p, i) => (
+            <option key={p.id} value={i}>{p.label}</option>
+          ))}
+          <option value={ADAPTER_PRESETS.length}>Custom…</option>
+        </select>
+      </label>
+
+      {preset === ADAPTER_PRESETS.length && (
+        <label className="flex flex-col gap-1">
+          <span className="font-medium text-foreground/80">Adapter command</span>
+          <input
+            value={adapterCmd}
+            onChange={(e) => setAdapterCmd(e.target.value)}
+            placeholder="e.g. node /path/to/adapter/server.js"
+            className="rounded border border-border bg-muted px-2 py-1 font-mono text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:ring-1 focus:ring-primary"
+          />
+        </label>
+      )}
+
+      <label className="flex flex-col gap-1">
+        <span className="font-medium text-foreground/80">Program</span>
+        <input
+          value={program}
+          onChange={(e) => setProgram(e.target.value)}
+          placeholder="/path/to/program"
+          spellCheck={false}
+          className="rounded border border-border bg-muted px-2 py-1 font-mono text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:ring-1 focus:ring-primary"
+        />
+      </label>
+
+      {error && (
+        <p className="text-[10.5px] text-destructive">{error}</p>
+      )}
+
+      <button
+        type="button"
+        disabled={launching}
+        onClick={() => void handleLaunch()}
+        className="rounded bg-primary px-3 py-1.5 text-[11px] font-medium text-primary-foreground transition-opacity disabled:opacity-50"
+      >
+        {launching ? "Starting…" : "Launch"}
+      </button>
+
+      {breakpoints.size > 0 && (
+        <p className="text-[10px] text-muted-foreground">
+          {[...breakpoints.values()].reduce((n, lines) => n + lines.length, 0)} breakpoint{[...breakpoints.values()].reduce((n, lines) => n + lines.length, 0) !== 1 ? "s" : ""} set
+        </p>
+      )}
     </div>
   );
 }
