@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 const DB_NAME = "nexis-bg-images";
 const STORE = "images";
 const VERSION = 1;

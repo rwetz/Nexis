@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
 export async function copyToClipboard(text: string): Promise<void> {

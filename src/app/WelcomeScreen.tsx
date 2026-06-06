@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { lazy, Suspense, useMemo } from "react";
 
 const DarkVeilBackground = lazy(() =>

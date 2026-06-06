@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { readTerminalTokens } from "@/styles/tokens";
 import type { ITheme } from "@xterm/xterm";
 

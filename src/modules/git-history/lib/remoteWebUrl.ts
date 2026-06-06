@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 export type RemoteWebHost = "github" | "gitlab" | "bitbucket";
 
 export type RemoteWebInfo = {

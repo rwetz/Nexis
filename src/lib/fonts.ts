@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 const NERD_FONT_CANDIDATES = [
   "JetBrainsMono Nerd Font",
   "JetBrainsMono Nerd Font Mono",

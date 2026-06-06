@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { keymap } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";
 import { uriToPath } from "../client";

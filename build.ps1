@@ -1,3 +1,9 @@
+# ╔══════════════════════════════════════╗
+# ║  Ryan Wetzstein                      ║
+# ║  Nexis                               ║
+# ║  2026                                ║
+# ╚══════════════════════════════════════╝
+
 # Nexis production build
 # Usage: .\build.ps1
 # Output: src-tauri/target/release/bundle/nsis/Nexis_*-setup.exe

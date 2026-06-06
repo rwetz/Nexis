@@ -1,2 +1,8 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 export { SshPanel } from "./SshPanel";
 export { useSshStore, buildSshCommand, newSshId, type SshConnection } from "./sshStore";

@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import type { UIMessage } from "@ai-sdk/react";
 import { type ModelId } from "../config";
 import { runAgentStream, type AgentUsageDelta } from "./agent";

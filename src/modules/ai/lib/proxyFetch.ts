@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { Channel, invoke } from "@tauri-apps/api/core";
 
 /** Streaming events emitted by the Rust `ai_http_stream` command. */

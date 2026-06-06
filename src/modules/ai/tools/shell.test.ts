@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildShellTools } from "./shell";
 import type { ToolContext } from "./context";

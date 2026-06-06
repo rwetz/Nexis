@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { setLastWslDistro } from "@/modules/settings/store";

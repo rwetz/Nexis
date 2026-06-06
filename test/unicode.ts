@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /**
  * unicode.ts — Nexis editor playground
  * Tests the editor's handling of Unicode: identifiers, strings, RTL,

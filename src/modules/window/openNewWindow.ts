@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { IS_MAC } from "@/lib/platform";
 

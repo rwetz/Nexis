@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 // Smoke tests: verify the app launches and critical shell chrome is present.
 // These run first and establish that tauri-driver connected successfully.
 

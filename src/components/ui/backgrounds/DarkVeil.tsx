@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { memo, useEffect, useRef } from "react";
 import { Renderer, Program, Mesh, Triangle, Vec2 } from "ogl";
 

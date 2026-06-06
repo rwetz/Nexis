@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { EXT_TO_LANGUAGE_ID } from "./constants";
 import * as fileIconsMod from "./fileIcons";
 import * as folderIconsMod from "./folderIcons";

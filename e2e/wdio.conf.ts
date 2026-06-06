@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import type { ChildProcess } from "child_process";
 import { spawn } from "child_process";
 import { dirname, resolve } from "path";

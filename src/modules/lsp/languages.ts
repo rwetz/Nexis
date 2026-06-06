@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /** Maps file extension to LSP languageId. */
 export const EXT_TO_LANGUAGE_ID: Record<string, string> = {
   ts: "typescript",

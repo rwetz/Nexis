@@ -111,6 +111,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
 - [x] AI skill bundles — installable packages that add new agent tools and slash commands
 
+- [] background job viewer/ canceler
+
 ### Development Panels
 - [x] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with live output and errors linked to source lines
 - [x] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save

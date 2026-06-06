@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 use serde::Serialize;
 
 pub(crate) const DEFAULT_TIMEOUT_SECS: u64 = 30;

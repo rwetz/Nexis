@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { cn } from "@/lib/utils";
 import type { NotebookTab, Tab } from "@/modules/tabs";
 import { NotebookViewer } from "./NotebookViewer";

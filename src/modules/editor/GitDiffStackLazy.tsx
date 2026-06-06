@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { lazy, Suspense } from "react";
 import type { ComponentProps } from "react";
 import type { GitDiffStack as GitDiffStackType } from "./GitDiffStack";

@@ -1,3 +1,9 @@
+# ╔══════════════════════════════════════╗
+# ║  Ryan Wetzstein                      ║
+# ║  Nexis                               ║
+# ║  2026                                ║
+# ╚══════════════════════════════════════╝
+
 # terax-shell-integration (bashrc)
 #
 # Differences vs zsh integration:

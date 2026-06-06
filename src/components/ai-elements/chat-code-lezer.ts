@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import type { Language, StreamParser } from "@codemirror/language";
 import { StringStream } from "@codemirror/language";
 import { classHighlighter, highlightCode } from "@lezer/highlight";

@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 const PANEL_HEIGHT_KEY = "nexis.ai.panelHeight";
 
 export function readAiPanelHeight(fallback: number): number {

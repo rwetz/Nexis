@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import type { CodeSnippet } from "@/modules/snippets/codeSnippets";
 import type { EditorView } from "@codemirror/view";
 

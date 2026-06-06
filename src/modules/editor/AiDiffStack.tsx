@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import type { AiDiffTab, Tab } from "@/modules/tabs";
 import { AiDiffPane } from "./AiDiffPane";
 

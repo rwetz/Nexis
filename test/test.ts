@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 // Test TypeScript file — Nexis editor playground
 // Exercises: class with readonly/private fields, Map<K,V>, string|undefined union, template literals,
 //            bigint arithmetic, nullish coalescing (??), iterative fibonacci.

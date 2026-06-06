@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { Vim } from "@replit/codemirror-vim";
 import { type EditorView, ViewPlugin } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";

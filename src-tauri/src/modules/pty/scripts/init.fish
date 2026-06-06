@@ -1,3 +1,9 @@
+# ╔══════════════════════════════════════╗
+# ║  Ryan Wetzstein                      ║
+# ║  Nexis                               ║
+# ║  2026                                ║
+# ╚══════════════════════════════════════╝
+
 # terax-shell-integration (fish)
 # Emits OSC 7 (cwd) + OSC 133 A/B/C/D so the host tracks cwd and prompt
 # boundaries without re-parsing the prompt.

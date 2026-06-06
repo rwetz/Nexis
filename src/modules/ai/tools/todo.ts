@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { tool } from "ai";
 import { z } from "zod";
 import { newTodoId, validateTodos, type Todo } from "../lib/todos";

@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 export type TerminalKeyEvent = Pick<
   KeyboardEvent,
   "altKey" | "ctrlKey" | "metaKey" | "key" | "code"

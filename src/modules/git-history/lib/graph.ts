@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 // Lane-based graph layout for a linear git log.
 //
 // Input: commits ordered newest-first, each with parent SHAs.

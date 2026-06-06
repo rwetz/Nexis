@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import type { PaneNode } from "@/modules/terminal/lib/panes";
 
 // Matches the renderer slot pool size — over this we'd evict an active leaf.

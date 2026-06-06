@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { redo, undo } from "@codemirror/commands";
 import { foldAll, unfoldAll } from "@codemirror/language";
 import {

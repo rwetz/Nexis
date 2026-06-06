@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /**
  * ConflictSection — collapsible list of merge-conflict files in the
  * source-control sidebar with a one-click "Resolve with AI" action.

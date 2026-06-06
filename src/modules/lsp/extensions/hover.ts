@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { hoverTooltip, type Tooltip } from "@codemirror/view";
 import type { EditorView } from "@codemirror/view";
 import type { Extension } from "@codemirror/state";

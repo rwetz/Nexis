@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { beforeEach, describe, expect, it } from "vitest";
 import { usePluginRegistry } from "./registry";
 import type { StatusBarItem } from "./types";

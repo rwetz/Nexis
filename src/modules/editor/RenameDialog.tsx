@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { native, type GrepHit } from "@/modules/ai/lib/native";
 import { cn } from "@/lib/utils";
 import { Alert02Icon, CheckmarkCircle01Icon } from "@hugeicons/core-free-icons";

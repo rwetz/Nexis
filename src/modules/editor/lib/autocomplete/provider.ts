@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import {
   DEFAULT_AUTOCOMPLETE_MODEL,
   LMSTUDIO_DEFAULT_BASE_URL,

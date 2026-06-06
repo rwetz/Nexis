@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import type { Theme, ThemeColors, ThemeVariant, TerminalPalette } from "./types";
 
 export type ValidationResult =

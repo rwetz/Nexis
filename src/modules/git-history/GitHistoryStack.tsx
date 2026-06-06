@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import type { GitHistoryTab, Tab } from "@/modules/tabs";
 import { GitHistoryPane, type GitHistorySearchHandle } from "./GitHistoryPane";
 

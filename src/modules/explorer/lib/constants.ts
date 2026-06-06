@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /**
  * Extension → VS Code language id, used by `iconResolver` as a fallback when
  * material-icon-theme's `fileExtensions` map lacks an entry. material-icon-theme

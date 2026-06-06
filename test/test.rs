@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 // Test Rust file — Nexis editor playground
 // Exercises: structs, impl blocks, derive macros, HashMap, Option, match expressions,
 //            format!/println! macros, string slices (&str / String), iterators, fibonacci recursion.

@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /**
  * SshKeyManager — lists ~/.ssh/*.pub keys, lets the user generate new Ed25519
  * key pairs via ssh-keygen, and copies public keys to the clipboard.

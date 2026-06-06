@@ -1,3 +1,9 @@
+# ╔══════════════════════════════════════╗
+# ║  Ryan Wetzstein                      ║
+# ║  Nexis                               ║
+# ║  2026                                ║
+# ╚══════════════════════════════════════╝
+
 # nexis-shell-integration (PowerShell)
 # Emits OSC 7 (cwd) + OSC 133 A/B/D so the host tracks cwd and prompt boundaries.
 

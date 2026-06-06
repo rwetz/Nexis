@@ -1,3 +1,9 @@
+# ╔══════════════════════════════════════╗
+# ║  Ryan Wetzstein                      ║
+# ║  Nexis                               ║
+# ║  2026                                ║
+# ╚══════════════════════════════════════╝
+
 # terax-shell-integration (zshrc)
 #
 # Emits OSC 7 (cwd) + OSC 133 A/B/C/D (prompt-start / prompt-end / pre-exec /

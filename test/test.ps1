@@ -1,3 +1,9 @@
+# ╔══════════════════════════════════════╗
+# ║  Ryan Wetzstein                      ║
+# ║  Nexis                               ║
+# ║  2026                                ║
+# ╚══════════════════════════════════════╝
+
 # Test PowerShell script — Nexis editor playground
 # Exercises: classes, enums, advanced functions, pipelines, jobs, remoting stubs,
 #            error handling, regex, DSC-style syntax, module patterns

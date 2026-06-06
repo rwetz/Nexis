@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import type { SidebarViewId } from "@/modules/sidebar";
 import type { FileExplorerHandle } from "@/modules/explorer";

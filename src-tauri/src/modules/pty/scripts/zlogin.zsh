@@ -1,3 +1,9 @@
+# ╔══════════════════════════════════════╗
+# ║  Ryan Wetzstein                      ║
+# ║  Nexis                               ║
+# ║  2026                                ║
+# ╚══════════════════════════════════════╝
+
 # terax-shell-integration (zlogin)
 #
 # This is the LAST init file zsh runs before entering the prompt loop, so its

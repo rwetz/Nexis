@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { Command } from "cmdk";
 import { cn } from "@/lib/utils";
 import { Search01Icon, Settings01Icon } from "@hugeicons/core-free-icons";

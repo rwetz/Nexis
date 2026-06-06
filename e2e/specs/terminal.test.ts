@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 // Terminal tab lifecycle: open via the "New tab" dropdown, verify xterm renders,
 // then close the tab and verify it is removed from the tab bar.
 //

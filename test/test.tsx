@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 // Test React TSX file — Nexis editor playground
 // Exercises: typed hooks, generics, discriminated unions, forwardRef, utility types
 

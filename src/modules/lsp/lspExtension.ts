@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import type { Extension } from "@codemirror/state";
 import { Compartment } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";

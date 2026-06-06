@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { AnimatedFolder } from "@/components/ui/AnimatedFolder";
 import { Button } from "@/components/ui/button";
 import {

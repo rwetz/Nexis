@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { usePreferencesStore } from "@/modules/settings/preferences";

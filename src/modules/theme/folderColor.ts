@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /** Per-theme accent colors for the AnimatedFolder component. */
 const FOLDER_COLORS: Record<string, { dark: string; light: string }> = {
   "nexis-default": { dark: "#5227FF", light: "#4318D6" },

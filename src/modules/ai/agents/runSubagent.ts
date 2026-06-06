@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { generateText, stepCountIs } from "ai";
 import { DEFAULT_MODEL_ID, getModel, type ModelId } from "../config";
 import { buildLanguageModel } from "../lib/agent";

@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /**
  * PortsPanel — detects locally listening TCP ports and surfaces them with
  * a one-click "Open in Preview" button.  Runs `ss` / `lsof` / `netstat`

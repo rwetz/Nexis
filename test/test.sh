@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+
+# ╔══════════════════════════════════════╗
+# ║  Ryan Wetzstein                      ║
+# ║  Nexis                               ║
+# ║  2026                                ║
+# ╚══════════════════════════════════════╝
+
 # Test Bash script — Nexis editor playground
 # Exercises: arrays, associative arrays, functions, traps, process substitution,
 #            here-strings, parameter expansion, getopts, regex, coprocs

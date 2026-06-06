@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 mod modules;
 
 use modules::{dap, fs, git, http_share, lsp, net, pty, python, recording, secrets, shell, workspace};

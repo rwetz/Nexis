@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 export { ThemeProvider, useTheme, type Theme, type ThemeModePref } from "./ThemeProvider";
 export { listBuiltinThemes, getBuiltinTheme, getDefaultTheme } from "./themes";
 export { validateTheme, type ValidationResult } from "./validateTheme";

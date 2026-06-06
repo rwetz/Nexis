@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { IS_WINDOWS } from "@/lib/platform";
 
 // On Windows, `python` is typically not in PATH. The Python Launcher (`py`)

@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /// macros.rs — Nexis editor playground
 /// Exercises: declarative macros (macro_rules!), procedural macro patterns
 /// (shown as doc examples), built-in macros, attribute macros.

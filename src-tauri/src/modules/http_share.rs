@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /*!
  * http_share — a minimal TCP server that serves an HTML page on a local port
  * so users can open the current AI conversation or terminal snapshot in a

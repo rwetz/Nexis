@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { CheckListIcon, SparklesIcon } from "@hugeicons/core-free-icons";
 import { usePlanStore } from "../store/planStore";
 

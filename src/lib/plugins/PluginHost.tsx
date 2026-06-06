@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /**
  * PluginHost — activates all registered plugins on mount and disposes them
  * on unmount. Render this once, high up in the tree (inside App).

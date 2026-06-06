@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { detectMonoFontFamily } from "@/lib/fonts";
 import { foldService, indentUnit } from "@codemirror/language";
 import { lintGutter } from "@codemirror/lint";

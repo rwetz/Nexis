@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /// Terminal session recording — save asciinema v2 `.cast` files to ~/nexis-recordings/.
 
 #[tauri::command]

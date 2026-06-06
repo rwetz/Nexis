@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 /**
  * Container plugin — detects container config (Dockerfile, docker-compose,
  * devcontainer.json) in the active workspace root and contributes a status
