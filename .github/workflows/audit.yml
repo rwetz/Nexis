@@ -1,0 +1,32 @@
+name: Security audit
+
+on:
+  # Run whenever Cargo.lock changes on main (new dep added or version bumped).
+  push:
+    branches: [main]
+    paths:
+      - "src-tauri/Cargo.lock"
+  # Weekly sweep — catches newly-disclosed advisories even without a code change.
+  schedule:
+    - cron: "0 8 * * 1" # Every Monday at 08:00 UTC
+  # Allow a manual trigger from the Actions tab.
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      # cargo-audit only reads Cargo.lock — no Tauri system deps needed.
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Run cargo audit
+        working-directory: src-tauri
+        run: cargo audit

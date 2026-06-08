@@ -62,6 +62,35 @@ jobs:
         working-directory: src-tauri
         run: cargo test
 
+  # ── Rust / clippy + fmt ───────────────────────────────────────────────────
+  # Run on Windows so Windows-specific code paths (#[cfg(target_os = "windows")])
+  # are linted. rustfmt is platform-independent but co-locating keeps the job
+  # count low.
+  lint-rust:
+    name: Rust lint (clippy + fmt)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable (with clippy + rustfmt)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+
+      - name: cargo fmt --check
+        working-directory: src-tauri
+        run: cargo fmt --check
+
+      - name: cargo clippy
+        working-directory: src-tauri
+        run: cargo clippy -- -D warnings
+
   # ── Rust / cargo test (Linux) ─────────────────────────────────────────────
   # Runs the cross-platform subset: authorize_spawn_cwd, git UTF-8 handling,
   # mutex poison recovery, build_globset, shell sentinel logic, and the Unix
