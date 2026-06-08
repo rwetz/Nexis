@@ -25,7 +25,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { JSX, useEffect, useState } from "react";
+import { JSX, useCallback, useEffect, useRef, useState } from "react";
 import type { SettingsTab } from "@/modules/settings/openSettingsWindow";
 import { useSettingsDialogStore } from "@/modules/settings/settingsDialogStore";
 import { AboutSection } from "./sections/AboutSection";
@@ -59,11 +59,30 @@ export function SettingsDialog() {
   const hide = useSettingsDialogStore((s) => s.hide);
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(storeTab);
+  const scrollRef = useRef<HTMLElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(false);
 
   // Sync to the requested tab whenever the dialog opens or the store tab changes.
   useEffect(() => {
     if (isOpen) setActiveTab(storeTab);
   }, [isOpen, storeTab]);
+
+  // Reset scroll and re-evaluate overflow whenever the active tab changes.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = 0;
+    requestAnimationFrame(() => {
+      if (!scrollRef.current) return;
+      setIsAtBottom(scrollRef.current.scrollHeight <= scrollRef.current.clientHeight + 2);
+    });
+  }, [activeTab]);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setIsAtBottom(el.scrollHeight - el.scrollTop <= el.clientHeight + 2);
+  }, []);
 
   const ActiveSection = TABS.find((t) => t.id === activeTab)?.component;
 
@@ -115,11 +134,23 @@ export function SettingsDialog() {
           </header>
 
           {/* Scrollable content */}
-          <main className="min-h-0 flex-1 overflow-y-auto px-8 pt-6 pb-7 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="mx-auto w-full max-w-160">
-              {ActiveSection && <ActiveSection />}
-            </div>
-          </main>
+          <div className="relative min-h-0 flex-1">
+            <main
+              ref={scrollRef}
+              onScroll={handleScroll}
+              className="h-full overflow-y-auto px-8 pt-6 pb-7 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              <div className="mx-auto w-full max-w-160">
+                {ActiveSection && <ActiveSection />}
+              </div>
+            </main>
+            {!isAtBottom && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-popover to-transparent"
+              />
+            )}
+          </div>
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>

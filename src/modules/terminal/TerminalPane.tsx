@@ -172,7 +172,7 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
                   className={`flex h-5 w-5 items-center justify-center rounded-full border text-[8px] font-bold shadow-sm transition-colors ${
                     isRecording
                       ? "border-red-500/70 bg-red-500/10 text-red-500 hover:bg-red-500/20"
-                      : "border-border/60 bg-card/80 text-muted-foreground hover:border-red-400/60 hover:text-red-400"
+                      : "border-border/60 bg-card/80 text-muted-foreground hover:bg-muted hover:border-red-400/60 hover:text-red-400"
                   }`}
                 >
                   {isRecording ? (

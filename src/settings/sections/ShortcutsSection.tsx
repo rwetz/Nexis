@@ -43,11 +43,9 @@ export function ShortcutsSection() {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const filteredShortcuts = useMemo(() => {
-    // Filter out internal/non-overridable shortcuts like tab.selectByIndex.
-    const base = SHORTCUTS.filter((s) => s.id !== "tab.selectByIndex");
-    if (!search) return base;
+    if (!search) return SHORTCUTS;
     const lower = search.toLowerCase();
-    return base.filter(
+    return SHORTCUTS.filter(
       (s) =>
         s.label.toLowerCase().includes(lower) ||
         s.group.toLowerCase().includes(lower)
@@ -120,7 +118,7 @@ export function ShortcutsSection() {
 
           return (
             <div key={group} className="flex flex-col gap-3">
-              <h3 className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+              <h3 className="text-xs font-semibold text-foreground/70">
                 {group}
               </h3>
               <div className="flex flex-col divide-y divide-border/40 rounded-lg border border-border/60 bg-card/40 overflow-hidden">
@@ -191,6 +189,42 @@ function ShortcutRow({
   const isModified = userBindings !== undefined;
   const hasBindings = bindings && bindings.length > 0;
 
+  function renderKeyBadges() {
+    if (!hasBindings) {
+      return (
+        <span className="text-[11px] text-muted-foreground italic">
+          Unassigned
+        </span>
+      );
+    }
+    if (shortcut.id === "tab.selectByIndex") {
+      // Show as a range: Ctrl/⌘ 1 – 9
+      const modTokens = getBindingTokens(bindings[0]).slice(0, -1);
+      return (
+        <KbdGroup>
+          {modTokens.map((t, i) => (
+            <Kbd key={i} className="group-hover:bg-accent group-hover:text-accent-foreground transition-colors">{t}</Kbd>
+          ))}
+          <Kbd className="group-hover:bg-accent group-hover:text-accent-foreground transition-colors">1</Kbd>
+          <span className="text-[10px] text-muted-foreground/60 px-0.5">–</span>
+          <Kbd className="group-hover:bg-accent group-hover:text-accent-foreground transition-colors">9</Kbd>
+        </KbdGroup>
+      );
+    }
+    return (
+      <KbdGroup>
+        {getBindingTokens(bindings[0]).map((t, i) => (
+          <Kbd
+            key={i}
+            className="group-hover:bg-accent group-hover:text-accent-foreground transition-colors"
+          >
+            {t}
+          </Kbd>
+        ))}
+      </KbdGroup>
+    );
+  }
+
   return (
     <div className="group flex items-center justify-between px-3 py-2.5 transition-colors hover:bg-muted/30">
       <div className="flex flex-col gap-0.5">
@@ -198,7 +232,11 @@ function ShortcutRow({
       </div>
 
       <div className="flex items-center gap-2">
-        {isRecording ? (
+        {shortcut.displayOnly ? (
+          <div className="flex min-w-[100px] items-center justify-end gap-1">
+            {renderKeyBadges()}
+          </div>
+        ) : isRecording ? (
           <Recorder onRecord={onRecord} onCancel={onStopRecording} />
         ) : (
           <>
@@ -206,22 +244,7 @@ function ShortcutRow({
               onClick={onStartRecording}
               className="flex min-w-[100px] cursor-pointer items-center justify-end gap-1"
             >
-              {hasBindings ? (
-                <KbdGroup>
-                  {getBindingTokens(bindings[0]).map((t, i) => (
-                    <Kbd
-                      key={i}
-                      className="group-hover:bg-accent group-hover:text-accent-foreground transition-colors"
-                    >
-                      {t}
-                    </Kbd>
-                  ))}
-                </KbdGroup>
-              ) : (
-                <span className="text-[11px] text-muted-foreground italic">
-                  Unassigned
-                </span>
-              )}
+              {renderKeyBadges()}
             </div>
 
             <div className="flex items-center gap-1">

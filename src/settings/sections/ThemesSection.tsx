@@ -506,7 +506,7 @@ export function ThemesSection() {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-[11px] font-medium tracking-tight text-muted-foreground">
+    <span className="text-xs font-semibold text-foreground/70">
       {children}
     </span>
   );

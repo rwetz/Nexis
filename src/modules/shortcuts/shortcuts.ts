@@ -70,6 +70,8 @@ export type Shortcut = {
   group: ShortcutGroup;
   defaultBindings: KeyBinding[];
   allowRepeat?: boolean;
+  /** Show in the shortcuts list but not editable (e.g. range shortcuts). */
+  displayOnly?: boolean;
 };
 
 export const SHORTCUTS: Shortcut[] = [
@@ -192,6 +194,7 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Jump to tab 1–9",
     group: "Tabs",
     defaultBindings: [{ [MOD_PROP]: true, key: "1" }],
+    displayOnly: true,
   },
   {
     id: "explorer.search",

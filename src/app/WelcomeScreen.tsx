@@ -35,12 +35,12 @@ function hexToHue(hex: string): number {
 }
 
 const SHORTCUTS = [
-  { label: "New terminal",    keys: [MOD_KEY, "T"] },
-  { label: "Quick open file", keys: [MOD_KEY, "P"] },
-  { label: "New editor tab",  keys: [MOD_KEY, "E"] },
-  { label: "Split pane",      keys: [MOD_KEY, "D"] },
+  { label: "Open AI agent",      keys: [MOD_KEY, "I"] },
+  { label: "Quick open file",    keys: [MOD_KEY, "P"] },
+  { label: "New editor tab",     keys: [MOD_KEY, "E"] },
+  { label: "Split pane",         keys: [MOD_KEY, "D"] },
   { label: "Keyboard shortcuts", keys: [MOD_KEY, "K"] },
-  { label: "New window",      keys: [MOD_KEY, SHIFT_KEY, "N"] },
+  { label: "New window",         keys: [MOD_KEY, SHIFT_KEY, "N"] },
 ] as const;
 
 export function WelcomeScreen({ onNewTerminal }: Props) {
@@ -83,11 +83,15 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
             Welcome to Nexis
           </p>
           <p className="text-[14px] text-muted-foreground">
-            Open a terminal or file to get started
+            Open a terminal or file to get started — or press {MOD_KEY}+I to ask the AI agent.
           </p>
         </div>
 
-        <Button size="sm" onClick={onNewTerminal}>
+        <Button
+          size="sm"
+          onClick={onNewTerminal}
+          className="bg-brand text-brand-foreground hover:bg-brand/85"
+        >
           New Terminal
           <span className="ml-1.5 opacity-50">{fmtShortcut(MOD_KEY, "T")}</span>
         </Button>

@@ -77,10 +77,15 @@ function savePinned(ids: SidebarViewId[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
 }
 
+type RailGroup = "Navigation" | "Code" | "AI" | "Dev Tools" | "Advanced";
+
+const RAIL_GROUPS: RailGroup[] = ["Navigation", "Code", "AI", "Dev Tools", "Advanced"];
+
 type RailItemDef = {
   id: SidebarViewId;
   label: string;
   icon: Parameters<typeof HugeiconsIcon>[0]["icon"];
+  group: RailGroup;
   badge?: number;
 };
 
@@ -103,30 +108,30 @@ export function SidebarRail({
   const [popoverOpen, setPopoverOpen] = useState(false);
 
   const allItems: RailItemDef[] = [
-    { id: "explorer", label: "Files", icon: FolderTreeIcon },
-    { id: "recent-files", label: "Recent Files", icon: Clock01Icon },
-    { id: "source-control", label: "Source Control", icon: FolderGitTwoIcon, badge: changedCount },
-    { id: "processes", label: "Processes", icon: TaskAdd01Icon, badge: runningProcessCount },
-    { id: "ports", label: "Ports", icon: Router01Icon },
-    { id: "profiles", label: "Profiles", icon: LayersIcon },
-    { id: "repl", label: "REPL", icon: ComputerTerminal01Icon },
-    { id: "outline", label: "Outline", icon: ListViewIcon },
-    { id: "snippets", label: "Snippets", icon: FileCodeIcon },
-    { id: "debugger", label: "Debugger", icon: Bug01Icon },
-    { id: "tests", label: "Tests", icon: TestTube01Icon },
-    { id: "database", label: "Database", icon: Database01Icon },
-    { id: "build", label: "Build", icon: Wrench01Icon },
-    { id: "code-review", label: "Code Review", icon: CodeSquareIcon },
-    { id: "agent-queue", label: "Agent Queue", icon: Queue01Icon },
-    { id: "symbol-search", label: "Symbol Search", icon: SearchCodeIcon },
-    { id: "refactor", label: "AI Refactor", icon: MagicWand01Icon },
-    { id: "share", label: "Share", icon: Globe02Icon },
-    { id: "prompt-templates", label: "Prompt Templates", icon: FlashIcon },
-    { id: "bookmarks", label: "Bookmarks", icon: BookmarkAdd01Icon },
-    { id: "notes", label: "Workspace Notes", icon: Note01Icon },
-    { id: "shell-snippets", label: "Shell Snippets", icon: ComputerTerminal01Icon },
-    { id: "ssh", label: "SSH", icon: TerminalIcon },
-    { id: "release", label: "Release", icon: RocketIcon },
+    { id: "explorer",        label: "Files",            icon: FolderTreeIcon,    group: "Navigation" },
+    { id: "recent-files",   label: "Recent Files",     icon: Clock01Icon,       group: "Navigation" },
+    { id: "outline",        label: "Outline",          icon: ListViewIcon,      group: "Navigation" },
+    { id: "bookmarks",      label: "Bookmarks",        icon: BookmarkAdd01Icon, group: "Navigation" },
+    { id: "source-control", label: "Source Control",   icon: FolderGitTwoIcon,  group: "Code", badge: changedCount },
+    { id: "build",          label: "Build",            icon: Wrench01Icon,      group: "Code" },
+    { id: "tests",          label: "Tests",            icon: TestTube01Icon,    group: "Code" },
+    { id: "debugger",       label: "Debugger",         icon: Bug01Icon,         group: "Code" },
+    { id: "symbol-search",  label: "Symbol Search",    icon: SearchCodeIcon,    group: "Code" },
+    { id: "code-review",    label: "Code Review",      icon: CodeSquareIcon,    group: "Code" },
+    { id: "agent-queue",    label: "Agent Queue",      icon: Queue01Icon,       group: "AI" },
+    { id: "refactor",       label: "AI Refactor",      icon: MagicWand01Icon,   group: "AI" },
+    { id: "prompt-templates", label: "Prompt Templates", icon: FlashIcon,       group: "AI" },
+    { id: "processes",      label: "Processes",        icon: TaskAdd01Icon,     group: "Dev Tools", badge: runningProcessCount },
+    { id: "ports",          label: "Ports",            icon: Router01Icon,      group: "Dev Tools" },
+    { id: "repl",           label: "REPL",             icon: ComputerTerminal01Icon, group: "Dev Tools" },
+    { id: "database",       label: "Database",         icon: Database01Icon,    group: "Dev Tools" },
+    { id: "profiles",       label: "Profiles",         icon: LayersIcon,        group: "Dev Tools" },
+    { id: "ssh",            label: "SSH",              icon: TerminalIcon,      group: "Dev Tools" },
+    { id: "share",          label: "Share",            icon: Globe02Icon,       group: "Advanced" },
+    { id: "notes",          label: "Workspace Notes",  icon: Note01Icon,        group: "Advanced" },
+    { id: "shell-snippets", label: "Shell Snippets",   icon: ComputerTerminal01Icon, group: "Advanced" },
+    { id: "snippets",       label: "Snippets",         icon: FileCodeIcon,      group: "Advanced" },
+    { id: "release",        label: "Release",          icon: RocketIcon,        group: "Advanced" },
   ];
 
   const itemMap = new Map(allItems.map((i) => [i.id, i]));
@@ -203,50 +208,33 @@ export function SidebarRail({
             sideOffset={6}
             className="w-56 gap-0 p-2"
           >
-            {/* Pinned section */}
-            {pinnedItems.length > 0 && (
-              <>
-                <p className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-                  Pinned
-                </p>
-                <div className="mb-2 flex flex-col gap-0.5">
-                  {pinnedItems.map((item) => (
-                    <OverflowRow
-                      key={item.id}
-                      item={item}
-                      isActive={item.id === activeView}
-                      isPinned
-                      onSelect={() => { onSelectView(item.id); setPopoverOpen(false); }}
-                      onTogglePin={() => unpin(item.id)}
-                    />
-                  ))}
+            {RAIL_GROUPS.map((group, i) => {
+              const items = allItems.filter((item) => item.group === group);
+              if (items.length === 0) return null;
+              return (
+                <div key={group}>
+                  {i > 0 && <div className="my-1.5 h-px bg-border/40" />}
+                  <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                    {group}
+                  </p>
+                  <div className="flex flex-col gap-0.5">
+                    {items.map((item) => {
+                      const isPinned = pinned.includes(item.id);
+                      return (
+                        <OverflowRow
+                          key={item.id}
+                          item={item}
+                          isActive={item.id === activeView}
+                          isPinned={isPinned}
+                          onSelect={() => { onSelectView(item.id); setPopoverOpen(false); }}
+                          onTogglePin={() => isPinned ? unpin(item.id) : pin(item.id)}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
-              </>
-            )}
-
-            {/* Overflow section */}
-            {overflowItems.length > 0 && (
-              <>
-                {pinnedItems.length > 0 && (
-                  <div className="my-1 h-px bg-border/40" />
-                )}
-                <p className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-                  More
-                </p>
-                <div className="flex flex-col gap-0.5">
-                  {overflowItems.map((item) => (
-                    <OverflowRow
-                      key={item.id}
-                      item={item}
-                      isActive={item.id === activeView}
-                      isPinned={false}
-                      onSelect={() => { onSelectView(item.id); setPopoverOpen(false); }}
-                      onTogglePin={() => pin(item.id)}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
+              );
+            })}
           </PopoverContent>
         </Popover>
 
