@@ -38,14 +38,26 @@ const SECRET_BASENAME_PREFIXES: &[&str] = &[
 
 /// Basename suffix/contains patterns checked case-insensitively.
 const SECRET_BASENAME_CONTAINS: &[&str] = &[
-    ".pem", ".key", ".p12", ".pfx", ".asc", ".gpg", ".keystore", ".jks",
+    ".pem",
+    ".key",
+    ".p12",
+    ".pfx",
+    ".asc",
+    ".gpg",
+    ".keystore",
+    ".jks",
 ];
 
 const SECRET_BASENAME_STARTSWITH: &[&str] = &["id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"];
 
 const SECRET_BASENAME_STARTSWITH_EXT: &[&str] = &[
-    "secrets.json", "secrets.yaml", "secrets.yml", "secrets.toml", "secrets.env",
-    "service-account", "service_account",
+    "secrets.json",
+    "secrets.yaml",
+    "secrets.yml",
+    "secrets.toml",
+    "secrets.env",
+    "service-account",
+    "service_account",
 ];
 
 /// Protected directory path segments (matched as subpath, not raw substring).
@@ -99,23 +111,34 @@ fn check_ai_path(path: &Path) -> Result<(), String> {
 
     // Exact / prefix matches for well-known secret filenames.
     for &pfx in SECRET_BASENAME_PREFIXES {
-        if base == pfx || base.starts_with(&format!("{pfx}.")) || base.starts_with(&format!("{pfx}_")) {
-            return Err(format!("Refused: \"{base}\" matches a sensitive-file pattern."));
+        if base == pfx
+            || base.starts_with(&format!("{pfx}."))
+            || base.starts_with(&format!("{pfx}_"))
+        {
+            return Err(format!(
+                "Refused: \"{base}\" matches a sensitive-file pattern."
+            ));
         }
     }
     for &suffix in SECRET_BASENAME_CONTAINS {
         if base.ends_with(suffix) {
-            return Err(format!("Refused: \"{base}\" matches a sensitive-file pattern."));
+            return Err(format!(
+                "Refused: \"{base}\" matches a sensitive-file pattern."
+            ));
         }
     }
     for &pfx in SECRET_BASENAME_STARTSWITH {
         if base.starts_with(pfx) {
-            return Err(format!("Refused: \"{base}\" matches a sensitive-file pattern."));
+            return Err(format!(
+                "Refused: \"{base}\" matches a sensitive-file pattern."
+            ));
         }
     }
     for &pfx in SECRET_BASENAME_STARTSWITH_EXT {
         if base.starts_with(pfx) {
-            return Err(format!("Refused: \"{base}\" matches a sensitive-file pattern."));
+            return Err(format!(
+                "Refused: \"{base}\" matches a sensitive-file pattern."
+            ));
         }
     }
 
@@ -359,7 +382,11 @@ pub fn fs_read_file_ai(
     let meta = std::fs::metadata(&canon).map_err(|e| e.to_string())?;
     let size = meta.len();
     if size > MAX_READ_BYTES {
-        return Ok(ReadAiResult::TooLarge { canonical, size, limit: MAX_READ_BYTES });
+        return Ok(ReadAiResult::TooLarge {
+            canonical,
+            size,
+            limit: MAX_READ_BYTES,
+        });
     }
 
     let bytes = std::fs::read(&canon).map_err(|e| e.to_string())?;
@@ -369,7 +396,11 @@ pub fn fs_read_file_ai(
     }
 
     match String::from_utf8(bytes) {
-        Ok(content) => Ok(ReadAiResult::Text { canonical, content, size }),
+        Ok(content) => Ok(ReadAiResult::Text {
+            canonical,
+            content,
+            size,
+        }),
         Err(_) => Ok(ReadAiResult::Binary { canonical, size }),
     }
 }

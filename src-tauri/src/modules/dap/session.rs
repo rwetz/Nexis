@@ -137,11 +137,7 @@ impl DapSession {
         self.request_blocking("configurationDone".to_string(), None)
     }
 
-    pub fn set_breakpoints(
-        &self,
-        source_path: &str,
-        lines: &[u32],
-    ) -> Result<Value, String> {
+    pub fn set_breakpoints(&self, source_path: &str, lines: &[u32]) -> Result<Value, String> {
         self.request_blocking(
             "setBreakpoints".to_string(),
             Some(json!({
@@ -152,19 +148,31 @@ impl DapSession {
     }
 
     pub fn continue_thread(&self, thread_id: i64) -> Result<Value, String> {
-        self.request_blocking("continue".to_string(), Some(json!({ "threadId": thread_id })))
+        self.request_blocking(
+            "continue".to_string(),
+            Some(json!({ "threadId": thread_id })),
+        )
     }
 
     pub fn next(&self, thread_id: i64) -> Result<Value, String> {
-        self.request_blocking("next".to_string(), Some(json!({ "threadId": thread_id, "granularity": "statement" })))
+        self.request_blocking(
+            "next".to_string(),
+            Some(json!({ "threadId": thread_id, "granularity": "statement" })),
+        )
     }
 
     pub fn step_in(&self, thread_id: i64) -> Result<Value, String> {
-        self.request_blocking("stepIn".to_string(), Some(json!({ "threadId": thread_id, "granularity": "statement" })))
+        self.request_blocking(
+            "stepIn".to_string(),
+            Some(json!({ "threadId": thread_id, "granularity": "statement" })),
+        )
     }
 
     pub fn step_out(&self, thread_id: i64) -> Result<Value, String> {
-        self.request_blocking("stepOut".to_string(), Some(json!({ "threadId": thread_id })))
+        self.request_blocking(
+            "stepOut".to_string(),
+            Some(json!({ "threadId": thread_id })),
+        )
     }
 
     pub fn pause(&self, thread_id: i64) -> Result<Value, String> {
@@ -172,11 +180,17 @@ impl DapSession {
     }
 
     pub fn disconnect(&self) -> Result<Value, String> {
-        self.request_blocking("disconnect".to_string(), Some(json!({ "terminateDebuggee": true })))
+        self.request_blocking(
+            "disconnect".to_string(),
+            Some(json!({ "terminateDebuggee": true })),
+        )
     }
 
     pub fn stack_trace(&self, thread_id: i64) -> Result<Value, String> {
-        self.request_blocking("stackTrace".to_string(), Some(json!({ "threadId": thread_id })))
+        self.request_blocking(
+            "stackTrace".to_string(),
+            Some(json!({ "threadId": thread_id })),
+        )
     }
 
     pub fn scopes(&self, frame_id: i64) -> Result<Value, String> {
@@ -267,10 +281,7 @@ fn dispatch(
 
     match msg_type {
         "response" => {
-            let req_seq = msg
-                .get("request_seq")
-                .and_then(Value::as_u64)
-                .unwrap_or(0) as u32;
+            let req_seq = msg.get("request_seq").and_then(Value::as_u64).unwrap_or(0) as u32;
             if let Some(tx) = pending.lock().unwrap().remove(&req_seq) {
                 let success = msg.get("success").and_then(Value::as_bool).unwrap_or(false);
                 let result = if success {

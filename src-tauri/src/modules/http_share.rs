@@ -76,7 +76,12 @@ impl RunningServer {
             })
             .map_err(|e| format!("spawn: {e}"))?;
 
-        Ok(Self { content, shutdown, port, sse_clients })
+        Ok(Self {
+            content,
+            shutdown,
+            port,
+            sse_clients,
+        })
     }
 
     fn update(&self, html: String) {
@@ -173,11 +178,7 @@ fn serve_html(mut stream: std::net::TcpStream, html: String) {
 }
 
 /// Keep the connection open and stream SSE events until shutdown or disconnect.
-fn serve_sse(
-    mut stream: std::net::TcpStream,
-    shutdown: Arc<Mutex<bool>>,
-    sse_clients: SseClients,
-) {
+fn serve_sse(mut stream: std::net::TcpStream, shutdown: Arc<Mutex<bool>>, sse_clients: SseClients) {
     // Register this client
     let (tx, rx) = mpsc::sync_channel::<String>(32);
     {
@@ -207,17 +208,13 @@ fn serve_sse(
                 // data may be multi-line — escape newlines within each data field
                 let escaped = data.replace('\n', "\\n").replace('\r', "");
                 let event = format!("data: {escaped}\n\n");
-                if stream.write_all(event.as_bytes()).is_err()
-                    || stream.flush().is_err()
-                {
+                if stream.write_all(event.as_bytes()).is_err() || stream.flush().is_err() {
                     break; // client disconnected
                 }
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {
                 // keepalive ping
-                if stream.write_all(b": keepalive\n\n").is_err()
-                    || stream.flush().is_err()
-                {
+                if stream.write_all(b": keepalive\n\n").is_err() || stream.flush().is_err() {
                     break;
                 }
             }
@@ -280,7 +277,10 @@ pub fn http_share_push_stream(
     data: String,
     state: tauri::State<'_, HttpShareState>,
 ) -> Result<(), String> {
-    let guard = state.server.lock().map_err(|_| "mutex poisoned".to_string())?;
+    let guard = state
+        .server
+        .lock()
+        .map_err(|_| "mutex poisoned".to_string())?;
     if let Some(srv) = guard.as_ref() {
         srv.broadcast(data);
     }
@@ -290,7 +290,10 @@ pub fn http_share_push_stream(
 /// Stop the share server.
 #[tauri::command]
 pub fn http_share_stop(state: tauri::State<'_, HttpShareState>) -> Result<(), String> {
-    let mut guard = state.server.lock().map_err(|_| "mutex poisoned".to_string())?;
+    let mut guard = state
+        .server
+        .lock()
+        .map_err(|_| "mutex poisoned".to_string())?;
     if let Some(srv) = guard.take() {
         srv.stop();
     }

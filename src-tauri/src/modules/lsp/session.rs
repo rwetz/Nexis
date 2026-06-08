@@ -48,14 +48,8 @@ impl LspSession {
             .spawn()
             .map_err(|e| format!("lsp: failed to start '{server_cmd}': {e}"))?;
 
-        let stdin = child
-            .stdin
-            .take()
-            .ok_or("lsp: no stdin pipe")?;
-        let stdout = child
-            .stdout
-            .take()
-            .ok_or("lsp: no stdout pipe")?;
+        let stdin = child.stdin.take().ok_or("lsp: no stdin pipe")?;
+        let stdout = child.stdout.take().ok_or("lsp: no stdout pipe")?;
 
         let stdin = Arc::new(Mutex::new(Box::new(stdin) as Box<dyn Write + Send>));
         let pending: Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>> =
@@ -80,11 +74,7 @@ impl LspSession {
         Ok(session)
     }
 
-    pub fn request_blocking(
-        &self,
-        method: String,
-        params: Option<Value>,
-    ) -> Result<Value, String> {
+    pub fn request_blocking(&self, method: String, params: Option<Value>) -> Result<Value, String> {
         let id = self.next_request_id.fetch_add(1, Ordering::Relaxed);
         let (tx, rx) = mpsc::sync_channel(1);
         self.pending.lock().unwrap().insert(id, tx);
@@ -330,8 +320,26 @@ pub fn path_to_uri(path: &str) -> String {
 fn percent_encode_path(s: &str) -> String {
     s.chars()
         .flat_map(|c| {
-            let should_encode = matches!(c, ' ' | '#' | '?' | '[' | ']' | '@' | '!' | '$' | '&'
-                | '\'' | '(' | ')' | '*' | '+' | ',' | ';' | '=' | '%');
+            let should_encode = matches!(
+                c,
+                ' ' | '#'
+                    | '?'
+                    | '['
+                    | ']'
+                    | '@'
+                    | '!'
+                    | '$'
+                    | '&'
+                    | '\''
+                    | '('
+                    | ')'
+                    | '*'
+                    | '+'
+                    | ','
+                    | ';'
+                    | '='
+                    | '%'
+            );
             if should_encode {
                 let mut buf = [0u8; 4];
                 let len = c.encode_utf8(&mut buf).len();
@@ -347,4 +355,3 @@ fn percent_encode_path(s: &str) -> String {
         })
         .collect()
 }
-

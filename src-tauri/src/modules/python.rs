@@ -119,8 +119,8 @@ pub async fn py_detect_envs(workspace_root: String) -> Vec<PythonEnv> {
         let venv_dir = root.join(name);
         if let Some(python_path) = find_python_in_venv(&venv_dir) {
             // Prefer fast pyvenv.cfg version read; fall back to subprocess
-            let version = read_pyvenv_version(&venv_dir)
-                .or_else(|| get_python_version(&python_path));
+            let version =
+                read_pyvenv_version(&venv_dir).or_else(|| get_python_version(&python_path));
             envs.push(PythonEnv {
                 name: name.to_string(),
                 path: venv_dir.to_string_lossy().into_owned(),
@@ -146,7 +146,10 @@ pub async fn py_detect_envs(workspace_root: String) -> Vec<PythonEnv> {
                         .file_name()
                         .map(|n| n.to_string_lossy().into_owned())
                         .unwrap_or_else(|| "conda-env".to_string());
-                    if envs.iter().any(|e| e.python_path == python_path.to_string_lossy().as_ref()) {
+                    if envs
+                        .iter()
+                        .any(|e| e.python_path == python_path.to_string_lossy().as_ref())
+                    {
                         continue;
                     }
                     let version = get_python_version(&python_path);
@@ -164,9 +167,10 @@ pub async fn py_detect_envs(workspace_root: String) -> Vec<PythonEnv> {
 
     // System Python (as a fallback option)
     if let Some(python_path) = which_python() {
-        if !envs.iter().any(|e| {
-            e.python_path == python_path.to_string_lossy().as_ref()
-        }) {
+        if !envs
+            .iter()
+            .any(|e| e.python_path == python_path.to_string_lossy().as_ref())
+        {
             let version = get_python_version(&python_path);
             envs.push(PythonEnv {
                 name: "system".to_string(),

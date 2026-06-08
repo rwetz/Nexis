@@ -21,9 +21,9 @@ use crate::modules::git::types::{
     GitOutput, TextSource, DEFAULT_TIMEOUT_SECS, MAX_FILE_BYTES, MAX_OUTPUT_BYTES,
     MAX_TIMEOUT_SECS, MIN_GIT_VERSION,
 };
-use crate::modules::workspace::WorkspaceEnv;
 #[cfg(windows)]
 use crate::modules::workspace::validate_wsl_distro_name;
+use crate::modules::workspace::WorkspaceEnv;
 
 #[derive(Clone)]
 enum Availability {
@@ -420,9 +420,9 @@ mod tests {
         decode_text, parse_git_version, prune_expired_availability_entries, version_meets_minimum,
         Availability, AvailabilityCache, AVAILABILITY_TTL,
     };
+    use crate::modules::git::types::TextSource;
     #[cfg(windows)]
     use crate::modules::workspace::WorkspaceEnv;
-    use crate::modules::git::types::TextSource;
     use std::collections::HashMap;
     #[cfg(windows)]
     use std::ffi::OsString;
@@ -538,7 +538,10 @@ mod tests {
         let bytes = vec![b'h', b'i', b' ', 0xE9, b'!'];
         match decode_text(bytes) {
             TextSource::Text(s) => {
-                assert!(!s.is_empty(), "output must not be empty for non-UTF-8 input");
+                assert!(
+                    !s.is_empty(),
+                    "output must not be empty for non-UTF-8 input"
+                );
                 assert!(s.starts_with("hi "), "valid ASCII prefix must be preserved");
                 // The invalid byte becomes U+FFFD rather than causing data loss.
                 assert!(s.contains('\u{FFFD}'), "replacement char expected for 0xE9");

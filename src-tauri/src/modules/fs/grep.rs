@@ -304,7 +304,9 @@ mod tests {
 
     #[test]
     fn build_globset_extension_pattern_matches_correctly() {
-        let set = build_globset(&["*.test.ts".to_string()]).expect("ok").unwrap();
+        let set = build_globset(&["*.test.ts".to_string()])
+            .expect("ok")
+            .unwrap();
         assert!(set.is_match("component.test.ts"));
         assert!(!set.is_match("component.ts"));
     }

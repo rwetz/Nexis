@@ -80,7 +80,9 @@ struct ChildKillGuard {
 
 impl ChildKillGuard {
     fn new(killer: Box<dyn ChildKiller + Send + Sync>) -> Self {
-        Self { killer: Some(killer) }
+        Self {
+            killer: Some(killer),
+        }
     }
 
     fn disarm(&mut self) {
@@ -151,10 +153,8 @@ pub fn spawn(
         master: Mutex::new(pair.master),
     });
 
-    let pending: Arc<(Mutex<Vec<u8>>, Condvar)> = Arc::new((
-        Mutex::new(Vec::with_capacity(READ_BUF)),
-        Condvar::new(),
-    ));
+    let pending: Arc<(Mutex<Vec<u8>>, Condvar)> =
+        Arc::new((Mutex::new(Vec::with_capacity(READ_BUF)), Condvar::new()));
     let done = Arc::new(AtomicBool::new(false));
     let spawn_at = Instant::now();
 
@@ -174,7 +174,10 @@ pub fn spawn(
                     Ok(n) => {
                         if !logged_first {
                             logged_first = true;
-                            log::debug!("pty first byte after {}ms", spawn_at.elapsed().as_millis());
+                            log::debug!(
+                                "pty first byte after {}ms",
+                                spawn_at.elapsed().as_millis()
+                            );
                         }
                         filtered.clear();
                         da_filter.process(&buf[..n], &mut filtered, |reply| {
@@ -230,8 +233,7 @@ pub fn spawn(
                 }
                 // Coalesce a short window so a burst flushes as one chunk.
                 thread::sleep(FLUSH_COALESCE);
-                let chunk =
-                    std::mem::take(&mut *lock.lock().unwrap_or_else(|e| e.into_inner()));
+                let chunk = std::mem::take(&mut *lock.lock().unwrap_or_else(|e| e.into_inner()));
                 if chunk.is_empty() {
                     continue;
                 }

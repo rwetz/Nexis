@@ -180,7 +180,10 @@ mod tests {
         let stdout = format!("{attacker}{trailer}");
         let (clean, cwd) = strip_cwd_sentinel(&stdout, "/fallback", &s.sentinel);
         assert_eq!(cwd.as_deref(), Some("/real"));
-        assert!(clean.contains(attacker), "attacker payload survives in stdout");
+        assert!(
+            clean.contains(attacker),
+            "attacker payload survives in stdout"
+        );
     }
 
     #[test]
@@ -202,7 +205,10 @@ mod tests {
     fn wrap_posix_includes_pwd_print_and_exit_code() {
         let s = ShellSession::new("/tmp".into(), WorkspaceEnv::Local);
         let wrapped = wrap_posix_with_sentinel("ls", &s.sentinel);
-        assert!(wrapped.contains("printf"), "must use printf to emit sentinel");
+        assert!(
+            wrapped.contains("printf"),
+            "must use printf to emit sentinel"
+        );
         assert!(wrapped.contains("$(pwd)"), "must capture pwd");
         assert!(wrapped.contains(&s.sentinel));
         // Must capture exit code and re-exit with it so the tool sees the
@@ -215,7 +221,10 @@ mod tests {
     fn wrap_windows_uses_psd_path_not_pwd() {
         let s = ShellSession::new("C:/Users/Ryan".into(), WorkspaceEnv::Local);
         let wrapped = wrap_with_sentinel("dir", &WorkspaceEnv::Local, &s.sentinel);
-        assert!(wrapped.contains("$PWD.Path"), "Windows wrap must use $PWD.Path");
+        assert!(
+            wrapped.contains("$PWD.Path"),
+            "Windows wrap must use $PWD.Path"
+        );
         assert!(wrapped.contains(&s.sentinel));
     }
 
@@ -231,7 +240,10 @@ mod tests {
         let s = ShellSession::new("/tmp".into(), WorkspaceEnv::Local);
         let stdout = format!("line1\nline2\n\n{}/new/cwd\n", s.sentinel);
         let (clean, cwd) = strip_cwd_sentinel(&stdout, "/fallback", &s.sentinel);
-        assert_eq!(clean, "line1\nline2", "trailing newlines before sentinel must be stripped");
+        assert_eq!(
+            clean, "line1\nline2",
+            "trailing newlines before sentinel must be stripped"
+        );
         assert_eq!(cwd.as_deref(), Some("/new/cwd"));
     }
 

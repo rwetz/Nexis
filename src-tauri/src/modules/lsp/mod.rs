@@ -55,11 +55,7 @@ pub async fn lsp_start(
     .map_err(|e| e.to_string())??;
 
     let id = state.next_id.fetch_add(1, Ordering::Relaxed);
-    state
-        .sessions
-        .write()
-        .unwrap()
-        .insert(id, Arc::new(result));
+    state.sessions.write().unwrap().insert(id, Arc::new(result));
     Ok(id)
 }
 

@@ -371,7 +371,6 @@ pub async fn git_stash_drop(
     .await
 }
 
-
 // ── Worktree commands ─────────────────────────────────────────────────────────
 
 #[tauri::command]

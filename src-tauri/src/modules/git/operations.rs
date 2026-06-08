@@ -309,12 +309,7 @@ pub fn unstage(
     if !looks_like_no_head(&output) {
         return ensure_success(&output, "git reset failed");
     }
-    let mut rm_args: Vec<OsString> = vec![
-        "rm".into(),
-        "--cached".into(),
-        "-r".into(),
-        "--".into(),
-    ];
+    let mut rm_args: Vec<OsString> = vec!["rm".into(), "--cached".into(), "-r".into(), "--".into()];
     for p in &resolved {
         rm_args.push(p.clone().into());
     }
@@ -1010,7 +1005,12 @@ pub fn stash_list(
             .and_then(|s| s.strip_suffix('}'))
             .and_then(|s| s.parse::<u32>().ok())
             .unwrap_or(0);
-        entries.push(GitStashEntry { index, ref_name, message, timestamp_secs });
+        entries.push(GitStashEntry {
+            index,
+            ref_name,
+            message,
+            timestamp_secs,
+        });
     }
     Ok(entries)
 }
@@ -1039,9 +1039,7 @@ pub fn stash_push(
 
 fn stash_ref_is_safe(r: &str) -> bool {
     // Allow stash@{N} only
-    r.starts_with("stash@{")
-        && r.ends_with('}')
-        && r[7..r.len() - 1].parse::<u32>().is_ok()
+    r.starts_with("stash@{") && r.ends_with('}') && r[7..r.len() - 1].parse::<u32>().is_ok()
 }
 
 pub fn stash_apply(
@@ -1152,7 +1150,12 @@ pub fn submodule_status(
             _ => "ok",
         }
         .to_string();
-        entries.push(GitSubmoduleEntry { path, name, sha, status });
+        entries.push(GitSubmoduleEntry {
+            path,
+            name,
+            sha,
+            status,
+        });
     }
     Ok(entries)
 }
@@ -1161,10 +1164,7 @@ pub fn submodule_status(
 
 /// List all worktrees for the given repo.
 /// Parses `git worktree list --porcelain` output.
-pub fn worktree_list(
-    repo_root: &str,
-    workspace: &WorkspaceEnv,
-) -> Result<Vec<GitWorktreeEntry>> {
+pub fn worktree_list(repo_root: &str, workspace: &WorkspaceEnv) -> Result<Vec<GitWorktreeEntry>> {
     let out = run_git(
         workspace,
         Some(repo_root),
@@ -1194,9 +1194,7 @@ pub fn worktree_list(
             } else if let Some(v) = line.strip_prefix("HEAD ") {
                 sha = v.trim()[..7.min(v.trim().len())].to_string();
             } else if let Some(v) = line.strip_prefix("branch ") {
-                branch = v.trim()
-                    .trim_start_matches("refs/heads/")
-                    .to_string();
+                branch = v.trim().trim_start_matches("refs/heads/").to_string();
             } else if line == "detached" {
                 is_detached = true;
             } else if line.starts_with("prunable") {
@@ -1246,11 +1244,7 @@ pub fn worktree_add(
 
 /// Remove a worktree by path.  Passes `--force` to allow removing
 /// worktrees with uncommitted changes (the user confirmed in the UI).
-pub fn worktree_remove(
-    repo_root: &str,
-    path: &str,
-    workspace: &WorkspaceEnv,
-) -> Result<()> {
+pub fn worktree_remove(repo_root: &str, path: &str, workspace: &WorkspaceEnv) -> Result<()> {
     let out = run_git(
         workspace,
         Some(repo_root),

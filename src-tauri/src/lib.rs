@@ -6,7 +6,9 @@
 
 mod modules;
 
-use modules::{dap, fs, git, http_share, lsp, net, pty, python, recording, secrets, shell, workspace};
+use modules::{
+    dap, fs, git, http_share, lsp, net, pty, python, recording, secrets, shell, workspace,
+};
 use std::sync::Mutex;
 use tauri::State;
 use tauri_plugin_window_state::StateFlags;
@@ -25,7 +27,9 @@ fn parse_launch_dir() -> Option<String> {
         if arg.starts_with('-') {
             continue;
         }
-        let Ok(canon) = std::fs::canonicalize(&arg) else { continue };
+        let Ok(canon) = std::fs::canonicalize(&arg) else {
+            continue;
+        };
         if !canon.is_dir() {
             continue;
         }
@@ -34,7 +38,6 @@ fn parse_launch_dir() -> Option<String> {
     }
     None
 }
-
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
