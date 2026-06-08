@@ -333,8 +333,8 @@ pub(crate) fn build_oneshot_command(
 // Shell history reader
 // ──────────────────────────────────────────────────────────────────────────
 
-/// Reads the user's shell history file and returns deduplicated entries,
-/// newest first. Handles zsh, bash, fish, and PowerShell history formats.
+// Reads the user's shell history file and returns deduplicated entries,
+// newest first. Handles zsh, bash, fish, and PowerShell history formats.
 // ── Shell history helpers ─────────────────────────────────────────────────────
 
 /// Collect all history file paths to try, in priority order.

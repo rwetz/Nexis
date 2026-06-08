@@ -17,10 +17,12 @@ use tauri::{AppHandle, Emitter};
 
 use crate::modules::proc::hide_console;
 
+type PendingMap = Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>;
+
 pub struct DapSession {
     _child: Child,
     stdin: Arc<Mutex<Box<dyn Write + Send>>>,
-    pending: Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>,
+    pending: PendingMap,
     next_seq: AtomicU32,
 }
 
@@ -50,8 +52,7 @@ impl DapSession {
         let stdout = child.stdout.take().ok_or("dap: no stdout")?;
 
         let stdin = Arc::new(Mutex::new(Box::new(stdin) as Box<dyn Write + Send>));
-        let pending: Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>> =
-            Arc::new(Mutex::new(HashMap::new()));
+        let pending: PendingMap = Arc::new(Mutex::new(HashMap::new()));
 
         {
             let pending = pending.clone();
@@ -227,7 +228,7 @@ impl Drop for DapSession {
 
 fn reader_loop<R: Read>(
     mut reader: BufReader<R>,
-    pending: Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>,
+    pending: PendingMap,
     app: AppHandle,
     session_id: u32,
 ) {
@@ -273,7 +274,7 @@ fn reader_loop<R: Read>(
 
 fn dispatch(
     msg: Value,
-    pending: &Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>,
+    pending: &PendingMap,
     app: &AppHandle,
     session_id: u32,
 ) {

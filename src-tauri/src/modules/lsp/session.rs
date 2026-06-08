@@ -17,11 +17,13 @@ use tauri::{AppHandle, Emitter};
 
 use crate::modules::proc::hide_console;
 
+type PendingMap = Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>;
+
 pub struct LspSession {
     /// Kept alive so stdin/stdout pipes stay open.
     _child: Child,
     stdin: Arc<Mutex<Box<dyn Write + Send>>>,
-    pending: Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>,
+    pending: PendingMap,
     next_request_id: AtomicU32,
 }
 
@@ -52,8 +54,7 @@ impl LspSession {
         let stdout = child.stdout.take().ok_or("lsp: no stdout pipe")?;
 
         let stdin = Arc::new(Mutex::new(Box::new(stdin) as Box<dyn Write + Send>));
-        let pending: Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>> =
-            Arc::new(Mutex::new(HashMap::new()));
+        let pending: PendingMap = Arc::new(Mutex::new(HashMap::new()));
 
         {
             let pending = pending.clone();
@@ -123,7 +124,7 @@ impl LspSession {
         let name = workspace_root
             .replace('\\', "/")
             .split('/')
-            .last()
+            .next_back()
             .unwrap_or("workspace")
             .to_string();
 
@@ -220,7 +221,7 @@ impl Drop for LspSession {
 
 fn reader_loop<R: Read>(
     mut reader: BufReader<R>,
-    pending: Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>,
+    pending: PendingMap,
     app: AppHandle,
     workspace_root: String,
 ) {
@@ -266,7 +267,7 @@ fn reader_loop<R: Read>(
 
 fn dispatch_message(
     msg: Value,
-    pending: &Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>,
+    pending: &PendingMap,
     app: &AppHandle,
     workspace_root: &str,
 ) {
