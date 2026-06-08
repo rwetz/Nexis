@@ -30,6 +30,17 @@ const mssqlLoader: LanguageLoader = () =>
 const plsqlLoader: LanguageLoader = () =>
   import("@codemirror/legacy-modes/mode/sql").then((m) => m.plSQL);
 
+const kotlinLoader: LanguageLoader = () =>
+  import("@codemirror/legacy-modes/mode/clike").then((m) => m.kotlin);
+const scalaLoader: LanguageLoader = () =>
+  import("@codemirror/legacy-modes/mode/clike").then((m) => m.scala);
+const dartLoader: LanguageLoader = () =>
+  import("@codemirror/legacy-modes/mode/clike").then((m) => m.dart);
+const nginxLoader: LanguageLoader = () =>
+  import("@codemirror/legacy-modes/mode/nginx").then((m) => m.nginx);
+const graphqlLoader: LanguageLoader = () =>
+  import("cm6-graphql").then((m) => m.graphqlLanguageSupport());
+
 /**
  * Extension → loader. Each loader is a dynamic import so language packs
  * only enter the bundle when a matching file is opened.
@@ -56,9 +67,14 @@ const loaders: Record<string, LanguageLoader> = {
       m.javascript({ jsx: true, typescript: true }),
     ),
 
+  // Vue / Svelte — HTML is the closest available grammar (handles template/script/style blocks)
+  vue: () => import("@codemirror/lang-html").then((m) => m.html()),
+  svelte: () => import("@codemirror/lang-html").then((m) => m.html()),
+
   rs: () => import("@codemirror/lang-rust").then((m) => m.rust()),
   go: () => import("@codemirror/lang-go").then((m) => m.go()),
   py: () => import("@codemirror/lang-python").then((m) => m.python()),
+  pyw: () => import("@codemirror/lang-python").then((m) => m.python()),
   json: jsonLoader,
   jsonc: jsonLoader,
   json5: jsonLoader,
@@ -72,12 +88,18 @@ const loaders: Record<string, LanguageLoader> = {
   mssql: mssqlLoader,
   plsql: plsqlLoader,
 
+  // GraphQL
+  graphql: graphqlLoader,
+  gql: graphqlLoader,
+
   md: () => import("@codemirror/lang-markdown").then((m) => m.markdown()),
   markdown: () => import("@codemirror/lang-markdown").then((m) => m.markdown()),
 
   html: () => import("@codemirror/lang-html").then((m) => m.html()),
   htm: () => import("@codemirror/lang-html").then((m) => m.html()),
   css: () => import("@codemirror/lang-css").then((m) => m.css()),
+  // SCSS: sass legacy mode handles brace-based SCSS syntax
+  scss: () => import("@codemirror/legacy-modes/mode/sass").then((m) => m.sass),
 
   php: () => import("@codemirror/lang-php").then((m) => m.php({ plain: true })),
   rb: rubyLoader,
@@ -100,7 +122,50 @@ const loaders: Record<string, LanguageLoader> = {
   // C#
   cs: () => import("@codemirror/legacy-modes/mode/clike").then((m) => m.csharp),
 
-  // Legacy-modes: loaders return the raw StreamParser; wrapped below.
+  // Kotlin
+  kt: kotlinLoader,
+  kts: kotlinLoader,
+
+  // Scala
+  scala: scalaLoader,
+
+  // Dart
+  dart: dartLoader,
+
+  // Lua
+  lua: () => import("@codemirror/legacy-modes/mode/lua").then((m) => m.lua),
+
+  // Haskell
+  hs: () =>
+    import("@codemirror/legacy-modes/mode/haskell").then((m) => m.haskell),
+
+  // R
+  r: () => import("@codemirror/legacy-modes/mode/r").then((m) => m.r),
+
+  // PowerShell
+  ps1: () =>
+    import("@codemirror/legacy-modes/mode/powershell").then(
+      (m) => m.powerShell,
+    ),
+
+  // Swift
+  swift: () =>
+    import("@codemirror/legacy-modes/mode/swift").then((m) => m.swift),
+
+  // Nginx / generic config files
+  conf: nginxLoader,
+
+  // Protocol Buffers
+  proto: () =>
+    import("@codemirror/legacy-modes/mode/protobuf").then((m) => m.protobuf),
+
+  // Elixir — Erlang grammar is the closest available (shared atom/module token structure)
+  ex: () =>
+    import("@codemirror/legacy-modes/mode/erlang").then((m) => m.erlang),
+  exs: () =>
+    import("@codemirror/legacy-modes/mode/erlang").then((m) => m.erlang),
+
+  // Shell family
   sh: () => import("@codemirror/legacy-modes/mode/shell").then((m) => m.shell),
   bash: () =>
     import("@codemirror/legacy-modes/mode/shell").then((m) => m.shell),
@@ -117,6 +182,7 @@ const loaders: Record<string, LanguageLoader> = {
 const filenameOverrides: Record<string, LanguageLoader> = {
   dockerfile: loaders.dockerfile!,
   "dockerfile.dev": loaders.dockerfile!,
+  "nginx.conf": nginxLoader,
   gemfile: rubyLoader,
   rakefile: rubyLoader,
   podfile: rubyLoader,
