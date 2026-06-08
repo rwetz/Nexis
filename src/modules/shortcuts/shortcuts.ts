@@ -286,18 +286,19 @@ export const SHORTCUTS: Shortcut[] = [
   // keys natively. We register them here so the shortcuts dialog can surface
   // them — they don't have App-level handlers, so `useGlobalShortcuts` falls
   // through without `preventDefault`, leaving CodeMirror to handle the event.
-  // Also excluded from the customization UI in ShortcutsSection.
   {
     id: "editor.undo",
     label: "Undo",
     group: "Editor",
     defaultBindings: [{ [MOD_PROP]: true, key: "z" }],
+    displayOnly: true,
   },
   {
     id: "editor.redo",
     label: "Redo",
     group: "Editor",
     defaultBindings: [{ [MOD_PROP]: true, key: "y" }],
+    displayOnly: true,
   },
 ];
 

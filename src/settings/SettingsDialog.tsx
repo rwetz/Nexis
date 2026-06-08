@@ -67,16 +67,20 @@ export function SettingsDialog() {
     if (isOpen) setActiveTab(storeTab);
   }, [isOpen, storeTab]);
 
-  // Reset scroll and re-evaluate overflow whenever the active tab changes.
+  // Reset scroll and re-evaluate overflow on every open AND tab switch.
+  // isOpen is in deps so that re-opening on the same tab (no activeTab change)
+  // still resets the stale isAtBottom state from the previous session.
   useEffect(() => {
+    setIsAtBottom(false); // clear stale state immediately
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) return; // dialog content not yet mounted (or just unmounted)
     el.scrollTop = 0;
     requestAnimationFrame(() => {
-      if (!scrollRef.current) return;
-      setIsAtBottom(scrollRef.current.scrollHeight <= scrollRef.current.clientHeight + 2);
+      const el = scrollRef.current;
+      if (!el) return;
+      setIsAtBottom(el.scrollHeight <= el.clientHeight + 2);
     });
-  }, [activeTab]);
+  }, [isOpen, activeTab]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;

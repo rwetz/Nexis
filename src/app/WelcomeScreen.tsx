@@ -90,7 +90,7 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
         <Button
           size="sm"
           onClick={onNewTerminal}
-          className="bg-brand text-brand-foreground hover:bg-brand/85"
+          className="bg-brand text-brand-foreground hover:bg-brand/80"
         >
           New Terminal
           <span className="ml-1.5 opacity-50">{fmtShortcut(MOD_KEY, "T")}</span>
