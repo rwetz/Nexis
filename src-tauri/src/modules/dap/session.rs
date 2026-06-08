@@ -272,12 +272,7 @@ fn reader_loop<R: Read>(
     }
 }
 
-fn dispatch(
-    msg: Value,
-    pending: &PendingMap,
-    app: &AppHandle,
-    session_id: u32,
-) {
+fn dispatch(msg: Value, pending: &PendingMap, app: &AppHandle, session_id: u32) {
     let msg_type = msg.get("type").and_then(Value::as_str).unwrap_or("");
 
     match msg_type {

@@ -2,6 +2,30 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.0] — 2026-06-08
+
+A focused polish pass — no new features and no breaking changes. Implements P1–P7 from the June 2026 UI critique (`UI_IMPROVEMENTS.md`) plus a Rust lint/format cleanup.
+
+### Added
+- **Brand accent color** — new `--brand` / `--brand-foreground` CSS variables (coral `oklch(0.72 0.15 35)`) defined in `globals.css` and wired into the Tailwind theme. Applied to the welcome-screen CTA button and the zoom-slider range track so the accent is consistent instead of hardcoded per component.
+- **Welcome screen AI entry point** — the shortcut grid's first action is now **Open AI agent** (`Ctrl+I`) instead of a duplicate "New terminal", and the subtitle surfaces the AI agent in one line.
+
+### Changed
+- **Sidebar overflow menu** — the overflow popover is restructured into five named, labeled groups (Navigation / Code / AI / Dev Tools / Advanced), replacing the flat 20-item PINNED / MORE split. Pin/unpin toggles and top-to-bottom keyboard navigation are preserved.
+- **Shortcuts modal key badges** — every key token now renders as a pill badge, including punctuation (`,` `` ` `` `]`). "Jump to tab 1–9" reads as two distinct badges with a dash separator rather than one elongated pill.
+- **Section header weight** — settings and shortcuts-modal section headers upgraded to `text-xs font-semibold text-foreground/70`, making them clearly distinct from body copy.
+- **Settings modal scroll affordance** — a bottom fade overlay appears when the active tab's content overflows and disappears once scrolled to the bottom, making the cut-off Terminal section discoverable.
+- **Terminal recording dot** — the recording toggle gains a `hover:bg-muted` boundary so it reads as a clickable target in its resting state.
+
+### Fixed
+- **Undo/redo in the shortcuts list** — `editor.undo` and `editor.redo` are marked `displayOnly` (they are handled by CodeMirror's history keymap and cannot be remapped via the global shortcut system), matching their code comment.
+- **Settings scroll fade on reopen** — the scroll-reset effect now keys off the dialog open state, so reopening on the same tab clears the stale "scrolled to bottom" flag and the fade shows correctly.
+- **Welcome-screen CTA hover** — brand button hover opacity normalized to `/80` to match the default button variant.
+
+### Internal
+- **CI** — added Dependabot, a Rust lint job (`cargo fmt --check` + `cargo clippy -D warnings`), and a weekly `cargo audit`.
+- **Rust cleanup** — applied `cargo fmt` across all source files and resolved every `clippy -D warnings` violation (a `PendingMap` type alias for the DAP/LSP pending-request maps, `next_back()` over `.last()`, and a stray doc comment).
+
 ## [1.2.0] — 2026-05-30
 
 ### Added

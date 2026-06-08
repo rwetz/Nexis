@@ -265,12 +265,7 @@ fn reader_loop<R: Read>(
     }
 }
 
-fn dispatch_message(
-    msg: Value,
-    pending: &PendingMap,
-    app: &AppHandle,
-    workspace_root: &str,
-) {
+fn dispatch_message(msg: Value, pending: &PendingMap, app: &AppHandle, workspace_root: &str) {
     // Response: has numeric "id"
     if let Some(id_val) = msg.get("id") {
         if let Some(id) = id_val.as_u64() {
