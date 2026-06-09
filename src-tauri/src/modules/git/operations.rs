@@ -438,9 +438,9 @@ pub fn push(
         &repo_root.git_path,
         ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
     )?;
-    if upstream.is_none() {
+    let Some(upstream) = upstream else {
         return Err(GitError::NoUpstream);
-    }
+    };
 
     let output = run_git(
         &repo_root.workspace,
@@ -450,7 +450,6 @@ pub fn push(
     )?;
     ensure_success(&output, "git push failed")?;
 
-    let upstream = upstream.unwrap();
     let (remote, branch) = split_upstream(&upstream);
     Ok(GitPushResult {
         remote,

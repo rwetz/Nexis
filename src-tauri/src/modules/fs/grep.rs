@@ -163,7 +163,7 @@ pub fn fs_grep(
     });
 
     let final_hits = Arc::try_unwrap(hits)
-        .map(|m| m.into_inner().unwrap())
+        .map(|m| m.into_inner().unwrap_or_else(|e| e.into_inner()))
         .unwrap_or_default();
 
     Ok(GrepResponse {

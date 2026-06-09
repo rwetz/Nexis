@@ -98,7 +98,11 @@ where
     if guard.is_none() {
         *guard = Some(read_store(app)?);
     }
-    let map = guard.as_mut().expect("cache initialized above");
+    // `guard` was just set to `Some` above; fall back to an error instead of
+    // a panic on the unreachable None branch (panic = "abort" in release).
+    let Some(map) = guard.as_mut() else {
+        return Err("secrets cache unexpectedly empty".into());
+    };
     Ok(f(map))
 }
 

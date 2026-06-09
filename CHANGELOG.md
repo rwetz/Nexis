@@ -2,6 +2,18 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.9] — 2026-06-09
+
+Reliability hardening (A1) — convert avoidable production panics to errors. Because the release profile is `panic = "abort"`, every reachable `.unwrap()`/`.expect()` is a potential whole-app abort.
+
+### Changed
+- **`git push` no longer relies on a distance-coupled `unwrap`** — `git/operations.rs` replaced `upstream.unwrap()` (sound only because of an `is_none()` early-return a dozen lines above) with a `let…else`, so the value can never panic-abort the app if that guard is ever moved or refactored.
+- **Poison-resilient locks** — the git-availability cache (`git/process.rs`) and the grep results collector (`fs/grep.rs`) now recover from a poisoned lock instead of `.unwrap()`/`.expect()`-panicking, matching the established PTY/workspace pattern.
+- **Secrets store (Linux)** — `with_store` returns an error on the (unreachable) empty-cache branch instead of `.expect()`-panicking.
+
+### Notes
+- The PTY reader/flusher/waiter thread-spawn sites (`pty/session.rs`) were intentionally left as `.expect()`: a correct conversion to error-returns must kill the just-spawned child shell on the failure path (the kill-guard is already disarmed by then), and that cleanup carries real risk in the delicate ConPTY lifecycle for an extremely rare (OS thread-exhaustion) failure that the crash reporter already captures.
+
 ## [1.15.8] — 2026-06-09
 
 More bug-catching tests — no runtime changes.
