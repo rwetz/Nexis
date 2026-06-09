@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.7] — 2026-06-09
+
+More bug-catching tests — no runtime changes.
+
+### Added
+- **Shell session sentinel anti-spoof fuzz** — `shell/session.rs` gains a 50,000-iteration fuzz test for `strip_cwd_sentinel`, asserting its security guarantee: a working-directory update is extracted only when the exact random per-session sentinel is present, so untrusted command output (laced with foreign/partial sentinels, multibyte text, and control bytes) can never spoof a cwd change or alter the passed-through stdout — and never panics.
+
 ## [1.15.6] — 2026-06-09
 
 Robustness + more bug-catching tests.

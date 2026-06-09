@@ -259,4 +259,60 @@ mod tests {
         let (_, cwd) = strip_cwd_sentinel(&stdout, "/fallback", &s.sentinel);
         assert_eq!(cwd.as_deref(), Some("/real"));
     }
+
+    struct R(u64);
+    impl R {
+        fn next_u64(&mut self) -> u64 {
+            let mut x = self.0;
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            self.0 = x;
+            x
+        }
+    }
+
+    /// `strip_cwd_sentinel` runs over the stdout of arbitrary user commands. Its
+    /// security guarantee is that a cwd update is extracted ONLY when the exact
+    /// random session sentinel is present — untrusted output must never spoof a
+    /// directory change. This fuzzes that guarantee (and no-panic) over inputs
+    /// laced with foreign/partial sentinels, multibyte text, and control bytes.
+    #[test]
+    fn fuzz_strip_cwd_sentinel_never_panics_and_resists_spoofing() {
+        let s = ShellSession::new("/tmp".into(), WorkspaceEnv::Local);
+        let real = s.sentinel.clone();
+
+        const PIECES: &[&str] = &[
+            "output line\n",
+            "__NEXIS_CWD_",
+            "__NEXIS_CWD_dead_beef__/evil\n",
+            "ünïcödé output\n",
+            "/spoofed/path",
+            "\n\n",
+            "partial __NEXIS_CW",
+            "no newline here",
+            "",
+            "__\n",
+            "\u{1b}[2J",
+            "\u{0}raw",
+        ];
+        let mut rng = R(0xF00D_BA11_5EED_CAFE);
+        for _ in 0..50_000 {
+            let piece_count = (rng.next_u64() as usize) % 10;
+            let mut stdout = String::new();
+            for _ in 0..piece_count {
+                stdout.push_str(PIECES[(rng.next_u64() as usize) % PIECES.len()]);
+            }
+            // The call itself is the no-panic assertion.
+            let (clean, cwd) = strip_cwd_sentinel(&stdout, "/fallback", &real);
+            if stdout.contains(&real) {
+                assert!(cwd.is_some(), "real sentinel present but no cwd extracted");
+            } else {
+                // Anti-spoof: without the exact session sentinel, stdout passes
+                // through untouched and no cwd is ever extracted.
+                assert!(cwd.is_none(), "spoofed cwd extracted from {stdout:?}");
+                assert_eq!(clean, stdout, "stdout altered without a sentinel match");
+            }
+        }
+    }
 }
