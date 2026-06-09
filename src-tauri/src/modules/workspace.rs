@@ -30,13 +30,13 @@ pub struct WorkspaceRegistry {
 impl WorkspaceRegistry {
     pub fn authorize<P: AsRef<Path>>(&self, path: P) -> std::io::Result<PathBuf> {
         let canonical = std::fs::canonicalize(path.as_ref())?;
-        let mut set = self.roots.lock().expect("workspace registry poisoned");
+        let mut set = self.roots.lock().unwrap_or_else(|e| e.into_inner());
         set.insert(canonical.clone());
         Ok(canonical)
     }
 
     pub fn is_authorized(&self, target: &Path) -> bool {
-        let set = self.roots.lock().expect("workspace registry poisoned");
+        let set = self.roots.lock().unwrap_or_else(|e| e.into_inner());
         set.iter().any(|root| target.starts_with(root))
     }
 
@@ -46,7 +46,7 @@ impl WorkspaceRegistry {
             let cache = self
                 .canonical_cache
                 .lock()
-                .expect("canonical cache poisoned");
+                .unwrap_or_else(|e| e.into_inner());
             if let Some(entry) = cache.get(&key) {
                 if entry.inserted_at.elapsed() < CANONICAL_TTL {
                     return Ok(entry.canonical.clone());
@@ -57,7 +57,7 @@ impl WorkspaceRegistry {
         let mut cache = self
             .canonical_cache
             .lock()
-            .expect("canonical cache poisoned");
+            .unwrap_or_else(|e| e.into_inner());
         if cache.len() >= CANONICAL_CACHE_CAP {
             cache.retain(|_, entry| entry.inserted_at.elapsed() < CANONICAL_TTL);
             if cache.len() >= CANONICAL_CACHE_CAP {

@@ -190,4 +190,88 @@ mod tests {
         assert_eq!(parsed.branch, "(detached)");
         assert!(parsed.upstream.is_none());
     }
+
+    #[test]
+    fn porcelain_v2_empty_input_yields_head_default() {
+        let parsed = parse_porcelain_v2("");
+        assert_eq!(parsed.branch, "HEAD");
+        assert!(parsed.files.is_empty());
+        assert_eq!(parsed.ahead, 0);
+        assert_eq!(parsed.behind, 0);
+    }
+
+    #[test]
+    fn porcelain_v2_truncated_rename_does_not_panic() {
+        // A rename record whose paired original-path token is missing (stream
+        // cut off mid-record) must not panic; the orig path falls back to "".
+        let stdout = "# branch.head main\x002 R. N... 1 2 3 a b R100 new.rs\x00";
+        let parsed = parse_porcelain_v2(stdout);
+        assert_eq!(parsed.files.len(), 1);
+        assert_eq!(parsed.files[0].path, "new.rs");
+        assert_eq!(parsed.files[0].original_path.as_deref(), Some(""));
+    }
+
+    struct R(u64);
+    impl R {
+        fn next_u64(&mut self) -> u64 {
+            let mut x = self.0;
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            self.0 = x;
+            x
+        }
+    }
+
+    /// The parser consumes raw `git status --porcelain=v2 -z` output, which is
+    /// attacker-influenced (branch names, file paths). It must never panic on
+    /// malformed, truncated, or non-ASCII input — only ever produce a usable
+    /// struct. This fuzzes random token streams against that invariant.
+    #[test]
+    fn fuzz_parse_porcelain_v2_never_panics() {
+        const PIECES: &[&str] = &[
+            "# branch.head main",
+            "# branch.head (detached)",
+            "# branch.upstream origin/x",
+            "# branch.ab +2 -1",
+            "# branch.ab +x -",
+            "# branch.ab",
+            "# weird",
+            "1 .M N... 100644 100644 100644 a b src/a.rs",
+            "1 .M N... 100644 100644 100644 a b ünïcödé.rs",
+            "1 X",
+            "1 ",
+            "1",
+            "2 R. N... 1 2 3 a b R100 new.rs",
+            "2 ",
+            "u UU N... 1 2 3 4 a b c merge.rs",
+            "u ",
+            "? untracked.rs",
+            "? ",
+            "?",
+            "garbage line",
+            "ünïcödé/path.rs",
+            "\u{1b}[31mansi\u{1b}[0m",
+            "",
+        ];
+        let mut rng = R(0x1234_5678_9ABC_DEF0);
+        for _ in 0..50_000 {
+            let token_count = (rng.next_u64() as usize) % 8;
+            let mut stdout = String::new();
+            for _ in 0..token_count {
+                stdout.push_str(PIECES[(rng.next_u64() as usize) % PIECES.len()]);
+                stdout.push('\0');
+            }
+            let parsed = parse_porcelain_v2(&stdout);
+            // Invariants that must hold for ANY input:
+            assert!(
+                !parsed.branch.is_empty(),
+                "branch went empty for {stdout:?}"
+            );
+            for f in &parsed.files {
+                assert!(!f.index_status.is_empty());
+                assert!(!f.worktree_status.is_empty());
+            }
+        }
+    }
 }

@@ -2,6 +2,16 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.6] — 2026-06-09
+
+Robustness + more bug-catching tests.
+
+### Added
+- **Git porcelain-v2 parser fuzz + edge tests** — `git/parser.rs` gains a 50,000-iteration fuzz test asserting the parser never panics on malformed, truncated, or non-ASCII `git status --porcelain=v2 -z` output (it consumes attacker-influenced branch names and file paths), plus regression cases for empty input and a rename record whose paired original-path token is missing.
+
+### Changed
+- **Workspace registry lock recovery** — `WorkspaceRegistry`'s `roots` and `canonical_cache` mutexes now recover from a poisoned lock (`unwrap_or_else(|e| e.into_inner())`) instead of `.expect()`-panicking, matching the pattern already used in the PTY subsystem. Poisoning can only occur under unwind (dev/test builds — release is `panic = "abort"`), but this stops a panic in one thread from cascading through the security-critical authorization path during development.
+
 ## [1.15.5] — 2026-06-09
 
 More bug-catching tests — no runtime changes.
