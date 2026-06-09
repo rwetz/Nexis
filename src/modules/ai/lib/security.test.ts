@@ -237,3 +237,82 @@ describe("checkShellCommand — control-character / newline injection", () => {
     });
   });
 });
+
+describe("security — property / fuzz invariants", () => {
+  // Deterministic xorshift32 so the fuzz corpus is reproducible in CI.
+  function makeRng(seed: number): () => number {
+    let s = seed >>> 0 || 1;
+    return () => {
+      s ^= s << 13;
+      s ^= s >>> 17;
+      s ^= s << 5;
+      s >>>= 0;
+      return s;
+    };
+  }
+
+  function pick<T>(arr: readonly T[], r: number): T {
+    return arr[r % arr.length] as T;
+  }
+
+  const ALPHABET = [
+    "a", "b", "Z", "0", "/", "\\", ".", " ", ":", "~", ".ssh", ".env",
+    ".aws", "credentials", "id_rsa", "config", "C:", "//", "..", "\x00",
+    "\n", "\u202e", "etc", "windows", "home", "me", "$DATA", "pem", "$HOME",
+  ];
+
+  function randomString(rng: () => number): string {
+    const parts: string[] = [];
+    const n = rng() % 8;
+    for (let i = 0; i < n; i++) parts.push(pick(ALPHABET, rng()));
+    return parts.join("");
+  }
+
+  it("checkReadable / checkWritable / checkShellCommand never throw and always return a boolean ok", () => {
+    const rng = makeRng(0x1234_5678);
+    for (let i = 0; i < 20_000; i++) {
+      const s = randomString(rng);
+      expect(typeof checkReadable(s).ok).toBe("boolean");
+      expect(typeof checkWritable(s).ok).toBe("boolean");
+      expect(typeof checkShellCommand(s).ok).toBe("boolean");
+    }
+  });
+
+  it("checkWritable is at least as strict as checkReadable (writes inherit every read denial)", () => {
+    const rng = makeRng(0xabcd_ef01);
+    for (let i = 0; i < 20_000; i++) {
+      const s = randomString(rng);
+      if (!checkReadable(s).ok) {
+        expect(checkWritable(s).ok).toBe(false);
+      }
+    }
+  });
+
+  it("any path containing a control byte is refused", () => {
+    const rng = makeRng(0x0f0f_0f0f);
+    for (let i = 0; i < 5_000; i++) {
+      const ctrl = String.fromCharCode(rng() % 0x20); // 0x00–0x1f
+      expect(checkReadable(`/home/me/file${ctrl}name`).ok).toBe(false);
+    }
+  });
+
+  it("any command containing a control byte is refused", () => {
+    const rng = makeRng(0x55aa_55aa);
+    for (let i = 0; i < 5_000; i++) {
+      const ctrl = String.fromCharCode(rng() % 0x20);
+      expect(checkShellCommand(`echo hello${ctrl}world`).ok).toBe(false);
+    }
+  });
+
+  it("a file under .ssh is blocked regardless of case, separator, drive prefix, or depth", () => {
+    const rng = makeRng(0x9988_7766);
+    const homes = ["/home/me", "/Users/Me", "C:\\Users\\Me", "//server/share", "~"];
+    const variants = [".ssh", ".SSH", ".Ssh"];
+    const tails = ["config", "known_hosts", "sub/dir/file", "anything"];
+    for (let i = 0; i < 5_000; i++) {
+      const sep = rng() % 2 === 0 ? "/" : "\\";
+      const p = `${pick(homes, rng())}${sep}${pick(variants, rng())}${sep}${pick(tails, rng())}`;
+      expect(checkReadable(p).ok).toBe(false);
+    }
+  });
+});

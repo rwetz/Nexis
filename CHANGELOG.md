@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.8] — 2026-06-09
+
+More bug-catching tests — no runtime changes.
+
+### Added
+- **AI tool-safety property/fuzz tests** — `security.test.ts` gains property tests over the path/command guards (`checkReadable`, `checkWritable`, `checkShellCommand`): on 20,000 random/adversarial inputs they never throw and always return a boolean `ok`; `checkWritable` is proven at least as strict as `checkReadable` (writes inherit every read denial); any path or command containing a control byte is always refused; and a file under `.ssh` is blocked regardless of case, path separator, drive prefix, or depth.
+
 ## [1.15.7] — 2026-06-09
 
 More bug-catching tests — no runtime changes.
