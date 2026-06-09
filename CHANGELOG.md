@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.12] — 2026-06-09
+
+More bug-catching tests — no runtime changes.
+
+### Added
+- **AI HTTP egress front-door fuzz** — `net.rs` gains two property tests completing the egress-security coverage (the `ip_kind` SSRF classifier was already fuzzed in 1.15.5): `validate_url` never panics and only accepts URLs with an http(s) scheme, no embedded userinfo, and a non-blocked host (50,000 random inputs); `sanitize_headers` never lets a blocklisted header or a value carrying CR/LF/NUL (the header-injection vector) through (30,000 random header maps).
+
 ## [1.15.11] — 2026-06-09
 
 Supply-chain — clear the remaining advisories in the shipped dependency tree.

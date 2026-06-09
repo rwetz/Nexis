@@ -605,4 +605,132 @@ mod tests {
             );
         }
     }
+
+    struct R(u64);
+    impl R {
+        fn next_u64(&mut self) -> u64 {
+            let mut x = self.0;
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            self.0 = x;
+            x
+        }
+    }
+
+    /// `validate_url` is the front door of the AI's HTTP egress. Over random
+    /// URL-ish input it must never panic, and any URL it ACCEPTS must satisfy
+    /// every security precondition: an http(s) scheme, no embedded userinfo,
+    /// and a non-blocked host name. (IP-level checks happen later, async.)
+    #[test]
+    fn fuzz_validate_url_only_accepts_safe_urls() {
+        const PIECES: &[&str] = &[
+            "http://",
+            "https://",
+            "ftp://",
+            "file://",
+            "javascript:",
+            "data:",
+            "gopher://",
+            "//",
+            "user",
+            ":pass",
+            "@",
+            "host.com",
+            "127.0.0.1",
+            "metadata",
+            "metadata.google.internal",
+            "[::1]",
+            ":8080",
+            "/p",
+            "?q=1",
+            "#f",
+            " ",
+            "..",
+            "%2e",
+            "evil",
+            "",
+            "\n",
+            "\t",
+        ];
+        let mut rng = R(0x00C0_FFEE_1234_5678);
+        for _ in 0..50_000 {
+            let n = (rng.next_u64() as usize) % 7;
+            let mut url = String::new();
+            for _ in 0..n {
+                url.push_str(PIECES[(rng.next_u64() as usize) % PIECES.len()]);
+            }
+            for allow_private in [false, true] {
+                if let Ok(parsed) = validate_url(&url, allow_private) {
+                    let scheme = parsed.scheme();
+                    assert!(
+                        scheme == "http" || scheme == "https",
+                        "accepted bad scheme {scheme} for {url:?}"
+                    );
+                    assert_eq!(parsed.username(), "", "accepted userinfo for {url:?}");
+                    assert!(parsed.password().is_none(), "accepted password for {url:?}");
+                    assert!(
+                        !is_blocked_host_name(parsed.host_str().unwrap_or("")),
+                        "accepted blocked host for {url:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    /// `sanitize_headers` must never let a blocklisted header or a value
+    /// carrying CR/LF/NUL (the header-injection vector) through. Fuzz the
+    /// guarantee: anything accepted is free of both.
+    #[test]
+    fn fuzz_sanitize_headers_rejects_injection_and_blocklist() {
+        const KEYS: &[&str] = &[
+            "x-custom",
+            "authorization",
+            "host",
+            "content-length",
+            "connection",
+            "te",
+            "X-Test",
+            "accept",
+            "user-agent",
+            "transfer-encoding",
+        ];
+        const VALS: &[&str] = &[
+            "value",
+            "ok",
+            "line1\r\nline2",
+            "nul\0byte",
+            "tab\tok",
+            "",
+            "Bearer x",
+            "trailing\n",
+            "\rlead",
+            "normal-value",
+        ];
+        let mut rng = R(0x0BAD_C0DE_9999_0001);
+        for _ in 0..30_000 {
+            let n = (rng.next_u64() as usize) % 5;
+            let mut h = HashMap::new();
+            for _ in 0..n {
+                let k = KEYS[(rng.next_u64() as usize) % KEYS.len()].to_string();
+                let v = VALS[(rng.next_u64() as usize) % VALS.len()].to_string();
+                h.insert(k, v);
+            }
+            let has_offender = h.iter().any(|(k, v)| {
+                HEADER_BLOCKLIST.contains(&k.to_ascii_lowercase().as_str())
+                    || v.as_bytes().iter().any(|b| matches!(b, 0 | b'\r' | b'\n'))
+            });
+            if let Ok(map) = sanitize_headers(Some(h)) {
+                assert!(!has_offender, "accepted a blocklisted or injection header");
+                for val in map.values() {
+                    assert!(
+                        !val.as_bytes()
+                            .iter()
+                            .any(|b| matches!(b, 0 | b'\r' | b'\n')),
+                        "accepted a header value with control bytes"
+                    );
+                }
+            }
+        }
+    }
 }
