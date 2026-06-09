@@ -227,4 +227,121 @@ mod tests {
         assert_eq!(out.len(), HOLD_MAX + 2);
         assert!(replies.is_empty());
     }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Property / fuzz-lite tests (dependency-free)
+    //
+    // The DA filter parses bytes that come from arbitrary programs, so the
+    // bugs that bite are the ones nobody writes a hand example for: a DA query
+    // split across an awkward chunk boundary, a runaway CSI, an escape byte
+    // mid-sequence. These tests assert invariants over a large random corpus
+    // instead of specific cases.
+    // ──────────────────────────────────────────────────────────────────────
+
+    /// Feed `input` one byte at a time through a fresh filter.
+    fn run_split(input: &[u8]) -> (Vec<u8>, Vec<Vec<u8>>) {
+        let mut f = DaFilter::new();
+        let mut out = Vec::new();
+        let mut replies = Vec::new();
+        for &b in input {
+            f.process(&[b], &mut out, |r| replies.push(r.to_vec()));
+        }
+        (out, replies)
+    }
+
+    /// True if `needle` is an in-order subsequence of `haystack`.
+    fn is_subsequence(needle: &[u8], haystack: &[u8]) -> bool {
+        let mut hay = haystack.iter();
+        needle.iter().all(|n| hay.any(|h| h == n))
+    }
+
+    /// Tiny deterministic xorshift64 PRNG — keeps the fuzz corpus reproducible
+    /// in CI without pulling in the `rand` crate.
+    struct XorShift64(u64);
+    impl XorShift64 {
+        fn next_u64(&mut self) -> u64 {
+            let mut x = self.0;
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            self.0 = x;
+            x
+        }
+        fn pick(&mut self, alphabet: &[u8]) -> u8 {
+            alphabet[(self.next_u64() as usize) % alphabet.len()]
+        }
+    }
+
+    #[test]
+    fn fuzz_lite_invariants_hold_over_random_inputs() {
+        // Alphabet biased toward bytes the CSI/DA state machine branches on,
+        // plus a few ordinary bytes, so most random strings exercise real
+        // parser transitions rather than the plain-text fast path.
+        const ALPHABET: &[u8] = b"\x1b[]>=?;:cmhlH0123456789AZaz \n\xff";
+        let mut rng = XorShift64(0x9E37_79B9_7F4A_7C15);
+
+        for _ in 0..20_000 {
+            let len = (rng.next_u64() as usize) % 48;
+            let input: Vec<u8> = (0..len).map(|_| rng.pick(ALPHABET)).collect();
+
+            // Whole-chunk run.
+            let mut f = DaFilter::new();
+            let mut out_whole = Vec::new();
+            let mut replies_whole: Vec<Vec<u8>> = Vec::new();
+            f.process(&input, &mut out_whole, |r| replies_whole.push(r.to_vec()));
+
+            // Byte-by-byte run of the same bytes.
+            let (out_split, replies_split) = run_split(&input);
+
+            // 1. Chunk-boundary invariance: splitting the stream anywhere must
+            //    not change what is emitted or replied.
+            assert_eq!(
+                out_whole, out_split,
+                "chunking changed output for {input:?}"
+            );
+            assert_eq!(
+                replies_whole, replies_split,
+                "chunking changed replies for {input:?}"
+            );
+
+            // 2. The filter never synthesizes bytes into `out`; everything it
+            //    emits came from the input, in order, and never grows it.
+            assert!(
+                is_subsequence(&out_whole, &input),
+                "out is not a subsequence of input for {input:?}"
+            );
+            assert!(
+                out_whole.len() <= input.len(),
+                "out longer than input for {input:?}"
+            );
+
+            // 3. Any reply is exactly one of the two canonical DA answers —
+            //    never attacker-influenced bytes echoed back to the shell.
+            for r in &replies_whole {
+                assert!(
+                    r.as_slice() == DA1_REPLY || r.as_slice() == DA2_REPLY,
+                    "unexpected reply {r:?} for input {input:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn esc_at_end_of_stream_is_held_not_emitted() {
+        // A lone trailing ESC is incomplete: it must be buffered, not emitted,
+        // so it can combine with the next chunk.
+        let mut f = DaFilter::new();
+        let (out, replies) = run(&mut f, b"abc\x1b");
+        assert_eq!(out, b"abc");
+        assert!(replies.is_empty());
+    }
+
+    #[test]
+    fn csi_with_intermediates_and_non_c_final_passes_through() {
+        // SGR (`\x1b[1;31m`) is a CSI that is not a DA query — must pass through.
+        let mut f = DaFilter::new();
+        let (out, replies) = run(&mut f, b"\x1b[1;31mred\x1b[0m");
+        assert_eq!(out, b"\x1b[1;31mred\x1b[0m");
+        assert!(replies.is_empty());
+    }
 }

@@ -2,6 +2,16 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.1] — 2026-06-09
+
+CI and test hardening — no user-facing changes.
+
+### Changed
+- **CI now typechecks** — the `test-frontend` job runs `tsc --noEmit` before Vitest. A type error that doesn't happen to break a test can no longer pass CI green (the job previously ran only `pnpm test`).
+
+### Added
+- **Fuzz-lite property tests for the DA (Device Attributes) filter** — `da_filter.rs` gains a dependency-free 20k-iteration property test asserting the invariants that matter for an untrusted-byte parser: chunk-boundary invariance (splitting the stream anywhere yields identical output and replies), no byte synthesis (`out` is always an in-order subsequence of the input and never longer), and that every emitted reply is exactly one of the two canonical DA answers. Plus regression cases for a trailing ESC and SGR sequences.
+
 ## [1.15.0] — 2026-06-08
 
 A focused polish pass — no new features and no breaking changes. Implements P1–P7 from the June 2026 UI critique (`UI_IMPROVEMENTS.md`) plus a Rust lint/format cleanup.

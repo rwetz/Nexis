@@ -34,6 +34,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Typecheck before tests: a type error that doesn't happen to break a
+      # Vitest case would otherwise pass CI green. `tsc --noEmit` is the gate.
+      - name: Typecheck (tsc --noEmit)
+        run: pnpm exec tsc --noEmit
+
       - name: Run Vitest
         run: pnpm test
 
