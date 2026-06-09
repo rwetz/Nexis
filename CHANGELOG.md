@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.5] — 2026-06-09
+
+More bug-catching tests — no runtime changes.
+
+### Added
+- **SSRF classifier fuzz + boundary tests** — `net.rs` gains a 1,000,000-iteration property test asserting the safety invariant of the `ip_kind` SSRF guard: an IPv4 in any reserved/internal range (RFC1918, CGNAT, link-local, loopback, broadcast, multicast, benchmarking) is never classified `Public`/fetchable. It cross-checks against std's own range predicates, so it's an independent oracle rather than a restatement of the implementation. Plus off-by-one boundary tests for the `172.16/12` and `100.64/10` ranges.
+
 ## [1.15.4] — 2026-06-09
 
 CI and tooling hardening — no runtime changes.

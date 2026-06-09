@@ -507,6 +507,64 @@ mod tests {
         );
     }
 
+    fn is_cgnat(o: [u8; 4]) -> bool {
+        o[0] == 100 && (64..=127).contains(&o[1])
+    }
+
+    fn is_benchmarking(o: [u8; 4]) -> bool {
+        o[0] == 198 && (o[1] == 18 || o[1] == 19)
+    }
+
+    /// SSRF safety invariant: an IPv4 in any reserved / internal range must
+    /// NEVER be classified `Public` (fetchable). The dangerous direction is an
+    /// internal address slipping through as Public; the reverse is only a
+    /// false positive. Cross-checked against std's own range predicates so this
+    /// is an independent oracle, not a restatement of `ip_kind`'s bit math.
+    #[test]
+    fn ip_kind_never_marks_reserved_ipv4_as_public() {
+        // Deterministic xorshift sweep over the 32-bit address space.
+        let mut state: u64 = 0xDEAD_BEEF_CAFE_F00D;
+        for _ in 0..1_000_000 {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            let ip = Ipv4Addr::from(state as u32);
+            let o = ip.octets();
+            let reserved = ip.is_private()
+                || ip.is_loopback()
+                || ip.is_link_local()
+                || ip.is_broadcast()
+                || ip.is_multicast()
+                || ip.is_unspecified()
+                || is_cgnat(o)
+                || is_benchmarking(o);
+            if reserved {
+                assert_ne!(
+                    ip_kind(IpAddr::V4(ip)),
+                    IpKind::Public,
+                    "reserved IPv4 {ip} was classified Public — SSRF hole"
+                );
+            }
+        }
+    }
+
+    /// Off-by-one guard on the range boundaries: the address just outside a
+    /// private block must be Public, and the edges of the block must be Private.
+    #[test]
+    fn ip_kind_private_range_boundaries() {
+        let v4 = |a, b, c, d| ip_kind(IpAddr::V4(Ipv4Addr::new(a, b, c, d)));
+        // 172.16.0.0 – 172.31.255.255 (RFC1918 /12).
+        assert_eq!(v4(172, 15, 255, 255), IpKind::Public);
+        assert_eq!(v4(172, 16, 0, 0), IpKind::Private);
+        assert_eq!(v4(172, 31, 255, 255), IpKind::Private);
+        assert_eq!(v4(172, 32, 0, 0), IpKind::Public);
+        // 100.64.0.0 – 100.127.255.255 (CGNAT /10).
+        assert_eq!(v4(100, 63, 255, 255), IpKind::Public);
+        assert_eq!(v4(100, 64, 0, 0), IpKind::Private);
+        assert_eq!(v4(100, 127, 255, 255), IpKind::Private);
+        assert_eq!(v4(100, 128, 0, 0), IpKind::Public);
+    }
+
     #[test]
     fn validate_url_blocks_userinfo_and_metadata_hostnames() {
         // URLs with userinfo can confuse browsers / leak creds in redirects.
