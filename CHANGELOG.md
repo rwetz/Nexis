@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.11] — 2026-06-09
+
+Supply-chain — clear the remaining advisories in the shipped dependency tree.
+
+### Security
+- **mermaid → 11.15.0 + uuid → 14.0.0** — added pnpm overrides in `pnpm-workspace.yaml` lifting the resolved `mermaid` floor to `>=11.14.1` (pulled in via `streamdown`), clearing the moderate HTML/CSS-injection and Gantt-chart infinite-loop DoS advisories, plus `uuid` to `>=11.1.1` (resolves to 14.0.0, which mermaid accepts) for GHSA-w5hq-g745-h8pq. `pnpm audit --prod` now reports zero advisories. The overrides live in `pnpm-workspace.yaml`, not `package.json` — pnpm 11 no longer reads a `pnpm.overrides` field from `package.json`.
+
 ## [1.15.10] — 2026-06-09
 
 Reliability hardening (A5) — bound a network-facing buffer.

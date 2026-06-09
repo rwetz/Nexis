@@ -3,3 +3,13 @@ allowBuilds:
   esbuild: true
   geckodriver: false
   msw: true
+overrides:
+  # Force mermaid past the moderate advisories (HTML/CSS injection, Gantt DoS)
+  # fixed in >=11.14.1. Pulled in via streamdown>mermaid; streamdown@2.5.0 already
+  # allows ^11.12.2, so this just lifts the resolved floor. Resolves to 11.15.0
+  # (no 11.14.1 exists on npm).
+  mermaid: '>=11.14.1'
+  # mermaid's uuid range (^11.1.0 || ^12 || ^13 || ^14.0.0) otherwise resolves to
+  # the vulnerable uuid@11.1.0 (GHSA-w5hq-g745-h8pq, patched >=11.1.1). Lift the
+  # floor; resolves to uuid@14.0.0, which mermaid explicitly accepts (^14.0.0).
+  uuid: '>=11.1.1'
