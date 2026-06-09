@@ -201,9 +201,14 @@ const leftItems = statusBarItems.filter((i) => i.side === "left");
 ---
 
 ## Pre-push checklist
-Before any `git push`, always run:
+Before any `git push`, always run these — they mirror the CI gates in `.github/workflows/ci.yml`, so a clean local run means a green CI:
+- `pnpm exec tsc --noEmit` — TypeScript must typecheck (CI gates on this; a type error that doesn't break a test still fails CI)
 - `pnpm test` — all Vitest tests must pass
-- `cargo test` in `src-tauri/` — all Rust tests must pass
+- `cargo test` in `src-tauri/` — all Rust tests must pass (the `authorize_spawn_cwd_blocks_symlink_escape` test fails locally on non-admin Windows with code 1314; that's expected — see Build/dev notes)
+- `cargo fmt --check` in `src-tauri/` — formatting must be clean. **Run this last**, after any `clippy` fixes: a clippy change that shortens a signature can leave the file unformatted even though `fmt` ran earlier.
+- `cargo clippy -- -D warnings` in `src-tauri/` — zero clippy warnings
+
+CI also runs `pnpm audit --prod --audit-level high`, which blocks high/critical advisories in the shipped (runtime) dependency tree. Dev-tool advisories don't gate; moderate ones are tracked by the weekly `audit.yml` job.
 
 ---
 

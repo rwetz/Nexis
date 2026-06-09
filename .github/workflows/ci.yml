@@ -42,6 +42,13 @@ jobs:
       - name: Run Vitest
         run: pnpm test
 
+      # Supply-chain gate: fail only on high/critical advisories in the
+      # *runtime* dependency tree. `--prod` excludes dev tooling (shadcn, the
+      # MCP SDK, etc.); moderate advisories are tracked by the weekly audit job
+      # rather than blocking every push.
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level high
+
   # ── Rust / cargo test ─────────────────────────────────────────────────────
   # Run on Windows so Windows-specific tests (ConPTY lifecycle, workspace
   # auth, PowerShell launch spec) are exercised. GitHub's Windows runners have
@@ -126,6 +133,30 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf
+
+      - name: Run Rust tests
+        working-directory: src-tauri
+        run: cargo test
+
+  # ── Rust / cargo test (macOS) ─────────────────────────────────────────────
+  # macOS uses the apple-native keychain backend and its own window-controls
+  # path — this is the only job that compiles and exercises them. Unix symlink
+  # creation needs no special privilege, so the symlink-escape test passes here
+  # too (unlike a non-admin Windows dev machine).
+  test-rust-macos:
+    name: Rust tests (macOS)
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
 
       - name: Run Rust tests
         working-directory: src-tauri

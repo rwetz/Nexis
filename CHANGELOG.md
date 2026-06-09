@@ -2,6 +2,15 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.4] — 2026-06-09
+
+CI and tooling hardening — no runtime changes.
+
+### Changed
+- **CI: macOS Rust job** — `cargo test` now also runs on `macos-latest`, the only job that compiles and exercises the apple-native keychain backend and the macOS window-controls path.
+- **CI: production supply-chain gate** — the frontend job runs `pnpm audit --prod --audit-level high`, failing the build on a high/critical advisory in the *shipped* (runtime) dependency tree. Dev-tool advisories are excluded; moderate advisories remain tracked by the weekly `audit.yml` job.
+- **Docs: pre-push checklist** — `CLAUDE.md` now lists every command CI gates on (`tsc --noEmit`, `cargo fmt --check`, `cargo clippy -- -D warnings`), with a note to run `fmt` last after any clippy fixes (the ordering that bit the 1.15.0 cycle).
+
 ## [1.15.3] — 2026-06-09
 
 More bug-catching tests — no runtime changes.
