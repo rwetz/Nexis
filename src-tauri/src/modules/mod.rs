@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+pub mod crash;
 pub mod dap;
 pub mod fs;
 pub mod git;

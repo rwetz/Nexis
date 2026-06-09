@@ -7,7 +7,7 @@
 mod modules;
 
 use modules::{
-    dap, fs, git, http_share, lsp, net, pty, python, recording, secrets, shell, workspace,
+    crash, dap, fs, git, http_share, lsp, net, pty, python, recording, secrets, shell, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -19,7 +19,10 @@ struct LaunchDir(Mutex<Option<String>>);
 
 #[tauri::command]
 fn get_launch_dir(state: State<'_, LaunchDir>) -> Option<String> {
-    state.0.lock().expect("LaunchDir mutex poisoned").take()
+    // Recover from a poisoned mutex instead of panicking: with panic="abort" a
+    // panic here would abort the whole app, and the guarded value is trivially
+    // recoverable from the poison.
+    state.0.lock().unwrap_or_else(|e| e.into_inner()).take()
 }
 
 fn parse_launch_dir() -> Option<String> {
@@ -41,6 +44,8 @@ fn parse_launch_dir() -> Option<String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Install first so a panic anywhere during setup is still captured.
+    crash::install_panic_hook();
     workspace::init_launch_cwd();
 
     tauri::Builder::default()
@@ -158,6 +163,7 @@ pub fn run() {
             http_share::http_share_update,
             http_share::http_share_stop,
             http_share::http_share_push_stream,
+            crash::list_crash_reports,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

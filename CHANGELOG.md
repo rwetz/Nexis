@@ -2,6 +2,16 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.2] — 2026-06-09
+
+Reliability hardening — no user-facing UI changes yet.
+
+### Added
+- **Crash reporter** — a global panic hook writes a structured report (app version, thread, panic location, message, and backtrace) to `{cache}/nexis/crash/` before the process exits. Because the release profile uses `panic = "abort"`, a panic on any thread previously vanished with no trace; it now leaves a diagnosable report on disk. A new `list_crash_reports` command (capped at 10 reports, 64 KB each) lets the UI surface a "Nexis recovered from a crash" notice on the next launch.
+
+### Fixed
+- **`get_launch_dir` no longer panics on a poisoned mutex** — it recovers the inner value via `unwrap_or_else(|e| e.into_inner())` instead, so a poisoned `LaunchDir` lock can't abort the whole app under `panic = "abort"`.
+
 ## [1.15.1] — 2026-06-09
 
 CI and test hardening — no user-facing changes.
