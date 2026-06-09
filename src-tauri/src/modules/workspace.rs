@@ -720,3 +720,119 @@ mod auth_tests {
         assert!(err.contains("outside"), "got: {err}");
     }
 }
+
+// Pure tests for the prefix-matching heart of the sandbox. These don't touch
+// the filesystem (they insert synthetic roots directly), so they run fast and
+// deterministically on every platform — no canonicalize, no symlink privilege.
+#[cfg(test)]
+mod registry_authorization_tests {
+    use super::*;
+
+    /// Build a registry seeded with synthetic in-memory roots, bypassing the
+    /// `authorize()` path which would otherwise canonicalize against a real
+    /// directory. Accessible because this is a child module of `workspace`.
+    fn registry_with_roots(roots: &[&str]) -> WorkspaceRegistry {
+        let reg = WorkspaceRegistry::default();
+        {
+            let mut set = reg.roots.lock().expect("lock roots");
+            for r in roots {
+                set.insert(PathBuf::from(r));
+            }
+        }
+        reg
+    }
+
+    #[test]
+    fn accepts_root_and_descendants() {
+        let reg = registry_with_roots(&["/ws/project"]);
+        assert!(reg.is_authorized(Path::new("/ws/project")));
+        assert!(reg.is_authorized(Path::new("/ws/project/src")));
+        assert!(reg.is_authorized(Path::new("/ws/project/src/main.rs")));
+    }
+
+    #[test]
+    fn rejects_string_prefix_sibling() {
+        // The classic sandbox escape: a sibling whose name merely shares a
+        // *string* prefix with the root must NOT be authorized. This is the
+        // regression guard against ever swapping `Path::starts_with`
+        // (component-wise) for a naive `str::starts_with`.
+        let reg = registry_with_roots(&["/ws/project"]);
+        assert!(!reg.is_authorized(Path::new("/ws/project-evil")));
+        assert!(!reg.is_authorized(Path::new("/ws/projectXYZ")));
+        assert!(!reg.is_authorized(Path::new("/ws/project.bak")));
+    }
+
+    #[test]
+    fn rejects_ancestor_and_unrelated() {
+        let reg = registry_with_roots(&["/ws/project"]);
+        assert!(!reg.is_authorized(Path::new("/ws"))); // ancestor of the root
+        assert!(!reg.is_authorized(Path::new("/"))); // filesystem root
+        assert!(!reg.is_authorized(Path::new("/other/place")));
+    }
+
+    #[test]
+    fn empty_registry_authorizes_nothing() {
+        let reg = WorkspaceRegistry::default();
+        assert!(!reg.is_authorized(Path::new("/ws/project")));
+        assert!(!reg.is_authorized(Path::new("/")));
+    }
+
+    #[test]
+    fn matches_any_of_multiple_roots() {
+        let reg = registry_with_roots(&["/a/one", "/b/two"]);
+        assert!(reg.is_authorized(Path::new("/a/one/x")));
+        assert!(reg.is_authorized(Path::new("/b/two")));
+        assert!(!reg.is_authorized(Path::new("/c/three")));
+        // String-prefix sibling of an authorized root is still rejected.
+        assert!(!reg.is_authorized(Path::new("/a/oneself")));
+    }
+
+    struct Rng(u64);
+    impl Rng {
+        fn next_u64(&mut self) -> u64 {
+            let mut x = self.0;
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            self.0 = x;
+            x
+        }
+    }
+
+    /// Reference: is `target` equal to, or a component-wise descendant of,
+    /// `root`? Independent of `Path::starts_with` so the fuzz test actually
+    /// cross-checks the implementation rather than restating it.
+    fn component_descendant_or_equal(target: &Path, root: &Path) -> bool {
+        let t: Vec<_> = target.components().collect();
+        let r: Vec<_> = root.components().collect();
+        r.len() <= t.len() && r.iter().zip(t.iter()).all(|(a, b)| a == b)
+    }
+
+    #[test]
+    fn fuzz_is_authorized_matches_component_reference() {
+        const SEGMENTS: &[&str] = &["a", "ab", "abc", "b", "project", "project-evil", "x"];
+        let mut rng = Rng(0x1234_5678_9ABC_DEF0);
+
+        let build = |rng: &mut Rng, n: usize| -> String {
+            let mut s = String::from("/");
+            for i in 0..n {
+                if i > 0 {
+                    s.push('/');
+                }
+                s.push_str(SEGMENTS[(rng.next_u64() as usize) % SEGMENTS.len()]);
+            }
+            s
+        };
+
+        for _ in 0..5_000 {
+            let root_len = 1 + (rng.next_u64() as usize) % 3;
+            let root = build(&mut rng, root_len);
+            let target_len = (rng.next_u64() as usize) % 5;
+            let target = build(&mut rng, target_len);
+            let reg = registry_with_roots(&[root.as_str()]);
+            let got = reg.is_authorized(Path::new(&target));
+            let want = component_descendant_or_equal(Path::new(&target), Path::new(&root));
+            assert_eq!(got, want, "root={root} target={target}");
+        }
+    }
+}

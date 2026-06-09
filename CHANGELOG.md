@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.3] — 2026-06-09
+
+More bug-catching tests — no runtime changes.
+
+### Added
+- **Sandbox prefix-matching tests for the workspace authorization guard** — `workspace.rs` gains a pure (filesystem-free) test module for `WorkspaceRegistry::is_authorized`, the component-prefix check at the heart of the spawn sandbox. Includes a regression test that a sibling sharing only a *string* prefix with an authorized root (e.g. `/ws/project-evil` vs root `/ws/project`) is rejected — the classic sandbox escape a switch from `Path::starts_with` to `str::starts_with` would silently reintroduce — plus a 5,000-iteration fuzz cross-check against an independent component-prefix reference.
+
 ## [1.15.2] — 2026-06-09
 
 Reliability hardening — no user-facing UI changes yet.
