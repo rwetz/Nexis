@@ -111,8 +111,6 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Better approval flow — project-scoped auto-approve policies, per-tool trust levels
 - [x] AI skill bundles — installable packages that add new agent tools and slash commands
 
-- [] background job viewer/ canceler
-
 ### Development Panels
 - [x] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with live output and errors linked to source lines
 - [x] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
@@ -176,11 +174,17 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Git worktrees — list, add, and remove git worktrees from the source control panel; clicking a worktree switches the workspace; branch creation flag; prune support (1.10.0)
 - [x] AI explain commit — "Explain" button in the git history commit detail popover; loads the full diff and sends it to the AI panel with author/SHA context (1.11.0)
 - [x] Shell command snippets — sidebar panel for saving and running frequently-used shell commands; one-click sends to the active terminal; `{VAR}` placeholder support; five built-in starters (1.11.0)
+- [x] Test coverage + E2E harness — expanded Rust and Vitest unit coverage plus a WebdriverIO end-to-end harness; automated release workflow builds the Windows NSIS/MSI installer on `v*` tag push (1.12.0)
+- [x] OSC 0/2 tab titles, cursor preferences, error boundary — terminal programs can set the tab title via escape sequences; configurable cursor style and blink rate; a React error boundary renders a recoverable fallback instead of a blank window on a render crash (1.13.0)
+- [x] Debugger sidebar panel + pinnable rail — the DAP debugger gets a dedicated sidebar panel; sidebar-rail items can be pinned; PowerShell tab-title fix (1.13.0)
+- [x] Expanded syntax highlighting — CodeMirror language packs for 15 additional languages; per-file header blocks added across the source tree; GitHub issue/PR templates (1.14.0)
+- [x] UI polish pass + CI hardening — grouped sidebar overflow menu, consistent shortcut key badges, heavier section headers, settings scroll fade, welcome-screen AI entry point, recording-dot hover affordance, and a named `--brand` accent color (P1–P7 from `UI_IMPROVEMENTS.md`); plus Dependabot, a Rust lint job (`cargo fmt --check` + `clippy -D warnings`), and a weekly `cargo audit` (1.15.0)
 
 ---
 
 ## Up next
 
+- [ ] **Background job viewer + canceler** — one panel to see and cancel every background process and queued agent task. Partially covered today (the Background process manager lists shell jobs; the Background agent queue retries/clears AI tasks), but there's no single cancel-anything view. Promoted from an orphaned TODO that was sitting unchecked in the Shipped list
 - [ ] **Multiplayer terminal view (full)** — polling-based live terminal view ships; a WebSocket upgrade path would add true push without the 2 s polling delay
 - [ ] **Refactoring engine (LSP)** — rename symbols, extract functions, and inline variables across a project, powered by LSP workspace edits; AI verification pass already ships via the refactor panel
 
