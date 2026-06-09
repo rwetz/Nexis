@@ -12,7 +12,7 @@
  * v2: added Server-Sent Events (SSE) endpoint at /stream for live terminal
  * streaming — no external crates, uses std::net + std::thread + mpsc only.
  */
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpListener;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
@@ -117,6 +117,11 @@ impl Drop for RunningServer {
 
 // ── HTTP connection handler ──────────────────────────────────────────────────
 
+/// Cap on bytes read for a request's start-line + headers, so a malicious LAN
+/// client can't OOM the server with an endless line or an unbounded header
+/// stream. 64 KiB is far above any legitimate HTTP request header section.
+const MAX_REQUEST_HEADER_BYTES: u64 = 64 * 1024;
+
 /// Read the request line, dispatch to the right handler.
 fn handle_connection(
     stream: std::net::TcpStream,
@@ -130,7 +135,9 @@ fn handle_connection(
         Ok(s) => s,
         Err(_) => return,
     };
-    let mut reader = BufReader::new(cloned);
+    // Bound the total request header bytes — defends against an unbounded
+    // read_line() OOM from a hostile client on the LAN.
+    let mut reader = BufReader::new(cloned.take(MAX_REQUEST_HEADER_BYTES));
 
     // Read the request line (first line)
     let mut request_line = String::new();

@@ -2,6 +2,13 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.10] — 2026-06-09
+
+Reliability hardening (A5) — bound a network-facing buffer.
+
+### Fixed
+- **LAN share server: cap request header reads** — `http_share` read the HTTP request line and headers with unbounded `read_line()`, so a malicious client on the same network could exhaust the host's memory by sending an endless line or an unbounded header stream. The request reader is now bounded to 64 KiB via `Read::take`, after which parsing ends cleanly. (The SSE client list already self-prunes dead senders on each broadcast.)
+
 ## [1.15.9] — 2026-06-09
 
 Reliability hardening (A1) — convert avoidable production panics to errors. Because the release profile is `panic = "abort"`, every reachable `.unwrap()`/`.expect()` is a potential whole-app abort.
