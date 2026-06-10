@@ -246,8 +246,18 @@ fn reader_loop<R: Read>(
             }
         }
 
+        // Cap the declared body size so a malformed or hostile Content-Length
+        // from the language server can't trigger a multi-GB allocation (which
+        // would OOM-abort the app under panic="abort").
+        const MAX_MESSAGE_BYTES: usize = 64 * 1024 * 1024;
         let len = match content_length {
-            Some(n) => n,
+            Some(n) if n <= MAX_MESSAGE_BYTES => n,
+            Some(n) => {
+                log::warn!(
+                    "lsp message of {n} bytes exceeds {MAX_MESSAGE_BYTES} cap; closing reader"
+                );
+                return;
+            }
             None => continue,
         };
 

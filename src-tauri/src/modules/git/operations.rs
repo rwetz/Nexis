@@ -1163,10 +1163,15 @@ pub fn submodule_status(
 
 /// List all worktrees for the given repo.
 /// Parses `git worktree list --porcelain` output.
-pub fn worktree_list(repo_root: &str, workspace: &WorkspaceEnv) -> Result<Vec<GitWorktreeEntry>> {
+pub fn worktree_list(
+    registry: &WorkspaceRegistry,
+    repo_root: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<Vec<GitWorktreeEntry>> {
+    let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
     let out = run_git(
-        workspace,
-        Some(repo_root),
+        &repo_root.workspace,
+        Some(&repo_root.git_path),
         ["worktree", "list", "--porcelain"],
         DEFAULT_TIMEOUT_SECS,
     )?;
@@ -1224,29 +1229,42 @@ pub fn worktree_list(repo_root: &str, workspace: &WorkspaceEnv) -> Result<Vec<Gi
 /// Add a new worktree at `path` checked out at `branch`.
 /// If `new_branch` is true, creates the branch (-b).
 pub fn worktree_add(
+    registry: &WorkspaceRegistry,
     repo_root: &str,
     path: &str,
     branch: &str,
     new_branch: bool,
     workspace: &WorkspaceEnv,
 ) -> Result<()> {
+    let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
     let mut args: Vec<&str> = vec!["worktree", "add"];
     if new_branch {
         args.push("-b");
     }
     args.push(path);
     args.push(branch);
-    let out = run_git(workspace, Some(repo_root), args, DEFAULT_TIMEOUT_SECS)?;
+    let out = run_git(
+        &repo_root.workspace,
+        Some(&repo_root.git_path),
+        args,
+        DEFAULT_TIMEOUT_SECS,
+    )?;
     ensure_success(&out, "git worktree add")?;
     Ok(())
 }
 
 /// Remove a worktree by path.  Passes `--force` to allow removing
 /// worktrees with uncommitted changes (the user confirmed in the UI).
-pub fn worktree_remove(repo_root: &str, path: &str, workspace: &WorkspaceEnv) -> Result<()> {
+pub fn worktree_remove(
+    registry: &WorkspaceRegistry,
+    repo_root: &str,
+    path: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<()> {
+    let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
     let out = run_git(
-        workspace,
-        Some(repo_root),
+        &repo_root.workspace,
+        Some(&repo_root.git_path),
         ["worktree", "remove", "--force", path],
         DEFAULT_TIMEOUT_SECS,
     )?;
@@ -1255,10 +1273,15 @@ pub fn worktree_remove(repo_root: &str, path: &str, workspace: &WorkspaceEnv) ->
 }
 
 /// Prune stale worktree references.
-pub fn worktree_prune(repo_root: &str, workspace: &WorkspaceEnv) -> Result<()> {
+pub fn worktree_prune(
+    registry: &WorkspaceRegistry,
+    repo_root: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<()> {
+    let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
     let out = run_git(
-        workspace,
-        Some(repo_root),
+        &repo_root.workspace,
+        Some(&repo_root.git_path),
         ["worktree", "prune"],
         DEFAULT_TIMEOUT_SECS,
     )?;

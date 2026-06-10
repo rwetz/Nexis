@@ -357,6 +357,13 @@ const RenderedMessage = memo(function RenderedMessage({
       break;
     }
   }
+  // Hooks must run unconditionally (Rules of Hooks): compute `groups` before
+  // the user-role early return, even though only the assistant branch uses it.
+  const groups = useMemo(
+    () => buildPartGroups(message.parts as AnyPart[]),
+    [message.parts],
+  );
+
   if (message.role === "user") {
     const rawText = message.parts
       .filter((p): p is { type: "text"; text: string } => p.type === "text")
@@ -384,10 +391,6 @@ const RenderedMessage = memo(function RenderedMessage({
       </Message>
     );
   }
-
-  const groups = useMemo(() => buildPartGroups(message.parts as AnyPart[]), [
-    message.parts,
-  ]);
 
   return (
     <Message from={message.role}>

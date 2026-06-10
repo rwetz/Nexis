@@ -25,13 +25,15 @@ type Props = {
 };
 
 export function WorkspaceEnvSelector({ onSelect }: Props) {
-  if (!IS_WINDOWS) return null;
-
+  // Hooks must run unconditionally (Rules of Hooks) — call them before the
+  // platform early-return below.
   const env = useWorkspaceEnvStore((s) => s.env);
   const distros = useWorkspaceEnvStore((s) => s.distros);
   const loading = useWorkspaceEnvStore((s) => s.loading);
   const error = useWorkspaceEnvStore((s) => s.error);
   const refreshDistros = useWorkspaceEnvStore((s) => s.refreshDistros);
+
+  if (!IS_WINDOWS) return null;
 
   const handleOpenChange = (open: boolean) => {
     if (open && distros.length === 0 && !loading) {

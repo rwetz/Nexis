@@ -380,8 +380,8 @@ pub async fn git_worktree_list(
     app: AppHandle,
 ) -> Result<Vec<GitWorktreeEntry>, String> {
     let workspace = WorkspaceEnv::from_option(workspace);
-    blocking(app, move |_r| {
-        operations::worktree_list(&repo_root, &workspace).map_err(Into::into)
+    blocking(app, move |r| {
+        operations::worktree_list(r, &repo_root, &workspace).map_err(Into::into)
     })
     .await
 }
@@ -396,8 +396,8 @@ pub async fn git_worktree_add(
     app: AppHandle,
 ) -> Result<(), String> {
     let workspace = WorkspaceEnv::from_option(workspace);
-    blocking(app, move |_r| {
-        operations::worktree_add(&repo_root, &path, &branch, new_branch, &workspace)
+    blocking(app, move |r| {
+        operations::worktree_add(r, &repo_root, &path, &branch, new_branch, &workspace)
             .map_err(Into::into)
     })
     .await
@@ -411,8 +411,8 @@ pub async fn git_worktree_remove(
     app: AppHandle,
 ) -> Result<(), String> {
     let workspace = WorkspaceEnv::from_option(workspace);
-    blocking(app, move |_r| {
-        operations::worktree_remove(&repo_root, &path, &workspace).map_err(Into::into)
+    blocking(app, move |r| {
+        operations::worktree_remove(r, &repo_root, &path, &workspace).map_err(Into::into)
     })
     .await
 }
@@ -424,8 +424,8 @@ pub async fn git_worktree_prune(
     app: AppHandle,
 ) -> Result<(), String> {
     let workspace = WorkspaceEnv::from_option(workspace);
-    blocking(app, move |_r| {
-        operations::worktree_prune(&repo_root, &workspace).map_err(Into::into)
+    blocking(app, move |r| {
+        operations::worktree_prune(r, &repo_root, &workspace).map_err(Into::into)
     })
     .await
 }

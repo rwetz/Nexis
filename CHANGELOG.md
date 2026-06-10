@@ -2,6 +2,18 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.13] — 2026-06-09
+
+Bugfix sweep.
+
+### Security
+- **Git worktree commands now enforce workspace authorization** — `git_worktree_list/add/remove/prune` bypassed the `WorkspaceRegistry` authorization that all 20+ other git commands run through, so a compromised renderer or plugin could operate on git worktrees of an arbitrary repo *outside* the authorized workspace (including `worktree add` writing to an arbitrary path and `worktree remove --force`). All four now call `authorized_repo_root` first, matching every sibling command.
+
+### Fixed
+- **LSP/DAP unbounded `Content-Length` allocation** — the JSON-RPC reader loops allocated `vec![0u8; len]` straight from the subprocess's `Content-Length` header with no upper bound, so a malformed or hostile language server / debug adapter could force a multi-GB allocation (OOM → abort under `panic = "abort"`). Both are now capped at 64 MiB.
+- **Git availability cache: stray panic on a poisoned lock** — one of the two `availability_cell().lock()` sites in `git/process.rs` still used `.expect()` (it had dodged the earlier sweep due to indentation); it now recovers from poison like its sibling.
+- **Two Rules-of-Hooks violations** — `AiChat`'s `RenderedMessage` called `useMemo` *after* an early `return` for user messages, and `WorkspaceEnvSelector` called five store hooks after a `return null` platform guard. Both are safe today only because the branch condition is fixed per component instance, but they are latent crashes (and lint violations); the hooks now run unconditionally before the early return.
+
 ## [1.15.12] — 2026-06-09
 
 More bug-catching tests — no runtime changes.
