@@ -2,6 +2,16 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.15] — 2026-06-10
+
+Code-quality cleanups — no behavior change.
+
+### Changed
+- **De-duplicated `display_path`** — the byte-identical helper in `fs/search.rs` and `fs/grep.rs` is hoisted to `fs/mod.rs` and shared.
+- **`percent_encode_path` no longer allocates per byte** — `lsp/session.rs` built a temporary `String` and `Vec<char>` for every encoded byte inside a `flat_map`; it now writes directly into a single output `String`.
+
+(The third flagged dedup, `write_if_changed`, was intentionally left as-is: hoisting it out of the two `#[cfg]`-gated `shell_init` submodules cascades into platform-specific import cleanup that's only verifiable on CI's Unix runners — more risk than a stable 15-line helper's duplication is worth.)
+
 ## [1.15.14] — 2026-06-09
 
 Correctness + code-quality cleanups from the v1.15.13 review — the low-risk subset.

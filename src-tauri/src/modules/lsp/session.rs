@@ -324,40 +324,37 @@ pub fn path_to_uri(path: &str) -> String {
 }
 
 fn percent_encode_path(s: &str) -> String {
-    s.chars()
-        .flat_map(|c| {
-            let should_encode = matches!(
-                c,
-                ' ' | '#'
-                    | '?'
-                    | '['
-                    | ']'
-                    | '@'
-                    | '!'
-                    | '$'
-                    | '&'
-                    | '\''
-                    | '('
-                    | ')'
-                    | '*'
-                    | '+'
-                    | ','
-                    | ';'
-                    | '='
-                    | '%'
-            );
-            if should_encode {
-                let mut buf = [0u8; 4];
-                let len = c.encode_utf8(&mut buf).len();
-                buf[..len]
-                    .iter()
-                    .map(|b| format!("%{:02X}", b))
-                    .collect::<String>()
-                    .chars()
-                    .collect::<Vec<char>>()
-            } else {
-                vec![c]
+    use std::fmt::Write;
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        let should_encode = matches!(
+            c,
+            ' ' | '#'
+                | '?'
+                | '['
+                | ']'
+                | '@'
+                | '!'
+                | '$'
+                | '&'
+                | '\''
+                | '('
+                | ')'
+                | '*'
+                | '+'
+                | ','
+                | ';'
+                | '='
+                | '%'
+        );
+        if should_encode {
+            let mut buf = [0u8; 4];
+            for b in c.encode_utf8(&mut buf).as_bytes() {
+                let _ = write!(out, "%{b:02X}");
             }
-        })
-        .collect()
+        } else {
+            out.push(c);
+        }
+    }
+    out
 }

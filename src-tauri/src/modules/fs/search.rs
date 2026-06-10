@@ -7,7 +7,7 @@
 use ignore::WalkBuilder;
 use serde::Serialize;
 
-use super::to_canon;
+use super::{display_path, to_canon};
 use crate::modules::workspace::{resolve_path, WorkspaceEnv};
 
 #[derive(Serialize)]
@@ -222,25 +222,4 @@ pub fn fs_list_files(
 
     files.sort_by_key(|a| a.to_lowercase());
     Ok(ListFilesResult { files, truncated })
-}
-
-fn display_path(
-    path: &std::path::Path,
-    root_path: &std::path::Path,
-    root_display: &str,
-    workspace: &WorkspaceEnv,
-) -> String {
-    if workspace.is_wsl() {
-        if let Ok(rel) = path.strip_prefix(root_path) {
-            let rel = to_canon(rel);
-            return if rel.is_empty() {
-                root_display.to_string()
-            } else if root_display.ends_with('/') {
-                format!("{root_display}{rel}")
-            } else {
-                format!("{root_display}/{rel}")
-            };
-        }
-    }
-    to_canon(path)
 }
