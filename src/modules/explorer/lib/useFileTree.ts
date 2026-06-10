@@ -35,9 +35,14 @@ export function joinPath(parent: string, name: string): string {
 }
 
 export function dirname(path: string): string {
-  const i = path.lastIndexOf("/");
+  // Normalize separators and handle a Windows drive root ("C:/file" → "C:/"),
+  // matching lib/path.ts (pitfall #12) so a file directly on a drive root
+  // resolves to the drive, not a slash-less "C:".
+  const normalized = path.replace(/\\/g, "/");
+  const i = normalized.lastIndexOf("/");
   if (i <= 0) return "/";
-  return path.slice(0, i);
+  if (i === 2 && normalized[1] === ":") return normalized.slice(0, 3);
+  return normalized.slice(0, i);
 }
 
 type Options = {

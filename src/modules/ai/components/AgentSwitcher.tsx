@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -44,8 +45,10 @@ export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
   const activeId = useAgentsStore((s) => s.activeId);
   const setActiveId = useAgentsStore((s) => s.setActiveId);
 
-  const list = useAgentsStore.getState().all();
-  void customAgents; // keeps the store subscription alive
+  // `all()` returns a fresh [...builtins, ...customAgents]; memoize it on the
+  // subscribed customAgents so the list is stable and updates reactively —
+  // no getState() snapshot + `void` keep-alive hack.
+  const list = useMemo(() => useAgentsStore.getState().all(), [customAgents]);
 
   const active = list.find((a) => a.id === activeId) ?? list[0];
   const builtIn = list.filter((a) => a.builtIn);

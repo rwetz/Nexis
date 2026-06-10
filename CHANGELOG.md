@@ -2,6 +2,18 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.15.14] — 2026-06-09
+
+Correctness + code-quality cleanups from the v1.15.13 review — the low-risk subset.
+
+### Fixed
+- **Git output silently dropped on non-UTF-8 bytes** — five `from_utf8(...).unwrap_or("")` sites in `git/operations.rs` (status / log / diff-tree parsers) returned *empty* on a single invalid UTF-8 byte (e.g. a Latin-1 path), losing the whole parse — the pitfall-#13 failure mode. Four now use `from_utf8_lossy`; `split_name_status_numstat` was rewritten to operate on raw bytes so a non-UTF-8 path can't desync the split offset or panic.
+- **Editor breakpoint sync ran on every render** — `EditorPane` derived breakpoints via `breakpointsForPath()`, which returns a fresh array each call, so the gutter-sync effect fired on every keystroke. It now selects the stable store array and derives the per-path lines in a `useMemo`.
+- **`useFileTree.dirname` mishandled Windows drive roots** — it lacked the pitfall-#12 handling (`C:/file` → `C:` instead of `C:/`), unlike `lib/path.ts`. Added separator normalization + drive-root handling.
+
+### Changed
+- **`AgentSwitcher` reads the agent list reactively** — replaced a `useAgentsStore.getState().all()` snapshot + a `void customAgents` subscription-keepalive hack with a `useMemo` keyed on the subscribed `customAgents`.
+
 ## [1.15.13] — 2026-06-09
 
 Bugfix sweep.

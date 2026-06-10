@@ -137,8 +137,8 @@ fn status_inner(repo_root: &ResolvedGitDirectory) -> Result<GitStatusSnapshot> {
     )?;
     ensure_success(&output, "git status failed")?;
 
-    let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
-    let parsed = parse_porcelain_v2(stdout);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let parsed = parse_porcelain_v2(&stdout);
 
     Ok(GitStatusSnapshot {
         repo_root: repo_root.git_path.clone(),
@@ -512,7 +512,7 @@ pub fn log(
         }
         return ensure_success(&output, "git log failed").map(|_| Vec::new());
     }
-    let stdout = std::str::from_utf8(&output.stdout).unwrap_or("");
+    let stdout = String::from_utf8_lossy(&output.stdout);
     let mut entries: Vec<GitLogEntry> = Vec::with_capacity(bounded as usize);
     // Lines we get back interleave:
     //   <sha>\x1f<author>\x1f<email>\x1f<ts>\x1f<parents>\x1f<subject>
@@ -669,25 +669,18 @@ pub fn commit_files(
 }
 
 fn split_name_status_numstat(bytes: &[u8]) -> (&[u8], &[u8]) {
-    let s = std::str::from_utf8(bytes).unwrap_or("");
-    let tokens: Vec<(usize, &str)> = s
-        .split('\0')
-        .scan(0usize, |off, t| {
-            let start = *off;
-            *off += t.len() + 1;
-            Some((start, t))
-        })
-        .collect();
+    // Operate on raw bytes (not a UTF-8 string) so a non-UTF-8 path can't
+    // desync the split offset or drop the whole input. The boundary is the
+    // start of the first NUL-delimited token containing a TAB (the numstat
+    // "<added>\t<deleted>" record); everything before it is name-status.
+    let mut off = 0usize;
     let mut split_at = bytes.len();
-    for (idx, tok) in tokens.iter().enumerate() {
-        if tok.1.contains('\t') {
-            split_at = tok.0;
-            // Walk back: numstat for R/C with -z emits "<a>\t<r>" then two
-            // NUL-separated paths. The two trailing path tokens belong to the
-            // numstat block, not name-status.
-            let _ = idx;
+    for tok in bytes.split(|&b| b == 0) {
+        if tok.contains(&b'\t') {
+            split_at = off;
             break;
         }
+        off += tok.len() + 1; // + NUL separator
     }
     (&bytes[..split_at], &bytes[split_at..])
 }
@@ -802,7 +795,7 @@ fn is_remote_name_char(c: char) -> bool {
 }
 
 fn parse_diff_tree_name_status(bytes: &[u8]) -> Vec<GitCommitFileChange> {
-    let s = std::str::from_utf8(bytes).unwrap_or("");
+    let s = String::from_utf8_lossy(bytes);
     let mut tokens = s.split('\0').filter(|t| !t.is_empty());
     let mut files: Vec<GitCommitFileChange> = Vec::new();
     while let Some(status_tok) = tokens.next() {
@@ -845,7 +838,7 @@ fn parse_diff_tree_name_status(bytes: &[u8]) -> Vec<GitCommitFileChange> {
 }
 
 fn apply_numstat(files: &mut [GitCommitFileChange], bytes: &[u8]) {
-    let s = std::str::from_utf8(bytes).unwrap_or("");
+    let s = String::from_utf8_lossy(bytes);
     let tokens: Vec<&str> = s.split('\0').filter(|t| !t.is_empty()).collect();
     let mut idx = 0;
     while idx < tokens.len() {

@@ -252,13 +252,22 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
 
     // Breakpoints — sync store → gutter when path changes or store updates
     const toggleBreakpoint = useBreakpointStore((s) => s.toggleBreakpoint);
-    const breakpointsForPath = useBreakpointStore((s) => s.breakpointsForPath);
-    const breakpoints = breakpointsForPath(path);
+    // Select the stable store array — `breakpointsForPath()` returns a fresh
+    // array on every call, which (in the effect deps) re-ran the sync on every
+    // render. Derive the per-path lines in a memo keyed on the raw array.
+    const allBreakpoints = useBreakpointStore((s) => s.breakpoints);
+    const breakpointLines = useMemo(
+      () =>
+        allBreakpoints
+          .filter((b) => b.path === path && b.enabled)
+          .map((b) => b.line),
+      [allBreakpoints, path],
+    );
 
     useEffect(() => {
       if (!editorView) return;
-      syncBreakpointsToView(editorView, path, breakpoints.map((b) => b.line));
-    }, [editorView, path, breakpoints]);
+      syncBreakpointsToView(editorView, path, breakpointLines);
+    }, [editorView, path, breakpointLines]);
 
     // Sync current execution line to this pane
     const currentDebugPath = useDebugStore((s) => s.currentPath);
