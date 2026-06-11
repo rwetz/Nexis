@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import type { Extension } from "@codemirror/state";
+import { delimiterLinter, DELIMITER_CHECK_EXTENSIONS } from "./linting";
 
 type LoaderResult = Extension | { token: unknown };
 type LanguageLoader = () => Promise<LoaderResult>;
@@ -107,17 +108,18 @@ const loaders: Record<string, LanguageLoader> = {
   gemspec: rubyLoader,
   ru: rubyLoader,
 
-  // C / C++ family
-  c: () => import("@codemirror/legacy-modes/mode/clike").then((m) => m.c),
-  h: () => import("@codemirror/legacy-modes/mode/clike").then((m) => m.c),
-  cpp: () => import("@codemirror/legacy-modes/mode/clike").then((m) => m.cpp),
-  cc: () => import("@codemirror/legacy-modes/mode/clike").then((m) => m.cpp),
-  cxx: () => import("@codemirror/legacy-modes/mode/clike").then((m) => m.cpp),
-  hpp: () => import("@codemirror/legacy-modes/mode/clike").then((m) => m.cpp),
-  hxx: () => import("@codemirror/legacy-modes/mode/clike").then((m) => m.cpp),
+  // C / C++ family — Lezer grammar (produces error nodes for syntaxLinter).
+  // lang-cpp's grammar covers C as well; there is no separate C package.
+  c: () => import("@codemirror/lang-cpp").then((m) => m.cpp()),
+  h: () => import("@codemirror/lang-cpp").then((m) => m.cpp()),
+  cpp: () => import("@codemirror/lang-cpp").then((m) => m.cpp()),
+  cc: () => import("@codemirror/lang-cpp").then((m) => m.cpp()),
+  cxx: () => import("@codemirror/lang-cpp").then((m) => m.cpp()),
+  hpp: () => import("@codemirror/lang-cpp").then((m) => m.cpp()),
+  hxx: () => import("@codemirror/lang-cpp").then((m) => m.cpp()),
 
-  // Java
-  java: () => import("@codemirror/legacy-modes/mode/clike").then((m) => m.java),
+  // Java — Lezer grammar (produces error nodes for syntaxLinter).
+  java: () => import("@codemirror/lang-java").then((m) => m.java()),
 
   // C#
   cs: () => import("@codemirror/legacy-modes/mode/clike").then((m) => m.csharp),
@@ -242,9 +244,16 @@ export async function resolveLanguage(
   let ext: Extension;
   if (isStreamParser(result)) {
     const { StreamLanguage } = await import("@codemirror/language");
-    ext = StreamLanguage.define(
+    const lang = StreamLanguage.define(
       result as Parameters<typeof StreamLanguage.define>[0],
     );
+    // StreamParser languages have no error nodes, so pair them with the
+    // bracket-balance linter where brackets are reliably balanced.
+    const extName = extOf(base);
+    ext =
+      extName && DELIMITER_CHECK_EXTENSIONS.has(extName)
+        ? [lang, delimiterLinter()]
+        : lang;
   } else {
     ext = result as Extension;
   }

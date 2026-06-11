@@ -90,6 +90,28 @@ export function buildSharedExtensions(): Extension[] {
         color: "var(--muted-foreground)",
         opacity: "0.5",
       },
+      // Inline placeholder shown in place of folded ranges (the "…" pill).
+      // Overrides CodeMirror's hardcoded light-gray base-theme box so it
+      // adapts to each theme's palette via CSS variables.
+      ".cm-foldPlaceholder": {
+        backgroundColor:
+          "color-mix(in srgb, var(--foreground) 7%, transparent)",
+        border:
+          "1px solid color-mix(in srgb, var(--foreground) 14%, transparent)",
+        color: "var(--muted-foreground)",
+        borderRadius: "4px",
+        margin: "0 3px",
+        padding: "0 5px",
+        fontSize: "0.8em",
+        verticalAlign: "baseline",
+        cursor: "pointer",
+        transition: "background-color 100ms ease, color 100ms ease",
+      },
+      ".cm-foldPlaceholder:hover": {
+        backgroundColor:
+          "color-mix(in srgb, var(--foreground) 12%, transparent)",
+        color: "var(--foreground)",
+      },
       ".cm-activeLine": {
         borderTopRightRadius: "5px",
         borderBottomRightRadius: "5px",

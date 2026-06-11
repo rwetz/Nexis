@@ -2,6 +2,19 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.16.0] — 2026-06-10
+
+Editor linting reaches the C-family languages, plus file-tree and fold-placeholder polish.
+
+### Added
+- **Java and C/C++ syntax linting** — C, C++, and Java move off the legacy `clike` StreamParser modes onto proper Lezer grammars (`@codemirror/lang-cpp`, `@codemirror/lang-java`), so they now surface real-time syntax-error markers like the other Lezer-backed languages. A new `syntaxErrorRanges` helper expands zero-width error nodes (an expected-but-missing closing delimiter reports as a zero-width node) to a 1-char range, so missing-brace warnings actually render instead of being invisible. Covered by a new `linting.test.ts` (18 tests).
+- **Bracket-balance linter for StreamParser languages** — languages without a Lezer grammar produce no error nodes, so they now get a `delimiterLinter` bracket-balance check for the extensions where brackets are reliably balanced.
+- **C# language server config** — `csharp-ls` (Roslyn-based, `dotnet tool install --global csharp-ls`) wired into the LSP server registry for `.cs` files.
+- **More folder icons** — `mobile`, `systems`, `query`, `functional`, `jvm`, `devops`, and `dotnet` folder names now resolve to catppuccin folder glyphs (android, core, database, functions, gradle, workflows, and lib respectively) instead of the plain default folder.
+
+### Fixed
+- **Fold-placeholder pill now follows the theme** — the inline `…` shown in place of folded code used CodeMirror's hardcoded light-gray base-theme box, which clashed with every dark theme. It's now styled from the active theme's CSS variables (translucent fill/border off `--foreground`, `--muted-foreground` text, hover brighten) so it adapts per theme across the editor, git-diff, and AI-diff panes.
+
 ## [1.15.15] — 2026-06-10
 
 Code-quality cleanups — no behavior change.

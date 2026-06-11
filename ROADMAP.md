@@ -187,6 +187,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] **Background job viewer + canceler** — one panel to see and cancel every background process and queued agent task. Partially covered today (the Background process manager lists shell jobs; the Background agent queue retries/clears AI tasks), but there's no single cancel-anything view. Promoted from an orphaned TODO that was sitting unchecked in the Shipped list
 - [ ] **Multiplayer terminal view (full)** — polling-based live terminal view ships; a WebSocket upgrade path would add true push without the 2 s polling delay
 - [ ] **Refactoring engine (LSP)** — rename symbols, extract functions, and inline variables across a project, powered by LSP workspace edits; AI verification pass already ships via the refactor panel
+- [ ] **Richer folder icon set** — the file explorer maps folder names onto the catppuccin Iconify set, which has no dedicated glyph for some ecosystems (`.NET`, JVM, mobile, etc.). Add a secondary Iconify set (e.g. `@iconify-json/vscode-icons`) as a fallback in `iconResolver.ts` so folders fall through to purpose-built icons when catppuccin lacks a match. The current stopgap aliases those names onto loosely-related catppuccin icons (mobile→android, jvm→gradle, devops→workflows, dotnet→lib, …), which is approximate — a proper set would give `.NET`/JVM/mobile their own art
 
 ---
 

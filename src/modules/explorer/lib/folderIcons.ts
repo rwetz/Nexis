@@ -29,7 +29,7 @@ const folderIcons: FolderIcons = {
     ],
   },
   android: {
-    folderNames: ["android"],
+    folderNames: ["android", "mobile"],
   },
   animation: {
     folderNames: ["anim", "anims", "animation", "animations", "animated"],
@@ -136,7 +136,7 @@ const folderIcons: FolderIcons = {
     ],
   },
   core: {
-    folderNames: ["core"],
+    folderNames: ["core", "systems"],
   },
   coverage: {
     folderNames: [
@@ -158,7 +158,7 @@ const folderIcons: FolderIcons = {
     folderNames: ["cypress", ".cypress"],
   },
   database: {
-    folderNames: ["db", "database", "databases", "sql", "data", "_data"],
+    folderNames: ["db", "database", "databases", "sql", "data", "_data", "query"],
   },
   debug: {
     folderNames: ["debug", "debugging"],
@@ -242,6 +242,7 @@ const folderIcons: FolderIcons = {
       "calcs",
       "calculation",
       "calculations",
+      "functional",
     ],
   },
   fvm: {
@@ -264,7 +265,7 @@ const folderIcons: FolderIcons = {
     folderNames: [".gitlab"],
   },
   gradle: {
-    folderNames: ["gradle", ".gradle"],
+    folderNames: ["gradle", ".gradle", "jvm"],
   },
   graphql: {
     folderNames: ["graphql", "gql"],
@@ -332,6 +333,7 @@ const folderIcons: FolderIcons = {
       ".libs",
       ".library",
       ".libraries",
+      "dotnet",
     ],
   },
   linux: {
@@ -553,7 +555,7 @@ const folderIcons: FolderIcons = {
     folderNames: ["windows"],
   },
   workflows: {
-    folderNames: ["workflow", "workflows", "ci", ".ci"],
+    folderNames: ["workflow", "workflows", "ci", ".ci", "devops"],
   },
   wxt: {
     folderNames: [".wxt"],

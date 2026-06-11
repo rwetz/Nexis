@@ -110,6 +110,14 @@ export const LANGUAGE_SERVERS: Record<string, ServerConfig> = {
     args: [],
     languages: ["c", "cpp"],
   },
+  // csharp-ls: a lightweight Roslyn-based server installed via
+  // `dotnet tool install --global csharp-ls`. Speaks LSP over stdio with no
+  // args. Resolves a solution/project from the workspace root automatically.
+  "csharp-ls": {
+    cmd: "csharp-ls",
+    args: [],
+    languages: ["csharp"],
+  },
 };
 
 /** Return the server group name for a language ID, or null if none known. */
