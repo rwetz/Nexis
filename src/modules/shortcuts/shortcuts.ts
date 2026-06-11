@@ -301,14 +301,11 @@ export const SHORTCUTS: Shortcut[] = [
     defaultBindings: [{ [MOD_PROP]: true, key: "y" }],
     displayOnly: true,
   },
-  // Handled by CodeMirror's keymap in EditorPane (like undo/redo above) —
-  // listed here only so the shortcuts dialog surfaces it.
   {
     id: "editor.codeActions",
     label: "Refactor (LSP code actions)",
     group: "Editor",
     defaultBindings: [{ [MOD_PROP]: true, shift: true, key: "r" }],
-    displayOnly: true,
   },
 ];
 

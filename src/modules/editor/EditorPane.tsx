@@ -86,6 +86,8 @@ export type EditorPaneHandle = {
   /** Apply CodeMirror's undo/redo commands. */
   undo: () => void;
   redo: () => void;
+  /** Open the LSP code-action (refactor) dialog for the current selection. */
+  openCodeActions: () => void;
 };
 
 type Props = {
@@ -413,29 +415,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
               return true;
             },
           },
-          {
-            key: "Mod-Shift-r",
-            preventDefault: true,
-            run: (view) => {
-              const { from, to } = view.state.selection.main;
-              const fromLine = view.state.doc.lineAt(from);
-              const toLine = view.state.doc.lineAt(to);
-              const range: LspRange = {
-                start: {
-                  line: fromLine.number - 1,
-                  character: from - fromLine.from,
-                },
-                end: { line: toLine.number - 1, character: to - toLine.from },
-              };
-              // Flush the buffer first: applyWorkspaceEdit writes to disk, so
-              // the server's edit must be computed against saved content.
-              void (async () => {
-                await saveRef.current();
-                openCodeActionRef.current?.(range);
-              })();
-              return true;
-            },
-          },
         ]),
       ],
       [],
@@ -540,6 +519,26 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         redo: () => {
           const view = cmRef.current?.view;
           if (view) redo(view);
+        },
+        openCodeActions: () => {
+          const view = cmRef.current?.view;
+          if (!view) return;
+          const { from, to } = view.state.selection.main;
+          const fromLine = view.state.doc.lineAt(from);
+          const toLine = view.state.doc.lineAt(to);
+          const range: LspRange = {
+            start: {
+              line: fromLine.number - 1,
+              character: from - fromLine.from,
+            },
+            end: { line: toLine.number - 1, character: to - toLine.from },
+          };
+          // Flush the buffer first: applyWorkspaceEdit writes to disk, so
+          // the server's edit must be computed against saved content.
+          void (async () => {
+            await saveRef.current();
+            openCodeActionRef.current?.(range);
+          })();
         },
       }),
       [path],

@@ -1107,6 +1107,9 @@ export default function App() {
       "editor.formatDocument": () => {
         void editorRefs.current.get(activeId)?.format();
       },
+      "editor.codeActions": () => {
+        editorRefs.current.get(activeId)?.openCodeActions();
+      },
       "editor.undo": () => editorRefs.current.get(activeId)?.undo(),
       "editor.redo": () => editorRefs.current.get(activeId)?.redo(),
     }),
@@ -1133,7 +1136,12 @@ export default function App() {
 
   const shortcutsDisabled = useCallback(
     (id: ShortcutId, e: KeyboardEvent) => {
-      if (id === "editor.undo" || id === "editor.redo" || id === "editor.formatDocument") {
+      if (
+        id === "editor.undo" ||
+        id === "editor.redo" ||
+        id === "editor.formatDocument" ||
+        id === "editor.codeActions"
+      ) {
         return activeTab?.kind !== "editor";
       }
       if (id === "ai.askSelection") {
