@@ -11,10 +11,11 @@
  * devices (phone, tablet, second monitor) on the same network.
  *
  * Terminal snapshot can be made "live" — the browser page connects via
- * Server-Sent Events and auto-updates as the terminal changes.
+ * WebSocket (SSE fallback) and updates the instant the terminal changes.
  */
 import { cn } from "@/lib/utils";
 import { useChatStore, getChat } from "@/modules/ai/store/chatStore";
+import { onTerminalOutput } from "@/modules/terminal/lib/useTerminalSession";
 import {
   Activity01Icon,
   Cancel01Icon,
@@ -102,27 +103,32 @@ export function SharePanel({ getTerminalBuffer }: Props) {
     setTimeout(() => setCopied(false), 2000);
   }, [server.port]);
 
-  // Live streaming — push terminal buffer to SSE clients every 2 s
-  const liveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
+  // Live streaming — push the terminal buffer the moment output arrives,
+  // debounced to one push per ~120 ms burst. WebSocket clients receive it
+  // instantly; SSE fallback clients on the next event.
+  const { pushStream } = server;
   useEffect(() => {
-    if (liveIntervalRef.current) {
-      clearInterval(liveIntervalRef.current);
-      liveIntervalRef.current = null;
+    if (!(liveMode && server.status === "running" && target === "terminal")) {
+      return;
     }
-    if (liveMode && server.status === "running" && target === "terminal") {
-      liveIntervalRef.current = setInterval(() => {
-        const buf = getTerminalBuffer?.() ?? "";
-        void server.pushStream(buf);
-      }, 2000);
-    }
-    return () => {
-      if (liveIntervalRef.current) {
-        clearInterval(liveIntervalRef.current);
-        liveIntervalRef.current = null;
-      }
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const push = () => {
+      const buf = getTerminalBuffer?.() ?? "";
+      void pushStream(buf);
     };
-  }, [liveMode, server, target, getTerminalBuffer]);
+    push(); // seed connected viewers immediately
+    const unsubscribe = onTerminalOutput(() => {
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = null;
+        push();
+      }, 120);
+    });
+    return () => {
+      unsubscribe();
+      if (timer) clearTimeout(timer);
+    };
+  }, [liveMode, server.status, target, pushStream, getTerminalBuffer]);
 
   // Disable live mode when switching away from terminal target
   useEffect(() => {
@@ -199,7 +205,7 @@ export function SharePanel({ getTerminalBuffer }: Props) {
               Live streaming
             </button>
             <span className="text-[9.5px] text-muted-foreground/50">
-              Browser auto-updates every 2 s
+              Instant updates over WebSocket
             </span>
           </div>
         )}
@@ -247,7 +253,7 @@ export function SharePanel({ getTerminalBuffer }: Props) {
               <p className="mt-1.5 text-[9.5px] text-muted-foreground/60">
                 Replace <em>{getLocalIpHint()}</em> with this machine's LAN IP.
                 {liveMode && target === "terminal" && (
-                  <> Connect to <strong>/stream</strong> for SSE live feed.</>
+                  <> Live feed: <strong>/ws</strong> (WebSocket) or <strong>/stream</strong> (SSE fallback).</>
                 )}
               </p>
             </div>

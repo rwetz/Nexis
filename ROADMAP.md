@@ -179,14 +179,16 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Debugger sidebar panel + pinnable rail — the DAP debugger gets a dedicated sidebar panel; sidebar-rail items can be pinned; PowerShell tab-title fix (1.13.0)
 - [x] Expanded syntax highlighting — CodeMirror language packs for 15 additional languages; per-file header blocks added across the source tree; GitHub issue/PR templates (1.14.0)
 - [x] UI polish pass + CI hardening — grouped sidebar overflow menu, consistent shortcut key badges, heavier section headers, settings scroll fade, welcome-screen AI entry point, recording-dot hover affordance, and a named `--brand` accent color (P1–P7 from `UI_IMPROVEMENTS.md`); plus Dependabot, a Rust lint job (`cargo fmt --check` + `clippy -D warnings`), and a weekly `cargo audit` (1.15.0)
+- [x] Multiplayer terminal view (WebSocket) — live terminal sharing now pushes over a stdlib-only WebSocket endpoint (`/ws`) the instant output arrives, replacing the ~2 s SSE polling cadence; `/stream` SSE kept as an automatic fallback; pushes are debounced to one per ~120 ms burst and remain view-only by design (no auth exists on the LAN server, so remote input must not reach the terminal) (1.18.0)
+- [x] Refactoring engine (LSP) — Extract Function and Inline Variable via `textDocument/codeAction` (Ctrl+Shift+R on a selection); actions resolve lazily through `codeAction/resolve`, command-only actions run via `workspace/executeCommand`, and the Rust proxy now answers server→client requests (`workspace/applyEdit`, `workspace/configuration`, …) so servers like rust-analyzer don't stall (1.18.0)
+- [x] Eager reload of edited-but-open tabs after multi-file edits — `applyWorkspaceEdit` (and the text-rename fallback) now broadcast the rewritten paths; every affected open editor tab force-reloads immediately instead of waiting for FS sync (1.18.0)
+- [x] Richer folder icon set — the explorer falls back to a pruned `@iconify-json/vscode-icons` subset (regenerate with `pnpm icons:folders`) when catppuccin lacks a folder match; `.NET`/`dotnet` now gets NuGet art, `jvm` gets Maven, and ~180 ecosystem folders (Kotlin, iOS, Flutter, Electron, MongoDB, …) get purpose-built icons; `mobile`/`devops` keep their catppuccin approximations since no dedicated art exists in either set (1.18.0)
 
 ---
 
 ## Up next
 
-- [ ] **Multiplayer terminal view (full)** — the live terminal view ships over SSE (the server pushes a refresh roughly every 2 s); a WebSocket upgrade would give instant bidirectional push without the ~2 s cadence
-- [ ] **Refactoring engine (LSP)** — rename symbols now ships via LSP (`textDocument/rename` → workspace edit, with a text fallback); still to come are **extract function** and **inline variable** across a project, powered by LSP code actions / workspace edits
-- [ ] **Richer folder icon set** — the file explorer maps folder names onto the catppuccin Iconify set, which has no dedicated glyph for some ecosystems (`.NET`, JVM, mobile, etc.). Add a secondary Iconify set (e.g. `@iconify-json/vscode-icons`) as a fallback in `iconResolver.ts` so folders fall through to purpose-built icons when catppuccin lacks a match. The current stopgap aliases those names onto loosely-related catppuccin icons (mobile→android, jvm→gradle, devops→workflows, dotnet→lib, …), which is approximate — a proper set would give `.NET`/JVM/mobile their own art
+_Empty — the previous batch shipped (see the 1.18.0 entries above). Candidates for the next batch live under **Later**._
 
 ---
 

@@ -58,9 +58,10 @@ impl LspSession {
 
         {
             let pending = pending.clone();
+            let stdin = stdin.clone();
             let workspace_root = workspace_root.to_string();
             thread::spawn(move || {
-                reader_loop(BufReader::new(stdout), pending, app, workspace_root);
+                reader_loop(BufReader::new(stdout), pending, stdin, app, workspace_root);
             });
         }
 
@@ -106,13 +107,7 @@ impl LspSession {
     }
 
     fn send_message(&self, msg: &Value) -> Result<(), String> {
-        let body = serde_json::to_string(msg).map_err(|e| e.to_string())?;
-        let header = format!("Content-Length: {}\r\n\r\n", body.len());
-        let mut buf = header.into_bytes();
-        buf.extend_from_slice(body.as_bytes());
-        let mut w = self.stdin.lock().unwrap();
-        w.write_all(&buf).map_err(|e| e.to_string())?;
-        w.flush().map_err(|e| e.to_string())
+        write_message(&self.stdin, msg)
     }
 
     fn do_initialize(
@@ -179,6 +174,10 @@ impl LspSession {
                                     "source.organizeImports"
                                 ]
                             }
+                        },
+                        "dataSupport": true,
+                        "resolveSupport": {
+                            "properties": ["edit"]
                         }
                     },
                     "publishDiagnostics": {
@@ -219,9 +218,23 @@ impl Drop for LspSession {
 
 // ── Reader thread ─────────────────────────────────────────────────────────────
 
+type SharedStdin = Arc<Mutex<Box<dyn Write + Send>>>;
+
+/// Frame and write a JSON-RPC message to the server's stdin.
+fn write_message(stdin: &Mutex<Box<dyn Write + Send>>, msg: &Value) -> Result<(), String> {
+    let body = serde_json::to_string(msg).map_err(|e| e.to_string())?;
+    let header = format!("Content-Length: {}\r\n\r\n", body.len());
+    let mut buf = header.into_bytes();
+    buf.extend_from_slice(body.as_bytes());
+    let mut w = stdin.lock().unwrap();
+    w.write_all(&buf).map_err(|e| e.to_string())?;
+    w.flush().map_err(|e| e.to_string())
+}
+
 fn reader_loop<R: Read>(
     mut reader: BufReader<R>,
     pending: PendingMap,
+    stdin: SharedStdin,
     app: AppHandle,
     workspace_root: String,
 ) {
@@ -271,11 +284,67 @@ fn reader_loop<R: Read>(
             Err(_) => continue,
         };
 
-        dispatch_message(msg, &pending, &app, &workspace_root);
+        dispatch_message(msg, &pending, &stdin, &app, &workspace_root);
     }
 }
 
-fn dispatch_message(msg: Value, pending: &PendingMap, app: &AppHandle, workspace_root: &str) {
+fn dispatch_message(
+    msg: Value,
+    pending: &PendingMap,
+    stdin: &SharedStdin,
+    app: &AppHandle,
+    workspace_root: &str,
+) {
+    let has_method = msg.get("method").and_then(Value::as_str).is_some();
+    let has_id = msg.get("id").map(|v| !v.is_null()).unwrap_or(false);
+
+    // Server → client request: has both "method" and "id". These must be
+    // answered or the server stalls waiting (e.g. rust-analyzer blocks an
+    // executeCommand reply on the workspace/applyEdit response).
+    if has_method && has_id {
+        let method = msg.get("method").and_then(Value::as_str).unwrap_or("");
+        let id = msg.get("id").cloned().unwrap_or(Value::Null);
+        let params = msg.get("params").cloned().unwrap_or(Value::Null);
+
+        let response = match method {
+            "workspace/applyEdit" => {
+                // Forward the edit to the frontend (which writes the files),
+                // then ack. We ack optimistically — the LSP spec has no way
+                // to report a deferred failure, and the frontend apply path
+                // is the same one used for renames.
+                let payload = json!({ "workspaceRoot": workspace_root, "params": params });
+                let _ = app.emit("lsp:workspace:applyEdit", payload);
+                json!({ "jsonrpc": "2.0", "id": id, "result": { "applied": true } })
+            }
+            "workspace/configuration" => {
+                // Respond with one null per requested item — "no opinion".
+                let count = params
+                    .get("items")
+                    .and_then(Value::as_array)
+                    .map(|a| a.len())
+                    .unwrap_or(0);
+                json!({ "jsonrpc": "2.0", "id": id, "result": vec![Value::Null; count] })
+            }
+            "client/registerCapability"
+            | "client/unregisterCapability"
+            | "window/workDoneProgress/create"
+            | "window/showMessageRequest" => {
+                json!({ "jsonrpc": "2.0", "id": id, "result": Value::Null })
+            }
+            _ => {
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "error": { "code": -32601, "message": format!("method not found: {method}") }
+                })
+            }
+        };
+        if let Err(e) = write_message(stdin, &response) {
+            log::warn!("lsp: failed to answer server request '{method}': {e}");
+        }
+        return;
+    }
+
     // Response: has numeric "id"
     if let Some(id_val) = msg.get("id") {
         if let Some(id) = id_val.as_u64() {

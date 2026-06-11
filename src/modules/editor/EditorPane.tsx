@@ -25,7 +25,9 @@ import {
   useState,
 } from "react";
 import { RenameDialog } from "./RenameDialog";
+import { CodeActionDialog } from "./CodeActionDialog";
 import { Minimap } from "./Minimap";
+import type { LspRange } from "@/modules/lsp/protocol";
 import { useChatStore } from "@/modules/ai/store/chatStore";
 import { EditorSelection, Prec } from "@codemirror/state";
 import { vim } from "@replit/codemirror-vim";
@@ -189,6 +191,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     >(null);
     openRenameRef.current = (target) => setRenameTarget(target);
 
+    const [codeActionRange, setCodeActionRange] = useState<LspRange | null>(null);
+    const openCodeActionRef = useRef<((range: LspRange) => void) | null>(null);
+    openCodeActionRef.current = (range) => setCodeActionRange(range);
+
     const [editorView, setEditorView] = useState<EditorView | undefined>(undefined);
 
     const projectHintsRef = useRef<string[] | null>(null);
@@ -256,6 +262,22 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       window.addEventListener("nexis:goto-location", handler);
       return () => window.removeEventListener("nexis:goto-location", handler);
     }, [editorView, path]);
+
+    // Force-reload when a workspace edit (LSP rename / refactor) rewrote this
+    // file on disk. Fired by notifyFilesRewritten — without this, only the
+    // active tab reloads and hidden tabs go stale until FS sync catches up.
+    useEffect(() => {
+      const myPath = path.replace(/\\/g, "/").toLowerCase();
+      const handler = (e: Event) => {
+        const ev = e as CustomEvent<{ paths: string[] }>;
+        const hit = ev.detail.paths.some(
+          (p) => p.replace(/\\/g, "/").toLowerCase() === myPath,
+        );
+        if (hit) reloadForceRef.current();
+      };
+      window.addEventListener("nexis:files-rewritten", handler);
+      return () => window.removeEventListener("nexis:files-rewritten", handler);
+    }, [path]);
 
     // Breakpoints — sync store → gutter when path changes or store updates
     const toggleBreakpoint = useBreakpointStore((s) => s.toggleBreakpoint);
@@ -388,6 +410,29 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
                 line: lineInfo.number - 1,
                 character: word.from - lineInfo.from,
               });
+              return true;
+            },
+          },
+          {
+            key: "Mod-Shift-r",
+            preventDefault: true,
+            run: (view) => {
+              const { from, to } = view.state.selection.main;
+              const fromLine = view.state.doc.lineAt(from);
+              const toLine = view.state.doc.lineAt(to);
+              const range: LspRange = {
+                start: {
+                  line: fromLine.number - 1,
+                  character: from - fromLine.from,
+                },
+                end: { line: toLine.number - 1, character: to - toLine.from },
+              };
+              // Flush the buffer first: applyWorkspaceEdit writes to disk, so
+              // the server's edit must be computed against saved content.
+              void (async () => {
+                await saveRef.current();
+                openCodeActionRef.current?.(range);
+              })();
               return true;
             },
           },
@@ -563,6 +608,18 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           />
           <Minimap view={editorView} />
         </div>
+        {codeActionRange && workspaceRoot && (
+          <CodeActionDialog
+            filePath={path}
+            workspaceRoot={workspaceRoot}
+            range={codeActionRange}
+            onClose={() => setCodeActionRange(null)}
+            onApplied={() => {
+              reloadForceRef.current();
+              setCodeActionRange(null);
+            }}
+          />
+        )}
         {renameTarget && workspaceRoot && (
           <RenameDialog
             symbol={renameTarget.symbol}

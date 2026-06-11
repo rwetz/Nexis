@@ -83,6 +83,21 @@ export function registerRecordingHandler(
   else recordingHandlers.delete(leafId);
 }
 
+/**
+ * Global "some terminal produced output" listeners. Used by the LAN share
+ * panel to push live updates the moment output arrives instead of polling.
+ * The set is empty unless live sharing is active, so the per-chunk cost is a
+ * single size check.
+ */
+const outputListeners = new Set<(leafId: number) => void>();
+
+export function onTerminalOutput(listener: (leafId: number) => void): () => void {
+  outputListeners.add(listener);
+  return () => {
+    outputListeners.delete(listener);
+  };
+}
+
 export function getSessionDimensions(leafId: number): { cols: number; rows: number } {
   const s = sessions.get(leafId);
   return { cols: s?.cols ?? 80, rows: s?.rows ?? 24 };
@@ -180,6 +195,9 @@ function deliverPtyBytes(leafId: number, bytes: Uint8Array): void {
   const slot = getSlotForLeaf(leafId);
   if (slot) slot.term.write(bytes);
   else s.dormantRing.push(bytes);
+  if (outputListeners.size > 0) {
+    for (const listener of outputListeners) listener(leafId);
+  }
 }
 
 async function openPtyForSession(

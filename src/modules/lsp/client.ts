@@ -7,16 +7,42 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
+  type LspCodeAction,
   type LspCompletionItem,
   type LspCompletionList,
   type LspDiagnostic,
   type LspHover,
   type LspLocation,
+  type LspRange,
   type LspWorkspaceEdit,
   pathToUri,
   uriToPath,
 } from "./protocol";
 import { serverGroupForLanguage } from "./languages";
+
+/**
+ * Servers can push edits to the client via the `workspace/applyEdit` request
+ * (e.g. after `workspace/executeCommand` runs a refactoring). The Rust proxy
+ * acks the request and re-emits it as an event; this single global listener
+ * applies the edit to disk (which also notifies open editor tabs).
+ */
+let applyEditListenerStarted = false;
+function ensureApplyEditListener(): void {
+  if (applyEditListenerStarted) return;
+  applyEditListenerStarted = true;
+  void listen<{
+    workspaceRoot: string;
+    params: { label?: string; edit?: LspWorkspaceEdit };
+  }>("lsp:workspace:applyEdit", (event) => {
+    void (async () => {
+      const { applyWorkspaceEdit, workspaceEditHasChanges } = await import(
+        "./applyEdit"
+      );
+      const edit = event.payload.params?.edit ?? null;
+      if (workspaceEditHasChanges(edit)) await applyWorkspaceEdit(edit);
+    })();
+  });
+}
 
 type SessionEntry = {
   sessionId: number;
@@ -101,6 +127,7 @@ class LspClientManager {
       );
 
       this.sessions.set(key, entry);
+      ensureApplyEditListener();
       return sessionId;
     } catch {
       // Server not installed or failed to start — silently degrade
@@ -258,20 +285,82 @@ class LspClientManager {
   async codeActions(
     entry: SessionEntry,
     path: string,
-    range: { start: { line: number; character: number }; end: { line: number; character: number } },
-  ) {
+    range: LspRange,
+    only?: string[],
+  ): Promise<LspCodeAction[]> {
     try {
-      return await invoke("lsp_request", {
-        sessionId: entry.sessionId,
-        method: "textDocument/codeAction",
-        params: {
-          textDocument: { uri: pathToUri(path) },
-          range,
-          context: { diagnostics: [] },
+      const result = await invoke<Array<LspCodeAction | null> | null>(
+        "lsp_request",
+        {
+          sessionId: entry.sessionId,
+          method: "textDocument/codeAction",
+          params: {
+            textDocument: { uri: pathToUri(path) },
+            range,
+            context: only ? { diagnostics: [], only } : { diagnostics: [] },
+          },
         },
+      );
+      if (!Array.isArray(result)) return [];
+      // The spec allows (Command | CodeAction)[] — normalize bare Commands
+      // (whose `command` field is a string) into the CodeAction shape.
+      return result.flatMap((item) => {
+        if (!item || typeof item.title !== "string") return [];
+        const cmd = (item as { command?: unknown }).command;
+        if (typeof cmd === "string") {
+          return [
+            {
+              title: item.title,
+              command: {
+                title: item.title,
+                command: cmd,
+                arguments: (item as { arguments?: unknown[] }).arguments,
+              },
+            } satisfies LspCodeAction,
+          ];
+        }
+        return [item];
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  /** Fill in a code action's `edit` lazily via codeAction/resolve. */
+  async resolveCodeAction(
+    entry: SessionEntry,
+    action: LspCodeAction,
+  ): Promise<LspCodeAction | null> {
+    try {
+      return await invoke<LspCodeAction | null>("lsp_request", {
+        sessionId: entry.sessionId,
+        method: "codeAction/resolve",
+        params: action,
       });
     } catch {
       return null;
+    }
+  }
+
+  /**
+   * Run a server-side command (a code action without a literal edit). The
+   * server applies its effect by sending `workspace/applyEdit` back to us,
+   * which the global listener handles.
+   */
+  async executeCommand(
+    entry: SessionEntry,
+    command: string,
+    args?: unknown[],
+  ): Promise<boolean> {
+    try {
+      await invoke("lsp_request", {
+        sessionId: entry.sessionId,
+        method: "workspace/executeCommand",
+        params: { command, arguments: args ?? [] },
+      });
+      return true;
+    } catch {
+      return false;
     }
   }
 

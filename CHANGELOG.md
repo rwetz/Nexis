@@ -2,6 +2,19 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.18.0] — 2026-06-11
+
+WebSocket live terminal sharing, LSP extract/inline refactorings, instant tab reload after multi-file edits, and a richer folder icon set.
+
+### Added
+- **WebSocket live terminal view** — the LAN share server gains a `/ws` endpoint (RFC 6455 handshake and framing implemented stdlib-only, with unit tests against the RFC vectors) so live terminal viewing pushes the instant output arrives instead of on the ~2 s SSE poll. The shared page connects via WebSocket and falls back to the kept `/stream` SSE endpoint automatically. The app now pushes on terminal output events (debounced to one push per ~120 ms burst) via a new zero-cost-when-idle output-listener registry in `useTerminalSession`. The view stays read-only by design — the server has no auth, so client frames are never forwarded to the terminal.
+- **LSP refactorings: Extract Function / Inline Variable (Ctrl+Shift+R)** — a new editor dialog lists `refactor.*` code actions from the language server for the current selection (extract function and inline variable sorted first) and applies the chosen workspace edit to disk. Actions without a literal edit are resolved via `codeAction/resolve` (`resolveSupport`/`dataSupport` now advertised); command-only actions run through `workspace/executeCommand`. The buffer is saved before requesting actions so edits are computed against disk content. Listed in the shortcuts dialog as a display-only Editor entry.
+- **LSP proxy answers server→client requests** — the Rust session reader previously dropped server-initiated requests (emitting them as events without replying), which stalls servers that block on the response. It now acks `workspace/applyEdit` (forwarding the edit to the frontend applier), answers `workspace/configuration` with per-item nulls, accepts `client/(un)registerCapability`, `window/workDoneProgress/create`, and `window/showMessageRequest`, and returns `-32601` for anything else.
+- **vscode-icons folder fallback** — the explorer falls back to a pruned `@iconify-json/vscode-icons` subset (folder types only, light-theme and `-opened` variants dropped; 179 icons, ~420 KB lazy chunk, regenerated via `pnpm icons:folders`) when catppuccin has no folder match. `dotnet` now resolves to NuGet art and `jvm` to Maven instead of the old lib/gradle aliases; Kotlin, iOS, Flutter, Electron, MongoDB, and ~170 other ecosystem folders get purpose-built icons. `mobile`/`devops` keep their catppuccin approximations — no dedicated art exists in either set.
+
+### Fixed
+- **Hidden editor tabs went stale after multi-file edits** — `applyWorkspaceEdit` (LSP rename/refactor) and the text-rename fallback now broadcast the rewritten paths via a `nexis:files-rewritten` event, and every open editor pane force-reloads its file immediately instead of only the active tab (the rest previously waited for FS sync to catch up).
+
 ## [1.17.0] — 2026-06-11
 
 Unified activity view, cancellable agent tasks, and semantic LSP rename.

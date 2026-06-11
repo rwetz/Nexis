@@ -141,8 +141,9 @@ ${rows}
 
 /**
  * Produce a self-contained HTML snapshot from terminal buffer text.
- * When `live` is true the page connects to /stream via Server-Sent Events
- * and updates the terminal output automatically.
+ * When `live` is true the page connects to /ws via WebSocket for instant
+ * push updates, falling back to the /stream SSE endpoint when the WebSocket
+ * can't be established.
  */
 export function terminalToHtml(
   bufferText: string,
@@ -157,15 +158,35 @@ export function terminalToHtml(
 (function(){
   var pre = document.getElementById('output');
   var dot = document.getElementById('live-dot');
-  var es = new EventSource('/stream');
-  es.onmessage = function(e){
-    // data is JSON-escaped newlines → restore
-    pre.textContent = e.data.replace(/\\\\n/g,'\\n');
+  function show(text){
+    pre.textContent = text;
     pre.scrollTop = pre.scrollHeight;
-  };
-  es.onerror = function(){
-    if(dot) dot.style.background='#f55';
-  };
+  }
+  function startSse(){
+    var es = new EventSource('/stream');
+    es.onmessage = function(e){
+      // SSE data has escaped newlines → restore
+      show(e.data.replace(/\\\\n/g,'\\n'));
+    };
+    es.onerror = function(){
+      if(dot) dot.style.background='#f55';
+    };
+  }
+  var fellBack = false;
+  function fallback(){
+    if(fellBack) return;
+    fellBack = true;
+    startSse();
+  }
+  try {
+    var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    var ws = new WebSocket(proto + location.host + '/ws');
+    ws.onmessage = function(e){ show(e.data); };
+    ws.onerror = fallback;
+    ws.onclose = fallback;
+  } catch (err) {
+    fallback();
+  }
 })();
 </script>`
     : "";

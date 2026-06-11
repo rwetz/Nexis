@@ -29,6 +29,8 @@ const folderIcons: FolderIcons = {
     ],
   },
   android: {
+    // "mobile" is a deliberate approximation — neither catppuccin nor the
+    // vscode-icons fallback has dedicated mobile art.
     folderNames: ["android", "mobile"],
   },
   animation: {
@@ -265,7 +267,7 @@ const folderIcons: FolderIcons = {
     folderNames: [".gitlab"],
   },
   gradle: {
-    folderNames: ["gradle", ".gradle", "jvm"],
+    folderNames: ["gradle", ".gradle"],
   },
   graphql: {
     folderNames: ["graphql", "gql"],
@@ -333,7 +335,6 @@ const folderIcons: FolderIcons = {
       ".libs",
       ".library",
       ".libraries",
-      "dotnet",
     ],
   },
   linux: {
@@ -555,6 +556,8 @@ const folderIcons: FolderIcons = {
     folderNames: ["windows"],
   },
   workflows: {
+    // "devops" is a deliberate approximation — no dedicated devops folder
+    // art exists in catppuccin or the vscode-icons fallback.
     folderNames: ["workflow", "workflows", "ci", ".ci", "devops"],
   },
   wxt: {

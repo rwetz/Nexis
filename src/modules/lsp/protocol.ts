@@ -70,11 +70,17 @@ export type LspWorkspaceEdit = {
   }>;
 };
 
+export type LspCommand = { title: string; command: string; arguments?: unknown[] };
+
 export type LspCodeAction = {
   title: string;
   kind?: string;
+  isPreferred?: boolean;
+  disabled?: { reason: string };
   edit?: LspWorkspaceEdit;
-  command?: { title: string; command: string; arguments?: unknown[] };
+  command?: LspCommand;
+  /** Server-specific payload echoed back in codeAction/resolve. */
+  data?: unknown;
 };
 
 export function hoverToMarkdown(contents: LspHoverContents): string {

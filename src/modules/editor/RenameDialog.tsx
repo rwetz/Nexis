@@ -10,6 +10,7 @@ import { lspClient } from "@/modules/lsp/client";
 import { languageIdForPath } from "@/modules/lsp/languages";
 import {
   applyWorkspaceEdit,
+  notifyFilesRewritten,
   workspaceEditHasChanges,
 } from "@/modules/lsp/applyEdit";
 import { Alert02Icon, CheckmarkCircle01Icon } from "@hugeicons/core-free-icons";
@@ -134,6 +135,7 @@ export function RenameDialog({
       // 2) Fallback: word-boundary text find/replace across grep hits.
       const pattern = new RegExp(`\\b${escapeRegex(symbol)}\\b`, "g");
       const uniquePaths = [...new Set(hits.map((h) => h.rel))];
+      const rewritten: string[] = [];
       for (const rel of uniquePaths) {
         const fullPath = `${workspaceRoot}/${rel}`;
         const result = await native.readFile(fullPath);
@@ -141,9 +143,11 @@ export function RenameDialog({
           const updated = result.content.replace(pattern, newName.trim());
           if (updated !== result.content) {
             await native.writeFile(fullPath, updated);
+            rewritten.push(fullPath);
           }
         }
       }
+      notifyFilesRewritten(rewritten);
       finishApplied();
     } catch (e) {
       setError(String(e));

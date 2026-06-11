@@ -68,13 +68,25 @@ function collectByUri(edit: LspWorkspaceEdit): Map<string, LspTextEdit[]> {
 }
 
 /**
+ * Tell every open editor tab that the given files were rewritten on disk so
+ * they can force-reload immediately instead of waiting for FS sync.
+ * EditorPane listens for this event.
+ */
+export function notifyFilesRewritten(paths: string[]): void {
+  if (paths.length === 0) return;
+  window.dispatchEvent(
+    new CustomEvent("nexis:files-rewritten", { detail: { paths } }),
+  );
+}
+
+/**
  * Apply a WorkspaceEdit to disk. Returns the number of files actually changed.
  */
 export async function applyWorkspaceEdit(
   edit: LspWorkspaceEdit,
 ): Promise<number> {
   const byUri = collectByUri(edit);
-  let changed = 0;
+  const rewritten: string[] = [];
   for (const [uri, edits] of byUri) {
     if (edits.length === 0) continue;
     const path = uriToPath(uri);
@@ -83,10 +95,11 @@ export async function applyWorkspaceEdit(
     const updated = applyEditsToText(res.content, edits);
     if (updated !== res.content) {
       await native.writeFile(path, updated);
-      changed++;
+      rewritten.push(path);
     }
   }
-  return changed;
+  notifyFilesRewritten(rewritten);
+  return rewritten.length;
 }
 
 /** True when a WorkspaceEdit carries at least one concrete edit. */

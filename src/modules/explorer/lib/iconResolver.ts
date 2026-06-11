@@ -24,17 +24,33 @@ let cat: IconifySet | null = null;
 let CAT_W = 16;
 let CAT_H = 16;
 
-// Lazy-load the 300KB catppuccin JSON off the critical path.
+// Secondary folder-icon set: a pruned @iconify-json/vscode-icons subset
+// (folder-type-* only, see scripts/generate-vscode-folder-icons.mjs).
+// Used when catppuccin has no folder match — it has purpose-built art for
+// ecosystems catppuccin lacks (NuGet, Maven, iOS, Flutter, Electron, …).
+let vsc: IconifySet | null = null;
+let VSC_W = 32;
+let VSC_H = 32;
+
+// Lazy-load the icon JSONs off the critical path.
 let loadPromise: Promise<void> | null = null;
 function ensureLoaded(): Promise<void> {
-  if (cat) return Promise.resolve();
+  if (cat && vsc) return Promise.resolve();
   if (loadPromise) return loadPromise;
-  loadPromise = import("@iconify-json/catppuccin/icons.json").then((mod) => {
-    const data = mod.default as unknown as IconifySet;
-    cat = data;
-    CAT_W = data.width ?? 16;
-    CAT_H = data.height ?? 16;
-  });
+  loadPromise = Promise.all([
+    import("@iconify-json/catppuccin/icons.json").then((mod) => {
+      const data = mod.default as unknown as IconifySet;
+      cat = data;
+      CAT_W = data.width ?? 16;
+      CAT_H = data.height ?? 16;
+    }),
+    import("./vscodeFolderIcons.json").then((mod) => {
+      const data = mod.default as unknown as IconifySet;
+      vsc = data;
+      VSC_W = data.width ?? 32;
+      VSC_H = data.height ?? 32;
+    }),
+  ]).then(() => {});
   return loadPromise;
 }
 
@@ -67,18 +83,60 @@ function catBody(iconName: string): string | null {
   return null;
 }
 
+function svgDataUrl(body: string, width: number, height: number): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">${body}</svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 function buildDataUrl(iconName: string): string | null {
-  const cached = dataUrlCache.get(iconName);
+  const key = `cat:${iconName}`;
+  const cached = dataUrlCache.get(key);
   if (cached !== undefined) return cached || null;
   const body = catBody(iconName);
   if (!body) {
-    dataUrlCache.set(iconName, "");
+    dataUrlCache.set(key, "");
     return null;
   }
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CAT_W} ${CAT_H}">${body}</svg>`;
-  const url = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  dataUrlCache.set(iconName, url);
+  const url = svgDataUrl(body, CAT_W, CAT_H);
+  dataUrlCache.set(key, url);
   return url;
+}
+
+function buildVscDataUrl(iconName: string): string | null {
+  const key = `vsc:${iconName}`;
+  const cached = dataUrlCache.get(key);
+  if (cached !== undefined) return cached || null;
+  const body = vsc?.icons[iconName]?.body;
+  if (!body) {
+    dataUrlCache.set(key, "");
+    return null;
+  }
+  const url = svgDataUrl(body, VSC_W, VSC_H);
+  dataUrlCache.set(key, url);
+  return url;
+}
+
+/**
+ * Folder names whose best available art lives in the vscode-icons set under
+ * a different slug than the folder name itself.
+ */
+const VSC_FOLDER_ALIASES: Record<string, string> = {
+  dotnet: "nuget",
+  ".nuget": "nuget",
+  jvm: "maven",
+  ".maven": "maven",
+  ".m2": "maven",
+  kt: "kotlin",
+  notebook: "notebooks",
+};
+
+/** vscode-icons fallback for a folder name; null when the set has no match. */
+function vscFolderUrl(name: string): string | null {
+  if (!vsc) return null;
+  const aliased = VSC_FOLDER_ALIASES[name];
+  const slug = aliased ?? name.replace(/^\.+/, "");
+  if (!slug) return null;
+  return buildVscDataUrl(`folder-type-${slug}`);
 }
 
 function extOf(name: string): string {
@@ -130,6 +188,11 @@ export function folderIconUrl(name: string, expanded: boolean): string {
     const url = buildDataUrl(target);
     if (url) return url;
   }
+
+  // Fall through to vscode-icons for ecosystems catppuccin doesn't cover.
+  // The pruned set carries no "-opened" variants — same art either state.
+  const vscUrl = vscFolderUrl(lower);
+  if (vscUrl) return vscUrl;
 
   return buildDataUrl(expanded ? DEFAULT_FOLDER_OPEN : DEFAULT_FOLDER) ?? "";
 }
