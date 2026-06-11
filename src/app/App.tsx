@@ -78,7 +78,7 @@ import {
   type ShortcutId,
 } from "@/modules/shortcuts";
 import { SidebarRail } from "@/modules/sidebar";
-import { BackgroundProcessPanel, useBackgroundProcesses } from "@/modules/processes";
+import { ActivityPanel, useBackgroundProcesses } from "@/modules/processes";
 import { ProblemsPanel } from "@/modules/problems/ProblemsPanel";
 import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
 import { SnippetsPanel } from "@/modules/snippets";
@@ -86,7 +86,6 @@ import { TestRunnerPanel } from "@/modules/testrunner";
 import { DatabasePanel } from "@/modules/database/DatabasePanel";
 import { BuildPanel } from "@/modules/build/BuildPanel";
 import { CodeReviewPanel } from "@/modules/code-review";
-import { AgentQueuePanel } from "@/modules/agent-queue";
 import { SharePanel } from "@/modules/share";
 import { SymbolSearchPanel } from "@/modules/symbol-search";
 import { RefactorPanel, setRefactorCode } from "@/modules/refactor";
@@ -1042,7 +1041,7 @@ export default function App() {
     { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
     { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
     { id: "sidebar.sc",          label: "Show source control",      category: "View",    action: () => persistSidebarView("source-control") },
-    { id: "sidebar.processes",   label: "Show background processes",category: "View",    action: () => persistSidebarView("processes") },
+    { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes") },
   ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView]);
 
   const handleCloseTabOrPane = useCallback(() => {
@@ -1492,7 +1491,7 @@ export default function App() {
                         onOpenImage={openImageViewer}
                       />
                     ) : sidebarView === "processes" ? (
-                      <BackgroundProcessPanel />
+                      <ActivityPanel />
                     ) : sidebarView === "ports" ? (
                       <PortsPanel onOpenPreview={openPreviewTab} />
                     ) : sidebarView === "repl" ? (
@@ -1530,7 +1529,7 @@ export default function App() {
                     ) : sidebarView === "code-review" ? (
                       <CodeReviewPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "agent-queue" ? (
-                      <AgentQueuePanel />
+                      <ActivityPanel />
                     ) : sidebarView === "symbol-search" ? (
                       <SymbolSearchPanel
                         workspaceRoot={explorerRoot}

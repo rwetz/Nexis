@@ -2,6 +2,21 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.17.0] — 2026-06-11
+
+Unified activity view, cancellable agent tasks, and semantic LSP rename.
+
+### Added
+- **Unified Activity panel** — the background-process manager and the AI agent queue are merged into a single sidebar view (relabeled "Activity"). Background shell processes can be killed and queued/running agent tasks stopped from one place. Resolves the "Background job viewer + canceler" roadmap item.
+- **Stop a running agent task** — the agent queue can now abort an *in-flight* task, not just queued ones. It calls the chat store's `stop()` to unwind the agent turn and finalizes the task as `cancelled` (a new, retryable status). Previously only queued/done/failed tasks could be removed; a running task had no cancel control.
+- **Semantic rename via LSP (F2)** — symbol rename now issues `textDocument/rename` when a language server is active and applies the returned WorkspaceEdit across files, so only true references change (not comments, strings, or substrings). It falls back to the previous word-boundary text find/replace when no server is available, and the dialog shows a `Semantic`/`Text` badge. New `lsp/applyEdit.ts` workspace-edit applier, covered by unit tests.
+
+### Changed
+- **Sidebar rail** — the separate "Processes" and "Agent Queue" entries are replaced by a single "Activity" item. The `processes` and `agent-queue` views both render the unified panel, so saved layouts keep working.
+
+### Docs
+- **ROADMAP corrections** — the Shipped "AI-powered rename … with AI verification" line was inaccurate (the shipped rename was a regex word-boundary find/replace, with no AI); it now describes the LSP-backed rename with text fallback. The multiplayer-terminal item now describes the shipped SSE transport accurately instead of "polling". The background-job item is marked shipped, and the LSP refactoring item is narrowed to the remaining extract-function / inline-variable work.
+
 ## [1.16.0] — 2026-06-10
 
 Editor linting reaches the C-family languages, plus file-tree and fold-placeholder polish.

@@ -44,7 +44,6 @@ import {
   Globe02Icon,
   MagicWand01Icon,
   Note01Icon,
-  Queue01Icon,
   SearchCodeIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -118,10 +117,9 @@ export function SidebarRail({
     { id: "debugger",       label: "Debugger",         icon: Bug01Icon,         group: "Code" },
     { id: "symbol-search",  label: "Symbol Search",    icon: SearchCodeIcon,    group: "Code" },
     { id: "code-review",    label: "Code Review",      icon: CodeSquareIcon,    group: "Code" },
-    { id: "agent-queue",    label: "Agent Queue",      icon: Queue01Icon,       group: "AI" },
     { id: "refactor",       label: "AI Refactor",      icon: MagicWand01Icon,   group: "AI" },
     { id: "prompt-templates", label: "Prompt Templates", icon: FlashIcon,       group: "AI" },
-    { id: "processes",      label: "Processes",        icon: TaskAdd01Icon,     group: "Dev Tools", badge: runningProcessCount },
+    { id: "processes",      label: "Activity",         icon: TaskAdd01Icon,     group: "Dev Tools", badge: runningProcessCount },
     { id: "ports",          label: "Ports",            icon: Router01Icon,      group: "Dev Tools" },
     { id: "repl",           label: "REPL",             icon: ComputerTerminal01Icon, group: "Dev Tools" },
     { id: "database",       label: "Database",         icon: Database01Icon,    group: "Dev Tools" },

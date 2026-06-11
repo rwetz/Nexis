@@ -12,9 +12,18 @@
  * idle/error, we mark the task done and start the next one.
  */
 import { create } from "zustand";
-import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
+import {
+  sendMessage,
+  stop as stopAgent,
+  useChatStore,
+} from "@/modules/ai/store/chatStore";
 
-export type QueueTaskStatus = "queued" | "running" | "done" | "failed";
+export type QueueTaskStatus =
+  | "queued"
+  | "running"
+  | "done"
+  | "failed"
+  | "cancelled";
 
 export type QueueTask = {
   id: string;
@@ -33,8 +42,10 @@ type QueueState = {
   addTask: (prompt: string, label?: string) => string;
   removeTask: (id: string) => void;
   clearDone: () => void;
-  /** Retry a failed task. */
+  /** Retry a failed/cancelled task. */
   retryTask: (id: string) => void;
+  /** Cancel a task: abort the agent turn if running, drop it if queued. */
+  cancelTask: (id: string) => void;
 };
 
 export const useAgentQueueStore = create<QueueState>()((set, get) => ({
@@ -69,7 +80,10 @@ export const useAgentQueueStore = create<QueueState>()((set, get) => ({
   retryTask: (id) => {
     set((s) => ({
       tasks: s.tasks.map((t) =>
-        t.id === id && (t.status === "failed" || t.status === "done")
+        t.id === id &&
+        (t.status === "failed" ||
+          t.status === "done" ||
+          t.status === "cancelled")
           ? {
               ...t,
               status: "queued" as const,
@@ -81,7 +95,35 @@ export const useAgentQueueStore = create<QueueState>()((set, get) => ({
     }));
     scheduleProcessNext(get);
   },
+
+  cancelTask: (id) => {
+    const task = get().tasks.find((t) => t.id === id);
+    if (!task) return;
+    if (task.status === "running") {
+      // Mark the in-flight task so the worker finalizes it as cancelled
+      // (not "done") once the agent turn unwinds, then abort the turn.
+      cancelledIds.add(id);
+      stopAgent();
+    } else if (task.status === "queued") {
+      set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
+    }
+  },
 }));
+
+// Ids of running tasks the user asked to cancel. The queue worker checks this
+// once the aborted agent turn resolves so it can mark them "cancelled".
+const cancelledIds = new Set<string>();
+
+function finalizeTask(
+  id: string,
+  status: "done" | "failed" | "cancelled",
+): void {
+  useAgentQueueStore.setState((s) => ({
+    tasks: s.tasks.map((t) =>
+      t.id === id ? { ...t, status, completedAt: Date.now() } : t,
+    ),
+  }));
+}
 
 // ── Queue worker ──────────────────────────────────────────────────────────────
 
@@ -125,22 +167,10 @@ async function processNext(get: () => QueueState) {
 
     await completionPromise;
 
-    // Mark done
-    useAgentQueueStore.setState((s) => ({
-      tasks: s.tasks.map((t) =>
-        t.id === task.id
-          ? { ...t, status: "done" as const, completedAt: Date.now() }
-          : t,
-      ),
-    }));
+    // If the user cancelled this running task, finalize it as cancelled.
+    finalizeTask(task.id, cancelledIds.delete(task.id) ? "cancelled" : "done");
   } catch {
-    useAgentQueueStore.setState((s) => ({
-      tasks: s.tasks.map((t) =>
-        t.id === task.id
-          ? { ...t, status: "failed" as const, completedAt: Date.now() }
-          : t,
-      ),
-    }));
+    finalizeTask(task.id, cancelledIds.delete(task.id) ? "cancelled" : "failed");
   }
 
   workerBusy = false;

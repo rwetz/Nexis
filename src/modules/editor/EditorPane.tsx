@@ -178,9 +178,16 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const pathRef = useRef(path);
     pathRef.current = path;
 
-    const [renameTarget, setRenameTarget] = useState<string | null>(null);
-    const openRenameRef = useRef<((symbol: string) => void) | null>(null);
-    openRenameRef.current = (symbol: string) => setRenameTarget(symbol);
+    const [renameTarget, setRenameTarget] = useState<{
+      symbol: string;
+      line: number;
+      character: number;
+    } | null>(null);
+    const openRenameRef = useRef<
+      | ((target: { symbol: string; line: number; character: number }) => void)
+      | null
+    >(null);
+    openRenameRef.current = (target) => setRenameTarget(target);
 
     const [editorView, setEditorView] = useState<EditorView | undefined>(undefined);
 
@@ -375,7 +382,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
               if (!word) return false;
               const symbol = view.state.sliceDoc(word.from, word.to);
               if (!symbol.trim()) return false;
-              openRenameRef.current?.(symbol);
+              const lineInfo = view.state.doc.lineAt(word.from);
+              openRenameRef.current?.({
+                symbol,
+                line: lineInfo.number - 1,
+                character: word.from - lineInfo.from,
+              });
               return true;
             },
           },
@@ -553,7 +565,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         </div>
         {renameTarget && workspaceRoot && (
           <RenameDialog
-            symbol={renameTarget}
+            symbol={renameTarget.symbol}
+            filePath={path}
+            line={renameTarget.line}
+            character={renameTarget.character}
             workspaceRoot={workspaceRoot}
             onClose={() => setRenameTarget(null)}
             onApplied={(_old, _new) => {

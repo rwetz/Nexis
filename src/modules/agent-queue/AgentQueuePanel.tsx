@@ -40,6 +40,8 @@ function statusIcon(status: QueueTaskStatus) {
       return CheckmarkCircle01Icon;
     case "failed":
       return Alert02Icon;
+    case "cancelled":
+      return Cancel01Icon;
   }
 }
 
@@ -53,6 +55,8 @@ function statusColor(status: QueueTaskStatus): string {
       return "text-green-500";
     case "failed":
       return "text-destructive";
+    case "cancelled":
+      return "text-muted-foreground";
   }
 }
 
@@ -69,6 +73,7 @@ export function AgentQueuePanel() {
   const removeTask = useAgentQueueStore((s) => s.removeTask);
   const clearDone = useAgentQueueStore((s) => s.clearDone);
   const retryTask = useAgentQueueStore((s) => s.retryTask);
+  const cancelTask = useAgentQueueStore((s) => s.cancelTask);
 
   const [showForm, setShowForm] = useState(false);
   const [prompt, setPrompt] = useState("");
@@ -78,7 +83,10 @@ export function AgentQueuePanel() {
   const queuedCount = tasks.filter((t) => t.status === "queued").length;
   const runningCount = tasks.filter((t) => t.status === "running").length;
   const doneCount = tasks.filter(
-    (t) => t.status === "done" || t.status === "failed",
+    (t) =>
+      t.status === "done" ||
+      t.status === "failed" ||
+      t.status === "cancelled",
   ).length;
 
   const handleAdd = useCallback(() => {
@@ -185,9 +193,17 @@ export function AgentQueuePanel() {
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100">
-                  {task.status === "failed" && (
+                {/* Actions — the stop control stays visible while running so a
+                    stuck task can always be aborted; the rest reveal on hover. */}
+                <div
+                  className={cn(
+                    "flex shrink-0 items-center gap-0.5",
+                    task.status !== "running" &&
+                      "opacity-0 group-hover:opacity-100",
+                  )}
+                >
+                  {(task.status === "failed" ||
+                    task.status === "cancelled") && (
                     <button
                       type="button"
                       title="Retry"
@@ -201,7 +217,20 @@ export function AgentQueuePanel() {
                       />
                     </button>
                   )}
-                  {task.status !== "running" && (
+                  {task.status === "running" ? (
+                    <button
+                      type="button"
+                      title="Stop task"
+                      onClick={() => cancelTask(task.id)}
+                      className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <HugeiconsIcon
+                        icon={Cancel01Icon}
+                        size={10}
+                        strokeWidth={2}
+                      />
+                    </button>
+                  ) : (
                     <button
                       type="button"
                       title="Remove"

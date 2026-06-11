@@ -6,12 +6,23 @@
 
 import { native, type GrepHit } from "@/modules/ai/lib/native";
 import { cn } from "@/lib/utils";
+import { lspClient } from "@/modules/lsp/client";
+import { languageIdForPath } from "@/modules/lsp/languages";
+import {
+  applyWorkspaceEdit,
+  workspaceEditHasChanges,
+} from "@/modules/lsp/applyEdit";
 import { Alert02Icon, CheckmarkCircle01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
   symbol: string;
+  /** Absolute path of the file the rename was triggered from. */
+  filePath: string;
+  /** 0-based cursor position of the symbol, for LSP textDocument/rename. */
+  line: number;
+  character: number;
   workspaceRoot: string;
   onClose: () => void;
   onApplied: (oldSymbol: string, newSymbol: string) => void;
@@ -26,7 +37,15 @@ type FileSummary = {
   count: number;
 };
 
-export function RenameDialog({ symbol, workspaceRoot, onClose, onApplied }: Props) {
+export function RenameDialog({
+  symbol,
+  filePath,
+  line,
+  character,
+  workspaceRoot,
+  onClose,
+  onApplied,
+}: Props) {
   const [newName, setNewName] = useState(symbol);
   const [hits, setHits] = useState<GrepHit[]>([]);
   const [fileSummaries, setFileSummaries] = useState<FileSummary[]>([]);
@@ -34,6 +53,7 @@ export function RenameDialog({ symbol, workspaceRoot, onClose, onApplied }: Prop
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [lspReady, setLspReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -61,14 +81,59 @@ export function RenameDialog({ symbol, workspaceRoot, onClose, onApplied }: Prop
       });
   }, [symbol, workspaceRoot]);
 
+  // Detect whether a language server can drive a semantic rename for this
+  // file. The session is almost always already running (the open editor
+  // created it), so getOrCreateSession just hands back the existing entry.
+  useEffect(() => {
+    let cancelled = false;
+    const langId = languageIdForPath(filePath);
+    if (!langId) return;
+    void lspClient
+      .getOrCreateSession(langId, workspaceRoot)
+      .then((entry) => {
+        if (!cancelled) setLspReady(!!entry);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [filePath, workspaceRoot]);
+
+  const finishApplied = () => {
+    setDone(true);
+    setTimeout(() => {
+      onApplied(symbol, newName.trim());
+      onClose();
+    }, 800);
+  };
+
   const apply = async () => {
     if (!newName.trim() || newName === symbol) { onClose(); return; }
     setApplying(true);
     setError(null);
-    const pattern = new RegExp(`\\b${escapeRegex(symbol)}\\b`, "g");
-    const uniquePaths = [...new Set(hits.map((h) => h.rel))];
 
     try {
+      // 1) Semantic rename via the language server when one is available —
+      //    only true references change (not comments/strings/substrings).
+      if (lspReady) {
+        const langId = languageIdForPath(filePath);
+        const entry = langId
+          ? await lspClient.getOrCreateSession(langId, workspaceRoot)
+          : null;
+        const edit = entry
+          ? await lspClient.rename(entry, filePath, line, character, newName.trim())
+          : null;
+        if (workspaceEditHasChanges(edit)) {
+          await applyWorkspaceEdit(edit);
+          finishApplied();
+          return;
+        }
+        // Server returned nothing actionable — fall through to text rename.
+      }
+
+      // 2) Fallback: word-boundary text find/replace across grep hits.
+      const pattern = new RegExp(`\\b${escapeRegex(symbol)}\\b`, "g");
+      const uniquePaths = [...new Set(hits.map((h) => h.rel))];
       for (const rel of uniquePaths) {
         const fullPath = `${workspaceRoot}/${rel}`;
         const result = await native.readFile(fullPath);
@@ -79,11 +144,7 @@ export function RenameDialog({ symbol, workspaceRoot, onClose, onApplied }: Prop
           }
         }
       }
-      setDone(true);
-      setTimeout(() => {
-        onApplied(symbol, newName.trim());
-        onClose();
-      }, 800);
+      finishApplied();
     } catch (e) {
       setError(String(e));
       setApplying(false);
@@ -100,7 +161,24 @@ export function RenameDialog({ symbol, workspaceRoot, onClose, onApplied }: Prop
     >
       <div className="w-[420px] rounded-xl border border-border/60 bg-card shadow-2xl">
         <div className="border-b border-border/40 px-4 py-3">
-          <p className="text-[12px] font-semibold text-foreground">Rename Symbol</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[12px] font-semibold text-foreground">Rename Symbol</p>
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
+                lspReady
+                  ? "bg-primary/15 text-primary"
+                  : "bg-muted text-muted-foreground",
+              )}
+              title={
+                lspReady
+                  ? "Semantic rename via language server — only true references change"
+                  : "Text rename — word-boundary find/replace across files"
+              }
+            >
+              {lspReady ? "Semantic" : "Text"}
+            </span>
+          </div>
           <p className="text-[11px] text-muted-foreground">
             Rename <span className="font-mono text-foreground">{symbol}</span> across the workspace
           </p>
@@ -133,6 +211,12 @@ export function RenameDialog({ symbol, workspaceRoot, onClose, onApplied }: Prop
                 <p className="text-muted-foreground">
                   {totalOccurrences} occurrence{totalOccurrences !== 1 ? "s" : ""} in {fileSummaries.length} file{fileSummaries.length !== 1 ? "s" : ""}
                 </p>
+                {lspReady && (
+                  <p className="text-[10px] text-primary/70">
+                    Text preview — the language server renames only real
+                    references.
+                  </p>
+                )}
                 <div className="mt-1 flex flex-col gap-0.5 max-h-[120px] overflow-y-auto">
                   {fileSummaries.map(({ rel, count }) => (
                     <div key={rel} className="flex items-center justify-between gap-2">

@@ -63,7 +63,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Symbol outline panel — file-level function/class/variable tree in the sidebar
 - [x] Code folding improvements — fold by indent, by region comments, and by language constructs
 - [x] Word wrap toggle — per-file and global word wrap setting
-- [x] AI-powered rename — rename a symbol across the project with AI verification (F2)
+- [x] Symbol rename (F2) — LSP-powered semantic rename across the project when a language server is available (only true references change), with a word-boundary text find/replace fallback when none is
 - [x] Editor split diff view — side-by-side comparison view for reviewing changes
 
 ### Language Tooling
@@ -114,7 +114,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 ### Development Panels
 - [x] Integrated build system — trigger builds (cargo, pnpm, make, gradle) from inside the app with live output and errors linked to source lines
 - [x] Test runner panel — run and watch test suites (Vitest, cargo test, pytest, JUnit) with pass/fail tree, inline failure markers, and re-run on save
-- [x] Background process manager — visibility into shell background jobs and dev servers running in Nexis
+- [x] Unified Activity panel — one sidebar view listing background shell processes and queued AI agent tasks; kill any process and stop any running or queued agent task from a single place (background process manager + agent queue merged in 1.17.0)
 - [x] Environment variable panel — view, edit, and persist env vars per workspace
 - [x] Database integration — connection manager for SQLite, PostgreSQL, MySQL; schema browser, table viewer, query editor with AI-assisted query generation
 - [x] Jupyter notebook support — open, edit, and run `.ipynb` files with kernel management, inline cell output rendering (text, plots, tables), and AI-assisted cell generation
@@ -184,9 +184,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 
 ## Up next
 
-- [ ] **Background job viewer + canceler** — one panel to see and cancel every background process and queued agent task. Partially covered today (the Background process manager lists shell jobs; the Background agent queue retries/clears AI tasks), but there's no single cancel-anything view. Promoted from an orphaned TODO that was sitting unchecked in the Shipped list
-- [ ] **Multiplayer terminal view (full)** — polling-based live terminal view ships; a WebSocket upgrade path would add true push without the 2 s polling delay
-- [ ] **Refactoring engine (LSP)** — rename symbols, extract functions, and inline variables across a project, powered by LSP workspace edits; AI verification pass already ships via the refactor panel
+- [ ] **Multiplayer terminal view (full)** — the live terminal view ships over SSE (the server pushes a refresh roughly every 2 s); a WebSocket upgrade would give instant bidirectional push without the ~2 s cadence
+- [ ] **Refactoring engine (LSP)** — rename symbols now ships via LSP (`textDocument/rename` → workspace edit, with a text fallback); still to come are **extract function** and **inline variable** across a project, powered by LSP code actions / workspace edits
 - [ ] **Richer folder icon set** — the file explorer maps folder names onto the catppuccin Iconify set, which has no dedicated glyph for some ecosystems (`.NET`, JVM, mobile, etc.). Add a secondary Iconify set (e.g. `@iconify-json/vscode-icons`) as a fallback in `iconResolver.ts` so folders fall through to purpose-built icons when catppuccin lacks a match. The current stopgap aliases those names onto loosely-related catppuccin icons (mobile→android, jvm→gradle, devops→workflows, dotnet→lib, …), which is approximate — a proper set would give `.NET`/JVM/mobile their own art
 
 ---
