@@ -22,6 +22,40 @@ Patch releases should be frequent and low-risk. Minor releases are bigger and ge
 
 ---
 
+### 1.19.0 — Persistent terminal sessions (planned)
+> Working spec. Roadmap item promoted to Up next after 1.18.0.
+
+PTY sessions survive Nexis restarts: relaunch the app and your shells are still there — scrollback, running processes, cwd. Two milestones, shippable independently.
+
+#### Milestone A — scrollback continuity (no broker)
+Visual persistence first: on exit, serialize each terminal tab's buffer; on relaunch, restore the scrollback into the new tab above a divider line, then start a fresh shell in the saved cwd. The process itself does not survive — this is "the terminal remembers what was on screen", which is most of the perceived value at a fraction of the risk.
+
+**Scope:**
+- Reuse the existing `SerializeAddon` snapshot path (renderer pool already serializes on slot release) — on app exit, write each terminal tab's serialized buffer to a per-session file under the user-only cache dir (`~/.cache/nexis/session-snapshots/`)
+- Tab persistence gains a stable session id so a restored tab can find its snapshot across restarts
+- On restore: write snapshot bytes into xterm before the PTY opens, print a themed `— session restored, previous shell ended —` divider, then spawn the shell in the saved cwd
+- **Private tabs never persist** (matches the AI-redaction contract); snapshot files are deleted on tab close and on restore-disabled
+- Setting: Settings → Terminal → "Restore scrollback on relaunch" (default on)
+
+**Pitfall notes:** snapshot write must be atomic (tmp + rename, same rationale as `write_if_changed`); restore happens before first PTY byte so it can't interleave with live output; respect the 4 MiB pending-buffer cap when replaying (pitfall #7).
+
+#### Milestone B — live process persistence (PTY broker)
+The real feature: shells keep running while Nexis is closed. PTY ownership moves out of the app process into a small broker the app talks to.
+
+**Scope:**
+- Broker = the same `nexis` binary launched headless with a hidden flag (`nexis --pty-broker`) — no second binary, no bundle growth
+- Transport: named pipe (Windows) / Unix domain socket (macOS, Linux, WSL) with a simple length-prefixed frame protocol: `open / write / resize / close / list / attach`, plus a streamed output channel per session
+- Broker keeps a capped ring buffer of recent output per session; `attach` replays it so a reconnecting window repaints scrollback
+- Lifecycle: app starts the broker on demand; sessions opted into persistence survive app exit; broker exits itself when its last session ends; stale-socket detection on startup
+- Per-tab opt-in (context-menu "Keep alive after close") plus a global default setting; private tabs excluded by design
+- Security: socket/pipe created with user-only permissions plus a random token handshake (file next to the socket, user-readable only) — terminal contents must not be readable by other local users
+
+**Windows pitfalls to carry over:** `CONPTY_LIFECYCLE_LOCK` create/close serialization moves into the broker (pitfall #1A); broker spawn needs `hide_console` (pitfall #4); ConPTY handles cannot cross processes, so the broker owns the full PTY lifecycle and the app only ever sees the byte stream.
+
+**Non-goals:** not a tmux clone — no server-side window management, no multi-client mirroring (the LAN share covers read-only viewing), no persistence across reboots.
+
+---
+
 ### 0.7.1 — Terminal quality + session persistence
 > Released: 2026-05-22
 
