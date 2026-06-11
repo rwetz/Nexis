@@ -5,7 +5,7 @@
   <p><strong>Open-source lightweight cross-platform AI-native terminal (ADE)</strong></p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-1.13.0-blue" alt="version" />
+    <img src="https://img.shields.io/badge/version-1.18.0-blue" alt="version" />
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license" />
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="platform" />
   </p>
@@ -48,13 +48,15 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 - Configurable font family, font size, letter spacing, scrollback buffer
 - Inline AI command suggestions — history-aware, never auto-execute
 - **Terminal recording** — capture a session to a file for playback or sharing
+- **Live terminal sharing** — serve a read-only live view of your terminal (or AI conversation) to any device on your LAN; WebSocket push the instant output arrives, with SSE fallback
 - Drag files into the terminal as quoted paths or AI context attachments
 
 ### Editor
 - CodeMirror 6 with syntax highlighting for TS/JS, Rust, Python, HTML/CSS, JSON/JSONC, Markdown, Go, C/C++, Java, C#, PHP, Ruby, SQL dialects, YAML, TOML, Shell/Bash, Dockerfile
 - **AI inline autocomplete** — context-aware completions with configurable provider and model
 - **AI diff approval** — AI-proposed edits shown as per-hunk diffs; approve or reject each change individually
-- **Workspace-wide symbol rename** (`F2`) — grep-backed rename across every file in the workspace with a preview dialog
+- **Semantic symbol rename** (`F2`) — LSP-powered rename across the project when a language server is running (only true references change), with a word-boundary text find/replace fallback and preview dialog when none is
+- **LSP refactorings** (`Ctrl+Shift+R`) — extract function and inline variable via language-server code actions, applied as workspace edits; every affected open tab reloads instantly
 - **Code minimap** — 52 px minimap with line-type coloring and click-to-scroll; viewport indicator
 - **Jupyter notebook viewer** — right-click any `.ipynb` to open a static cell viewer; renders code, markdown, stream, and error outputs without a kernel
 - Vim mode
@@ -70,6 +72,11 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 - Live file system sync — editor and explorer update in real time as files change on disk
 - Run current file — execute via a configured command with output captured in a terminal tab
 
+### Language Tooling
+- **Full LSP support** — go-to-definition, hover docs, completion, and diagnostics from real language servers; a Rust proxy handles protocol negotiation and session lifecycle
+- **DAP debugger** — breakpoint gutter, step-through controls (over / in / out / continue), variable inspector, and call stack panel; Node.js, Python, and LLDB-based runtimes
+- **Problems panel** — file-grouped error/warning list with filtering and a status-bar indicator
+
 ### Themes
 - Built-in app themes: Nexis Default, Catppuccin Mocha, Nord, Tokyo Night, Rosé Pine, Gruvbox, Caffeine, Claude, Sage, Tide
 - Custom themes — create, import, and delete `.nexis-theme` files; live swatch preview
@@ -78,7 +85,7 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 - Terminal color palettes built into each theme
 
 ### File Explorer
-- Catppuccin / Material icon themes
+- Catppuccin / Material icon themes, with a vscode-icons fallback so ecosystem folders (NuGet, Maven, Kotlin, iOS, Flutter, MongoDB, …) get purpose-built art
 - Fuzzy search, keyboard navigation, inline rename, context menu
 - Right-click `.md` files → **Open Preview** for rendered Markdown
 - Right-click `.ipynb` files → **Open Notebook** for the static cell viewer
@@ -120,7 +127,9 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 | **Files** | File explorer with icons, search, and rename |
 | **Recent Files** | MRU list of opened and AI-edited files with fuzzy search, relative timestamps, and per-entry removal |
 | **Source Control** | Git stage / commit / diff |
-| **Processes** | Background jobs and dev servers with live log streaming |
+| **Activity** | Background jobs and dev servers with live log streaming, plus the AI agent task queue — kill processes and stop queued or running agent tasks from one place |
+| **Debugger** | DAP step-through debugging with variables and call stack |
+| **Share** | LAN share of the terminal or AI conversation; live WebSocket streaming |
 | **Ports** | Detect listening ports, open in web preview with one click, or forward over SSH |
 | **Outline** | Symbol tree for the active file |
 | **Snippets** | Create and manage code snippets |
@@ -171,6 +180,7 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 | Command palette | `Cmd+Shift+P` | `Ctrl+Shift+P` |
 | Format document | `Shift+Alt+F` | `Shift+Alt+F` |
 | Rename symbol | `F2` | `F2` |
+| Refactor (LSP code actions) | `Cmd+Shift+R` | `Ctrl+Shift+R` |
 | Fold all | `Cmd+K Cmd+0` | `Ctrl+K Ctrl+0` |
 | Unfold all | `Cmd+K Cmd+J` | `Ctrl+K Ctrl+J` |
 | Toggle sidebar | `Cmd+B` | `Ctrl+B` |

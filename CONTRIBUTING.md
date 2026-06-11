@@ -15,7 +15,7 @@ pnpm install
 pnpm tauri dev
 ```
 
-You'll need Rust (stable), Node 20+, pnpm, and the [Tauri platform dependencies](https://tauri.app/start/prerequisites/).
+You'll need Rust (stable), Node 22+, pnpm 11+, and the [Tauri platform dependencies](https://tauri.app/start/prerequisites/).
 
 ## What to discuss first
 
@@ -46,7 +46,7 @@ Every PR gets checked against:
 
 ## What this project isn't trying to be
 
-- A full IDE. No integrated debugger, no LSP, no refactoring engine.
+- A VS Code replacement. LSP, DAP debugging, and refactoring exist, but the goal stays a focused terminal-first tool — not a feature-for-feature IDE clone.
 - A web browser. The preview pane is for local dev servers only.
 - An extension platform. Not building a marketplace.
 - A good "first open source contribution" project — beginners are welcome but expect real feedback.
@@ -90,6 +90,9 @@ src-tauri/src/modules/
   fs/           File system access
   git/          Source control operations
   net/          Outbound HTTP proxy (AI requests) with SSRF guard
+  lsp/          Language-server proxy (sessions, JSON-RPC framing)
+  dap/          Debug-adapter proxy
+  http_share    LAN share server (HTTP + SSE + WebSocket)
   workspace/    WSL support, workspace environment
 
 src/modules/
@@ -98,6 +101,9 @@ src/modules/
   explorer/     File tree, icons, search
   tabs/         Tab model, workspace cwd tracking
   ai/           Agents, sessions, tools, providers, UI
+  lsp/          LSP client, editor extensions, workspace-edit applier
+  debugger/     DAP UI — breakpoints, stepping, variables
+  share/        LAN share panel and live streaming
   git-history/  Commit graph and history viewer
   source-control/ Staging, commits, branches
   preview/      Web, image, and Markdown preview
