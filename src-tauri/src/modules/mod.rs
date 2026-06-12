@@ -10,6 +10,7 @@ pub mod fs;
 pub mod git;
 pub mod http_share;
 pub mod lsp;
+pub mod ml;
 pub mod net;
 pub mod proc;
 pub mod pty;

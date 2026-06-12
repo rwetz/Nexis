@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
-import type { SidebarViewId } from "@/modules/sidebar";
+import { isSidebarViewId, type SidebarViewId } from "@/modules/sidebar";
 import type { FileExplorerHandle } from "@/modules/explorer";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 
@@ -81,6 +81,23 @@ export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null
     if (p.getSize().asPercentage <= 0) p.expand();
     else p.collapse();
   }, []);
+
+  // Lets decoupled UI (status-bar pills, plugin commands) open a sidebar
+  // view without threading callbacks through App:
+  //   window.dispatchEvent(new CustomEvent("nexis:open-sidebar-view", { detail: "ml" }))
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!isSidebarViewId(detail)) return;
+      const panel = sidebarRef.current;
+      if (panel && panel.getSize().asPercentage <= 0) {
+        panel.resize(`${sidebarWidthRef.current}px`);
+      }
+      persistSidebarView(detail);
+    };
+    window.addEventListener("nexis:open-sidebar-view", handler);
+    return () => window.removeEventListener("nexis:open-sidebar-view", handler);
+  }, [persistSidebarView]);
 
   const cycleSidebarView = useCallback(
     (view: SidebarViewId) => {

@@ -7,7 +7,8 @@
 mod modules;
 
 use modules::{
-    crash, dap, fs, git, http_share, lsp, net, pty, python, recording, secrets, shell, workspace,
+    crash, dap, fs, git, http_share, lsp, ml, net, pty, python, recording, secrets, shell,
+    workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -77,6 +78,7 @@ pub fn run() {
         })
         .manage(lsp::LspState::default())
         .manage(dap::DapState::default())
+        .manage(ml::MlState::default())
         .manage(http_share::HttpShareState::default())
         .manage(LaunchDir(Mutex::new(parse_launch_dir())))
         .invoke_handler(tauri::generate_handler![
@@ -150,6 +152,13 @@ pub fn run() {
             lsp::lsp_request,
             lsp::lsp_notify,
             lsp::lsp_stop,
+            ml::ml_detect,
+            ml::ml_spawn,
+            ml::ml_cancel,
+            ml::ml_kill,
+            ml::ml_install,
+            ml::ml_env,
+            ml::ml_gpu_probe,
             dap::dap_start,
             dap::dap_request,
             dap::dap_stop,

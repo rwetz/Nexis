@@ -38,6 +38,7 @@ import {
   Cancel01Icon,
 } from "@hugeicons/core-free-icons";
 import {
+  AiBrain01Icon,
   BookmarkAdd01Icon,
   CodeSquareIcon,
   FlashIcon,
@@ -62,12 +63,31 @@ const DEFAULT_PINNED: SidebarViewId[] = [
   "debugger",
   "tests",
   "build",
+  "ml",
+];
+
+/** One-time promotions of new views into existing users' pinned rails.
+ *  Each runs once (tracked by the marker key) and respects a user who
+ *  later unpins the item. */
+const PIN_PROMOTIONS: { id: SidebarViewId; marker: string }[] = [
+  { id: "ml", marker: "nexis:rail-promoted:ml" },
 ];
 
 function loadPinned(): SidebarViewId[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as SidebarViewId[];
+    if (raw) {
+      let pinned = JSON.parse(raw) as SidebarViewId[];
+      for (const promo of PIN_PROMOTIONS) {
+        if (localStorage.getItem(promo.marker)) continue;
+        localStorage.setItem(promo.marker, "1");
+        if (!pinned.includes(promo.id)) {
+          pinned = [...pinned, promo.id];
+          savePinned(pinned);
+        }
+      }
+      return pinned;
+    }
   } catch {}
   return DEFAULT_PINNED;
 }
@@ -123,6 +143,7 @@ export function SidebarRail({
     { id: "ports",          label: "Ports",            icon: Router01Icon,      group: "Dev Tools" },
     { id: "repl",           label: "REPL",             icon: ComputerTerminal01Icon, group: "Dev Tools" },
     { id: "database",       label: "Database",         icon: Database01Icon,    group: "Dev Tools" },
+    { id: "ml",             label: "ML Lab",           icon: AiBrain01Icon,     group: "Dev Tools" },
     { id: "profiles",       label: "Profiles",         icon: LayersIcon,        group: "Dev Tools" },
     { id: "ssh",            label: "SSH",              icon: TerminalIcon,      group: "Dev Tools" },
     { id: "share",          label: "Share",            icon: Globe02Icon,       group: "Advanced" },

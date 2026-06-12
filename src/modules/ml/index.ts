@@ -4,12 +4,6 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-/**
- * ALL_PLUGINS — the canonical list of first-party plugins activated at startup.
- * Add new plugins here. Order determines activation sequence.
- */
-import { pythonPlugin } from "./python";
-import { containersPlugin } from "./containers";
-import { mlPlugin } from "./ml";
-
-export const ALL_PLUGINS = [pythonPlugin, containersPlugin, mlPlugin] as const;
+export { MlPanel } from "./MlPanel";
+export { MlStatusPill } from "./MlStatusPill";
+export { useMlStore, initMlSubscriptions, getSeriesMap } from "./store";

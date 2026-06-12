@@ -1,0 +1,207 @@
+# Nexis ML Suite — working spec (draft)
+
+> Status: engine repo live ([rwetz/nexis-ml](https://github.com/rwetz/nexis-ml), local: `E:\nexis-ml`, v0.2.0) — protocol v1, run store, harness, `tabular` template, `new`/`train`/`runs`/`replay`/`env`, stdin cancel all verified end-to-end. Nexis-side wireup + UX pass done (2026-06-12): "ML Lab" pinned to the sidebar rail by default, plain-language panel (progress bar, status sentences, friendly metric names, hero chart), one-click engine install (`ml_install` → pip into the detected venv, `default` or `cuda-torch` flavor), in-panel project creation (`Create & train`), project selector. GPU support (2026-06-12): `device = auto|cpu|gpu` in train.toml with a job-size auto heuristic, `device` field on run.started/summary, `nexis-ml env` capability probe + `nvidia-smi` host probe, GPU chip / "Enable GPU" upsell / install-with-GPU checkbox in the panel. Companion doc to [PLAN.md](PLAN.md) / [ROADMAP.md](ROADMAP.md).
+
+A hobby-grade ML workbench inside Nexis: create, train, and run inference on **small models** trained on **small data**, with live auto-generated graphs (loss curves, accuracy, confusion matrices, sample predictions). This is a personal-experimentation tool — *not* an attempt to compete with hosted LLM providers, and not a production MLOps platform.
+
+---
+
+## The three decisions up front
+
+### 1. What category is this? → **Companion tool + first-party plugin** (the LSP model)
+
+Nexis already has the exact pattern this needs: the app ships a thin client (LSP proxy, DAP debugger, git, formatters) and the heavy tool lives *outside* the binary, detected at runtime, with a graceful "X not installed → install with …" state when missing (IDEAS.md item A7).
+
+The ML suite is the same shape:
+
+- **Inside Nexis (this repo):** a first-party plugin (`nexis.ml`) registered in `src/plugins/index.ts` like `python` and `containers` — panel UI, live charts, run browser, inference playground, and the protocol client that spawns/talks to the engine.
+- **Outside Nexis (separate repo):** the **engine** (`nexis-ml`) — the thing that actually imports an ML framework, loads datasets, runs training loops, and serves inference. Installed separately, versioned separately.
+
+Why not compile it in:
+- The roadmap's hard limits: **<10 MB binary**, "every dependency earns its place." Any real ML framework (libtorch ≈ 2 GB, ONNX Runtime ≈ 20–60 MB, even pure-Rust `burn` with a wgpu backend) blows the budget instantly.
+- "No extension marketplace" is a stated hard limit, but the roadmap explicitly carves out *"maybe narrow AI tool bundles someday."* This is exactly that: a narrow, first-party, single-purpose bundle — not arbitrary third-party plugins.
+- The plugin system is compiled-in pure TypeScript (`src/lib/plugins/types.ts` forbids dynamic imports from disk), so the "downloadable" part can only ever be the engine, never the UI. That's fine — it's how LSP servers work too.
+
+### 2. Separate repo or not? → **Engine: separate repo. Plugin UI: this repo.**
+
+| Piece | Lives in | Why |
+|---|---|---|
+| `nexis-ml` engine (training/inference runtime, CLI) | **New repo** `nexis-ml` | Different release cadence, different toolchain (Python first), doesn't bloat Nexis CI or the app bundle, independently usable from a plain terminal |
+| `nexis.ml` plugin (panels, charts, protocol client) | **This repo**, `src/plugins/ml/` + `src/modules/ml/` | Plugin system is compiled-in; UI rides the normal Nexis release train |
+| Protocol spec (the contract between them) | **This repo**, this file (section below) is the source of truth; the engine repo vendors a copy | Nexis is the consumer; breaking the contract breaks the app |
+
+The engine is also useful standalone (`nexis-ml train` in any terminal prints metrics as text), which is good discipline: the protocol stays honest because the engine can't assume Nexis is on the other end.
+
+### 3. What does the engine run on? → **Python/PyTorch first; protocol designed so a Rust sidecar can implement it later**
+
+Researched options (June 2026):
+
+| Option | Train | Infer | Verdict for hobby use |
+|---|---|---|---|
+| **Python + PyTorch** | ✅ best-in-class | ✅ | **Phase 1 choice.** Full freedom to write/tweak architectures in `train.py` — which *is* the hobby. Endless tutorials. Nexis already detects Python envs (`src-tauri/src/modules/python.rs`, `usePythonEnv`) |
+| **Rust + `burn`** (0.20, Jan 2026: CubeCL kernels for CUDA/ROCm/Metal/Vulkan/WebGPU) | ✅ real training support, wgpu = GPU on any Windows box without CUDA toolchain | ✅ | **Phase 3 option.** Single ~30 MB downloadable exe, zero Python required — the true "downloadable add-on" feel. But custom architectures mean recompiling or a declarative layer-config DSL, which caps experimentation. Pre-1.0 API churn |
+| **Rust + `candle`** (0.9.x) | ⚠️ exists but inference-focused; reported 3–4× slower than PyTorch on GPU for some workloads | ✅ strong (GGUF/quantization, HF integration) | Inference-only candidate, not the trainer |
+| **Rust + `ort`** (ONNX Runtime bindings) | ⚠️ training is niche | ✅ fast, broad hardware | Good Phase-2/3 option for *running* exported `.onnx` models without Python |
+
+The deciding argument: the user-visible core of this feature is **writing a small model and watching it learn**. PyTorch is where a hobbyist can copy a tutorial, edit three lines, and rerun. A Rust engine would make "create your own model" mean either recompiling a sidecar or being boxed into a config-file DSL. So: Python engine first, and because the protocol is just NDJSON over stdio (below), a `burn`-based single-binary engine can be added later for the "no Python on this machine" install path without touching the Nexis UI.
+
+Hardware expectations: small models on small data train fine on CPU. If the user has an NVIDIA card, the engine uses CUDA-enabled torch when present; otherwise CPU. No GPU plumbing in Nexis itself.
+
+---
+
+## Architecture
+
+```
+┌────────────────────────── Nexis (this repo) ──────────────────────────┐
+│  src/plugins/ml/            plugin registration (panel, statusbar,    │
+│                             commands)                                 │
+│  src/modules/ml/            MlPanel, RunList, LiveCharts,             │
+│                             InferencePlayground, useMlStore (zustand) │
+│                             lib/engine-bridge.ts  (spawn + NDJSON)    │
+└────────────────┬──────────────────────────────────────────────────────┘
+                 │ Tauri IPC (reuse shell/background.rs spawn + stream)
+┌────────────────▼──────────────────────────────────────────────────────┐
+│  Rust: spawn `nexis-ml <cmd> --nexis-protocol` with hide_console();   │
+│  stream stdout lines to JS as events; stdin for control msgs          │
+└────────────────┬──────────────────────────────────────────────────────┘
+                 │ NDJSON over stdio (one JSON object per line)
+┌────────────────▼───────────── nexis-ml (separate repo) ───────────────┐
+│  Python package (PyPI). CLI: new / train / infer / serve / runs / ui  │
+│  PyTorch training loop harness, dataset loaders, project templates    │
+│  Run store: <project>/.nexis-ml/runs/<run-id>/  (JSONL + artifacts)   │
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+No long-lived daemon in Phase 1. Each training run is one child process that streams events and exits. Inference is either one-shot (`infer`) or a short-lived `serve` process the playground keeps open while its panel is visible.
+
+---
+
+## The protocol (source of truth)
+
+Transport: **NDJSON over stdio** — same family as the LSP/DAP proxies already in the app, but line-delimited instead of `Content-Length` framing (simpler, and the engine is trusted local code we install). Every line the engine writes to stdout while `--nexis-protocol` is set is one JSON object:
+
+```jsonc
+{ "ev": "run.started",  "run": "2026-06-11-1432-mnist", "config": { /* hyperparams */ }, "totalEpochs": 10, "device": "cuda:0" }
+{ "ev": "metric",       "run": "…", "step": 120, "epoch": 1, "name": "loss/train", "value": 0.482 }
+{ "ev": "metric",       "run": "…", "step": 120, "epoch": 1, "name": "acc/val",    "value": 0.911 }
+{ "ev": "epoch",        "run": "…", "epoch": 1, "of": 10 }
+{ "ev": "artifact",     "run": "…", "kind": "confusion-matrix", "path": ".nexis-ml/runs/…/cm-epoch1.json" }
+{ "ev": "artifact",     "run": "…", "kind": "image-grid",       "path": ".nexis-ml/runs/…/samples-epoch1.png" }
+{ "ev": "sample",       "run": "…", "input": "…", "output": "…" }          // e.g. text generation preview
+{ "ev": "log",          "run": "…", "level": "info", "msg": "…" }
+{ "ev": "run.finished", "run": "…", "status": "ok" | "error" | "cancelled", "summary": { "best": { "acc/val": 0.94, "epoch": 7 } } }
+```
+
+Control messages on stdin: `{ "cmd": "cancel" }` (graceful stop + checkpoint), `{ "cmd": "pause" }` / `{ "cmd": "resume" }` (stretch).
+
+Rules:
+- Unknown `ev` types must be ignored by the client; unknown fields ignored by both sides (forward compatibility — same rule as the plugin API types).
+- Metrics are append-only and also written by the engine to `runs/<id>/metrics.jsonl`, so the Nexis run browser can render **finished/historical runs without the engine running** by reading the file directly (fs IPC already exists).
+- Artifacts are files on disk, referenced by path — the protocol never inlines binary data. Charts panel loads them via the existing fs/image-viewer plumbing.
+- Engine prints human-readable progress to stderr; stdout is protocol-only when `--nexis-protocol` is set.
+
+This mirrors what trackio/W&B-style trackers do (local-first JSONL/SQLite run store + dashboard), minus the dashboard server — Nexis *is* the dashboard.
+
+---
+
+## The engine: `nexis-ml` (separate repo)
+
+Python ≥3.10 package, `pip install nexis-ml` (or `uv tool install`). Torch is a declared dependency; CPU wheel by default, user swaps in CUDA wheel if they want.
+
+CLI surface (also usable standalone in any terminal):
+
+- `nexis-ml new <template> <dir>` — scaffold a project. Templates planned:
+  - `tabular` — CSV in, MLP classifier/regressor (the "my spreadsheet, what predicts what" project)
+  - `image` — folder-of-images-per-class, small CNN (the MNIST/pets project; MNIST starter auto-downloads)
+  - `textgen` — char-level / small-BPE tiny transformer trained on your own .txt files (the "tiny GPT on my journal" project — *the* canonical hobby build)
+  - `finetune` — stretch: LoRA on a small open model
+- `nexis-ml train [--config train.toml]` — runs `train.py`, streams protocol events
+- `nexis-ml infer --run <id> --input …` — one-shot inference from a checkpoint
+- `nexis-ml serve --run <id>` — stdin/stdout inference loop for the playground
+- `nexis-ml runs [--json]` — list runs + summaries
+- `nexis-ml export --run <id> --onnx` — stretch: export to ONNX (door-opener for a later Rust/`ort` inference path)
+
+Project layout the scaffold produces:
+
+```
+my-experiment/
+  train.py          # the user's model + loop, calling the nexis_ml harness
+  train.toml        # hyperparams (epochs, lr, batch size…) — editable in Nexis
+  data/             # user drops data here
+  .nexis-ml/runs/   # run store: config.json, metrics.jsonl, checkpoints, artifacts
+```
+
+Key design rule: **`train.py` is the user's file.** The harness is a library (`from nexis_ml import track, harness`) that wraps a normal PyTorch loop with metric emission, checkpointing, and cancel handling — it must never hide the model definition. Editing the architecture in the Nexis editor and hitting "Train" again is the core loop of the whole feature.
+
+Auto-generated artifacts by template (engine-side, no user code):
+- all: loss/metric curves data (from `metrics.jsonl`), LR schedule
+- `tabular`/`image`: confusion matrix per eval, per-class precision/recall
+- `image`: sample-prediction image grid per epoch
+- `textgen`: generated-sample text snapshot per epoch (watching gibberish become words is the payoff)
+
+---
+
+## The Nexis side: plugin `nexis.ml` (this repo)
+
+Contributions (all through the existing `PluginAPI`):
+- **Panel** ("ML", bottom or sidebar): three tabs/sections —
+  1. **Runs** — list from `runs/` dirs in the workspace (live ones first), summary stats, compare toggle
+  2. **Charts** — live metric curves for the selected run(s); confusion matrix + image-grid artifact viewers
+  3. **Playground** — prompt/input box → `serve` process → output; image upload for `image` template
+- **Status bar item** — training pill (run name, epoch n/m, latest loss, spinner), click → opens panel. Same pattern as `PythonEnvPill`.
+- **Commands** — `ml: new project`, `ml: train`, `ml: cancel`, `ml: open runs panel`.
+- **Detection / graceful degradation** — `nexis-ml --version` probe (per A7): panel renders "nexis-ml not installed → `pip install nexis-ml`" with a copy button, plus picks up the active Python env from the python plugin's `python:env-changed` event so it installs/runs in the right venv.
+
+Charts rendering: no chart dependency exists today. Recommendation: **uPlot** (~10 KB gzipped, zero deps, canvas-based, built exactly for high-frequency streaming line charts) for the metric curves; confusion matrix is a trivial hand-rolled grid; image grids reuse the image-viewer module. If uPlot feels like too much, a hand-rolled SVG polyline is acceptable for Phase 1 but will struggle past a few thousand points per series — decide at implementation time. Either way the chart must **decimate**: cap points-per-series rendered (e.g. min/max binning to ~2× pixel width) so a 100k-step run can't hang the renderer.
+
+State: `useMlStore` (zustand) holding runs, live metric buffers, engine status.
+
+---
+
+## Phases
+
+**Phase 1 — train + watch (the MVP that proves the idea)**
+Engine repo bootstrapped with `tabular` + `image` templates; `new/train/runs`; protocol v1. Nexis plugin: spawn/stream bridge, Runs + live loss/accuracy charts, status pill, cancel. Historical runs read from `metrics.jsonl`.
+
+**Phase 2 — infer + richer graphs**
+`infer`/`serve` + Playground panel; confusion matrix + image-grid artifacts; run comparison overlay; `textgen` template with live sample text. Hyperparam editing UI for `train.toml`.
+
+**Phase 3 — the "downloadable extension" install path (optional)**
+A `burn`-based (or `ort`-based, for ONNX inference) single-binary engine implementing the same protocol, downloaded like an LSP server, for machines without Python. Declarative model config only (MLP/CNN presets). Also: `export --onnx`. Only build this if Phase 1/2 actually get used.
+
+**Explicit non-goals (all phases)**
+- No cloud anything: no hosted training, no telemetry, no accounts (roadmap non-negotiable)
+- No distributed/multi-GPU, no hyperparameter sweep orchestration
+- No model zoo browser / marketplace
+- Not a notebook replacement — the notebook viewer already exists; this is the *run* loop, not the *explore* loop
+
+---
+
+## Pitfalls to carry over (from CLAUDE.md)
+
+- **#4 / #1D — `hide_console`:** every engine spawn (`probe --version`, `train`, `serve`) is a new `Command::new()` on Windows and **must** go through `crate::modules::proc::hide_console`, or it can blank an active terminal. If the spawn path reuses `shell/background.rs`, this is already handled — prefer that.
+- **#1C — `workspace_authorize`:** if the engine is ever spawned with a user-picked project dir as cwd, authorize it first or the spawn fails silently.
+- **#10 — memoized promise rejection:** the engine-bridge will memoize "engine detected / serve session open" promises; a rejected promise cached in a Map poisons all later calls. Delete-on-reject, same fix as `getSessionShell`.
+- **#14 — Zustand selector stability:** the charts/runs store is exactly the shape that invites `.filter()`-in-selector infinite loops. Selectors return stable refs; derive in render or use `useShallow`.
+- **#7-adjacent — backpressure:** a tight training loop can emit thousands of metric lines/sec. The bridge must batch (flush to the store at ~10 Hz max) and the store must cap in-memory points per series (decimate; full fidelity stays in `metrics.jsonl`).
+- **#2 — settings:** any ML-suite preference goes through `writePref()`.
+- **Atomic writes:** engine writes `metrics.jsonl` append-only and checkpoints via tmp+rename (same rationale as `write_if_changed`) so a crash mid-write can't corrupt a run.
+
+---
+
+## Open questions
+
+1. Plugin UI placement: bottom panel vs sidebar — probably bottom (charts want width).
+2. uPlot vs hand-rolled SVG for curves (lean uPlot; measure first).
+3. Does `serve` warrant a persistent session manager like `sessionShells`, or is per-playground-open fine? (Start with per-open.)
+4. Engine repo name: `nexis-ml`? Working name used throughout this doc.
+5. Should `nexis-ml runs` data live in the workspace (`.nexis-ml/`, gitignorable, portable) or a global dir? Spec says workspace-local — revisit if it annoys.
+
+---
+
+## Research notes (June 2026)
+
+- Burn 0.20 (Jan 2026) added CubeCL multi-platform kernels (CUDA/ROCm/Metal/Vulkan/WebGPU); training-first design, wgpu backend runs on any modern GPU without vendor toolchains. ([Phoronix](https://www.phoronix.com/news/Burn-0.20-Released), [tracel-ai/burn](https://github.com/tracel-ai/burn))
+- Candle 0.9.x is inference-lean (GGUF/quantization strong, training exists but secondary; 3–4× slower than PyTorch on GPU in some comparisons). ([huggingface/candle](https://github.com/huggingface/candle), [Burn vs Candle comparison](https://dasroot.net/posts/2026/04/rust-machine-learning-burn-vs-candle-framework-comparison/))
+- `ort` (ONNX Runtime Rust bindings) supports minimal builds for size-sensitive desktop apps — the natural later path for Python-free inference of exported models. ([pykeio/ort](https://github.com/pykeio/ort))
+- Trackio (HF, May 2026) validates the local-first run-store design: wandb-compatible API, SQLite/JSONL storage, local dashboard. We mirror the storage idea but render in Nexis instead of a Gradio server. ([gradio-app/trackio](https://github.com/gradio-app/trackio), [HF blog](https://huggingface.co/blog/trackio))

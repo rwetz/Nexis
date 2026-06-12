@@ -98,6 +98,7 @@ import { PortsPanel } from "@/modules/ports";
 import { ProfilesPanel } from "@/modules/profiles";
 import { ReplPanel, sendToRepl } from "@/modules/repl";
 import { ReleasePanel } from "@/modules/release";
+import { MlPanel } from "@/modules/ml";
 import { DebuggerPanel } from "@/modules/debugger/DebuggerPanel";
 import { DebugToolbar } from "@/modules/debugger/DebugToolbar";
 import {
@@ -1585,6 +1586,8 @@ export default function App() {
                       </div>
                     ) : sidebarView === "release" ? (
                       <ReleasePanel workspaceRoot={explorerRoot} />
+                    ) : sidebarView === "ml" ? (
+                      <MlPanel workspaceRoot={explorerRoot} />
                     ) : (
                       <SourceControlPanel
                         open
