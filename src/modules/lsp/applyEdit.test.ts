@@ -62,6 +62,44 @@ describe("applyEditsToText", () => {
   it("returns the original text when there are no edits", () => {
     expect(applyEditsToText(src, [])).toBe(src);
   });
+
+  it("applies same-position inserts in array order (LSP spec)", () => {
+    // Two zero-width inserts at the same position: the spec says the result
+    // follows array order. Bottom-up application reverses it unless equal
+    // offsets tiebreak by index.
+    const edits = [edit(0, 0, 0, 0, "A"), edit(0, 0, 0, 0, "B")];
+    expect(applyEditsToText("rest", edits)).toBe("ABrest");
+  });
+
+  it("counts positions in UTF-16 code units (astral chars are 2 units)", () => {
+    // 😀 is one grapheme but two UTF-16 units — LSP positions count units,
+    // and so do JS string offsets. '1' sits at unit index 11.
+    expect(applyEditsToText("const 😀 = 1;", [edit(0, 11, 0, 12, "2")])).toBe(
+      "const 😀 = 2;",
+    );
+  });
+
+  it("handles CRLF documents (line starts track \\n, ranges span lines)", () => {
+    const crlf = "alpha\r\nbeta\r\ngamma\r\n";
+    // Replace 'beta' on line 1.
+    expect(applyEditsToText(crlf, [edit(1, 0, 1, 4, "BETA")])).toBe(
+      "alpha\r\nBETA\r\ngamma\r\n",
+    );
+    // Multi-line range across the CRLF boundary.
+    expect(applyEditsToText(crlf, [edit(0, 5, 1, 0, " ")])).toBe(
+      "alpha beta\r\ngamma\r\n",
+    );
+  });
+
+  it("clamps a character offset past the end of its line to text length only at EOF", () => {
+    // Character beyond line end on the last line: offset resolver clamps to
+    // text length rather than reading into the void.
+    expect(applyEditsToText("ab", [edit(0, 99, 0, 100, "!")])).toBe("ab!");
+  });
+
+  it("treats a negative line as document start", () => {
+    expect(applyEditsToText("xyz", [edit(-1, 0, 0, 1, "Q")])).toBe("Qyz");
+  });
 });
 
 describe("workspaceEditHasChanges", () => {

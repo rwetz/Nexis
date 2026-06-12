@@ -32,14 +32,20 @@ function buildOffsetResolver(text: string): (line: number, ch: number) => number
 export function applyEditsToText(text: string, edits: LspTextEdit[]): string {
   const toOffset = buildOffsetResolver(text);
   // Sort by start offset descending so applying one edit never shifts the
-  // offsets of edits that come before it.
-  const sorted = [...edits].sort(
-    (a, b) =>
-      toOffset(b.range.start.line, b.range.start.character) -
-      toOffset(a.range.start.line, a.range.start.character),
-  );
+  // offsets of edits that come before it. Equal offsets tiebreak by array
+  // index descending: the LSP spec says multiple inserts at the same
+  // position land in array order, and bottom-up application reverses that
+  // unless the later edit is applied first.
+  const sorted = edits
+    .map((e, i) => ({ e, i }))
+    .sort((a, b) => {
+      const diff =
+        toOffset(b.e.range.start.line, b.e.range.start.character) -
+        toOffset(a.e.range.start.line, a.e.range.start.character);
+      return diff !== 0 ? diff : b.i - a.i;
+    });
   let out = text;
-  for (const e of sorted) {
+  for (const { e } of sorted) {
     const start = toOffset(e.range.start.line, e.range.start.character);
     const end = toOffset(e.range.end.line, e.range.end.character);
     out = out.slice(0, start) + e.newText + out.slice(end);

@@ -65,6 +65,12 @@ impl RunningServer {
                     }
                     match listener.accept() {
                         Ok((stream, _)) => {
+                            // Accepted sockets inherit the listener's
+                            // non-blocking mode on Windows. Reset it, or
+                            // per-connection reads (request headers, WS
+                            // ping/close frames) fail instantly with
+                            // WouldBlock instead of waiting for bytes.
+                            let _ = stream.set_nonblocking(false);
                             let content_snap = Arc::clone(&content_clone);
                             let shutdown_snap = Arc::clone(&shutdown_clone);
                             let clients_snap = Arc::clone(&stream_clients_clone);
@@ -455,6 +461,13 @@ fn serve_ws(
     // thread) write frames; the mutex keeps frames from interleaving.
     let writer = Arc::new(Mutex::new(stream));
 
+    // Register for broadcasts BEFORE the 101 goes out: once the client has
+    // read the handshake response it must not be able to miss a push.
+    let (tx, rx) = mpsc::sync_channel::<String>(32);
+    if let Ok(mut clients) = stream_clients.lock() {
+        clients.push(tx);
+    }
+
     let response = format!(
         "HTTP/1.1 101 Switching Protocols\r\n\
          Upgrade: websocket\r\n\
@@ -468,12 +481,6 @@ fn serve_ws(
         if w.write_all(response.as_bytes()).is_err() || w.flush().is_err() {
             return;
         }
-    }
-
-    // Register this client for broadcasts.
-    let (tx, rx) = mpsc::sync_channel::<String>(32);
-    if let Ok(mut clients) = stream_clients.lock() {
-        clients.push(tx);
     }
 
     // Reader side: answer pings, honor close, ignore everything else.
@@ -687,5 +694,135 @@ mod tests {
         buf.push(127); // 64-bit extended length
         buf.extend_from_slice(&(MAX_WS_CLIENT_FRAME + 1).to_be_bytes());
         assert!(read_ws_frame(&mut buf.as_slice()).is_err());
+    }
+
+    #[test]
+    fn ws_frame_length_encoding_boundaries() {
+        // 125 = last 7-bit length, 126 = first 16-bit, 65535 = last 16-bit,
+        // 65536 = first 64-bit (and exactly the client cap, so it must pass).
+        for len in [125usize, 126, 65535, 65536] {
+            let payload = vec![b'z'; len];
+            let mut buf = Vec::new();
+            write_ws_frame(&mut buf, WS_OP_TEXT, &payload).unwrap();
+            let (op, out) = read_ws_frame(&mut buf.as_slice()).unwrap();
+            assert_eq!(op, WS_OP_TEXT, "len {len}");
+            assert_eq!(out.len(), len, "len {len}");
+        }
+    }
+
+    // ── Loopback integration ──────────────────────────────────────────────
+
+    use std::io::{BufRead, BufReader};
+    use std::net::TcpStream;
+
+    fn connect(port: u16) -> TcpStream {
+        let s = TcpStream::connect(("127.0.0.1", port)).expect("connect");
+        s.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+        s
+    }
+
+    /// Read HTTP status line + headers; return (status_line, headers_text).
+    fn read_http_head(reader: &mut impl BufRead) -> (String, String) {
+        let mut status = String::new();
+        reader.read_line(&mut status).expect("status line");
+        let mut headers = String::new();
+        loop {
+            let mut line = String::new();
+            reader.read_line(&mut line).expect("header line");
+            if line == "\r\n" || line == "\n" {
+                break;
+            }
+            headers.push_str(&line);
+        }
+        (status, headers)
+    }
+
+    #[test]
+    fn loopback_serves_html_and_live_updates() {
+        let srv = RunningServer::start("<html>one</html>".into(), 0).expect("start");
+        let port = srv.port();
+
+        let mut stream = connect(port);
+        stream
+            .write_all(b"GET / HTTP/1.1\r\nHost: x\r\n\r\n")
+            .unwrap();
+        let mut reader = BufReader::new(stream.try_clone().unwrap());
+        let (status, headers) = read_http_head(&mut reader);
+        assert!(status.starts_with("HTTP/1.1 200"), "got: {status}");
+        assert!(headers.to_lowercase().contains("content-type: text/html"));
+        let mut body = String::new();
+        reader.read_to_string(&mut body).unwrap(); // Connection: close
+        assert_eq!(body, "<html>one</html>");
+
+        srv.update("<html>two</html>".into());
+        let mut stream = connect(port);
+        stream
+            .write_all(b"GET / HTTP/1.1\r\nHost: x\r\n\r\n")
+            .unwrap();
+        let mut reader = BufReader::new(stream);
+        let _ = read_http_head(&mut reader);
+        let mut body = String::new();
+        reader.read_to_string(&mut body).unwrap();
+        assert_eq!(body, "<html>two</html>");
+
+        srv.stop();
+    }
+
+    #[test]
+    fn loopback_ws_handshake_and_broadcast() {
+        let srv = RunningServer::start("x".into(), 0).expect("start");
+        let port = srv.port();
+
+        let mut stream = connect(port);
+        stream
+            .write_all(
+                b"GET /ws HTTP/1.1\r\n\
+                  Host: x\r\n\
+                  Upgrade: websocket\r\n\
+                  Connection: Upgrade\r\n\
+                  Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\
+                  Sec-WebSocket-Version: 13\r\n\r\n",
+            )
+            .unwrap();
+
+        let mut reader = BufReader::new(stream.try_clone().unwrap());
+        let (status, headers) = read_http_head(&mut reader);
+        assert!(status.starts_with("HTTP/1.1 101"), "got: {status}");
+        // RFC 6455 §1.3 worked example — proves the accept-key path end to end.
+        assert!(
+            headers.contains("Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo="),
+            "got headers: {headers}"
+        );
+
+        // Registration happens before the 101 is written, so a broadcast now
+        // must reach this client.
+        srv.broadcast("hello viewer".into());
+        let (op, payload) = read_ws_frame(&mut reader).expect("broadcast frame");
+        assert_eq!(op, WS_OP_TEXT);
+        assert_eq!(payload, b"hello viewer");
+
+        // Send a masked close; the server must answer with a close frame.
+        let close = [0x88u8, 0x80, 0x00, 0x00, 0x00, 0x00]; // masked, empty
+        stream.write_all(&close).unwrap();
+        let (op, _) = read_ws_frame(&mut reader).expect("close reply");
+        assert_eq!(op, WS_OP_CLOSE);
+
+        srv.stop();
+    }
+
+    #[test]
+    fn loopback_ws_without_key_is_rejected() {
+        let srv = RunningServer::start("x".into(), 0).expect("start");
+        let port = srv.port();
+
+        let mut stream = connect(port);
+        stream
+            .write_all(b"GET /ws HTTP/1.1\r\nHost: x\r\n\r\n")
+            .unwrap();
+        let mut reader = BufReader::new(stream);
+        let (status, _) = read_http_head(&mut reader);
+        assert!(status.starts_with("HTTP/1.1 400"), "got: {status}");
+
+        srv.stop();
     }
 }

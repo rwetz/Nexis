@@ -113,10 +113,13 @@ export function pathToUri(path: string): string {
 }
 
 export function uriToPath(uri: string): string {
-  const withoutScheme = uri
-    .replace(/^file:\/\/\//, "") // Windows
-    .replace(/^file:\/\//, "");  // Unix
+  // Strip the scheme but keep the path's leading slash: file:///home/x is
+  // the absolute path /home/x. (Stripping all three slashes silently turned
+  // Unix paths relative.)
+  const withoutScheme = uri.replace(/^file:\/\//, "");
   const decoded = decodeURIComponent(withoutScheme);
-  // Windows: C:/foo — leave forward slashes, Tauri handles both
+  // Windows: file:///C:/foo decodes to /C:/foo — drop the slash before the
+  // drive letter. Forward slashes are fine, Tauri handles both.
+  if (/^\/[a-zA-Z]:/.test(decoded)) return decoded.slice(1);
   return decoded;
 }
