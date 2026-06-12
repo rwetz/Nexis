@@ -160,14 +160,29 @@ State: `useMlStore` (zustand) holding runs, live metric buffers, engine status.
 
 ## Phases
 
-**Phase 1 — train + watch (the MVP that proves the idea)**
-Engine repo bootstrapped with `tabular` + `image` templates; `new/train/runs`; protocol v1. Nexis plugin: spawn/stream bridge, Runs + live loss/accuracy charts, status pill, cancel. Historical runs read from `metrics.jsonl`.
+**Phase 1 — train + watch ✅ (shipped in 1.19.0, engine v0.2.0)**
+What shipped exceeded the original Phase 1 plan: `tabular` template; `new/train/runs/replay/env`; protocol v1 with device field; ML Lab panel (progress bar, plain-language status, friendly metric names, hero chart, run browser); one-click engine install with CPU/CUDA flavors; in-panel Create & train; device auto/cpu/gpu with job-size heuristic; status pill. Verified end-to-end on CPU and an RTX 4070 SUPER.
 
-**Phase 2 — infer + richer graphs**
-`infer`/`serve` + Playground panel; confusion matrix + image-grid artifacts; run comparison overlay; `textgen` template with live sample text. Hyperparam editing UI for `train.toml`.
+**Phase 2 — infer + richer graphs (next)**
+Rough priority order, biased toward visible payoff per effort:
+1. **`textgen` template** — tiny char-level transformer on the user's own .txt files, `sample` events per epoch rendered in the panel (watching gibberish become words is the suite's best demo, and now the GPU has something to chew on)
+2. **Confusion-matrix viewer** — the artifacts already exist per epoch; render the JSON as a colored grid in the panel instead of a log line
+3. **Inference playground** — `infer` (one-shot) + `serve` (stdin/stdout loop) engine commands; panel input box → prediction, using `checkpoints/best.pt`
+4. **Run comparison** — overlay 2+ historical runs on one chart (the buffers and decimation already support multiple series)
+5. **`image` template** — folder-per-class CNN + sample-prediction image grids via the image-viewer module
+6. **Hyperparam form** — render `train.toml` as a small form (epochs/lr/hidden) so tweak-and-retrain never leaves the panel
+7. **PyPI publish** — workflow is in the engine repo; needs the trusted publisher configured on pypi.org. Until then the panel's install button only works where the engine is already reachable
 
 **Phase 3 — the "downloadable extension" install path (optional)**
 A `burn`-based (or `ort`-based, for ONNX inference) single-binary engine implementing the same protocol, downloaded like an LSP server, for machines without Python. Declarative model config only (MLP/CNN presets). Also: `export --onnx`. Only build this if Phase 1/2 actually get used.
+
+**Parking lot (unscheduled ideas)**
+- `pause`/`resume` protocol commands (reserved since v1)
+- Per-run notes/tags in the run browser; pin a "baseline" run
+- Auto-open the panel when training starts (setting — must go through `writePref()`, pitfall #2)
+- Live GPU memory/utilization line while training on CUDA (engine samples `torch.cuda.memory_allocated`)
+- Early-stopping helper in the harness (`run.should_stop(patience=...)`)
+- Export a run as a self-contained HTML report (charts + config + summary)
 
 **Explicit non-goals (all phases)**
 - No cloud anything: no hosted training, no telemetry, no accounts (roadmap non-negotiable)

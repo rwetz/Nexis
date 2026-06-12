@@ -447,9 +447,13 @@ export const useMlStore = create<MlStore>((set, get) => ({
     }
   },
 
-  async refreshRuns(workspaceRoot) {
-    const runsDir = `${workspaceRoot}/.nexis-ml/runs`;
+  async refreshRuns(projectDir) {
+    const runsDir = `${projectDir}/.nexis-ml/runs`;
     set({ runsLoading: true });
+    // Concurrent refreshes can race (e.g. create-project triggers one
+    // via refreshProjects and another via selectProject) — only the
+    // load for the currently selected project may write the list.
+    const stillCurrent = () => get().selectedProject === projectDir;
     try {
       const entries = await invoke<DirEntry[]>("fs_read_dir", {
         path: runsDir,
@@ -488,10 +492,12 @@ export const useMlStore = create<MlStore>((set, get) => ({
           return base;
         }),
       );
-      set({ runs, runsLoading: false });
+      if (stillCurrent()) set({ runs, runsLoading: false });
+      else set({ runsLoading: false });
     } catch {
       // .nexis-ml/runs doesn't exist yet — that's a fresh project, not an error
-      set({ runs: [], runsLoading: false });
+      if (stillCurrent()) set({ runs: [], runsLoading: false });
+      else set({ runsLoading: false });
     }
   },
 
@@ -537,8 +543,21 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   _applyProto(payload) {
-    const run = get().activeRun;
-    if (!run || payload.sid !== run.sid) return;
+    let run = get().activeRun;
+    if (!run) return;
+    if (payload.sid !== run.sid) {
+      // Spawn race: ml_spawn's events can land before its invoke
+      // promise resolves and stamps the sid. While we're still waiting
+      // (sid -1), adopt a batch that opens with a run.started — only
+      // one spawn can be in flight, so it's unambiguously ours.
+      const adoptable =
+        run.sid === -1 &&
+        payload.sid !== get().installSid &&
+        payload.sid !== get().pendingCreate?.sid &&
+        parseProtocolLines(payload.lines.slice(0, 1))[0]?.ev === "run.started";
+      if (!adoptable) return;
+      run = { ...run, sid: payload.sid };
+    }
     const events = parseProtocolLines(payload.lines);
     if (events.length === 0) return;
 
