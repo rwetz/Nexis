@@ -2,6 +2,19 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.19.0] — 2026-06-12
+
+ML Lab: train small machine-learning models inside Nexis. An early feature — functional and verified end-to-end, but young; expect rough edges.
+
+### Added
+- **ML Lab panel** — a new sidebar view (own rail icon, pinned by default with a one-time promotion for existing rails) for training small models on your own data. Live charts with plain-language metric names ("Accuracy", not `acc/val`), a progress bar with elapsed time, and a trend-aware status sentence that explains what the model is doing — including an overfitting warning when validation worsens. Raw logs live in a collapsed Details disclosure. A status-bar pill shows progress and jumps to the panel.
+- **External engine, LSP-style** — the heavy lifting happens in [nexis-ml](https://github.com/rwetz/nexis-ml) (Python/PyTorch, Apache-2.0), spawned over an NDJSON stdio protocol. The Nexis binary stays under 10 MB; the panel degrades to an actionable setup card when the engine is missing.
+- **One-click setup and project creation** — the panel installs the engine into the detected venv (CPU or CUDA torch, fixed pip-argument allowlist on the Rust side), scaffolds an example project, and starts training in a single Create & train click. Past runs render from on-disk `metrics.jsonl` with no engine running.
+- **GPU training** — `device = "auto" | "cpu" | "gpu"` per project; `auto` uses the GPU only when the job is big enough to benefit and says why. NVIDIA detection via `nvidia-smi`, engine capability probe via `nexis-ml env`, an install-time GPU checkbox, and an "Enable GPU" upgrade path that handles pip's refusal to swap `+cpu` for `+cuXXX` builds (`--force-reinstall`).
+
+### Security
+- New `ml_*` Tauri commands are deliberately narrow: only an executable whose stem is `nexis-ml` (or a CPython launcher, for installs) can be spawned, subcommands and pip invocations are fixed allowlists, and project directories pass the same `authorize_spawn_cwd` guard as terminal spawns. All spawn sites use `CREATE_NO_WINDOW` (pitfall #4).
+
 ## [1.18.1] — 2026-06-11
 
 Shortcut polish, a test-suite expansion that caught three real bugs, and CI maintenance.

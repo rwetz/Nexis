@@ -22,8 +22,25 @@ Patch releases should be frequent and low-risk. Minor releases are bigger and ge
 
 ---
 
-### 1.19.0 — Persistent terminal sessions (planned)
-> Working spec. Roadmap item promoted to Up next after 1.18.0.
+### 1.19.0 — ML Lab (ready to tag)
+> Built and verified 2026-06-12. Full spec and phase plan: [ML_SUITE.md](ML_SUITE.md).
+
+Train small ML models inside Nexis. A new ML Lab sidebar panel (own rail icon, pinned by default) drives the external [nexis-ml](https://github.com/rwetz/nexis-ml) engine (v0.2.0) over an NDJSON stdio protocol — the LSP model: Nexis ships the client, the heavy tool installs separately, the binary stays under 10 MB.
+
+**Scope shipped:**
+- One-click engine setup: pip install into the detected venv, CPU or CUDA torch flavor (fixed pip-arg allowlist in Rust), GPU detection via `nvidia-smi` + `nexis-ml env` capability probe, "Enable GPU" upsell when CPU torch sits next to an NVIDIA card
+- In-panel project scaffolding (Create & train) with example data; project selector for multi-project workspaces
+- Live training UX written for non-experts: progress bar + elapsed, plain-language status sentences (trend-aware, warns about overfitting), friendly metric names (Accuracy, not `acc/val`), hero metric chart with min/max-decimated canvas rendering, jargon collapsed into a Details disclosure
+- Device selection `auto | cpu | gpu` with a job-size heuristic (tiny jobs stay on CPU — GPU transfer overhead would make them slower)
+- Run browser reads finished runs from `metrics.jsonl`/`summary.json` on disk — no engine process needed; status-bar pill with live progress
+- Pitfall coverage: #1C authorize-before-spawn, #4/#1D `hide_console` on every spawn site, #8 poison-recovering locks, #10 delete-on-reject promise memoization, #14 charts subscribe to a primitive tick (series buffers live outside Zustand)
+
+**Known limits (by design, this release):** one training run at a time; `tabular` template only (textgen/image are Phase 2 — see ML_SUITE.md); panel install button requires the engine on PyPI or an existing local install.
+
+---
+
+### 1.20.0 — Persistent terminal sessions (planned)
+> Working spec. Roadmap item promoted to Up next after 1.18.0; renumbered from 1.19.0 when ML Lab shipped first.
 
 PTY sessions survive Nexis restarts: relaunch the app and your shells are still there — scrollback, running processes, cwd. Two milestones, shippable independently.
 
