@@ -2,6 +2,16 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.18.1] — 2026-06-11
+
+Shortcut polish + CI maintenance.
+
+### Fixed
+- **LSP refactor shortcut is now rebindable** — `editor.codeActions` (default `Ctrl+Shift+R` / `Cmd+Shift+R`) was display-only in Settings → Shortcuts with the key hardcoded in the editor keymap, so remapping it had no effect. It now dispatches through the global shortcut system like Format document: the editor pane exposes `openCodeActions()`, the app routes the binding to the active editor, and the shortcut falls through harmlessly when the active tab isn't an editor.
+
+### CI
+- **GitHub Actions bumped for the Node 24 runner switchover** (forced June 16, 2026): `actions/checkout` v4→v6, `actions/setup-node` v4→v6, `pnpm/action-setup` v4→v6 across all workflows, and `softprops/action-gh-release` v2→v3 in the release workflow.
+
 ## [1.18.0] — 2026-06-11
 
 WebSocket live terminal sharing, LSP extract/inline refactorings, instant tab reload after multi-file edits, and a richer folder icon set.
