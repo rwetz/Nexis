@@ -4,10 +4,16 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [1.18.1] — 2026-06-11
 
-Shortcut polish + CI maintenance.
+Shortcut polish, a test-suite expansion that caught three real bugs, and CI maintenance.
 
 ### Fixed
 - **LSP refactor shortcut is now rebindable** — `editor.codeActions` (default `Ctrl+Shift+R` / `Cmd+Shift+R`) was display-only in Settings → Shortcuts with the key hardcoded in the editor keymap, so remapping it had no effect. It now dispatches through the global shortcut system like Format document: the editor pane exposes `openCodeActions()`, the app routes the binding to the active editor, and the shortcut falls through harmlessly when the active tab isn't an editor.
+- **Unix paths from language servers lost their leading slash** — `uriToPath` stripped all three slashes from `file:///home/...`, turning absolute paths relative and silently breaking go-to-definition and workspace edits on macOS/Linux. Windows drive paths were unaffected.
+- **Share-server connections could die instantly on Windows** — sockets accepted by the LAN share server inherit the listener's non-blocking mode, so per-connection reads (request headers, WebSocket ping/close frames) could fail immediately with `WouldBlock`; the WS reader thread died at spawn, leaving ping/close handling dead. Accepted sockets are now reset to blocking, and WS clients register for broadcasts before the handshake response so a push can't slip past a freshly connected viewer.
+- **Same-position LSP inserts applied in reverse order** — `applyEditsToText` applied multiple zero-width inserts at one position bottom-up without a tiebreak, reversing the array order the LSP spec mandates.
+
+### Tests
+- **Suite grown from 105 to 142 Vitest tests and 126 to 130 Rust tests** — new suites for LSP URI/hover protocol helpers, share-page HTML escaping (untrusted terminal/AI content), shortcut matching and registry invariants (duplicate ids, conflicting default bindings), and explorer icon resolution (catppuccin→vscode-icons fallback chain); plus WebSocket frame-length boundary tests and real loopback integration tests of the share server (RFC 6455 handshake with the spec example key, broadcast delivery, masked close, 400 on missing key). The three fixes above all fell out of these tests.
 
 ### CI
 - **GitHub Actions bumped for the Node 24 runner switchover** (forced June 16, 2026): `actions/checkout` v4→v6, `actions/setup-node` v4→v6, `pnpm/action-setup` v4→v6 across all workflows, and `softprops/action-gh-release` v2→v3 in the release workflow.
