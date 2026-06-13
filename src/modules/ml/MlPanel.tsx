@@ -14,12 +14,20 @@
  *    sentence about what the model is doing
  *  - metrics labeled "Accuracy", not "acc/val"; jargon lives in Details
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Refresh01Icon } from "@hugeicons/core-free-icons";
-import { useMlStore, getSeriesMap, type ActiveRun, type HistoricalRun } from "./store";
-import { MetricChart } from "./MetricChart";
+import {
+  useMlStore,
+  getSeriesMap,
+  type ActiveRun,
+  type CompareRun,
+  type HistoricalRun,
+  type PlaygroundResult,
+  type ServeSession,
+} from "./store";
+import { MetricChart, CompareChart } from "./MetricChart";
 import {
   displayMetric,
   formatElapsed,
@@ -29,6 +37,29 @@ import {
   trendOf,
 } from "./lib/friendly";
 import type { RunSummary } from "./lib/protocol";
+import type { MlTemplate } from "./lib/engine-bridge";
+import { readConfusionMatrix, type ConfusionMatrix } from "./lib/artifacts";
+
+/** Project templates offered in the create card. */
+const TEMPLATE_OPTIONS: {
+  id: MlTemplate;
+  label: string;
+  desc: string;
+  defaultName: string;
+}[] = [
+  {
+    id: "tabular",
+    label: "Spreadsheet",
+    desc: "Predict a column in a CSV with a small neural net.",
+    defaultName: "my-first-model",
+  },
+  {
+    id: "textgen",
+    label: "Text generator",
+    desc: "Train a tiny GPT on a .txt file and watch it learn to write.",
+    defaultName: "tiny-writer",
+  },
+];
 
 type Props = {
   workspaceRoot: string | null;
@@ -53,6 +84,7 @@ export function MlPanel({ workspaceRoot }: Props) {
   const logs = useMlStore((s) => s.logs);
   const runs = useMlStore((s) => s.runs);
   const runsLoading = useMlStore((s) => s.runsLoading);
+  const compareRuns = useMlStore((s) => s.compareRuns);
 
   const detect = useMlStore((s) => s.detect);
   const redetect = useMlStore((s) => s.redetect);
@@ -65,6 +97,8 @@ export function MlPanel({ workspaceRoot }: Props) {
   const cancelActive = useMlStore((s) => s.cancelActive);
   const refreshRuns = useMlStore((s) => s.refreshRuns);
   const loadHistoricalRun = useMlStore((s) => s.loadHistoricalRun);
+  const toggleCompare = useMlStore((s) => s.toggleCompare);
+  const clearCompare = useMlStore((s) => s.clearCompare);
 
   const [showCreate, setShowCreate] = useState(false);
 
@@ -76,6 +110,8 @@ export function MlPanel({ workspaceRoot }: Props) {
   const busy = activeRun != null && BUSY_STATES.includes(activeRun.status);
   const finished =
     activeRun != null && ["ok", "cancelled", "error"].includes(activeRun.status);
+  // 2+ runs checked → overlay them instead of the single-run views.
+  const comparing = compareRuns.length >= 2;
 
   const metricNames = useMemo(() => Object.keys(lastValues).sort(), [lastValues]);
   const hero = useMemo(() => headlineMetric(metricNames), [metricNames]);
@@ -149,9 +185,9 @@ export function MlPanel({ workspaceRoot }: Props) {
               <CreateCard
                 creating={pendingCreate != null}
                 firstProject={projects.length === 0}
-                onCreate={(name) => {
+                onCreate={(template, name) => {
                   setShowCreate(false);
-                  void createProject(workspaceRoot, name, true);
+                  void createProject(workspaceRoot, template, name, true);
                 }}
                 onDismiss={projects.length > 0 ? () => setShowCreate(false) : undefined}
               />
@@ -200,20 +236,44 @@ export function MlPanel({ workspaceRoot }: Props) {
               </button>
             ) : null}
 
-            {/* Charts */}
-            {metricNames.length > 0 ? (
-              <div className="mb-2 mt-2 flex flex-col gap-2">
-                {chartSource?.kind === "historical" ? (
-                  <p className="text-[10px] text-muted-foreground">
-                    Viewing a past run ({friendlyRunName(chartSource.runId)})
-                  </p>
+            {comparing ? (
+              /* Overlay several runs on shared charts */
+              <ComparisonView runs={compareRuns} onClear={clearCompare} />
+            ) : (
+              <>
+                {/* Generated text (textgen) — the payoff, above the charts */}
+                <SamplesView />
+
+                {/* Charts */}
+                {metricNames.length > 0 ? (
+                  <div className="mb-2 mt-2 flex flex-col gap-2">
+                    {chartSource?.kind === "historical" ? (
+                      <p className="text-[10px] text-muted-foreground">
+                        Viewing a past run ({friendlyRunName(chartSource.runId)})
+                      </p>
+                    ) : null}
+                    {hero ? <MetricChart name={hero} hero /> : null}
+                    {restMetrics.map((name) => (
+                      <MetricChart key={name} name={name} />
+                    ))}
+                  </div>
                 ) : null}
-                {hero ? <MetricChart name={hero} hero /> : null}
-                {restMetrics.map((name) => (
-                  <MetricChart key={name} name={name} />
-                ))}
-              </div>
-            ) : null}
+
+                {/* Confusion matrix (classification) — per-epoch artifact grid */}
+                <ConfusionMatrixView />
+
+                {/* Inference playground — try the trained model live */}
+                <Playground
+                  run={
+                    finished && activeRun?.runId
+                      ? { projectDir: activeRun.projectDir, runId: activeRun.runId }
+                      : chartSource?.kind === "historical" && selectedProject
+                        ? { projectDir: selectedProject, runId: chartSource.runId }
+                        : null
+                  }
+                />
+              </>
+            )}
 
             {/* Details (logs, raw output) — collapsed so novices never see it */}
             {logs.length > 0 ? (
@@ -227,8 +287,13 @@ export function MlPanel({ workspaceRoot }: Props) {
 
             {/* Past runs */}
             <div className="mt-3">
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                Past runs {runsLoading ? "…" : ""}
+              <p className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                <span>Past runs {runsLoading ? "…" : ""}</span>
+                {runs.length > 1 ? (
+                  <span className="font-normal normal-case tracking-normal text-muted-foreground/50">
+                    check 2+ to compare
+                  </span>
+                ) : null}
               </p>
               {runs.length === 0 && !runsLoading ? (
                 <p className="text-[11px] text-muted-foreground/70">
@@ -244,8 +309,11 @@ export function MlPanel({ workspaceRoot }: Props) {
                         chartSource?.kind === "historical" &&
                         chartSource.runId === run.id
                       }
+                      comparing={compareRuns.some((r) => r.id === run.id)}
+                      compareColor={compareRuns.find((r) => r.id === run.id)?.color}
                       disabled={busy}
                       onClick={() => void loadHistoricalRun(run)}
+                      onToggleCompare={() => void toggleCompare(run)}
                     />
                   ))}
                 </div>
@@ -425,10 +493,19 @@ function CreateCard({
 }: {
   creating: boolean;
   firstProject: boolean;
-  onCreate: (name: string) => void;
+  onCreate: (template: MlTemplate, name: string) => void;
   onDismiss?: () => void;
 }) {
-  const [name, setName] = useState("my-first-model");
+  const [template, setTemplate] = useState<MlTemplate>("tabular");
+  const [name, setName] = useState(TEMPLATE_OPTIONS[0].defaultName);
+
+  // Switching template swaps in its suggested name (the user can still
+  // rename); keeps "tiny-writer" from sticking on a tabular project.
+  const pick = (id: MlTemplate) => {
+    setTemplate(id);
+    setName(TEMPLATE_OPTIONS.find((o) => o.id === id)?.defaultName ?? name);
+  };
+
   return (
     <div className="mb-2 rounded-md border border-primary/25 bg-primary/[0.04] p-2.5">
       <div className="mb-1 flex items-start justify-between">
@@ -448,8 +525,43 @@ function CreateCard({
       </div>
       <p className="mb-2 text-[11px] leading-snug text-muted-foreground">
         Creates a small example project with sample data — you'll see live
-        charts within seconds. Swap in your own CSV whenever you're ready.
+        results within seconds. Swap in your own data whenever you're ready.
       </p>
+
+      {/* Template chooser */}
+      <div className="mb-2 flex flex-col gap-1">
+        {TEMPLATE_OPTIONS.map((opt) => {
+          const selected = opt.id === template;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              disabled={creating}
+              onClick={() => pick(opt.id)}
+              className={cn(
+                "rounded border px-2 py-1 text-left transition-colors disabled:opacity-60",
+                selected
+                  ? "border-primary/50 bg-primary/[0.07]"
+                  : "border-border hover:bg-foreground/[0.04]",
+              )}
+            >
+              <span className="flex items-center gap-1.5 text-[11px] font-medium text-foreground/90">
+                <span
+                  className={cn(
+                    "size-1.5 rounded-full",
+                    selected ? "bg-primary" : "bg-muted-foreground/40",
+                  )}
+                />
+                {opt.label}
+              </span>
+              <span className="ml-3 block text-[10px] leading-snug text-muted-foreground">
+                {opt.desc}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {creating ? (
         <p className="flex items-center gap-1.5 text-[11px] text-foreground/90">
           <span className="size-1.5 animate-pulse rounded-full bg-sky-500" />
@@ -461,7 +573,7 @@ function CreateCard({
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && name.trim()) onCreate(name);
+              if (e.key === "Enter" && name.trim()) onCreate(template, name);
             }}
             spellCheck={false}
             className="h-6 min-w-0 flex-1 rounded border border-border bg-background px-1.5 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
@@ -469,7 +581,7 @@ function CreateCard({
           <button
             type="button"
             disabled={!name.trim()}
-            onClick={() => onCreate(name)}
+            onClick={() => onCreate(template, name)}
             className="h-6 shrink-0 rounded-md bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Create &amp; train
@@ -477,6 +589,440 @@ function CreateCard({
         </div>
       )}
     </div>
+  );
+}
+
+// ── Generated-text samples (textgen) ──────────────────────────────────────────
+
+function SamplesView() {
+  const samples = useMlStore((s) => s.samples);
+  const [idx, setIdx] = useState(0);
+
+  // Pin to the newest snapshot as fresh ones stream in.
+  useEffect(() => {
+    setIdx(Math.max(0, samples.length - 1));
+  }, [samples.length]);
+
+  if (samples.length === 0) return null;
+  const i = Math.min(idx, samples.length - 1);
+  const sample = samples[i];
+
+  return (
+    <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          Generated text
+        </span>
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          {sample.epoch != null ? (
+            <span>after pass {sample.epoch}</span>
+          ) : null}
+          {samples.length > 1 ? (
+            <span className="flex items-center gap-0.5">
+              <button
+                type="button"
+                aria-label="Previous sample"
+                disabled={i === 0}
+                onClick={() => setIdx(i - 1)}
+                className="px-1 leading-none hover:text-foreground disabled:opacity-30"
+              >
+                ‹
+              </button>
+              <span className="tabular-nums">
+                {i + 1}/{samples.length}
+              </span>
+              <button
+                type="button"
+                aria-label="Next sample"
+                disabled={i === samples.length - 1}
+                onClick={() => setIdx(i + 1)}
+                className="px-1 leading-none hover:text-foreground disabled:opacity-30"
+              >
+                ›
+              </button>
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded bg-background/50 px-2 py-1.5 font-mono text-[11px] leading-snug text-foreground/90">
+        {sample.text.trim() || "…"}
+      </pre>
+    </div>
+  );
+}
+
+// ── Confusion matrix (classification) ─────────────────────────────────────────
+
+function ConfusionMatrixView() {
+  const artifact = useMlStore((s) => s.cmArtifact);
+  const [cm, setCm] = useState<ConfusionMatrix | null>(null);
+
+  // Read the artifact file whenever the path changes (once per epoch
+  // live, or once on historical load). The cancelled flag drops a stale
+  // read when the user switches runs mid-flight.
+  useEffect(() => {
+    if (!artifact) {
+      setCm(null);
+      return;
+    }
+    let cancelled = false;
+    void readConfusionMatrix(artifact.path)
+      .then((d) => {
+        if (!cancelled) setCm(d);
+      })
+      .catch(() => {
+        if (!cancelled) setCm(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [artifact?.path]);
+
+  if (!cm) return null;
+  const { labels, matrix } = cm;
+  const k = labels.length;
+
+  let total = 0;
+  let correct = 0;
+  let max = 0;
+  for (let r = 0; r < k; r++) {
+    for (let c = 0; c < k; c++) {
+      const v = matrix[r][c];
+      total += v;
+      if (r === c) correct += v;
+      if (v > max) max = v;
+    }
+  }
+  const accuracy = total > 0 ? correct / total : 0;
+
+  const cellColor = (v: number, diag: boolean): string | undefined => {
+    if (v <= 0) return undefined;
+    const alpha = 0.12 + (max > 0 ? v / max : 0) * 0.73;
+    // emerald for the correct diagonal, rose for misclassifications
+    return `rgba(${diag ? "16,185,129" : "244,63,94"},${alpha.toFixed(3)})`;
+  };
+
+  return (
+    <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          Confusion matrix
+        </span>
+        <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          {total > 0 ? (
+            <span className="font-mono tabular-nums text-foreground/80">
+              {(accuracy * 100).toFixed(1)}% correct
+            </span>
+          ) : null}
+          {artifact?.epoch != null ? <span>after pass {artifact.epoch}</span> : null}
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <div
+          className="inline-grid gap-0.5"
+          style={{ gridTemplateColumns: `auto repeat(${k}, 1.6rem)` }}
+        >
+          {/* header: predicted labels */}
+          <div />
+          {labels.map((l) => (
+            <div
+              key={`h-${l}`}
+              className="flex h-4 items-center justify-center truncate px-0.5 text-[9.5px] font-medium text-muted-foreground"
+              title={`predicted ${l}`}
+            >
+              {l}
+            </div>
+          ))}
+          {/* one row per actual label */}
+          {matrix.map((row, r) => (
+            <Fragment key={`r-${labels[r]}`}>
+              <div
+                className="flex max-w-16 items-center justify-end truncate pr-1 text-[9.5px] font-medium text-muted-foreground"
+                title={`actual ${labels[r]}`}
+              >
+                {labels[r]}
+              </div>
+              {row.map((v, c) => (
+                <div
+                  key={`c-${labels[c]}`}
+                  className="flex h-6 items-center justify-center rounded-sm font-mono text-[10px] tabular-nums text-foreground/85"
+                  style={{ backgroundColor: cellColor(v, r === c) }}
+                  title={`actual ${labels[r]} → predicted ${labels[c]}: ${v}`}
+                >
+                  {v}
+                </div>
+              ))}
+            </Fragment>
+          ))}
+        </div>
+      </div>
+      <p className="mt-1 text-[9.5px] leading-snug text-muted-foreground/60">
+        Rows are the real answer, columns the model's guess — the green diagonal
+        is correct.
+      </p>
+    </div>
+  );
+}
+
+// ── Inference playground ──────────────────────────────────────────────────────
+
+function Playground({
+  run,
+}: {
+  run: { projectDir: string; runId: string } | null;
+}) {
+  const serve = useMlStore((s) => s.serve);
+  const startServe = useMlStore((s) => s.startServe);
+  const stopServe = useMlStore((s) => s.stopServe);
+  const runInference = useMlStore((s) => s.runInference);
+
+  if (!serve && !run) return null;
+
+  const open = () => {
+    if (run) void startServe(run.projectDir, run.runId);
+  };
+
+  return (
+    <div className="mb-2 mt-3 rounded-md border border-border/60 bg-muted/20 p-2.5">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold">
+          Playground
+          {serve?.status === "ready" && serve.device ? (
+            <span
+              className={cn(
+                "rounded px-1 py-px text-[9px] font-medium",
+                serve.device.startsWith("cuda")
+                  ? "bg-emerald-500/10 text-emerald-500"
+                  : "bg-muted/60 text-muted-foreground",
+              )}
+              title={`device: ${serve.device}`}
+            >
+              {serve.device.startsWith("cuda") ? "⚡ GPU" : "CPU"}
+            </span>
+          ) : null}
+        </span>
+        {serve && serve.status !== "stopped" ? (
+          <button
+            type="button"
+            onClick={() => void stopServe()}
+            className="text-[10px] text-muted-foreground hover:text-foreground"
+          >
+            Close
+          </button>
+        ) : null}
+      </div>
+
+      {!serve ? (
+        <>
+          <p className="mb-1.5 text-[11px] leading-snug text-muted-foreground">
+            Load this trained model and try it live — give it an input, get a
+            prediction back.
+          </p>
+          <button
+            type="button"
+            onClick={open}
+            className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            Try this model
+          </button>
+        </>
+      ) : serve.status === "starting" ? (
+        <p className="flex items-center gap-1.5 text-[11px] text-foreground/90">
+          <span className="size-1.5 animate-pulse rounded-full bg-sky-500" />
+          Loading the model…
+        </p>
+      ) : serve.status === "error" ? (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[11px] text-destructive">
+            {serve.error ?? "Couldn't load the model."}
+          </p>
+          <button
+            type="button"
+            onClick={open}
+            className="self-start rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground hover:text-foreground"
+          >
+            Try again
+          </button>
+        </div>
+      ) : serve.status === "stopped" ? (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] text-muted-foreground">Playground closed.</p>
+          {run ? (
+            <button
+              type="button"
+              onClick={open}
+              className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground hover:text-foreground"
+            >
+              Reopen
+            </button>
+          ) : null}
+        </div>
+      ) : serve.template === "tabular" ? (
+        <TabularPlayground serve={serve} onPredict={runInference} />
+      ) : (
+        <TextgenPlayground serve={serve} onGenerate={runInference} />
+      )}
+    </div>
+  );
+}
+
+function TextgenPlayground({
+  serve,
+  onGenerate,
+}: {
+  serve: ServeSession;
+  onGenerate: (request: unknown) => void;
+}) {
+  const [prompt, setPrompt] = useState("Once upon a time");
+  const [temperature, setTemperature] = useState(0.8);
+  const result = serve.result?.kind === "text" ? serve.result : null;
+
+  const submit = () =>
+    onGenerate({ input: prompt, maxNew: 200, temperature });
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <textarea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        rows={2}
+        spellCheck={false}
+        placeholder="Start of the text…"
+        className="w-full resize-none rounded border border-border bg-background px-1.5 py-1 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+      />
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] text-muted-foreground">wildness</span>
+        <input
+          type="range"
+          min={0.2}
+          max={1.4}
+          step={0.1}
+          value={temperature}
+          onChange={(e) => setTemperature(Number(e.target.value))}
+          className="min-w-0 flex-1 accent-primary"
+        />
+        <span className="w-6 font-mono text-[10px] tabular-nums text-muted-foreground">
+          {temperature.toFixed(1)}
+        </span>
+        <button
+          type="button"
+          onClick={submit}
+          disabled={serve.busy}
+          className="shrink-0 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {serve.busy ? "Writing…" : "Generate"}
+        </button>
+      </div>
+      {serve.error ? (
+        <p className="text-[10px] text-destructive">{serve.error}</p>
+      ) : null}
+      {result ? (
+        <pre className="max-h-44 overflow-y-auto whitespace-pre-wrap break-words rounded bg-background/50 px-2 py-1.5 font-mono text-[11px] leading-snug">
+          <span className="text-muted-foreground">{result.input}</span>
+          <span className="text-foreground/90">{result.continuation}</span>
+        </pre>
+      ) : null}
+    </div>
+  );
+}
+
+function TabularPlayground({
+  serve,
+  onPredict,
+}: {
+  serve: ServeSession;
+  onPredict: (request: unknown) => void;
+}) {
+  const features = serve.meta?.features ?? [];
+  const [values, setValues] = useState<Record<string, string>>({});
+  const result = serve.result?.kind === "tabular" ? serve.result : null;
+
+  const submit = () => {
+    const input: Record<string, number> = {};
+    for (const f of features) {
+      const v = values[f];
+      if (v !== undefined && v.trim() !== "" && Number.isFinite(Number(v))) {
+        input[f] = Number(v);
+      }
+    }
+    onPredict({ input });
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[10px] text-muted-foreground">
+        Enter feature values (blanks use the training average):
+      </p>
+      <div className="grid grid-cols-2 gap-1.5">
+        {features.map((f) => (
+          <label key={f} className="flex items-center gap-1 text-[10px]">
+            <span className="w-12 shrink-0 truncate text-muted-foreground" title={f}>
+              {f}
+            </span>
+            <input
+              type="number"
+              step="any"
+              value={values[f] ?? ""}
+              onChange={(e) =>
+                setValues((s) => ({ ...s, [f]: e.target.value }))
+              }
+              className="h-6 min-w-0 flex-1 rounded border border-border bg-background px-1 font-mono text-[10px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+            />
+          </label>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={submit}
+        disabled={serve.busy}
+        className="self-start rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+      >
+        {serve.busy ? "Predicting…" : "Predict"}
+      </button>
+      {serve.error ? (
+        <p className="text-[10px] text-destructive">{serve.error}</p>
+      ) : null}
+      {result ? <TabularResult result={result} /> : null}
+    </div>
+  );
+}
+
+function TabularResult({ result }: { result: Extract<PlaygroundResult, { kind: "tabular" }> }) {
+  if (result.label !== undefined) {
+    const entries = Object.entries(result.probs ?? {}).sort((a, b) => b[1] - a[1]);
+    return (
+      <div className="mt-0.5">
+        <p className="text-[12px]">
+          Prediction:{" "}
+          <span className="font-semibold text-foreground">{result.label}</span>
+        </p>
+        <div className="mt-1 flex flex-col gap-0.5">
+          {entries.map(([cls, p]) => (
+            <div key={cls} className="flex items-center gap-1.5 text-[10px]">
+              <span className="w-8 shrink-0 text-right text-muted-foreground">{cls}</span>
+              <div className="h-2 flex-1 overflow-hidden rounded bg-muted/60">
+                <div
+                  className="h-full rounded bg-primary/70"
+                  style={{ width: `${Math.round(p * 100)}%` }}
+                />
+              </div>
+              <span className="w-10 shrink-0 text-right font-mono tabular-nums text-muted-foreground">
+                {(p * 100).toFixed(1)}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <p className="mt-0.5 text-[12px]">
+      Predicted value:{" "}
+      <span className="font-mono font-semibold text-foreground">
+        {result.value?.toFixed(4)}
+      </span>
+    </p>
   );
 }
 
@@ -710,13 +1256,19 @@ function friendlyRunName(id: string): string {
 function RunRow({
   run,
   selected,
+  comparing,
+  compareColor,
   disabled,
   onClick,
+  onToggleCompare,
 }: {
   run: HistoricalRun;
   selected: boolean;
+  comparing: boolean;
+  compareColor?: string;
   disabled: boolean;
   onClick: () => void;
+  onToggleCompare: () => void;
 }) {
   const dot =
     run.status === "ok"
@@ -738,28 +1290,113 @@ function RunRow({
     }
   }
 
+  // A checkbox can't live inside a <button>, so the row is a flex
+  // container: checkbox toggles compare, the button loads the single view.
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
+    <div
       className={cn(
-        "flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left transition-colors",
+        "flex items-center gap-1 rounded transition-colors",
         selected ? "bg-primary/[0.08]" : "hover:bg-muted/50",
-        disabled && "cursor-default opacity-60",
       )}
-      title={`${run.id} — ${runStatusWord(run.status)}`}
     >
-      <span className={cn("size-1.5 shrink-0 rounded-full", dot)} />
-      <span className="min-w-0 flex-1 truncate text-[10.5px] text-foreground/85">
-        {friendlyRunName(run.id)}
-        <span className="text-muted-foreground/60"> · {runStatusWord(run.status)}</span>
-      </span>
-      {metric ? (
-        <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
-          {metric}
+      <input
+        type="checkbox"
+        checked={comparing}
+        onChange={onToggleCompare}
+        aria-label={`Compare ${friendlyRunName(run.id)}`}
+        title="Compare this run"
+        className="ml-1 size-3 shrink-0 accent-primary"
+        style={comparing && compareColor ? { accentColor: compareColor } : undefined}
+      />
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onClick}
+        className={cn(
+          "flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-1 text-left",
+          disabled && "cursor-default opacity-60",
+        )}
+        title={`${run.id} — ${runStatusWord(run.status)}`}
+      >
+        <span className={cn("size-1.5 shrink-0 rounded-full", dot)} />
+        <span className="min-w-0 flex-1 truncate text-[10.5px] text-foreground/85">
+          {friendlyRunName(run.id)}
+          <span className="text-muted-foreground/60">
+            {" "}
+            · {runStatusWord(run.status)}
+          </span>
         </span>
-      ) : null}
-    </button>
+        {metric ? (
+          <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+            {metric}
+          </span>
+        ) : null}
+      </button>
+    </div>
+  );
+}
+
+// ── Run comparison ────────────────────────────────────────────────────────────
+
+function ComparisonView({
+  runs,
+  onClear,
+}: {
+  runs: CompareRun[];
+  onClear: () => void;
+}) {
+  // Redraw when the compare buffers change (loaded/removed a run).
+  const tick = useMlStore((s) => s.seriesTick);
+  void tick;
+
+  const metricSet = new Set<string>();
+  for (const r of runs) for (const m of r.metrics) metricSet.add(m);
+  const metricNames = [...metricSet];
+  const hero = headlineMetric(metricNames);
+  const ordered = hero
+    ? [hero, ...metricNames.filter((m) => m !== hero)]
+    : metricNames;
+  const lines = runs.map((r) => ({ id: r.id, color: r.color }));
+
+  return (
+    <div className="mb-2 mt-2">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-[11px] font-semibold">
+          Comparing {runs.length} runs
+        </span>
+        <button
+          type="button"
+          onClick={onClear}
+          className="text-[10px] text-muted-foreground hover:text-foreground"
+        >
+          Clear
+        </button>
+      </div>
+      <div className="mb-2 flex flex-wrap gap-x-3 gap-y-1">
+        {runs.map((r) => (
+          <span
+            key={r.id}
+            className="flex items-center gap-1 text-[10px] text-muted-foreground"
+          >
+            <span
+              className="size-2 shrink-0 rounded-sm"
+              style={{ backgroundColor: r.color }}
+            />
+            {friendlyRunName(r.id)}
+          </span>
+        ))}
+      </div>
+      {ordered.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          {ordered.map((m) => (
+            <CompareChart key={m} metric={m} runs={lines} />
+          ))}
+        </div>
+      ) : (
+        <p className="text-[11px] text-muted-foreground/70">
+          These runs have no metrics to chart.
+        </p>
+      )}
+    </div>
   );
 }

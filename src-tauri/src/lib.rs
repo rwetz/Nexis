@@ -156,6 +156,7 @@ pub fn run() {
             ml::ml_spawn,
             ml::ml_cancel,
             ml::ml_kill,
+            ml::ml_stdin,
             ml::ml_install,
             ml::ml_env,
             ml::ml_gpu_probe,

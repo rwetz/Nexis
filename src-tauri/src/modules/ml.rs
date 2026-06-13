@@ -40,8 +40,10 @@ const MAX_LINE_BYTES: usize = 1024 * 1024;
 
 /// Subcommands the frontend is allowed to spawn. `train` and `replay`
 /// stream protocol events; `new` scaffolds a project (one-shot, watched
-/// via ml:exit). Everything else the frontend reads from disk.
-const ALLOWED_SUBCOMMANDS: &[&str] = &["train", "replay", "new"];
+/// via ml:exit); `serve` is the inference playground's request/response
+/// loop (driven via `ml_stdin`). Everything else the frontend reads from
+/// disk or runs via a dedicated command (`env`, `--version`).
+const ALLOWED_SUBCOMMANDS: &[&str] = &["train", "replay", "new", "serve"];
 
 pub struct MlSession {
     child: Arc<SharedChild>,
@@ -356,6 +358,28 @@ pub fn ml_cancel(state: State<'_, MlState>, sid: u32) -> Result<(), String> {
         .map_err(|e| format!("ml_cancel: {e}"))
 }
 
+/// Write one request line to a session's stdin. The inference playground
+/// (`nexis-ml serve`) reads one JSON request per line, so the frontend
+/// sends each request through here. A trailing newline is appended (and
+/// any the caller included is stripped first) so the engine always gets
+/// exactly one complete line.
+#[tauri::command]
+pub fn ml_stdin(state: State<'_, MlState>, sid: u32, line: String) -> Result<(), String> {
+    let session = lock_sessions(&state)
+        .get(&sid)
+        .cloned()
+        .ok_or("ml_stdin: no such session")?;
+    let mut stdin = session.stdin.lock().unwrap_or_else(|e| e.into_inner());
+    let Some(pipe) = stdin.as_mut() else {
+        return Err("ml_stdin: stdin closed".into());
+    };
+    let mut bytes = line.trim_end_matches(['\r', '\n']).as_bytes().to_vec();
+    bytes.push(b'\n');
+    pipe.write_all(&bytes)
+        .and_then(|_| pipe.flush())
+        .map_err(|e| format!("ml_stdin: {e}"))
+}
+
 /// Hard-kill the engine process (used if cancel doesn't take).
 #[tauri::command]
 pub fn ml_kill(state: State<'_, MlState>, sid: u32) -> Result<(), String> {
@@ -534,9 +558,11 @@ mod tests {
         assert!(ALLOWED_SUBCOMMANDS.contains(&"train"));
         assert!(ALLOWED_SUBCOMMANDS.contains(&"replay"));
         assert!(ALLOWED_SUBCOMMANDS.contains(&"new"));
-        // `runs` and arbitrary subcommands stay CLI-only
+        assert!(ALLOWED_SUBCOMMANDS.contains(&"serve"));
+        // `runs`, `infer`, and arbitrary subcommands stay CLI-only
         assert!(!ALLOWED_SUBCOMMANDS.contains(&"runs"));
-        assert_eq!(ALLOWED_SUBCOMMANDS.len(), 3);
+        assert!(!ALLOWED_SUBCOMMANDS.contains(&"infer"));
+        assert_eq!(ALLOWED_SUBCOMMANDS.len(), 4);
     }
 
     #[test]

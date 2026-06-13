@@ -55,6 +55,12 @@ const KNOWN_METRICS: Record<string, MetricDisplay> = {
     hint: "Average distance between predictions and truth — lower is better",
     format: formatValue,
   },
+  "perplexity/val": {
+    label: "Perplexity",
+    better: "down",
+    hint: "How many characters the model is effectively choosing between — lower (toward 1) is better",
+    format: formatValue,
+  },
 };
 
 export function displayMetric(name: string): MetricDisplay {

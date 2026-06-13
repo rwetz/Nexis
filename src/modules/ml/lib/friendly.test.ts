@@ -22,6 +22,11 @@ describe("displayMetric", () => {
     expect(displayMetric("loss/train").better).toBe("down");
   });
 
+  it("labels textgen perplexity in plain language", () => {
+    expect(displayMetric("perplexity/val").label).toBe("Perplexity");
+    expect(displayMetric("perplexity/val").better).toBe("down");
+  });
+
   it("falls back gracefully for unknown metric names", () => {
     const d = displayMetric("custom/thing");
     expect(d.label).toBe("custom/thing");

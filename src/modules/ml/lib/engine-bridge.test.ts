@@ -10,7 +10,10 @@ import {
   buildCandidates,
   detectEngine,
   resetEngineDetection,
+  sendInfer,
   siblingExe,
+  spawnNew,
+  spawnServe,
   spawnTrain,
 } from "./engine-bridge";
 
@@ -129,5 +132,71 @@ describe("spawnTrain — pitfall #1C: authorize before spawn", () => {
       return null;
     });
     await expect(spawnTrain("nexis-ml", "E:\\proj")).resolves.toBe(3);
+  });
+});
+
+describe("spawnNew — scaffolds the chosen template", () => {
+  it("passes `new <template> <name>` and authorizes the workspace first", async () => {
+    const order: string[] = [];
+    let spawnArgs: unknown;
+    invokeMock.mockImplementation(async (cmd: string, args?: unknown) => {
+      order.push(cmd);
+      if (cmd === "workspace_authorize") return "E:\\ws";
+      if (cmd === "ml_spawn") {
+        spawnArgs = args;
+        return 11;
+      }
+      return null;
+    });
+
+    const sid = await spawnNew("nexis-ml", "E:\\ws", "textgen", "tiny-writer");
+
+    expect(sid).toBe(11);
+    expect(order.indexOf("workspace_authorize")).toBeLessThan(
+      order.indexOf("ml_spawn"),
+    );
+    expect(spawnArgs).toMatchObject({
+      args: ["new", "textgen", "tiny-writer"],
+      projectDir: "E:\\ws",
+    });
+  });
+});
+
+describe("serve bridge", () => {
+  it("spawnServe authorizes then spawns `serve --run <id> --checkpoint`", async () => {
+    const order: string[] = [];
+    let spawnArgs: unknown;
+    invokeMock.mockImplementation(async (cmd: string, args?: unknown) => {
+      order.push(cmd);
+      if (cmd === "workspace_authorize") return "E:\\proj";
+      if (cmd === "ml_spawn") {
+        spawnArgs = args;
+        return 5;
+      }
+      return null;
+    });
+
+    const sid = await spawnServe("nexis-ml", "E:\\proj", "2026-run", "best");
+
+    expect(sid).toBe(5);
+    expect(order.indexOf("workspace_authorize")).toBeLessThan(
+      order.indexOf("ml_spawn"),
+    );
+    expect(spawnArgs).toMatchObject({
+      args: ["serve", "--run", "2026-run", "--checkpoint", "best"],
+      projectDir: "E:\\proj",
+    });
+  });
+
+  it("sendInfer writes the request as a single JSON line via ml_stdin", async () => {
+    let stdinArgs: unknown;
+    invokeMock.mockImplementation(async (cmd: string, args?: unknown) => {
+      if (cmd === "ml_stdin") stdinArgs = args;
+      return null;
+    });
+
+    await sendInfer(7, { input: "hi", maxNew: 50 });
+
+    expect(stdinArgs).toEqual({ sid: 7, line: '{"input":"hi","maxNew":50}' });
   });
 });

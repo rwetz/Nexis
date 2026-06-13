@@ -146,19 +146,24 @@ export async function spawnTrain(
   });
 }
 
+/** Project templates the panel can scaffold. The engine validates the
+ *  name too (argparse `choices`); this union keeps the UI honest. */
+export type MlTemplate = "tabular" | "textgen";
+
 /**
  * Scaffold a new project under the workspace root (`nexis-ml new
- * tabular <name>`). One-shot: completion arrives as ml:exit.
+ * <template> <name>`). One-shot: completion arrives as ml:exit.
  */
 export async function spawnNew(
   exe: string,
   workspaceRoot: string,
+  template: MlTemplate,
   name: string,
 ): Promise<number> {
   await authorizeProjectDir(workspaceRoot);
   return invoke<number>("ml_spawn", {
     exe,
-    args: ["new", "tabular", name],
+    args: ["new", template, name],
     projectDir: workspaceRoot,
   });
 }
@@ -216,6 +221,31 @@ export async function spawnReplay(
     args: ["replay", runPath, "--delay", "5"],
     projectDir,
   });
+}
+
+/**
+ * Start an inference session (`nexis-ml serve --run <id>`) for the
+ * playground. Long-lived like train; requests go in via `sendInfer`,
+ * responses stream back as ml:proto serve events. Resolves to a sid.
+ */
+export async function spawnServe(
+  exe: string,
+  projectDir: string,
+  runId: string,
+  checkpoint: "best" | "last" = "best",
+): Promise<number> {
+  await authorizeProjectDir(projectDir);
+  return invoke<number>("ml_spawn", {
+    exe,
+    args: ["serve", "--run", runId, "--checkpoint", checkpoint],
+    projectDir,
+  });
+}
+
+/** Send one inference request to a serve session (written as a single
+ *  stdin line; the engine answers with a prediction/error event). */
+export function sendInfer(sid: number, request: unknown): Promise<void> {
+  return invoke("ml_stdin", { sid, line: JSON.stringify(request) });
 }
 
 /** Graceful stop: the engine checkpoints and finishes as "cancelled". */

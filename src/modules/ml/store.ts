@@ -25,17 +25,31 @@ import {
   probeEnv,
   probeGpu,
   resetEngineDetection,
+  sendInfer,
   spawnInstall,
   spawnNew,
+  spawnServe,
   spawnTrain,
   subscribeMlEvents,
   type ExitPayload,
   type InstallFlavor,
   type MlEnvInfo,
+  type MlTemplate,
   type ProtoPayload,
   type StderrPayload,
 } from "./lib/engine-bridge";
-import { parseProtocolLines, type MetricStats, type RunSummary } from "./lib/protocol";
+import {
+  collectSamples,
+  latestConfusionMatrix,
+  parseProtocolLines,
+  parseServeLine,
+  type ArtifactRef,
+  type MetricStats,
+  type MlSample,
+  type RunSummary,
+  type ServeEvent,
+  type ServeMeta,
+} from "./lib/protocol";
 import { appendPoint, createSeriesMap, type Series } from "./lib/series";
 
 type ReadResult =
@@ -89,8 +103,78 @@ export type HistoricalRun = {
   finishedAt?: string;
 };
 
+/** A historical run selected for overlay comparison. */
+export type CompareRun = {
+  id: string;
+  dir: string;
+  color: string;
+  /** Metric names present in this run (for the chart union). */
+  metrics: string[];
+};
+
+export type ServeStatus = "starting" | "ready" | "error" | "stopped";
+
+/** A single prediction from the playground. */
+export type PlaygroundResult =
+  | { kind: "text"; input: string; output: string; continuation: string }
+  | { kind: "tabular"; label?: string; probs?: Record<string, number>; value?: number };
+
+/** Live inference session backing the playground (one `nexis-ml serve`). */
+export type ServeSession = {
+  sid: number;
+  projectDir: string;
+  runId: string;
+  status: ServeStatus;
+  /** "textgen" | "tabular", from the ready event. */
+  template: string | null;
+  device: string | null;
+  meta: ServeMeta | null;
+  /** A request is in flight (awaiting the next prediction/error). */
+  busy: boolean;
+  error: string | null;
+  result: PlaygroundResult | null;
+};
+
+function toPlaygroundResult(
+  ev: Extract<ServeEvent, { ev: "prediction" }>,
+): PlaygroundResult {
+  const out = ev.output;
+  if (typeof out === "string") {
+    return {
+      kind: "text",
+      input: String(ev.input ?? ""),
+      output: out,
+      continuation: typeof ev.continuation === "string" ? ev.continuation : out,
+    };
+  }
+  if (out && typeof out === "object") {
+    const o = out as { label?: unknown; probs?: unknown; value?: unknown };
+    return {
+      kind: "tabular",
+      label: typeof o.label === "string" ? o.label : undefined,
+      probs:
+        o.probs && typeof o.probs === "object"
+          ? (o.probs as Record<string, number>)
+          : undefined,
+      value: typeof o.value === "number" ? o.value : undefined,
+    };
+  }
+  return { kind: "text", input: String(ev.input ?? ""), output: String(out ?? ""), continuation: "" };
+}
+
+/** Does this proto batch belong to the serve session (incl. the initial
+ *  ready batch arriving before spawnServe's sid is stamped)? */
+function serveOwns(payload: ProtoPayload, serve: ServeSession | null): boolean {
+  if (!serve) return false;
+  if (payload.sid === serve.sid) return true;
+  if (serve.sid === -1) return parseServeLine(payload.lines[0] ?? "")?.ev === "ready";
+  return false;
+}
+
 const MAX_LOG_LINES = 200;
 const MAX_RUNS_LISTED = 50;
+/** Keep only the most recent generated-text snapshots in memory. */
+const MAX_SAMPLES = 12;
 
 // ── Module-level series buffers (deliberately outside Zustand) ────────────────
 
@@ -103,6 +187,31 @@ export function getSeriesMap(): Map<string, Series> {
 function resetSeries(): void {
   seriesMap = createSeriesMap();
 }
+
+// Comparison buffers: runId → (metric name → series). Kept outside Zustand
+// for the same reason as seriesMap (pitfall #14); CompareChart reads it
+// imperatively keyed on the `seriesTick` counter.
+let compareData = new Map<string, Map<string, Series>>();
+
+export function getCompareData(): Map<string, Map<string, Series>> {
+  return compareData;
+}
+
+function resetCompareData(): void {
+  compareData = new Map();
+}
+
+/** Distinct line colors for compared runs (canvas can't read CSS vars,
+ *  so these are fixed hex that read on both light and dark). */
+const COMPARE_COLORS = [
+  "#6366f1", // indigo
+  "#10b981", // emerald
+  "#f59e0b", // amber
+  "#ef4444", // red
+  "#06b6d4", // cyan
+  "#ec4899", // pink
+];
+const MAX_COMPARE = COMPARE_COLORS.length;
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
@@ -140,10 +249,22 @@ type MlStore = {
   /** Which run the series buffers currently hold. */
   chartSource: { kind: "live" } | { kind: "historical"; runId: string } | null;
   lastValues: Record<string, number>;
+  /** Generated-text snapshots from `sample` events (the textgen payoff). */
+  samples: MlSample[];
+  /** Latest confusion-matrix artifact (path + epoch); the panel reads
+   *  and renders it. Path is rebuilt from the run dir so it survives a
+   *  moved project, like the metrics.jsonl reads do. */
+  cmArtifact: ArtifactRef | null;
   logs: string[];
 
   runs: HistoricalRun[];
   runsLoading: boolean;
+
+  /** Inference playground session, or null when closed. */
+  serve: ServeSession | null;
+
+  /** Historical runs selected for overlay comparison. */
+  compareRuns: CompareRun[];
 
   detect: (workspaceRoot: string | null) => Promise<void>;
   redetect: (workspaceRoot: string | null) => Promise<void>;
@@ -154,6 +275,7 @@ type MlStore = {
   selectProject: (dir: string) => void;
   createProject: (
     workspaceRoot: string,
+    template: MlTemplate,
     name: string,
     autoTrain: boolean,
   ) => Promise<void>;
@@ -162,8 +284,16 @@ type MlStore = {
   refreshRuns: (projectDir: string) => Promise<void>;
   loadHistoricalRun: (run: HistoricalRun) => Promise<void>;
 
+  startServe: (projectDir: string, runId: string) => Promise<void>;
+  stopServe: () => Promise<void>;
+  runInference: (request: unknown) => Promise<void>;
+
+  toggleCompare: (run: HistoricalRun) => Promise<void>;
+  clearCompare: () => void;
+
   _startNextInstall: () => Promise<void>;
   _applyProto: (payload: ProtoPayload) => void;
+  _applyServeProto: (payload: ProtoPayload) => void;
   _applyStderr: (payload: StderrPayload) => void;
   _applyExit: (payload: ExitPayload) => void;
 };
@@ -216,10 +346,15 @@ export const useMlStore = create<MlStore>((set, get) => ({
   seriesTick: 0,
   chartSource: null,
   lastValues: {},
+  samples: [],
+  cmArtifact: null,
   logs: [],
 
   runs: [],
   runsLoading: false,
+
+  serve: null,
+  compareRuns: [],
 
   async detect(workspaceRoot) {
     if (get().engineStatus === "detecting") return;
@@ -358,11 +493,13 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   selectProject(dir) {
+    void get().stopServe(); // playground was tied to the old run
+    get().clearCompare(); // run ids belong to the old project
     set({ selectedProject: dir });
     void get().refreshRuns(dir);
   },
 
-  async createProject(workspaceRoot, name, autoTrain) {
+  async createProject(workspaceRoot, template, name, autoTrain) {
     const { engineExe, pendingCreate } = get();
     if (!engineExe || pendingCreate) return;
     const clean = name.trim().replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "");
@@ -371,10 +508,10 @@ export const useMlStore = create<MlStore>((set, get) => ({
       return;
     }
     set((s) => ({
-      logs: pushLog(s.logs, `$ nexis-ml new tabular ${clean}  (${workspaceRoot})`),
+      logs: pushLog(s.logs, `$ nexis-ml new ${template} ${clean}  (${workspaceRoot})`),
     }));
     try {
-      const sid = await spawnNew(engineExe, workspaceRoot, clean);
+      const sid = await spawnNew(engineExe, workspaceRoot, template, clean);
       set({
         pendingCreate: {
           sid,
@@ -396,6 +533,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     if (activeRun && ["starting", "running", "cancelling"].includes(activeRun.status)) {
       return; // one run at a time in phase 1
     }
+    void get().stopServe(); // a fresh run supersedes any open playground
     resetSeries();
     set((s) => ({
       activeRun: {
@@ -411,6 +549,8 @@ export const useMlStore = create<MlStore>((set, get) => ({
       lastSummary: null,
       chartSource: { kind: "live" },
       lastValues: {},
+      samples: [],
+      cmArtifact: null,
       seriesTick: s.seriesTick + 1,
       logs: pushLog(s.logs, `$ nexis-ml train  (${projectDir})`),
     }));
@@ -506,6 +646,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     if (active && ["starting", "running", "cancelling"].includes(active.status)) {
       return; // don't clobber a live chart
     }
+    void get().stopServe(); // viewing a different run closes the playground
     try {
       const res = await invoke<ReadResult>("fs_read_file", {
         path: `${run.dir}/metrics.jsonl`,
@@ -523,16 +664,22 @@ export const useMlStore = create<MlStore>((set, get) => ({
         return;
       }
       resetSeries();
+      const events = parseProtocolLines(res.content.split("\n"));
       const lastValues: Record<string, number> = {};
-      for (const ev of parseProtocolLines(res.content.split("\n"))) {
+      for (const ev of events) {
         if (ev.ev === "metric") {
           appendPoint(seriesMap, ev.name, ev.step, ev.value);
           lastValues[ev.name] = ev.value;
         }
       }
+      const cmRef = latestConfusionMatrix(events);
       set((s) => ({
         chartSource: { kind: "historical", runId: run.id },
         lastValues,
+        samples: collectSamples(events, MAX_SAMPLES),
+        cmArtifact: cmRef
+          ? { path: `${run.dir}/artifacts/${basename(cmRef.path)}`, epoch: cmRef.epoch }
+          : null,
         seriesTick: s.seriesTick + 1,
       }));
     } catch (err) {
@@ -542,7 +689,158 @@ export const useMlStore = create<MlStore>((set, get) => ({
     }
   },
 
+  async startServe(projectDir, runId) {
+    const { engineExe } = get();
+    if (!engineExe) return;
+    // One playground at a time — drop any model already loaded.
+    if (get().serve) await get().stopServe();
+    set({
+      serve: {
+        sid: -1,
+        projectDir,
+        runId,
+        status: "starting",
+        template: null,
+        device: null,
+        meta: null,
+        busy: false,
+        error: null,
+        result: null,
+      },
+    });
+    try {
+      const sid = await spawnServe(engineExe, projectDir, runId);
+      set((s) =>
+        s.serve && s.serve.sid === -1 ? { serve: { ...s.serve, sid } } : {},
+      );
+    } catch (err) {
+      set((s) => ({
+        serve: s.serve
+          ? { ...s.serve, status: "error", error: String(err) }
+          : null,
+      }));
+    }
+  },
+
+  async stopServe() {
+    const serve = get().serve;
+    if (!serve) return;
+    set({ serve: null });
+    if (serve.sid >= 0) {
+      try {
+        await killRun(serve.sid); // serve has no checkpoint to save
+      } catch {
+        // already gone
+      }
+    }
+  },
+
+  async runInference(request) {
+    const serve = get().serve;
+    if (!serve || serve.sid < 0 || serve.status !== "ready" || serve.busy) return;
+    set({ serve: { ...serve, busy: true, error: null } });
+    try {
+      await sendInfer(serve.sid, request);
+    } catch (err) {
+      set((s) => ({
+        serve: s.serve ? { ...s.serve, busy: false, error: String(err) } : null,
+      }));
+    }
+  },
+
+  async toggleCompare(run) {
+    const existing = get().compareRuns;
+    // Already comparing this run → drop it.
+    if (existing.some((r) => r.id === run.id)) {
+      compareData.delete(run.id);
+      set((s) => ({
+        compareRuns: s.compareRuns.filter((r) => r.id !== run.id),
+        seriesTick: s.seriesTick + 1,
+      }));
+      return;
+    }
+    if (existing.length >= MAX_COMPARE) {
+      set((s) => ({
+        logs: pushLog(s.logs, `compare up to ${MAX_COMPARE} runs at once`),
+      }));
+      return;
+    }
+    try {
+      const res = await invoke<ReadResult>("fs_read_file", {
+        path: `${run.dir}/metrics.jsonl`,
+        workspace: currentWorkspaceEnv(),
+      });
+      if (res.kind !== "text") return;
+      const series = createSeriesMap();
+      const metricNames = new Set<string>();
+      for (const ev of parseProtocolLines(res.content.split("\n"))) {
+        if (ev.ev === "metric") {
+          appendPoint(series, ev.name, ev.step, ev.value);
+          metricNames.add(ev.name);
+        }
+      }
+      compareData.set(run.id, series);
+      // Pick the first unused palette color so swatches stay distinct
+      // even after a middle run is removed.
+      const used = new Set(get().compareRuns.map((r) => r.color));
+      const color =
+        COMPARE_COLORS.find((c) => !used.has(c)) ??
+        COMPARE_COLORS[get().compareRuns.length % COMPARE_COLORS.length];
+      set((s) => ({
+        compareRuns: [
+          ...s.compareRuns,
+          { id: run.id, dir: run.dir, color, metrics: [...metricNames] },
+        ],
+        seriesTick: s.seriesTick + 1,
+      }));
+    } catch (err) {
+      set((s) => ({
+        logs: pushLog(s.logs, `couldn't load ${run.id} for compare: ${String(err)}`),
+      }));
+    }
+  },
+
+  clearCompare() {
+    resetCompareData();
+    set((s) => ({ compareRuns: [], seriesTick: s.seriesTick + 1 }));
+  },
+
+  _applyServeProto(payload) {
+    let serve = get().serve;
+    if (!serve) return;
+    if (payload.sid !== serve.sid) {
+      if (serve.sid === -1 && serveOwns(payload, serve)) {
+        serve = { ...serve, sid: payload.sid };
+      } else {
+        return;
+      }
+    }
+    let { status, template, device, meta, busy, error, result } = serve;
+    for (const line of payload.lines) {
+      const ev = parseServeLine(line);
+      if (!ev) continue;
+      if (ev.ev === "ready") {
+        status = "ready";
+        template = ev.template ?? null;
+        device = ev.device ?? null;
+        meta = ev.meta ?? null;
+      } else if (ev.ev === "prediction") {
+        busy = false;
+        error = null;
+        result = toPlaygroundResult(ev);
+      } else if (ev.ev === "error") {
+        busy = false;
+        error = ev.msg;
+      }
+    }
+    set({ serve: { ...serve, status, template, device, meta, busy, error, result } });
+  },
+
   _applyProto(payload) {
+    if (serveOwns(payload, get().serve)) {
+      get()._applyServeProto(payload);
+      return;
+    }
     let run = get().activeRun;
     if (!run) return;
     if (payload.sid !== run.sid) {
@@ -587,14 +885,16 @@ export const useMlStore = create<MlStore>((set, get) => ({
         case "log":
           logs = pushLog(logs, ev.msg);
           break;
-        case "sample": {
-          const text = `${String(ev.input ?? "")} → ${String(ev.output ?? "")}`;
-          logs = pushLog(logs, `sample: ${text.slice(0, 200)}`);
+        case "sample":
+          // Folded into the samples buffer after the loop (it needs the
+          // epoch resolved across the whole batch) — see collectSamples.
           break;
-        }
         case "artifact":
-          // Phase 2 renders these; for now surface them in the log.
-          logs = pushLog(logs, `artifact (${ev.kind}): ${ev.path}`);
+          // Confusion matrices are rendered (folded in after the loop);
+          // other kinds still surface in the log until they get a viewer.
+          if (ev.kind !== "confusion-matrix") {
+            logs = pushLog(logs, `artifact (${ev.kind}): ${ev.path}`);
+          }
           break;
         case "run.finished": {
           const status = ev.status === "ok" || ev.status === "cancelled" ? ev.status : "error";
@@ -606,10 +906,30 @@ export const useMlStore = create<MlStore>((set, get) => ({
       }
     }
 
+    // Only rebuild the samples array when this batch actually carried a
+    // sample — otherwise a new reference every ~30 Hz batch would churn
+    // the samples view for nothing.
+    const samples = events.some((e) => e.ev === "sample")
+      ? collectSamples(events, MAX_SAMPLES, get().samples, run.epoch)
+      : null;
+
+    // Rebuild the run-dir-relative path so it reads back even if the
+    // project later moves (the engine's artifact path is absolute).
+    const cmRef = latestConfusionMatrix(events, run.epoch);
+    const cmArtifact =
+      cmRef && next.runId
+        ? {
+            path: `${run.projectDir}/.nexis-ml/runs/${next.runId}/artifacts/${basename(cmRef.path)}`,
+            epoch: cmRef.epoch,
+          }
+        : null;
+
     set((s) => ({
       activeRun: next,
       lastValues,
       logs,
+      ...(samples ? { samples } : {}),
+      ...(cmArtifact ? { cmArtifact } : {}),
       seriesTick: s.seriesTick + 1,
     }));
     if (finishedProject) {
@@ -618,17 +938,34 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   _applyStderr(payload) {
-    const { activeRun, installSid, pendingCreate } = get();
+    const { activeRun, installSid, pendingCreate, serve } = get();
     const known =
       payload.sid === activeRun?.sid ||
       payload.sid === installSid ||
-      payload.sid === pendingCreate?.sid;
+      payload.sid === pendingCreate?.sid ||
+      payload.sid === serve?.sid;
     if (!known) return;
     set((s) => ({ logs: pushLog(s.logs, payload.line) }));
   },
 
   _applyExit(payload) {
-    const { activeRun, installSid, pendingCreate } = get();
+    const { activeRun, installSid, pendingCreate, serve } = get();
+
+    // serve session ended (killed by us, or the engine died)
+    if (serve && payload.sid === serve.sid) {
+      set({
+        serve: {
+          ...serve,
+          status: serve.status === "ready" ? "stopped" : "error",
+          busy: false,
+          error:
+            serve.status === "ready"
+              ? serve.error
+              : (serve.error ?? "the inference engine stopped"),
+        },
+      });
+      return;
+    }
 
     // pip install step finished → next step, or re-probe for the engine
     if (payload.sid === installSid) {
