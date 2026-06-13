@@ -193,8 +193,9 @@ export type ArtifactRef = { path: string; epoch: number | null };
  * it belongs to — tracked the same way `collectSamples` tracks samples,
  * since artifact events carry no epoch of their own.
  */
-export function latestConfusionMatrix(
+export function latestArtifact(
   events: MlEvent[],
+  kind: string,
   startEpoch: number | null = null,
 ): ArtifactRef | null {
   let epoch = startEpoch;
@@ -204,9 +205,17 @@ export function latestConfusionMatrix(
       if (typeof ev.epoch === "number") epoch = ev.epoch;
     } else if (ev.ev === "epoch") {
       epoch = ev.epoch;
-    } else if (ev.ev === "artifact" && ev.kind === "confusion-matrix") {
+    } else if (ev.ev === "artifact" && ev.kind === kind) {
       found = { path: ev.path, epoch };
     }
   }
   return found;
+}
+
+/** Convenience wrapper for the `tabular`/`image` per-eval confusion matrix. */
+export function latestConfusionMatrix(
+  events: MlEvent[],
+  startEpoch: number | null = null,
+): ArtifactRef | null {
+  return latestArtifact(events, "confusion-matrix", startEpoch);
 }

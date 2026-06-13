@@ -7,6 +7,7 @@
 import { describe, expect, it } from "vitest";
 import {
   collectSamples,
+  latestArtifact,
   latestConfusionMatrix,
   parseProtocolLine,
   parseProtocolLines,
@@ -169,6 +170,19 @@ describe("latestConfusionMatrix", () => {
       { ev: "artifact", run: "r", kind: "confusion-matrix", path: "/x/cm.json" },
     ];
     expect(latestConfusionMatrix(events, 7)).toEqual({ path: "/x/cm.json", epoch: 7 });
+  });
+
+  it("latestArtifact selects by kind (e.g. image-grid)", () => {
+    const events: MlEvent[] = [
+      { ev: "metric", run: "r", step: 1, epoch: 2, name: "acc/val", value: 0.5 },
+      { ev: "artifact", run: "r", kind: "confusion-matrix", path: "/x/cm.json" },
+      { ev: "artifact", run: "r", kind: "image-grid", path: "/x/samples-epoch2.png" },
+    ];
+    expect(latestArtifact(events, "image-grid")).toEqual({
+      path: "/x/samples-epoch2.png",
+      epoch: 2,
+    });
+    expect(latestArtifact(events, "nope")).toBeNull();
   });
 });
 

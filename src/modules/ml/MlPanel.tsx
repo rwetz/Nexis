@@ -15,6 +15,7 @@
  *  - metrics labeled "Accuracy", not "acc/val"; jargon lives in Details
  */
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Refresh01Icon } from "@hugeicons/core-free-icons";
@@ -39,6 +40,8 @@ import {
 import type { RunSummary } from "./lib/protocol";
 import type { MlTemplate } from "./lib/engine-bridge";
 import { readConfusionMatrix, type ConfusionMatrix } from "./lib/artifacts";
+import { readTrainToml, writeTrainToml } from "./lib/config";
+import { tomlGet, tomlSet } from "./lib/toml-edit";
 
 /** Project templates offered in the create card. */
 const TEMPLATE_OPTIONS: {
@@ -58,6 +61,12 @@ const TEMPLATE_OPTIONS: {
     label: "Text generator",
     desc: "Train a tiny GPT on a .txt file and watch it learn to write.",
     defaultName: "tiny-writer",
+  },
+  {
+    id: "image",
+    label: "Image classifier",
+    desc: "Train a small CNN on folders of images, one folder per class.",
+    defaultName: "image-classifier",
   },
 ];
 
@@ -236,6 +245,15 @@ export function MlPanel({ workspaceRoot }: Props) {
               </button>
             ) : null}
 
+            {/* Hyperparameters — tweak train.toml without leaving the panel */}
+            {selectedProject && !busy && !pendingCreate && projects.length > 0 ? (
+              <HyperparamForm
+                key={selectedProject}
+                projectDir={selectedProject}
+                onSaveTrain={() => void startTrain(selectedProject)}
+              />
+            ) : null}
+
             {comparing ? (
               /* Overlay several runs on shared charts */
               <ComparisonView runs={compareRuns} onClear={clearCompare} />
@@ -261,6 +279,9 @@ export function MlPanel({ workspaceRoot }: Props) {
 
                 {/* Confusion matrix (classification) — per-epoch artifact grid */}
                 <ConfusionMatrixView />
+
+                {/* Sample-prediction grid (image template) */}
+                <ImageGridView />
 
                 {/* Inference playground — try the trained model live */}
                 <Playground
@@ -760,6 +781,45 @@ function ConfusionMatrixView() {
       <p className="mt-1 text-[9.5px] leading-snug text-muted-foreground/60">
         Rows are the real answer, columns the model's guess — the green diagonal
         is correct.
+      </p>
+    </div>
+  );
+}
+
+// ── Sample-prediction grid (image template) ───────────────────────────────────
+
+function ImageGridView() {
+  const artifact = useMlStore((s) => s.imageArtifact);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => setFailed(false), [artifact?.path]);
+  if (!artifact || failed) return null;
+
+  // Same asset:// path handling as the image viewer (convertFileSrc on
+  // Windows needs forward slashes). The filename changes each epoch, so
+  // the <img> reloads without cache-busting.
+  const src = convertFileSrc(artifact.path.replace(/\\/g, "/"));
+
+  return (
+    <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          Sample predictions
+        </span>
+        {artifact.epoch != null ? (
+          <span className="text-[10px] text-muted-foreground">
+            after pass {artifact.epoch}
+          </span>
+        ) : null}
+      </div>
+      <img
+        src={src}
+        alt="Sample predictions"
+        onError={() => setFailed(true)}
+        className="w-full rounded bg-background/50"
+      />
+      <p className="mt-1 text-[9.5px] leading-snug text-muted-foreground/60">
+        Green border = correct, red = wrong.
       </p>
     </div>
   );
@@ -1398,5 +1458,214 @@ function ComparisonView({
         </p>
       )}
     </div>
+  );
+}
+
+// ── Hyperparameter form ───────────────────────────────────────────────────────
+
+type HpType = "int" | "float" | "enum" | "intList";
+type HpField = {
+  section: string;
+  key: string;
+  label: string;
+  type: HpType;
+  options?: string[];
+};
+
+// Editable knobs across templates. Only fields actually present in the
+// project's train.toml are rendered, so this one list covers both
+// tabular and textgen (and any future template that reuses these keys).
+const HP_FIELDS: HpField[] = [
+  { section: "train", key: "epochs", label: "Passes (epochs)", type: "int" },
+  { section: "train", key: "steps_per_epoch", label: "Steps per pass", type: "int" },
+  { section: "train", key: "batch_size", label: "Batch size", type: "int" },
+  { section: "train", key: "lr", label: "Learning rate", type: "float" },
+  { section: "train", key: "val_split", label: "Validation split", type: "float" },
+  { section: "train", key: "seed", label: "Seed", type: "int" },
+  {
+    section: "train",
+    key: "device",
+    label: "Device",
+    type: "enum",
+    options: ["auto", "cpu", "gpu"],
+  },
+  { section: "model", key: "hidden", label: "Hidden layers", type: "intList" },
+  { section: "model", key: "context", label: "Context (chars)", type: "int" },
+  { section: "model", key: "embed", label: "Model width", type: "int" },
+  { section: "model", key: "heads", label: "Attention heads", type: "int" },
+  { section: "model", key: "layers", label: "Layers", type: "int" },
+  { section: "sample", key: "temperature", label: "Sampling temp", type: "float" },
+  { section: "sample", key: "length", label: "Sample length", type: "int" },
+];
+
+const fieldId = (f: HpField) => `${f.section}.${f.key}`;
+
+function rawToDisplay(type: HpType, raw: string): string {
+  if (type === "enum") return raw.replace(/^"|"$/g, "");
+  if (type === "intList") return raw.replace(/^\[|\]$/g, "").trim();
+  return raw.trim();
+}
+
+/** Display string → TOML raw value, or null if invalid for the type. */
+function displayToRaw(type: HpType, display: string): string | null {
+  const d = display.trim();
+  if (type === "int") {
+    return d !== "" && Number.isInteger(Number(d)) ? String(Number(d)) : null;
+  }
+  if (type === "float") {
+    return d !== "" && Number.isFinite(Number(d)) ? d : null;
+  }
+  if (type === "enum") return `"${d}"`;
+  const parts = d.split(",").map((p) => p.trim()).filter(Boolean);
+  const nums = parts.map(Number);
+  if (parts.length === 0 || !nums.every((n) => Number.isInteger(n))) return null;
+  return `[${nums.join(", ")}]`;
+}
+
+function HyperparamForm({
+  projectDir,
+  onSaveTrain,
+}: {
+  projectDir: string;
+  onSaveTrain: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState<string | null>(null);
+  const [fields, setFields] = useState<HpField[]>([]);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [status, setStatus] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Load train.toml the first time the section is expanded (and reload
+  // if reopened, so external edits are picked up).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setStatus(null);
+    void readTrainToml(projectDir).then((t) => {
+      if (cancelled) return;
+      if (t == null) {
+        setText(null);
+        setFields([]);
+        return;
+      }
+      const present = HP_FIELDS.filter((f) => tomlGet(t, f.section, f.key) !== null);
+      const vals: Record<string, string> = {};
+      for (const f of present) {
+        vals[fieldId(f)] = rawToDisplay(f.type, tomlGet(t, f.section, f.key) as string);
+      }
+      setText(t);
+      setFields(present);
+      setValues(vals);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, projectDir]);
+
+  const save = async (thenTrain: boolean) => {
+    if (text == null) return;
+    let next = text;
+    for (const f of fields) {
+      const raw = displayToRaw(f.type, values[fieldId(f)] ?? "");
+      if (raw == null) {
+        setStatus(`Check "${f.label}"`);
+        return;
+      }
+      next = tomlSet(next, f.section, f.key, raw);
+    }
+    setSaving(true);
+    try {
+      await writeTrainToml(projectDir, next);
+      setText(next);
+      setStatus("Saved");
+      if (thenTrain) onSaveTrain();
+    } catch (e) {
+      setStatus(`Save failed: ${String(e)}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <details
+      className="mb-2 rounded-md border border-border/60 bg-muted/20"
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+    >
+      <summary className="cursor-pointer select-none px-2.5 py-1.5 text-[11px] font-semibold text-foreground/90">
+        Hyperparameters
+      </summary>
+      <div className="px-2.5 pb-2.5">
+        {text == null ? (
+          <p className="text-[11px] text-muted-foreground">
+            No train.toml in this project.
+          </p>
+        ) : fields.length === 0 ? (
+          <p className="text-[11px] text-muted-foreground">
+            No editable settings found.
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1.5">
+              {fields.map((f) => (
+                <label
+                  key={fieldId(f)}
+                  className="flex flex-col gap-0.5 text-[10px] text-muted-foreground"
+                >
+                  <span className="truncate" title={`[${f.section}] ${f.key}`}>
+                    {f.label}
+                  </span>
+                  {f.type === "enum" ? (
+                    <select
+                      value={values[fieldId(f)] ?? ""}
+                      onChange={(e) =>
+                        setValues((s) => ({ ...s, [fieldId(f)]: e.target.value }))
+                      }
+                      className="h-6 rounded border border-border bg-background px-1 text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                    >
+                      {(f.options ?? []).map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={values[fieldId(f)] ?? ""}
+                      onChange={(e) =>
+                        setValues((s) => ({ ...s, [fieldId(f)]: e.target.value }))
+                      }
+                      spellCheck={false}
+                      className="h-6 rounded border border-border bg-background px-1 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                    />
+                  )}
+                </label>
+              ))}
+            </div>
+            <div className="mt-2 flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void save(false)}
+                className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void save(true)}
+                className="rounded-md bg-primary px-2.5 py-0.5 text-[10.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                Save &amp; train
+              </button>
+              {status ? (
+                <span className="text-[10px] text-muted-foreground">{status}</span>
+              ) : null}
+            </div>
+          </>
+        )}
+      </div>
+    </details>
   );
 }

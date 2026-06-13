@@ -40,6 +40,7 @@ import {
 } from "./lib/engine-bridge";
 import {
   collectSamples,
+  latestArtifact,
   latestConfusionMatrix,
   parseProtocolLines,
   parseServeLine,
@@ -255,6 +256,8 @@ type MlStore = {
    *  and renders it. Path is rebuilt from the run dir so it survives a
    *  moved project, like the metrics.jsonl reads do. */
   cmArtifact: ArtifactRef | null;
+  /** Latest image-grid (sample-prediction) artifact for the image template. */
+  imageArtifact: ArtifactRef | null;
   logs: string[];
 
   runs: HistoricalRun[];
@@ -348,6 +351,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
   lastValues: {},
   samples: [],
   cmArtifact: null,
+  imageArtifact: null,
   logs: [],
 
   runs: [],
@@ -551,6 +555,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
       lastValues: {},
       samples: [],
       cmArtifact: null,
+      imageArtifact: null,
       seriesTick: s.seriesTick + 1,
       logs: pushLog(s.logs, `$ nexis-ml train  (${projectDir})`),
     }));
@@ -673,12 +678,16 @@ export const useMlStore = create<MlStore>((set, get) => ({
         }
       }
       const cmRef = latestConfusionMatrix(events);
+      const imgRef = latestArtifact(events, "image-grid");
       set((s) => ({
         chartSource: { kind: "historical", runId: run.id },
         lastValues,
         samples: collectSamples(events, MAX_SAMPLES),
         cmArtifact: cmRef
           ? { path: `${run.dir}/artifacts/${basename(cmRef.path)}`, epoch: cmRef.epoch }
+          : null,
+        imageArtifact: imgRef
+          ? { path: `${run.dir}/artifacts/${basename(imgRef.path)}`, epoch: imgRef.epoch }
           : null,
         seriesTick: s.seriesTick + 1,
       }));
@@ -890,9 +899,9 @@ export const useMlStore = create<MlStore>((set, get) => ({
           // epoch resolved across the whole batch) — see collectSamples.
           break;
         case "artifact":
-          // Confusion matrices are rendered (folded in after the loop);
-          // other kinds still surface in the log until they get a viewer.
-          if (ev.kind !== "confusion-matrix") {
+          // Rendered kinds are folded in after the loop; anything without
+          // a viewer yet still surfaces in the log.
+          if (ev.kind !== "confusion-matrix" && ev.kind !== "image-grid") {
             logs = pushLog(logs, `artifact (${ev.kind}): ${ev.path}`);
           }
           break;
@@ -915,13 +924,18 @@ export const useMlStore = create<MlStore>((set, get) => ({
 
     // Rebuild the run-dir-relative path so it reads back even if the
     // project later moves (the engine's artifact path is absolute).
+    const runArtifactDir = next.runId
+      ? `${run.projectDir}/.nexis-ml/runs/${next.runId}/artifacts`
+      : null;
     const cmRef = latestConfusionMatrix(events, run.epoch);
     const cmArtifact =
-      cmRef && next.runId
-        ? {
-            path: `${run.projectDir}/.nexis-ml/runs/${next.runId}/artifacts/${basename(cmRef.path)}`,
-            epoch: cmRef.epoch,
-          }
+      cmRef && runArtifactDir
+        ? { path: `${runArtifactDir}/${basename(cmRef.path)}`, epoch: cmRef.epoch }
+        : null;
+    const imgRef = latestArtifact(events, "image-grid", run.epoch);
+    const imageArtifact =
+      imgRef && runArtifactDir
+        ? { path: `${runArtifactDir}/${basename(imgRef.path)}`, epoch: imgRef.epoch }
         : null;
 
     set((s) => ({
@@ -930,6 +944,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
       logs,
       ...(samples ? { samples } : {}),
       ...(cmArtifact ? { cmArtifact } : {}),
+      ...(imageArtifact ? { imageArtifact } : {}),
       seriesTick: s.seriesTick + 1,
     }));
     if (finishedProject) {
