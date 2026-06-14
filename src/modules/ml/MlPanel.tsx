@@ -756,6 +756,8 @@ function ConfusionMatrixView() {
   }
   const accuracy = total > 0 ? correct / total : 0;
 
+  // Keep this color math in sync with the HTML report's _confusion_table
+  // (nexis-ml/src/nexis_ml/report.py) so the panel and the export agree.
   const cellColor = (v: number, diag: boolean): string | undefined => {
     if (v <= 0) return undefined;
     const alpha = 0.12 + (max > 0 ? v / max : 0) * 0.73;
@@ -1578,18 +1580,19 @@ function ComparisonView({
   runs: CompareRun[];
   onClear: () => void;
 }) {
-  // Redraw when the compare buffers change (loaded/removed a run).
-  const tick = useMlStore((s) => s.seriesTick);
-  void tick;
-
-  const metricSet = new Set<string>();
-  for (const r of runs) for (const m of r.metrics) metricSet.add(m);
-  const metricNames = [...metricSet];
-  const hero = headlineMetric(metricNames);
-  const ordered = hero
-    ? [hero, ...metricNames.filter((m) => m !== hero)]
-    : metricNames;
-  const lines = runs.map((r) => ({ id: r.id, color: r.color }));
+  // The layout (metric union + legend) derives only from the selected
+  // runs; each CompareChart subscribes to seriesTick itself for its redraw,
+  // so this component needn't recompute on every batch.
+  const { ordered, lines } = useMemo(() => {
+    const metricSet = new Set<string>();
+    for (const r of runs) for (const m of r.metrics) metricSet.add(m);
+    const metricNames = [...metricSet];
+    const hero = headlineMetric(metricNames);
+    return {
+      ordered: hero ? [hero, ...metricNames.filter((m) => m !== hero)] : metricNames,
+      lines: runs.map((r) => ({ id: r.id, color: r.color })),
+    };
+  }, [runs]);
 
   return (
     <div className="mb-2 mt-2">

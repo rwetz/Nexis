@@ -12,13 +12,9 @@
  */
 import { invoke } from "@tauri-apps/api/core";
 import { currentWorkspaceEnv } from "@/modules/workspace";
+import { readTextFile } from "./fs";
 
 export type RunMeta = { note: string; tags: string[]; pinned: boolean };
-
-type ReadResult =
-  | { kind: "text"; content: string; size: number }
-  | { kind: "binary"; size: number }
-  | { kind: "toolarge"; size: number; limit: number };
 
 export function emptyMeta(): RunMeta {
   return { note: "", tags: [], pinned: false };
@@ -37,13 +33,10 @@ export function parseRunMeta(raw: unknown): RunMeta {
 }
 
 export async function readRunMeta(dir: string): Promise<RunMeta> {
+  const content = await readTextFile(`${dir}/notes.json`);
+  if (content === null) return emptyMeta();
   try {
-    const res = await invoke<ReadResult>("fs_read_file", {
-      path: `${dir}/notes.json`,
-      workspace: currentWorkspaceEnv(),
-    });
-    if (res.kind !== "text") return emptyMeta();
-    return parseRunMeta(JSON.parse(res.content));
+    return parseRunMeta(JSON.parse(content));
   } catch {
     return emptyMeta();
   }

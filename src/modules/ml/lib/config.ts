@@ -11,22 +11,10 @@
  */
 import { invoke } from "@tauri-apps/api/core";
 import { currentWorkspaceEnv } from "@/modules/workspace";
+import { readTextFile } from "./fs";
 
-type ReadResult =
-  | { kind: "text"; content: string; size: number }
-  | { kind: "binary"; size: number }
-  | { kind: "toolarge"; size: number; limit: number };
-
-export async function readTrainToml(projectDir: string): Promise<string | null> {
-  try {
-    const res = await invoke<ReadResult>("fs_read_file", {
-      path: `${projectDir}/train.toml`,
-      workspace: currentWorkspaceEnv(),
-    });
-    return res.kind === "text" ? res.content : null;
-  } catch {
-    return null;
-  }
+export function readTrainToml(projectDir: string): Promise<string | null> {
+  return readTextFile(`${projectDir}/train.toml`);
 }
 
 export async function writeTrainToml(

@@ -12,8 +12,7 @@
  * Today that's the per-epoch confusion matrix (a `tabular`/`image`
  * classification artifact); image grids and others land here later.
  */
-import { invoke } from "@tauri-apps/api/core";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import { readTextFile } from "./fs";
 
 /** Shape the engine writes for a `confusion-matrix` artifact:
  *  `{ labels: [...], matrix: [[...], ...] }`, rows = actual class,
@@ -50,11 +49,6 @@ export function parseConfusionMatrix(raw: unknown): ConfusionMatrix | null {
   return { labels, matrix };
 }
 
-type ReadResult =
-  | { kind: "text"; content: string; size: number }
-  | { kind: "binary"; size: number }
-  | { kind: "toolarge"; size: number; limit: number };
-
 /**
  * Read + parse a confusion-matrix artifact file. Resolves to null for
  * any failure (missing file, non-text, malformed JSON) so callers can
@@ -63,18 +57,10 @@ type ReadResult =
 export async function readConfusionMatrix(
   path: string,
 ): Promise<ConfusionMatrix | null> {
-  let res: ReadResult;
+  const content = await readTextFile(path);
+  if (content === null) return null;
   try {
-    res = await invoke<ReadResult>("fs_read_file", {
-      path,
-      workspace: currentWorkspaceEnv(),
-    });
-  } catch {
-    return null;
-  }
-  if (res.kind !== "text") return null;
-  try {
-    return parseConfusionMatrix(JSON.parse(res.content));
+    return parseConfusionMatrix(JSON.parse(content));
   } catch {
     return null;
   }

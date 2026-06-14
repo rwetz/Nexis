@@ -55,12 +55,8 @@ import {
 } from "./lib/protocol";
 import { appendPoint, createSeriesMap, type Series } from "./lib/series";
 import { readRunMeta, writeRunMeta, type RunMeta } from "./lib/notes";
+import { readTextFile, type ReadResult } from "./lib/fs";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
-
-type ReadResult =
-  | { kind: "text"; content: string; size: number }
-  | { kind: "binary"; size: number }
-  | { kind: "toolarge"; size: number; limit: number };
 
 type DirEntry = {
   name: string;
@@ -171,6 +167,18 @@ function toPlaygroundResult(
     };
   }
   return { kind: "text", input: String(ev.input ?? ""), output: String(out ?? ""), continuation: "" };
+}
+
+/** Rebuild an artifact ref's path relative to its run's artifacts dir, so
+ *  it reads back even if the project later moves (the engine emits an
+ *  absolute path). Shared by the live and historical-load paths. */
+function rebindArtifact(
+  ref: ArtifactRef | null,
+  artifactsDir: string | null,
+): ArtifactRef | null {
+  return ref && artifactsDir
+    ? { path: `${artifactsDir}/${basename(ref.path)}`, epoch: ref.epoch }
+    : null;
 }
 
 /** Does this proto batch belong to the serve session (incl. the initial
@@ -668,16 +676,16 @@ export const useMlStore = create<MlStore>((set, get) => ({
           const dir = `${runsDir}/${name}`;
           const base: HistoricalRun = { id: name, dir, status: "unknown" };
           // notes.json is independent of summary.json (a crashed run can
-          // still be annotated/pinned), so read it either way.
-          const meta = await readRunMeta(dir);
+          // still be annotated/pinned); the two files are independent, so
+          // read them concurrently.
+          const [meta, summaryText] = await Promise.all([
+            readRunMeta(dir),
+            readTextFile(`${dir}/summary.json`),
+          ]);
           const withMeta = { note: meta.note, tags: meta.tags, pinned: meta.pinned };
-          try {
-            const res = await invoke<ReadResult>("fs_read_file", {
-              path: `${dir}/summary.json`,
-              workspace: currentWorkspaceEnv(),
-            });
-            if (res.kind === "text") {
-              const summary = JSON.parse(res.content) as RunSummary;
+          if (summaryText !== null) {
+            try {
+              const summary = JSON.parse(summaryText) as RunSummary;
               return {
                 ...base,
                 ...withMeta,
@@ -687,9 +695,9 @@ export const useMlStore = create<MlStore>((set, get) => ({
                 totalEpochs: summary.totalEpochs,
                 finishedAt: summary.finishedAt,
               };
+            } catch {
+              // malformed summary → keep "unknown"
             }
-          } catch {
-            // no summary → run still in progress or crashed; keep "unknown"
           }
           return { ...base, ...withMeta };
         }),
@@ -734,18 +742,13 @@ export const useMlStore = create<MlStore>((set, get) => ({
           lastValues[ev.name] = ev.value;
         }
       }
-      const cmRef = latestConfusionMatrix(events);
-      const imgRef = latestArtifact(events, "image-grid");
+      const artifactsDir = `${run.dir}/artifacts`;
       set((s) => ({
         chartSource: { kind: "historical", runId: run.id },
         lastValues,
         samples: collectSamples(events, MAX_SAMPLES),
-        cmArtifact: cmRef
-          ? { path: `${run.dir}/artifacts/${basename(cmRef.path)}`, epoch: cmRef.epoch }
-          : null,
-        imageArtifact: imgRef
-          ? { path: `${run.dir}/artifacts/${basename(imgRef.path)}`, epoch: imgRef.epoch }
-          : null,
+        cmArtifact: rebindArtifact(latestConfusionMatrix(events), artifactsDir),
+        imageArtifact: rebindArtifact(latestArtifact(events, "image-grid"), artifactsDir),
         seriesTick: s.seriesTick + 1,
       }));
     } catch (err) {
@@ -832,14 +835,11 @@ export const useMlStore = create<MlStore>((set, get) => ({
       return;
     }
     try {
-      const res = await invoke<ReadResult>("fs_read_file", {
-        path: `${run.dir}/metrics.jsonl`,
-        workspace: currentWorkspaceEnv(),
-      });
-      if (res.kind !== "text") return;
+      const content = await readTextFile(`${run.dir}/metrics.jsonl`);
+      if (content === null) return;
       const series = createSeriesMap();
       const metricNames = new Set<string>();
-      for (const ev of parseProtocolLines(res.content.split("\n"))) {
+      for (const ev of parseProtocolLines(content.split("\n"))) {
         if (ev.ev === "metric") {
           appendPoint(series, ev.name, ev.step, ev.value);
           metricNames.add(ev.name);
@@ -1013,21 +1013,19 @@ export const useMlStore = create<MlStore>((set, get) => ({
       ? collectSamples(events, MAX_SAMPLES, get().samples, run.epoch)
       : null;
 
-    // Rebuild the run-dir-relative path so it reads back even if the
-    // project later moves (the engine's artifact path is absolute).
+    // Artifacts arrive at most once per epoch, so only scan a batch that
+    // actually carried one (the rebuilt paths are run-dir-relative so they
+    // survive a moved project). Otherwise leave the existing refs in place.
+    const hadArtifact = events.some((e) => e.ev === "artifact");
     const runArtifactDir = next.runId
       ? `${run.projectDir}/.nexis-ml/runs/${next.runId}/artifacts`
       : null;
-    const cmRef = latestConfusionMatrix(events, run.epoch);
-    const cmArtifact =
-      cmRef && runArtifactDir
-        ? { path: `${runArtifactDir}/${basename(cmRef.path)}`, epoch: cmRef.epoch }
-        : null;
-    const imgRef = latestArtifact(events, "image-grid", run.epoch);
-    const imageArtifact =
-      imgRef && runArtifactDir
-        ? { path: `${runArtifactDir}/${basename(imgRef.path)}`, epoch: imgRef.epoch }
-        : null;
+    const cmArtifact = hadArtifact
+      ? rebindArtifact(latestConfusionMatrix(events, run.epoch), runArtifactDir)
+      : null;
+    const imageArtifact = hadArtifact
+      ? rebindArtifact(latestArtifact(events, "image-grid", run.epoch), runArtifactDir)
+      : null;
 
     set((s) => ({
       activeRun: next,
