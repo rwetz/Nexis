@@ -248,9 +248,30 @@ export function sendInfer(sid: number, request: unknown): Promise<void> {
   return invoke("ml_stdin", { sid, line: JSON.stringify(request) });
 }
 
+/** Write a run's self-contained HTML report (`nexis-ml export`). One-shot:
+ *  completion arrives as ml:exit; the file lands at <run>/report.html. */
+export async function spawnExport(
+  exe: string,
+  projectDir: string,
+  runId: string,
+): Promise<number> {
+  await authorizeProjectDir(projectDir);
+  return invoke<number>("ml_spawn", {
+    exe,
+    args: ["export", "--run", runId],
+    projectDir,
+  });
+}
+
 /** Graceful stop: the engine checkpoints and finishes as "cancelled". */
 export function cancelRun(sid: number): Promise<void> {
   return invoke("ml_cancel", { sid });
+}
+
+/** Pause/resume a training run — the harness honors it at the next epoch
+ *  boundary. Sent as a control line on the child's stdin. */
+export function sendControl(sid: number, cmd: "pause" | "resume"): Promise<void> {
+  return invoke("ml_stdin", { sid, line: JSON.stringify({ cmd }) });
 }
 
 /** Hard kill, for when cancel doesn't take. */

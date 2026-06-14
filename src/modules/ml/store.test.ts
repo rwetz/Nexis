@@ -11,6 +11,9 @@ vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn(async () => () => {}) })
 vi.mock("@/modules/workspace", () => ({
   currentWorkspaceEnv: () => ({ kind: "local" }),
 }));
+vi.mock("@tauri-apps/plugin-opener", () => ({
+  revealItemInDir: vi.fn(async () => {}),
+}));
 
 import { useMlStore, getCompareData, type HistoricalRun } from "./store";
 

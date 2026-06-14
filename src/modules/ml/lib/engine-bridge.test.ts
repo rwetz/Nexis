@@ -12,6 +12,7 @@ import {
   resetEngineDetection,
   sendInfer,
   siblingExe,
+  spawnExport,
   spawnNew,
   spawnServe,
   spawnTrain,
@@ -198,5 +199,30 @@ describe("serve bridge", () => {
     await sendInfer(7, { input: "hi", maxNew: 50 });
 
     expect(stdinArgs).toEqual({ sid: 7, line: '{"input":"hi","maxNew":50}' });
+  });
+
+  it("spawnExport authorizes then runs `export --run <id>`", async () => {
+    const order: string[] = [];
+    let spawnArgs: unknown;
+    invokeMock.mockImplementation(async (cmd: string, args?: unknown) => {
+      order.push(cmd);
+      if (cmd === "workspace_authorize") return "E:\\proj";
+      if (cmd === "ml_spawn") {
+        spawnArgs = args;
+        return 9;
+      }
+      return null;
+    });
+
+    const sid = await spawnExport("nexis-ml", "E:\\proj", "2026-run");
+
+    expect(sid).toBe(9);
+    expect(order.indexOf("workspace_authorize")).toBeLessThan(
+      order.indexOf("ml_spawn"),
+    );
+    expect(spawnArgs).toMatchObject({
+      args: ["export", "--run", "2026-run"],
+      projectDir: "E:\\proj",
+    });
   });
 });

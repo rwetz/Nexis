@@ -8,13 +8,29 @@
  * MlStatusPill — status bar pill shown while a training run streams.
  * Click opens the ML sidebar panel.
  */
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { usePreferencesStore } from "@/modules/settings/preferences";
 import { useMlStore } from "./store";
 import { displayMetric, headlineMetric } from "./lib/friendly";
 
 export function MlStatusPill() {
   const activeRun = useMlStore((s) => s.activeRun);
   const lastValues = useMlStore((s) => s.lastValues);
+
+  // Auto-open the ML Lab when a run starts, if the user opted in. Lives
+  // here (always mounted in the status bar) so it fires even when the
+  // panel is closed. Keyed on runId so it triggers once per run.
+  const autoOpen = usePreferencesStore((s) => s.mlAutoOpenOnTrain);
+  const runId = activeRun?.runId ?? null;
+  const isRunning = activeRun?.status === "running";
+  useEffect(() => {
+    if (autoOpen && isRunning && runId) {
+      window.dispatchEvent(
+        new CustomEvent("nexis:open-sidebar-view", { detail: "ml" }),
+      );
+    }
+  }, [autoOpen, isRunning, runId]);
 
   if (
     !activeRun ||

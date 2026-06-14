@@ -25,7 +25,9 @@ import {
   probeEnv,
   probeGpu,
   resetEngineDetection,
+  sendControl,
   sendInfer,
+  spawnExport,
   spawnInstall,
   spawnNew,
   spawnServe,
@@ -53,6 +55,7 @@ import {
 } from "./lib/protocol";
 import { appendPoint, createSeriesMap, type Series } from "./lib/series";
 import { readRunMeta, writeRunMeta, type RunMeta } from "./lib/notes";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
 type ReadResult =
   | { kind: "text"; content: string; size: number }
@@ -86,6 +89,8 @@ export type ActiveRun = {
   startedAtMs: number;
   /** "cpu" / "cuda" / "cuda:0" — from run.started, once known. */
   device: string | null;
+  /** Pause requested (engine pauses at the next epoch boundary). */
+  paused?: boolean;
 };
 
 export type MlProject = {
@@ -274,6 +279,9 @@ type MlStore = {
   /** Historical runs selected for overlay comparison. */
   compareRuns: CompareRun[];
 
+  /** In-flight `nexis-ml export` (one at a time); its report path. */
+  pendingExport: { sid: number; reportPath: string } | null;
+
   detect: (workspaceRoot: string | null) => Promise<void>;
   redetect: (workspaceRoot: string | null) => Promise<void>;
   installEngine: (workspaceRoot: string | null, useGpu: boolean) => Promise<void>;
@@ -289,6 +297,8 @@ type MlStore = {
   ) => Promise<void>;
   startTrain: (projectDir: string) => Promise<void>;
   cancelActive: () => Promise<void>;
+  pauseActive: () => Promise<void>;
+  resumeActive: () => Promise<void>;
   refreshRuns: (projectDir: string) => Promise<void>;
   loadHistoricalRun: (run: HistoricalRun) => Promise<void>;
 
@@ -300,6 +310,7 @@ type MlStore = {
   clearCompare: () => void;
 
   setRunMeta: (run: HistoricalRun, patch: Partial<RunMeta>) => Promise<void>;
+  exportReport: (projectDir: string, runId: string) => Promise<void>;
 
   _startNextInstall: () => Promise<void>;
   _applyProto: (payload: ProtoPayload) => void;
@@ -374,6 +385,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
 
   serve: null,
   compareRuns: [],
+  pendingExport: null,
 
   async detect(workspaceRoot) {
     if (get().engineStatus === "detecting") return;
@@ -604,6 +616,31 @@ export const useMlStore = create<MlStore>((set, get) => ({
       await cancelRun(run.sid);
     } catch (err) {
       set((s) => ({ logs: pushLog(s.logs, `cancel failed: ${String(err)}`) }));
+    }
+  },
+
+  async pauseActive() {
+    const run = get().activeRun;
+    if (!run || run.sid < 0 || run.status !== "running" || run.paused) return;
+    set({ activeRun: { ...run, paused: true } }); // optimistic; engine pauses at next epoch
+    try {
+      await sendControl(run.sid, "pause");
+    } catch (err) {
+      set((s) => ({
+        activeRun: s.activeRun ? { ...s.activeRun, paused: false } : null,
+        logs: pushLog(s.logs, `pause failed: ${String(err)}`),
+      }));
+    }
+  },
+
+  async resumeActive() {
+    const run = get().activeRun;
+    if (!run || run.sid < 0 || !run.paused) return;
+    set({ activeRun: { ...run, paused: false } });
+    try {
+      await sendControl(run.sid, "resume");
+    } catch (err) {
+      set((s) => ({ logs: pushLog(s.logs, `resume failed: ${String(err)}`) }));
     }
   },
 
@@ -855,6 +892,19 @@ export const useMlStore = create<MlStore>((set, get) => ({
     }
   },
 
+  async exportReport(projectDir, runId) {
+    const { engineExe, pendingExport } = get();
+    if (!engineExe || pendingExport) return;
+    const reportPath = `${projectDir}/.nexis-ml/runs/${runId}/report.html`;
+    set((s) => ({ logs: pushLog(s.logs, `$ nexis-ml export --run ${runId}`) }));
+    try {
+      const sid = await spawnExport(engineExe, projectDir, runId);
+      set({ pendingExport: { sid, reportPath } });
+    } catch (err) {
+      set((s) => ({ logs: pushLog(s.logs, `export failed: ${String(err)}`) }));
+    }
+  },
+
   _applyServeProto(payload) {
     let serve = get().serve;
     if (!serve) return;
@@ -994,18 +1044,34 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   _applyStderr(payload) {
-    const { activeRun, installSid, pendingCreate, serve } = get();
+    const { activeRun, installSid, pendingCreate, serve, pendingExport } = get();
     const known =
       payload.sid === activeRun?.sid ||
       payload.sid === installSid ||
       payload.sid === pendingCreate?.sid ||
-      payload.sid === serve?.sid;
+      payload.sid === serve?.sid ||
+      payload.sid === pendingExport?.sid;
     if (!known) return;
     set((s) => ({ logs: pushLog(s.logs, payload.line) }));
   },
 
   _applyExit(payload) {
-    const { activeRun, installSid, pendingCreate, serve } = get();
+    const { activeRun, installSid, pendingCreate, serve, pendingExport } = get();
+
+    // export finished → reveal the report file (or report failure)
+    if (pendingExport && payload.sid === pendingExport.sid) {
+      const { reportPath } = pendingExport;
+      set({ pendingExport: null });
+      if (payload.code === 0) {
+        set((s) => ({ logs: pushLog(s.logs, `report written: ${reportPath}`) }));
+        void revealItemInDir(reportPath).catch(() => {});
+      } else {
+        set((s) => ({
+          logs: pushLog(s.logs, `export failed (exit ${payload.code ?? "?"})`),
+        }));
+      }
+      return;
+    }
 
     // serve session ended (killed by us, or the engine died)
     if (serve && payload.sid === serve.sid) {

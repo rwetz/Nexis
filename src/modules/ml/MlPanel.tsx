@@ -42,6 +42,8 @@ import type { MlTemplate } from "./lib/engine-bridge";
 import { readConfusionMatrix, type ConfusionMatrix } from "./lib/artifacts";
 import { readTrainToml, writeTrainToml } from "./lib/config";
 import { tomlGet, tomlSet } from "./lib/toml-edit";
+import { usePreferencesStore } from "@/modules/settings/preferences";
+import { setMlAutoOpenOnTrain } from "@/modules/settings/store";
 
 /** Project templates offered in the create card. */
 const TEMPLATE_OPTIONS: {
@@ -104,11 +106,16 @@ export function MlPanel({ workspaceRoot }: Props) {
   const createProject = useMlStore((s) => s.createProject);
   const startTrain = useMlStore((s) => s.startTrain);
   const cancelActive = useMlStore((s) => s.cancelActive);
+  const pauseActive = useMlStore((s) => s.pauseActive);
+  const resumeActive = useMlStore((s) => s.resumeActive);
   const refreshRuns = useMlStore((s) => s.refreshRuns);
   const loadHistoricalRun = useMlStore((s) => s.loadHistoricalRun);
   const toggleCompare = useMlStore((s) => s.toggleCompare);
   const clearCompare = useMlStore((s) => s.clearCompare);
   const setRunMeta = useMlStore((s) => s.setRunMeta);
+  const exportReport = useMlStore((s) => s.exportReport);
+  const pendingExport = useMlStore((s) => s.pendingExport);
+  const autoOpenOnTrain = usePreferencesStore((s) => s.mlAutoOpenOnTrain);
 
   const [showCreate, setShowCreate] = useState(false);
 
@@ -129,6 +136,15 @@ export function MlPanel({ workspaceRoot }: Props) {
     () => metricNames.filter((n) => n !== hero),
     [metricNames, hero],
   );
+
+  // The run currently in view (a finished live run, or a loaded historical
+  // one) — what the playground and "Export report" act on.
+  const viewedRun =
+    finished && activeRun?.runId
+      ? { projectDir: activeRun.projectDir, runId: activeRun.runId }
+      : chartSource?.kind === "historical" && selectedProject
+        ? { projectDir: selectedProject, runId: chartSource.runId }
+        : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -229,7 +245,12 @@ export function MlPanel({ workspaceRoot }: Props) {
 
             {/* Train hero / progress / result */}
             {busy && activeRun ? (
-              <ProgressBlock run={activeRun} onCancel={() => void cancelActive()} />
+              <ProgressBlock
+                run={activeRun}
+                onCancel={() => void cancelActive()}
+                onPause={() => void pauseActive()}
+                onResume={() => void resumeActive()}
+              />
             ) : finished && activeRun ? (
               <ResultCard
                 run={activeRun}
@@ -285,15 +306,21 @@ export function MlPanel({ workspaceRoot }: Props) {
                 <ImageGridView />
 
                 {/* Inference playground — try the trained model live */}
-                <Playground
-                  run={
-                    finished && activeRun?.runId
-                      ? { projectDir: activeRun.projectDir, runId: activeRun.runId }
-                      : chartSource?.kind === "historical" && selectedProject
-                        ? { projectDir: selectedProject, runId: chartSource.runId }
-                        : null
-                  }
-                />
+                <Playground run={viewedRun} />
+
+                {/* Export a self-contained HTML report of the viewed run */}
+                {viewedRun ? (
+                  <button
+                    type="button"
+                    disabled={pendingExport != null}
+                    onClick={() =>
+                      void exportReport(viewedRun.projectDir, viewedRun.runId)
+                    }
+                    className="mt-1 rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                  >
+                    {pendingExport ? "Exporting…" : "⤓ Export HTML report"}
+                  </button>
+                ) : null}
               </>
             )}
 
@@ -342,6 +369,17 @@ export function MlPanel({ workspaceRoot }: Props) {
                 </div>
               )}
             </div>
+
+            {/* Settings */}
+            <label className="mt-3 flex cursor-pointer items-center gap-1.5 text-[10px] text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={autoOpenOnTrain}
+                onChange={(e) => void setMlAutoOpenOnTrain(e.target.checked)}
+                className="size-3 accent-primary"
+              />
+              Open this panel automatically when training starts
+            </label>
           </>
         )}
       </div>
@@ -1090,7 +1128,17 @@ function TabularResult({ result }: { result: Extract<PlaygroundResult, { kind: "
 
 // ── Live progress ─────────────────────────────────────────────────────────────
 
-function ProgressBlock({ run, onCancel }: { run: ActiveRun; onCancel: () => void }) {
+function ProgressBlock({
+  run,
+  onCancel,
+  onPause,
+  onResume,
+}: {
+  run: ActiveRun;
+  onCancel: () => void;
+  onPause: () => void;
+  onResume: () => void;
+}) {
   const seriesTick = useMlStore((s) => s.seriesTick);
   const lastValues = useMlStore((s) => s.lastValues);
   const [, forceTick] = useState(0);
@@ -1141,6 +1189,11 @@ function ProgressBlock({ run, onCancel }: { run: ActiveRun; onCancel: () => void
               {run.device.startsWith("cuda") ? "⚡ GPU" : "CPU"}
             </span>
           ) : null}
+          {run.paused ? (
+            <span className="rounded bg-amber-500/10 px-1 py-px text-[9px] font-medium text-amber-500">
+              paused
+            </span>
+          ) : null}
         </span>
         <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
           {formatElapsed(Date.now() - run.startedAtMs)}
@@ -1166,15 +1219,28 @@ function ProgressBlock({ run, onCancel }: { run: ActiveRun; onCancel: () => void
         {pct !== null ? <span className="font-mono tabular-nums">{pct}%</span> : null}
       </div>
 
-      <p className="mb-1.5 text-[11px] leading-snug text-foreground/90">{sentence}</p>
+      <p className="mb-1.5 text-[11px] leading-snug text-foreground/90">
+        {run.paused ? "Paused — will resume at your command." : sentence}
+      </p>
 
-      <button
-        type="button"
-        onClick={onCancel}
-        className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
-      >
-        {run.status === "cancelling" ? "Force stop" : "Stop (keeps progress)"}
-      </button>
+      <div className="flex items-center gap-1.5">
+        {run.status === "running" ? (
+          <button
+            type="button"
+            onClick={run.paused ? onResume : onPause}
+            className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {run.paused ? "Resume" : "Pause"}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
+        >
+          {run.status === "cancelling" ? "Force stop" : "Stop (keeps progress)"}
+        </button>
+      </div>
     </div>
   );
 }

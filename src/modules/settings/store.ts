@@ -154,6 +154,8 @@ export type Preferences = {
   terminalCursorBlink: boolean;
   toolApprovalPolicies: Record<string, ToolApprovalPolicy>;
   wordWrap: boolean;
+  /** Open the ML Lab panel automatically when a training run starts. */
+  mlAutoOpenOnTrain: boolean;
 };
 
 const STORE_PATH = "nexis-settings.json";
@@ -203,6 +205,7 @@ const KEY_TERMINAL_CURSOR_STYLE = "terminalCursorStyle";
 const KEY_TERMINAL_CURSOR_BLINK = "terminalCursorBlink";
 const KEY_TOOL_APPROVAL_POLICIES = "toolApprovalPolicies";
 const KEY_WORD_WRAP = "wordWrap";
+const KEY_ML_AUTO_OPEN = "mlAutoOpenOnTrain";
 
 export const TERMINAL_FONT_SIZE_DEFAULT = 14;
 export const TERMINAL_FONT_SIZE_MIN = 8;
@@ -265,6 +268,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   terminalCursorBlink: false,
   toolApprovalPolicies: {},
   wordWrap: false,
+  mlAutoOpenOnTrain: false,
 };
 
 function mergeFormatters(
@@ -410,6 +414,8 @@ export async function loadPreferences(): Promise<Preferences> {
       get<Record<string, ToolApprovalPolicy>>(KEY_TOOL_APPROVAL_POLICIES) ??
       DEFAULT_PREFERENCES.toolApprovalPolicies,
     wordWrap: get<boolean>(KEY_WORD_WRAP) ?? DEFAULT_PREFERENCES.wordWrap,
+    mlAutoOpenOnTrain:
+      get<boolean>(KEY_ML_AUTO_OPEN) ?? DEFAULT_PREFERENCES.mlAutoOpenOnTrain,
   };
 }
 
@@ -643,6 +649,10 @@ export async function setWordWrap(value: boolean): Promise<void> {
   await writePref(KEY_WORD_WRAP, value);
 }
 
+export async function setMlAutoOpenOnTrain(value: boolean): Promise<void> {
+  await writePref(KEY_ML_AUTO_OPEN, value);
+}
+
 export type PrefKey = keyof Preferences;
 
 /** Subscribe to changes from any window (settings → main). */
@@ -695,6 +705,7 @@ export async function onPreferencesChange(
     [KEY_FORMATTERS]: "formatters",
     [KEY_FORMAT_ON_SAVE]: "formatOnSave",
     [KEY_WORD_WRAP]: "wordWrap",
+    [KEY_ML_AUTO_OPEN]: "mlAutoOpenOnTrain",
   };
   // Same-process writes still fire onChange immediately; cross-window writes
   // arrive via the Tauri event emitted by writePref().

@@ -41,9 +41,10 @@ const MAX_LINE_BYTES: usize = 1024 * 1024;
 /// Subcommands the frontend is allowed to spawn. `train` and `replay`
 /// stream protocol events; `new` scaffolds a project (one-shot, watched
 /// via ml:exit); `serve` is the inference playground's request/response
-/// loop (driven via `ml_stdin`). Everything else the frontend reads from
-/// disk or runs via a dedicated command (`env`, `--version`).
-const ALLOWED_SUBCOMMANDS: &[&str] = &["train", "replay", "new", "serve"];
+/// loop (driven via `ml_stdin`); `export` writes a run's HTML report
+/// (one-shot). Everything else the frontend reads from disk or runs via a
+/// dedicated command (`env`, `--version`).
+const ALLOWED_SUBCOMMANDS: &[&str] = &["train", "replay", "new", "serve", "export"];
 
 pub struct MlSession {
     child: Arc<SharedChild>,
@@ -559,10 +560,11 @@ mod tests {
         assert!(ALLOWED_SUBCOMMANDS.contains(&"replay"));
         assert!(ALLOWED_SUBCOMMANDS.contains(&"new"));
         assert!(ALLOWED_SUBCOMMANDS.contains(&"serve"));
+        assert!(ALLOWED_SUBCOMMANDS.contains(&"export"));
         // `runs`, `infer`, and arbitrary subcommands stay CLI-only
         assert!(!ALLOWED_SUBCOMMANDS.contains(&"runs"));
         assert!(!ALLOWED_SUBCOMMANDS.contains(&"infer"));
-        assert_eq!(ALLOWED_SUBCOMMANDS.len(), 4);
+        assert_eq!(ALLOWED_SUBCOMMANDS.len(), 5);
     }
 
     #[test]
