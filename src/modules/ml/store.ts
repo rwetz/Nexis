@@ -52,6 +52,7 @@ import {
   type ServeMeta,
 } from "./lib/protocol";
 import { appendPoint, createSeriesMap, type Series } from "./lib/series";
+import { readRunMeta, writeRunMeta, type RunMeta } from "./lib/notes";
 
 type ReadResult =
   | { kind: "text"; content: string; size: number }
@@ -102,6 +103,10 @@ export type HistoricalRun = {
   lastEpoch?: number | null;
   totalEpochs?: number | null;
   finishedAt?: string;
+  /** Per-run metadata from notes.json. */
+  note?: string;
+  tags?: string[];
+  pinned?: boolean;
 };
 
 /** A historical run selected for overlay comparison. */
@@ -294,6 +299,8 @@ type MlStore = {
   toggleCompare: (run: HistoricalRun) => Promise<void>;
   clearCompare: () => void;
 
+  setRunMeta: (run: HistoricalRun, patch: Partial<RunMeta>) => Promise<void>;
+
   _startNextInstall: () => Promise<void>;
   _applyProto: (payload: ProtoPayload) => void;
   _applyServeProto: (payload: ProtoPayload) => void;
@@ -304,6 +311,14 @@ type MlStore = {
 function basename(path: string): string {
   const parts = path.replace(/[\\/]+$/, "").split(/[\\/]/);
   return parts[parts.length - 1] || path;
+}
+
+/** Pinned runs first; order is otherwise preserved (the input is already
+ *  newest-first), relying on Array.prototype.sort being stable. */
+function sortRuns(runs: HistoricalRun[]): HistoricalRun[] {
+  // Boolean-coerce: a missing `pinned` must read as 0, not NaN (which
+  // would make the comparator inconsistent and leave the list unsorted).
+  return runs.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 }
 
 /** Subdirectories that can't plausibly be ML projects. */
@@ -615,6 +630,10 @@ export const useMlStore = create<MlStore>((set, get) => ({
         dirs.map(async (name) => {
           const dir = `${runsDir}/${name}`;
           const base: HistoricalRun = { id: name, dir, status: "unknown" };
+          // notes.json is independent of summary.json (a crashed run can
+          // still be annotated/pinned), so read it either way.
+          const meta = await readRunMeta(dir);
+          const withMeta = { note: meta.note, tags: meta.tags, pinned: meta.pinned };
           try {
             const res = await invoke<ReadResult>("fs_read_file", {
               path: `${dir}/summary.json`,
@@ -624,6 +643,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
               const summary = JSON.parse(res.content) as RunSummary;
               return {
                 ...base,
+                ...withMeta,
                 status: summary.status ?? "unknown",
                 metrics: summary.metrics,
                 lastEpoch: summary.lastEpoch,
@@ -634,10 +654,10 @@ export const useMlStore = create<MlStore>((set, get) => ({
           } catch {
             // no summary → run still in progress or crashed; keep "unknown"
           }
-          return base;
+          return { ...base, ...withMeta };
         }),
       );
-      if (stillCurrent()) set({ runs, runsLoading: false });
+      if (stillCurrent()) set({ runs: sortRuns(runs), runsLoading: false });
       else set({ runsLoading: false });
     } catch {
       // .nexis-ml/runs doesn't exist yet — that's a fresh project, not an error
@@ -812,6 +832,27 @@ export const useMlStore = create<MlStore>((set, get) => ({
   clearCompare() {
     resetCompareData();
     set((s) => ({ compareRuns: [], seriesTick: s.seriesTick + 1 }));
+  },
+
+  async setRunMeta(run, patch) {
+    const next: RunMeta = {
+      note: run.note ?? "",
+      tags: run.tags ?? [],
+      pinned: run.pinned ?? false,
+      ...patch,
+    };
+    try {
+      await writeRunMeta(run.dir, next);
+      set((s) => ({
+        runs: sortRuns(
+          s.runs.map((r) => (r.id === run.id ? { ...r, ...next } : r)),
+        ),
+      }));
+    } catch (err) {
+      set((s) => ({
+        logs: pushLog(s.logs, `couldn't save notes for ${run.id}: ${String(err)}`),
+      }));
+    }
   },
 
   _applyServeProto(payload) {

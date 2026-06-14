@@ -27,6 +27,11 @@ describe("displayMetric", () => {
     expect(displayMetric("perplexity/val").better).toBe("down");
   });
 
+  it("labels GPU memory with MB units", () => {
+    expect(displayMetric("mem/gpu_mb").label).toBe("GPU memory");
+    expect(displayMetric("mem/gpu_mb").format(512.7)).toBe("513 MB");
+  });
+
   it("falls back gracefully for unknown metric names", () => {
     const d = displayMetric("custom/thing");
     expect(d.label).toBe("custom/thing");

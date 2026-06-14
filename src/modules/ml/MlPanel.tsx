@@ -108,6 +108,7 @@ export function MlPanel({ workspaceRoot }: Props) {
   const loadHistoricalRun = useMlStore((s) => s.loadHistoricalRun);
   const toggleCompare = useMlStore((s) => s.toggleCompare);
   const clearCompare = useMlStore((s) => s.clearCompare);
+  const setRunMeta = useMlStore((s) => s.setRunMeta);
 
   const [showCreate, setShowCreate] = useState(false);
 
@@ -335,6 +336,7 @@ export function MlPanel({ workspaceRoot }: Props) {
                       disabled={busy}
                       onClick={() => void loadHistoricalRun(run)}
                       onToggleCompare={() => void toggleCompare(run)}
+                      onSaveMeta={(patch) => void setRunMeta(run, patch)}
                     />
                   ))}
                 </div>
@@ -1321,6 +1323,7 @@ function RunRow({
   disabled,
   onClick,
   onToggleCompare,
+  onSaveMeta,
 }: {
   run: HistoricalRun;
   selected: boolean;
@@ -1329,7 +1332,19 @@ function RunRow({
   disabled: boolean;
   onClick: () => void;
   onToggleCompare: () => void;
+  onSaveMeta: (patch: { note?: string; tags?: string[]; pinned?: boolean }) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [note, setNote] = useState(run.note ?? "");
+  const [tags, setTags] = useState((run.tags ?? []).join(", "));
+
+  useEffect(() => {
+    if (editing) {
+      setNote(run.note ?? "");
+      setTags((run.tags ?? []).join(", "));
+    }
+  }, [editing, run.note, run.tags]);
+
   const dot =
     run.status === "ok"
       ? "bg-emerald-500"
@@ -1350,48 +1365,140 @@ function RunRow({
     }
   }
 
+  const hasMeta = Boolean(run.note?.trim()) || (run.tags?.length ?? 0) > 0;
+  const saveMeta = () => {
+    onSaveMeta({
+      note: note.trim(),
+      tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+    });
+    setEditing(false);
+  };
+
   // A checkbox can't live inside a <button>, so the row is a flex
   // container: checkbox toggles compare, the button loads the single view.
   return (
     <div
       className={cn(
-        "flex items-center gap-1 rounded transition-colors",
+        "rounded transition-colors",
         selected ? "bg-primary/[0.08]" : "hover:bg-muted/50",
       )}
     >
-      <input
-        type="checkbox"
-        checked={comparing}
-        onChange={onToggleCompare}
-        aria-label={`Compare ${friendlyRunName(run.id)}`}
-        title="Compare this run"
-        className="ml-1 size-3 shrink-0 accent-primary"
-        style={comparing && compareColor ? { accentColor: compareColor } : undefined}
-      />
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={onClick}
-        className={cn(
-          "flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-1 text-left",
-          disabled && "cursor-default opacity-60",
-        )}
-        title={`${run.id} — ${runStatusWord(run.status)}`}
-      >
-        <span className={cn("size-1.5 shrink-0 rounded-full", dot)} />
-        <span className="min-w-0 flex-1 truncate text-[10.5px] text-foreground/85">
-          {friendlyRunName(run.id)}
-          <span className="text-muted-foreground/60">
-            {" "}
-            · {runStatusWord(run.status)}
+      <div className="flex items-center gap-1">
+        <input
+          type="checkbox"
+          checked={comparing}
+          onChange={onToggleCompare}
+          aria-label={`Compare ${friendlyRunName(run.id)}`}
+          title="Compare this run"
+          className="ml-1 size-3 shrink-0 accent-primary"
+          style={comparing && compareColor ? { accentColor: compareColor } : undefined}
+        />
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onClick}
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-1 text-left",
+            disabled && "cursor-default opacity-60",
+          )}
+          title={`${run.id} — ${runStatusWord(run.status)}`}
+        >
+          <span className={cn("size-1.5 shrink-0 rounded-full", dot)} />
+          <span className="min-w-0 flex-1 truncate text-[10.5px] text-foreground/85">
+            {friendlyRunName(run.id)}
+            <span className="text-muted-foreground/60">
+              {" "}
+              · {runStatusWord(run.status)}
+            </span>
           </span>
-        </span>
-        {metric ? (
-          <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
-            {metric}
-          </span>
-        ) : null}
-      </button>
+          {metric ? (
+            <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+              {metric}
+            </span>
+          ) : null}
+        </button>
+        <button
+          type="button"
+          onClick={() => onSaveMeta({ pinned: !run.pinned })}
+          aria-label={run.pinned ? "Unpin run" : "Pin as baseline"}
+          title={run.pinned ? "Unpin" : "Pin as baseline"}
+          className={cn(
+            "shrink-0 px-1 text-[11px] leading-none",
+            run.pinned
+              ? "text-amber-500"
+              : "text-muted-foreground/40 hover:text-foreground",
+          )}
+        >
+          {run.pinned ? "★" : "☆"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          aria-label="Notes and tags"
+          title="Notes & tags"
+          className="mr-1 shrink-0 px-0.5 text-[10px] leading-none text-muted-foreground/50 hover:text-foreground"
+        >
+          ✎
+        </button>
+      </div>
+
+      {!editing && hasMeta ? (
+        <div className="flex flex-col gap-0.5 px-2 pb-1 pl-6">
+          {run.tags?.length ? (
+            <div className="flex flex-wrap gap-1">
+              {run.tags.map((t) => (
+                <span
+                  key={t}
+                  className="rounded bg-muted/60 px-1 py-px text-[9px] text-muted-foreground"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {run.note?.trim() ? (
+            <p className="truncate text-[10px] text-muted-foreground/70" title={run.note}>
+              {run.note}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {editing ? (
+        <div className="flex flex-col gap-1 px-2 pb-2 pl-6">
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Note for this run…"
+            rows={2}
+            spellCheck={false}
+            className="w-full resize-none rounded border border-border bg-background px-1.5 py-1 text-[10.5px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+          />
+          <input
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="tags, comma, separated"
+            spellCheck={false}
+            className="h-6 rounded border border-border bg-background px-1.5 text-[10.5px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+          />
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={saveMeta}
+              className="rounded-md bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="rounded border border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

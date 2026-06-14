@@ -86,3 +86,38 @@ describe("run comparison (store)", () => {
     expect(getCompareData().size).toBe(0);
   });
 });
+
+describe("run metadata (store)", () => {
+  beforeEach(async () => {
+    const core = await import("@tauri-apps/api/core");
+    const invokeMock = vi.mocked(core.invoke);
+    invokeMock.mockReset();
+    invokeMock.mockResolvedValue(null); // fs_write_file resolves
+    useMlStore.setState({
+      runs: [
+        { id: "b", dir: "proj/.nexis-ml/runs/b", status: "ok" },
+        { id: "a", dir: "proj/.nexis-ml/runs/a", status: "ok" },
+      ],
+    });
+  });
+
+  it("setRunMeta updates the run and pinning sorts it first", async () => {
+    await useMlStore.getState().setRunMeta(run("a"), { pinned: true, note: "best so far" });
+    const runs = useMlStore.getState().runs;
+    expect(runs[0].id).toBe("a"); // pinned floats to the top
+    expect(runs[0].pinned).toBe(true);
+    expect(runs[0].note).toBe("best so far");
+    expect(runs[1].pinned).toBeFalsy();
+  });
+
+  it("writes notes.json for the run via fs_write_file", async () => {
+    const core = await import("@tauri-apps/api/core");
+    const invokeMock = vi.mocked(core.invoke);
+    await useMlStore.getState().setRunMeta(run("b"), { tags: ["baseline"] });
+    const call = invokeMock.mock.calls.find((c) => c[0] === "fs_write_file");
+    expect(call).toBeTruthy();
+    const args = call?.[1] as { path: string; content: string };
+    expect(args.path).toBe("proj/.nexis-ml/runs/b/notes.json");
+    expect(JSON.parse(args.content)).toMatchObject({ tags: ["baseline"], pinned: false });
+  });
+});

@@ -178,10 +178,10 @@ A `burn`-based (or `ort`-based, for ONNX inference) single-binary engine impleme
 
 **Parking lot (unscheduled ideas)**
 - `pause`/`resume` protocol commands (reserved since v1)
-- Per-run notes/tags in the run browser; pin a "baseline" run
+- ✅ Per-run notes/tags in the run browser; pin a "baseline" run (2026-06-13) — `notes.json` per run (`lib/notes.ts`), shown + editable in the run row (★ pin floats to top, ✎ note/tags editor)
 - Auto-open the panel when training starts (setting — must go through `writePref()`, pitfall #2)
-- Live GPU memory/utilization line while training on CUDA (engine samples `torch.cuda.memory_allocated`)
-- Early-stopping helper in the harness (`run.should_stop(patience=...)`)
+- ✅ Live GPU memory line while training on CUDA (2026-06-13) — harness auto-emits `mem/gpu_mb` per epoch (engine v0.6.0); friendly "GPU memory" label in the panel
+- ✅ Early-stopping helper in the harness (`run.should_stop(patience=...)`) (2026-06-13, engine v0.6.0)
 - Export a run as a self-contained HTML report (charts + config + summary)
 
 **Explicit non-goals (all phases)**

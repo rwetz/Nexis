@@ -61,6 +61,12 @@ const KNOWN_METRICS: Record<string, MetricDisplay> = {
     hint: "How many characters the model is effectively choosing between — lower (toward 1) is better",
     format: formatValue,
   },
+  "mem/gpu_mb": {
+    label: "GPU memory",
+    better: "down",
+    hint: "GPU memory in use while training",
+    format: (v) => `${Math.round(v)} MB`,
+  },
 };
 
 export function displayMetric(name: string): MetricDisplay {
