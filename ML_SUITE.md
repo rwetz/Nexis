@@ -173,8 +173,10 @@ Rough priority order, biased toward visible payoff per effort:
 6. ✅ **Hyperparam form** (2026-06-13) — a collapsible "Hyperparameters" section renders the editable keys present in `train.toml` (epochs/lr/batch/device/hidden/context/embed/… — auto-adapts per template) with Save and Save & train. `lib/toml-edit.ts` does *surgical* value replacement (preserves comments, alignment, and CRLF — no full re-serialize), `lib/config.ts` reads/writes via the atomic `fs_write_file`. Tested in `toml-edit.test.ts`.
 7. **PyPI publish** — workflow is in the engine repo; needs the trusted publisher configured on pypi.org. Until then the panel's install button only works where the engine is already reachable
 
-**Phase 3 — the "downloadable extension" install path (optional)**
+**Phase 3 — the "downloadable extension" install path (started 2026-06-14)**
 A `burn`-based (or `ort`-based, for ONNX inference) single-binary engine implementing the same protocol, downloaded like an LSP server, for machines without Python. Declarative model config only (MLP/CNN presets). Also: `export --onnx`. Only build this if Phase 1/2 actually get used.
+
+**Foundation slice shipped** (new repo `nexis-ml-rs`, local: `E:\nexis-ml-rs`, v0.1.0): a Rust single-binary engine (binary named `nexis-ml` for drop-in detection) implementing **protocol v1 NDJSON + the exact run-store layout**, with CLI `--version`/`env`/`new`/`train`. The `train` command currently drives a built-in **linear classifier** on synthetic data (pure Rust, no framework) through the full `Run` lifecycle (run.started → metric/epoch → confusion-matrix artifact → run.finished). **Compatibility proven**: a Rust-produced run is listed by the Python `nexis-ml runs` unchanged. `cargo test`/`clippy -D warnings`/`fmt` clean. Roadmap (`nexis-ml-rs/PLAN.md`): M2 `burn` ndarray backend (real MLP), M3 `wgpu` GPU, M4 declarative MLP/CNN presets, M5 `export --onnx`, M6 Nexis download+detect integration.
 
 **Parking lot** — ✅ all cleared (2026-06-13/14)
 - ✅ `pause`/`resume` protocol commands — harness honors `{cmd:pause|resume}` on stdin at the epoch boundary (`run.paused`, engine v0.6.0); Pause/Resume buttons in the panel via `ml_stdin`, optimistic `paused` state + indicator.
