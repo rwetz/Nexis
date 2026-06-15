@@ -469,7 +469,12 @@ export const useMlStore = create<MlStore>((set, get) => ({
     // GPU installs grab the CUDA torch build first, then the engine —
     // pip then sees torch as already satisfied.
     const queue: InstallFlavor[] = useGpu ? ["cuda-torch", "default"] : ["default"];
-    set({ installing: true, installQueue: queue, installRoot: workspaceRoot });
+    set({
+      installing: true,
+      installQueue: queue,
+      installRoot: workspaceRoot,
+      engineError: null,
+    });
     await get()._startNextInstall();
   },
 
@@ -488,13 +493,14 @@ export const useMlStore = create<MlStore>((set, get) => ({
     if (get().downloadingEngine || get().installing) return;
     const url = await engineReleaseUrl();
     if (!url) {
-      set((s) => ({
-        logs: pushLog(s.logs, "no prebuilt standalone engine for this platform"),
-      }));
+      set({
+        engineError: "No prebuilt standalone engine for this platform yet.",
+      });
       return;
     }
     set((s) => ({
       downloadingEngine: true,
+      engineError: null,
       logs: pushLog(s.logs, "downloading the standalone engine (~31 MB)…"),
     }));
     try {
@@ -513,6 +519,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     } catch (err) {
       set((s) => ({
         downloadingEngine: false,
+        engineError: `Engine download failed: ${String(err)}`,
         logs: pushLog(s.logs, `engine download failed: ${String(err)}`),
       }));
     }
@@ -1181,6 +1188,9 @@ export const useMlStore = create<MlStore>((set, get) => ({
         installFlavor: null,
         installRoot: null,
         installQueue: [],
+        engineError: ok
+          ? null
+          : `Install failed (exit ${payload.code ?? "?"}). See the log; you can also try the standalone engine.`,
         logs: pushLog(
           s.logs,
           ok

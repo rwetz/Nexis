@@ -81,6 +81,7 @@ const BUSY_STATES = ["starting", "running", "cancelling"];
 export function MlPanel({ workspaceRoot }: Props) {
   const engineStatus = useMlStore((s) => s.engineStatus);
   const engineVersion = useMlStore((s) => s.engineVersion);
+  const engineError = useMlStore((s) => s.engineError);
   const installPython = useMlStore((s) => s.installPython);
   const installing = useMlStore((s) => s.installing);
   const downloadingEngine = useMlStore((s) => s.downloadingEngine);
@@ -192,6 +193,7 @@ export function MlPanel({ workspaceRoot }: Props) {
             downloadingEngine={downloadingEngine}
             hostGpu={hostGpu}
             logs={logs}
+            error={engineError}
             onInstall={(useGpu) => void installEngine(workspaceRoot, useGpu)}
             onDownloadEngine={() => void downloadStandaloneEngine()}
             onRetry={() => void redetect(workspaceRoot)}
@@ -401,6 +403,7 @@ function SetupCard({
   downloadingEngine,
   hostGpu,
   logs,
+  error,
   onInstall,
   onDownloadEngine,
   onRetry,
@@ -410,6 +413,7 @@ function SetupCard({
   downloadingEngine: boolean;
   hostGpu: string | null;
   logs: string[];
+  error: string | null;
   onInstall: (useGpu: boolean) => void;
   onDownloadEngine: () => void;
   onRetry: () => void;
@@ -476,6 +480,9 @@ function SetupCard({
       ) : (
         <ManualSetupSteps />
       )}
+      {error && !installing && !downloadingEngine ? (
+        <p className="mt-1.5 text-[10.5px] leading-snug text-red-400">{error}</p>
+      ) : null}
       {!installing && !downloadingEngine ? (
         <div className="mt-2 border-t border-border/40 pt-2">
           <button
