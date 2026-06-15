@@ -266,6 +266,8 @@ type MlStore = {
     dir: string;
     autoTrain: boolean;
   } | null;
+  /** Why the last "Create & train" didn't start — shown on the create card. */
+  createError: string | null;
 
   activeRun: ActiveRun | null;
   /** Summary from the last run.finished event (best/final metrics). */
@@ -375,6 +377,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
   engineExe: null,
   engineVersion: null,
   engineError: null,
+  createError: null,
   installPython: null,
   installing: false,
   installSid: null,
@@ -594,13 +597,23 @@ export const useMlStore = create<MlStore>((set, get) => ({
 
   async createProject(workspaceRoot, template, name, autoTrain) {
     const { engineExe, pendingCreate } = get();
-    if (!engineExe || pendingCreate) return;
+    if (pendingCreate) return; // already creating one
+    // Surface why nothing would happen, instead of silently returning.
+    if (!engineExe) {
+      set({ createError: "No engine is set up yet — install or download one above." });
+      return;
+    }
+    if (!workspaceRoot) {
+      set({ createError: "Open a folder first — the project is created inside it." });
+      return;
+    }
     const clean = name.trim().replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "");
     if (!clean) {
-      set((s) => ({ logs: pushLog(s.logs, "project name can't be empty") }));
+      set({ createError: "Project name can't be empty." });
       return;
     }
     set((s) => ({
+      createError: null,
       logs: pushLog(s.logs, `$ nexis-ml new ${template} ${clean}  (${workspaceRoot})`),
     }));
     try {
@@ -615,6 +628,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
       });
     } catch (err) {
       set((s) => ({
+        createError: `Couldn't start the engine: ${String(err)}`,
         logs: pushLog(s.logs, `create failed: ${String(err)}`),
       }));
     }
@@ -1191,6 +1205,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
           });
       } else {
         set((s) => ({
+          createError: `The engine couldn't scaffold the project (exit ${payload.code ?? "?"}). See the log.`,
           logs: pushLog(s.logs, `create failed (exit ${payload.code ?? "?"})`),
         }));
       }

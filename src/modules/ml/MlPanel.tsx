@@ -89,6 +89,7 @@ export function MlPanel({ workspaceRoot }: Props) {
   const projects = useMlStore((s) => s.projects);
   const selectedProject = useMlStore((s) => s.selectedProject);
   const pendingCreate = useMlStore((s) => s.pendingCreate);
+  const createError = useMlStore((s) => s.createError);
   const activeRun = useMlStore((s) => s.activeRun);
   const lastSummary = useMlStore((s) => s.lastSummary);
   const chartSource = useMlStore((s) => s.chartSource);
@@ -215,6 +216,7 @@ export function MlPanel({ workspaceRoot }: Props) {
               <CreateCard
                 creating={pendingCreate != null}
                 firstProject={projects.length === 0}
+                createError={createError}
                 onCreate={(template, name) => {
                   setShowCreate(false);
                   void createProject(workspaceRoot, template, name, true);
@@ -581,11 +583,13 @@ function CopyLine({ command }: { command: string }) {
 function CreateCard({
   creating,
   firstProject,
+  createError,
   onCreate,
   onDismiss,
 }: {
   creating: boolean;
   firstProject: boolean;
+  createError: string | null;
   onCreate: (template: MlTemplate, name: string) => void;
   onDismiss?: () => void;
 }) {
@@ -681,6 +685,11 @@ function CreateCard({
           </button>
         </div>
       )}
+      {createError && !creating ? (
+        <p className="mt-1.5 text-[10.5px] leading-snug text-red-400">
+          {createError}
+        </p>
+      ) : null}
     </div>
   );
 }
