@@ -29,7 +29,7 @@ use shared_child::SharedChild;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::modules::proc::hide_console;
-use crate::modules::workspace::{authorize_spawn_cwd, WorkspaceEnv, WorkspaceRegistry};
+use crate::modules::workspace::WorkspaceRegistry;
 
 /// Flush a batch to the frontend at most this often (~30 Hz).
 const FLUSH_INTERVAL: Duration = Duration::from_millis(33);
@@ -322,11 +322,26 @@ pub fn ml_spawn(
     if !ALLOWED_SUBCOMMANDS.contains(&sub) {
         return Err(format!("subcommand not allowed: {sub}"));
     }
-    // Same guard as pty_open (pitfall #1C): the project dir must be under
-    // an authorized workspace root. The frontend calls workspace_authorize
-    // first, exactly like pty-bridge does.
-    let resolved = authorize_spawn_cwd(&registry, Some(&project_dir), &WorkspaceEnv::Local)?
-        .ok_or("ml_spawn: empty project dir")?;
+    // The project dir is the user's explicitly-chosen folder from the ML
+    // panel (a known engine binary running an allowlisted subcommand), so
+    // *authorize* it — add it to the workspace registry — rather than only
+    // checking against it. A check-only guard (like pty_open's, pitfall #1C)
+    // fails silently when the folder was authorized under a different
+    // workspace env; authorizing here can't. `authorize` canonicalizes, so a
+    // missing/inaccessible dir still errors clearly.
+    let trimmed = project_dir.trim();
+    if trimmed.is_empty() {
+        return Err("ml_spawn: empty project dir".into());
+    }
+    let resolved = registry
+        .authorize(trimmed)
+        .map_err(|e| format!("project dir not accessible: {e}"))?;
+    if !resolved.is_dir() {
+        return Err(format!(
+            "project dir is not a directory: {}",
+            resolved.display()
+        ));
+    }
 
     let mut cmd = Command::new(&exe);
     cmd.arg("--nexis-protocol")
