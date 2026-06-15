@@ -160,18 +160,17 @@ pub fn ml_detect(candidates: Vec<String>) -> Result<MlDetectResult, String> {
 /// candidates so a downloaded engine is found like any other; a missing path
 /// just fails the `--version` probe instantly.
 fn managed_engine_exe(app: &AppHandle) -> Result<std::path::PathBuf, String> {
-    let dir = app
-        .path()
-        .app_local_data_dir()
-        .map_err(|e| e.to_string())?
-        .join("engine");
-    std::fs::create_dir_all(&dir).map_err(|e| format!("create engine dir: {e}"))?;
     let name = if cfg!(windows) {
         "nexis-ml.exe"
     } else {
         "nexis-ml"
     };
-    Ok(dir.join(name))
+    let dir = app
+        .path()
+        .app_local_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("engine");
+    Ok(dir.join(name)) // pure path; the dir is created lazily by ml_download
 }
 
 /// The managed engine path as a string, for the frontend's candidate list.
@@ -191,6 +190,9 @@ pub async fn ml_download(app: AppHandle, url: String) -> Result<MlDetectResult, 
         return Err("engine download url must be https".into());
     }
     let exe = managed_engine_exe(&app)?;
+    if let Some(parent) = exe.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("create engine dir: {e}"))?;
+    }
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(300))
