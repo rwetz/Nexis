@@ -108,6 +108,31 @@ fn is_nexis_ml_exe(exe: &str) -> bool {
     stem.eq_ignore_ascii_case("nexis-ml")
 }
 
+/// Run `<exe> --version` and return the parsed version (the last
+/// whitespace-separated token, e.g. "0.5.0" from "nexis-ml 0.5.0"). Shared by
+/// candidate detection and post-download verification.
+fn engine_version(exe: &std::path::Path) -> Result<String, String> {
+    let mut cmd = Command::new(exe);
+    cmd.arg("--version")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    hide_console(&mut cmd);
+    let out = cmd.output().map_err(|e| e.to_string())?;
+    if !out.status.success() {
+        return Err(format!("exit {:?}", out.status.code()));
+    }
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    parse_version(&stdout).ok_or_else(|| "empty --version output".to_string())
+}
+
+/// Parse the version token from `<exe> --version` output (the last
+/// whitespace-separated token of "nexis-ml 0.5.0").
+fn parse_version(stdout: &str) -> Option<String> {
+    let v = stdout.trim().rsplit(' ').next().unwrap_or("");
+    (!v.is_empty()).then(|| v.to_string())
+}
+
 /// Try `<exe> --version` for each candidate path; first success wins.
 #[tauri::command]
 pub fn ml_detect(candidates: Vec<String>) -> Result<MlDetectResult, String> {
@@ -117,34 +142,93 @@ pub fn ml_detect(candidates: Vec<String>) -> Result<MlDetectResult, String> {
             last_err = format!("not a nexis-ml binary: {exe}");
             continue;
         }
-        let mut cmd = Command::new(exe);
-        cmd.arg("--version")
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null());
-        hide_console(&mut cmd);
-        match cmd.output() {
-            Ok(out) if out.status.success() => {
-                let stdout = String::from_utf8_lossy(&out.stdout);
-                let version = stdout.trim().rsplit(' ').next().unwrap_or("").to_string();
-                if version.is_empty() {
-                    last_err = format!("{exe}: empty --version output");
-                    continue;
-                }
+        match engine_version(std::path::Path::new(exe)) {
+            Ok(version) => {
                 return Ok(MlDetectResult {
                     exe: exe.clone(),
                     version,
-                });
+                })
             }
-            Ok(out) => {
-                last_err = format!("{exe}: exit {:?}", out.status.code());
-            }
-            Err(e) => {
-                last_err = format!("{exe}: {e}");
-            }
+            Err(e) => last_err = format!("{exe}: {e}"),
         }
     }
     Err(last_err)
+}
+
+/// Path to the managed standalone-engine binary (under the app's local data
+/// dir), whether or not it exists yet. The frontend adds it to the detection
+/// candidates so a downloaded engine is found like any other; a missing path
+/// just fails the `--version` probe instantly.
+fn managed_engine_exe(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    let dir = app
+        .path()
+        .app_local_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("engine");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("create engine dir: {e}"))?;
+    let name = if cfg!(windows) {
+        "nexis-ml.exe"
+    } else {
+        "nexis-ml"
+    };
+    Ok(dir.join(name))
+}
+
+/// The managed engine path as a string, for the frontend's candidate list.
+#[tauri::command]
+pub fn ml_managed_engine_path(app: AppHandle) -> Result<String, String> {
+    Ok(managed_engine_exe(&app)?.to_string_lossy().to_string())
+}
+
+/// Download a standalone `nexis-ml` engine binary from `url` (https) into the
+/// managed engine dir, verify it via `--version`, and return its path +
+/// version. The "download → locate → detect" path for machines without a
+/// Python toolchain — mirrors how an LSP server is fetched. The frontend then
+/// uses the returned path exactly like a detected engine.
+#[tauri::command]
+pub async fn ml_download(app: AppHandle, url: String) -> Result<MlDetectResult, String> {
+    if !url.starts_with("https://") {
+        return Err("engine download url must be https".into());
+    }
+    let exe = managed_engine_exe(&app)?;
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(300))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("download failed: HTTP {}", resp.status().as_u16()));
+    }
+    let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
+
+    // Write to a temp sibling, mark executable (unix), then rename onto the
+    // target so a partial download never leaves a half-written binary.
+    let tmp = exe.with_extension("download");
+    std::fs::write(&tmp, &bytes).map_err(|e| format!("write engine: {e}"))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&tmp)
+            .map_err(|e| e.to_string())?
+            .permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&tmp, perms).map_err(|e| e.to_string())?;
+    }
+    std::fs::rename(&tmp, &exe).map_err(|e| format!("install engine: {e}"))?;
+
+    match engine_version(&exe) {
+        Ok(version) => Ok(MlDetectResult {
+            exe: exe.to_string_lossy().to_string(),
+            version,
+        }),
+        Err(e) => {
+            let _ = std::fs::remove_file(&exe);
+            Err(format!(
+                "downloaded file is not a valid nexis-ml engine: {e}"
+            ))
+        }
+    }
 }
 
 /// Run `nexis-ml env` and return its JSON capability report (torch
@@ -552,6 +636,18 @@ mod tests {
         assert!(!is_nexis_ml_exe(""));
         // Path tricks must not slip through the stem check
         assert!(!is_nexis_ml_exe(r"cmd.exe /c nexis-ml"));
+    }
+
+    #[test]
+    fn parse_version_takes_last_token() {
+        assert_eq!(parse_version("nexis-ml 0.5.0\n").as_deref(), Some("0.5.0"));
+        assert_eq!(
+            parse_version("  nexis-ml 1.2.3  ").as_deref(),
+            Some("1.2.3")
+        );
+        assert_eq!(parse_version("0.1.0").as_deref(), Some("0.1.0"));
+        assert_eq!(parse_version("").as_deref(), None);
+        assert_eq!(parse_version("   ").as_deref(), None);
     }
 
     #[test]

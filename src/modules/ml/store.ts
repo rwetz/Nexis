@@ -22,6 +22,7 @@ import {
   cancelRun,
   detectEngine,
   killRun,
+  managedEngineCandidate,
   probeEnv,
   probeGpu,
   resetEngineDetection,
@@ -416,7 +417,12 @@ export const useMlStore = create<MlStore>((set, get) => ({
       envs.find((e) => e.kind === "venv" || e.kind === "conda") ?? envs[0];
     set({ installPython: installTarget?.python_path ?? null });
     try {
-      const found = await detectEngine(buildCandidates(envs, workspaceRoot));
+      // Candidates: Python envs + ancestor venvs + PATH, then the managed
+      // standalone engine (the "no Python" fallback) last.
+      const candidates = buildCandidates(envs, workspaceRoot);
+      const managed = await managedEngineCandidate();
+      if (managed) candidates.push(managed);
+      const found = await detectEngine(candidates);
       set({
         engineStatus: "ready",
         engineExe: found.exe,

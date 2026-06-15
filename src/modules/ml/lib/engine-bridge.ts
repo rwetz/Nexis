@@ -117,6 +117,26 @@ export function resetEngineDetection(): void {
   detectCache.clear();
 }
 
+/**
+ * Path where a downloaded standalone engine lives (under the app's local
+ * data dir), to add to the detection candidates. Resolved by the Rust side
+ * so the platform-specific name (`nexis-ml` vs `nexis-ml.exe`) and base dir
+ * are authoritative. Returns null if the path can't be resolved.
+ */
+export function managedEngineCandidate(): Promise<string | null> {
+  return invoke<string>("ml_managed_engine_path").catch(() => null);
+}
+
+/**
+ * Download a standalone `nexis-ml` engine binary from `url` (https) into the
+ * managed dir and verify it — the "no Python on this machine" install path,
+ * mirroring how an LSP server is fetched. Resolves to the installed engine's
+ * path + version (usable exactly like a detected engine).
+ */
+export function downloadEngine(url: string): Promise<EngineDetectResult> {
+  return invoke<EngineDetectResult>("ml_download", { url });
+}
+
 // ── Spawning ──────────────────────────────────────────────────────────────────
 
 async function authorizeProjectDir(projectDir: string): Promise<void> {

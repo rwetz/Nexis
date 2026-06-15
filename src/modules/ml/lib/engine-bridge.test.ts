@@ -9,6 +9,8 @@ import {
   ancestorVenvCandidates,
   buildCandidates,
   detectEngine,
+  downloadEngine,
+  managedEngineCandidate,
   resetEngineDetection,
   sendInfer,
   siblingExe,
@@ -223,6 +225,39 @@ describe("serve bridge", () => {
     expect(spawnArgs).toMatchObject({
       args: ["export", "--run", "2026-run"],
       projectDir: "E:\\proj",
+    });
+  });
+
+  it("managedEngineCandidate returns the Rust-resolved path", async () => {
+    invokeMock.mockImplementation(async (cmd: string) =>
+      cmd === "ml_managed_engine_path" ? "C:\\data\\engine\\nexis-ml.exe" : null,
+    );
+    expect(await managedEngineCandidate()).toBe("C:\\data\\engine\\nexis-ml.exe");
+  });
+
+  it("managedEngineCandidate resolves null when the path can't be resolved", async () => {
+    invokeMock.mockImplementation(async () => {
+      throw new Error("no data dir");
+    });
+    expect(await managedEngineCandidate()).toBeNull();
+  });
+
+  it("downloadEngine invokes ml_download with the url", async () => {
+    let args: unknown;
+    invokeMock.mockImplementation(async (cmd: string, a?: unknown) => {
+      if (cmd === "ml_download") {
+        args = a;
+        return { exe: "C:\\data\\engine\\nexis-ml.exe", version: "0.5.0" };
+      }
+      return null;
+    });
+
+    const res = await downloadEngine("https://example.com/nexis-ml.exe");
+
+    expect(args).toEqual({ url: "https://example.com/nexis-ml.exe" });
+    expect(res).toEqual({
+      exe: "C:\\data\\engine\\nexis-ml.exe",
+      version: "0.5.0",
     });
   });
 });
