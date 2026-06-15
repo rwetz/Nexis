@@ -493,10 +493,21 @@ fn is_python_exe(exe: &str) -> bool {
 /// this must not become a generic pip runner.
 fn install_flavor_args(flavor: &str) -> Option<&'static [&'static str]> {
     match flavor {
-        // The engine + CPU torch (the default everywhere)
+        // The engine + CPU torch from PyPI (the preferred source).
         "default" => Some(&["-m", "pip", "install", "--upgrade", "nexis-ml[torch]"]),
+        // GitHub fallback — installs the engine straight from the public repo
+        // when it isn't on PyPI (yet). The frontend tries `default` first and
+        // only falls back to this. A fixed direct-reference URL, not a
+        // user-supplied one, so this stays a non-generic installer.
+        "git" => Some(&[
+            "-m",
+            "pip",
+            "install",
+            "--upgrade",
+            "nexis-ml[torch] @ git+https://github.com/rwetz/nexis-ml.git",
+        ]),
         // CUDA torch from the PyTorch index (NVIDIA GPUs). The frontend
-        // runs this first, then "default" — nexis-ml's torch requirement
+        // runs this first, then `default` — nexis-ml's torch requirement
         // is then already satisfied by the CUDA build.
         //
         // --force-reinstall is required: pip ignores the +cpu/+cuXXX
@@ -668,12 +679,13 @@ mod tests {
     #[test]
     fn install_flavors_are_a_fixed_allowlist() {
         assert!(install_flavor_args("default").is_some());
+        assert!(install_flavor_args("git").is_some());
         assert!(install_flavor_args("cuda-torch").is_some());
         assert!(install_flavor_args("").is_none());
         assert!(install_flavor_args("anything-else").is_none());
         // No flavor may smuggle arbitrary packages: every arg set is
         // a compile-time constant.
-        for flavor in ["default", "cuda-torch"] {
+        for flavor in ["default", "git", "cuda-torch"] {
             let args = install_flavor_args(flavor).unwrap();
             assert_eq!(args[0], "-m");
             assert_eq!(args[1], "pip");

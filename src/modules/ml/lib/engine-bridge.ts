@@ -188,7 +188,7 @@ export async function spawnNew(
   });
 }
 
-export type InstallFlavor = "default" | "cuda-torch";
+export type InstallFlavor = "default" | "cuda-torch" | "git";
 
 /**
  * Install/upgrade the engine (or a torch variant) into a Python env.

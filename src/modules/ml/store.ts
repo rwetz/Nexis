@@ -247,6 +247,8 @@ type MlStore = {
   installRoot: string | null;
   /** Remaining pip steps (GPU installs run cuda-torch, then default). */
   installQueue: InstallFlavor[];
+  /** The pip step currently running — used to fall back PyPI → GitHub. */
+  installFlavor: InstallFlavor | null;
   /** What the installed engine can do (torch / CUDA), once probed. */
   envInfo: MlEnvInfo | null;
   /** NVIDIA GPU reported by the driver, engine not required. */
@@ -372,6 +374,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
   installSid: null,
   installRoot: null,
   installQueue: [],
+  installFlavor: null,
   envInfo: null,
   hostGpu: null,
 
@@ -478,9 +481,12 @@ export const useMlStore = create<MlStore>((set, get) => ({
     const label =
       flavor === "cuda-torch"
         ? "$ pip install torch (CUDA build, ~3 GB — this is the big one)"
-        : "$ pip install --upgrade nexis-ml[torch]";
+        : flavor === "git"
+          ? "$ pip install nexis-ml[torch] from GitHub (PyPI fallback)"
+          : "$ pip install --upgrade nexis-ml[torch]";
     set((s) => ({
       installQueue: s.installQueue.slice(1),
+      installFlavor: flavor,
       logs: pushLog(s.logs, label),
     }));
     try {
@@ -490,6 +496,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
       set((s) => ({
         installing: false,
         installSid: null,
+        installFlavor: null,
         installQueue: [],
         logs: pushLog(s.logs, `install failed to start: ${String(err)}`),
       }));
@@ -1102,9 +1109,21 @@ export const useMlStore = create<MlStore>((set, get) => ({
         void get()._startNextInstall();
         return;
       }
+      // The PyPI engine step failed → the package may not be published yet,
+      // so fall back to installing it straight from GitHub before giving up.
+      if (!ok && get().installFlavor === "default") {
+        set((s) => ({
+          installSid: null,
+          installQueue: ["git"],
+          logs: pushLog(s.logs, "couldn't get nexis-ml from PyPI — trying GitHub…"),
+        }));
+        void get()._startNextInstall();
+        return;
+      }
       set((s) => ({
         installing: false,
         installSid: null,
+        installFlavor: null,
         installRoot: null,
         installQueue: [],
         logs: pushLog(
