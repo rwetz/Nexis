@@ -128,6 +128,15 @@ export function managedEngineCandidate(): Promise<string | null> {
 }
 
 /**
+ * The GitHub release download URL for the standalone engine binary matching
+ * this OS/arch, or null on a platform with no prebuilt binary. Resolved by
+ * the Rust side (it knows the target triple).
+ */
+export function engineReleaseUrl(): Promise<string | null> {
+  return invoke<string | null>("ml_engine_release_url").catch(() => null);
+}
+
+/**
  * Download a standalone `nexis-ml` engine binary from `url` (https) into the
  * managed dir and verify it — the "no Python on this machine" install path,
  * mirroring how an LSP server is fetched. Resolves to the installed engine's

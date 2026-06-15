@@ -21,6 +21,8 @@ import {
   buildCandidates,
   cancelRun,
   detectEngine,
+  downloadEngine,
+  engineReleaseUrl,
   killRun,
   managedEngineCandidate,
   probeEnv,
@@ -249,6 +251,8 @@ type MlStore = {
   installQueue: InstallFlavor[];
   /** The pip step currently running — used to fall back PyPI → GitHub. */
   installFlavor: InstallFlavor | null;
+  /** Downloading the standalone Rust engine (no-Python path). */
+  downloadingEngine: boolean;
   /** What the installed engine can do (torch / CUDA), once probed. */
   envInfo: MlEnvInfo | null;
   /** NVIDIA GPU reported by the driver, engine not required. */
@@ -298,6 +302,8 @@ type MlStore = {
   installEngine: (workspaceRoot: string | null, useGpu: boolean) => Promise<void>;
   /** Swap the engine's CPU torch for the CUDA build. */
   upgradeToGpu: (workspaceRoot: string | null) => Promise<void>;
+  /** Download the standalone Rust engine (no Python needed). */
+  downloadStandaloneEngine: () => Promise<void>;
   refreshProjects: (workspaceRoot: string) => Promise<void>;
   selectProject: (dir: string) => void;
   createProject: (
@@ -375,6 +381,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
   installRoot: null,
   installQueue: [],
   installFlavor: null,
+  downloadingEngine: false,
   envInfo: null,
   hostGpu: null,
 
@@ -472,6 +479,40 @@ export const useMlStore = create<MlStore>((set, get) => ({
       installRoot: workspaceRoot,
     });
     await get()._startNextInstall();
+  },
+
+  async downloadStandaloneEngine() {
+    if (get().downloadingEngine || get().installing) return;
+    const url = await engineReleaseUrl();
+    if (!url) {
+      set((s) => ({
+        logs: pushLog(s.logs, "no prebuilt standalone engine for this platform"),
+      }));
+      return;
+    }
+    set((s) => ({
+      downloadingEngine: true,
+      logs: pushLog(s.logs, "downloading the standalone engine (~31 MB)…"),
+    }));
+    try {
+      const res = await downloadEngine(url);
+      set((s) => ({
+        downloadingEngine: false,
+        engineStatus: "ready",
+        engineExe: res.exe,
+        engineVersion: res.version,
+        engineError: null,
+        logs: pushLog(s.logs, `standalone engine ready (${res.version})`),
+      }));
+      void probeEnv(res.exe)
+        .then((env) => set({ envInfo: env }))
+        .catch(() => set({ envInfo: null }));
+    } catch (err) {
+      set((s) => ({
+        downloadingEngine: false,
+        logs: pushLog(s.logs, `engine download failed: ${String(err)}`),
+      }));
+    }
   },
 
   async _startNextInstall() {

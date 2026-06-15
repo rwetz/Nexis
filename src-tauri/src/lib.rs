@@ -161,6 +161,7 @@ pub fn run() {
             ml::ml_env,
             ml::ml_gpu_probe,
             ml::ml_managed_engine_path,
+            ml::ml_engine_release_url,
             ml::ml_download,
             dap::dap_start,
             dap::dap_request,

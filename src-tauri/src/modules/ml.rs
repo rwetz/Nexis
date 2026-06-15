@@ -179,6 +179,28 @@ pub fn ml_managed_engine_path(app: AppHandle) -> Result<String, String> {
     Ok(managed_engine_exe(&app)?.to_string_lossy().to_string())
 }
 
+/// GitHub "latest release" download URL for the standalone engine binary
+/// matching this OS/arch, or None on a platform with no prebuilt binary.
+/// The panel's "download engine" button passes this to `ml_download`. A
+/// fixed base (the project's own releases) — not user-supplied.
+#[tauri::command]
+pub fn ml_engine_release_url() -> Option<String> {
+    let asset = if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
+        "nexis-ml-windows-x64.exe"
+    } else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        "nexis-ml-macos-arm64"
+    } else if cfg!(all(target_os = "macos", target_arch = "x86_64")) {
+        "nexis-ml-macos-x64"
+    } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+        "nexis-ml-linux-x64"
+    } else {
+        return None;
+    };
+    Some(format!(
+        "https://github.com/rwetz/nexis-ml-rs/releases/latest/download/{asset}"
+    ))
+}
+
 /// Download a standalone `nexis-ml` engine binary from `url` (https) into the
 /// managed engine dir, verify it via `--version`, and return its path +
 /// version. The "download → locate → detect" path for machines without a

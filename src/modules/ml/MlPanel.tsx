@@ -83,6 +83,7 @@ export function MlPanel({ workspaceRoot }: Props) {
   const engineVersion = useMlStore((s) => s.engineVersion);
   const installPython = useMlStore((s) => s.installPython);
   const installing = useMlStore((s) => s.installing);
+  const downloadingEngine = useMlStore((s) => s.downloadingEngine);
   const envInfo = useMlStore((s) => s.envInfo);
   const hostGpu = useMlStore((s) => s.hostGpu);
   const projects = useMlStore((s) => s.projects);
@@ -101,6 +102,7 @@ export function MlPanel({ workspaceRoot }: Props) {
   const redetect = useMlStore((s) => s.redetect);
   const installEngine = useMlStore((s) => s.installEngine);
   const upgradeToGpu = useMlStore((s) => s.upgradeToGpu);
+  const downloadStandaloneEngine = useMlStore((s) => s.downloadStandaloneEngine);
   const refreshProjects = useMlStore((s) => s.refreshProjects);
   const selectProject = useMlStore((s) => s.selectProject);
   const createProject = useMlStore((s) => s.createProject);
@@ -186,9 +188,11 @@ export function MlPanel({ workspaceRoot }: Props) {
           <SetupCard
             installPython={installPython}
             installing={installing}
+            downloadingEngine={downloadingEngine}
             hostGpu={hostGpu}
             logs={logs}
             onInstall={(useGpu) => void installEngine(workspaceRoot, useGpu)}
+            onDownloadEngine={() => void downloadStandaloneEngine()}
             onRetry={() => void redetect(workspaceRoot)}
           />
         ) : engineStatus === "detecting" || engineStatus === "idle" ? (
@@ -392,16 +396,20 @@ export function MlPanel({ workspaceRoot }: Props) {
 function SetupCard({
   installPython,
   installing,
+  downloadingEngine,
   hostGpu,
   logs,
   onInstall,
+  onDownloadEngine,
   onRetry,
 }: {
   installPython: string | null;
   installing: boolean;
+  downloadingEngine: boolean;
   hostGpu: string | null;
   logs: string[];
   onInstall: (useGpu: boolean) => void;
+  onDownloadEngine: () => void;
   onRetry: () => void;
 }) {
   // GPU build is the better experience when a card exists; default on.
@@ -422,6 +430,14 @@ function SetupCard({
             <span className="size-1.5 animate-pulse rounded-full bg-sky-500" />
             Installing — this downloads PyTorch ({sizeNote}), give it a few
             minutes…
+          </p>
+          <LogView logs={logs} />
+        </>
+      ) : downloadingEngine ? (
+        <>
+          <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
+            <span className="size-1.5 animate-pulse rounded-full bg-sky-500" />
+            Downloading the standalone engine (~31 MB)…
           </p>
           <LogView logs={logs} />
         </>
@@ -458,10 +474,26 @@ function SetupCard({
       ) : (
         <ManualSetupSteps />
       )}
+      {!installing && !downloadingEngine ? (
+        <div className="mt-2 border-t border-border/40 pt-2">
+          <button
+            type="button"
+            onClick={onDownloadEngine}
+            className="w-full rounded-md border border-border/60 px-3 py-1.5 text-[11px] font-medium text-foreground/90 transition-opacity hover:opacity-90"
+          >
+            Download standalone engine — no Python (~31 MB)
+          </button>
+          <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">
+            A single binary that trains tabular & image models on your GPU
+            (no PyTorch download). Text generation & the playground need the
+            Python engine above.
+          </p>
+        </div>
+      ) : null}
       <button
         type="button"
         onClick={onRetry}
-        disabled={installing}
+        disabled={installing || downloadingEngine}
         className="mt-1.5 text-[10.5px] text-primary underline-offset-2 hover:underline disabled:opacity-50"
       >
         I installed it — check again
