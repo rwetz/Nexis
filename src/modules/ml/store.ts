@@ -22,7 +22,9 @@ import {
   cancelRun,
   detectEngine,
   downloadEngine,
+  engineKindFromEnv,
   engineReleaseUrl,
+  engineSupportsTemplate,
   killRun,
   managedEngineCandidate,
   probeEnv,
@@ -36,6 +38,7 @@ import {
   spawnServe,
   spawnTrain,
   subscribeMlEvents,
+  type EngineKind,
   type ExitPayload,
   type InstallFlavor,
   type MlEnvInfo,
@@ -242,6 +245,10 @@ type MlStore = {
   engineExe: string | null;
   engineVersion: string | null;
   engineError: string | null;
+  /** Which engine is active. Gates Python-only features (textgen / `blank`
+   *  templates, Playground, HTML report) — null until the env probe tells
+   *  us, which callers treat as "don't block". */
+  engineKind: EngineKind | null;
   /** Python to install the engine into, when one was detected. */
   installPython: string | null;
   installing: boolean;
@@ -377,6 +384,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
   engineExe: null,
   engineVersion: null,
   engineError: null,
+  engineKind: null,
   createError: null,
   installPython: null,
   installing: false,
@@ -440,17 +448,27 @@ export const useMlStore = create<MlStore>((set, get) => ({
         engineStatus: "ready",
         engineExe: found.exe,
         engineVersion: found.version,
+        // The managed binary is always the standalone Rust engine, so we
+        // can gate its narrower feature set immediately; for anything else
+        // we wait for the env probe rather than guessing.
+        engineKind: managed && found.exe === managed ? "rust" : null,
       });
-      // Capability probe (torch/CUDA) after the UI unblocks — importing
-      // torch inside `nexis-ml env` takes a few seconds.
+      // Capability probe (torch/CUDA + backend) after the UI unblocks —
+      // importing torch inside `nexis-ml env` takes a few seconds.
       void probeEnv(found.exe)
-        .then((env) => set({ envInfo: env }))
+        .then((env) =>
+          set((s) => ({
+            envInfo: env,
+            engineKind: engineKindFromEnv(env) ?? s.engineKind,
+          })),
+        )
         .catch(() => set({ envInfo: null }));
     } catch (err) {
       set({
         engineStatus: "missing",
         engineExe: null,
         engineVersion: null,
+        engineKind: null,
         engineError: String(err),
         envInfo: null,
       });
@@ -510,11 +528,18 @@ export const useMlStore = create<MlStore>((set, get) => ({
         engineStatus: "ready",
         engineExe: res.exe,
         engineVersion: res.version,
+        // The downloaded standalone binary is always the Rust engine.
+        engineKind: "rust",
         engineError: null,
         logs: pushLog(s.logs, `standalone engine ready (${res.version})`),
       }));
       void probeEnv(res.exe)
-        .then((env) => set({ envInfo: env }))
+        .then((env) =>
+          set((s) => ({
+            envInfo: env,
+            engineKind: engineKindFromEnv(env) ?? s.engineKind,
+          })),
+        )
         .catch(() => set({ envInfo: null }));
     } catch (err) {
       set((s) => ({
@@ -603,11 +628,22 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   async createProject(workspaceRoot, template, name, autoTrain) {
-    const { engineExe, pendingCreate } = get();
+    const { engineExe, engineKind, pendingCreate } = get();
     if (pendingCreate) return; // already creating one
     // Surface why nothing would happen, instead of silently returning.
     if (!engineExe) {
       set({ createError: "No engine is set up yet — install or download one above." });
+      return;
+    }
+    // Belt-and-suspenders for the filtered card (the picker hides these on
+    // the Rust engine): it can't scaffold textgen / blank — it's config-only.
+    // Say so plainly instead of letting the engine fail with a cryptic
+    // "exit 2" (it reports "unknown template '<x>' (supports: tabular, image)").
+    if (!engineSupportsTemplate(template, engineKind)) {
+      set({
+        createError:
+          "This template needs the Python engine — the standalone engine only does Spreadsheet and Image projects.",
+      });
       return;
     }
     if (!workspaceRoot) {

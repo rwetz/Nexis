@@ -38,7 +38,11 @@ import {
   trendOf,
 } from "./lib/friendly";
 import type { RunSummary } from "./lib/protocol";
-import type { MlTemplate } from "./lib/engine-bridge";
+import {
+  engineSupportsTemplate,
+  type EngineKind,
+  type MlTemplate,
+} from "./lib/engine-bridge";
 import { readConfusionMatrix, type ConfusionMatrix } from "./lib/artifacts";
 import { readTrainToml, writeTrainToml } from "./lib/config";
 import { tomlGet, tomlSet } from "./lib/toml-edit";
@@ -87,6 +91,7 @@ const BUSY_STATES = ["starting", "running", "cancelling"];
 export function MlPanel({ workspaceRoot }: Props) {
   const engineStatus = useMlStore((s) => s.engineStatus);
   const engineVersion = useMlStore((s) => s.engineVersion);
+  const engineKind = useMlStore((s) => s.engineKind);
   const engineError = useMlStore((s) => s.engineError);
   const installPython = useMlStore((s) => s.installPython);
   const installing = useMlStore((s) => s.installing);
@@ -210,8 +215,14 @@ export function MlPanel({ workspaceRoot }: Props) {
           </p>
         ) : (
           <>
-            {/* GPU available on the machine but the engine can't use it */}
-            {hostGpu && envInfo && !envInfo.cudaAvailable && installPython ? (
+            {/* GPU available on the machine but the engine can't use it.
+                Python-engine only: the upsell installs the CUDA torch build,
+                which is meaningless for the Rust engine (it uses wgpu). */}
+            {hostGpu &&
+            envInfo &&
+            !envInfo.cudaAvailable &&
+            installPython &&
+            engineKind === "python" ? (
               <GpuUpsell
                 gpuName={hostGpu}
                 installing={installing}
@@ -225,6 +236,7 @@ export function MlPanel({ workspaceRoot }: Props) {
                 creating={pendingCreate != null}
                 firstProject={projects.length === 0}
                 createError={createError}
+                engineKind={engineKind}
                 onCreate={(template, name) => {
                   setShowCreate(false);
                   void createProject(workspaceRoot, template, name, true);
@@ -597,12 +609,14 @@ function CreateCard({
   creating,
   firstProject,
   createError,
+  engineKind,
   onCreate,
   onDismiss,
 }: {
   creating: boolean;
   firstProject: boolean;
   createError: string | null;
+  engineKind: EngineKind | null;
   onCreate: (template: MlTemplate, name: string) => void;
   onDismiss?: () => void;
 }) {
@@ -615,6 +629,29 @@ function CreateCard({
     setTemplate(id);
     setName(TEMPLATE_OPTIONS.find((o) => o.id === id)?.defaultName ?? name);
   };
+
+  // If the active engine can't scaffold the selected template — e.g. the
+  // standalone Rust engine resolved after the card mounted — fall back to
+  // the first one it can, so the Create button never starts a doomed run.
+  useEffect(() => {
+    if (engineSupportsTemplate(template, engineKind)) return;
+    const fallback = TEMPLATE_OPTIONS.find((o) =>
+      engineSupportsTemplate(o.id, engineKind),
+    );
+    if (fallback) {
+      setTemplate(fallback.id);
+      setName(fallback.defaultName);
+    }
+  }, [engineKind, template]);
+
+  // Show only templates the active engine can actually scaffold. The Rust
+  // engine is config-only, so textgen and the code-it-yourself `blank`
+  // project (both hinge on a hand-editable train.py) are hidden while it's
+  // active — you only ever see options that will work. An unknown engine
+  // kind (probe still pending) shows everything; the engine validates too.
+  const templateOptions = TEMPLATE_OPTIONS.filter((o) =>
+    engineSupportsTemplate(o.id, engineKind),
+  );
 
   return (
     <div className="mb-2 rounded-md border border-primary/25 bg-primary/[0.04] p-2.5">
@@ -638,9 +675,9 @@ function CreateCard({
         results within seconds. Swap in your own data whenever you're ready.
       </p>
 
-      {/* Template chooser */}
+      {/* Template chooser — only options the active engine can scaffold */}
       <div className="mb-2 flex flex-col gap-1">
-        {TEMPLATE_OPTIONS.map((opt) => {
+        {templateOptions.map((opt) => {
           const selected = opt.id === template;
           return (
             <button
@@ -649,7 +686,7 @@ function CreateCard({
               disabled={creating}
               onClick={() => pick(opt.id)}
               className={cn(
-                "rounded border px-2 py-1 text-left transition-colors disabled:opacity-60",
+                "rounded border px-2 py-1 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                 selected
                   ? "border-primary/50 bg-primary/[0.07]"
                   : "border-border hover:bg-foreground/[0.04]",
@@ -671,6 +708,14 @@ function CreateCard({
           );
         })}
       </div>
+
+      {/* Nudge toward the Python engine for the features it hides here. */}
+      {templateOptions.length < TEMPLATE_OPTIONS.length ? (
+        <p className="mb-2 text-[10px] leading-snug text-muted-foreground/70">
+          For more of a playground feel with custom and ready-made models, try
+          the Python engine.
+        </p>
+      ) : null}
 
       {creating ? (
         <p className="flex items-center gap-1.5 text-[11px] text-foreground/90">

@@ -10,7 +10,10 @@ import {
   buildCandidates,
   detectEngine,
   downloadEngine,
+  engineKindFromEnv,
+  engineSupportsTemplate,
   managedEngineCandidate,
+  probeEnv,
   resetEngineDetection,
   sendInfer,
   siblingExe,
@@ -18,6 +21,7 @@ import {
   spawnNew,
   spawnServe,
   spawnTrain,
+  type MlEnvInfo,
 } from "./engine-bridge";
 
 vi.mock("@tauri-apps/api/core", () => ({
@@ -162,6 +166,55 @@ describe("spawnNew — scaffolds the chosen template", () => {
       args: ["new", "textgen", "tiny-writer"],
       projectDir: "E:\\ws",
     });
+  });
+});
+
+describe("engine kind + template gating", () => {
+  const env = (over: Partial<MlEnvInfo>): MlEnvInfo => ({
+    python: null,
+    torch: null,
+    cudaAvailable: false,
+    gpuName: null,
+    backend: null,
+    ...over,
+  });
+
+  it("identifies the Rust engine by its `backend` field", () => {
+    expect(engineKindFromEnv(env({ backend: "wgpu" }))).toBe("rust");
+    expect(engineKindFromEnv(env({ backend: "cpu" }))).toBe("rust");
+  });
+
+  it("identifies the Python engine by python/torch", () => {
+    expect(engineKindFromEnv(env({ python: "/x/python", torch: "2.3" }))).toBe(
+      "python",
+    );
+    expect(engineKindFromEnv(env({ torch: "2.3" }))).toBe("python");
+  });
+
+  it("is null when the kind can't be told yet", () => {
+    expect(engineKindFromEnv(null)).toBeNull();
+    expect(engineKindFromEnv(env({}))).toBeNull();
+  });
+
+  it("blocks textgen/blank on the Rust engine but allows tabular/image", () => {
+    expect(engineSupportsTemplate("textgen", "rust")).toBe(false);
+    expect(engineSupportsTemplate("blank", "rust")).toBe(false);
+    expect(engineSupportsTemplate("tabular", "rust")).toBe(true);
+    expect(engineSupportsTemplate("image", "rust")).toBe(true);
+  });
+
+  it("allows every template on the Python engine or when kind is unknown", () => {
+    for (const kind of ["python", null] as const) {
+      expect(engineSupportsTemplate("textgen", kind)).toBe(true);
+      expect(engineSupportsTemplate("blank", kind)).toBe(true);
+    }
+  });
+
+  it("probeEnv parses the Rust engine's backend field", async () => {
+    invokeMock.mockResolvedValueOnce(JSON.stringify({ backend: "wgpu" }));
+    const info = await probeEnv("nexis-ml");
+    expect(info.backend).toBe("wgpu");
+    expect(engineKindFromEnv(info)).toBe("rust");
   });
 });
 

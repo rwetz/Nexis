@@ -216,11 +216,18 @@ export type MlEnvInfo = {
   torch: string | null;
   cudaAvailable: boolean;
   gpuName: string | null;
+  /**
+   * Rust standalone engine only: its compute backend (`"cpu"` | `"wgpu"`).
+   * The Python engine never reports it — its presence is how we tell the
+   * two engines apart (see `engineKindFromEnv`).
+   */
+  backend: string | null;
 };
 
 /**
  * Ask the engine what it can do (`nexis-ml env`). Slow-ish — importing
- * torch takes a few seconds — so callers fire it without blocking UI.
+ * torch takes a few seconds on the Python engine — so callers fire it
+ * without blocking UI. The Rust engine answers instantly.
  */
 export async function probeEnv(exe: string): Promise<MlEnvInfo> {
   const raw = await invoke<string>("ml_env", { exe });
@@ -230,7 +237,43 @@ export async function probeEnv(exe: string): Promise<MlEnvInfo> {
     torch: typeof parsed.torch === "string" ? parsed.torch : null,
     cudaAvailable: parsed.cudaAvailable === true,
     gpuName: typeof parsed.gpuName === "string" ? parsed.gpuName : null,
+    backend: typeof parsed.backend === "string" ? parsed.backend : null,
   };
+}
+
+/** Which engine binary is in use. The two engines share the name
+ *  `nexis-ml` but have different capability sets (ML_LAB_GUIDE §22). */
+export type EngineKind = "python" | "rust";
+
+/**
+ * Identify the engine from its `env` report. The Rust engine reports a
+ * `backend` field and no torch; the Python engine reports python/torch.
+ * Returns null when we can't tell yet (probe not done or failed) — callers
+ * treat that as "don't block", letting the engine surface its own error.
+ */
+export function engineKindFromEnv(env: MlEnvInfo | null): EngineKind | null {
+  if (!env) return null;
+  if (env.backend != null) return "rust";
+  if (env.python != null || env.torch != null) return "python";
+  return null;
+}
+
+/** Templates the standalone Rust engine can scaffold. The Python engine
+ *  supports every template; textgen and the code-it-yourself `blank`
+ *  project need Python (the Rust engine is config-only — ML_LAB_GUIDE §22). */
+const RUST_TEMPLATES: readonly MlTemplate[] = ["tabular", "image"];
+
+/**
+ * Whether `template` can be scaffolded by the given engine. An unknown
+ * engine kind (probe pending/failed) is treated as supported — the engine
+ * still validates and reports its own error if it genuinely can't.
+ */
+export function engineSupportsTemplate(
+  template: MlTemplate,
+  kind: EngineKind | null,
+): boolean {
+  if (kind !== "rust") return true;
+  return RUST_TEMPLATES.includes(template);
 }
 
 /** NVIDIA GPU name from the driver (nvidia-smi), engine not required. */
