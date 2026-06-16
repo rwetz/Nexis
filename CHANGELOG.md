@@ -2,6 +2,30 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [Unreleased]
+
+ML Lab grows up: the rest of the ML Suite's **Phase 2** (inference + richer graphs) and **Phase 3** (a Python-free engine) merged here. Still an early feature — verified end-to-end, but young.
+
+### Added
+- **More templates** — Text generator (a tiny character-level GPT over any `.txt`, streaming a generated-text snapshot each pass), Image classifier (a folder-per-class CNN with a per-epoch sample-prediction grid), and Blank (scaffold your own `train.py`). The create card scaffolds and trains any of them in one click.
+- **Inference playground** — load a trained model and try it live without leaving the panel: prompt → continuation for text, a feature form → class + probability bars for tabular. Backed by `nexis-ml serve` (an NDJSON request/response loop); started per-run and torn down on navigation to free GPU memory.
+- **Run browser, comparison & annotation** — past runs list with final metrics; check 2+ to overlay them on shared charts (one color per run), and annotate each with notes, tags, and a pin-to-top "baseline" marker (`notes.json` per run).
+- **Confusion matrices & sample grids** — classification runs render a colored confusion matrix (accuracy + per-cell counts); image runs render a green/red sample-prediction grid — live and for historical runs.
+- **Hyperparameter form** — edit the keys present in `train.toml` (epochs / lr / batch / device / model size …) with Save and Save & train; surgical value replacement preserves comments, alignment, and line endings.
+- **HTML report export** — one-click self-contained report of any run (inline SVG charts, summary, confusion matrix, sample grid, generated-text samples, config) via `nexis-ml export`.
+- **Pause / resume, early stopping & GPU-memory telemetry** — Pause/Resume honored at the epoch boundary; the harness exposes `run.should_stop(patience=…)`; CUDA runs plot a per-epoch `mem/gpu_mb` footprint.
+- **Auto-open on train** — an opt-in, cross-window-synced preference that opens the panel automatically when training starts.
+- **Standalone Rust engine (no Python)** — Nexis can detect and download [nexis-ml-rs](https://github.com/rwetz/nexis-ml-rs), a single ~31 MB binary that trains tabular and image models on CPU or any GPU (burn's `wgpu` backend — no CUDA toolchain) and exports a tabular model to ONNX. It speaks the same protocol and writes the same run store, so the panel renders its runs unchanged. The setup card offers a one-click "Download standalone engine" alongside the Python install.
+- **Engine-aware UI** — the panel identifies which engine is active (from `nexis-ml env`) and gates features to it: the config-only Rust engine hides the Text generator and Blank templates (which need an editable `train.py`) and the GPU/CUDA upsell, showing only what it can do, with a hint pointing to the Python engine for the rest.
+
+### Fixed
+- The setup card now surfaces *why* engine setup, install, or download failed instead of failing silently, and "Create & train" reports why it didn't start.
+- The engine install falls back to installing from GitHub when the package isn't on PyPI yet, and the project folder is authorized (not merely checked) before `ml_spawn`.
+- ML engine/Python path guards parse the executable stem host-independently (split on both `/` and `\`), so engine detection behaves identically on Windows and Unix.
+
+### Security
+- The standalone-engine download (`ml_download`) only fetches over HTTPS into a managed app-data directory and verifies the binary with a `--version` probe before it can be spawned; the spawn guard still requires the executable's stem to be exactly `nexis-ml`.
+
 ## [1.19.0] — 2026-06-12
 
 ML Lab: train small machine-learning models inside Nexis. An early feature — functional and verified end-to-end, but young; expect rough edges.

@@ -5,7 +5,7 @@
   <p><strong>Open-source lightweight cross-platform AI-native terminal (ADE)</strong></p>
 
   <p>
-    <img src="https://img.shields.io/badge/version-1.18.1-blue" alt="version" />
+    <img src="https://img.shields.io/badge/version-1.19.0-blue" alt="version" />
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license" />
     <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="platform" />
   </p>
@@ -121,6 +121,17 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 - **Prompt templates** — save and reuse common AI prompts with `{VAR}` placeholder substitution
 - Dockable AI panel — resize, float, and snap-to-dock
 
+### ML Lab
+- **Train small models locally** — a sidebar panel for training models on your own data, no cloud and no accounts. Powered by a small local engine (`nexis-ml`) that the panel installs or downloads for you; everything runs on your machine.
+- **Two engines, one panel** — a PyTorch-based **Python engine** (the full feature set) or a **standalone Rust engine** (a single ~31 MB binary, no Python/PyTorch needed, that trains tabular & image models on CPU or any GPU via `wgpu`). The panel auto-detects whichever is present and only ever shows the options that engine supports.
+- **Templates** — Spreadsheet (tabular neural net), Text generator (a tiny GPT you can watch learn to write), Image classifier (a small CNN over folders of images), and Blank (design your own network in `train.py`). One-click **Create & train** scaffolds an example project with sample data — live results within seconds.
+- **Plain-language training** — live charts with friendly metric names ("Accuracy", not `acc/val`), a progress bar with elapsed time, and a trend-aware status sentence that explains what the model is doing, including an overfitting warning when validation worsens. Raw logs stay in a collapsed Details disclosure.
+- **Inference playground** — load a trained model and try it live: a prompt → continuation box for text, a feature form → prediction with probability bars for tabular.
+- **Run browser & comparison** — every run is saved with its metrics; annotate with notes/tags, pin a baseline, and overlay 2+ runs on shared charts to compare. Confusion matrices and sample-prediction grids render inline.
+- **Hyperparameter form & HTML report export** — tweak `train.toml` keys without leaving the panel, and export a self-contained HTML report (charts + summary + samples) of any run in one click.
+
+See **[ML_LAB_GUIDE.md](ML_LAB_GUIDE.md)** for the full how/why guide and **[ML_SUITE.md](ML_SUITE.md)** for the architecture, protocol, and roadmap.
+
 ### Sidebar Panels
 | Panel | What it does |
 |---|---|
@@ -134,6 +145,7 @@ If you want the upstream project: [crynta/terax-ai](https://github.com/crynta/te
 | **Outline** | Symbol tree for the active file |
 | **Snippets** | Create and manage code snippets |
 | **Tests** | Run Vitest / cargo test / pytest / JUnit with pass/fail tree |
+| **ML Lab** | Train small ML models on your own data — live charts, templates, an inference playground, and a run browser |
 | **Database** | Connection manager for SQLite, PostgreSQL, MySQL; schema browser, table viewer, AI-assisted query editor |
 | **Build** | Detect and run cargo, pnpm, make, gradle, go, and more |
 | **SSH** | Save SSH connections; **Connect** opens a new terminal tab with the command pre-executed |
