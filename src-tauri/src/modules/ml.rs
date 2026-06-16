@@ -97,15 +97,22 @@ struct ExitPayload {
     code: Option<i32>,
 }
 
+/// Lowercased final-component stem of a path, splitting on BOTH `/` and `\`
+/// regardless of host OS. `Path::file_stem` is host-dependent — on Unix it
+/// doesn't treat `\` as a separator — so a Windows-style candidate path like
+/// `C:\venv\Scripts\nexis-ml.exe` would otherwise pass the guard on Windows
+/// but fail it (and the unit tests) on the Linux/macOS CI runners.
+fn exe_stem_lower(exe: &str) -> String {
+    let name = exe.rsplit(['/', '\\']).next().unwrap_or(exe);
+    let stem = name.rsplit_once('.').map_or(name, |(base, _ext)| base);
+    stem.to_ascii_lowercase()
+}
+
 /// True if `exe` plausibly names the nexis-ml binary (and nothing else).
 /// This command must not become a generic process launcher: only a file
 /// whose stem is exactly `nexis-ml` may be spawned.
 fn is_nexis_ml_exe(exe: &str) -> bool {
-    let stem = std::path::Path::new(exe)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("");
-    stem.eq_ignore_ascii_case("nexis-ml")
+    exe_stem_lower(exe) == "nexis-ml"
 }
 
 /// Run `<exe> --version` and return the parsed version (the last
@@ -518,11 +525,7 @@ pub fn ml_kill(state: State<'_, MlState>, sid: u32) -> Result<(), String> {
 /// Same rationale as `is_nexis_ml_exe`: ml_install must not become a
 /// generic process launcher.
 fn is_python_exe(exe: &str) -> bool {
-    let stem = std::path::Path::new(exe)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("")
-        .to_ascii_lowercase();
+    let stem = exe_stem_lower(exe);
     stem == "python" || stem == "python3" || stem.starts_with("python3.")
 }
 
