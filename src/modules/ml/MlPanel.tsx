@@ -70,6 +70,12 @@ const TEMPLATE_OPTIONS: {
     desc: "Train a small CNN on folders of images, one folder per class.",
     defaultName: "image-classifier",
   },
+  {
+    id: "blank",
+    label: "Blank",
+    desc: "Start from scratch — design your own network in train.py.",
+    defaultName: "my-network",
+  },
 ];
 
 type Props = {

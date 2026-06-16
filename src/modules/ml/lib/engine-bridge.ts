@@ -177,7 +177,7 @@ export async function spawnTrain(
 
 /** Project templates the panel can scaffold. The engine validates the
  *  name too (argparse `choices`); this union keeps the UI honest. */
-export type MlTemplate = "tabular" | "textgen" | "image";
+export type MlTemplate = "tabular" | "textgen" | "image" | "blank";
 
 /**
  * Scaffold a new project under the workspace root (`nexis-ml new
