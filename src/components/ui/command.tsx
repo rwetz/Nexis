@@ -60,6 +60,9 @@ function CommandDialog({
       <DialogContent
         className={cn(
           "top-1/3 translate-y-0 overflow-hidden rounded-4xl! p-0",
+          // Spotlight glass: translucent + blurred so the app shows through,
+          // with a soft elevation shadow. Reads as "floating over" the UI.
+          "border-border/60 bg-popover/80 shadow-2xl shadow-black/40 backdrop-blur-xl",
           className
         )}
         showCloseButton={showCloseButton}

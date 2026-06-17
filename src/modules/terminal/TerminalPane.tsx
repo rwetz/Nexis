@@ -146,8 +146,8 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
         onDrop={handleDrop}
       >
         {isDragOver && (
-          <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center rounded border-2 border-dashed border-primary bg-primary/10">
-            <span className="rounded bg-card/80 px-3 py-1.5 text-xs font-medium text-primary shadow">
+          <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center rounded-md border-2 border-dashed border-brand bg-brand/10 backdrop-blur-[1px]">
+            <span className="brand-glow rounded-md bg-card/90 px-3 py-1.5 text-xs font-medium text-brand shadow">
               Drop to paste path
             </span>
           </div>

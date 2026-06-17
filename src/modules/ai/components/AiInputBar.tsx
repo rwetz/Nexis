@@ -264,6 +264,8 @@ export function AiInputBar({ compact }: { compact?: boolean } = {}) {
           cn("flex flex-col gap-1.5 rounded-lg px-1", compact ? "w-full py-0" : "py-1"),
           "transition-colors focus-within:border-border",
           isDragOver && "ring-2 ring-primary ring-offset-1",
+          // Aurora border traces the composer while the agent is working.
+          c.isBusy && "aurora-border",
         )}
       >
         <ChipsRow

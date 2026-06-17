@@ -30,6 +30,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { EditorTab, Tab } from "./lib/tabTypes";
 
@@ -240,11 +241,17 @@ export function TabBar({
                     draggingId === t.id && "opacity-50 ring-1 ring-primary/30",
                   )}
                 >
-                  {/* Top accent line on active tab */}
-                  <span
-                    aria-hidden
-                    className="absolute inset-x-2 top-0 h-[1.5px] rounded-full bg-primary opacity-0 transition-opacity group-data-[state=active]:opacity-100"
-                  />
+                  {/* Sliding brand-colored active indicator — a single
+                      shared-layout element that animates between tabs as the
+                      selection changes, with a soft brand glow. */}
+                  {t.id === activeId && (
+                    <motion.span
+                      layoutId="tab-active-indicator"
+                      aria-hidden
+                      className="absolute inset-x-1.5 top-0 h-[2px] rounded-full bg-brand shadow-[0_0_8px_var(--brand)]"
+                      transition={{ type: "spring", stiffness: 480, damping: 36 }}
+                    />
+                  )}
                   <span
                     className={cn(
                       "flex items-center gap-1.5 truncate",

@@ -6,6 +6,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { currentWorkspaceEnv } from "@/modules/workspace";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 
@@ -235,7 +236,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
         options?.onPathRenamed?.(renaming, to);
         await fetchChildren(parent);
       } catch (e) {
-        window.alert(`Rename failed: ${e}`);
+        toast.error("Rename failed", { description: String(e) });
       } finally {
         setRenaming(null);
       }
@@ -250,7 +251,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
         options?.onPathDeleted?.(path);
         await fetchChildren(dirname(path));
       } catch (e) {
-        window.alert(`Delete failed: ${e}`);
+        toast.error("Delete failed", { description: String(e) });
       }
     },
     [fetchChildren, options],

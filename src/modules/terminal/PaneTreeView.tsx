@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { Fragment } from "react";
+import { cn } from "@/lib/utils";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -28,6 +29,9 @@ type Props = {
   activeLeafId: number;
   onFocusLeaf: (leafId: number) => void;
   getBundle: (leafId: number) => LeafBundle;
+  /** True once we're inside a split — gates the focus glow so a lone pane
+   *  (the common case) never lights up. Set by the recursive descent. */
+  split?: boolean;
 };
 
 export function PaneTreeView({
@@ -36,6 +40,7 @@ export function PaneTreeView({
   activeLeafId,
   onFocusLeaf,
   getBundle,
+  split = false,
 }: Props) {
   if (node.kind === "leaf") {
     const focused = node.id === activeLeafId;
@@ -51,7 +56,10 @@ export function PaneTreeView({
           if (!focused) onFocusLeaf(node.id);
         }}
         data-pane-leaf={node.id}
-        className="relative h-full w-full"
+        className={cn(
+          "relative h-full w-full",
+          focused && split && "pane-focus-glow",
+        )}
       >
         <TerminalPane
           leafId={node.id}
@@ -82,6 +90,7 @@ export function PaneTreeView({
               activeLeafId={activeLeafId}
               onFocusLeaf={onFocusLeaf}
               getBundle={getBundle}
+              split
             />
           </ResizablePanel>
         </Fragment>

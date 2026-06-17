@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { toast } from "sonner";
 
 export async function copyToClipboard(text: string): Promise<void> {
   try {
@@ -24,6 +25,6 @@ export async function revealInFinder(path: string): Promise<void> {
   try {
     await revealItemInDir(path);
   } catch (e) {
-    window.alert(`Could not reveal in file manager: ${e}`);
+    toast.error("Could not reveal in file manager", { description: String(e) });
   }
 }

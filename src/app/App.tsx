@@ -16,6 +16,7 @@ import { WorkspaceSearch } from "@/components/WorkspaceSearch";
 import { CommandPalette, type CommandDef } from "@/components/CommandPalette";
 import { ShellHistoryOverlay } from "@/components/ShellHistoryOverlay";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -137,7 +138,7 @@ import {
 import { homeDir } from "@tauri-apps/api/path";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { SearchAddon } from "@xterm/addon-search";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, MotionConfig } from "motion/react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const MarkdownStackLazy = lazy(() =>
@@ -1446,6 +1447,7 @@ export default function App() {
 
   const shell = (
     <ThemeProvider>
+      <MotionConfig reducedMotion="user" transition={{ duration: 0.2 }}>
       <TooltipProvider>
         <div className="relative flex h-screen flex-col overflow-hidden bg-background text-foreground">
           <Header
@@ -1816,7 +1818,9 @@ export default function App() {
             </AlertDialogContent>
           </AlertDialog>
         </div>
+        <Toaster />
       </TooltipProvider>
+      </MotionConfig>
     </ThemeProvider>
   );
 

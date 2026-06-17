@@ -479,3 +479,80 @@ textarea,
 :root:not(.dark) .nexis-scrollbar::-webkit-scrollbar-thumb:hover {
   background: oklch(0 0 0 / 22%);
 }
+
+/* ── Spice: brand glow / active-pane / aurora border ──────────────────────
+ * Reusable look-and-feel primitives keyed off the --brand token. */
+
+/* Soft brand-colored glow — focus rings, active chips, "alive" accents. */
+.brand-glow {
+  box-shadow: 0 0 12px -2px color-mix(in oklch, var(--brand) 60%, transparent);
+}
+
+/* The focused split pane gets a subtle inset brand ring + inner glow so it's
+ * always obvious which pane has focus. Inset only, so it never shifts layout
+ * or gets clipped by the pane's own overflow. */
+.pane-focus-glow {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--brand) 42%, transparent),
+    inset 0 0 14px -5px color-mix(in oklch, var(--brand) 55%, transparent);
+  transition: box-shadow 0.2s ease;
+}
+
+/* Aurora border — a slow conic-gradient of --brand traced around an element's
+ * edge. Used on the AI panel while the agent streams ("alive / thinking").
+ * The @property angle is animatable, and a mask-composite ring shows only the
+ * 1px border, not the fill. */
+@property --aurora-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes aurora-spin {
+  to {
+    --aurora-angle: 360deg;
+  }
+}
+.aurora-border {
+  position: relative;
+}
+.aurora-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--aurora-angle),
+    transparent 0%,
+    var(--brand) 16%,
+    transparent 34%,
+    transparent 66%,
+    var(--brand) 84%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: aurora-spin 4s linear infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-border::before {
+    animation: none;
+    background: conic-gradient(
+      from 90deg,
+      transparent,
+      var(--brand),
+      transparent 50%
+    );
+  }
+}
+
+/* Theme switch crossfade (View Transitions API — see ThemeProvider). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.25s;
+}

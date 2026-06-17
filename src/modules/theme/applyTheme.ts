@@ -57,6 +57,7 @@ const ANSI_VARS: readonly string[] = [
 
 const ALL_VARS: readonly string[] = [
   ...Object.values(COLOR_VAR),
+  "--brand",
   "--terminal-background",
   "--terminal-foreground",
   "--terminal-cursor",
@@ -77,7 +78,17 @@ export function applyTheme(theme: Theme, mode: ThemeMode): void {
   const colors = variant.colors;
   const terminal = variant.terminal;
   for (const v of ALL_VARS) root.style.removeProperty(v);
-  if (colors) writeColors(root, colors);
+  if (colors) {
+    writeColors(root, colors);
+    // Make the brand-accent system (the sliding tab indicator, the composer
+    // aurora, the active-pane glow — everything keyed off --brand) take on the
+    // theme's signature colour so it coincides with the theme. `ring` is the
+    // vivid accent across themes (Tokyo Night's primary is a washed lavender,
+    // its ring the blue); primary is the fallback. The default Nexis theme
+    // runs clearTheme(), so --brand falls back to the coral in globals.css.
+    const brand = colors.ring ?? colors.primary;
+    if (brand) root.style.setProperty("--brand", brand);
+  }
   if (terminal) writeTerminal(root, terminal);
   lastApplied = theme.id;
 }

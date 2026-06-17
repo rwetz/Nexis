@@ -24,7 +24,27 @@ import {
   type EditorThemeId,
   type ThemePref,
 } from "@/modules/settings/store";
+import { flushSync } from "react-dom";
 import { applyTheme, clearTheme } from "./applyTheme";
+
+/**
+ * Run a theme-changing state update inside a View Transition so the whole
+ * window crossfades between palettes instead of hard-cutting. flushSync makes
+ * the React update synchronous so the browser captures the new palette in the
+ * transition's "after" snapshot. Degrades to a plain update where the API is
+ * unavailable or the user prefers reduced motion.
+ */
+function withViewTransition(mutate: () => void): void {
+  const doc = document as Document & {
+    startViewTransition?: (cb: () => void) => unknown;
+  };
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce || typeof doc.startViewTransition !== "function") {
+    mutate();
+    return;
+  }
+  doc.startViewTransition(() => flushSync(mutate));
+}
 import {
   listCustomThemes,
   onCustomThemesChange,
@@ -161,13 +181,13 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
   }, [themeId, resolvedMode, customThemes]);
 
   const setMode = useCallback((next: ThemePref) => {
-    setModeState(next);
+    withViewTransition(() => setModeState(next));
     writeFastMode(next);
     void persistTheme(next);
   }, []);
 
   const setThemeId = useCallback((id: string) => {
-    setThemeIdState(id);
+    withViewTransition(() => setThemeIdState(id));
     writeFastThemeId(id);
     void persistThemeId(id);
   }, []);
