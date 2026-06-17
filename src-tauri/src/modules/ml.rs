@@ -192,12 +192,11 @@ pub fn ml_managed_engine_path(app: AppHandle) -> Result<String, String> {
 /// fixed base (the project's own releases) — not user-supplied.
 #[tauri::command]
 pub fn ml_engine_release_url() -> Option<String> {
+    // macOS standalone builds are deferred — no prebuilt asset is published
+    // for it, so Mac falls through to None (the panel guides users to the
+    // Python engine instead of offering a download that would 404).
     let asset = if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
         "nexis-ml-windows-x64.exe"
-    } else if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
-        "nexis-ml-macos-arm64"
-    } else if cfg!(all(target_os = "macos", target_arch = "x86_64")) {
-        "nexis-ml-macos-x64"
     } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
         "nexis-ml-linux-x64"
     } else {
