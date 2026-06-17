@@ -2,9 +2,9 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
-## [Unreleased]
+## [1.20.0] — 2026-06-17
 
-ML Lab grows up: the rest of the ML Suite's **Phase 2** (inference + richer graphs) and **Phase 3** (a Python-free engine) merged here. Still an early feature — verified end-to-end, but young.
+ML Lab grows up: the rest of the ML Suite's **Phase 2** (inference + richer graphs) and **Phase 3** (a Python-free engine) ship here. Still an early feature — verified end-to-end, but young.
 
 ### Added
 - **More templates** — Text generator (a tiny character-level GPT over any `.txt`, streaming a generated-text snapshot each pass), Image classifier (a folder-per-class CNN with a per-epoch sample-prediction grid), and Blank (scaffold your own `train.py`). The create card scaffolds and trains any of them in one click.

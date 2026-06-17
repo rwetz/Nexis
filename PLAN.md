@@ -22,8 +22,8 @@ Patch releases should be frequent and low-risk. Minor releases are bigger and ge
 
 ---
 
-### 1.19.0 — ML Lab (ready to tag)
-> Built and verified 2026-06-12. Full spec and phase plan: [ML_SUITE.md](ML_SUITE.md).
+### 1.19.0 — ML Lab, Phase 1 (never tagged; shipped within 1.20.0)
+> Built and verified 2026-06-12. Full spec and phase plan: [ML_SUITE.md](ML_SUITE.md). The version was bumped to 1.19.0 but never released; Phases 2–3 landed on top without a re-bump, so all of it ships together as 1.20.0.
 
 Train small ML models inside Nexis. A new ML Lab sidebar panel (own rail icon, pinned by default) drives the external [nexis-ml](https://github.com/rwetz/nexis-ml) engine (v0.2.0) over an NDJSON stdio protocol — the LSP model: Nexis ships the client, the heavy tool installs separately, the binary stays under 10 MB.
 
@@ -39,8 +39,24 @@ Train small ML models inside Nexis. A new ML Lab sidebar panel (own rail icon, p
 
 ---
 
-### 1.20.0 — Persistent terminal sessions (planned)
-> Working spec. Roadmap item promoted to Up next after 1.18.0; renumbered from 1.19.0 when ML Lab shipped first.
+### 1.20.0 — ML Lab complete (ML Suite Phase 2 + 3)
+> Built and verified through 2026-06-17. Spec: [ML_SUITE.md](ML_SUITE.md); user guide: [ML_LAB_GUIDE.md](ML_LAB_GUIDE.md). Includes the never-tagged 1.19.0 (Phase 1 — tabular).
+
+The full ML Lab: every template, an inference playground, run comparison, and a Python-free engine.
+
+**Scope shipped (on top of 1.19.0's tabular foundation):**
+- Templates: Text generator (tiny char-level GPT), Image classifier (folder-per-class CNN), and Blank (write your own `train.py`), alongside the original Spreadsheet (tabular) template.
+- Inference playground (`nexis-ml serve`): prompt → continuation for text, a feature form → class + probabilities for tabular; started per-run and torn down on navigation to free GPU memory.
+- Run browser with comparison (overlay 2+ runs), per-run notes/tags/pin, inline confusion matrices + sample-prediction grids, a hyperparameter form (surgical `train.toml` edits), and one-click HTML report export.
+- Pause/resume at the epoch boundary, an early-stopping helper, GPU-memory telemetry, and an opt-in "auto-open panel on train" preference.
+- Standalone Rust engine ([nexis-ml-rs](https://github.com/rwetz/nexis-ml-rs)): a single ~31 MB binary (no Python/PyTorch) that trains tabular & image models on CPU or any GPU via `wgpu` and exports ONNX. Detected + downloaded from the setup card; the panel gates templates to the active engine's capabilities.
+
+**Known limits (by design):** one training run at a time; the Rust engine is config-only (no textgen/blank, no playground/HTML report yet); image ONNX export is a follow-up.
+
+---
+
+### 1.21.0 — Persistent terminal sessions (planned)
+> Working spec. Promoted to Up next after 1.18.0; renumbered 1.19.0 → 1.20.0 → 1.21.0 as ML Lab took the slots ahead of it.
 
 PTY sessions survive Nexis restarts: relaunch the app and your shells are still there — scrollback, running processes, cwd. Two milestones, shippable independently.
 
