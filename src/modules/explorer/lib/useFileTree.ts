@@ -64,22 +64,32 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     showHiddenRef.current = showHidden;
   }, [showHidden]);
 
-  const fetchChildren = useCallback(async (path: string) => {
-    setNodes((s) => ({ ...s, [path]: { status: "loading" } }));
-    try {
-      const entries = await invoke<DirEntry[]>("fs_read_dir", {
-        path,
-        showHidden: showHiddenRef.current,
-        workspace: currentWorkspaceEnv(),
+  const fetchChildren = useCallback(
+    async (path: string, opts?: { background?: boolean }) => {
+      // A background refresh (the live-sync poll) keeps the already-loaded
+      // rows on screen while it re-lists — flipping to "loading" would clear
+      // the entries and flash the list empty every poll. Only show the
+      // loading state when there's nothing to display yet.
+      setNodes((s) => {
+        if (opts?.background && s[path]?.status === "loaded") return s;
+        return { ...s, [path]: { status: "loading" } };
       });
-      setNodes((s) => ({ ...s, [path]: { status: "loaded", entries } }));
-    } catch (e) {
-      setNodes((s) => ({
-        ...s,
-        [path]: { status: "error", message: String(e) },
-      }));
-    }
-  }, []);
+      try {
+        const entries = await invoke<DirEntry[]>("fs_read_dir", {
+          path,
+          showHidden: showHiddenRef.current,
+          workspace: currentWorkspaceEnv(),
+        });
+        setNodes((s) => ({ ...s, [path]: { status: "loaded", entries } }));
+      } catch (e) {
+        setNodes((s) => ({
+          ...s,
+          [path]: { status: "error", message: String(e) },
+        }));
+      }
+    },
+    [],
+  );
 
   // Root change → reset state.
   useEffect(() => {
@@ -145,7 +155,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
 
   const refresh = useCallback(
     (path: string) => {
-      void fetchChildren(path);
+      void fetchChildren(path, { background: true });
     },
     [fetchChildren],
   );

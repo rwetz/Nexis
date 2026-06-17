@@ -35,7 +35,7 @@ import { ExplorerSearch, type ExplorerSearchHandle } from "./ExplorerSearch";
 import { EntryRow, PendingRow, StatusRow } from "./TreeRow";
 import { InlineInput } from "./InlineInput";
 import { copyToClipboard, revealInFinder } from "./lib/contextActions";
-import { fileIconUrl, folderIconUrl } from "./lib/iconResolver";
+import { fileIconUrl, folderIconUrl, preloadIcons } from "./lib/iconResolver";
 import { COMPACT_CONTENT, COMPACT_ITEM } from "./lib/menuItemClass";
 import { useFileTree } from "./lib/useFileTree";
 import { useGlobalShortcuts } from "@/modules/shortcuts";
@@ -176,6 +176,20 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
     const searchRef = useRef<ExplorerSearchHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // The folder/file icon JSON loads async. If the tree first paints before
+    // it's ready, icon URLs come back empty; re-render once it resolves so the
+    // icons fill in immediately instead of waiting for the next interaction.
+    const [, setIconsReady] = useState(false);
+    useEffect(() => {
+      let alive = true;
+      void preloadIcons().then(() => {
+        if (alive) setIconsReady(true);
+      });
+      return () => {
+        alive = false;
+      };
+    }, []);
 
     const { rows, entryIndexByPath } = useMemo(() => {
       if (!rootPath) return { rows: [] as Row[], entryIndexByPath: new Map<string, number>() };

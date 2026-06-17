@@ -92,6 +92,10 @@ function buildDataUrl(iconName: string): string | null {
   const key = `cat:${iconName}`;
   const cached = dataUrlCache.get(key);
   if (cached !== undefined) return cached || null;
+  // Don't cache a miss while the JSON is still loading — `cat` is null until
+  // the async import resolves, and caching "" here would poison the lookup so
+  // the icon never appears even after load (the broken-box bug).
+  if (!cat) return null;
   const body = catBody(iconName);
   if (!body) {
     dataUrlCache.set(key, "");
@@ -106,7 +110,9 @@ function buildVscDataUrl(iconName: string): string | null {
   const key = `vsc:${iconName}`;
   const cached = dataUrlCache.get(key);
   if (cached !== undefined) return cached || null;
-  const body = vsc?.icons[iconName]?.body;
+  // Same as buildDataUrl: don't poison the cache while the set is loading.
+  if (!vsc) return null;
+  const body = vsc.icons[iconName]?.body;
   if (!body) {
     dataUrlCache.set(key, "");
     return null;
