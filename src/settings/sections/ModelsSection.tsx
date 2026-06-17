@@ -41,6 +41,12 @@ import {
   setMlxModelId,
   setOllamaBaseURL,
   setOllamaModelId,
+  setVllmBaseURL,
+  setVllmModelId,
+  setXllmBaseURL,
+  setXllmModelId,
+  setSglangBaseURL,
+  setSglangModelId,
   setOpenaiCompatibleBaseURL,
   setOpenaiCompatibleContextLimit,
   setOpenaiCompatibleModelId,
@@ -99,6 +105,32 @@ const LOCAL_META: Partial<Record<ProviderId, LocalMeta>> = {
     description: "Local models via Ollama's built-in OpenAI-compatible API.",
     modelHint: <>The model name from `ollama list` / `ollama pull`.</>,
   },
+  vllm: {
+    urlPlaceholder: "http://localhost:8000/v1",
+    modelPlaceholder: "Qwen/Qwen2.5-Coder-7B-Instruct",
+    description:
+      "High-throughput serving via a vLLM OpenAI-compatible server (--port 8000).",
+    modelHint: (
+      <>
+        The model id you launched vLLM with — see the server's{" "}
+        <span className="font-mono">/v1/models</span> page.
+      </>
+    ),
+  },
+  xllm: {
+    urlPlaceholder: "http://localhost:8000/v1",
+    modelPlaceholder: "Qwen/Qwen2.5-Coder-7B-Instruct",
+    description:
+      "Self-hosted models via an xLLM OpenAI-compatible server (adjust the URL to match your port).",
+    modelHint: <>The model id served by your xLLM instance.</>,
+  },
+  sglang: {
+    urlPlaceholder: "http://localhost:30000/v1",
+    modelPlaceholder: "Qwen/Qwen2.5-Coder-7B-Instruct",
+    description:
+      "High-performance serving via an SGLang OpenAI-compatible server (--port 30000).",
+    modelHint: <>The model id you launched the SGLang server with.</>,
+  },
   "openai-compatible": {
     urlPlaceholder: "https://api.example.com/v1",
     modelPlaceholder: "gpt-4o, qwen3-max, glm-4.6, …",
@@ -118,6 +150,12 @@ export function ModelsSection() {
   const mlxModelId = usePreferencesStore((s) => s.mlxModelId);
   const ollamaBaseURL = usePreferencesStore((s) => s.ollamaBaseURL);
   const ollamaModelId = usePreferencesStore((s) => s.ollamaModelId);
+  const vllmBaseURL = usePreferencesStore((s) => s.vllmBaseURL);
+  const vllmModelId = usePreferencesStore((s) => s.vllmModelId);
+  const xllmBaseURL = usePreferencesStore((s) => s.xllmBaseURL);
+  const xllmModelId = usePreferencesStore((s) => s.xllmModelId);
+  const sglangBaseURL = usePreferencesStore((s) => s.sglangBaseURL);
+  const sglangModelId = usePreferencesStore((s) => s.sglangModelId);
   const compatBaseURL = usePreferencesStore((s) => s.openaiCompatibleBaseURL);
   const compatModelId = usePreferencesStore((s) => s.openaiCompatibleModelId);
   const compatContextLimit = usePreferencesStore(
@@ -162,6 +200,27 @@ export function ModelsSection() {
           modelId: ollamaModelId,
           setBaseURL: setOllamaBaseURL,
           setModelId: setOllamaModelId,
+        };
+      case "vllm":
+        return {
+          baseURL: vllmBaseURL,
+          modelId: vllmModelId,
+          setBaseURL: setVllmBaseURL,
+          setModelId: setVllmModelId,
+        };
+      case "xllm":
+        return {
+          baseURL: xllmBaseURL,
+          modelId: xllmModelId,
+          setBaseURL: setXllmBaseURL,
+          setModelId: setXllmModelId,
+        };
+      case "sglang":
+        return {
+          baseURL: sglangBaseURL,
+          modelId: sglangModelId,
+          setBaseURL: setSglangBaseURL,
+          setModelId: setSglangModelId,
         };
       case "openai-compatible":
         return {

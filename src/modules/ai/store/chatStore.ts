@@ -264,6 +264,12 @@ function makeChat(sessionId: string): Chat<UIMessage> {
     getMlxModelId: () => usePreferencesStore.getState().mlxModelId,
     getOllamaBaseURL: () => usePreferencesStore.getState().ollamaBaseURL,
     getOllamaModelId: () => usePreferencesStore.getState().ollamaModelId,
+    getVllmBaseURL: () => usePreferencesStore.getState().vllmBaseURL,
+    getVllmModelId: () => usePreferencesStore.getState().vllmModelId,
+    getXllmBaseURL: () => usePreferencesStore.getState().xllmBaseURL,
+    getXllmModelId: () => usePreferencesStore.getState().xllmModelId,
+    getSglangBaseURL: () => usePreferencesStore.getState().sglangBaseURL,
+    getSglangModelId: () => usePreferencesStore.getState().sglangModelId,
     getOpenaiCompatibleBaseURL: () =>
       usePreferencesStore.getState().openaiCompatibleBaseURL,
     getOpenaiCompatibleModelId: () =>

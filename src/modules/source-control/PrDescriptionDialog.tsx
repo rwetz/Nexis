@@ -71,6 +71,12 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
         mlxModelId: prefs.mlxModelId,
         ollamaBaseURL: prefs.ollamaBaseURL,
         ollamaModelId: prefs.ollamaModelId,
+        vllmBaseURL: prefs.vllmBaseURL,
+        vllmModelId: prefs.vllmModelId,
+        xllmBaseURL: prefs.xllmBaseURL,
+        xllmModelId: prefs.xllmModelId,
+        sglangBaseURL: prefs.sglangBaseURL,
+        sglangModelId: prefs.sglangModelId,
         openaiCompatibleBaseURL: prefs.openaiCompatibleBaseURL,
         openaiCompatibleModelId: prefs.openaiCompatibleModelId,
       });

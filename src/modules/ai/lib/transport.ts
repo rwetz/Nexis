@@ -58,6 +58,12 @@ type Deps = {
   getMlxModelId?: () => string | undefined;
   getOllamaBaseURL?: () => string | undefined;
   getOllamaModelId?: () => string | undefined;
+  getVllmBaseURL?: () => string | undefined;
+  getVllmModelId?: () => string | undefined;
+  getXllmBaseURL?: () => string | undefined;
+  getXllmModelId?: () => string | undefined;
+  getSglangBaseURL?: () => string | undefined;
+  getSglangModelId?: () => string | undefined;
   getOpenaiCompatibleBaseURL?: () => string | undefined;
   getOpenaiCompatibleModelId?: () => string | undefined;
   getOpenaiCompatibleContextLimit?: () => number | undefined;
@@ -98,6 +104,12 @@ export function createContextAwareTransport(deps: Deps) {
       mlxModelId: deps.getMlxModelId?.(),
       ollamaBaseURL: deps.getOllamaBaseURL?.(),
       ollamaModelId: deps.getOllamaModelId?.(),
+      vllmBaseURL: deps.getVllmBaseURL?.(),
+      vllmModelId: deps.getVllmModelId?.(),
+      xllmBaseURL: deps.getXllmBaseURL?.(),
+      xllmModelId: deps.getXllmModelId?.(),
+      sglangBaseURL: deps.getSglangBaseURL?.(),
+      sglangModelId: deps.getSglangModelId?.(),
       openaiCompatibleBaseURL: deps.getOpenaiCompatibleBaseURL?.(),
       openaiCompatibleModelId: deps.getOpenaiCompatibleModelId?.(),
       openaiCompatibleContextLimit: deps.getOpenaiCompatibleContextLimit?.(),

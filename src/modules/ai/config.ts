@@ -16,10 +16,14 @@ export type ProviderId =
   | "deepseek"
   | "mistral"
   | "openrouter"
+  | "zai"
   | "openai-compatible"
   | "lmstudio"
   | "mlx"
   | "ollama"
+  | "vllm"
+  | "xllm"
+  | "sglang"
   | "huggingface";
 
 export type ProviderInfo = {
@@ -97,6 +101,13 @@ export const PROVIDERS: readonly ProviderInfo[] = [
     consoleUrl: "https://openrouter.ai/keys",
   },
   {
+    id: "zai",
+    label: "Z.ai",
+    keyringAccount: "zai-api-key",
+    keyPrefix: null,
+    consoleUrl: "https://z.ai/manage-apikey/apikey-list",
+  },
+  {
     id: "openai-compatible",
     label: "OpenAI Compatible",
     keyringAccount: "openai-compatible-api-key",
@@ -124,6 +135,27 @@ export const PROVIDERS: readonly ProviderInfo[] = [
     keyringAccount: "",
     keyPrefix: null,
     consoleUrl: "https://ollama.com/download",
+  },
+  {
+    id: "vllm",
+    label: "vLLM",
+    keyringAccount: "",
+    keyPrefix: null,
+    consoleUrl: "https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html",
+  },
+  {
+    id: "xllm",
+    label: "xLLM",
+    keyringAccount: "",
+    keyPrefix: null,
+    consoleUrl: "https://github.com/jd-opensource/xllm",
+  },
+  {
+    id: "sglang",
+    label: "SGLang",
+    keyringAccount: "",
+    keyPrefix: null,
+    consoleUrl: "https://docs.sglang.ai/backend/openai_api_completions.html",
   },
   {
     id: "huggingface",
@@ -569,6 +601,71 @@ export const MODELS = [
     tags: ["tools", "coding"],
   },
 
+  // ── Z.AI (Zhipu GLM — OpenAI-compatible) ──────────────────────────────────
+  {
+    id: "glm-4.6",
+    provider: "zai",
+    label: "GLM-4.6",
+    hint: "Flagship",
+    description: "Zhipu's flagship — long-context agentic coding.",
+    capabilities: { intelligence: 5, speed: 3, cost: 4 },
+    tags: ["reasoning", "tools", "coding"],
+  },
+  {
+    id: "glm-4.5",
+    provider: "zai",
+    label: "GLM-4.5",
+    hint: "Strong",
+    description: "355B MoE for reasoning and tool use.",
+    capabilities: { intelligence: 4, speed: 3, cost: 4 },
+    tags: ["reasoning", "tools", "coding"],
+  },
+  {
+    id: "glm-4.5-x",
+    provider: "zai",
+    label: "GLM-4.5-X",
+    hint: "Fast flagship",
+    description: "GLM-4.5 quality at high throughput.",
+    capabilities: { intelligence: 4, speed: 5, cost: 3 },
+    tags: ["reasoning", "tools", "coding"],
+  },
+  {
+    id: "glm-4.5-air",
+    provider: "zai",
+    label: "GLM-4.5 Air",
+    hint: "Balanced",
+    description: "Lighter, cheaper GLM-4.5 at near-flagship quality.",
+    capabilities: { intelligence: 4, speed: 4, cost: 5 },
+    tags: ["tools", "coding"],
+  },
+  {
+    id: "glm-4.5-airx",
+    provider: "zai",
+    label: "GLM-4.5 AirX",
+    hint: "Fast & cheap",
+    description: "High-speed GLM-4.5 Air.",
+    capabilities: { intelligence: 4, speed: 5, cost: 4 },
+    tags: ["tools", "coding"],
+  },
+  {
+    id: "glm-4.5-flash",
+    provider: "zai",
+    label: "GLM-4.5 Flash",
+    hint: "Fastest",
+    description: "Free, fast tier for everyday tasks.",
+    capabilities: { intelligence: 3, speed: 5, cost: 5 },
+    tags: ["tools"],
+  },
+  {
+    id: "glm-4.5v",
+    provider: "zai",
+    label: "GLM-4.5V",
+    hint: "Vision",
+    description: "Vision-language model over images and screenshots.",
+    capabilities: { intelligence: 4, speed: 4, cost: 4 },
+    tags: ["vision", "tools"],
+  },
+
   // ── Hugging Face Inference API ────────────────────────────────────────────
   {
     id: "meta-llama/Llama-3.1-70B-Instruct",
@@ -655,6 +752,32 @@ export const MODELS = [
     description: "Local models via Ollama.",
     capabilities: { intelligence: 3, speed: 3, cost: 5 },
   },
+
+  // ── vLLM / xLLM / SGLang (local OpenAI-compatible servers) ────────────────
+  {
+    id: "vllm-local",
+    provider: "vllm",
+    label: "vLLM",
+    hint: "Local",
+    description: "Self-hosted models via a vLLM OpenAI server.",
+    capabilities: { intelligence: 3, speed: 4, cost: 5 },
+  },
+  {
+    id: "xllm-local",
+    provider: "xllm",
+    label: "xLLM",
+    hint: "Local",
+    description: "Self-hosted models via an xLLM OpenAI server.",
+    capabilities: { intelligence: 3, speed: 4, cost: 5 },
+  },
+  {
+    id: "sglang-local",
+    provider: "sglang",
+    label: "SGLang",
+    hint: "Local",
+    description: "Self-hosted models via an SGLang OpenAI server.",
+    capabilities: { intelligence: 3, speed: 4, cost: 5 },
+  },
 ] as const satisfies readonly ModelInfo[];
 
 export type ModelId = (typeof MODELS)[number]["id"];
@@ -711,10 +834,20 @@ export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   "qwen/qwen3-coder": 256_000,
   "mistralai/mistral-large-latest": 128_000,
   "z-ai/glm-4.6": 128_000,
+  "glm-4.6": 200_000,
+  "glm-4.5": 128_000,
+  "glm-4.5-x": 128_000,
+  "glm-4.5-air": 128_000,
+  "glm-4.5-airx": 128_000,
+  "glm-4.5-flash": 128_000,
+  "glm-4.5v": 64_000,
   "openai-compatible-custom": 128_000,
   "lmstudio-local": 32_000,
   "mlx-local": 32_000,
   "ollama-local": 32_000,
+  "vllm-local": 32_000,
+  "xllm-local": 32_000,
+  "sglang-local": 32_000,
   "mistral-large-latest": 131_072,
   "mistral-medium-latest": 32_768,
   "codestral-latest": 256_000,
@@ -761,6 +894,14 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   "deepseek-v4-pro": { input: 0.28, output: 1.1, cacheRead: 0.028 },
   "deepseek-v4-flash": { input: 0.07, output: 0.27, cacheRead: 0.007 },
   "deepseek-reasoner": { input: 0.55, output: 2.19, cacheRead: 0.14 },
+  // Z.AI (Zhipu) — approximate USD / 1M tokens; verify on the z.ai pricing page.
+  "glm-4.6": { input: 0.6, output: 2.2, cacheRead: 0.11 },
+  "glm-4.5": { input: 0.6, output: 2.2, cacheRead: 0.11 },
+  "glm-4.5-x": { input: 1.2, output: 4.5 },
+  "glm-4.5-air": { input: 0.2, output: 1.1, cacheRead: 0.03 },
+  "glm-4.5-airx": { input: 0.5, output: 2.0 },
+  "glm-4.5-flash": { input: 0, output: 0 },
+  "glm-4.5v": { input: 0.6, output: 1.8 },
 };
 
 export function estimateCost(
@@ -783,6 +924,9 @@ export const KEYLESS_PROVIDERS: readonly ProviderId[] = [
   "lmstudio",
   "mlx",
   "ollama",
+  "vllm",
+  "xllm",
+  "sglang",
   "openai-compatible",
 ] as const;
 
@@ -813,6 +957,7 @@ export const DEFAULT_AUTOCOMPLETE_MODEL: Partial<Record<ProviderId, string>> = {
   xai: "grok-4-fast-reasoning",
   deepseek: "deepseek-v4-flash",
   openrouter: "openai/gpt-5.4-mini",
+  zai: "glm-4.5-flash",
   "openai-compatible": "",
 };
 
@@ -826,6 +971,9 @@ export function getAutocompleteEligibleModels(): readonly ModelInfo[] {
 export const LMSTUDIO_DEFAULT_BASE_URL = "http://localhost:1234/v1";
 export const MLX_DEFAULT_BASE_URL = "http://127.0.0.1:8080/v1";
 export const OLLAMA_DEFAULT_BASE_URL = "http://localhost:11434/v1";
+export const VLLM_DEFAULT_BASE_URL = "http://localhost:8000/v1";
+export const XLLM_DEFAULT_BASE_URL = "http://localhost:8000/v1";
+export const SGLANG_DEFAULT_BASE_URL = "http://localhost:30000/v1";
 export const OPENAI_COMPATIBLE_DEFAULT_BASE_URL = "";
 export const MAX_AGENT_STEPS = 24;
 export const TERMINAL_BUFFER_LINES = 300;
@@ -907,6 +1055,8 @@ const LITE_SYSTEM_PROMPT_MODEL_IDS = new Set<string>([
   "llama3.3-70b",
   "llama-3.3-70b-versatile",
   "qwen-3-32b",
+  "glm-4.5-flash",
+  "glm-4.5-airx",
 ]);
 
 export function selectSystemPrompt(modelId: string | undefined): string {

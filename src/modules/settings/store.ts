@@ -10,6 +10,9 @@ import {
   LMSTUDIO_DEFAULT_BASE_URL,
   MLX_DEFAULT_BASE_URL,
   OLLAMA_DEFAULT_BASE_URL,
+  VLLM_DEFAULT_BASE_URL,
+  XLLM_DEFAULT_BASE_URL,
+  SGLANG_DEFAULT_BASE_URL,
   OPENAI_COMPATIBLE_DEFAULT_BASE_URL,
   type AutocompleteProviderId,
   type ModelId,
@@ -131,6 +134,12 @@ export type Preferences = {
   mlxModelId: string;
   ollamaBaseURL: string;
   ollamaModelId: string;
+  vllmBaseURL: string;
+  vllmModelId: string;
+  xllmBaseURL: string;
+  xllmModelId: string;
+  sglangBaseURL: string;
+  sglangModelId: string;
   openaiCompatibleBaseURL: string;
   openaiCompatibleModelId: string;
   openaiCompatibleContextLimit: number;
@@ -181,6 +190,12 @@ const KEY_MLX_BASE_URL = "mlxBaseURL";
 const KEY_MLX_MODEL_ID = "mlxModelId";
 const KEY_OLLAMA_BASE_URL = "ollamaBaseURL";
 const KEY_OLLAMA_MODEL_ID = "ollamaModelId";
+const KEY_VLLM_BASE_URL = "vllmBaseURL";
+const KEY_VLLM_MODEL_ID = "vllmModelId";
+const KEY_XLLM_BASE_URL = "xllmBaseURL";
+const KEY_XLLM_MODEL_ID = "xllmModelId";
+const KEY_SGLANG_BASE_URL = "sglangBaseURL";
+const KEY_SGLANG_MODEL_ID = "sglangModelId";
 const KEY_OPENAI_COMPAT_BASE_URL = "openaiCompatibleBaseURL";
 const KEY_OPENAI_COMPAT_MODEL_ID = "openaiCompatibleModelId";
 const KEY_OPENAI_COMPAT_CONTEXT_LIMIT = "openaiCompatibleContextLimit";
@@ -245,6 +260,12 @@ export const DEFAULT_PREFERENCES: Preferences = {
   mlxModelId: "",
   ollamaBaseURL: OLLAMA_DEFAULT_BASE_URL,
   ollamaModelId: "",
+  vllmBaseURL: VLLM_DEFAULT_BASE_URL,
+  vllmModelId: "",
+  xllmBaseURL: XLLM_DEFAULT_BASE_URL,
+  xllmModelId: "",
+  sglangBaseURL: SGLANG_DEFAULT_BASE_URL,
+  sglangModelId: "",
   openaiCompatibleBaseURL: OPENAI_COMPATIBLE_DEFAULT_BASE_URL,
   openaiCompatibleModelId: "",
   openaiCompatibleContextLimit: 128_000,
@@ -352,6 +373,18 @@ export async function loadPreferences(): Promise<Preferences> {
       get<string>(KEY_OLLAMA_BASE_URL) ?? DEFAULT_PREFERENCES.ollamaBaseURL,
     ollamaModelId:
       get<string>(KEY_OLLAMA_MODEL_ID) ?? DEFAULT_PREFERENCES.ollamaModelId,
+    vllmBaseURL:
+      get<string>(KEY_VLLM_BASE_URL) ?? DEFAULT_PREFERENCES.vllmBaseURL,
+    vllmModelId:
+      get<string>(KEY_VLLM_MODEL_ID) ?? DEFAULT_PREFERENCES.vllmModelId,
+    xllmBaseURL:
+      get<string>(KEY_XLLM_BASE_URL) ?? DEFAULT_PREFERENCES.xllmBaseURL,
+    xllmModelId:
+      get<string>(KEY_XLLM_MODEL_ID) ?? DEFAULT_PREFERENCES.xllmModelId,
+    sglangBaseURL:
+      get<string>(KEY_SGLANG_BASE_URL) ?? DEFAULT_PREFERENCES.sglangBaseURL,
+    sglangModelId:
+      get<string>(KEY_SGLANG_MODEL_ID) ?? DEFAULT_PREFERENCES.sglangModelId,
     openaiCompatibleBaseURL:
       get<string>(KEY_OPENAI_COMPAT_BASE_URL) ??
       DEFAULT_PREFERENCES.openaiCompatibleBaseURL,
@@ -523,6 +556,30 @@ export async function setOllamaModelId(value: string): Promise<void> {
   await writePref(KEY_OLLAMA_MODEL_ID, value);
 }
 
+export async function setVllmBaseURL(value: string): Promise<void> {
+  await writePref(KEY_VLLM_BASE_URL, value);
+}
+
+export async function setVllmModelId(value: string): Promise<void> {
+  await writePref(KEY_VLLM_MODEL_ID, value);
+}
+
+export async function setXllmBaseURL(value: string): Promise<void> {
+  await writePref(KEY_XLLM_BASE_URL, value);
+}
+
+export async function setXllmModelId(value: string): Promise<void> {
+  await writePref(KEY_XLLM_MODEL_ID, value);
+}
+
+export async function setSglangBaseURL(value: string): Promise<void> {
+  await writePref(KEY_SGLANG_BASE_URL, value);
+}
+
+export async function setSglangModelId(value: string): Promise<void> {
+  await writePref(KEY_SGLANG_MODEL_ID, value);
+}
+
 export async function setOpenaiCompatibleBaseURL(value: string): Promise<void> {
   await writePref(KEY_OPENAI_COMPAT_BASE_URL, value);
 }
@@ -682,6 +739,12 @@ export async function onPreferencesChange(
     [KEY_MLX_MODEL_ID]: "mlxModelId",
     [KEY_OLLAMA_BASE_URL]: "ollamaBaseURL",
     [KEY_OLLAMA_MODEL_ID]: "ollamaModelId",
+    [KEY_VLLM_BASE_URL]: "vllmBaseURL",
+    [KEY_VLLM_MODEL_ID]: "vllmModelId",
+    [KEY_XLLM_BASE_URL]: "xllmBaseURL",
+    [KEY_XLLM_MODEL_ID]: "xllmModelId",
+    [KEY_SGLANG_BASE_URL]: "sglangBaseURL",
+    [KEY_SGLANG_MODEL_ID]: "sglangModelId",
     [KEY_OPENAI_COMPAT_BASE_URL]: "openaiCompatibleBaseURL",
     [KEY_OPENAI_COMPAT_MODEL_ID]: "openaiCompatibleModelId",
     [KEY_OPENAI_COMPAT_CONTEXT_LIMIT]: "openaiCompatibleContextLimit",

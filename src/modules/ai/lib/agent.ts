@@ -20,6 +20,9 @@ import {
   LMSTUDIO_DEFAULT_BASE_URL,
   MLX_DEFAULT_BASE_URL,
   OLLAMA_DEFAULT_BASE_URL,
+  VLLM_DEFAULT_BASE_URL,
+  XLLM_DEFAULT_BASE_URL,
+  SGLANG_DEFAULT_BASE_URL,
   MAX_AGENT_STEPS,
   providerNeedsKey,
   selectSystemPrompt,
@@ -71,6 +74,9 @@ export type BuildModelOptions = {
   lmstudioBaseURL?: string;
   mlxBaseURL?: string;
   ollamaBaseURL?: string;
+  vllmBaseURL?: string;
+  xllmBaseURL?: string;
+  sglangBaseURL?: string;
   openaiCompatibleBaseURL?: string;
 };
 
@@ -91,8 +97,11 @@ export async function buildLanguageModel(
   const lmstudioURL = options.lmstudioBaseURL ?? LMSTUDIO_DEFAULT_BASE_URL;
   const mlxURL = options.mlxBaseURL ?? MLX_DEFAULT_BASE_URL;
   const ollamaURL = options.ollamaBaseURL ?? OLLAMA_DEFAULT_BASE_URL;
+  const vllmURL = options.vllmBaseURL ?? VLLM_DEFAULT_BASE_URL;
+  const xllmURL = options.xllmBaseURL ?? XLLM_DEFAULT_BASE_URL;
+  const sglangURL = options.sglangBaseURL ?? SGLANG_DEFAULT_BASE_URL;
   const compatURL = options.openaiCompatibleBaseURL ?? "";
-  const cacheKey = `${provider} ${key} ${resolvedModelId} ${lmstudioURL} ${mlxURL} ${ollamaURL} ${compatURL}`;
+  const cacheKey = `${provider} ${key} ${resolvedModelId} ${lmstudioURL} ${mlxURL} ${ollamaURL} ${vllmURL} ${xllmURL} ${sglangURL} ${compatURL}`;
   const hit = modelCache.get(cacheKey);
   if (hit) return hit;
 
@@ -162,6 +171,16 @@ export async function buildLanguageModel(
       })(resolvedModelId);
       break;
     }
+    case "zai": {
+      const { createOpenAICompatible } =
+        await import("@ai-sdk/openai-compatible");
+      built = createOpenAICompatible({
+        name: "zai",
+        baseURL: "https://api.z.ai/api/paas/v4",
+        apiKey: key,
+      })(resolvedModelId);
+      break;
+    }
     case "openai-compatible": {
       if (!compatURL) {
         throw new Error(
@@ -208,6 +227,39 @@ export async function buildLanguageModel(
       })(resolvedModelId);
       break;
     }
+    case "vllm": {
+      const { createOpenAICompatible } =
+        await import("@ai-sdk/openai-compatible");
+      built = createOpenAICompatible({
+        name: "vllm",
+        baseURL: vllmURL,
+        apiKey: key || undefined,
+        fetch: localProxyFetch,
+      })(resolvedModelId);
+      break;
+    }
+    case "xllm": {
+      const { createOpenAICompatible } =
+        await import("@ai-sdk/openai-compatible");
+      built = createOpenAICompatible({
+        name: "xllm",
+        baseURL: xllmURL,
+        apiKey: key || undefined,
+        fetch: localProxyFetch,
+      })(resolvedModelId);
+      break;
+    }
+    case "sglang": {
+      const { createOpenAICompatible } =
+        await import("@ai-sdk/openai-compatible");
+      built = createOpenAICompatible({
+        name: "sglang",
+        baseURL: sglangURL,
+        apiKey: key || undefined,
+        fetch: localProxyFetch,
+      })(resolvedModelId);
+      break;
+    }
     case "huggingface": {
       const { createOpenAICompatible } =
         await import("@ai-sdk/openai-compatible");
@@ -234,6 +286,12 @@ export type LocalProviderConfig = {
   mlxModelId?: string;
   ollamaBaseURL?: string;
   ollamaModelId?: string;
+  vllmBaseURL?: string;
+  vllmModelId?: string;
+  xllmBaseURL?: string;
+  xllmModelId?: string;
+  sglangBaseURL?: string;
+  sglangModelId?: string;
   openaiCompatibleBaseURL?: string;
   openaiCompatibleModelId?: string;
 };
@@ -266,6 +324,27 @@ export function buildConfiguredLanguageModel(
       );
     }
     resolvedId = local.ollamaModelId.trim();
+  } else if (m.id === "vllm-local") {
+    if (!local.vllmModelId?.trim()) {
+      throw new Error(
+        "vLLM: no model id set. Open Settings → Models and enter the model id served by your vLLM server.",
+      );
+    }
+    resolvedId = local.vllmModelId.trim();
+  } else if (m.id === "xllm-local") {
+    if (!local.xllmModelId?.trim()) {
+      throw new Error(
+        "xLLM: no model id set. Open Settings → Models and enter the model id served by your xLLM server.",
+      );
+    }
+    resolvedId = local.xllmModelId.trim();
+  } else if (m.id === "sglang-local") {
+    if (!local.sglangModelId?.trim()) {
+      throw new Error(
+        "SGLang: no model id set. Open Settings → Models and enter the model id served by your SGLang server.",
+      );
+    }
+    resolvedId = local.sglangModelId.trim();
   } else if (m.id === "openai-compatible-custom") {
     if (!local.openaiCompatibleModelId?.trim()) {
       throw new Error(
@@ -278,6 +357,9 @@ export function buildConfiguredLanguageModel(
     lmstudioBaseURL: local.lmstudioBaseURL,
     mlxBaseURL: local.mlxBaseURL,
     ollamaBaseURL: local.ollamaBaseURL,
+    vllmBaseURL: local.vllmBaseURL,
+    xllmBaseURL: local.xllmBaseURL,
+    sglangBaseURL: local.sglangBaseURL,
     openaiCompatibleBaseURL: local.openaiCompatibleBaseURL,
   });
 }
@@ -360,6 +442,12 @@ export type RunAgentOptions = {
   mlxModelId?: string;
   ollamaBaseURL?: string;
   ollamaModelId?: string;
+  vllmBaseURL?: string;
+  vllmModelId?: string;
+  xllmBaseURL?: string;
+  xllmModelId?: string;
+  sglangBaseURL?: string;
+  sglangModelId?: string;
   openaiCompatibleBaseURL?: string;
   openaiCompatibleModelId?: string;
   openaiCompatibleContextLimit?: number;
@@ -378,6 +466,12 @@ export async function runAgentStream(opts: RunAgentOptions) {
     mlxModelId: opts.mlxModelId,
     ollamaBaseURL: opts.ollamaBaseURL,
     ollamaModelId: opts.ollamaModelId,
+    vllmBaseURL: opts.vllmBaseURL,
+    vllmModelId: opts.vllmModelId,
+    xllmBaseURL: opts.xllmBaseURL,
+    xllmModelId: opts.xllmModelId,
+    sglangBaseURL: opts.sglangBaseURL,
+    sglangModelId: opts.sglangModelId,
     openaiCompatibleBaseURL: opts.openaiCompatibleBaseURL,
     openaiCompatibleModelId: opts.openaiCompatibleModelId,
   });

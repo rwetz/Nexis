@@ -20,6 +20,10 @@ import {
   MistralIcon,
   PlugIcon,
   ServerStack01Icon,
+  ServerStack02Icon,
+  Layers01Icon,
+  RocketIcon,
+  SparklesIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -33,10 +37,14 @@ const ICON_BY_PROVIDER = {
   deepseek: DeepseekIcon,
   mistral: MistralIcon,
   openrouter: GlobeIcon,
+  zai: SparklesIcon,
   "openai-compatible": PlugIcon,
   lmstudio: ComputerIcon,
   mlx: AppleIcon,
   ollama: ServerStack01Icon,
+  vllm: RocketIcon,
+  xllm: ServerStack02Icon,
+  sglang: Layers01Icon,
   huggingface: BrainIcon,
 } as const satisfies Record<ProviderId, typeof ChatGptIcon>;
 

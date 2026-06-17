@@ -25,6 +25,9 @@ export type CompletionDeps = {
   lmstudioBaseURL: string;
   mlxBaseURL?: string;
   ollamaBaseURL?: string;
+  vllmBaseURL?: string;
+  xllmBaseURL?: string;
+  sglangBaseURL?: string;
   openaiCompatibleBaseURL?: string;
 };
 
@@ -51,6 +54,9 @@ export async function requestCompletion(
     lmstudioBaseURL: deps.lmstudioBaseURL || LMSTUDIO_DEFAULT_BASE_URL,
     mlxBaseURL: deps.mlxBaseURL,
     ollamaBaseURL: deps.ollamaBaseURL,
+    vllmBaseURL: deps.vllmBaseURL,
+    xllmBaseURL: deps.xllmBaseURL,
+    sglangBaseURL: deps.sglangBaseURL,
     openaiCompatibleBaseURL: deps.openaiCompatibleBaseURL,
   });
 

@@ -365,6 +365,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
               lmstudioBaseURL: s.lmstudioBaseURL,
               mlxBaseURL: s.mlxBaseURL,
               ollamaBaseURL: s.ollamaBaseURL,
+              vllmBaseURL: s.vllmBaseURL,
+              xllmBaseURL: s.xllmBaseURL,
+              sglangBaseURL: s.sglangBaseURL,
               openaiCompatibleBaseURL: s.openaiCompatibleBaseURL,
             };
           },

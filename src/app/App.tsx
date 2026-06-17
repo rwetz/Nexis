@@ -366,6 +366,12 @@ export default function App() {
   const mlxBaseURL = usePreferencesStore((s) => s.mlxBaseURL);
   const ollamaModelId = usePreferencesStore((s) => s.ollamaModelId);
   const ollamaBaseURL = usePreferencesStore((s) => s.ollamaBaseURL);
+  const vllmModelId = usePreferencesStore((s) => s.vllmModelId);
+  const vllmBaseURL = usePreferencesStore((s) => s.vllmBaseURL);
+  const xllmModelId = usePreferencesStore((s) => s.xllmModelId);
+  const xllmBaseURL = usePreferencesStore((s) => s.xllmBaseURL);
+  const sglangModelId = usePreferencesStore((s) => s.sglangModelId);
+  const sglangBaseURL = usePreferencesStore((s) => s.sglangBaseURL);
   const openaiCompatibleModelId = usePreferencesStore(
     (s) => s.openaiCompatibleModelId,
   );
@@ -376,6 +382,9 @@ export default function App() {
     (lmstudioBaseURL.trim().length > 0 && lmstudioModelId.trim().length > 0) ||
     (mlxBaseURL.trim().length > 0 && mlxModelId.trim().length > 0) ||
     (ollamaBaseURL.trim().length > 0 && ollamaModelId.trim().length > 0) ||
+    (vllmBaseURL.trim().length > 0 && vllmModelId.trim().length > 0) ||
+    (xllmBaseURL.trim().length > 0 && xllmModelId.trim().length > 0) ||
+    (sglangBaseURL.trim().length > 0 && sglangModelId.trim().length > 0) ||
     (openaiCompatibleBaseURL.trim().length > 0 &&
       openaiCompatibleModelId.trim().length > 0);
   const hasComposer = hasAnyKey(apiKeys) || hasLocalModel;
