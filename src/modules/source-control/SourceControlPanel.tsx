@@ -444,9 +444,30 @@ export const SourceControlPanel = memo(function SourceControlPanel({
   const fetchBusy = sourceControl.busyAction === "fetch";
   const pullBusy = sourceControl.busyAction === "pull";
 
+  // Peacock-style per-branch colour: a stable hue derived from the branch
+  // name so the panel takes on a distinct accent per branch (tells branches
+  // apart at a glance). Independent of the theme — it identifies the branch.
+  const branch = scm.status?.branch;
+  let branchColor: string | undefined;
+  if (branch) {
+    let h = 0;
+    for (let i = 0; i < branch.length; i++) {
+      h = (h * 31 + branch.charCodeAt(i)) >>> 0;
+    }
+    branchColor = `oklch(0.7 0.14 ${h % 360})`;
+  }
+
   return (
     <TooltipProvider delayDuration={800} skipDelayDuration={300}>
       <aside className="flex h-full min-w-0 flex-col bg-card/80 backdrop-blur [contain:layout_style]">
+        {branchColor ? (
+          <div
+            className="h-[3px] shrink-0 transition-colors"
+            style={{ background: branchColor }}
+            aria-hidden
+            title={`Branch: ${branch}`}
+          />
+        ) : null}
         <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-3 pb-2.5 pt-3">
           <div className="flex min-w-0 items-center gap-1.5">
             <div className="inline-flex min-w-0 items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-[11.5px] font-medium leading-none text-foreground transition-colors hover:bg-foreground/10">

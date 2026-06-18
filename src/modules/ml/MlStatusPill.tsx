@@ -9,6 +9,7 @@
  * Click opens the ML sidebar panel.
  */
 import { useEffect } from "react";
+import { getCurrentWindow, ProgressBarStatus } from "@tauri-apps/api/window";
 import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { useMlStore } from "./store";
@@ -31,6 +32,31 @@ export function MlStatusPill() {
       );
     }
   }, [autoOpen, isRunning, runId]);
+
+  // Mirror training progress onto the OS taskbar/dock icon — native polish
+  // that's visible even when Nexis is in the background. Cleared as soon as
+  // the run leaves a training state.
+  const status = activeRun?.status;
+  const epoch = activeRun?.epoch ?? 0;
+  const totalEpochs = activeRun?.totalEpochs ?? 0;
+  const paused = activeRun?.paused ?? false;
+  useEffect(() => {
+    const w = getCurrentWindow();
+    const training =
+      status === "running" || status === "starting" || status === "cancelling";
+    if (!training) {
+      void w.setProgressBar({ status: ProgressBarStatus.None });
+      return;
+    }
+    if (totalEpochs > 0) {
+      void w.setProgressBar({
+        status: paused ? ProgressBarStatus.Paused : ProgressBarStatus.Normal,
+        progress: Math.min(100, Math.round((epoch / totalEpochs) * 100)),
+      });
+    } else {
+      void w.setProgressBar({ status: ProgressBarStatus.Indeterminate });
+    }
+  }, [status, epoch, totalEpochs, paused]);
 
   if (
     !activeRun ||

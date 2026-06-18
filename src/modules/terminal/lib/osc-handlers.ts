@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import type { IMarker, Terminal } from "@xterm/xterm";
+import type { IDecoration, IMarker, Terminal } from "@xterm/xterm";
 
 /**
  * Cross-handler state shared between the OSC 7 cwd handler and the OSC 133
@@ -50,11 +50,15 @@ export function registerPromptTracker(
   state?: ShellIntegrationState,
 ): PromptTracker {
   let marker: IMarker | null = null;
+  const decorations: IDecoration[] = [];
   const d = term.parser.registerOscHandler(133, (data) => {
     // OSC 133 A — start of new prompt (between commands).
     if (data.startsWith("A")) {
       if (state) state.inCommand = false;
-      marker?.dispose();
+      // A fresh marker per prompt. We intentionally do NOT dispose the
+      // previous one — its exit-status decoration (added at the matching D)
+      // must persist down the scrollback. xterm disposes the marker for us
+      // once it scrolls past the buffer, which tears down its decoration too.
       marker = term.registerMarker(0);
     } else if (data.startsWith("B")) {
       // OSC 133 B — command begins. From here on, treat all output as
@@ -64,8 +68,12 @@ export function registerPromptTracker(
       // OSC 133 C — command pre-execution marker; still inside command.
       if (state) state.inCommand = true;
     } else if (data.startsWith("D")) {
-      // OSC 133 D — command ends.
+      // OSC 133 D;<exitcode> — command ends. Accent the command's prompt line
+      // green/red in the gutter so success/failure is scannable at a glance.
       if (state) state.inCommand = false;
+      if (marker && !marker.isDisposed) {
+        addExitDecoration(term, marker, parseExitCode(data), decorations);
+      }
     }
     return true;
   });
@@ -73,10 +81,47 @@ export function registerPromptTracker(
     getMarker: () => (marker && !marker.isDisposed ? marker : null),
     dispose: () => {
       d.dispose();
+      for (const dec of decorations.slice()) dec.dispose();
+      decorations.length = 0;
       marker?.dispose();
       marker = null;
     },
   };
+}
+
+/** Exit code from an OSC 133 `D` payload ("D", "D;0", "D;1;…"). Missing → 0. */
+function parseExitCode(data: string): number {
+  const code = Number(data.split(";")[1]);
+  return Number.isFinite(code) ? code : 0;
+}
+
+/** Add a thin green/red gutter bar on a command's prompt line, by exit code. */
+function addExitDecoration(
+  term: Terminal,
+  marker: IMarker,
+  code: number,
+  decorations: IDecoration[],
+): void {
+  // Decorations aren't guaranteed (older xterm builds / headless test mocks).
+  if (typeof term.registerDecoration !== "function") return;
+  const dec = term.registerDecoration({ marker, x: 0, width: 1 });
+  if (!dec) return;
+  decorations.push(dec);
+  dec.onDispose(() => {
+    const i = decorations.indexOf(dec);
+    if (i >= 0) decorations.splice(i, 1);
+  });
+  const ok = code === 0;
+  dec.onRender((el) => {
+    el.style.width = "2px";
+    el.style.height = "100%";
+    el.style.borderRadius = "1px";
+    el.style.background = ok
+      ? "var(--terminal-ansi-green)"
+      : "var(--terminal-ansi-red)";
+    el.style.opacity = "0.85";
+    el.style.pointerEvents = "none";
+  });
 }
 
 /**
