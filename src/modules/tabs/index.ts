@@ -6,11 +6,20 @@
 
 export { TabBar } from "./TabBar";
 export { useTabs } from "./lib/useTabs";
-export { MAX_PANES_PER_TAB } from "./lib/tabTypes";
+export {
+  MAX_PANES_PER_TAB,
+  editorActiveLeaf,
+  editorActivePath,
+  editorLeaves,
+  editorLeafPaths,
+  editorAnyDirty,
+} from "./lib/tabTypes";
 export type {
   Tab,
   TerminalTab,
   EditorTab,
+  EditorLeafData,
+  EditorPaneNode,
   PreviewTab,
   MarkdownTab,
   NotebookTab,

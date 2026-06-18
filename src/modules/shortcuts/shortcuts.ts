@@ -25,6 +25,10 @@ export type ShortcutId =
   | "pane.splitDown"
   | "pane.focusNext"
   | "pane.focusPrev"
+  | "pane.moveUp"
+  | "pane.moveDown"
+  | "pane.moveLeft"
+  | "pane.moveRight"
   | "pane.source"
   | "search.focus"
   | "explorer.search"
@@ -171,7 +175,31 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Focus previous pane",
     group: "Panes",
     defaultBindings: [{ [MOD_PROP]: true, key: "[" }],
-  },  
+  },
+  {
+    id: "pane.moveUp",
+    label: "Move pane up",
+    group: "Panes",
+    defaultBindings: [{ [MOD_PROP]: true, alt: true, key: "ArrowUp" }],
+  },
+  {
+    id: "pane.moveDown",
+    label: "Move pane down",
+    group: "Panes",
+    defaultBindings: [{ [MOD_PROP]: true, alt: true, key: "ArrowDown" }],
+  },
+  {
+    id: "pane.moveLeft",
+    label: "Move pane left",
+    group: "Panes",
+    defaultBindings: [{ [MOD_PROP]: true, alt: true, key: "ArrowLeft" }],
+  },
+  {
+    id: "pane.moveRight",
+    label: "Move pane right",
+    group: "Panes",
+    defaultBindings: [{ [MOD_PROP]: true, alt: true, key: "ArrowRight" }],
+  },
   {
     id: "pane.source",
     label: "Toggle source panel",

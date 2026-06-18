@@ -6,21 +6,23 @@
 
 import { cn } from "@/lib/utils";
 import type { EditorTab, Tab } from "@/modules/tabs";
+import { leafIds } from "@/modules/terminal/lib/panes";
 import { useEffect, useRef } from "react";
-import { EditorPane, type EditorPaneHandle } from "./EditorPane";
-import { EditorBreadcrumb } from "./EditorBreadcrumb";
-import { buildRunCommand } from "./lib/runCommand";
-import { usePreferencesStore } from "@/modules/settings/preferences";
-import { setWordWrap } from "@/modules/settings/store";
-import { PlayIcon, TextAlignLeftIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import type { EditorPaneHandle } from "./EditorPane";
+import {
+  EditorPaneTreeView,
+  type EditorLeafBundle,
+} from "./EditorPaneTreeView";
 
 type Props = {
   tabs: Tab[];
   activeId: number;
-  onDirtyChange: (id: number, dirty: boolean) => void;
-  registerHandle: (id: number, handle: EditorPaneHandle | null) => void;
-  onCloseTab: (id: number) => void;
+  /** Register/unregister handle by leaf id (not tab id). */
+  registerHandle: (leafId: number, handle: EditorPaneHandle | null) => void;
+  onDirtyChange: (leafId: number, dirty: boolean) => void;
+  /** Close one file pane (collapses splits; closes the tab on the last pane). */
+  onCloseLeaf: (leafId: number) => void;
+  onFocusLeaf: (tabId: number, leafId: number) => void;
   onRunFile?: (path: string, cwd: string, command: string) => void;
   root?: string | null;
   onNavigateToFolder?: (folderPath: string) => void;
@@ -31,21 +33,20 @@ export function EditorStack({
   activeId,
   onDirtyChange,
   registerHandle,
-  onCloseTab,
+  onCloseLeaf,
+  onFocusLeaf,
   onRunFile,
   root,
   onNavigateToFolder,
 }: Props) {
   const editors = tabs.filter((t): t is EditorTab => t.kind === "editor");
-  const wordWrap = usePreferencesStore((s) => s.wordWrap);
 
-  // Stable per-tab callbacks. Inline arrows in `ref` and `onDirtyChange`
-  // change identity every render, which makes React detach+reattach the ref
-  // callback and re-invoke `onDirtyChange`, triggering setState loops in
-  // the parent. Memoizing per id keeps each callback's identity stable.
+  // Ref-stable callbacks (see the original note): inline arrows change identity
+  // every render and make React detach/reattach the handle ref, re-firing
+  // onDirtyChange and looping the parent. Memoize per leaf id.
   const registerRef = useRef(registerHandle);
   const dirtyRef = useRef(onDirtyChange);
-  const closeRef = useRef(onCloseTab);
+  const closeRef = useRef(onCloseLeaf);
   useEffect(() => {
     registerRef.current = registerHandle;
   }, [registerHandle]);
@@ -53,51 +54,29 @@ export function EditorStack({
     dirtyRef.current = onDirtyChange;
   }, [onDirtyChange]);
   useEffect(() => {
-    closeRef.current = onCloseTab;
-  }, [onCloseTab]);
+    closeRef.current = onCloseLeaf;
+  }, [onCloseLeaf]);
 
-  const refCallbacks = useRef(
-    new Map<number, (h: EditorPaneHandle | null) => void>(),
-  );
-  const dirtyCallbacks = useRef(new Map<number, (dirty: boolean) => void>());
-  const closeCallbacks = useRef(new Map<number, () => void>());
-
-  const getRefCallback = (id: number) => {
-    let cb = refCallbacks.current.get(id);
-    if (!cb) {
-      cb = (h: EditorPaneHandle | null) => registerRef.current(id, h);
-      refCallbacks.current.set(id, cb);
+  const bundles = useRef(new Map<number, EditorLeafBundle>());
+  const getBundle = (leafId: number): EditorLeafBundle => {
+    let b = bundles.current.get(leafId);
+    if (!b) {
+      b = {
+        setRef: (h) => registerRef.current(leafId, h),
+        onDirty: (dirty) => dirtyRef.current(leafId, dirty),
+        onClose: () => closeRef.current(leafId),
+      };
+      bundles.current.set(leafId, b);
     }
-    return cb;
-  };
-  const getDirtyCallback = (id: number) => {
-    let cb = dirtyCallbacks.current.get(id);
-    if (!cb) {
-      cb = (dirty: boolean) => dirtyRef.current(id, dirty);
-      dirtyCallbacks.current.set(id, cb);
-    }
-    return cb;
-  };
-  const getCloseCallback = (id: number) => {
-    let cb = closeCallbacks.current.get(id);
-    if (!cb) {
-      cb = () => closeRef.current(id);
-      closeCallbacks.current.set(id, cb);
-    }
-    return cb;
+    return b;
   };
 
-  // Drop callback entries for closed tabs to avoid unbounded growth.
+  // Drop bundle entries for closed leaves to avoid unbounded growth.
   useEffect(() => {
-    const live = new Set(editors.map((t) => t.id));
-    for (const id of refCallbacks.current.keys()) {
-      if (!live.has(id)) refCallbacks.current.delete(id);
-    }
-    for (const id of dirtyCallbacks.current.keys()) {
-      if (!live.has(id)) dirtyCallbacks.current.delete(id);
-    }
-    for (const id of closeCallbacks.current.keys()) {
-      if (!live.has(id)) closeCallbacks.current.delete(id);
+    const live = new Set<number>();
+    for (const t of editors) for (const id of leafIds(t.paneTree)) live.add(id);
+    for (const id of bundles.current.keys()) {
+      if (!live.has(id)) bundles.current.delete(id);
     }
   }, [editors]);
 
@@ -115,52 +94,15 @@ export function EditorStack({
             )}
             aria-hidden={!visible}
           >
-            <div className="flex h-full flex-col overflow-hidden rounded-md border border-border/60 bg-background">
-              {(() => {
-                const rc = onRunFile ? buildRunCommand(t.path) : null;
-                return (
-                  <div className="flex shrink-0 items-center gap-2 border-b border-border/40 bg-card/60 px-2 py-0.5">
-                    {/* Breadcrumb */}
-                    <EditorBreadcrumb
-                      path={t.path}
-                      root={root ?? null}
-                      onNavigate={onNavigateToFolder}
-                    />
-                    {/* Toolbar actions */}
-                    <div className="flex shrink-0 items-center gap-1">
-                      <button
-                        type="button"
-                        title={wordWrap ? "Disable word wrap" : "Enable word wrap"}
-                        onClick={() => void setWordWrap(!wordWrap)}
-                        className={cn(
-                          "flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] transition-colors hover:bg-muted",
-                          wordWrap ? "text-foreground" : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        <HugeiconsIcon icon={TextAlignLeftIcon} size={12} strokeWidth={1.75} />
-                      </button>
-                      {rc && onRunFile && (
-                        <button
-                          type="button"
-                          title={`Run: ${rc.command.trim()}`}
-                          onClick={() => onRunFile(t.path, rc.cwd, rc.command)}
-                          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        >
-                          <HugeiconsIcon icon={PlayIcon} size={12} strokeWidth={1.75} className="text-green-500" />
-                          <span className="font-mono">{rc.command.trim()}</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-              <EditorPane
-                ref={getRefCallback(t.id)}
-                path={t.path}
-                onDirtyChange={getDirtyCallback(t.id)}
-                onClose={getCloseCallback(t.id)}
-              />
-            </div>
+            <EditorPaneTreeView
+              node={t.paneTree}
+              activeLeafId={t.activeLeafId}
+              onFocusLeaf={(leafId) => onFocusLeaf(t.id, leafId)}
+              getBundle={getBundle}
+              root={root}
+              onRunFile={onRunFile}
+              onNavigateToFolder={onNavigateToFolder}
+            />
           </div>
         );
       })}

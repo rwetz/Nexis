@@ -4,7 +4,13 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import type { PaneNode } from "@/modules/terminal/lib/panes";
+import {
+  findLeaf,
+  leaves,
+  type PaneLeaf,
+  type PaneNode,
+  type TerminalPaneNode,
+} from "@/modules/terminal/lib/panes";
 
 // Matches the renderer slot pool size — over this we'd evict an active leaf.
 export const MAX_PANES_PER_TAB = 4;
@@ -20,25 +26,60 @@ export type TerminalTab = {
    * Cleared when the active leaf changes or the session is reset.
    */
   oscTitle?: string;
-  paneTree: PaneNode;
+  paneTree: TerminalPaneNode;
   activeLeafId: number;
   /** AI agent cannot read buffer / context of this terminal. */
   private?: boolean;
 };
 
+/**
+ * One file pane inside an editor tab. `dirty` mirrors the buffer's unsaved
+ * state; `preview` marks the transient single-click state (replaced by the next
+ * single-click rather than accumulating).
+ */
+export type EditorLeafData = {
+  path: string;
+  dirty?: boolean;
+  preview?: boolean;
+};
+
+export type EditorPaneNode = PaneNode<EditorLeafData>;
+
 export type EditorTab = {
   id: number;
   kind: "editor";
   title: string;
-  path: string;
-  dirty: boolean;
-  /**
-   * True while the tab is in the transient "preview" state — opened by a
-   * single-click in the explorer and not yet pinned by the user. A preview tab
-   * is replaced by the next single-click rather than accumulating.
-   */
-  preview: boolean;
+  /** Split tree of file panes (full parity with terminal tabs). */
+  paneTree: EditorPaneNode;
+  /** Leaf id of the focused file pane — the "current" file. */
+  activeLeafId: number;
 };
+
+export function editorActiveLeaf(
+  tab: EditorTab,
+): PaneLeaf<EditorLeafData> | undefined {
+  return findLeaf(tab.paneTree, tab.activeLeafId);
+}
+
+/** Path of the focused pane (the file the rest of the app treats as current). */
+export function editorActivePath(tab: EditorTab): string {
+  return editorActiveLeaf(tab)?.path ?? "";
+}
+
+/** Every file pane in this tab, left-to-right. */
+export function editorLeaves(tab: EditorTab): PaneLeaf<EditorLeafData>[] {
+  return leaves(tab.paneTree);
+}
+
+/** Every open file path across this tab's panes. */
+export function editorLeafPaths(tab: EditorTab): string[] {
+  return leaves(tab.paneTree).map((l) => l.path);
+}
+
+/** True if any pane in this tab has unsaved changes. */
+export function editorAnyDirty(tab: EditorTab): boolean {
+  return leaves(tab.paneTree).some((l) => l.dirty === true);
+}
 
 export type PreviewTab = {
   id: number;

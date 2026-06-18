@@ -6,14 +6,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  findLeaf,
   findLeafCwd,
   hasLeaf,
   leafIds,
+  leaves,
+  movePane,
   nextLeafId,
   removeLeaf,
   setLeafCwd as setLeafCwdInTree,
   siblingLeafOf,
   splitLeaf,
+  updateLeaf,
   type SplitDir,
 } from "@/modules/terminal/lib/panes";
 import { disposeSession } from "@/modules/terminal/lib/useTerminalSession";
@@ -96,6 +100,10 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   useEffect(() => {
     tabsRef.current = tabs;
   }, [tabs]);
+  const activeIdRef = useRef(activeId);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
 
   // Persist tab state to localStorage (debounced).
   // Fresh windows skip saving so they don't overwrite the main window's state.
@@ -160,86 +168,132 @@ export function useTabs(initial?: Partial<TerminalTab>) {
    *   otherwise the current preview slot is replaced with the new path.
    */
   const openFileTab = useCallback((path: string, pin = true) => {
+    // When the active editor tab is split, load the file into the focused pane
+    // (VS Code's "active editor group" behavior) so a split can show different
+    // files. Skipped if the focused pane is dirty — never clobber unsaved edits;
+    // those fall through to the normal new-tab/dedup path below.
+    const active = tabsRef.current.find((t) => t.id === activeIdRef.current);
+    if (active?.kind === "editor" && leafIds(active.paneTree).length > 1) {
+      const focused = findLeaf(active.paneTree, active.activeLeafId);
+      if (focused && focused.path !== path && !focused.dirty) {
+        setTabs((curr) =>
+          curr.map((t) => {
+            if (t.id !== active.id || t.kind !== "editor") return t;
+            const paneTree = updateLeaf(t.paneTree, t.activeLeafId, {
+              path,
+              dirty: false,
+              preview: false,
+            });
+            return { ...t, paneTree, title: basename(path) };
+          }),
+        );
+        setActiveId(active.id);
+        return active.id;
+      }
+    }
+
     let targetId: number | null = null;
     setTabs((curr) => {
-      if (pin) {
-        // Persistent open: find any existing editor tab, pin it if needed.
-        const existing = curr.find(
-          (t) => t.kind === "editor" && t.path === path,
-        );
-        if (existing) {
-          targetId = existing.id;
-          if ((existing as EditorTab).preview) {
-            return curr.map((t) =>
-              t.id === existing.id ? { ...t, preview: false } : t,
-            );
+      // Locate an existing editor tab + leaf showing this path. With splitting,
+      // a path may live in any pane of any editor tab.
+      const findMatch = (requirePersistent: boolean) => {
+        for (const t of curr) {
+          if (t.kind !== "editor") continue;
+          for (const l of leaves(t.paneTree)) {
+            if (l.path !== path) continue;
+            if (requirePersistent && l.preview) continue;
+            return { tabId: t.id, leafId: l.id };
           }
-          return curr;
         }
+        return null;
+      };
+      const newEditorTab = (preview: boolean): EditorTab => {
         const id = nextIdRef.current++;
+        const leafId = nextIdRef.current++;
         targetId = id;
-        return [
-          ...curr,
-          {
-            id,
-            kind: "editor",
-            title: basename(path),
-            path,
-            dirty: false,
-            preview: false,
-          } satisfies EditorTab,
-        ];
-      } else {
-        // Preview open: persistent tab for this path takes priority.
-        const persistent = curr.find(
-          (t) =>
-            t.kind === "editor" && t.path === path && !(t as EditorTab).preview,
-        );
-        if (persistent) {
-          targetId = persistent.id;
-          return curr;
-        }
-        // Reuse the slot if it already shows the same path.
-        const existingPreview = curr.find(
-          (t) =>
-            t.kind === "editor" && t.path === path && (t as EditorTab).preview,
-        );
-        if (existingPreview) {
-          targetId = existingPreview.id;
-          return curr;
-        }
-        // Replace the current preview slot, or append a new one.
-        const previewIdx = curr.findIndex(
-          (t) => t.kind === "editor" && (t as EditorTab).preview,
-        );
-        const id = nextIdRef.current++;
-        targetId = id;
-        const tab: EditorTab = {
+        return {
           id,
           kind: "editor",
           title: basename(path),
-          path,
-          dirty: false,
-          preview: true,
+          paneTree: { kind: "leaf", id: leafId, path, dirty: false, preview },
+          activeLeafId: leafId,
         };
-        if (previewIdx === -1) return [...curr, tab];
-        const next = [...curr];
-        next[previewIdx] = tab;
-        return next;
+      };
+
+      if (pin) {
+        // Persistent open: focus any leaf already showing the path, un-preview it.
+        const match = findMatch(false);
+        if (match) {
+          targetId = match.tabId;
+          return curr.map((t) =>
+            t.id === match.tabId && t.kind === "editor"
+              ? {
+                  ...t,
+                  paneTree: updateLeaf(t.paneTree, match.leafId, {
+                    preview: false,
+                  }),
+                  activeLeafId: match.leafId,
+                }
+              : t,
+          );
+        }
+        return [...curr, newEditorTab(false)];
       }
+
+      // Preview open: a persistent leaf for this path wins.
+      const persistent = findMatch(true);
+      if (persistent) {
+        targetId = persistent.tabId;
+        return curr.map((t) =>
+          t.id === persistent.tabId && t.kind === "editor"
+            ? { ...t, activeLeafId: persistent.leafId }
+            : t,
+        );
+      }
+      // A preview leaf already showing this path — just focus it.
+      const previewMatch = findMatch(false);
+      if (previewMatch) {
+        targetId = previewMatch.tabId;
+        return curr.map((t) =>
+          t.id === previewMatch.tabId && t.kind === "editor"
+            ? { ...t, activeLeafId: previewMatch.leafId }
+            : t,
+        );
+      }
+      // Replace the current single-leaf preview tab, or append a new one. (Only
+      // an unsplit editor tab can be the shared preview slot; split panes pin.)
+      const previewIdx = curr.findIndex(
+        (t) =>
+          t.kind === "editor" &&
+          t.paneTree.kind === "leaf" &&
+          t.paneTree.preview === true,
+      );
+      const tab = newEditorTab(true);
+      if (previewIdx === -1) return [...curr, tab];
+      const next = [...curr];
+      next[previewIdx] = tab;
+      return next;
     });
     if (targetId !== null) setActiveId(targetId);
     return targetId as number | null;
   }, []);
 
   /**
-   * Promotes a preview tab to a persistent one. Called on double-click of the
-   * tab title in the tab bar. Dirty edits also auto-promote (see `updateTab`).
+   * Promotes the active pane of an editor tab from preview to persistent.
+   * Called on double-click of the tab title. Dirty edits also auto-promote
+   * (see `setEditorLeafDirty`).
    */
   const pinTab = useCallback((id: number) => {
     setTabs((curr) =>
       curr.map((t) =>
-        t.id === id && t.kind === "editor" ? { ...t, preview: false } : t,
+        t.id === id && t.kind === "editor"
+          ? {
+              ...t,
+              paneTree: updateLeaf(t.paneTree, t.activeLeafId, {
+                preview: false,
+              }),
+            }
+          : t,
       ),
     );
   }, []);
@@ -581,17 +635,12 @@ export function useTabs(initial?: Partial<TerminalTab>) {
             ...(patch.path !== undefined && { path: patch.path }),
           };
         }
-        // editor tab: auto-promote from preview the moment the file becomes dirty.
-        const autoPin =
-          patch.dirty === true && (x as EditorTab).preview
-            ? { preview: false }
-            : {};
+        // editor tab: only the tab-level title is patched here. Per-leaf state
+        // (dirty / path / preview) is managed via the leaf-aware editor actions
+        // (setEditorLeafDirty, renameEditorLeafPaths, pinTab).
         return {
           ...x,
-          ...autoPin,
           ...(patch.title !== undefined && { title: patch.title }),
-          ...(patch.dirty !== undefined && { dirty: patch.dirty }),
-          ...(patch.path !== undefined && { path: patch.path }),
         };
       }),
     );
@@ -690,12 +739,27 @@ export function useTabs(initial?: Partial<TerminalTab>) {
             splitId,
             leafId,
             dir,
-            t.cwd,
+            { cwd: t.cwd },
           );
           return { ...t, paneTree, activeLeafId: leafId };
         }),
       );
       return newLeafId;
+    },
+    [],
+  );
+
+  /** Reorder the active leaf of `tabId` within its split (see movePane). */
+  const movePaneInTab = useCallback(
+    (tabId: number, axis: SplitDir, delta: 1 | -1): void => {
+      setTabs((curr) =>
+        curr.map((t) => {
+          if (t.id !== tabId || t.kind !== "terminal") return t;
+          const paneTree = movePane(t.paneTree, t.activeLeafId, axis, delta);
+          if (paneTree === t.paneTree) return t;
+          return { ...t, paneTree };
+        }),
+      );
     },
     [],
   );
@@ -726,7 +790,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
       }
       didRemove = true;
       return curr.map((x) =>
-        x.id === tab.id
+        x.id === tab.id && x.kind === "terminal"
           ? { ...x, paneTree: newTree, activeLeafId: newActive }
           : x,
       );
@@ -759,7 +823,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
         sib && remaining.includes(sib) ? sib : remaining[0];
       removedLeaf = target;
       return curr.map((x) =>
-        x.id === tabId
+        x.id === tabId && x.kind === "terminal"
           ? { ...x, paneTree: newTree, activeLeafId: newActive }
           : x,
       );
@@ -767,6 +831,166 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     if (removedLeaf !== null) disposeSession(removedLeaf);
     return closedTab;
   }, []);
+
+  // ─── Editor pane actions (mirror the terminal ones; full split parity) ───
+  // Editor panes have no PTY session, so there's nothing to dispose — the
+  // per-leaf editor handles in App are pruned off the pane tree by effect.
+
+  const editorTitleFor = (tree: EditorTab["paneTree"], leafId: number, fallback: string) => {
+    const leaf = findLeaf(tree, leafId);
+    return leaf ? basename(leaf.path) : fallback;
+  };
+
+  /** Update a file pane's dirty flag (keyed by leaf id — each EditorPane reports
+   *  its own leaf). A pane auto-promotes out of preview once it becomes dirty. */
+  const setEditorLeafDirty = useCallback(
+    (leafId: number, dirty: boolean) => {
+      setTabs((curr) =>
+        curr.map((t) => {
+          if (t.kind !== "editor" || !hasLeaf(t.paneTree, leafId)) return t;
+          const paneTree = updateLeaf(
+            t.paneTree,
+            leafId,
+            dirty ? { dirty, preview: false } : { dirty },
+          );
+          return paneTree === t.paneTree ? t : { ...t, paneTree };
+        }),
+      );
+    },
+    [],
+  );
+
+  /** Rewrite editor pane paths after a rename/move on disk. Updates any leaf
+   *  whose path is `from` or sits under `from/`, and refreshes the tab title. */
+  const renameEditorLeafPaths = useCallback((from: string, to: string) => {
+    const remap = (p: string): string | null => {
+      if (p === from) return to;
+      if (p.startsWith(`${from}/`)) return `${to}${p.slice(from.length)}`;
+      return null;
+    };
+    setTabs((curr) =>
+      curr.map((t) => {
+        if (t.kind !== "editor") return t;
+        let paneTree = t.paneTree;
+        let changed = false;
+        for (const l of leaves(t.paneTree)) {
+          const np = remap(l.path);
+          if (np !== null && np !== l.path) {
+            paneTree = updateLeaf(paneTree, l.id, { path: np });
+            changed = true;
+          }
+        }
+        if (!changed) return t;
+        return { ...t, paneTree, title: editorTitleFor(paneTree, t.activeLeafId, t.title) };
+      }),
+    );
+  }, []);
+
+  /** Focus a file pane within an editor tab. */
+  const focusEditorPane = useCallback((tabId: number, leafId: number) => {
+    setTabs((curr) =>
+      curr.map((t) => {
+        if (t.id !== tabId || t.kind !== "editor") return t;
+        if (t.activeLeafId === leafId || !hasLeaf(t.paneTree, leafId)) return t;
+        return {
+          ...t,
+          activeLeafId: leafId,
+          title: editorTitleFor(t.paneTree, leafId, t.title),
+        };
+      }),
+    );
+  }, []);
+
+  const focusNextEditorPane = useCallback((tabId: number, delta: 1 | -1) => {
+    setTabs((curr) =>
+      curr.map((t) => {
+        if (t.id !== tabId || t.kind !== "editor") return t;
+        const next = nextLeafId(t.paneTree, t.activeLeafId, delta);
+        if (next === t.activeLeafId) return t;
+        return {
+          ...t,
+          activeLeafId: next,
+          title: editorTitleFor(t.paneTree, next, t.title),
+        };
+      }),
+    );
+  }, []);
+
+  /** Split the active file pane of `tabId`; the new pane opens the same file. */
+  const splitActiveEditorPane = useCallback(
+    (tabId: number, dir: SplitDir): number | null => {
+      let newLeafId: number | null = null;
+      setTabs((curr) =>
+        curr.map((t) => {
+          if (t.id !== tabId || t.kind !== "editor") return t;
+          if (leafIds(t.paneTree).length >= MAX_PANES_PER_TAB) return t;
+          const active = findLeaf(t.paneTree, t.activeLeafId);
+          if (!active) return t;
+          const splitId = nextIdRef.current++;
+          const leafId = nextIdRef.current++;
+          newLeafId = leafId;
+          const paneTree = splitLeaf(t.paneTree, t.activeLeafId, splitId, leafId, dir, {
+            path: active.path,
+            dirty: false,
+            preview: false,
+          });
+          return { ...t, paneTree, activeLeafId: leafId };
+        }),
+      );
+      return newLeafId;
+    },
+    [],
+  );
+
+  /** Close one file pane; collapse single-child splits; close the tab when its
+   *  last pane goes. */
+  const closeEditorPaneByLeaf = useCallback((leafId: number): void => {
+    setTabs((curr) => {
+      const tab = curr.find(
+        (t) => t.kind === "editor" && hasLeaf(t.paneTree, leafId),
+      );
+      if (!tab || tab.kind !== "editor") return curr;
+      const newTree = removeLeaf(tab.paneTree, leafId);
+      if (newTree === null) {
+        if (curr.length <= 1) return curr;
+        const idx = curr.findIndex((x) => x.id === tab.id);
+        const next = curr.filter((x) => x.id !== tab.id);
+        setActiveId((active) =>
+          active === tab.id ? next[Math.max(0, idx - 1)].id : active,
+        );
+        return next;
+      }
+      const remaining = leafIds(newTree);
+      let newActive = tab.activeLeafId;
+      if (tab.activeLeafId === leafId) {
+        const sib = siblingLeafOf(tab.paneTree, leafId);
+        newActive = sib && remaining.includes(sib) ? sib : remaining[0];
+      }
+      return curr.map((x) =>
+        x.id === tab.id
+          ? {
+              ...x,
+              paneTree: newTree,
+              activeLeafId: newActive,
+              title: editorTitleFor(newTree, newActive, x.title),
+            }
+          : x,
+      );
+    });
+  }, []);
+
+  const moveEditorPaneInTab = useCallback(
+    (tabId: number, axis: SplitDir, delta: 1 | -1): void => {
+      setTabs((curr) =>
+        curr.map((t) => {
+          if (t.id !== tabId || t.kind !== "editor") return t;
+          const paneTree = movePane(t.paneTree, t.activeLeafId, axis, delta);
+          return paneTree === t.paneTree ? t : { ...t, paneTree };
+        }),
+      );
+    },
+    [],
+  );
 
   /** Apply a fully reordered tab list by ID array (result of a drag operation). */
   const reorderTabs = useCallback((newOrder: number[]) => {
@@ -825,8 +1049,16 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     focusPane,
     focusNextPaneInTab,
     splitActivePane,
+    movePaneInTab,
     closeActivePane,
     closePaneByLeaf,
+    setEditorLeafDirty,
+    renameEditorLeafPaths,
+    focusEditorPane,
+    focusNextEditorPane,
+    splitActiveEditorPane,
+    closeEditorPaneByLeaf,
+    moveEditorPaneInTab,
     resetWorkspace,
     reorderTabs,
   };

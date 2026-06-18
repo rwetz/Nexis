@@ -32,7 +32,8 @@ import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import type { EditorTab, Tab } from "./lib/tabTypes";
+import type { Tab } from "./lib/tabTypes";
+import { editorAnyDirty } from "./lib/tabTypes";
 
 type Props = {
   tabs: Tab[];
@@ -213,7 +214,10 @@ export function TabBar({
         >
           <TabsList className="h-7 w-max gap-0.5 bg-transparent p-0">
             {(dragOrder ?? tabs).map((t) => {
-              const isPreview = t.kind === "editor" && (t as EditorTab).preview;
+              const isPreview =
+                t.kind === "editor" &&
+                t.paneTree.kind === "leaf" &&
+                t.paneTree.preview === true;
               return (
                 <TabsTrigger
                   key={t.id}
@@ -264,7 +268,7 @@ export function TabBar({
                     <span className={cn("truncate", isPreview && "italic")}>
                       {labelFor(t)}
                     </span>
-                    {t.kind === "editor" && t.dirty ? (
+                    {t.kind === "editor" && editorAnyDirty(t) ? (
                       <span
                         aria-label="Unsaved changes"
                         className="size-1.5 shrink-0 rounded-full bg-foreground/70"

@@ -4,8 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import type { Tab, EditorTab, TerminalTab } from "./tabTypes";
-import { basename } from "./tabTypes";
+import type { EditorPaneNode, Tab, EditorTab, TerminalTab } from "./tabTypes";
+import { basename, editorActivePath } from "./tabTypes";
+import { leaves } from "@/modules/terminal/lib/panes";
 
 // ─── Storage keys & constants ──────────────────────────────────────────────────
 
@@ -21,9 +22,17 @@ type PersistedTerminalTab = {
   cwd?: string;
   private?: boolean;
 };
+/** Editor pane tree, mirrored structurally (ids are reassigned on restore). */
+type PersistedEditorNode =
+  | { kind: "leaf"; path: string }
+  | { kind: "split"; dir: "row" | "col"; children: PersistedEditorNode[] };
 type PersistedEditorTab = {
   kind: "editor";
-  path: string;
+  /** Full split tree. `path` is the legacy single-file form (still restored). */
+  tree?: PersistedEditorNode;
+  path?: string;
+  /** Path of the pane that was focused, so it's re-focused on restore. */
+  activePath?: string;
 };
 type PersistedTab = PersistedTerminalTab | PersistedEditorTab;
 type PersistedTabState = {
@@ -77,15 +86,31 @@ export function loadSavedTabState(): PersistedTabState | null {
   }
 }
 
+function serializeEditorNode(n: EditorPaneNode): PersistedEditorNode {
+  if (n.kind === "leaf") return { kind: "leaf", path: n.path };
+  return {
+    kind: "split",
+    dir: n.dir,
+    children: n.children.map(serializeEditorNode),
+  };
+}
+
 export function serializeTabState(tabs: Tab[], activeId: number): PersistedTabState {
   const persisted: PersistedTab[] = [];
   for (const t of tabs) {
     if (t.kind === "terminal") {
       persisted.push({ kind: "terminal", title: t.title, cwd: t.cwd, private: t.private });
-    } else if (t.kind === "editor" && !t.preview) {
-      persisted.push({ kind: "editor", path: t.path });
+    } else if (t.kind === "editor") {
+      // Skip a lone, unpinned preview pane (matches the old behavior); split or
+      // pinned tabs persist their full pane tree.
+      if (t.paneTree.kind === "leaf" && t.paneTree.preview) continue;
+      persisted.push({
+        kind: "editor",
+        tree: serializeEditorNode(t.paneTree),
+        activePath: editorActivePath(t),
+      });
     }
-    // Skip: preview, ai-diff, git-diff, git-history, git-commit-file, markdown, notebook, image
+    // Skip: ai-diff, git-diff, git-history, git-commit-file, markdown, notebook, image
   }
   const activeTab = tabs.find((t) => t.id === activeId);
   let activeIndex = 0;
@@ -95,7 +120,7 @@ export function serializeTabState(tabs: Tab[], activeId: number): PersistedTabSt
         (p.kind === "terminal" && activeTab.kind === "terminal") ||
         (p.kind === "editor" &&
           activeTab.kind === "editor" &&
-          (activeTab as EditorTab).path === p.path),
+          editorActivePath(activeTab) === p.activePath),
     );
     if (serializedIdx !== -1) activeIndex = serializedIdx;
   }
@@ -128,13 +153,30 @@ export function buildTabsFromSaved(
       if (i === saved.activeIndex) activeId = tabId;
     } else if (p.kind === "editor") {
       const tabId = id++;
+      const buildNode = (n: PersistedEditorNode): EditorPaneNode => {
+        if (n.kind === "leaf") {
+          return { kind: "leaf", id: id++, path: n.path, dirty: false, preview: false };
+        }
+        return {
+          kind: "split",
+          id: id++,
+          dir: n.dir,
+          children: n.children.map(buildNode),
+        };
+      };
+      // Prefer the persisted tree; fall back to the legacy single-path form.
+      const source: PersistedEditorNode = p.tree ??
+        (p.path ? { kind: "leaf", path: p.path } : { kind: "leaf", path: "" });
+      const paneTree = buildNode(source);
+      const all = leaves(paneTree);
+      const activeLeaf =
+        all.find((l) => l.path === p.activePath) ?? all[0];
       const tab: EditorTab = {
         id: tabId,
         kind: "editor",
-        title: basename(p.path),
-        path: p.path,
-        dirty: false,
-        preview: false,
+        title: basename(activeLeaf?.path ?? ""),
+        paneTree,
+        activeLeafId: activeLeaf?.id ?? paneTree.id,
       };
       tabs.push(tab);
       if (i === saved.activeIndex) activeId = tabId;

@@ -5,15 +5,16 @@
 // ╚══════════════════════════════════════╝
 
 import { Fragment } from "react";
-import { cn } from "@/lib/utils";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { SearchAddon } from "@xterm/addon-search";
 import { TerminalPane, type TerminalPaneHandle } from "./TerminalPane";
-import type { PaneNode } from "./lib/panes";
+import type { TerminalPaneNode } from "./lib/panes";
 
 type LeafBundle = {
   setRef: (h: TerminalPaneHandle | null) => void;
@@ -21,10 +22,11 @@ type LeafBundle = {
   onCwd: (cwd: string) => void;
   onExit: (code: number) => void;
   onTitle: (title: string) => void;
+  onClose: () => void;
 };
 
 type Props = {
-  node: PaneNode;
+  node: TerminalPaneNode;
   tabVisible: boolean;
   activeLeafId: number;
   onFocusLeaf: (leafId: number) => void;
@@ -56,10 +58,7 @@ export function PaneTreeView({
           if (!focused) onFocusLeaf(node.id);
         }}
         data-pane-leaf={node.id}
-        className={cn(
-          "relative h-full w-full",
-          focused && split && "pane-focus-glow",
-        )}
+        className="group/pane relative h-full w-full"
       >
         <TerminalPane
           leafId={node.id}
@@ -72,6 +71,28 @@ export function PaneTreeView({
           onExit={(_id, code) => b.onExit(code)}
           onTitle={(_id, title) => b.onTitle(title)}
         />
+        {/* Per-pane close — only inside a split (a lone pane closes via the
+         *  tab). Offset left of the record toggle (right-2) so they don't
+         *  overlap. Revealed on pane hover. */}
+        {split && (
+          <button
+            type="button"
+            aria-label="Close pane"
+            title="Close pane"
+            onClick={(e) => {
+              e.stopPropagation();
+              b.onClose();
+            }}
+            className="absolute right-9 top-2 z-40 flex h-5 w-5 items-center justify-center rounded-full border border-border/60 bg-card/80 text-muted-foreground opacity-0 shadow-sm transition-opacity duration-150 hover:border-red-400/60 hover:bg-muted hover:text-red-400 group-hover/pane:opacity-100"
+          >
+            <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} />
+          </button>
+        )}
+        {/* Focus ring — overlay drawn ON TOP of the terminal so it shows on
+         *  all four sides (see .pane-focus-ring in globals.css). */}
+        {focused && split && (
+          <div className="pane-focus-ring pointer-events-none absolute inset-0 z-30 rounded-[inherit]" />
+        )}
       </div>
     );
   }

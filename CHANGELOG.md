@@ -2,6 +2,21 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [1.20.1] — 2026-06-18
+
+Split panes get full parity across the terminal and the editor, plus a fix for the focused-pane indicator.
+
+### Added
+- **Editor split panes** — editor tabs now split into multiple file panes just like the terminal (`Ctrl+D` split right, `Ctrl+Shift+D` split down), each independently resizable and closable, up to 4 panes per tab. Opening a file while a split pane is focused loads it into that pane (unless it has unsaved changes), so you can view different files side by side. Split layouts persist across restart.
+- **Close panes individually** — a hover ✕ on each terminal/editor pane, shown only when a tab is split.
+- **Move panes** — reorder a pane within its split with `Ctrl+Alt+Arrow`.
+
+### Fixed
+- **Focused-pane indicator** — the brand-colored focus ring no longer leaks as a stray line along the bottom of the active pane. It's now rendered as a clean overlay ring on all four sides (previously an inset shadow that the terminal canvas hid on three edges, leaking only through xterm's bottom row-rounding gap).
+
+### Changed
+- The split-pane tree is now generic and shared between terminal and editor tabs.
+
 ## [1.20.0] — 2026-06-17
 
 ML Lab grows up: the rest of the ML Suite's **Phase 2** (inference + richer graphs) and **Phase 3** (a Python-free engine) ship here. Still an early feature — verified end-to-end, but young.

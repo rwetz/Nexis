@@ -110,7 +110,16 @@ import { StatusBar } from "@/modules/statusbar";
 import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
 import { pushRecentWorkspace } from "@/modules/workspace/useRecentWorkspaces";
 import { PluginHost } from "@/lib/plugins/PluginHost";
-import { MAX_PANES_PER_TAB, useTabs, useWorkspaceCwd, setSavedTabsEnabled } from "@/modules/tabs";
+import {
+  MAX_PANES_PER_TAB,
+  useTabs,
+  useWorkspaceCwd,
+  setSavedTabsEnabled,
+  editorActivePath,
+  editorAnyDirty,
+  editorLeaves,
+  editorLeafPaths,
+} from "@/modules/tabs";
 import {
   disposeSession,
   findLeafCwd,
@@ -178,8 +187,16 @@ export default function App() {
     focusPane,
     focusNextPaneInTab,
     splitActivePane,
+    movePaneInTab,
     closeActivePane,
     closePaneByLeaf,
+    setEditorLeafDirty,
+    renameEditorLeafPaths,
+    focusEditorPane,
+    focusNextEditorPane,
+    splitActiveEditorPane,
+    closeEditorPaneByLeaf,
+    moveEditorPaneInTab,
     resetWorkspace,
     reorderTabs,
   } = useTabs(getLaunchDir() ? { cwd: getLaunchDir() } : undefined);
@@ -194,6 +211,14 @@ export default function App() {
     return t && t.kind === "terminal" ? t : null;
   }, [tabs, activeId]);
   const activeLeafId = activeTerminalTab?.activeLeafId ?? null;
+
+  // Editor handles are keyed by leaf id (a tab can host several file panes);
+  // the active leaf is the "current" editor for save/format/find/undo.
+  const activeEditorTab = useMemo(() => {
+    const t = tabs.find((x) => x.id === activeId);
+    return t && t.kind === "editor" ? t : null;
+  }, [tabs, activeId]);
+  const activeEditorLeafId = activeEditorTab?.activeLeafId ?? null;
 
   const searchAddons = useRef<Map<number, SearchAddon>>(new Map());
   const [activeSearchAddon, setActiveSearchAddon] =
@@ -269,7 +294,7 @@ export default function App() {
       ) {
         return;
       }
-      const dirty = tabsRef.current.some((t) => t.kind === "editor" && t.dirty);
+      const dirty = tabsRef.current.some((t) => t.kind === "editor" && editorAnyDirty(t));
       if (dirty) {
         window.alert("Save or close unsaved editor tabs before switching workspace.");
         return;
@@ -321,7 +346,7 @@ export default function App() {
 
   const switchWorkspacePath = useCallback(
     async (path: string) => {
-      const dirty = tabsRef.current.some((t) => t.kind === "editor" && t.dirty);
+      const dirty = tabsRef.current.some((t) => t.kind === "editor" && editorAnyDirty(t));
       if (dirty) {
         window.alert("Save or close unsaved editor tabs before switching workspace.");
         return;
@@ -490,8 +515,9 @@ export default function App() {
       appliedDiffsRef.current.add(t.approvalId);
       for (const e of tabs) {
         if (e.kind !== "editor") continue;
-        if (e.path !== t.path) continue;
-        editorRefs.current.get(e.id)?.reload();
+        for (const l of editorLeaves(e)) {
+          if (l.path === t.path) editorRefs.current.get(l.id)?.reload();
+        }
       }
     }
   }, [tabs]);
@@ -507,8 +533,10 @@ export default function App() {
         const currentTabs = tabsRef.current;
         for (const t of currentTabs) {
           if (t.kind !== "editor") continue;
-          if (t.path.replace(/\\/g, "/") === normalizedPath) {
-            editorRefs.current.get(t.id)?.reload();
+          for (const l of editorLeaves(t)) {
+            if (l.path.replace(/\\/g, "/") === normalizedPath) {
+              editorRefs.current.get(l.id)?.reload();
+            }
           }
         }
       },
@@ -529,8 +557,12 @@ export default function App() {
     setActiveSearchAddon(
       activeLeafId !== null ? (searchAddons.current.get(activeLeafId) ?? null) : null,
     );
-    setActiveEditorHandle(editorRefs.current.get(activeId) ?? null);
-  }, [activeId, activeLeafId]);
+    setActiveEditorHandle(
+      activeEditorLeafId !== null
+        ? (editorRefs.current.get(activeEditorLeafId) ?? null)
+        : null,
+    );
+  }, [activeId, activeLeafId, activeEditorLeafId]);
 
   const handleSearchReady = useCallback(
     (leafId: number, addon: SearchAddon) => {
@@ -542,10 +574,9 @@ export default function App() {
 
   const disposeTab = useCallback(
     (id: number) => {
-      // Terminal-leaf-keyed maps (terminalRefs/searchAddons) are pruned by
+      // Leaf-keyed maps (terminalRefs/searchAddons/editorRefs) are pruned by
       // the effect below as the pane tree changes; only the tab-id-keyed
-      // handles need explicit cleanup here.
-      editorRefs.current.delete(id);
+      // preview handles need explicit cleanup here.
       previewRefs.current.delete(id);
       closeTab(id);
     },
@@ -557,9 +588,12 @@ export default function App() {
   const liveLeavesRef = useRef<Set<number>>(new Set());
   useEffect(() => {
     const live = new Set<number>();
+    const editorLive = new Set<number>();
     for (const t of tabs) {
       if (t.kind === "terminal") {
         for (const id of leafIds(t.paneTree)) live.add(id);
+      } else if (t.kind === "editor") {
+        for (const id of leafIds(t.paneTree)) editorLive.add(id);
       }
     }
     for (const id of liveLeavesRef.current) {
@@ -570,12 +604,15 @@ export default function App() {
       if (!live.has(k)) terminalRefs.current.delete(k);
     for (const k of [...searchAddons.current.keys()])
       if (!live.has(k)) searchAddons.current.delete(k);
+    // Editor panes have no session; just prune handles for closed leaves.
+    for (const k of [...editorRefs.current.keys()])
+      if (!editorLive.has(k)) editorRefs.current.delete(k);
   }, [tabs]);
 
   const handleClose = useCallback(
     (id: number) => {
       const t = tabs.find((x) => x.id === id);
-      if (t?.kind === "editor" && t.dirty) {
+      if (t?.kind === "editor" && editorAnyDirty(t)) {
         setPendingCloseTab(id);
         return;
       }
@@ -613,7 +650,7 @@ export default function App() {
       return terminalRefs.current.get(lid)?.getSelection() ?? null;
     }
     if (t.kind === "editor") {
-      return editorRefs.current.get(activeId)?.getSelection() ?? null;
+      return editorRefs.current.get(t.activeLeafId)?.getSelection() ?? null;
     }
     return null;
   }, [tabs, activeId]);
@@ -843,10 +880,11 @@ export default function App() {
 
   const handlePathRenamed = useCallback(
     (from: string, to: string) => {
+      // Editor tabs hold paths per pane — remap leaves in one pass.
+      renameEditorLeafPaths(from, to);
+      // Single-path tab kinds (image, markdown, notebook) stay flat.
       for (const t of tabs) {
-        // Handle all tab kinds that carry a .path field (editor, image, markdown, notebook).
         if (
-          t.kind !== "editor" &&
           t.kind !== "image" &&
           t.kind !== "markdown" &&
           t.kind !== "notebook"
@@ -865,7 +903,7 @@ export default function App() {
         }
       }
     },
-    [tabs, updateTab],
+    [tabs, updateTab, renameEditorLeafPaths],
   );
 
   const confirmDeleteClose = useCallback(() => {
@@ -889,8 +927,12 @@ export default function App() {
           continue;
         }
         if (t.kind !== "editor") continue;
-        if (t.path !== path && !t.path.startsWith(`${path}/`)) continue;
-        if (t.dirty) {
+        // Any pane in this tab showing the deleted path (or something under it).
+        const affected = editorLeafPaths(t).some(
+          (p) => p === path || p.startsWith(`${path}/`),
+        );
+        if (!affected) continue;
+        if (editorAnyDirty(t)) {
           dirty.push(t.id);
         } else {
           disposeTab(t.id);
@@ -909,7 +951,7 @@ export default function App() {
       : null;
 
   const activeFilePath = (() => {
-    if (activeTab?.kind === "editor") return activeTab.path;
+    if (activeTab?.kind === "editor") return editorActivePath(activeTab);
     if (activeTab?.kind === "image") return activeTab.path;
     if (activeTab?.kind === "markdown") return activeTab.path;
     if (activeTab?.kind === "notebook") return activeTab.path;
@@ -933,7 +975,7 @@ export default function App() {
     if (activeTab?.kind === "terminal") {
       return activeTerminalLeafCwd ?? explorerRoot ?? workspaceFallbackPath;
     }
-    if (activeTab?.kind === "editor") return dirname(activeTab.path);
+    if (activeTab?.kind === "editor") return dirname(editorActivePath(activeTab));
     if (activeTab?.kind === "git-diff") return activeTab.repoRoot;
     if (activeTab?.kind === "git-commit-file") return activeTab.repoRoot;
     if (activeTab?.kind === "git-history") return activeTab.repoRoot;
@@ -1025,13 +1067,33 @@ export default function App() {
     [newImageTab],
   );
 
+  // Pane split/move/focus dispatch to the terminal or editor variant based on
+  // the active tab kind, so the same shortcuts drive both.
   const splitActivePaneInActiveTab = useCallback(
     (dir: "row" | "col") => {
       const t = tabsRef.current.find((x) => x.id === activeId);
-      if (!t || t.kind !== "terminal") return;
-      splitActivePane(activeId, dir);
+      if (t?.kind === "terminal") splitActivePane(activeId, dir);
+      else if (t?.kind === "editor") splitActiveEditorPane(activeId, dir);
     },
-    [activeId, splitActivePane],
+    [activeId, splitActivePane, splitActiveEditorPane],
+  );
+
+  const movePaneInActiveTab = useCallback(
+    (axis: "row" | "col", delta: 1 | -1) => {
+      const t = tabsRef.current.find((x) => x.id === activeId);
+      if (t?.kind === "terminal") movePaneInTab(activeId, axis, delta);
+      else if (t?.kind === "editor") moveEditorPaneInTab(activeId, axis, delta);
+    },
+    [activeId, movePaneInTab, moveEditorPaneInTab],
+  );
+
+  const focusNextPaneInActiveTab = useCallback(
+    (delta: 1 | -1) => {
+      const t = tabsRef.current.find((x) => x.id === activeId);
+      if (t?.kind === "terminal") focusNextPaneInTab(activeId, delta);
+      else if (t?.kind === "editor") focusNextEditorPane(activeId, delta);
+    },
+    [activeId, focusNextPaneInTab, focusNextEditorPane],
   );
 
   const paletteCommands = useMemo<CommandDef[]>(() => [
@@ -1076,8 +1138,12 @@ export default function App() {
       "tab.selectByIndex": (e) => selectByIndex(parseInt(e.key, 10) - 1),
       "pane.splitRight": () => splitActivePaneInActiveTab("row"),
       "pane.splitDown": () => splitActivePaneInActiveTab("col"),
-      "pane.focusNext": () => focusNextPaneInTab(activeId, 1),
-      "pane.focusPrev": () => focusNextPaneInTab(activeId, -1),
+      "pane.focusNext": () => focusNextPaneInActiveTab(1),
+      "pane.focusPrev": () => focusNextPaneInActiveTab(-1),
+      "pane.moveUp": () => movePaneInActiveTab("col", -1),
+      "pane.moveDown": () => movePaneInActiveTab("col", 1),
+      "pane.moveLeft": () => movePaneInActiveTab("row", -1),
+      "pane.moveRight": () => movePaneInActiveTab("row", 1),
       "pane.source": toggleSourceControl,
       "search.focus": () => searchInlineRef.current?.focus(),
       "ai.toggle": togglePanelAndFocus,
@@ -1099,9 +1165,9 @@ export default function App() {
       "bookmark.toggle": () => {
         const tab = tabs.find((t) => t.id === activeId);
         if (!tab || tab.kind !== "editor") return;
-        const handle = editorRefs.current.get(activeId);
+        const handle = editorRefs.current.get(tab.activeLeafId);
         const line = handle?.getCursorLine?.() ?? 0;
-        toggleBookmark(tab.path, line);
+        toggleBookmark(editorActivePath(tab), line);
       },
       "files.quickOpen": () => setQuickFilePickerOpen((v) => !v),
       "search.workspace": () => setWorkspaceSearchOpen((v) => !v),
@@ -1116,16 +1182,23 @@ export default function App() {
       "view.zoomOut": zoomOut,
       "view.zoomReset": zoomReset,
       "editor.formatDocument": () => {
-        void editorRefs.current.get(activeId)?.format();
+        if (activeEditorLeafId !== null)
+          void editorRefs.current.get(activeEditorLeafId)?.format();
       },
       "editor.codeActions": () => {
-        editorRefs.current.get(activeId)?.openCodeActions();
+        if (activeEditorLeafId !== null)
+          editorRefs.current.get(activeEditorLeafId)?.openCodeActions();
       },
-      "editor.undo": () => editorRefs.current.get(activeId)?.undo(),
-      "editor.redo": () => editorRefs.current.get(activeId)?.redo(),
+      "editor.undo": () =>
+        activeEditorLeafId !== null &&
+        editorRefs.current.get(activeEditorLeafId)?.undo(),
+      "editor.redo": () =>
+        activeEditorLeafId !== null &&
+        editorRefs.current.get(activeEditorLeafId)?.redo(),
     }),
     [
       activeId,
+      activeEditorLeafId,
       cycleTab,
       handleCloseTabOrPane,
       openNewTab,
@@ -1133,7 +1206,8 @@ export default function App() {
       openPreviewTab,
       selectByIndex,
       splitActivePaneInActiveTab,
-      focusNextPaneInTab,
+      movePaneInActiveTab,
+      focusNextPaneInActiveTab,
       toggleSourceControl,
       togglePanelAndFocus,
       askFromSelection,
@@ -1181,12 +1255,12 @@ export default function App() {
   );
 
   const registerEditorHandle = useCallback(
-    (id: number, h: EditorPaneHandle | null) => {
-      if (h) editorRefs.current.set(id, h);
-      else editorRefs.current.delete(id);
-      if (id === activeId) setActiveEditorHandle(h);
+    (leafId: number, h: EditorPaneHandle | null) => {
+      if (h) editorRefs.current.set(leafId, h);
+      else editorRefs.current.delete(leafId);
+      if (leafId === activeEditorLeafId) setActiveEditorHandle(h);
     },
-    [activeId],
+    [activeEditorLeafId],
   );
 
   const registerPreviewHandle = useCallback(
@@ -1237,8 +1311,8 @@ export default function App() {
   );
 
   const handleEditorDirty = useCallback(
-    (id: number, dirty: boolean) => updateTab(id, { dirty }),
-    [updateTab],
+    (leafId: number, dirty: boolean) => setEditorLeafDirty(leafId, dirty),
+    [setEditorLeafDirty],
   );
 
   const searchTarget = useMemo<SearchTarget>(() => {
@@ -1313,7 +1387,7 @@ export default function App() {
       getWorkspaceRoot: () => explorerRoot ?? launchCwd ?? home ?? null,
       getActiveFile: () => {
         const t = tabs.find((x) => x.id === activeId);
-        return t?.kind === "editor" ? t.path : null;
+        return t?.kind === "editor" ? editorActivePath(t) : null;
       },
       openPreview: (url: string) => {
         openPreviewTab(url);
@@ -1342,6 +1416,7 @@ export default function App() {
           onTitle={handleTerminalTitle}
           onExit={handleLeafExit}
           onFocusLeaf={handleFocusLeaf}
+          onClosePane={closePaneByLeaf}
         />
       </div>
       <div
@@ -1356,7 +1431,8 @@ export default function App() {
           activeId={activeId}
           registerHandle={registerEditorHandle}
           onDirtyChange={handleEditorDirty}
-          onCloseTab={disposeTab}
+          onCloseLeaf={closeEditorPaneByLeaf}
+          onFocusLeaf={focusEditorPane}
           onRunFile={handleRunFile}
           root={explorerRoot}
           onNavigateToFolder={(_folderPath) => {
@@ -1466,8 +1542,10 @@ export default function App() {
             onToggleSidebar={toggleSidebar}
             onSplit={splitActivePaneInActiveTab}
             canSplit={
-              activeTerminalTab !== null &&
-              leafIds(activeTerminalTab.paneTree).length < MAX_PANES_PER_TAB
+              (activeTerminalTab !== null &&
+                leafIds(activeTerminalTab.paneTree).length < MAX_PANES_PER_TAB) ||
+              (activeEditorTab !== null &&
+                leafIds(activeEditorTab.paneTree).length < MAX_PANES_PER_TAB)
             }
             onOpenShortcuts={() => setShortcutsOpen(true)}
             onOpenSettings={() => void openSettingsWindow()}
@@ -1537,7 +1615,7 @@ export default function App() {
                         }}
                       />
                     ) : sidebarView === "outline" ? (
-                      <SymbolOutlinePanel filePath={tabs.find(t => t.id === activeId && t.kind === "editor") ? (tabs.find(t => t.id === activeId) as { path: string }).path : null} />
+                      <SymbolOutlinePanel filePath={activeEditorTab ? editorActivePath(activeEditorTab) : null} />
                     ) : sidebarView === "snippets" ? (
                       <SnippetsPanel />
                     ) : sidebarView === "tests" ? (

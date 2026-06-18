@@ -21,6 +21,7 @@ type Props = {
   onTitle: (leafId: number, title: string) => void;
   onExit: (leafId: number, code: number) => void;
   onFocusLeaf: (tabId: number, leafId: number) => void;
+  onClosePane: (leafId: number) => void;
 };
 
 type Bundle = {
@@ -29,6 +30,7 @@ type Bundle = {
   onCwd: (cwd: string) => void;
   onTitle: (title: string) => void;
   onExit: (code: number) => void;
+  onClose: () => void;
 };
 
 export function TerminalStack({
@@ -40,6 +42,7 @@ export function TerminalStack({
   onTitle,
   onExit,
   onFocusLeaf,
+  onClosePane,
 }: Props) {
   const terminals = useMemo(
     () => tabs.filter((t) => t.kind === "terminal"),
@@ -51,6 +54,7 @@ export function TerminalStack({
   const cwdRef = useRef(onCwd);
   const titleRef = useRef(onTitle);
   const exitRef = useRef(onExit);
+  const closeRef = useRef(onClosePane);
   useEffect(() => {
     registerRef.current = registerHandle;
   }, [registerHandle]);
@@ -66,6 +70,9 @@ export function TerminalStack({
   useEffect(() => {
     exitRef.current = onExit;
   }, [onExit]);
+  useEffect(() => {
+    closeRef.current = onClosePane;
+  }, [onClosePane]);
 
   const bundles = useRef(new Map<number, Bundle>());
   const getBundle = (leafId: number): Bundle => {
@@ -77,6 +84,7 @@ export function TerminalStack({
         onCwd: (cwd) => cwdRef.current(leafId, cwd),
         onTitle: (title) => titleRef.current(leafId, title),
         onExit: (code) => exitRef.current(leafId, code),
+        onClose: () => closeRef.current(leafId),
       };
       bundles.current.set(leafId, b);
     }

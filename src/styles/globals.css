@@ -489,12 +489,15 @@ textarea,
 }
 
 /* The focused split pane gets a subtle inset brand ring + inner glow so it's
- * always obvious which pane has focus. Inset only, so it never shifts layout
- * or gets clipped by the pane's own overflow. */
-.pane-focus-glow {
+ * always obvious which pane has focus. This is rendered as a pointer-events-none
+ * overlay drawn ON TOP of the pane content (not on the pane wrapper behind it):
+ * the terminal's opaque canvas would otherwise paint over three edges, and
+ * xterm's row-rounding gap at the bottom would leak the ring's bottom edge as a
+ * stray line. As a top layer the ring is crisp and symmetric on all four sides. */
+.pane-focus-ring {
   box-shadow:
-    inset 0 0 0 1px color-mix(in oklch, var(--brand) 42%, transparent),
-    inset 0 0 14px -5px color-mix(in oklch, var(--brand) 55%, transparent);
+    inset 0 0 0 1px color-mix(in oklch, var(--brand) 55%, transparent),
+    inset 0 0 16px -6px color-mix(in oklch, var(--brand) 45%, transparent);
   transition: box-shadow 0.2s ease;
 }
 
