@@ -2,6 +2,11 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [Unreleased]
+
+### Security
+- Bumped the transitive `quinn-proto` lockfile entry 0.11.14 → 0.11.15 to clear **RUSTSEC-2026-0185** (a high-severity remote memory-exhaustion advisory). The crate is an orphan `Cargo.lock` entry — not compiled into any of Nexis's build targets — so there is no user impact; this keeps `cargo audit` green.
+
 ## [1.20.2] — 2026-06-22
 
 A reliability, security, and supply-chain hardening pass — no user-facing features, just CI gates, panic-safety, and resource ceilings. Also makes `CHANGELOG.md` the canonical record (see Docs) and retires the `IDEAS.md` brainstorm (its content moved into `ROADMAP.md`'s hardening backlog).
