@@ -2,20 +2,54 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
-## [1.20.1] — 2026-06-18
+## [Unreleased]
 
-Split panes get full parity across the terminal and the editor, plus a fix for the focused-pane indicator.
+A reliability, security, and supply-chain hardening pass — no user-facing features, just CI gates, panic-safety, and resource ceilings. Also retires the `IDEAS.md` brainstorm (its content moved into `ROADMAP.md`'s hardening backlog).
 
 ### Added
+- **Binary-size budget gate** — the release workflow fails if `nexis.exe` exceeds 10 MiB, making the "<10 MB" non-negotiable actually enforced so a careless dependency can't quietly blow the budget (currently ~8.4 MiB).
+- **Coverage gate** — CI now runs `pnpm test:coverage` instead of bare `pnpm test`; the `vitest.config.ts` thresholds were raised from 40/35/45/40 to just below the current numbers (lines/statements ~72%, branches ~82%, functions ~56%), so a real coverage regression fails the build.
+- **`cargo-deny` supply-chain gate** — `src-tauri/deny.toml` adds a license allow-list, advisory checks, and a source-registry lock on top of `cargo audit`, run by the weekly `audit.yml` workflow (and on any `Cargo.lock`/`deny.toml` change). Documented exceptions cover unmaintained *transitive* Tauri dependencies (the gtk-rs GTK3 bindings, the rust-unic Unicode tables, proc-macro-error) that have no fix path.
+- **Panic-lint gate** — `src-tauri/clippy.toml` plus `#![warn(clippy::unwrap_used, clippy::expect_used)]` on the security-critical command modules (`net`, `secrets`, `recording`) make a new `.unwrap()`/`.expect()` in their production code a CI failure (test code is exempt via `allow-unwrap-in-tests`).
+
+### Changed
+- **All GitHub Actions are pinned to a commit SHA** (with the tag in a trailing comment) across the CI, audit, release, and E2E workflows, so a re-pointed tag can't swap in unreviewed action code. `dtolnay/rust-toolchain` gained an explicit `toolchain: stable` input to remain pinnable.
+- Marked the `nexis` crate `publish = false` and documented the intentionally-minimal `rt`-only `tokio` feature set in `Cargo.toml` (a contributor note tied to the size budget).
+
+### Fixed
+- **PTY thread-spawn no longer panics on exhaustion** — if the reader/flusher/waiter thread fails to spawn (OS thread limit / OOM), the spawn path now kills the child shell and unwinds cleanly via a new `ThreadSpawnGuard` instead of `.expect()`-panicking on a Tauri worker thread (which could take down the whole process — pitfall #9 territory).
+
+### Security
+- **Buffer ceilings** (defense against unbounded growth): terminal recordings are capped (a 64 MiB frontend accumulation ceiling with a truncation notice, plus a 512 MiB Rust-side guard on the saved `.cast` payload); the AI message history gained a hard context-window backstop so a single very large recent tool result can't push the history past the model's window; and the explorer live-sync re-list fan-out is bounded.
+- **Audited minimal Tauri capability surface** — verified every granted capability in `capabilities/*.json` maps to a real feature (no blanket `fs:`/`shell:`/`http:` grants) and documented the posture in `SECURITY.md`.
+
+## [1.20.1] — 2026-06-18
+
+A look-and-feel pass that spreads the AI panel's polish across the whole app, four new AI providers, full editor split-pane parity with the terminal, and an explorer-stability fix.
+
+### Added
+- **New AI providers** — **Z.ai** (Zhipu GLM) cloud provider with 7 GLM models (GLM-4.6 / 4.5 / 4.5-X / Air / AirX / Flash / 4.5V) via its OpenAI-compatible endpoint (`api.z.ai/api/paas/v4`), plus three LM Studio-style local providers — **vLLM**, **xLLM**, and **SGLang** — each with its own icon and a configurable base URL + model id in the LOCAL & CUSTOM list. All four are threaded through chat, inline autocomplete, and commit/PR generation, persist via `writePref`, and the local ones satisfy the composer's local-model gate.
 - **Editor split panes** — editor tabs now split into multiple file panes just like the terminal (`Ctrl+D` split right, `Ctrl+Shift+D` split down), each independently resizable and closable, up to 4 panes per tab. Opening a file while a split pane is focused loads it into that pane (unless it has unsaved changes), so you can view different files side by side. Split layouts persist across restart.
 - **Close panes individually** — a hover ✕ on each terminal/editor pane, shown only when a tab is split.
 - **Move panes** — reorder a pane within its split with `Ctrl+Alt+Arrow`.
+- **Command exit-status gutter** — `OSC 133;D` exit codes now paint a thin green/red gutter bar on each command's line (xterm decorations anchored to the prompt marker), so success/failure is scannable down the scrollback. Degrades silently where decorations aren't available; the cwd-gating path is untouched. (The achievable slice of command blocks — full Warp-style interactive blocks would need replacing the WebGL renderer.)
+- **ML training progress on the OS taskbar** — a training run mirrors its progress onto the taskbar/dock icon via `setProgressBar` (normal / paused / indeterminate), cleared when the run ends.
+- **Per-branch source-control accent** — the source-control panel gets a peacock-style top strip whose color is a stable hash of the current branch name, so branches are distinguishable at a glance.
+- **Motion system** — shared spring/tween presets (`lib/motion.ts`) and a root `<MotionConfig reducedMotion="user">`, so animations share one vocabulary and respect `prefers-reduced-motion`.
+- **Themed toasts** — a Sonner `<Toaster>` at the app root; the explorer's rename / delete / reveal errors now surface as toasts instead of `window.alert()`. (Adds the `sonner` dependency.)
+- **Sliding brand tab indicator** — one shared-layout (`layoutId`) element that springs between tabs with a glow, replacing the static per-tab accent line.
+- **Theme-aware brand accent** — `applyTheme` now sources `--brand` from each theme's signature ring color, so the tab indicator, composer aurora, and active-pane glow all match the active theme and crossfade with it (the default theme keeps coral).
+- **Signature effects** — a rotating brand conic "aurora" border on the composer while the agent works; an inset brand glow on the focused split pane (multi-pane only); a terminal file-drop overlay; a glassy command palette; an AI code-block copy button that springs copy → green check; and a reduced-motion-aware crossfade when the theme palette/mode changes.
+- **New reusable UI components** — `<ScrollFade>` (scroll affordance) and `<KbdHint>` (keyboard-hint pill).
 
 ### Fixed
 - **Focused-pane indicator** — the brand-colored focus ring no longer leaks as a stray line along the bottom of the active pane. It's now rendered as a clean overlay ring on all four sides (previously an inset shadow that the terminal canvas hid on three edges, leaking only through xterm's bottom row-rounding gap).
+- **Explorer folder-icon cache poisoning** — folder/file icon URLs were being cached as `""` when looked up before the icon JSON finished loading, permanently breaking the default folder icon (the empty box before the workspace name). The negative cache is now skipped while the icon set is still loading, and the tree re-renders once `preloadIcons()` resolves so icons fill in immediately.
+- **Explorer live-sync flicker** — the 3 s live-sync poll flipped each node to "loading" (clearing its entries) before `fs_read_dir` resolved, flashing the list empty every cycle. The poll now does a background fetch that keeps the loaded rows on screen and swaps in new entries only on success.
 
 ### Changed
 - The split-pane tree is now generic and shared between terminal and editor tabs.
+- **macOS ML standalone-engine download deferred** — `ml_engine_release_url` now returns `None` on macOS (no prebuilt `nexis-ml-rs` asset is published — the Intel runner kept hanging), so the panel guides Mac users to the Python engine instead of offering a 404 download.
 
 ## [1.20.0] — 2026-06-17
 
@@ -268,6 +302,94 @@ A focused polish pass — no new features and no breaking changes. Implements P1
 ### Internal
 - **CI** — added Dependabot, a Rust lint job (`cargo fmt --check` + `cargo clippy -D warnings`), and a weekly `cargo audit`.
 - **Rust cleanup** — applied `cargo fmt` across all source files and resolved every `clippy -D warnings` violation (a `PendingMap` type alias for the DAP/LSP pending-request maps, `next_back()` over `.last()`, and a stray doc comment).
+
+## [1.14.0] — 2026-06-07
+
+### Added
+- **Expanded syntax highlighting** — CodeMirror language packs for 15 additional languages, with per-file header blocks added across the source tree and GitHub issue/PR templates.
+
+## [1.13.0] — 2026-06-01
+
+### Added
+- **OSC 0/2 tab titles** — terminal programs can set the tab title via escape sequences.
+- **Cursor preferences** — configurable cursor style and blink rate.
+- **Debugger sidebar panel + pinnable rail** — the DAP debugger gets a dedicated sidebar panel, and sidebar-rail items can be pinned.
+
+### Fixed
+- **Render-crash error boundary** — a React error boundary renders a recoverable fallback instead of a blank window on a render crash.
+- **PowerShell tab title** — corrected PowerShell tab-title handling.
+
+## [1.12.0] — 2026-05-31
+
+### Added
+- **E2E harness** — a WebdriverIO end-to-end harness, plus expanded Rust and Vitest unit coverage.
+- **Release automation** — the release workflow builds the Windows NSIS/MSI installer on a `v*` tag push.
+
+### Fixed
+- Assorted bug fixes surfaced by the new test coverage.
+
+## [1.11.0] — 2026-05-31
+
+### Added
+- **AI explain commit** — an "Explain" button in the git-history commit-detail popover loads the full diff and sends it to the AI panel with author/SHA context.
+- **Shell command snippets** — a sidebar panel for saving and running frequently-used shell commands; one-click sends to the active terminal, with `{VAR}` placeholder support and five built-in starters.
+
+## [1.10.0] — 2026-05-31
+
+### Added
+- **Workspace notes** — a per-workspace Markdown scratch-pad saved to `.nexis/NOTES.md`; auto-saves on keystroke, with a live-preview toggle, accessible from the sidebar.
+- **Git worktrees** — list, add, and remove git worktrees from the source-control panel; clicking a worktree switches the workspace; supports a branch-creation flag and prune.
+
+## [1.9.0] — 2026-05-31
+
+### Added
+- **Live terminal streaming** — the LAN share server gained Server-Sent Events; the browser page auto-updates every 2 s with current terminal output via a `/stream` SSE endpoint, for real-time viewing on any device on the same network.
+- **Prompt templates** — reusable named AI prompts stored in localStorage; one-click sends any template to the AI panel; create/edit/delete from the sidebar, with four built-in starters.
+- **File bookmarks** — bookmark any file or line with `Alt+D`; a persistent, keyboard-navigable sidebar panel grouped by file, with inline label editing, backed by localStorage.
+
+## [1.8.0] — 2026-05-31
+
+### Added
+- **Semantic / AST-aware search** — a structural symbol-search panel with pattern prefixes (`fn:` `class:` `hook:` `import:` `type:` `const:`) that translate to language-aware regexes fed to the existing grep backend.
+- **Remote Prompt viewing** — a local stdlib-only TCP HTTP server serves the current AI conversation as a self-contained HTML page accessible from any device on the same LAN; the same server also handles terminal snapshots.
+- **AI refactoring engine** — a sidebar panel with Extract Function, Inline Variable, Add Types, Simplify, Add Error Handling, and Add Docs operations; `Alt+Shift+X` captures the active editor selection and prompts the AI with structured refactoring instructions.
+- **Multi-window** — open Nexis in multiple independent windows via `Ctrl+Shift+N`; each window has its own workspace, tabs, and layout, sharing the OS keychain and theme.
+
+## [1.7.0] — 2026-05-31
+
+### Added
+- **AI code review** — on-demand review of the staged or all-unstaged diff via a dedicated sidebar panel; shows file/line stats and a scrollable diff preview, and "Review with AI" sends the diff as a structured prompt.
+- **AI-assisted git conflict resolution** — conflict files are surfaced automatically in the source-control panel; "Resolve with AI" reads the conflicted file and sends a structured three-way resolution prompt including conflict markers and context.
+- **Background agent queue** — a sidebar panel for queuing multiple AI prompts to run sequentially; tasks show queued/running/done/failed status with duration, failed tasks can be retried, and there's a clear-completed action.
+
+## [1.6.0] — 2026-05-31
+
+### Added
+- **Streaming build errors → AI** — a "Fix with AI" button appears in the Build panel when a build fails, sending the compiler output directly to the AI panel as a pre-filled prompt.
+- **Workspace profiles** — named configurations storing a root path, env-var overrides, and an optional startup command (saved to localStorage); a sidebar panel with full CRUD, where activating a profile switches workspace, applies env vars, and optionally runs the startup command.
+- **Embedded REPL panel** — an interactive Python, Node.js, Ruby, or shell REPL in the sidebar via a dedicated TerminalPane; `Alt+Shift+R` sends the active editor or terminal selection directly into the running REPL.
+
+## [1.5.0] — 2026-05-31
+
+### Added
+- **Terminal session recording** — record PTY output to an asciinema v2 `.cast` file with a single toggle button, saved to `~/nexis-recordings/`; useful for demos and bug reports.
+- **Port forwarding panel** — a dedicated sidebar panel that detects locally listening TCP ports via `ss`/`lsof`/`netstat`, with one-click open-in-preview for web/dev-server ports and a 5 s auto-refresh.
+- **SSH key manager** — a collapsible section in the SSH panel listing `~/.ssh/*.pub` keys; generate new Ed25519 key pairs via `ssh-keygen` with an optional passphrase, and one-click copy of the public key.
+- **Diffstat in commit view** — per-file +/− line counts in the git-history commit-detail view for every changed file.
+
+## [1.4.0] — 2026-05-31
+
+### Added
+- **Workspace switcher** — a keyboard picker (Ctrl + backtick) for recently opened folders with fuzzy search; switching resets the workspace and starts a fresh terminal at the selected directory, and the recent list persists across restarts.
+- **Persistent AI chat history** — a searchable session-history popover in the AI panel header; sessions sorted by last-updated, filterable by title, with compact timestamps, backed by the Tauri store across restarts.
+- **Git submodule support** — a collapsible submodule list in the source-control panel with status badges (ok / modified / uninitialized / conflict), short SHA, path display, and per-entry init/update actions.
+
+## [1.3.0] — 2026-05-30
+
+### Added
+- **Git stash manager** — list, create, apply, pop, and drop stashes from the source-control panel; a collapsible stash list with message, timestamp, and per-entry actions.
+- **AI inline explain** — select any terminal output or code and click "Explain" to submit an explanation request to the AI mini-window instantly, no full panel required.
+- **Terminal → AI** — "Explain" and "Ask Nexis" buttons appear on text selection in the terminal or editor; the selection is attached as context and the AI responds in the mini-window.
 
 ## [1.2.0] — 2026-05-30
 

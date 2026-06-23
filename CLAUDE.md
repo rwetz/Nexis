@@ -5,6 +5,17 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 ---
 
+## CHANGELOG is the record — keep it current (TOP PRIORITY)
+
+`CHANGELOG.md` is the **single source of truth for what shipped**. Maintaining it — detailed, accurate, and up to date — is a top-priority part of every change, not an afterthought.
+
+- **Every user-facing change gets a CHANGELOG entry in the same commit/PR that makes it.** Features, fixes, security changes, perf, and notable behavior changes all count. Shipping a change without documenting it is a defect. (This has bitten us: the entire 1.20.1 visual "spice-up" pass, the new AI providers, and the exit-status gutter shipped in the tagged release with *no* changelog entry — backfilled later from commit diffs. Don't repeat that.)
+- **Write from the diff, not from the commit subject.** Name the specifics: the feature, the keybinding, the file/flag, the *why*, and any tradeoff or limitation. Match the depth of the existing entries — a vague one-liner is not acceptable.
+- **Keep an `[Unreleased]` section at the top** and add to it as you work; it's renamed to the version on release. Follow the existing `### Added / Fixed / Changed / Security` grouping and the `**bold lead-in** — prose` bullet style.
+- **`ROADMAP.md` is NOT a record.** It is a working to-do list — items are added when planned and erased once done; its history is disposable. Never treat ROADMAP as the place to record what shipped, and don't rely on it to reconstruct history. All record-keeping lives in the CHANGELOG.
+
+---
+
 ## Known bug pitfalls
 
 ### 1. ConPTY lifecycle race (Windows — CRITICAL)
@@ -201,7 +212,9 @@ const leftItems = statusBarItems.filter((i) => i.side === "left");
 ---
 
 ## Pre-push checklist
-Before any `git push`, always run these — they mirror the CI gates in `.github/workflows/ci.yml`, so a clean local run means a green CI:
+First, **update `CHANGELOG.md`**: every user-facing change in this push must have an entry under `[Unreleased]` (see "CHANGELOG is the record" above) — this is not optional.
+
+Then run these — they mirror the CI gates in `.github/workflows/ci.yml`, so a clean local run means a green CI:
 - `pnpm exec tsc --noEmit` — TypeScript must typecheck (CI gates on this; a type error that doesn't break a test still fails CI)
 - `pnpm test:coverage` — all Vitest tests must pass **and** coverage must stay above the floor in `vitest.config.ts` (CI runs this, not bare `pnpm test`; dropping below the threshold fails the build). Ratchet the thresholds up as coverage grows; never lower them to get green.
 - `cargo test` in `src-tauri/` — all Rust tests must pass (the `authorize_spawn_cwd_blocks_symlink_escape` test fails locally on non-admin Windows with code 1314; that's expected — see Build/dev notes)
