@@ -40,11 +40,16 @@ export default defineConfig({
         "src/modules/terminal/lib/osc-handlers.ts",
         "src/modules/terminal/lib/pty-bridge.ts",
       ],
+      // Minimum-coverage gate (IDEAS D4): floors sit a few points below the
+      // current numbers (lines/statements ~72%, branches ~82%, functions ~56%)
+      // so ordinary churn doesn't flake the build, but a real regression that
+      // drops coverage fails `pnpm test:coverage` — which CI now runs.
+      // Ratchet these up as coverage improves; never lower them to make CI pass.
       thresholds: {
-        lines: 40,
-        branches: 35,
-        functions: 45,
-        statements: 40,
+        lines: 70,
+        branches: 78,
+        functions: 52,
+        statements: 70,
       },
     },
   },

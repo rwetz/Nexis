@@ -1,0 +1,61 @@
+# cargo-deny configuration — supply-chain depth gate (IDEAS B5).
+#
+# Run locally with `cargo deny check` from `src-tauri/`. CI runs the same in
+# the weekly Security-audit workflow (`.github/workflows/audit.yml`), alongside
+# `cargo audit`. cargo-deny adds three things `cargo audit` doesn't: a license
+# allow-list, duplicate-dependency visibility, and a source registry lock.
+
+[advisories]
+# Fail hard on actual security *vulnerabilities* and yanked crates anywhere in
+# the tree. For "unmaintained" advisories we mirror cargo-audit's posture: a
+# crate going unmaintained is not itself a vulnerability, and ours come in only
+# transitively through Tauri (the gtk-rs GTK3 bindings on Linux, the rust-unic
+# Unicode tables, proc-macro-error) with no fix path until Tauri migrates. So
+# only flag an unmaintained crate if *we* depend on it directly — that's a
+# signal we can act on — and tolerate the transitive ones.
+unmaintained = "workspace"
+yanked = "deny"
+
+[licenses]
+# Permissive + weak-copyleft licenses we accept. Anything not on this list
+# fails the check, so a new dependency under a viral license (GPL/AGPL) can't
+# slip in unnoticed.
+allow = [
+    "MIT",
+    "MIT-0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "0BSD",
+    "ISC",
+    "Zlib",
+    "BSL-1.0",
+    "CC0-1.0",
+    "CDLA-Permissive-2.0",
+    "Unlicense",
+    "Unicode-3.0",
+    # MPL-2.0 is file-level copyleft (cssparser/selectors family) — using the
+    # crates unmodified imposes no obligation on our own source. Acceptable.
+    "MPL-2.0",
+    # LGPL-2.1-or-later reaches us only via `r-efi`, a UEFI-target runtime crate
+    # pulled by getrandom. It is never compiled into the desktop binaries we
+    # ship (macOS/Windows/Linux), so no dynamic-linking obligation applies.
+    "LGPL-2.1-or-later",
+]
+# `nexis` itself carries no license field; skip workspace/own crates.
+private = { ignore = true }
+confidence-threshold = 0.8
+
+[bans]
+# Tauri's tree legitimately carries many duplicate versions (windows-sys, syn,
+# toml, …). Surface them as a warning for periodic cleanup, but don't fail CI —
+# a hard "deny" here would be permanently red through no fault of our own code.
+multiple-versions = "warn"
+wildcards = "warn"
+
+[sources]
+# Every dependency must come from a known registry. Blocks a typosquatted or
+# unexpected git/registry source from being introduced.
+unknown-registry = "deny"
+unknown-git = "deny"

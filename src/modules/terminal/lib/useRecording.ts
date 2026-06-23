@@ -21,9 +21,17 @@ type RecordingState = {
   events: CastEvent[];
   cols: number;
   rows: number;
+  bytes: number;
+  truncated: boolean;
 };
 
 const decoder = new TextDecoder("utf-8", { fatal: false });
+
+// Ceiling on accumulated recording text (IDEAS A5 buffer-cap sweep). A recorder
+// left running indefinitely would otherwise grow `events` without bound and
+// eventually exhaust memory / produce an unwritable file. At the cap we stop
+// appending and emit a single truncation notice, keeping the .cast valid.
+const MAX_RECORDING_BYTES = 64 * 1024 * 1024;
 
 export function useRecording(leafId: number) {
   const [isRecording, setIsRecording] = useState(false);
@@ -38,12 +46,26 @@ export function useRecording(leafId: number) {
       events: [],
       cols: cols > 0 ? cols : 80,
       rows: rows > 0 ? rows : 24,
+      bytes: 0,
+      truncated: false,
     };
     registerRecordingHandler(leafId, (bytes: Uint8Array) => {
       const state = stateRef.current;
-      if (!state) return;
+      if (!state || state.truncated) return;
       const elapsed = (Date.now() - state.startTime) / 1000;
       const text = decoder.decode(bytes);
+      if (state.bytes + text.length > MAX_RECORDING_BYTES) {
+        // Hit the ceiling: emit one notice and stop accumulating. The user can
+        // still stop & save; the recording up to this point stays intact.
+        state.truncated = true;
+        state.events.push([
+          elapsed,
+          "o",
+          "\r\n[nexis: recording truncated — size limit reached]\r\n",
+        ]);
+        return;
+      }
+      state.bytes += text.length;
       state.events.push([elapsed, "o", text]);
     });
     setIsRecording(true);

@@ -6,22 +6,26 @@ on:
     branches: [main]
     paths:
       - "src-tauri/Cargo.lock"
+      - "src-tauri/deny.toml"
   # Weekly sweep — catches newly-disclosed advisories even without a code change.
   schedule:
     - cron: "0 8 * * 1" # Every Monday at 08:00 UTC
   # Allow a manual trigger from the Actions tab.
   workflow_dispatch:
 
+# Actions are pinned to a full commit SHA (tag in trailing comment) — see ci.yml.
 jobs:
   audit:
     name: cargo audit
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          toolchain: stable
 
       # cargo-audit only reads Cargo.lock — no Tauri system deps needed.
       - name: Install cargo-audit
@@ -30,3 +34,25 @@ jobs:
       - name: Run cargo audit
         working-directory: src-tauri
         run: cargo audit
+
+  # cargo-deny adds license enforcement, duplicate-dep visibility, and a source
+  # registry lock on top of cargo-audit's advisory scan (IDEAS B5). Config and
+  # documented advisory/license exceptions live in src-tauri/deny.toml.
+  deny:
+    name: cargo deny
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          toolchain: stable
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
+      - name: Run cargo deny
+        working-directory: src-tauri
+        run: cargo deny check

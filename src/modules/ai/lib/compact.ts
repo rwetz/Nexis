@@ -229,6 +229,33 @@ export function compactModelMessagesDetailed(
     }
   }
 
+  // Hard-ceiling backstop (IDEAS A5): the loop above protects the last
+  // KEEP_TAIL messages, so a single very large *recent* tool result could
+  // still push the array past the model's context window. As a last resort,
+  // elide tool results in the tail too (oldest-first) until the total fits.
+  // Elision only swaps a tool-result's output for a stub — it never removes a
+  // message — so tool-call/tool-result pairing stays intact and the array
+  // length is preserved.
+  if (runningBytes / 4 > contextLimit) {
+    for (let i = stopIdx; i < out.length; i++) {
+      if (out[i].role === "system") continue;
+      if (!Array.isArray(out[i].content)) continue;
+      let local = false;
+      const oldBytes = messageBytes(out[i]);
+      const next = (out[i].content as ToolPart[]).map((part) => {
+        const r = elideToolResult(part);
+        if (r.changed) local = true;
+        return r.part;
+      });
+      if (local) {
+        out[i] = { ...out[i], content: next } as ModelMessage;
+        dropped++;
+        runningBytes = runningBytes - oldBytes + messageBytes(out[i]);
+        if (runningBytes / 4 <= contextLimit) break;
+      }
+    }
+  }
+
   return {
     messages: out,
     compacted: dropped > 0,

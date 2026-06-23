@@ -23,6 +23,11 @@
 //! All commands take `&AppHandle` so we can resolve the data directory
 //! once via Tauri's path API.
 
+// Panic-lint gate (IDEAS A1): API keys live here. A panic mid-operation could
+// leave the secrets store in a surprising state — forbid `.unwrap()`/`.expect()`
+// in non-test code; CI's `clippy -D warnings` enforces it.
+#![warn(clippy::unwrap_used, clippy::expect_used)]
+
 use std::sync::Mutex;
 
 use tauri::AppHandle;

@@ -1,0 +1,9 @@
+# Panic-lint gate support (IDEAS A1).
+#
+# Modules that opt into `#![warn(clippy::unwrap_used, clippy::expect_used)]`
+# (currently the security-sensitive command modules: net.rs, secrets.rs,
+# recording.rs) must use real error handling in production paths — CI runs
+# `cargo clippy -- -D warnings`, so a new `.unwrap()`/`.expect()` there fails
+# the build. Test code may still panic freely, which is what these allow:
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true

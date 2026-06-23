@@ -13,7 +13,7 @@ A hobby-grade ML workbench inside Nexis: create, train, and run inference on **s
 
 ### 1. What category is this? → **Companion tool + first-party plugin** (the LSP model)
 
-Nexis already has the exact pattern this needs: the app ships a thin client (LSP proxy, DAP debugger, git, formatters) and the heavy tool lives *outside* the binary, detected at runtime, with a graceful "X not installed → install with …" state when missing (IDEAS.md item A7).
+Nexis already has the exact pattern this needs: the app ships a thin client (LSP proxy, DAP debugger, git, formatters) and the heavy tool lives *outside* the binary, detected at runtime, with a graceful "X not installed → install with …" state when missing (see the graceful-degradation item in ROADMAP.md's hardening backlog).
 
 The ML suite is the same shape:
 

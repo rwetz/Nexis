@@ -98,6 +98,36 @@ impl Drop for ChildKillGuard {
     }
 }
 
+/// Guards the reader/flusher/waiter spawn section of `spawn()`. If any of those
+/// three `thread::Builder::spawn` calls fails (OS thread exhaustion or OOM), the
+/// child shell is already running and some sibling threads may already be live.
+/// On drop — unless disarmed once all three are up — this kills the child (so
+/// the reader hits EOF and unwinds) and sets `done` + notifies the condvar so
+/// the flusher's idle wait returns and it exits instead of looping forever.
+/// Replaces the old `.expect("spawn pty … thread")` calls, which panicked on a
+/// Tauri worker thread and could take down the whole process (pitfall #9).
+struct ThreadSpawnGuard {
+    killer: Option<Box<dyn ChildKiller + Send + Sync>>,
+    done: Arc<AtomicBool>,
+    pending: Arc<(Mutex<Vec<u8>>, Condvar)>,
+}
+
+impl ThreadSpawnGuard {
+    fn disarm(&mut self) {
+        self.killer = None;
+    }
+}
+
+impl Drop for ThreadSpawnGuard {
+    fn drop(&mut self) {
+        if let Some(mut k) = self.killer.take() {
+            let _ = k.kill();
+            self.done.store(true, Ordering::Release);
+            self.pending.1.notify_all();
+        }
+    }
+}
+
 pub fn spawn(
     cols: u16,
     rows: u16,
@@ -158,6 +188,14 @@ pub fn spawn(
     let done = Arc::new(AtomicBool::new(false));
     let spawn_at = Instant::now();
 
+    // Tears down the child + already-spawned threads if any of the three
+    // spawns below fails; disarmed once all three are running. See the struct.
+    let mut spawn_guard = ThreadSpawnGuard {
+        killer: Some(child.clone_killer()),
+        done: done.clone(),
+        pending: pending.clone(),
+    };
+
     let pending_r = pending.clone();
     let writer_for_da = writer.clone();
     let reader_thread = thread::Builder::new()
@@ -209,7 +247,7 @@ pub fn spawn(
                 log::warn!("pty backpressure: dropped {dropped_bytes} bytes (cap {MAX_PENDING})");
             }
         })
-        .expect("spawn pty reader thread");
+        .map_err(|e| format!("spawn pty reader thread: {e}"))?;
 
     let on_data_flush = on_data.clone();
     let pending_f = pending.clone();
@@ -243,7 +281,7 @@ pub fn spawn(
                 }
             }
         })
-        .expect("spawn pty flusher thread");
+        .map_err(|e| format!("spawn pty flusher thread: {e}"))?;
 
     let on_data_exit = on_data;
     let pending_e = pending;
@@ -284,8 +322,10 @@ pub fn spawn(
                 log::debug!("pty exit send failed (channel closed): {e}");
             }
         })
-        .expect("spawn pty waiter thread");
+        .map_err(|e| format!("spawn pty waiter thread: {e}"))?;
 
+    // All three I/O threads are live — disarm so the child is not killed.
+    spawn_guard.disarm();
     Ok((session, size))
 }
 

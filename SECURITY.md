@@ -17,7 +17,7 @@ I'll acknowledge within a few days. Once fixed, I'll credit you in the release n
 
 ## Supported versions
 
-Only the latest release is actively patched. That's currently `1.18.x`.
+Only the latest release is actively patched. That's currently `1.20.x`.
 
 ## In scope
 
@@ -38,6 +38,7 @@ Only the latest release is actively patched. That's currently `1.18.x`.
 - **No telemetry.** Network calls only happen when you initiate them — AI requests, update checks, and web preview. Nothing else.
 - **Tool approval.** The AI agent can't write files or run shell commands without you explicitly approving each action.
 - **IPC sandboxing.** The frontend can only call allow-listed Tauri commands — no direct OS access from the webview.
+- **Minimal capability surface.** The Tauri capability files (`src-tauri/capabilities/*.json`) are audited to grant the webview only the core/plugin permissions it actually uses — window controls, the event bus, and the opener/os/store/log/autostart/window-state/process plugins. There is no blanket `fs:`, `shell:`, or `http:` capability; all filesystem, shell, and network access goes through purpose-built custom commands that validate their input (path guards, SSRF/DNS-rebinding checks, header sanitization).
 - **Verified updates.** Release artifacts are signed; the updater checks signatures before applying anything.
 
 ## Honest limitations

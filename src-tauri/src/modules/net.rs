@@ -4,6 +4,11 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+// Panic-lint gate (IDEAS A1): this is the AI's HTTP egress / SSRF guard — a
+// reachable production panic here is a denial-of-service vector. Forbid
+// `.unwrap()`/`.expect()` in non-test code; CI's `clippy -D warnings` enforces it.
+#![warn(clippy::unwrap_used, clippy::expect_used)]
+
 use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;

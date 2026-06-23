@@ -113,7 +113,22 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     const loadedPaths = Object.entries(nodes)
       .filter(([, state]) => state.status === "loaded")
       .map(([path]) => path);
-    for (const path of loadedPaths) void fetchChildren(path);
+    // Ceiling on the re-list fan-out (IDEAS A5 buffer-cap sweep): toggling the
+    // visibility preference re-fetches every expanded directory at once. With a
+    // pathologically deep expansion that's an unbounded burst of concurrent IPC
+    // calls; clamp it. Anything beyond the cap stays as-is until the user next
+    // touches it. Typical sessions have far fewer than MAX expanded directories.
+    const MAX_RELIST = 512;
+    const toRefetch =
+      loadedPaths.length > MAX_RELIST
+        ? loadedPaths.slice(0, MAX_RELIST)
+        : loadedPaths;
+    if (loadedPaths.length > MAX_RELIST) {
+      console.warn(
+        `[nexis] explorer live-sync: ${loadedPaths.length} loaded dirs exceeds cap ${MAX_RELIST}; re-listing the first ${MAX_RELIST}`,
+      );
+    }
+    for (const path of toRefetch) void fetchChildren(path);
     // Re-list loaded directories when the visibility preference changes.
     // `nodes` is intentionally omitted so ordinary tree edits don't refetch
     // every expanded directory.

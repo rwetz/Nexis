@@ -4,6 +4,10 @@ version = "1.20.1"
 description = "Nexis — an AI-native terminal emulator"
 authors = []
 edition = "2021"
+# Desktop application binary — never published to crates.io. Marking it
+# non-publishable also lets cargo-deny's `licenses.private.ignore` skip the
+# license check on our own crate (it carries no SPDX license field).
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -41,6 +45,12 @@ reqwest = { version = "0.12", default-features = false, features = [
 ] }
 bytes = "1"
 futures-util = "0.3"
+# tokio is intentionally pulled with ONLY the `rt` feature (IDEAS C2). The async
+# runtime is deliberately minimal: `net`/`io`/`time`/`full` drag in mio, a
+# socket stack, and timer machinery that materially grow the binary against the
+# <10 MB budget (enforced in release CI). Do NOT enable additional tokio
+# features without a size review — this directly constrains any true-push
+# networking work (e.g. a WebSocket server would want `net`/`io`).
 tokio = { version = "1", default-features = false, features = ["rt"] }
 tempfile = "3"
 

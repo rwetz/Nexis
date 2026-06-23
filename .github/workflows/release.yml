@@ -14,30 +14,33 @@ concurrency:
 permissions:
   contents: write
 
+# Actions are pinned to a full commit SHA (tag in trailing comment) — see ci.yml.
 jobs:
   build-windows:
     name: Build Windows installer
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
         with:
           version: "11"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: "22"
           cache: "pnpm"
 
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          toolchain: stable
 
       - name: Cache Rust build artifacts
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: "src-tauri -> target"
 
@@ -51,6 +54,27 @@ jobs:
           # artifact uploads. Remove if you add a signing key later.
           TAURI_SIGNING_PRIVATE_KEY: ""
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+
+      # Bundle-size budget gate (IDEAS C1). "Under 10 MB" is a stated
+      # non-negotiable; enforce it so a careless dependency can't quietly blow
+      # the budget. Fails the release if the stripped binary exceeds 10 MiB.
+      - name: Enforce binary size budget (< 10 MB)
+        shell: pwsh
+        run: |
+          $binary = "src-tauri/target/release/nexis.exe"
+          if (-not (Test-Path $binary)) {
+            Write-Error "Release binary not found at $binary"
+            exit 1
+          }
+          $bytes = (Get-Item $binary).Length
+          $mib = [math]::Round($bytes / 1MB, 2)
+          $maxBytes = 10 * 1024 * 1024
+          Write-Host "nexis.exe = $bytes bytes ($mib MiB); budget = 10 MiB"
+          if ($bytes -gt $maxBytes) {
+            Write-Error "Binary exceeds the 10 MB budget (a stated non-negotiable). Investigate the dependency or build-config change that grew it."
+            exit 1
+          }
+          Write-Host "OK: under the 10 MB budget."
 
       - name: Collect artifacts
         id: artifacts
@@ -68,7 +92,7 @@ jobs:
           echo "Found artifacts: $found"
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
         with:
           name: "Nexis ${{ github.ref_name }}"
           generate_release_notes: true

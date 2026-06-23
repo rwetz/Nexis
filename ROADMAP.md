@@ -20,6 +20,8 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - **Not a package manager UI.** Use `npm`, `cargo`, `pip` in the terminal like normal.
 - **No accounts or telemetry.** Ever.
 - **No extension marketplace.** Maybe narrow AI tool bundles someday, but not arbitrary plugins.
+- **No bundled LLM inference.** Shipping a llama.cpp-class engine would blow the size budget. Local models are supported by shelling out to Ollama / LM Studio / MLX, not by embedding an inference engine.
+- **No mobile (iOS/Android).** The app's shape — real shells, PTY, arbitrary filesystem access — doesn't map onto mobile sandboxes.
 
 ## Design principles
 
@@ -183,6 +185,7 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [x] Refactoring engine (LSP) — Extract Function and Inline Variable via `textDocument/codeAction` (Ctrl+Shift+R on a selection); actions resolve lazily through `codeAction/resolve`, command-only actions run via `workspace/executeCommand`, and the Rust proxy now answers server→client requests (`workspace/applyEdit`, `workspace/configuration`, …) so servers like rust-analyzer don't stall (1.18.0)
 - [x] Eager reload of edited-but-open tabs after multi-file edits — `applyWorkspaceEdit` (and the text-rename fallback) now broadcast the rewritten paths; every affected open editor tab force-reloads immediately instead of waiting for FS sync (1.18.0)
 - [x] Richer folder icon set — the explorer falls back to a pruned `@iconify-json/vscode-icons` subset (regenerate with `pnpm icons:folders`) when catppuccin lacks a folder match; `.NET`/`dotnet` now gets NuGet art, `jvm` gets Maven, and ~180 ecosystem folders (Kotlin, iOS, Flutter, Electron, MongoDB, …) get purpose-built icons; `mobile`/`devops` keep their catppuccin approximations since no dedicated art exists in either set (1.18.0)
+- [x] Reliability & supply-chain hardening pass — CI now enforces a <10 MB binary-size budget on release, a minimum test-coverage floor (`pnpm test:coverage`), and `cargo-deny` (license allow-list + advisory/source gates, `src-tauri/deny.toml`) alongside `cargo audit`; every GitHub Action is pinned to a commit SHA. A `clippy::unwrap_used`/`expect_used` panic-lint gate (`src-tauri/clippy.toml`) guards the security-critical command modules (net/secrets/recording); the PTY reader/flusher/waiter spawn path no longer panics on thread exhaustion (it kills the child and unwinds cleanly); and buffer ceilings now cap terminal recordings, AI message history, and explorer live-sync fan-out (1.20.x)
 
 ---
 
@@ -198,6 +201,45 @@ The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemet
 - [ ] **Remote workspace** — browse, edit, and run code on remote machines entirely over SSH; the file explorer and editor work against the remote filesystem via SFTP while the terminal is already there; the goal is a seamless local feel with zero local clones required
 - [ ] **Selective TS → Rust migration** — profile hot paths (terminal input dispatch, diff rendering, file-tree diffing), identify where a Rust implementation gives a measurable win, migrate incrementally without growing bundle size
 - [ ] **Multiplayer terminal input (authenticated)** — the 1.18.0 live view is deliberately read-only because the LAN share server has no auth; full multiplayer (remote viewers typing into the shared terminal) needs an auth story first — e.g. a per-session token in the share URL plus an input-consent toggle on the host
+
+---
+
+## Hardening backlog
+
+Reliability, security, and performance ideas tracked for the "bulletproof and solid" goal (migrated here from the former `IDEAS.md` brainstorm). These are a raw pool, not commitments. Feasibility: ✅ doable now · 🟡 moderate · 🟠 heavy lift.
+
+**Reliability & correctness**
+- 🟡 Extend the panic-lint gate (`clippy::unwrap_used`/`expect_used`) from the security-critical command modules (net, secrets, recording) to the remaining `#[tauri::command]` modules, converting each production `unwrap`/`expect` to real error handling as it's enabled.
+- 🟡 PTY thread watchdog — detect a silently-dead reader/flusher/waiter thread (pitfall #8) via a heartbeat counter and surface "terminal stalled — reopen?" instead of an invisible hang.
+- 🟡 Windows startup self-test for the ConPTY path — open a hidden PTY, round-trip a sentinel, and warn if the #1 blank-terminal condition is present *before* the user hits it.
+- ✅ Graceful-degradation matrix — render a visible "X not installed → install with …" state for every missing external tool (LSP/DAP/formatters/git) instead of a silent no-op, with a test that asserts the degraded UI appears.
+
+**Security**
+- 🟡 Content-Security-Policy for the webview — lock down `connect-src`/`img-src`/`script-src` (matters because the preview pane loads untrusted local dev servers and markdown can embed remote images).
+- 🟡 LAN-share auth + a persistent "🔴 Sharing on" status-bar indicator + a bound-interface picker; ensure secret redaction also covers the shared HTML/SSE/WS stream.
+- 🟡 AI command audit log — append-only record of every shell command the agent ran, paired with a "require approval for commands matching <pattern>" rule set.
+- 🟡 Secret-redaction lint — a test/util that scans outbound surfaces (logs, crash bundles, recordings, share stream) for API-key / `Authorization:`-shaped strings and refuses to emit them.
+
+**Performance & resource safety**
+- 🟡 Lazy-load the debugger / database / Jupyter panels the way language packs already are, so they cost nothing at startup for users who never open them.
+- 🟡 Large-file editor mode — detect file size on open and auto-disable LSP/lint/minimap/folding above a threshold, with a banner offering to re-enable.
+- ✅ Opt-in memory self-report — a debug status-bar readout of scrollback bytes, recording size, and AI-history tokens so resource creep is visible during development.
+
+**Testing & observability**
+- 🟡 E2E coverage for the blank-terminal pitfalls — script the exact ConPTY failure modes (close-tab-then-open, cross-drive `cd` + new tab, PowerShell first-prompt) so pitfall #1 can never silently regress.
+- 🟡 Diagnostics bundle export — one button that zips logs + versions + sanitized config + the last asciinema recording for bug reports (everything stays local, user attaches it manually).
+
+**Terminal & editor robustness**
+- 🟡 Unicode/grapheme correctness golden-file suite — CJK width, emoji ZWJ sequences, combining marks, zero-width handling — so rendering-width bugs surface in CI.
+- ✅ Shell-integration resilience — detect missing prompt markers (pitfall #6 territory) and fall back gracefully instead of mis-tracking cwd.
+- 🟡 Editor autosave + crash recovery — periodic dirty-buffer snapshots to a scratch dir, offered for recovery on next launch.
+
+**Stretch features**
+- 🟡 Git-backed AI checkpoints — snapshot to a hidden ref/stash before any agent edit/multi-edit; surface a one-click "revert this agent action". Turns the scariest part of an agentic terminal into a safe, reversible operation, and it's all local git.
+- 🟠 Local semantic code index — embeddings over the workspace for sharper AI context retrieval; needs an embeddings source and a small vector store, weighed against the size budget.
+- 🟡 Command prediction — next-command suggestions from recent context (BYOK or local), fitting the existing inline-suggestion UI.
+- 🟠 Plugin sandboxing + first-party SDK — a sandboxed, typed, install-from-workspace SDK with a local test harness (pairs with "Custom AI tool authoring" above).
+- 🟠🔴 Collaborative editing (CRDT) — real-time co-editing via a yjs/automerge-class CRDT; powerful but a major subsystem and a networking story, probably beyond a terminal-first tool's scope.
 
 ---
 

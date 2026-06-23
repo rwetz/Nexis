@@ -203,12 +203,12 @@ const leftItems = statusBarItems.filter((i) => i.side === "left");
 ## Pre-push checklist
 Before any `git push`, always run these — they mirror the CI gates in `.github/workflows/ci.yml`, so a clean local run means a green CI:
 - `pnpm exec tsc --noEmit` — TypeScript must typecheck (CI gates on this; a type error that doesn't break a test still fails CI)
-- `pnpm test` — all Vitest tests must pass
+- `pnpm test:coverage` — all Vitest tests must pass **and** coverage must stay above the floor in `vitest.config.ts` (CI runs this, not bare `pnpm test`; dropping below the threshold fails the build). Ratchet the thresholds up as coverage grows; never lower them to get green.
 - `cargo test` in `src-tauri/` — all Rust tests must pass (the `authorize_spawn_cwd_blocks_symlink_escape` test fails locally on non-admin Windows with code 1314; that's expected — see Build/dev notes)
 - `cargo fmt --check` in `src-tauri/` — formatting must be clean. **Run this last**, after any `clippy` fixes: a clippy change that shortens a signature can leave the file unformatted even though `fmt` ran earlier.
-- `cargo clippy -- -D warnings` in `src-tauri/` — zero clippy warnings
+- `cargo clippy -- -D warnings` in `src-tauri/` — zero clippy warnings. Note `src-tauri/clippy.toml` plus `#![warn(clippy::unwrap_used, clippy::expect_used)]` on `net.rs`/`secrets.rs`/`recording.rs` make a new `.unwrap()`/`.expect()` in those modules' production code a CI failure (tests are exempt).
 
-CI also runs `pnpm audit --prod --audit-level high`, which blocks high/critical advisories in the shipped (runtime) dependency tree. Dev-tool advisories don't gate; moderate ones are tracked by the weekly `audit.yml` job.
+CI also runs `pnpm audit --prod --audit-level high`, which blocks high/critical advisories in the shipped (runtime) dependency tree. Dev-tool advisories don't gate; moderate ones are tracked by the weekly `audit.yml` job. That same `audit.yml` (weekly + on `Cargo.lock`/`deny.toml` change) also runs `cargo deny check` — if you change Rust dependencies, run it in `src-tauri/` locally; a new dependency under a non-allow-listed license or from an unknown source fails it (config + documented exceptions in `src-tauri/deny.toml`). The release workflow additionally enforces a <10 MB binary-size budget.
 
 ---
 
