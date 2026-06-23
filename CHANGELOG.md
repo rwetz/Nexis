@@ -2,9 +2,9 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
-## [Unreleased]
+## [1.20.2] — 2026-06-22
 
-A reliability, security, and supply-chain hardening pass — no user-facing features, just CI gates, panic-safety, and resource ceilings. Also retires the `IDEAS.md` brainstorm (its content moved into `ROADMAP.md`'s hardening backlog).
+A reliability, security, and supply-chain hardening pass — no user-facing features, just CI gates, panic-safety, and resource ceilings. Also makes `CHANGELOG.md` the canonical record (see Docs) and retires the `IDEAS.md` brainstorm (its content moved into `ROADMAP.md`'s hardening backlog).
 
 ### Added
 - **Binary-size budget gate** — the release workflow fails if `nexis.exe` exceeds 10 MiB, making the "<10 MB" non-negotiable actually enforced so a careless dependency can't quietly blow the budget (currently ~8.4 MiB).
@@ -22,6 +22,9 @@ A reliability, security, and supply-chain hardening pass — no user-facing feat
 ### Security
 - **Buffer ceilings** (defense against unbounded growth): terminal recordings are capped (a 64 MiB frontend accumulation ceiling with a truncation notice, plus a 512 MiB Rust-side guard on the saved `.cast` payload); the AI message history gained a hard context-window backstop so a single very large recent tool result can't push the history past the model's window; and the explorer live-sync re-list fan-out is bounded.
 - **Audited minimal Tauri capability surface** — verified every granted capability in `capabilities/*.json` maps to a real feature (no blanket `fs:`/`shell:`/`http:` grants) and documented the posture in `SECURITY.md`.
+
+### Docs
+- **CHANGELOG is now the canonical, contiguous record.** Backfilled the entirely-missing 1.3.0–1.14.0 history (12 releases, ~25 features — stash manager, port forwarding, REPL, AI code review, multi-window, worktrees, bookmarks, and more) and the undocumented 1.20.1 visual/provider work. Retired ROADMAP's ~150-line "Shipped" section in favor of a pointer to this file; `CLAUDE.md` now codifies keeping the changelog current as a top priority and the roadmap as a disposable to-do list.
 
 ## [1.20.1] — 2026-06-18
 
