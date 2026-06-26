@@ -1,10 +1,11 @@
 {
   "name": "nexis",
   "private": true,
-  "version": "1.20.2",
+  "version": "1.20.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:kill": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/kill-dev.ps1",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",

@@ -21,6 +21,7 @@ import {
   relativePath,
   revealInFinder,
 } from "./lib/contextActions";
+import type { ExplorerDrag } from "./lib/dnd";
 import { fileIconUrl, folderIconUrl } from "./lib/iconResolver";
 import { COMPACT_CONTENT, COMPACT_ITEM } from "./lib/menuItemClass";
 import type { useFileTree } from "./lib/useFileTree";
@@ -37,6 +38,9 @@ export type EntryRowProps = {
   tree: Tree;
   isSelected: boolean;
   isRenaming: boolean;
+  isDragSource: boolean;
+  isDropTarget: boolean;
+  drag: ExplorerDrag;
   onOpenFile: (path: string, pin?: boolean) => void;
   onSelectPath: (path: string) => void;
   onRevealInTerminal?: (path: string) => void;
@@ -69,6 +73,9 @@ function EntryRowImpl(props: EntryRowProps) {
     tree,
     isSelected,
     isRenaming,
+    isDragSource,
+    isDropTarget,
+    drag,
     onOpenFile,
     onSelectPath,
     onRevealInTerminal,
@@ -84,6 +91,9 @@ function EntryRowImpl(props: EntryRowProps) {
   const paddingLeft = 6 + depth * 12;
 
   const handleClick = () => {
+    // A drag that ends on the source row fires a trailing click; swallow it so
+    // a move doesn't also select/open the row.
+    if (drag.shouldSuppressClick()) return;
     if (tree.renaming) return;
     onSelectPath(path);
     if (isDir) tree.toggle(path);
@@ -91,7 +101,14 @@ function EntryRowImpl(props: EntryRowProps) {
   };
 
   return (
-    <ContextMenu>
+    <ContextMenu
+      onOpenChange={(open) => {
+        // Reset the delete confirm whenever the menu closes, instead of via a
+        // mouseleave timer that races the label reflow and could disarm the
+        // confirm between the two clicks (making delete appear to do nothing).
+        if (!open) setIsConfirming(false);
+      }}
+    >
       <ContextMenuTrigger asChild>
         {isRenaming ? (
           <div
@@ -114,11 +131,15 @@ function EntryRowImpl(props: EntryRowProps) {
           <button
             type="button"
             data-fs-path={path}
+            data-fs-dir={isDir ? "1" : "0"}
+            onMouseDown={(e) => drag.onRowMouseDown(e, path)}
             onClick={handleClick}
             onDoubleClick={() => !isDir && tree.beginRename(path)}
             className={cn(
               "group flex h-6 w-full min-w-0 cursor-pointer items-center gap-2 rounded-sm px-1.5 text-left text-[13px] text-foreground/85 transition-colors hover:bg-accent/70",
               isSelected && "bg-accent text-foreground",
+              isDragSource && "opacity-50",
+              isDropTarget && "bg-primary/10 ring-1 ring-inset ring-primary",
             )}
             style={{ paddingLeft }}
           >
@@ -234,14 +255,15 @@ function EntryRowImpl(props: EntryRowProps) {
           className={COMPACT_ITEM}
           variant="destructive"
           onSelect={(e) => {
-            e.preventDefault();
+            // Keep the menu open on the first (arming) click; let it close
+            // normally on the confirming click so it dismisses after delete.
             if (isConfirming) {
               void tree.deletePath(path);
             } else {
+              e.preventDefault();
               setIsConfirming(true);
             }
           }}
-          onMouseLeave={() => setTimeout(() => setIsConfirming(false), 1500)}
         >
           {isConfirming ? "Click again to confirm" : "Delete"}
         </ContextMenuItem>

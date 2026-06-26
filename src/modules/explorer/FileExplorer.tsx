@@ -20,6 +20,7 @@ import {
   Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { cn } from "@/lib/utils";
 import { getFolderColor, useTheme } from "@/modules/theme";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
@@ -34,6 +35,7 @@ import {
 import { ExplorerSearch, type ExplorerSearchHandle } from "./ExplorerSearch";
 import { EntryRow, PendingRow, StatusRow } from "./TreeRow";
 import { InlineInput } from "./InlineInput";
+import { canMoveInto, type ExplorerDrag, moveTargetDir } from "./lib/dnd";
 import { copyToClipboard, revealInFinder } from "./lib/contextActions";
 import { fileIconUrl, folderIconUrl, preloadIcons } from "./lib/iconResolver";
 import { COMPACT_CONTENT, COMPACT_ITEM } from "./lib/menuItemClass";
@@ -176,6 +178,183 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
     const searchRef = useRef<ExplorerSearchHandle>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // ── Drag-to-move (mouse events) ──────────────────────────────────────
+    // HTML5 drag-and-drop is swallowed by Tauri's webview drag handler (the
+    // same reason the tab bar reorders with mouse events — see TabBar.tsx), so
+    // moves are driven from raw mouse events. A row reports its mousedown; the
+    // global listeners below own the threshold, hit-testing, hover-expand, and
+    // the drop. `treeRef`/`rootPathRef` keep the listeners off stale state.
+    const dragRef = useRef<{
+      fromPath: string;
+      startX: number;
+      startY: number;
+      dragging: boolean;
+    } | null>(null);
+    const targetDirRef = useRef<string | null>(null);
+    const suppressClickRef = useRef(false);
+    const hoverExpandRef = useRef<{
+      path: string;
+      timer: ReturnType<typeof setTimeout>;
+    } | null>(null);
+    const [dragSource, setDragSource] = useState<string | null>(null);
+    const [dropTargetRow, setDropTargetRow] = useState<string | null>(null);
+
+    const treeRef = useRef(tree);
+    treeRef.current = tree;
+    const rootPathRef = useRef(rootPath);
+    rootPathRef.current = rootPath;
+
+    const clearHoverExpand = useCallback(() => {
+      if (hoverExpandRef.current) {
+        clearTimeout(hoverExpandRef.current.timer);
+        hoverExpandRef.current = null;
+      }
+    }, []);
+
+    const drag = useMemo<ExplorerDrag>(
+      () => ({
+        onRowMouseDown: (e, path) => {
+          if (e.button !== 0) return; // left button only
+          dragRef.current = {
+            fromPath: path,
+            startX: e.clientX,
+            startY: e.clientY,
+            dragging: false,
+          };
+        },
+        shouldSuppressClick: () => {
+          if (suppressClickRef.current) {
+            suppressClickRef.current = false;
+            return true;
+          }
+          return false;
+        },
+      }),
+      [],
+    );
+
+    useEffect(() => {
+      const THRESHOLD = 5;
+
+      // What a cursor position drops onto: a row's folder (or a file's parent),
+      // or the workspace root when over the header / empty space. Returns null
+      // for an invalid target; also drives hover-to-expand on collapsed folders.
+      const resolveTarget = (
+        x: number,
+        y: number,
+        from: string,
+      ): { rowKey: string; dir: string } | null => {
+        const el = document.elementFromPoint(x, y);
+        if (!el) return null;
+        const rowEl = el.closest<HTMLElement>("[data-fs-path]");
+        if (rowEl) {
+          const rowPath = rowEl.dataset.fsPath ?? "";
+          const isDir = rowEl.dataset.fsDir === "1";
+          const dir = moveTargetDir(rowPath, isDir);
+          if (!canMoveInto(from, dir)) {
+            clearHoverExpand();
+            return null;
+          }
+          if (isDir && !treeRef.current.expanded.has(rowPath)) {
+            if (hoverExpandRef.current?.path !== rowPath) {
+              clearHoverExpand();
+              hoverExpandRef.current = {
+                path: rowPath,
+                timer: setTimeout(() => {
+                  treeRef.current.expand(rowPath);
+                  hoverExpandRef.current = null;
+                }, 600),
+              };
+            }
+          } else {
+            clearHoverExpand();
+          }
+          return { rowKey: rowPath, dir };
+        }
+        clearHoverExpand();
+        const zone = el.closest<HTMLElement>('[data-explorer-dropzone="root"]');
+        const root = rootPathRef.current;
+        if (zone && root && canMoveInto(from, root)) {
+          return { rowKey: root, dir: root };
+        }
+        return null;
+      };
+
+      const onMouseMove = (e: MouseEvent) => {
+        const s = dragRef.current;
+        if (!s) return;
+        if (!s.dragging) {
+          if (
+            Math.abs(e.clientX - s.startX) < THRESHOLD &&
+            Math.abs(e.clientY - s.startY) < THRESHOLD
+          )
+            return;
+          s.dragging = true;
+          setDragSource(s.fromPath);
+        }
+        const target = resolveTarget(e.clientX, e.clientY, s.fromPath);
+        targetDirRef.current = target?.dir ?? null;
+        setDropTargetRow(target?.rowKey ?? null);
+      };
+
+      const onMouseUp = () => {
+        const s = dragRef.current;
+        const dir = targetDirRef.current;
+        dragRef.current = null;
+        targetDirRef.current = null;
+        clearHoverExpand();
+        if (s?.dragging) {
+          // The mouseup is followed by a click on the source row; swallow it.
+          suppressClickRef.current = true;
+          setTimeout(() => {
+            suppressClickRef.current = false;
+          }, 0);
+          if (dir) void treeRef.current.movePath(s.fromPath, dir);
+        }
+        setDragSource(null);
+        setDropTargetRow(null);
+      };
+
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+      return () => {
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mouseup", onMouseUp);
+      };
+    }, [clearHoverExpand]);
+
+    // Grabbing cursor + suppressed text selection across the document while a
+    // move-drag is in flight (mirrors the tab-drag affordance).
+    useEffect(() => {
+      if (dragSource === null) return;
+      const prevCursor = document.body.style.cursor;
+      const prevSelect = document.body.style.userSelect;
+      document.body.style.cursor = "grabbing";
+      document.body.style.userSelect = "none";
+      return () => {
+        document.body.style.cursor = prevCursor;
+        document.body.style.userSelect = prevSelect;
+      };
+    }, [dragSource]);
+
+    // Manual refresh: re-list the whole visible tree and spin the icon briefly
+    // so the action is visibly acknowledged even when nothing changed on disk
+    // (the silent root-only background poll made the button feel inert).
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const refreshSpinRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const handleRefresh = useCallback(() => {
+      tree.refreshAll();
+      setIsRefreshing(true);
+      if (refreshSpinRef.current) clearTimeout(refreshSpinRef.current);
+      refreshSpinRef.current = setTimeout(() => setIsRefreshing(false), 600);
+    }, [tree]);
+    useEffect(
+      () => () => {
+        if (refreshSpinRef.current) clearTimeout(refreshSpinRef.current);
+      },
+      [],
+    );
 
     // The folder/file icon JSON loads async. If the tree first paints before
     // it's ready, icon URLs come back empty; re-render once it resolves so the
@@ -401,6 +580,9 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
               tree={tree}
               isSelected={selectedPath === row.path}
               isRenaming={row.kind === "rename"}
+              isDragSource={dragSource === row.path}
+              isDropTarget={dropTargetRow === row.path}
+              drag={drag}
               onOpenFile={onOpenFile}
               onSelectPath={setSelectedPath}
               onRevealInTerminal={onRevealInTerminal}
@@ -434,7 +616,13 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
         tabIndex={0}
         onKeyDown={handleKeyDown}
       >
-        <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border/60 px-2">
+        <div
+          data-explorer-dropzone="root"
+          className={cn(
+            "flex h-8 shrink-0 items-center gap-1 border-b border-border/60 px-2 transition-colors",
+            dropTargetRow === rootPath && "bg-primary/10",
+          )}
+        >
           <span
             className="flex flex-1 items-center truncate text-xs font-medium text-foreground/80"
             title={rootPath}
@@ -483,10 +671,15 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
               variant="ghost"
               size="icon"
               className="size-6 text-muted-foreground hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]"
-              onClick={() => tree.refresh(rootPath)}
+              onClick={handleRefresh}
               title="Refresh"
             >
-              <HugeiconsIcon icon={Refresh01Icon} size={12} strokeWidth={2} />
+              <HugeiconsIcon
+                icon={Refresh01Icon}
+                size={12}
+                strokeWidth={2}
+                className={cn(isRefreshing && "animate-spin")}
+              />
             </Button>
           </div>
         </div>
@@ -507,7 +700,12 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
             <ContextMenuTrigger asChild>
               <div
                 ref={scrollRef}
-                className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]"
+                data-explorer-dropzone="root"
+                className={cn(
+                  "min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable]",
+                  dropTargetRow === rootPath &&
+                    "ring-1 ring-inset ring-primary/60",
+                )}
               >
                 {pendingAtRoot ? (
                   <div
@@ -618,7 +816,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
               </ContextMenuItem>
               <ContextMenuItem
                 className={COMPACT_ITEM}
-                onSelect={() => tree.refresh(rootPath)}
+                onSelect={handleRefresh}
               >
                 Refresh
               </ContextMenuItem>

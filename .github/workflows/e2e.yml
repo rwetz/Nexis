@@ -1,10 +1,15 @@
 name: E2E
 
 # E2E tests require a full Tauri release build (~20 min on a cold runner) plus
-# a running WebDriver server, so they are NOT wired to every push.  Trigger
-# manually from the Actions tab when you need a full integration check, or add
-# a `push: branches: [main]` trigger once the suite is stable.
+# a running WebDriver server, so they are NOT wired to every push (that would
+# tax every PR with a 20-min build). Instead they run nightly against main to
+# catch integration regressions the unit/typecheck gates can't see, and can
+# still be triggered manually from the Actions tab for an on-demand check.
 on:
+  # Nightly sweep against the default branch (06:17 UTC ≈ off-peak). The odd
+  # minute avoids the top-of-hour congestion when GitHub defers scheduled jobs.
+  schedule:
+    - cron: "17 6 * * *"
   workflow_dispatch:
 
 concurrency:

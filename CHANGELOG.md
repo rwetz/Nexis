@@ -4,6 +4,17 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.20.3] — 2026-06-26
+
+Explorer quality-of-life: drag-and-drop file moves, plus fixes to the refresh button and the delete confirm.
+
+### Added
+- **Drag-and-drop file moves in the explorer** — drag a file or folder onto another folder to move it there, instead of dropping to a terminal `mv`. Dropping onto a file targets that file's parent directory; dropping onto the workspace-name header bar or the empty space below the tree moves the item up to the project root. The drop target is highlighted, the dragged row dims under a grabbing cursor, and hovering a collapsed folder for a beat springs it open so you can drill into nested directories mid-drag. Moves go through the existing `fs_rename` command (workspace-authorized, refuses to overwrite an existing target, surfaces a toast on failure), and open editor tabs follow the moved path — including tabs for files inside a moved folder. Invalid drops (onto itself, into its own subtree, or back into its current directory) highlight no target and are ignored on release. The drag is driven by mouse events rather than the HTML5 drag API, which Tauri's webview intercepts (the same reason tab reordering is mouse-driven).
+
+### Fixed
+- **Explorer refresh button now actually refreshes** — it re-lists *every* loaded directory (root plus expanded subfolders), not just the root, so an external change anywhere in the visible tree is picked up. Previously it silently re-listed only the root — the same thing the 3-second live-sync poll already does — so it appeared to do nothing. The icon now also spins briefly to acknowledge the click even when nothing changed on disk.
+- **Explorer delete confirm no longer disarms between clicks** — the "Delete → Click again to confirm" item reset its armed state via a 1.5 s `mouseleave` timer that raced the label's reflow; a spurious `mouseleave` could disarm the confirm so the second click only re-armed it, making delete appear broken. The confirm now resets cleanly when the context menu closes instead.
+
 ### Security
 - Bumped the transitive `quinn-proto` lockfile entry 0.11.14 → 0.11.15 to clear **RUSTSEC-2026-0185** (a high-severity remote memory-exhaustion advisory). The crate is an orphan `Cargo.lock` entry — not compiled into any of Nexis's build targets — so there is no user impact; this keeps `cargo audit` green.
 

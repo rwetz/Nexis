@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { currentWorkspaceEnv } from "@/modules/workspace";
 import { usePreferencesStore } from "@/modules/settings/preferences";
+import { basename } from "./dnd";
 
 export type DirEntry = {
   name: string;
@@ -176,6 +177,21 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     [fetchChildren],
   );
 
+  // Manual refresh: re-list every currently-loaded directory (root + expanded
+  // subfolders), not just the root, so an external change anywhere in the
+  // visible tree is picked up. Background mode keeps the rows on screen while
+  // re-listing. Capped at MAX_RELIST to bound the IPC fan-out on a pathological
+  // deep expansion (mirrors the showHidden re-list ceiling above).
+  const refreshAll = useCallback(() => {
+    const loaded = Object.entries(nodes)
+      .filter(([, state]) => state.status === "loaded")
+      .map(([path]) => path);
+    const MAX_RELIST = 512;
+    const toRefetch =
+      loaded.length > MAX_RELIST ? loaded.slice(0, MAX_RELIST) : loaded;
+    for (const path of toRefetch) void fetchChildren(path, { background: true });
+  }, [nodes, fetchChildren]);
+
   // --- mutations ---
 
   const beginCreate = useCallback(
@@ -259,6 +275,39 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     [renaming, fetchChildren, options],
   );
 
+  // Moves `from` into `targetDir`, keeping its basename. A move is just a
+  // cross-directory `fs_rename` (the backend command renames-or-moves and
+  // refuses to overwrite an existing target). Refetches both the source and
+  // destination parents, expands the destination so the moved item is visible,
+  // and reuses `onPathRenamed` so open editor tabs follow the new path.
+  const movePath = useCallback(
+    async (from: string, targetDir: string) => {
+      const to = joinPath(targetDir, basename(from));
+      if (to === from) return;
+      try {
+        await invoke("fs_rename", {
+          from,
+          to,
+          workspace: currentWorkspaceEnv(),
+        });
+        options?.onPathRenamed?.(from, to);
+        setExpanded((curr) => {
+          if (curr.has(targetDir)) return curr;
+          const next = new Set(curr);
+          next.add(targetDir);
+          return next;
+        });
+        await Promise.all([
+          fetchChildren(dirname(from)),
+          fetchChildren(targetDir),
+        ]);
+      } catch (e) {
+        toast.error("Move failed", { description: String(e) });
+      }
+    },
+    [fetchChildren, options],
+  );
+
   const deletePath = useCallback(
     async (path: string) => {
       try {
@@ -280,6 +329,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     toggle,
     expand,
     refresh,
+    refreshAll,
     beginCreate,
     cancelCreate,
     commitCreate,
@@ -287,6 +337,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     cancelRename,
     commitRename,
     deletePath,
+    movePath,
     joinPath,
   };
 }
