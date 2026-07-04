@@ -4,6 +4,8 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.20.4] — 2026-07-04
+
 A terminal-bulletproofing pass: the ConPTY invariants documented in CLAUDE.md are now enforced by the build — clippy config plus two tripwire test suites — instead of by prose, so a future coding session that reintroduces one of the blank-terminal pitfalls gets a red build instead of a silently broken terminal. Plus a redundancy sweep that consolidates ~30 duplicated helper implementations left behind by earlier feature passes. Also: the ML Lab is refactored from a "train your first model" showcase into a workspace-rooted workbench, gaining a network graph, hover-to-explain cards, ONNX and Rust-engine inference along the way (see the ML Lab entries below).
 
 ### Added
