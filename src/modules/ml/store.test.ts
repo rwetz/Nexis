@@ -124,3 +124,59 @@ describe("run metadata (store)", () => {
     expect(JSON.parse(args.content)).toMatchObject({ tags: ["baseline"], pinned: false });
   });
 });
+
+describe("project discovery (store)", () => {
+  /** Mock the fs surface: `files` is the set of paths that exist. */
+  const mockFs = async (files: Set<string>, rootEntries: string[]) => {
+    const core = await import("@tauri-apps/api/core");
+    const invokeMock = vi.mocked(core.invoke);
+    invokeMock.mockReset();
+    invokeMock.mockImplementation(async (cmd: string, args?: unknown) => {
+      const a = args as { path?: string } | undefined;
+      if (cmd === "fs_read_dir") {
+        if (a?.path === "ws") {
+          return rootEntries.map((name) => ({ name, kind: "dir", size: 0, mtime: 0 }));
+        }
+        throw new Error(`not found: ${a?.path}`); // e.g. .nexis-ml/runs
+      }
+      if (cmd === "fs_stat") {
+        if (a?.path && files.has(a.path)) return { size: 1, mtime: 0, kind: "file" };
+        throw new Error(`not found: ${a?.path}`);
+      }
+      return null;
+    });
+  };
+
+  it("discovers config-only projects (train.toml, no train.py) — the Rust engine's layout", async () => {
+    // Regression: discovery used to require train.py, so projects scaffolded
+    // by the standalone Rust engine (train.toml only) were invisible and the
+    // panel showed the create card next to a fully trained model.
+    await mockFs(new Set(["ws/rust-model/train.toml"]), ["rust-model", "docs"]);
+    await useMlStore.getState().refreshProjects("ws");
+    const projects = useMlStore.getState().projects;
+    expect(projects.map((p) => p.name)).toEqual(["rust-model"]);
+    expect(projects[0].hasOnnx).toBe(false);
+  });
+
+  it("still discovers legacy train.py-only projects", async () => {
+    await mockFs(new Set(["ws/old-python/train.py"]), ["old-python"]);
+    await useMlStore.getState().refreshProjects("ws");
+    expect(useMlStore.getState().projects.map((p) => p.name)).toEqual(["old-python"]);
+  });
+
+  it("flags projects with an exported model.onnx", async () => {
+    await mockFs(
+      new Set(["ws/exported/train.toml", "ws/exported/model.onnx"]),
+      ["exported"],
+    );
+    await useMlStore.getState().refreshProjects("ws");
+    expect(useMlStore.getState().projects[0]?.hasOnnx).toBe(true);
+  });
+
+  it("reports no models when nothing in the folder is a project", async () => {
+    await mockFs(new Set(), ["docs", "src"]);
+    await useMlStore.getState().refreshProjects("ws");
+    expect(useMlStore.getState().projects).toEqual([]);
+    expect(useMlStore.getState().selectedProject).toBeNull();
+  });
+});

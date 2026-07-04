@@ -405,9 +405,10 @@ size in `train.toml` is fully supported. A checkpoint whose `train.py` *code*
 was heavily edited may not match the built-in predictor — you'll get a clear
 message rather than a crash.
 
-> The Playground currently requires the **Python** engine (the Rust engine
-> doesn't serve inference yet). Image-model inference isn't in the Playground
-> yet — watch the sample-prediction grid during training instead.
+> The Playground works with the **Python** engine and, from v0.8, the
+> standalone **Rust** engine (tabular models; the panel checks the engine's
+> `serve` capability). Image-model inference isn't in the Playground yet —
+> watch the sample-prediction grid during training instead.
 
 ---
 
@@ -585,7 +586,7 @@ engines coexist.
 | live charts / runs / confusion matrix | ✅ | ✅ |
 | pause / resume / stop | ✅ | ✅ |
 | reproducible seed | ✅ | ✅ |
-| Playground (serve inference) | ✅ | ❌ |
+| Playground (serve inference) | ✅ | ✅ (v0.8+, tabular) |
 | HTML report (`export --run`) | ✅ | ❌ |
 | ONNX export (`export --onnx`) | ❌ | ✅ (tabular) |
 | `replay` | ✅ | ❌ |
@@ -622,8 +623,9 @@ form writes a list.
 **`textgen` won't start: "embed must be divisible by heads".**
 Set `[model] embed` to a multiple of `[model] heads` (e.g. embed 128, heads 4).
 
-**The Rust engine errors on `serve`/`replay`/`textgen`/HTML export.**
-Those are Python-engine features — see [§22](#capabilities-matrix).
+**The Rust engine errors on `replay`/`textgen`/HTML export.**
+Those are Python-engine features — see [§22](#capabilities-matrix). (`serve`
+works from Rust engine v0.8 for tabular runs trained by v0.8+.)
 
 **Where did my run go?**
 `<project>/.nexis-ml/runs/`. It's just files — copy, archive, or delete the

@@ -176,6 +176,7 @@ describe("engine kind + template gating", () => {
     cudaAvailable: false,
     gpuName: null,
     backend: null,
+    serve: false,
     ...over,
   });
 
@@ -215,6 +216,22 @@ describe("engine kind + template gating", () => {
     const info = await probeEnv("nexis-ml");
     expect(info.backend).toBe("wgpu");
     expect(engineKindFromEnv(info)).toBe("rust");
+  });
+
+  it("probeEnv parses the serve capability flag (Rust engine v0.8+)", async () => {
+    // A v0.8 engine reports serve: true → the Playground gate opens.
+    invokeMock.mockResolvedValueOnce(
+      JSON.stringify({ backend: "cpu", serve: true }),
+    );
+    expect((await probeEnv("nexis-ml")).serve).toBe(true);
+    // Older engines don't report the field at all → false, gate stays shut.
+    invokeMock.mockResolvedValueOnce(JSON.stringify({ backend: "cpu" }));
+    expect((await probeEnv("nexis-ml")).serve).toBe(false);
+    // Anything non-boolean-true is false (defensive).
+    invokeMock.mockResolvedValueOnce(
+      JSON.stringify({ backend: "cpu", serve: "yes" }),
+    );
+    expect((await probeEnv("nexis-ml")).serve).toBe(false);
   });
 });
 

@@ -19,8 +19,9 @@ import { cn } from "@/lib/utils";
 import { useMlStore, getSeriesMap, getCompareData } from "./store";
 import { binForRender, type Series } from "./lib/series";
 import { displayMetric } from "./lib/friendly";
+import { Explain } from "./Explain";
 
-function cssColor(el: HTMLElement, varName: string, fallback: string): string {
+export function cssColor(el: HTMLElement, varName: string, fallback: string): string {
   const v = getComputedStyle(el).getPropertyValue(varName).trim();
   return v || fallback;
 }
@@ -145,15 +146,19 @@ export function MetricChart({
   return (
     <div ref={wrapRef} className="w-full">
       <div className="mb-0.5 flex items-baseline justify-between px-0.5">
-        <span
-          className={cn(
-            "truncate text-muted-foreground",
-            hero ? "text-[11px] font-medium" : "text-[10px]",
-          )}
-          title={name}
+        <Explain
+          info={display.hint ? { title: display.label, body: display.hint } : null}
         >
-          {display.label}
-        </span>
+          <span
+            className={cn(
+              "truncate text-muted-foreground",
+              hero ? "text-[11px] font-medium" : "text-[10px]",
+            )}
+            title={name}
+          >
+            {display.label}
+          </span>
+        </Explain>
         {typeof last === "number" ? (
           <span
             className={cn(

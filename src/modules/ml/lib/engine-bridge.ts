@@ -222,6 +222,13 @@ export type MlEnvInfo = {
    * two engines apart (see `engineKindFromEnv`).
    */
   backend: string | null;
+  /**
+   * Capability flag: the engine implements `serve` (the Playground's
+   * inference loop). The Rust engine reports it from v0.8; the Python
+   * engine has always had serve but never reports the flag — so gate with
+   * `kind !== "rust" || serve` (see the panel's Playground gate).
+   */
+  serve: boolean;
 };
 
 /**
@@ -238,6 +245,7 @@ export async function probeEnv(exe: string): Promise<MlEnvInfo> {
     cudaAvailable: parsed.cudaAvailable === true,
     gpuName: typeof parsed.gpuName === "string" ? parsed.gpuName : null,
     backend: typeof parsed.backend === "string" ? parsed.backend : null,
+    serve: parsed.serve === true,
   };
 }
 
@@ -320,8 +328,10 @@ export function sendInfer(sid: number, request: unknown): Promise<void> {
   return invoke("ml_stdin", { sid, line: JSON.stringify(request) });
 }
 
-/** Write a run's self-contained HTML report (`nexis-ml export`). One-shot:
- *  completion arrives as ml:exit; the file lands at <run>/report.html. */
+/** Write a run's self-contained HTML report (`nexis-ml export --run`).
+ *  Python engine only — the Rust engine's `export` speaks `--onnx` instead.
+ *  One-shot: completion arrives as ml:exit; the file lands at
+ *  <run>/report.html. */
 export async function spawnExport(
   exe: string,
   projectDir: string,
@@ -331,6 +341,22 @@ export async function spawnExport(
   return invoke<number>("ml_spawn", {
     exe,
     args: ["export", "--run", runId],
+    projectDir,
+  });
+}
+
+/** Export the project's tabular model to ONNX (`nexis-ml export --onnx .`).
+ *  Rust engine only. Retrains from train.toml (reproducible via [train]
+ *  seed) and writes <project>/model.onnx. One-shot: completion arrives as
+ *  ml:exit. */
+export async function spawnExportOnnx(
+  exe: string,
+  projectDir: string,
+): Promise<number> {
+  await authorizeProjectDir(projectDir);
+  return invoke<number>("ml_spawn", {
+    exe,
+    args: ["export", "--onnx", "."],
     projectDir,
   });
 }

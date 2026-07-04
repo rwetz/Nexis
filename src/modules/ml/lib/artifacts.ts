@@ -13,6 +13,7 @@
  * classification artifact); image grids and others land here later.
  */
 import { readTextFile } from "./fs";
+import { parseWeights, type WeightsFile } from "./netgraph";
 
 /** Shape the engine writes for a `confusion-matrix` artifact:
  *  `{ labels: [...], matrix: [[...], ...] }`, rows = actual class,
@@ -61,6 +62,22 @@ export async function readConfusionMatrix(
   if (content === null) return null;
   try {
     return parseConfusionMatrix(JSON.parse(content));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read + parse a `weights` artifact (the network graph's Tier-2 overlay;
+ * format contract in ML_SUITE.md §weights-artifact). Same null-on-anything
+ * contract as readConfusionMatrix. No engine emits this yet — the graph
+ * renders structure-only until one does.
+ */
+export async function readWeights(path: string): Promise<WeightsFile | null> {
+  const content = await readTextFile(path);
+  if (content === null) return null;
+  try {
+    return parseWeights(JSON.parse(content));
   } catch {
     return null;
   }

@@ -14,7 +14,14 @@
  *    sentence about what the model is doing
  *  - metrics labeled "Accuracy", not "acc/val"; jargon lives in Details
  */
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -29,6 +36,8 @@ import {
   type ServeSession,
 } from "./store";
 import { MetricChart, CompareChart } from "./MetricChart";
+import { NetworkGraph } from "./NetworkGraph";
+import { Explain } from "./Explain";
 import {
   displayMetric,
   formatElapsed,
@@ -37,12 +46,21 @@ import {
   statusSentence,
   trendOf,
 } from "./lib/friendly";
-import type { RunSummary } from "./lib/protocol";
+import {
+  displayToRaw,
+  fieldId,
+  HP_FIELDS,
+  rawToDisplay,
+  type HpField,
+} from "./lib/hyperparams";
+import type { MetricStats, RunSummary } from "./lib/protocol";
 import {
   engineSupportsTemplate,
   type EngineKind,
+  type MlEnvInfo,
   type MlTemplate,
 } from "./lib/engine-bridge";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { readConfusionMatrix, type ConfusionMatrix } from "./lib/artifacts";
 import { readTrainToml, writeTrainToml } from "./lib/config";
 import { tomlGet, tomlSet } from "./lib/toml-edit";
@@ -130,6 +148,8 @@ export function MlPanel({ workspaceRoot }: Props) {
   const setRunMeta = useMlStore((s) => s.setRunMeta);
   const exportReport = useMlStore((s) => s.exportReport);
   const pendingExport = useMlStore((s) => s.pendingExport);
+  const exportOnnx = useMlStore((s) => s.exportOnnx);
+  const pendingOnnx = useMlStore((s) => s.pendingOnnx);
   const autoOpenOnTrain = usePreferencesStore((s) => s.mlAutoOpenOnTrain);
 
   const [showCreate, setShowCreate] = useState(false);
@@ -167,11 +187,20 @@ export function MlPanel({ workspaceRoot }: Props) {
       <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-2.5 py-1.5">
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] font-semibold tracking-wide">ML Lab</span>
-          <EngineChip status={engineStatus} version={engineVersion} />
-          {engineStatus === "ready" && envInfo?.cudaAvailable ? (
+          <EngineChip
+            status={engineStatus}
+            version={engineVersion}
+            kind={engineKind}
+            envInfo={envInfo}
+          />
+          {engineStatus === "ready" &&
+          (envInfo?.cudaAvailable || envInfo?.backend === "wgpu") ? (
             <span
               className="flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-px text-[10px] text-emerald-500"
-              title={envInfo.gpuName ?? "CUDA available"}
+              title={
+                envInfo?.gpuName ??
+                (envInfo?.backend === "wgpu" ? "GPU via wgpu" : "CUDA available")
+              }
             >
               ⚡ GPU
             </span>
@@ -230,44 +259,84 @@ export function MlPanel({ workspaceRoot }: Props) {
                 onUpgrade={() => void upgradeToGpu(workspaceRoot)}
               />
             ) : null}
-            {/* Project picker / creation */}
-            {projects.length === 0 || showCreate || pendingCreate ? (
-              <CreateCard
-                creating={pendingCreate != null}
-                firstProject={projects.length === 0}
-                createError={createError}
-                engineKind={engineKind}
-                onCreate={(template, name) => {
-                  setShowCreate(false);
-                  void createProject(workspaceRoot, template, name, true);
-                }}
-                onDismiss={projects.length > 0 ? () => setShowCreate(false) : undefined}
-              />
-            ) : (
-              <div className="mb-2 flex items-center gap-1.5">
-                <select
-                  value={selectedProject ?? ""}
-                  onChange={(e) => selectProject(e.target.value)}
-                  disabled={busy}
-                  className="h-6 min-w-0 flex-1 truncate rounded border border-border bg-background px-1.5 text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
-                >
-                  {projects.map((p) => (
-                    <option key={p.dir} value={p.dir}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+            {/* Models discovered in this folder */}
+            {projects.length > 0 ? (
+              <div className="mb-2">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                  Models
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <select
+                    value={selectedProject ?? ""}
+                    onChange={(e) => selectProject(e.target.value)}
+                    disabled={busy}
+                    className="h-6 min-w-0 flex-1 truncate rounded border border-border bg-background px-1.5 text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                  >
+                    {projects.map((p) => (
+                      <option key={p.dir} value={p.dir}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  {projects.find((p) => p.dir === selectedProject)?.hasOnnx ? (
+                    <Explain term="onnx">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void revealItemInDir(`${selectedProject}/model.onnx`).catch(
+                            () => {},
+                          )
+                        }
+                        className="h-6 shrink-0 rounded border border-sky-500/40 bg-sky-500/[0.06] px-1.5 text-[10px] font-medium text-sky-500"
+                        title="model.onnx — click to reveal"
+                      >
+                        ONNX
+                      </button>
+                    </Explain>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setShowCreate(true)}
+                    disabled={busy}
+                    className="h-6 shrink-0 rounded border border-border px-2 text-[11px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Create a new model"
+                  >
+                    + New
+                  </button>
+                </div>
+              </div>
+            ) : !showCreate && !pendingCreate ? (
+              <div className="mb-2 rounded-md border border-border/60 bg-muted/20 p-2.5">
+                <p className="text-[11px] font-medium text-foreground/90">
+                  No models in this folder.
+                </p>
+                <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground/70">
+                  A model lives in a project folder with a{" "}
+                  <span className="font-mono">train.toml</span>. Models trained
+                  here (or by <span className="font-mono">nexis-ml</span> in a
+                  terminal) show up automatically.
+                </p>
                 <button
                   type="button"
                   onClick={() => setShowCreate(true)}
-                  disabled={busy}
-                  className="h-6 shrink-0 rounded border border-border px-2 text-[11px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Create a new project"
+                  className="mt-1.5 rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                 >
-                  + New
+                  New model…
                 </button>
               </div>
-            )}
+            ) : null}
+            {showCreate || pendingCreate ? (
+              <CreateCard
+                creating={pendingCreate != null}
+                createError={createError}
+                engineKind={engineKind}
+                onCreate={(template, name, autoTrain) => {
+                  setShowCreate(false);
+                  void createProject(workspaceRoot, template, name, autoTrain);
+                }}
+                onDismiss={() => setShowCreate(false)}
+              />
+            ) : null}
 
             {/* Train hero / progress / result */}
             {busy && activeRun ? (
@@ -302,11 +371,20 @@ export function MlPanel({ workspaceRoot }: Props) {
               />
             ) : null}
 
+            {/* The model itself — architecture graph (weights overlay once
+                the engine emits a `weights` artifact; ML_SUITE.md contract) */}
+            {selectedProject && !pendingCreate && projects.length > 0 ? (
+              <NetworkGraph key={`net-${selectedProject}`} projectDir={selectedProject} />
+            ) : null}
+
             {comparing ? (
               /* Overlay several runs on shared charts */
               <ComparisonView runs={compareRuns} onClear={clearCompare} />
             ) : (
               <>
+                {/* Facts about the run in view — id, device, duration, best/last metrics */}
+                <RunDetails />
+
                 {/* Generated text (textgen) — the payoff, above the charts */}
                 <SamplesView />
 
@@ -331,22 +409,51 @@ export function MlPanel({ workspaceRoot }: Props) {
                 {/* Sample-prediction grid (image template) */}
                 <ImageGridView />
 
-                {/* Inference playground — try the trained model live */}
-                <Playground run={viewedRun} />
-
-                {/* Export a self-contained HTML report of the viewed run */}
-                {viewedRun ? (
-                  <button
-                    type="button"
-                    disabled={pendingExport != null}
-                    onClick={() =>
-                      void exportReport(viewedRun.projectDir, viewedRun.runId)
-                    }
-                    className="mt-1 rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-                  >
-                    {pendingExport ? "Exporting…" : "⤓ Export HTML report"}
-                  </button>
+                {/* Inference playground — try the trained model live.
+                    Capability-gated: the Python engine has always had
+                    `serve`; the standalone Rust engine implements it from
+                    v0.8 and reports it via the env probe's `serve` flag. */}
+                {engineKind !== "rust" || envInfo?.serve ? (
+                  <Playground run={viewedRun} />
+                ) : viewedRun ? (
+                  <p className="mb-1 mt-3 text-[10px] leading-snug text-muted-foreground/70">
+                    This engine version can't serve models — update the
+                    standalone engine (v0.8+) for in-panel inference, or
+                    export to{" "}
+                    <Explain term="onnx">
+                      <span>ONNX</span>
+                    </Explain>{" "}
+                    below and run the model with onnxruntime anywhere.
+                  </p>
                 ) : null}
+
+                {/* Exports: HTML report (Python engine) / ONNX (Rust engine) */}
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  {viewedRun && engineKind !== "rust" ? (
+                    <button
+                      type="button"
+                      disabled={pendingExport != null}
+                      onClick={() =>
+                        void exportReport(viewedRun.projectDir, viewedRun.runId)
+                      }
+                      className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                    >
+                      {pendingExport ? "Exporting…" : "⤓ Export HTML report"}
+                    </button>
+                  ) : null}
+                  {selectedProject && engineKind === "rust" ? (
+                    <Explain term="onnx">
+                      <button
+                        type="button"
+                        disabled={pendingOnnx != null || busy}
+                        onClick={() => void exportOnnx(selectedProject)}
+                        className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+                      >
+                        {pendingOnnx ? "Exporting ONNX…" : "⤓ Export ONNX model"}
+                      </button>
+                    </Explain>
+                  ) : null}
+                </div>
               </>
             )}
 
@@ -512,8 +619,8 @@ function SetupCard({
           </button>
           <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">
             A single binary that trains tabular & image models on your GPU
-            (no PyTorch download). Text generation & the playground need the
-            Python engine above.
+            (no PyTorch download), with the inference playground built in
+            (v0.8+). Text generation needs the Python engine above.
           </p>
         </div>
       ) : null}
@@ -607,21 +714,20 @@ function CopyLine({ command }: { command: string }) {
 
 function CreateCard({
   creating,
-  firstProject,
   createError,
   engineKind,
   onCreate,
   onDismiss,
 }: {
   creating: boolean;
-  firstProject: boolean;
   createError: string | null;
   engineKind: EngineKind | null;
-  onCreate: (template: MlTemplate, name: string) => void;
+  onCreate: (template: MlTemplate, name: string, autoTrain: boolean) => void;
   onDismiss?: () => void;
 }) {
   const [template, setTemplate] = useState<MlTemplate>("tabular");
   const [name, setName] = useState(TEMPLATE_OPTIONS[0].defaultName);
+  const [autoTrain, setAutoTrain] = useState(false);
 
   // Switching template swaps in its suggested name (the user can still
   // rename); keeps "tiny-writer" from sticking on a tabular project.
@@ -656,9 +762,7 @@ function CreateCard({
   return (
     <div className="mb-2 rounded-md border border-primary/25 bg-primary/[0.04] p-2.5">
       <div className="mb-1 flex items-start justify-between">
-        <p className="text-[12px] font-semibold">
-          {firstProject ? "Train your first model" : "New project"}
-        </p>
+        <p className="text-[12px] font-semibold">New model</p>
         {onDismiss ? (
           <button
             type="button"
@@ -671,8 +775,10 @@ function CreateCard({
         ) : null}
       </div>
       <p className="mb-2 text-[11px] leading-snug text-muted-foreground">
-        Creates a small example project with sample data — you'll see live
-        results within seconds. Swap in your own data whenever you're ready.
+        Scaffolds a project folder in this workspace:{" "}
+        <span className="font-mono">train.toml</span> for the settings and a{" "}
+        <span className="font-mono">data/</span> folder for your files (with
+        starter data so the setup is verifiable — replace it with your own).
       </p>
 
       {/* Template chooser — only options the active engine can scaffold */}
@@ -709,11 +815,11 @@ function CreateCard({
         })}
       </div>
 
-      {/* Nudge toward the Python engine for the features it hides here. */}
+      {/* Factual note when the standalone engine hides templates. */}
       {templateOptions.length < TEMPLATE_OPTIONS.length ? (
         <p className="mb-2 text-[10px] leading-snug text-muted-foreground/70">
-          For more of a playground feel with custom and ready-made models, try
-          the Python engine.
+          Text generation and the code-your-own Blank project need the Python
+          engine — the standalone engine is config-driven.
         </p>
       ) : null}
 
@@ -723,31 +829,179 @@ function CreateCard({
           Creating project…
         </p>
       ) : (
-        <div className="flex items-center gap-1.5">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && name.trim()) onCreate(template, name);
-            }}
-            spellCheck={false}
-            className="h-6 min-w-0 flex-1 rounded border border-border bg-background px-1.5 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
-          />
-          <button
-            type="button"
-            disabled={!name.trim()}
-            onClick={() => onCreate(template, name)}
-            className="h-6 shrink-0 rounded-md bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Create &amp; train
-          </button>
-        </div>
+        <>
+          <div className="flex items-center gap-1.5">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && name.trim())
+                  onCreate(template, name, autoTrain);
+              }}
+              spellCheck={false}
+              className="h-6 min-w-0 flex-1 rounded border border-border bg-background px-1.5 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+            />
+            <button
+              type="button"
+              disabled={!name.trim()}
+              onClick={() => onCreate(template, name, autoTrain)}
+              className="h-6 shrink-0 rounded-md bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Create
+            </button>
+          </div>
+          <label className="mt-1.5 flex cursor-pointer items-center gap-1.5 text-[10px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={autoTrain}
+              onChange={(e) => setAutoTrain(e.target.checked)}
+              className="size-3 accent-primary"
+            />
+            Start training right away (otherwise review the hyperparameters
+            first)
+          </label>
+        </>
       )}
       {createError && !creating ? (
         <p className="mt-1.5 text-[10.5px] leading-snug text-red-400">
           {createError}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+// ── Run details (facts about the run in view) ─────────────────────────────────
+
+/** What RunDetails needs, whichever source the run came from. */
+type RunFacts = {
+  id: string;
+  status: string;
+  device: string | null;
+  lastEpoch: number | null;
+  totalEpochs: number | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  metrics: Record<string, MetricStats>;
+};
+
+function factsFromSummary(id: string, s: RunSummary): RunFacts {
+  return {
+    id,
+    status: s.status,
+    device: s.device ?? null,
+    lastEpoch: s.lastEpoch ?? null,
+    totalEpochs: s.totalEpochs ?? null,
+    startedAt: s.startedAt ?? null,
+    finishedAt: s.finishedAt ?? null,
+    metrics: s.metrics ?? {},
+  };
+}
+
+function runDuration(facts: RunFacts): string | null {
+  if (!facts.startedAt || !facts.finishedAt) return null;
+  const ms = Date.parse(facts.finishedAt) - Date.parse(facts.startedAt);
+  return Number.isFinite(ms) && ms >= 0 ? formatElapsed(ms) : null;
+}
+
+/**
+ * Diagnostics strip for the run in view (a just-finished live run or a
+ * loaded historical one): identity, device, passes, duration, and each
+ * metric's best + final value — every label hover-explained.
+ */
+function RunDetails() {
+  const activeRun = useMlStore((s) => s.activeRun);
+  const lastSummary = useMlStore((s) => s.lastSummary);
+  const chartSource = useMlStore((s) => s.chartSource);
+  const runs = useMlStore((s) => s.runs);
+
+  let facts: RunFacts | null = null;
+  if (chartSource?.kind === "historical") {
+    const run = runs.find((r) => r.id === chartSource.runId);
+    if (run) {
+      facts = {
+        id: run.id,
+        status: run.status,
+        device: run.device ?? null,
+        lastEpoch: run.lastEpoch ?? null,
+        totalEpochs: run.totalEpochs ?? null,
+        startedAt: run.startedAt ?? null,
+        finishedAt: run.finishedAt ?? null,
+        metrics: run.metrics ?? {},
+      };
+    }
+  } else if (
+    activeRun &&
+    ["ok", "cancelled", "error"].includes(activeRun.status) &&
+    lastSummary
+  ) {
+    facts = factsFromSummary(activeRun.runId ?? "run", lastSummary);
+  }
+  if (!facts) return null;
+
+  const duration = runDuration(facts);
+  const metricNames = Object.keys(facts.metrics).sort();
+
+  const cell = (label: ReactNode, value: ReactNode, key: string) => (
+    <div key={key} className="flex min-w-0 flex-col">
+      <span className="truncate text-[9.5px] uppercase tracking-wide text-muted-foreground/60">
+        {label}
+      </span>
+      <span className="truncate font-mono text-[10.5px] tabular-nums text-foreground/90">
+        {value}
+      </span>
+    </div>
+  );
+
+  return (
+    <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          Run details
+        </span>
+        <span className="truncate font-mono text-[9.5px] text-muted-foreground/60" title={facts.id}>
+          {facts.id}
+        </span>
+      </div>
+      <div className="grid grid-cols-3 gap-x-2 gap-y-1.5">
+        {cell("Status", runStatusWord(facts.status), "status")}
+        {facts.device
+          ? cell(<Explain term="device">Device</Explain>, facts.device, "device")
+          : null}
+        {facts.lastEpoch != null
+          ? cell(
+              <Explain term="epochs">Passes</Explain>,
+              facts.totalEpochs
+                ? `${facts.lastEpoch}/${facts.totalEpochs}`
+                : String(facts.lastEpoch),
+              "passes",
+            )
+          : null}
+        {duration
+          ? cell(<Explain term="duration">Duration</Explain>, duration, "duration")
+          : null}
+        {metricNames.map((name) => {
+          const d = displayMetric(name);
+          const stats = facts.metrics[name];
+          const best = d.better === "up" ? stats.max : stats.min;
+          const label = d.hint ? (
+            <Explain info={{ title: d.label, body: d.hint }}>{d.label}</Explain>
+          ) : (
+            d.label
+          );
+          return cell(
+            label,
+            <>
+              {d.format(stats.last)}
+              <span className="text-muted-foreground/60">
+                {" · "}
+                <Explain term="best">best</Explain> {d.format(best)}
+              </span>
+            </>,
+            `m-${name}`,
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1093,7 +1347,9 @@ function TextgenPlayground({
         className="w-full resize-none rounded border border-border bg-background px-1.5 py-1 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
       />
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-muted-foreground">wildness</span>
+        <Explain term="temperature">
+          <span className="text-[10px] text-muted-foreground">wildness</span>
+        </Explain>
         <input
           type="range"
           min={0.2}
@@ -1312,11 +1568,13 @@ function ProgressBlock({
         />
       </div>
       <div className="mb-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>
-          {run.totalEpochs
-            ? `pass ${run.epoch}/${run.totalEpochs} through the data`
-            : `pass ${run.epoch}`}
-        </span>
+        <Explain term="epochs">
+          <span>
+            {run.totalEpochs
+              ? `pass ${run.epoch}/${run.totalEpochs} through the data`
+              : `pass ${run.epoch}`}
+          </span>
+        </Explain>
         {pct !== null ? <span className="font-mono tabular-nums">{pct}%</span> : null}
       </div>
 
@@ -1430,9 +1688,13 @@ function ResultCard({
 function EngineChip({
   status,
   version,
+  kind,
+  envInfo,
 }: {
   status: string;
   version: string | null;
+  kind: EngineKind | null;
+  envInfo: MlEnvInfo | null;
 }) {
   const dot =
     status === "ready"
@@ -1440,14 +1702,30 @@ function EngineChip({
       : status === "missing"
         ? "bg-red-500/80"
         : "bg-muted-foreground/50";
+  // Which engine is answering, not just that one exists: the standalone
+  // Rust/burn binary and the Python/PyTorch package share the name
+  // `nexis-ml` but have different capability sets.
+  const kindLabel =
+    kind === "rust" ? "Rust engine" : kind === "python" ? "Python engine" : "engine";
   const label =
     status === "ready"
-      ? `engine ${version ?? ""}`
+      ? `${kindLabel} ${version ?? ""}`
       : status === "missing"
         ? "setup needed"
         : "checking…";
+  const detail =
+    status !== "ready"
+      ? undefined
+      : kind === "rust"
+        ? `Standalone Rust engine (burn) · backend: ${envInfo?.backend ?? "?"}`
+        : kind === "python"
+          ? `Python engine (PyTorch${envInfo?.torch ? ` ${envInfo.torch}` : ""})`
+          : "Engine detected — probing capabilities…";
   return (
-    <span className="flex items-center gap-1 rounded bg-muted/40 px-1.5 py-px text-[10px] text-muted-foreground">
+    <span
+      className="flex items-center gap-1 rounded bg-muted/40 px-1.5 py-px text-[10px] text-muted-foreground"
+      title={detail}
+    >
       <span className={cn("size-1.5 rounded-full", dot)} />
       {label}
     </span>
@@ -1737,65 +2015,8 @@ function ComparisonView({
 }
 
 // ── Hyperparameter form ───────────────────────────────────────────────────────
-
-type HpType = "int" | "float" | "enum" | "intList";
-type HpField = {
-  section: string;
-  key: string;
-  label: string;
-  type: HpType;
-  options?: string[];
-};
-
-// Editable knobs across templates. Only fields actually present in the
-// project's train.toml are rendered, so this one list covers both
-// tabular and textgen (and any future template that reuses these keys).
-const HP_FIELDS: HpField[] = [
-  { section: "train", key: "epochs", label: "Passes (epochs)", type: "int" },
-  { section: "train", key: "steps_per_epoch", label: "Steps per pass", type: "int" },
-  { section: "train", key: "batch_size", label: "Batch size", type: "int" },
-  { section: "train", key: "lr", label: "Learning rate", type: "float" },
-  { section: "train", key: "val_split", label: "Validation split", type: "float" },
-  { section: "train", key: "seed", label: "Seed", type: "int" },
-  {
-    section: "train",
-    key: "device",
-    label: "Device",
-    type: "enum",
-    options: ["auto", "cpu", "gpu"],
-  },
-  { section: "model", key: "hidden", label: "Hidden layers", type: "intList" },
-  { section: "model", key: "context", label: "Context (chars)", type: "int" },
-  { section: "model", key: "embed", label: "Model width", type: "int" },
-  { section: "model", key: "heads", label: "Attention heads", type: "int" },
-  { section: "model", key: "layers", label: "Layers", type: "int" },
-  { section: "sample", key: "temperature", label: "Sampling temp", type: "float" },
-  { section: "sample", key: "length", label: "Sample length", type: "int" },
-];
-
-const fieldId = (f: HpField) => `${f.section}.${f.key}`;
-
-function rawToDisplay(type: HpType, raw: string): string {
-  if (type === "enum") return raw.replace(/^"|"$/g, "");
-  if (type === "intList") return raw.replace(/^\[|\]$/g, "").trim();
-  return raw.trim();
-}
-
-/** Display string → TOML raw value, or null if invalid for the type. */
-function displayToRaw(type: HpType, display: string): string | null {
-  const d = display.trim();
-  if (type === "int") {
-    return d !== "" && Number.isInteger(Number(d)) ? String(Number(d)) : null;
-  }
-  if (type === "float") {
-    return d !== "" && Number.isFinite(Number(d)) ? d : null;
-  }
-  if (type === "enum") return `"${d}"`;
-  const parts = d.split(",").map((p) => p.trim()).filter(Boolean);
-  const nums = parts.map(Number);
-  if (parts.length === 0 || !nums.every((n) => Number.isInteger(n))) return null;
-  return `[${nums.join(", ")}]`;
-}
+// Field list + display/TOML conversions live in lib/hyperparams.ts (pure,
+// unit-tested); glossary.test.ts guarantees each field has a hover card.
 
 function HyperparamForm({
   projectDir,
@@ -1887,9 +2108,11 @@ function HyperparamForm({
                   key={fieldId(f)}
                   className="flex flex-col gap-0.5 text-[10px] text-muted-foreground"
                 >
-                  <span className="truncate" title={`[${f.section}] ${f.key}`}>
-                    {f.label}
-                  </span>
+                  <Explain term={f.key}>
+                    <span className="truncate" title={`[${f.section}] ${f.key}`}>
+                      {f.label}
+                    </span>
+                  </Explain>
                   {f.type === "enum" ? (
                     <select
                       value={values[fieldId(f)] ?? ""}

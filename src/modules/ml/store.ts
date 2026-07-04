@@ -15,6 +15,7 @@
  */
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import { basename } from "@/lib/path";
 import { currentWorkspaceEnv } from "@/modules/workspace";
 import type { PythonEnv } from "@/modules/python/usePythonEnv";
 import {
@@ -33,6 +34,7 @@ import {
   sendControl,
   sendInfer,
   spawnExport,
+  spawnExportOnnx,
   spawnInstall,
   spawnNew,
   spawnServe,
@@ -100,6 +102,8 @@ export type MlProject = {
   dir: string;
   /** Short display name (directory basename). */
   name: string;
+  /** An exported model.onnx exists in the project dir. */
+  hasOnnx: boolean;
 };
 
 export type HistoricalRun = {
@@ -109,6 +113,8 @@ export type HistoricalRun = {
   metrics?: Record<string, MetricStats>;
   lastEpoch?: number | null;
   totalEpochs?: number | null;
+  device?: string | null;
+  startedAt?: string;
   finishedAt?: string;
   /** Per-run metadata from notes.json. */
   note?: string;
@@ -198,6 +204,7 @@ function serveOwns(payload: ProtoPayload, serve: ServeSession | null): boolean {
 
 const MAX_LOG_LINES = 200;
 const MAX_RUNS_LISTED = 50;
+const BUSY_RUN_STATES = ["starting", "running", "cancelling"];
 /** Keep only the most recent generated-text snapshots in memory. */
 const MAX_SAMPLES = 12;
 
@@ -246,8 +253,9 @@ type MlStore = {
   engineVersion: string | null;
   engineError: string | null;
   /** Which engine is active. Gates Python-only features (textgen / `blank`
-   *  templates, Playground, HTML report) — null until the env probe tells
-   *  us, which callers treat as "don't block". */
+   *  templates, HTML report; the Playground is capability-gated via
+   *  `envInfo.serve` since Rust engine v0.8) — null until the env probe
+   *  tells us, which callers treat as "don't block". */
   engineKind: EngineKind | null;
   /** Python to install the engine into, when one was detected. */
   installPython: string | null;
@@ -292,6 +300,9 @@ type MlStore = {
   cmArtifact: ArtifactRef | null;
   /** Latest image-grid (sample-prediction) artifact for the image template. */
   imageArtifact: ArtifactRef | null;
+  /** Latest `weights` artifact (network-graph overlay — ML_SUITE.md contract;
+   *  stays null until an engine version emits it). */
+  weightsArtifact: ArtifactRef | null;
   logs: string[];
 
   runs: HistoricalRun[];
@@ -303,8 +314,10 @@ type MlStore = {
   /** Historical runs selected for overlay comparison. */
   compareRuns: CompareRun[];
 
-  /** In-flight `nexis-ml export` (one at a time); its report path. */
+  /** In-flight `nexis-ml export --run` (one at a time); its report path. */
   pendingExport: { sid: number; reportPath: string } | null;
+  /** In-flight `nexis-ml export --onnx` (Rust engine); its output path. */
+  pendingOnnx: { sid: number; outPath: string; projectDir: string } | null;
 
   detect: (workspaceRoot: string | null) => Promise<void>;
   redetect: (workspaceRoot: string | null) => Promise<void>;
@@ -337,6 +350,7 @@ type MlStore = {
 
   setRunMeta: (run: HistoricalRun, patch: Partial<RunMeta>) => Promise<void>;
   exportReport: (projectDir: string, runId: string) => Promise<void>;
+  exportOnnx: (projectDir: string) => Promise<void>;
 
   _startNextInstall: () => Promise<void>;
   _applyProto: (payload: ProtoPayload) => void;
@@ -344,11 +358,6 @@ type MlStore = {
   _applyStderr: (payload: StderrPayload) => void;
   _applyExit: (payload: ExitPayload) => void;
 };
-
-function basename(path: string): string {
-  const parts = path.replace(/[\\/]+$/, "").split(/[\\/]/);
-  return parts[parts.length - 1] || path;
-}
 
 /** Pinned runs first; order is otherwise preserved (the input is already
  *  newest-first), relying on Array.prototype.sort being stable. */
@@ -361,16 +370,30 @@ function sortRuns(runs: HistoricalRun[]): HistoricalRun[] {
 /** Subdirectories that can't plausibly be ML projects. */
 const SKIP_DIRS = new Set(["node_modules", "dist", "build", "target", "coverage"]);
 
-async function hasTrainPy(dir: string): Promise<boolean> {
+async function fileExists(path: string): Promise<boolean> {
   try {
-    await invoke("fs_stat", {
-      path: `${dir}/train.py`,
-      workspace: currentWorkspaceEnv(),
-    });
+    await invoke("fs_stat", { path, workspace: currentWorkspaceEnv() });
     return true;
   } catch {
     return false;
   }
+}
+
+/**
+ * A dir is an ML project when it has a `train.toml` — the engine-agnostic
+ * marker both engines scaffold. The Rust engine's projects are config-only
+ * (NO train.py), so checking train.py alone made them invisible and the
+ * panel showed the first-model create card next to a fully trained model.
+ * train.py is kept as a fallback for old Python projects.
+ */
+async function isMlProject(dir: string): Promise<boolean> {
+  if (await fileExists(`${dir}/train.toml`)) return true;
+  return fileExists(`${dir}/train.py`);
+}
+
+/** Build the MlProject record for a discovered dir (ONNX badge included). */
+async function toProject(dir: string, name: string): Promise<MlProject> {
+  return { dir, name, hasOnnx: await fileExists(`${dir}/model.onnx`) };
 }
 
 function pushLog(logs: string[], line: string): string[] {
@@ -408,6 +431,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
   samples: [],
   cmArtifact: null,
   imageArtifact: null,
+  weightsArtifact: null,
   logs: [],
 
   runs: [],
@@ -416,6 +440,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
   serve: null,
   compareRuns: [],
   pendingExport: null,
+  pendingOnnx: null,
 
   async detect(workspaceRoot) {
     if (get().engineStatus === "detecting") return;
@@ -581,8 +606,8 @@ export const useMlStore = create<MlStore>((set, get) => ({
 
   async refreshProjects(workspaceRoot) {
     const found: MlProject[] = [];
-    if (await hasTrainPy(workspaceRoot)) {
-      found.push({ dir: workspaceRoot, name: basename(workspaceRoot) });
+    if (await isMlProject(workspaceRoot)) {
+      found.push(await toProject(workspaceRoot, basename(workspaceRoot)));
     }
     try {
       const entries = await invoke<DirEntry[]>("fs_read_dir", {
@@ -599,14 +624,15 @@ export const useMlStore = create<MlStore>((set, get) => ({
       const checks = await Promise.all(
         candidates.map(async (e) => ({
           entry: e,
-          ok: await hasTrainPy(`${workspaceRoot}/${e.name}`),
+          ok: await isMlProject(`${workspaceRoot}/${e.name}`),
         })),
       );
-      for (const c of checks) {
-        if (c.ok) {
-          found.push({ dir: `${workspaceRoot}/${c.entry.name}`, name: c.entry.name });
-        }
-      }
+      const projects = await Promise.all(
+        checks
+          .filter((c) => c.ok)
+          .map((c) => toProject(`${workspaceRoot}/${c.entry.name}`, c.entry.name)),
+      );
+      found.push(...projects);
     } catch {
       // unreadable workspace root — keep whatever we found
     }
@@ -702,6 +728,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
       samples: [],
       cmArtifact: null,
       imageArtifact: null,
+      weightsArtifact: null,
       seriesTick: s.seriesTick + 1,
       logs: pushLog(s.logs, `$ nexis-ml train  (${projectDir})`),
     }));
@@ -804,6 +831,8 @@ export const useMlStore = create<MlStore>((set, get) => ({
                 metrics: summary.metrics,
                 lastEpoch: summary.lastEpoch,
                 totalEpochs: summary.totalEpochs,
+                device: summary.device,
+                startedAt: summary.startedAt,
                 finishedAt: summary.finishedAt,
               };
             } catch {
@@ -860,6 +889,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
         samples: collectSamples(events, MAX_SAMPLES),
         cmArtifact: rebindArtifact(latestConfusionMatrix(events), artifactsDir),
         imageArtifact: rebindArtifact(latestArtifact(events, "image-grid"), artifactsDir),
+        weightsArtifact: rebindArtifact(latestArtifact(events, "weights"), artifactsDir),
         seriesTick: s.seriesTick + 1,
       }));
     } catch (err) {
@@ -1004,8 +1034,17 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   async exportReport(projectDir, runId) {
-    const { engineExe, pendingExport } = get();
+    const { engineExe, engineKind, pendingExport } = get();
     if (!engineExe || pendingExport) return;
+    // The Rust engine's `export` only speaks --onnx; `--run` is the Python
+    // engine's HTML report. The panel hides the button, but guard anyway so
+    // a stale click can't spawn a doomed process.
+    if (engineKind === "rust") {
+      set((s) => ({
+        logs: pushLog(s.logs, "HTML reports need the Python engine"),
+      }));
+      return;
+    }
     const reportPath = `${projectDir}/.nexis-ml/runs/${runId}/report.html`;
     set((s) => ({ logs: pushLog(s.logs, `$ nexis-ml export --run ${runId}`) }));
     try {
@@ -1013,6 +1052,32 @@ export const useMlStore = create<MlStore>((set, get) => ({
       set({ pendingExport: { sid, reportPath } });
     } catch (err) {
       set((s) => ({ logs: pushLog(s.logs, `export failed: ${String(err)}`) }));
+    }
+  },
+
+  async exportOnnx(projectDir) {
+    const { engineExe, engineKind, pendingOnnx, activeRun } = get();
+    if (!engineExe || pendingOnnx) return;
+    // Python-engine `export` has no --onnx (Rust engine feature, ML_SUITE M5).
+    if (engineKind !== "rust") {
+      set((s) => ({
+        logs: pushLog(s.logs, "ONNX export needs the standalone (Rust) engine"),
+      }));
+      return;
+    }
+    if (activeRun && BUSY_RUN_STATES.includes(activeRun.status)) return;
+    set((s) => ({
+      logs: pushLog(s.logs, `$ nexis-ml export --onnx .  (${projectDir})`),
+    }));
+    try {
+      const sid = await spawnExportOnnx(engineExe, projectDir);
+      set({
+        pendingOnnx: { sid, outPath: `${projectDir}/model.onnx`, projectDir },
+      });
+    } catch (err) {
+      set((s) => ({
+        logs: pushLog(s.logs, `ONNX export failed: ${String(err)}`),
+      }));
     }
   },
 
@@ -1103,7 +1168,11 @@ export const useMlStore = create<MlStore>((set, get) => ({
         case "artifact":
           // Rendered kinds are folded in after the loop; anything without
           // a viewer yet still surfaces in the log.
-          if (ev.kind !== "confusion-matrix" && ev.kind !== "image-grid") {
+          if (
+            ev.kind !== "confusion-matrix" &&
+            ev.kind !== "image-grid" &&
+            ev.kind !== "weights"
+          ) {
             logs = pushLog(logs, `artifact (${ev.kind}): ${ev.path}`);
           }
           break;
@@ -1137,6 +1206,9 @@ export const useMlStore = create<MlStore>((set, get) => ({
     const imageArtifact = hadArtifact
       ? rebindArtifact(latestArtifact(events, "image-grid", run.epoch), runArtifactDir)
       : null;
+    const weightsArtifact = hadArtifact
+      ? rebindArtifact(latestArtifact(events, "weights", run.epoch), runArtifactDir)
+      : null;
 
     set((s) => ({
       activeRun: next,
@@ -1145,6 +1217,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
       ...(samples ? { samples } : {}),
       ...(cmArtifact ? { cmArtifact } : {}),
       ...(imageArtifact ? { imageArtifact } : {}),
+      ...(weightsArtifact ? { weightsArtifact } : {}),
       seriesTick: s.seriesTick + 1,
     }));
     if (finishedProject) {
@@ -1153,19 +1226,45 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   _applyStderr(payload) {
-    const { activeRun, installSid, pendingCreate, serve, pendingExport } = get();
+    const { activeRun, installSid, pendingCreate, serve, pendingExport, pendingOnnx } =
+      get();
     const known =
       payload.sid === activeRun?.sid ||
       payload.sid === installSid ||
       payload.sid === pendingCreate?.sid ||
       payload.sid === serve?.sid ||
-      payload.sid === pendingExport?.sid;
+      payload.sid === pendingExport?.sid ||
+      payload.sid === pendingOnnx?.sid;
     if (!known) return;
     set((s) => ({ logs: pushLog(s.logs, payload.line) }));
   },
 
   _applyExit(payload) {
-    const { activeRun, installSid, pendingCreate, serve, pendingExport } = get();
+    const { activeRun, installSid, pendingCreate, serve, pendingExport, pendingOnnx } =
+      get();
+
+    // ONNX export finished → reveal model.onnx + refresh the project badge
+    if (pendingOnnx && payload.sid === pendingOnnx.sid) {
+      const { outPath, projectDir } = pendingOnnx;
+      set({ pendingOnnx: null });
+      if (payload.code === 0) {
+        set((s) => ({
+          logs: pushLog(s.logs, `ONNX model written: ${outPath}`),
+          projects: s.projects.map((p) =>
+            p.dir === projectDir ? { ...p, hasOnnx: true } : p,
+          ),
+        }));
+        void revealItemInDir(outPath).catch(() => {});
+      } else {
+        set((s) => ({
+          logs: pushLog(
+            s.logs,
+            `ONNX export failed (exit ${payload.code ?? "?"}) — it supports tabular (CSV) models; see the log above`,
+          ),
+        }));
+      }
+      return;
+    }
 
     // export finished → reveal the report file (or report failure)
     if (pendingExport && payload.sid === pendingExport.sid) {
