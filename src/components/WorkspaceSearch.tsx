@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { native, type GrepHit } from "@/modules/ai/lib/native";
 import {
@@ -32,10 +33,6 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function basename(p: string) {
-  const parts = p.replace(/\\/g, "/").split("/").filter(Boolean);
-  return parts[parts.length - 1] ?? p;
-}
 function relDir(rel: string) {
   const parts = rel.replace(/\\/g, "/").split("/");
   return parts.slice(0, -1).join("/") || ".";

@@ -4,10 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-use crate::modules::proc::hide_console;
+use crate::modules::proc;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct PythonEnv {
@@ -56,9 +55,8 @@ fn read_pyvenv_version(venv_dir: &Path) -> Option<String> {
 }
 
 fn get_python_version(python_path: &Path) -> Option<String> {
-    let mut cmd = Command::new(python_path);
+    let mut cmd = proc::command(python_path);
     cmd.arg("--version");
-    hide_console(&mut cmd);
     let output = cmd.output().ok()?;
     // Python 2 prints to stderr, Python 3 to stdout
     let raw = if output.stdout.is_empty() {
@@ -82,15 +80,14 @@ fn which_python() -> Option<PathBuf> {
     };
     for candidate in candidates {
         let mut cmd = if cfg!(windows) {
-            let mut c = Command::new("where");
+            let mut c = proc::command("where");
             c.arg(candidate);
             c
         } else {
-            let mut c = Command::new("which");
+            let mut c = proc::command("which");
             c.arg(candidate);
             c
         };
-        hide_console(&mut cmd);
         if let Ok(out) = cmd.output() {
             if out.status.success() {
                 if let Some(line) = String::from_utf8_lossy(&out.stdout)

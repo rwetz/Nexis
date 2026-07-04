@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 use std::io::{BufReader, Read, Write};
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, Stdio};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
@@ -15,7 +15,7 @@ use std::time::Duration;
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter};
 
-use crate::modules::proc::hide_console;
+use crate::modules::proc;
 
 type PendingMap = Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>;
 
@@ -37,12 +37,11 @@ impl DapSession {
         session_id: u32,
         app: AppHandle,
     ) -> Result<Self, String> {
-        let mut cmd = Command::new(adapter_cmd);
+        let mut cmd = proc::command(adapter_cmd);
         cmd.args(adapter_args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null());
-        hide_console(&mut cmd);
 
         let mut child = cmd
             .spawn()
@@ -77,7 +76,12 @@ impl DapSession {
     ) -> Result<Value, String> {
         let seq = self.next_seq.fetch_add(1, Ordering::Relaxed);
         let (tx, rx) = mpsc::sync_channel(1);
-        self.pending.lock().unwrap().insert(seq, tx);
+        // Poison recovery on the shared pending/stdin mutexes (pitfall #8
+        // pattern): a panicked reader thread must not brick every later request.
+        self.pending
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(seq, tx);
 
         let msg = json!({
             "seq": seq,
@@ -87,7 +91,10 @@ impl DapSession {
         });
 
         if let Err(e) = self.send_message(&msg) {
-            self.pending.lock().unwrap().remove(&seq);
+            self.pending
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .remove(&seq);
             return Err(e);
         }
 
@@ -100,7 +107,7 @@ impl DapSession {
         let header = format!("Content-Length: {}\r\n\r\n", body.len());
         let mut buf = header.into_bytes();
         buf.extend_from_slice(body.as_bytes());
-        let mut w = self.stdin.lock().unwrap();
+        let mut w = self.stdin.lock().unwrap_or_else(|e| e.into_inner());
         w.write_all(&buf).map_err(|e| e.to_string())?;
         w.flush().map_err(|e| e.to_string())
     }
@@ -288,7 +295,11 @@ fn dispatch(msg: Value, pending: &PendingMap, app: &AppHandle, session_id: u32) 
     match msg_type {
         "response" => {
             let req_seq = msg.get("request_seq").and_then(Value::as_u64).unwrap_or(0) as u32;
-            if let Some(tx) = pending.lock().unwrap().remove(&req_seq) {
+            if let Some(tx) = pending
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .remove(&req_seq)
+            {
                 let success = msg.get("success").and_then(Value::as_bool).unwrap_or(false);
                 let result = if success {
                     Ok(msg.get("body").cloned().unwrap_or(Value::Null))

@@ -51,7 +51,13 @@ pub struct BackgroundProcInfo {
 
 impl BackgroundProc {
     pub fn read_logs(&self, since: u64) -> BackgroundLogResponse {
-        let (bytes, next_offset, dropped) = self.buffer.lock().unwrap().read_from(since);
+        // Poison recovery: the buffer is shared with the reader threads; a
+        // panicked reader must not brick log polling (pitfall #8 pattern).
+        let (bytes, next_offset, dropped) = self
+            .buffer
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .read_from(since);
         let exited = self.exited.load(Ordering::Acquire);
         let exit_code = if exited && !self.exit_unknown.load(Ordering::Acquire) {
             Some(self.exit_code.load(Ordering::Acquire))
@@ -117,7 +123,6 @@ pub fn spawn(
     cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    crate::modules::proc::hide_console(&mut cmd);
 
     let shared = Arc::new(SharedChild::spawn(&mut cmd).map_err(|e| e.to_string())?);
     let kill_on_fail = || {
@@ -157,7 +162,11 @@ pub fn spawn(
             loop {
                 match pipe.read(&mut buf) {
                     Ok(0) => break,
-                    Ok(n) => proc_ref.buffer.lock().unwrap().push(&buf[..n]),
+                    Ok(n) => proc_ref
+                        .buffer
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .push(&buf[..n]),
                     Err(_) => break,
                 }
             }
@@ -171,7 +180,11 @@ pub fn spawn(
             loop {
                 match pipe.read(&mut buf) {
                     Ok(0) => break,
-                    Ok(n) => proc_ref.buffer.lock().unwrap().push(&buf[..n]),
+                    Ok(n) => proc_ref
+                        .buffer
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .push(&buf[..n]),
                     Err(_) => break,
                 }
             }

@@ -64,6 +64,7 @@ import { StashSection } from "./StashSection";
 import { SubmoduleSection } from "./SubmoduleSection";
 import { ConflictSection } from "./ConflictSection";
 import { WorktreeSection } from "./WorktreeSection";
+import { basename, displayDirname as dirname } from "@/lib/path";
 
 type Props = {
   open: boolean;
@@ -101,18 +102,6 @@ type RowDescriptor =
       count: number;
     }
   | { kind: "entry"; key: string; entry: SourceControlFileEntry; sectionId: SectionId };
-
-function basename(path: string): string {
-  const parts = path.split(/[\\/]/).filter(Boolean);
-  return parts.length > 0 ? parts[parts.length - 1] : path;
-}
-
-function dirname(path: string): string {
-  const normalized = path.replace(/\\/g, "/");
-  const index = normalized.lastIndexOf("/");
-  if (index <= 0) return "";
-  return normalized.slice(0, index);
-}
 
 function entryPathLabel(entry: SourceControlFileEntry): string {
   if (entry.originalPath) return `${entry.originalPath} → ${entry.path}`;

@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { basename, displayDirname as dirpart } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { Cancel01Icon, File01Icon, Delete02Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -13,17 +14,6 @@ import { useRecentFiles } from "./useRecentFiles";
 type Props = {
   onOpenFile: (path: string) => void;
 };
-
-function basename(path: string): string {
-  const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
-  return parts[parts.length - 1] ?? path;
-}
-
-function dirpart(path: string): string {
-  const normalized = path.replace(/\\/g, "/");
-  const idx = normalized.lastIndexOf("/");
-  return idx > 0 ? normalized.slice(0, idx) : "";
-}
 
 function relativeTime(ms: number): string {
   const diff = Date.now() - ms;

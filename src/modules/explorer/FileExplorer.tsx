@@ -41,6 +41,7 @@ import { fileIconUrl, folderIconUrl, preloadIcons } from "./lib/iconResolver";
 import { COMPACT_CONTENT, COMPACT_ITEM } from "./lib/menuItemClass";
 import { useFileTree } from "./lib/useFileTree";
 import { useGlobalShortcuts } from "@/modules/shortcuts";
+import { basename } from "@/lib/path";
 
 export type FileExplorerHandle = {
   focus: () => void;
@@ -76,11 +77,6 @@ type Row =
 const ROW_HEIGHT = 24;
 const OVERSCAN = 8;
 
-
-function basename(path: string): string {
-  const parts = path.split(/[\\/]/).filter(Boolean);
-  return parts.length ? parts[parts.length - 1] : path;
-}
 
 function buildRows(
   rootPath: string,

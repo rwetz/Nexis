@@ -11,6 +11,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { formatBytes } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
   ArrowRight01Icon,
@@ -688,12 +689,6 @@ function highlightMatch(text: string, pattern: string): ReactNode {
       <span key={i}>{p}</span>
     ),
   );
-}
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n}B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)}KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)}MB`;
 }
 
 function CodeBlockMini({ code }: { code: string; language: string }) {

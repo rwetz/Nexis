@@ -18,6 +18,8 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 ## Known bug pitfalls
 
+**These invariants are enforced by the build, not just this document.** Two tripwire suites scan the source tree and fail with a message naming the pitfall: `src-tauri/tests/pitfall_invariants.rs` (ConPTY lifecycle lock, `-Command` launch, `authorize_spawn_cwd`, `Command::new` confinement, PTY lock-poison handling) and `src/lib/pitfall-guards.test.ts` (`pty_open` confinement, `writePref` routing, composer `disabled`, reasoning pruning, Zustand selector references). `src-tauri/clippy.toml` additionally bans raw `std::process::Command::new` via `disallowed-methods`. **If one of these fails, fix the code — never weaken or delete the tripwire.** They exist because every guarded invariant has been broken at least once by a refactor that looked harmless.
+
 ### 1. ConPTY lifecycle race (Windows — CRITICAL)
 **Symptom:** New terminal opens blank — cursor visible but shell never prints output.
 
@@ -41,15 +43,15 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 **Root cause (D):** Any `Command::new().spawn()` call on Windows that lacks `CREATE_NO_WINDOW` briefly creates a visible console. If a ConPTY session is active at that moment, the console creation races with ConPTY I/O and can corrupt the active pseudoconsole — the shell in the open terminal goes silent even though it is still running.
 
-**Fix in place (D):** `crate::modules::proc::hide_console(&mut cmd)` is now applied to every non-PTY spawn site: `run_git_uncached`, `run_blocking`, `background::spawn`, `run_wsl`, and `wsl_exec_capture`. See pitfall #4 for the full list.
+**Fix in place (D):** Every non-PTY subprocess is now constructed via `crate::modules::proc::command()`, which pre-applies `CREATE_NO_WINDOW`. Raw `std::process::Command::new` is banned by `disallowed-methods` in `src-tauri/clippy.toml` (CI runs `clippy -D warnings`) and by the `pitfall_1d_command_new_only_in_proc_rs` tripwire test. See pitfall #4.
 
-**Future danger (D):** Any new `Command::new().spawn()` that runs while a terminal tab is open and lacks `hide_console` can blank an active terminal. This is silent — the user just sees the prompt disappear. PTY sessions go through `portable_pty` which sets the flag internally; everywhere else you must add it manually.
+**Future danger (D):** Build new subprocesses with `proc::command(program)` — never `Command::new`. PTY sessions go through `portable_pty`, which sets the flag internally; do not route them through `proc::command`.
 
 **Checklist when a blank terminal is reported:**
 1. Does it happen after closing another tab? → Root cause A (ConPTY lock)
 2. Does it happen only with PowerShell, not cmd? → Root cause B (-Command flag)
 3. Does it happen when `cd`-ing outside home/launch dir then opening a new tab? → Root cause C (workspace_authorize)
-4. Did you recently add a new `Command::new().spawn()` in Rust? → Root cause D (hide_console)
+4. Did a new Rust spawn site bypass `proc::command()` (e.g. with `#[allow(clippy::disallowed_methods)]`)? → Root cause D
 5. Check the Tauri devtools console for `[nexis] openPty failed:` — this is always logged when pty_open returns an error.
 
 ---
@@ -81,13 +83,9 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 **Root cause:** `std::process::Command` on Windows inherits the parent's console by default. GUI apps have no console, so Windows creates a temporary one — visible as a flash, and destructive to any live ConPTY.
 
-**Fix in place:** `crate::modules::proc::hide_console(&mut cmd)` sets `CREATE_NO_WINDOW` before spawning. Applied in:
-- `src-tauri/src/modules/git/process.rs` — `run_git_uncached`
-- `src-tauri/src/modules/shell/mod.rs` — `run_blocking`
-- `src-tauri/src/modules/shell/background.rs` — `spawn` (agent background processes)
-- `src-tauri/src/modules/workspace.rs` — `run_wsl` and `wsl_exec_capture` (WSL listing and home-dir probes)
+**Fix in place:** `crate::modules::proc::command(program)` is the only sanctioned constructor for non-PTY subprocesses — it returns a `Command` with `CREATE_NO_WINDOW` already applied. All spawn sites (git, shell one-shots, agent background procs, WSL probes, LSP/DAP servers, ML engine, python probes) build through it. Raw `std::process::Command::new` fails CI twice over: `disallowed-methods` in `src-tauri/clippy.toml`, and the `pitfall_1d_command_new_only_in_proc_rs` test in `src-tauri/tests/pitfall_invariants.rs`.
 
-**Future danger:** Any new `Command::new(...).spawn()` call on Windows that is not a PTY session needs `hide_console`. PTY sessions go through `portable_pty` which handles this internally — do not add it there.
+**Future danger:** Use `proc::command(...)` for any new subprocess. Do not add an `#[allow(clippy::disallowed_methods)]` outside `proc.rs`. PTY sessions go through `portable_pty` which handles the flag internally — do not route them through `proc::command`.
 
 ---
 
@@ -107,7 +105,7 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 **Root cause:** `write_if_changed` compares the embedded script content against the cached file on disk. If the content is identical the file is not rewritten, so old function names persist until the embedded content actually differs.
 
-**Location:** `src-tauri/src/modules/pty/shell_init.rs` — `write_if_changed` in both the `unix` and `windows` submodules. Cached profiles live at `~/.cache/nexis/shell-integration/`.
+**Location:** `src-tauri/src/modules/pty/shell_init.rs` — one shared `write_if_changed` at module level, used by both the `unix` and `windows` submodules. Cached profiles live at `~/.cache/nexis/shell-integration/`.
 
 **Future danger:** If you need to force a profile refresh during development without changing the script content, delete the cached file manually. Do not bypass `write_if_changed` with a direct write — the atomic rename it performs prevents a parallel shell startup from sourcing a half-written file.
 
@@ -175,7 +173,7 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 **Fix in place:** Special-case: if `idx === 2` and `normalized[1] === ':'`, return `normalized.slice(0, 3)` to preserve the trailing slash. Also fixed `idx === 0` to return `"/"` (Unix root) instead of the original path.
 
-**Future danger:** Use Node's `path.dirname` equivalent (via `@tauri-apps/api/path`) for any path manipulation that must handle all OS forms. The inline `dirname` helper is only safe for known-well-formed paths.
+**Future danger:** Never write a new local `dirname`/`basename` helper in a component — seven private copies of the naive form survived long after the canonical fix and carried this exact bug. Import from `src/lib/path.ts` instead: `dirname` (nullable, absolute), `absoluteDirname` (navigation, floors at `/` / `C:/`), `displayDirname` (labels, `""` when no parent), `basename`. Exception: `ai/lib/security.ts` keeps a private basename on purpose (hardened comparison surface — do not "consolidate" it).
 
 ---
 

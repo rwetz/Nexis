@@ -12,6 +12,7 @@
  * can subscribe to changes without pulling in a full store.
  */
 import { useEffect, useState } from "react";
+import { basename } from "@/lib/path";
 
 const STORAGE_KEY = "nexis:bookmarks";
 
@@ -40,10 +41,6 @@ function load(): Bookmark[] {
 function persist(): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(_bookmarks));
   _listeners.forEach((fn) => fn());
-}
-
-function basename(path: string): string {
-  return path.replace(/\\/g, "/").split("/").pop() ?? path;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────

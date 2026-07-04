@@ -22,6 +22,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useRef, useState } from "react";
+import { basename, displayDirname as dirname } from "@/lib/path";
 import {
   removeBookmark,
   updateBookmarkLabel,
@@ -32,16 +33,6 @@ import {
 type Props = {
   onNavigate?: (path: string, line: number) => void;
 };
-
-function basename(path: string): string {
-  return path.replace(/\\/g, "/").split("/").pop() ?? path;
-}
-
-function dirname(path: string): string {
-  const n = path.replace(/\\/g, "/");
-  const i = n.lastIndexOf("/");
-  return i > 0 ? n.slice(0, i) : "";
-}
 
 export function BookmarksPanel({ onNavigate }: Props) {
   const bookmarks = useBookmarks();

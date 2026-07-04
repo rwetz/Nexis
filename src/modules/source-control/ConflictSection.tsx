@@ -11,6 +11,7 @@
  * Conflict detection: any file whose indexStatus or worktreeStatus is "U"
  * (unmerged), or where both sides are "A" (both added) or "D" (both deleted).
  */
+import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
 import { native } from "@/modules/ai/lib/native";
@@ -47,11 +48,6 @@ function conflictTypeLabel(f: GitChangedFile): string {
   if (f.indexStatus === "D" && f.worktreeStatus === "U") return "deleted by us";
   if (f.indexStatus === "U" && f.worktreeStatus === "D") return "deleted by them";
   return "conflict";
-}
-
-function basename(path: string): string {
-  const parts = path.replace(/\\/g, "/").split("/");
-  return parts[parts.length - 1] ?? path;
 }
 
 export function ConflictSection({ repoRoot, changedFiles }: Props) {

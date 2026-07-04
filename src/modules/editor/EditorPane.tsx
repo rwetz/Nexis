@@ -13,6 +13,7 @@ import {
   setSearchQuery,
 } from "@codemirror/search";
 import { EditorView, keymap } from "@codemirror/view";
+import { formatBytes } from "@/lib/format";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { loadEditorTheme, getCachedEditorTheme } from "./lib/themes";
@@ -109,12 +110,6 @@ function deriveProjectHints(filePath: string): string[] {
   if (/\.(jsx?|tsx?)$/.test(normalized) && normalized.includes("node_modules")) hints.push("Node.js");
   if (/\.(css|scss|sass|less)$/.test(normalized)) hints.push("CSS");
   return hints;
-}
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
 export const EditorPane = forwardRef<EditorPaneHandle, Props>(

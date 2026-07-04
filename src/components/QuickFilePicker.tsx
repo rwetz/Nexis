@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { basename, displayDirname as dirname } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
@@ -25,17 +26,6 @@ type Props = {
   onSelect: (path: string) => void;
   onClose: () => void;
 };
-
-function basename(path: string): string {
-  const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
-  return parts[parts.length - 1] ?? path;
-}
-
-function dirname(path: string): string {
-  const normalized = path.replace(/\\/g, "/");
-  const idx = normalized.lastIndexOf("/");
-  return idx > 0 ? normalized.slice(0, idx) : "";
-}
 
 export function QuickFilePicker({ root, onSelect, onClose }: Props) {
   const [query, setQuery] = useState("");

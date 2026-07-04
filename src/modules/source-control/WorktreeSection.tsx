@@ -11,6 +11,7 @@
  * (pointing to an existing or new branch) and remove linked ones.
  * Uses the `git_worktree_*` Tauri commands added in v1.10.0.
  */
+import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import {
   Add01Icon,
@@ -38,10 +39,6 @@ type Props = {
   /** Open the selected worktree path as a workspace */
   onOpenWorktree?: (path: string) => void;
 };
-
-function basename(p: string): string {
-  return p.replace(/\\/g, "/").split("/").pop() ?? p;
-}
 
 export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
   const [open, setOpen] = useState(false);

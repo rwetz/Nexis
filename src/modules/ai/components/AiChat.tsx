@@ -25,6 +25,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -489,11 +490,6 @@ function readPathFromPart(p: AnyPart): string | null {
   const input = (p as { input?: { path?: unknown } }).input;
   const path = input?.path;
   return typeof path === "string" && path.length > 0 ? path : null;
-}
-
-function basename(p: string): string {
-  const i = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
-  return i >= 0 ? p.slice(i + 1) : p;
 }
 
 const ReadGroup = memo(function ReadGroup({ parts }: { parts: AnyPart[] }) {

@@ -5,53 +5,47 @@
 // ╚══════════════════════════════════════╝
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::ffi::OsString;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 use portable_pty::CommandBuilder;
 
 use crate::modules::workspace::{self, WorkspaceEnv};
 
-#[cfg(windows)]
+// Shell-integration scripts, embedded at compile time. Used by native Unix
+// shells on macOS/Linux and by WSL shells on Windows.
 const BASHRC_SCRIPT: &str = include_str!("scripts/bashrc.bash");
-#[cfg(windows)]
 const ZSHENV_SCRIPT: &str = include_str!("scripts/zshenv.zsh");
-#[cfg(windows)]
 const ZPROFILE_SCRIPT: &str = include_str!("scripts/zprofile.zsh");
-#[cfg(windows)]
 const ZLOGIN_SCRIPT: &str = include_str!("scripts/zlogin.zsh");
-#[cfg(windows)]
 const ZSHRC_SCRIPT: &str = include_str!("scripts/zshrc.zsh");
-#[cfg(windows)]
 const FISH_INIT_SCRIPT: &str = include_str!("scripts/init.fish");
 
-#[cfg(windows)]
-fn bashrc_script() -> &'static str {
-    BASHRC_SCRIPT
+fn integration_root() -> Result<PathBuf, String> {
+    let home = dirs::home_dir().ok_or_else(|| "could not resolve home dir".to_string())?;
+    let root = home.join(".cache").join("nexis").join("shell-integration");
+    fs::create_dir_all(&root).map_err(|e| format!("create {}: {e}", root.display()))?;
+    Ok(root)
 }
 
-#[cfg(windows)]
-fn zshenv_script() -> &'static str {
-    ZSHENV_SCRIPT
-}
-
-#[cfg(windows)]
-fn zprofile_script() -> &'static str {
-    ZPROFILE_SCRIPT
-}
-
-#[cfg(windows)]
-fn zlogin_script() -> &'static str {
-    ZLOGIN_SCRIPT
-}
-
-#[cfg(windows)]
-fn zshrc_script() -> &'static str {
-    ZSHRC_SCRIPT
-}
-
-#[cfg(windows)]
-fn fish_init_script() -> &'static str {
-    FISH_INIT_SCRIPT
+/// Skips the write when content is unchanged (pitfall #6: the cache only
+/// refreshes when the embedded script actually differs) and replaces the file
+/// atomically so a parallel shell startup never sources a half-written file.
+fn write_if_changed(path: &Path, content: &str) -> Result<(), String> {
+    if let Ok(existing) = fs::read_to_string(path) {
+        if existing == content {
+            return Ok(());
+        }
+    }
+    let mut tmp: OsString = path.as_os_str().to_owned();
+    tmp.push(".__nexis_tmp__");
+    let tmp = PathBuf::from(tmp);
+    fs::write(&tmp, content).map_err(|e| format!("write {}: {e}", tmp.display()))?;
+    fs::rename(&tmp, path).map_err(|e| {
+        let _ = fs::remove_file(&tmp);
+        format!("rename {} -> {}: {e}", tmp.display(), path.display())
+    })
 }
 
 pub fn build_command(
@@ -130,18 +124,12 @@ fn apply_common(cmd: &mut CommandBuilder, cwd: Option<String>) {
 
 #[cfg(unix)]
 mod unix {
-    use std::ffi::OsString;
     use std::fs;
     use std::path::{Path, PathBuf};
 
     use portable_pty::CommandBuilder;
 
-    const ZSHENV: &str = include_str!("scripts/zshenv.zsh");
-    const ZPROFILE: &str = include_str!("scripts/zprofile.zsh");
-    const ZLOGIN: &str = include_str!("scripts/zlogin.zsh");
-    const ZSHRC: &str = include_str!("scripts/zshrc.zsh");
-    const BASHRC: &str = include_str!("scripts/bashrc.bash");
-    const FISH_INIT: &str = include_str!("scripts/init.fish");
+    use super::{integration_root, write_if_changed};
 
     pub enum Shell {
         Zsh,
@@ -238,20 +226,13 @@ mod unix {
         Ok(cmd)
     }
 
-    fn integration_root() -> Result<PathBuf, String> {
-        let home = dirs::home_dir().ok_or_else(|| "could not resolve home dir".to_string())?;
-        let root = home.join(".cache").join("nexis").join("shell-integration");
-        fs::create_dir_all(&root).map_err(|e| format!("create {}: {e}", root.display()))?;
-        Ok(root)
-    }
-
     fn prepare_zdotdir() -> Result<PathBuf, String> {
         let dir = integration_root()?.join("zsh");
         fs::create_dir_all(&dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
-        write_if_changed(&dir.join(".zshenv"), ZSHENV)?;
-        write_if_changed(&dir.join(".zprofile"), ZPROFILE)?;
-        write_if_changed(&dir.join(".zshrc"), ZSHRC)?;
-        write_if_changed(&dir.join(".zlogin"), ZLOGIN)?;
+        write_if_changed(&dir.join(".zshenv"), super::ZSHENV_SCRIPT)?;
+        write_if_changed(&dir.join(".zprofile"), super::ZPROFILE_SCRIPT)?;
+        write_if_changed(&dir.join(".zshrc"), super::ZSHRC_SCRIPT)?;
+        write_if_changed(&dir.join(".zlogin"), super::ZLOGIN_SCRIPT)?;
         Ok(dir)
     }
 
@@ -259,7 +240,7 @@ mod unix {
         let dir = integration_root()?.join("bash");
         fs::create_dir_all(&dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
         let rc = dir.join("bashrc");
-        write_if_changed(&rc, BASHRC)?;
+        write_if_changed(&rc, super::BASHRC_SCRIPT)?;
         Ok(rc)
     }
 
@@ -267,94 +248,20 @@ mod unix {
         let home = dirs::home_dir().ok_or_else(|| "could not resolve home dir".to_string())?;
         let dir = home.join(".config").join("fish").join("conf.d");
         fs::create_dir_all(&dir).map_err(|e| format!("create {}: {e}", dir.display()))?;
-        write_if_changed(&dir.join("nexis.fish"), FISH_INIT)?;
+        write_if_changed(&dir.join("nexis.fish"), super::FISH_INIT_SCRIPT)?;
         Ok(())
-    }
-
-    fn write_if_changed(path: &Path, content: &str) -> Result<(), String> {
-        if let Ok(existing) = fs::read_to_string(path) {
-            if existing == content {
-                return Ok(());
-            }
-        }
-        // Atomic replace: a parallel shell startup must never source a half-written file.
-        let mut tmp: OsString = path.as_os_str().to_owned();
-        tmp.push(".__nexis_tmp__");
-        let tmp = PathBuf::from(tmp);
-        fs::write(&tmp, content).map_err(|e| format!("write {}: {e}", tmp.display()))?;
-        fs::rename(&tmp, path).map_err(|e| {
-            let _ = fs::remove_file(&tmp);
-            format!("rename {} -> {}: {e}", tmp.display(), path.display())
-        })
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-
-        fn tmpfile(label: &str) -> PathBuf {
-            let mut p = std::env::temp_dir();
-            let nanos = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_nanos())
-                .unwrap_or(0);
-            p.push(format!("nexis-unix-wic-{label}-{nanos}.txt"));
-            p
-        }
-
-        #[test]
-        fn write_if_changed_creates_file_when_absent() {
-            let p = tmpfile("new");
-            write_if_changed(&p, "hello").expect("create");
-            assert_eq!(fs::read_to_string(&p).unwrap(), "hello");
-            let _ = fs::remove_file(&p);
-        }
-
-        #[test]
-        fn write_if_changed_updates_when_content_differs() {
-            let p = tmpfile("upd");
-            fs::write(&p, "old").unwrap();
-            write_if_changed(&p, "new").expect("update");
-            assert_eq!(fs::read_to_string(&p).unwrap(), "new");
-            let _ = fs::remove_file(&p);
-        }
-
-        // Pitfall 6 regression — same invariant as the Windows submodule.
-        #[test]
-        fn write_if_changed_is_idempotent_on_same_content_pitfall_6() {
-            let p = tmpfile("idm");
-            fs::write(&p, "same content").unwrap();
-            let mtime_before = fs::metadata(&p).unwrap().modified().unwrap();
-            std::thread::sleep(std::time::Duration::from_millis(20));
-            write_if_changed(&p, "same content").expect("idempotent");
-            let mtime_after = fs::metadata(&p).unwrap().modified().unwrap();
-            assert_eq!(
-                mtime_before, mtime_after,
-                "file must not be re-written when content has not changed"
-            );
-            let _ = fs::remove_file(&p);
-        }
-
-        #[test]
-        fn write_if_changed_leaves_no_temp_file_after_success() {
-            let p = tmpfile("tmp");
-            write_if_changed(&p, "content").expect("write");
-            let mut tmp_os = p.clone().into_os_string();
-            tmp_os.push(".__nexis_tmp__");
-            assert!(!PathBuf::from(tmp_os).exists());
-            let _ = fs::remove_file(&p);
-        }
     }
 }
 
 #[cfg(windows)]
 mod windows {
-    use std::ffi::OsString;
     use std::fs;
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
 
     use crate::modules::workspace::WorkspaceEnv;
     use portable_pty::CommandBuilder;
+
+    use super::{integration_root, write_if_changed};
 
     const PROFILE_PS1: &str = include_str!("scripts/profile.ps1");
 
@@ -589,19 +496,19 @@ mod windows {
         let (linux_dir, unc_dir) = prepare_wsl_integration_dir(distro, "zsh")?;
         write_if_changed(
             &unc_dir.join(".zshenv"),
-            &normalize_script(super::zshenv_script()),
+            &normalize_script(super::ZSHENV_SCRIPT),
         )?;
         write_if_changed(
             &unc_dir.join(".zprofile"),
-            &normalize_script(super::zprofile_script()),
+            &normalize_script(super::ZPROFILE_SCRIPT),
         )?;
         write_if_changed(
             &unc_dir.join(".zshrc"),
-            &normalize_script(super::zshrc_script()),
+            &normalize_script(super::ZSHRC_SCRIPT),
         )?;
         write_if_changed(
             &unc_dir.join(".zlogin"),
-            &normalize_script(super::zlogin_script()),
+            &normalize_script(super::ZLOGIN_SCRIPT),
         )?;
         Ok(linux_dir)
     }
@@ -610,7 +517,7 @@ mod windows {
         let (linux_dir, _unc_dir) = prepare_wsl_integration_dir(distro, "bash")?;
         let linux_rc = format!("{linux_dir}/bashrc");
         let unc_file = crate::modules::workspace::wsl_path_to_unc(distro, &linux_rc);
-        let content = normalize_script(super::bashrc_script());
+        let content = normalize_script(super::BASHRC_SCRIPT);
         write_if_changed(&unc_file, &content)?;
         Ok(linux_rc)
     }
@@ -621,16 +528,9 @@ mod windows {
         let unc_dir = crate::modules::workspace::wsl_path_to_unc(distro, &linux_dir);
         fs::create_dir_all(&unc_dir).map_err(|e| format!("create {}: {e}", unc_dir.display()))?;
         let unc_file = unc_dir.join("nexis.fish");
-        let content = normalize_script(super::fish_init_script());
+        let content = normalize_script(super::FISH_INIT_SCRIPT);
         write_if_changed(&unc_file, &content)?;
         Ok(())
-    }
-
-    fn integration_root() -> Result<PathBuf, String> {
-        let home = dirs::home_dir().ok_or_else(|| "could not resolve home dir".to_string())?;
-        let root = home.join(".cache").join("nexis").join("shell-integration");
-        fs::create_dir_all(&root).map_err(|e| format!("create {}: {e}", root.display()))?;
-        Ok(root)
     }
 
     fn prepare_ps_profile() -> Result<PathBuf, String> {
@@ -639,22 +539,6 @@ mod windows {
         let file = dir.join("profile.ps1");
         write_if_changed(&file, PROFILE_PS1)?;
         Ok(file)
-    }
-
-    fn write_if_changed(path: &Path, content: &str) -> Result<(), String> {
-        if let Ok(existing) = fs::read_to_string(path) {
-            if existing == content {
-                return Ok(());
-            }
-        }
-        let mut tmp: OsString = path.as_os_str().to_owned();
-        tmp.push(".__nexis_tmp__");
-        let tmp = PathBuf::from(tmp);
-        fs::write(&tmp, content).map_err(|e| format!("write {}: {e}", tmp.display()))?;
-        fs::rename(&tmp, path).map_err(|e| {
-            let _ = fs::remove_file(&tmp);
-            format!("rename {} -> {}: {e}", tmp.display(), path.display())
-        })
     }
 
     #[cfg(test)]
@@ -856,63 +740,68 @@ mod windows {
         fn shell_kind_from_path_returns_other_for_empty() {
             assert_eq!(ShellKind::from_path(""), ShellKind::Other);
         }
+    }
+}
 
-        // ── write_if_changed ──────────────────────────────────────────────
+// write_if_changed is shared by the unix and windows submodules; test it once
+// here (it used to be duplicated — implementation and tests — in both).
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-        fn tmpfile(label: &str) -> std::path::PathBuf {
-            let mut p = std::env::temp_dir();
-            let nanos = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_nanos())
-                .unwrap_or(0);
-            p.push(format!("nexis-wic-{label}-{nanos}.txt"));
-            p
-        }
+    fn tmpfile(label: &str) -> PathBuf {
+        let mut p = std::env::temp_dir();
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        p.push(format!("nexis-wic-{label}-{nanos}.txt"));
+        p
+    }
 
-        #[test]
-        fn write_if_changed_creates_file_when_absent() {
-            let p = tmpfile("new");
-            write_if_changed(&p, "hello").expect("create");
-            assert_eq!(std::fs::read_to_string(&p).unwrap(), "hello");
-            let _ = std::fs::remove_file(&p);
-        }
+    #[test]
+    fn write_if_changed_creates_file_when_absent() {
+        let p = tmpfile("new");
+        write_if_changed(&p, "hello").expect("create");
+        assert_eq!(fs::read_to_string(&p).unwrap(), "hello");
+        let _ = fs::remove_file(&p);
+    }
 
-        #[test]
-        fn write_if_changed_updates_when_content_differs() {
-            let p = tmpfile("upd");
-            std::fs::write(&p, "old").unwrap();
-            write_if_changed(&p, "new").expect("update");
-            assert_eq!(std::fs::read_to_string(&p).unwrap(), "new");
-            let _ = std::fs::remove_file(&p);
-        }
+    #[test]
+    fn write_if_changed_updates_when_content_differs() {
+        let p = tmpfile("upd");
+        fs::write(&p, "old").unwrap();
+        write_if_changed(&p, "new").expect("update");
+        assert_eq!(fs::read_to_string(&p).unwrap(), "new");
+        let _ = fs::remove_file(&p);
+    }
 
-        // Pitfall 6 regression: write_if_changed must skip the write when
-        // content is unchanged, so a parallel shell can't source a half-written
-        // profile. We verify by checking mtime is untouched.
-        #[test]
-        fn write_if_changed_is_idempotent_on_same_content_pitfall_6() {
-            let p = tmpfile("idm");
-            std::fs::write(&p, "same content").unwrap();
-            let mtime_before = std::fs::metadata(&p).unwrap().modified().unwrap();
-            std::thread::sleep(std::time::Duration::from_millis(20));
-            write_if_changed(&p, "same content").expect("idempotent");
-            let mtime_after = std::fs::metadata(&p).unwrap().modified().unwrap();
-            assert_eq!(
-                mtime_before, mtime_after,
-                "file must not be re-written when content has not changed"
-            );
-            let _ = std::fs::remove_file(&p);
-        }
+    // Pitfall 6 regression: write_if_changed must skip the write when content
+    // is unchanged, so a parallel shell can't source a half-written profile.
+    // Verified by checking the mtime is untouched.
+    #[test]
+    fn write_if_changed_is_idempotent_on_same_content_pitfall_6() {
+        let p = tmpfile("idm");
+        fs::write(&p, "same content").unwrap();
+        let mtime_before = fs::metadata(&p).unwrap().modified().unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        write_if_changed(&p, "same content").expect("idempotent");
+        let mtime_after = fs::metadata(&p).unwrap().modified().unwrap();
+        assert_eq!(
+            mtime_before, mtime_after,
+            "file must not be re-written when content has not changed"
+        );
+        let _ = fs::remove_file(&p);
+    }
 
-        #[test]
-        fn write_if_changed_leaves_no_temp_file_after_success() {
-            let p = tmpfile("tmp");
-            write_if_changed(&p, "content").expect("write");
-            let mut tmp_os = p.clone().into_os_string();
-            tmp_os.push(".__nexis_tmp__");
-            assert!(!std::path::PathBuf::from(tmp_os).exists());
-            let _ = std::fs::remove_file(&p);
-        }
+    #[test]
+    fn write_if_changed_leaves_no_temp_file_after_success() {
+        let p = tmpfile("tmp");
+        write_if_changed(&p, "content").expect("write");
+        let mut tmp_os = p.clone().into_os_string();
+        tmp_os.push(".__nexis_tmp__");
+        assert!(!PathBuf::from(tmp_os).exists());
+        let _ = fs::remove_file(&p);
     }
 }
 

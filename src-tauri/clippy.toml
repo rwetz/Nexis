@@ -7,3 +7,15 @@
 # the build. Test code may still panic freely, which is what these allow:
 allow-unwrap-in-tests = true
 allow-expect-in-tests = true
+
+# ConPTY-corruption gate (CLAUDE.md pitfalls #1D / #4).
+#
+# A raw `Command::new` spawn on Windows inherits no console, so Windows
+# creates a temporary visible one — it flashes on screen and races active
+# ConPTY I/O, silently blanking open terminal tabs. Every non-PTY subprocess
+# must be built via `crate::modules::proc::command()`, which pre-applies
+# CREATE_NO_WINDOW. PTY sessions go through portable_pty (exempt — it sets
+# the flag internally).
+disallowed-methods = [
+    { path = "std::process::Command::new", reason = "spawning without CREATE_NO_WINDOW flashes a console and can corrupt an active ConPTY, blanking open terminals (CLAUDE.md pitfalls #1D/#4) — build the command with crate::modules::proc::command() instead" },
+]

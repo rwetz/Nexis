@@ -348,9 +348,8 @@ fn looks_utf16le(bytes: &[u8]) -> bool {
 
 #[cfg(windows)]
 fn run_wsl(args: &[&str]) -> Result<String, String> {
-    let mut cmd = std::process::Command::new("wsl.exe");
+    let mut cmd = crate::modules::proc::command("wsl.exe");
     cmd.args(args);
-    crate::modules::proc::hide_console(&mut cmd);
     let out = cmd.output().map_err(|e| e.to_string())?;
     if !out.status.success() {
         let stderr = decode_command_output(&out.stderr);
@@ -366,13 +365,12 @@ pub(crate) fn wsl_exec_capture(
     args: &[&str],
 ) -> Result<String, String> {
     validate_wsl_distro_name(distro)?;
-    let mut cmd = std::process::Command::new("wsl.exe");
+    let mut cmd = crate::modules::proc::command("wsl.exe");
     cmd.arg("-d")
         .arg(distro)
         .arg("--exec")
         .arg(program)
         .args(args);
-    crate::modules::proc::hide_console(&mut cmd);
     let out = cmd.output().map_err(|e| e.to_string())?;
     if !out.status.success() {
         let stderr = decode_command_output(&out.stderr);

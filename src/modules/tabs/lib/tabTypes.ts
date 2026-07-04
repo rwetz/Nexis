@@ -174,10 +174,9 @@ export type TabPatch = Partial<{
   url: string;
 }>;
 
-export function basename(path: string): string {
-  const parts = path.split(/[\\/]/).filter(Boolean);
-  return parts.length ? parts[parts.length - 1] : path;
-}
+// Re-exported so existing "./tabTypes" importers keep working; the
+// implementation is the shared one in lib/path.ts.
+export { basename } from "@/lib/path";
 
 export function titleFromUrl(url: string): string {
   try {

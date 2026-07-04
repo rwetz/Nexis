@@ -291,9 +291,15 @@ pub fn fs_stat(path: String, workspace: Option<WorkspaceEnv>) -> Result<FileStat
     let workspace = WorkspaceEnv::from_option(workspace);
     let p = resolve_path(&path, &workspace);
     let meta = std::fs::metadata(&p).map_err(|e| e.to_string())?;
+    // `metadata()` follows symlinks, so its file_type() can never report one;
+    // only `symlink_metadata()` sees the link itself. Dir stays first so a
+    // symlink-to-dir keeps reporting "dir" (callers use kind == "dir" checks).
     let kind = if meta.is_dir() {
         StatKind::Dir
-    } else if meta.file_type().is_symlink() {
+    } else if std::fs::symlink_metadata(&p)
+        .map(|m| m.file_type().is_symlink())
+        .unwrap_or(false)
+    {
         StatKind::Symlink
     } else {
         StatKind::File

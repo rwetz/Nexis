@@ -103,7 +103,6 @@ fn run_blocking(
     cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    crate::modules::proc::hide_console(&mut cmd);
 
     let child = Arc::new(SharedChild::spawn(&mut cmd).map_err(|e| {
         log::warn!("shell_run_command spawn failed: {e}");
@@ -195,7 +194,14 @@ pub fn shell_session_open(
     };
     let session = Arc::new(ShellSession::new(initial, workspace));
     let id = state.next_session_id.fetch_add(1, Ordering::Relaxed);
-    state.sessions.write().unwrap().insert(id, session);
+    // Poison recovery on all session/bg map locks in this module: these run in
+    // Tauri command handlers, where a panic kills the worker thread (pitfall #9)
+    // and a poisoned map would otherwise brick every shell tool call (pitfall #8).
+    state
+        .sessions
+        .write()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(id, session);
     Ok(id)
 }
 
@@ -212,7 +218,7 @@ pub async fn shell_session_run(
     let session = state
         .sessions
         .read()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .get(&id)
         .cloned()
         .ok_or_else(|| "no shell session".to_string())?;
@@ -234,7 +240,11 @@ pub async fn shell_session_run(
 
 #[tauri::command]
 pub fn shell_session_close(state: tauri::State<ShellState>, id: u32) -> Result<(), String> {
-    state.sessions.write().unwrap().remove(&id);
+    state
+        .sessions
+        .write()
+        .unwrap_or_else(|e| e.into_inner())
+        .remove(&id);
     Ok(())
 }
 
@@ -250,7 +260,11 @@ pub fn shell_bg_spawn(
     authorize_spawn_cwd(&registry, cwd.as_deref(), &workspace)?;
     let proc = background::spawn(command, cwd, workspace)?;
     let id = state.next_bg_id.fetch_add(1, Ordering::Relaxed);
-    state.bg.write().unwrap().insert(id, proc);
+    state
+        .bg
+        .write()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(id, proc);
     Ok(id)
 }
 
@@ -263,7 +277,7 @@ pub fn shell_bg_logs(
     let proc = state
         .bg
         .read()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .get(&handle)
         .cloned()
         .ok_or_else(|| "no background handle".to_string())?;
@@ -272,7 +286,13 @@ pub fn shell_bg_logs(
 
 #[tauri::command]
 pub fn shell_bg_kill(state: tauri::State<ShellState>, handle: u32) -> Result<(), String> {
-    if let Some(proc) = state.bg.read().unwrap().get(&handle).cloned() {
+    if let Some(proc) = state
+        .bg
+        .read()
+        .unwrap_or_else(|e| e.into_inner())
+        .get(&handle)
+        .cloned()
+    {
         proc.kill();
     }
     Ok(())
@@ -280,7 +300,7 @@ pub fn shell_bg_kill(state: tauri::State<ShellState>, handle: u32) -> Result<(),
 
 #[tauri::command]
 pub fn shell_bg_list(state: tauri::State<ShellState>) -> Result<Vec<BackgroundProcInfo>, String> {
-    let map = state.bg.read().unwrap();
+    let map = state.bg.read().unwrap_or_else(|e| e.into_inner());
     let mut out = Vec::with_capacity(map.len());
     for (id, p) in map.iter() {
         out.push(p.info(*id));
@@ -297,7 +317,7 @@ pub(crate) fn build_oneshot_command(
     #[cfg(windows)]
     if let WorkspaceEnv::Wsl { distro } = workspace {
         validate_wsl_distro_name(distro)?;
-        let mut cmd = Command::new("wsl.exe");
+        let mut cmd = crate::modules::proc::command("wsl.exe");
         cmd.arg("-d").arg(distro);
         if let Some(cwd) = cwd.filter(|s| !s.is_empty()) {
             cmd.arg("--cd").arg(cwd);
@@ -307,14 +327,14 @@ pub(crate) fn build_oneshot_command(
     }
     #[cfg(unix)]
     {
-        let mut cmd = Command::new("/bin/sh");
+        let mut cmd = crate::modules::proc::command("/bin/sh");
         cmd.arg("-c").arg(command);
         Ok(cmd)
     }
     #[cfg(windows)]
     {
         let shell = crate::modules::pty::shell_init::windows_shell_path();
-        let mut cmd = Command::new(&shell);
+        let mut cmd = crate::modules::proc::command(&shell);
         let is_cmd = shell
             .file_name()
             .and_then(|s| s.to_str())

@@ -10,15 +10,9 @@ import { dirname } from "@/lib/path";
 // Pure drag-and-drop helpers for the file explorer. Kept free of React/Tauri so
 // the move-validity logic can be unit-tested in isolation (lib/dnd.test.ts).
 
-/** Forward-slash basename, trailing separators stripped. */
-export function basename(path: string): string {
-  const parts = path
-    .replace(/\\/g, "/")
-    .replace(/\/+$/, "")
-    .split("/")
-    .filter(Boolean);
-  return parts.length ? parts[parts.length - 1] : path;
-}
+// Re-exported so existing "./dnd" importers keep working; the implementation
+// is the shared one in lib/path.ts.
+export { basename } from "@/lib/path";
 
 /** Backslash → slash; strip a trailing slash but preserve a lone "/" root. */
 function normalize(p: string): string {

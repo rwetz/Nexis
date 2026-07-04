@@ -12,13 +12,13 @@
 //!   ml:stderr { sid, line }                — human-readable progress
 //!   ml:exit   { sid, code: Option<i32> }   — process ended
 //!
-//! Modeled on the LSP session (long-lived child, stdio, hide_console) with
+//! Modeled on the LSP session (long-lived child, stdio, hidden console) with
 //! the PTY reader→flusher split so a metric burst becomes one event, not
 //! thousands. Lock recovery follows pitfall #8 (`unwrap_or_else(into_inner)`).
 
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
-use std::process::{ChildStdin, Command, Stdio};
+use std::process::{ChildStdin, Stdio};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
@@ -28,7 +28,7 @@ use serde::Serialize;
 use shared_child::SharedChild;
 use tauri::{AppHandle, Emitter, Manager, State};
 
-use crate::modules::proc::hide_console;
+use crate::modules::proc;
 use crate::modules::workspace::WorkspaceRegistry;
 
 /// Flush a batch to the frontend at most this often (~30 Hz).
@@ -119,12 +119,11 @@ fn is_nexis_ml_exe(exe: &str) -> bool {
 /// whitespace-separated token, e.g. "0.5.0" from "nexis-ml 0.5.0"). Shared by
 /// candidate detection and post-download verification.
 fn engine_version(exe: &std::path::Path) -> Result<String, String> {
-    let mut cmd = Command::new(exe);
+    let mut cmd = proc::command(exe);
     cmd.arg("--version")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
-    hide_console(&mut cmd);
     let out = cmd.output().map_err(|e| e.to_string())?;
     if !out.status.success() {
         return Err(format!("exit {:?}", out.status.code()));
@@ -269,12 +268,11 @@ pub fn ml_env(exe: String) -> Result<String, String> {
     if !is_nexis_ml_exe(&exe) {
         return Err(format!("not a nexis-ml binary: {exe}"));
     }
-    let mut cmd = Command::new(&exe);
+    let mut cmd = proc::command(&exe);
     cmd.arg("env")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
-    hide_console(&mut cmd);
     let out = cmd.output().map_err(|e| format!("{exe}: {e}"))?;
     if !out.status.success() {
         return Err(format!("{exe} env: exit {:?}", out.status.code()));
@@ -287,12 +285,11 @@ pub fn ml_env(exe: String) -> Result<String, String> {
 /// used to offer the CUDA torch build even before the engine exists.
 #[tauri::command]
 pub fn ml_gpu_probe() -> Option<String> {
-    let mut cmd = Command::new("nvidia-smi");
+    let mut cmd = proc::command("nvidia-smi");
     cmd.args(["--query-gpu=name", "--format=csv,noheader"])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
-    hide_console(&mut cmd);
     let out = cmd.output().ok()?;
     if !out.status.success() {
         return None;
@@ -349,15 +346,13 @@ pub fn ml_spawn(
         ));
     }
 
-    let mut cmd = Command::new(&exe);
+    let mut cmd = proc::command(&exe);
     cmd.arg("--nexis-protocol")
         .args(&args)
         .current_dir(&resolved)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    // Pitfall #4/#1D: a visible console flash can corrupt an active ConPTY.
-    hide_console(&mut cmd);
 
     let shared = Arc::new(SharedChild::spawn(&mut cmd).map_err(|e| e.to_string())?);
     let stdin = shared.take_stdin();
@@ -581,13 +576,11 @@ pub fn ml_install(
     }
     let args =
         install_flavor_args(&flavor).ok_or_else(|| format!("unknown install flavor: {flavor}"))?;
-    let mut cmd = Command::new(&python);
+    let mut cmd = proc::command(&python);
     cmd.args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    // Pitfall #4/#1D: no console flash while a terminal may be live.
-    hide_console(&mut cmd);
 
     let shared = Arc::new(SharedChild::spawn(&mut cmd).map_err(|e| e.to_string())?);
     let stdout = shared.take_stdout().ok_or_else(|| {

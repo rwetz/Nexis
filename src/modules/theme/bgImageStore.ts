@@ -4,6 +4,8 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { formatBytes } from "@/lib/format";
+
 const DB_NAME = "nexis-bg-images";
 const STORE = "images";
 const VERSION = 1;
@@ -79,12 +81,6 @@ const JPEG_QUALITY = 0.88;
 const MAX_STATIC_BYTES = 30 * 1024 * 1024;
 const MAX_ANIMATED_BYTES = 10 * 1024 * 1024;
 const WEBP_SNIFF_BYTES = 64;
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
-}
 
 async function isAnimated(file: File): Promise<boolean> {
   const t = file.type.toLowerCase();

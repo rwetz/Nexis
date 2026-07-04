@@ -29,6 +29,7 @@ import {
   type ModelId,
   type ProviderId,
 } from "../config";
+import { basename } from "@/lib/path";
 import { buildTools, type ToolContext } from "../tools/tools";
 import { compactModelMessagesDetailed } from "./compact";
 import type { ProviderKeys } from "./keyring";
@@ -60,9 +61,7 @@ const TOOL_LABELS: Record<string, (input: Record<string, unknown>) => string> =
   };
 
 function shortPath(p: unknown): string {
-  if (typeof p !== "string") return "";
-  const i = p.lastIndexOf("/");
-  return i === -1 ? p : p.slice(i + 1);
+  return typeof p === "string" ? basename(p) : "";
 }
 
 function ellipsize(s: string, max: number): string {

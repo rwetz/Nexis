@@ -23,6 +23,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CodeSquareIcon } from "@hugeicons/core-free-icons";
 import type { GrepHit } from "@/modules/ai/lib/native";
+import { basename, displayDirname as dirname } from "@/lib/path";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // ── Pattern translation ───────────────────────────────────────────────────────
@@ -109,14 +110,6 @@ type Props = {
 
 const MAX_RESULTS = 200;
 
-function basename(path: string) {
-  return path.replace(/\\/g, "/").split("/").pop() ?? path;
-}
-function dirname(path: string) {
-  const n = path.replace(/\\/g, "/");
-  const i = n.lastIndexOf("/");
-  return i > 0 ? n.slice(0, i) : "";
-}
 
 export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
   const [query, setQuery] = useState("");

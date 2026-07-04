@@ -53,6 +53,7 @@ import {
   parseRemoteWebUrl,
   type RemoteWebInfo,
 } from "./lib/remoteWebUrl";
+import { basename, displayDirname as dirname } from "@/lib/path";
 
 const RAIL_RESERVED_PX = railWidth(MAX_VISIBLE_LANES);
 // rail | sha | subject(capped) | spacer(absorbs slack) | author(hugs) | date | changes
@@ -91,18 +92,6 @@ type FilesEntry =
   | { state: "loading" }
   | { state: "loaded"; files: GitCommitFileChange[] }
   | { state: "error"; error: string };
-
-function basename(path: string): string {
-  const parts = path.split(/[\\/]/).filter(Boolean);
-  return parts.length > 0 ? parts[parts.length - 1] : path;
-}
-
-function dirname(path: string): string {
-  const normalized = path.replace(/\\/g, "/");
-  const index = normalized.lastIndexOf("/");
-  if (index <= 0) return "";
-  return normalized.slice(0, index);
-}
 
 function normalizeError(error: unknown): string {
   if (typeof error === "string") return error;

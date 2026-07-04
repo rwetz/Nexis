@@ -266,7 +266,6 @@ where
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    crate::modules::proc::hide_console(&mut cmd);
 
     let child = Arc::new(SharedChild::spawn(&mut cmd).map_err(|e| GitError::Spawn(e.to_string()))?);
     let mut stdout_pipe = child
@@ -319,7 +318,7 @@ fn build_git_command(
     if let WorkspaceEnv::Wsl { distro } = _workspace {
         validate_wsl_distro_name(distro)
             .map_err(|_| GitError::command("unsafe WSL distro name", distro.clone()))?;
-        let mut cmd = Command::new("wsl.exe");
+        let mut cmd = crate::modules::proc::command("wsl.exe");
         cmd.arg("-d").arg(distro);
         if let Some(cwd) = cwd.filter(|s| !s.is_empty()) {
             cmd.arg("--cd").arg(cwd);
@@ -329,7 +328,7 @@ fn build_git_command(
         return Ok(cmd);
     }
 
-    let mut cmd = Command::new("git");
+    let mut cmd = crate::modules::proc::command("git");
     cmd.args(args);
     if let Some(dir) = cwd.filter(|s| !s.is_empty()) {
         cmd.current_dir(Path::new(dir));

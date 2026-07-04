@@ -7,6 +7,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { absoluteDirname as dirname } from "@/lib/path";
 import { currentWorkspaceEnv } from "@/modules/workspace";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { basename } from "./dnd";
@@ -34,17 +35,6 @@ export type PendingCreate = {
 export function joinPath(parent: string, name: string): string {
   if (parent.endsWith("/")) return `${parent}${name}`;
   return `${parent}/${name}`;
-}
-
-export function dirname(path: string): string {
-  // Normalize separators and handle a Windows drive root ("C:/file" → "C:/"),
-  // matching lib/path.ts (pitfall #12) so a file directly on a drive root
-  // resolves to the drive, not a slash-less "C:".
-  const normalized = path.replace(/\\/g, "/");
-  const i = normalized.lastIndexOf("/");
-  if (i <= 0) return "/";
-  if (i === 2 && normalized[1] === ":") return normalized.slice(0, 3);
-  return normalized.slice(0, i);
 }
 
 type Options = {

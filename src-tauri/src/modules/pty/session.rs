@@ -69,8 +69,14 @@ impl Drop for Session {
 static CONPTY_LIFECYCLE_LOCK: Mutex<()> = Mutex::new(());
 
 pub(super) fn drop_session(session: Arc<Session>) {
+    // Poison recovery: the lock only serializes timing (it guards no data),
+    // so if a previous holder panicked we can safely keep using it. A plain
+    // .unwrap() here would make every terminal open/close panic forever
+    // after one bad spawn (pitfall #8's cascade, applied to pitfall #1A).
     #[cfg(windows)]
-    let _guard = CONPTY_LIFECYCLE_LOCK.lock().unwrap();
+    let _guard = CONPTY_LIFECYCLE_LOCK
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
     drop(session);
 }
 
@@ -137,8 +143,11 @@ pub fn spawn(
     on_data: Channel<Response>,
     on_exit: Channel<i32>,
 ) -> Result<(Arc<Session>, PtySize), String> {
+    // Poison recovery — see drop_session; the lock guards timing, not data.
     #[cfg(windows)]
-    let _spawn_guard = CONPTY_LIFECYCLE_LOCK.lock().unwrap();
+    let _spawn_guard = CONPTY_LIFECYCLE_LOCK
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
 
     let pty_system = native_pty_system();
     let size = PtySize {
