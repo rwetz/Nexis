@@ -131,9 +131,16 @@ jobs:
         with:
           workspaces: "src-tauri -> target"
 
-      # Same webkit/appindicator/rsvg stack as ci.yml's test-rust-linux, plus
-      # the packaging tools the bundler needs: patchelf + file for AppImage, and
-      # the gstreamer plugins pulled in by `appimage.bundleMediaFramework: true`.
+      # Same webkit/appindicator/rsvg stack as ci.yml's test-rust-linux (proven
+      # green on this runner), plus patchelf + file for AppImage bundling and the
+      # *runtime* gstreamer plugins that `appimage.bundleMediaFramework: true`
+      # bundles into the AppImage.
+      #
+      # Do NOT add the gstreamer `-dev` packages: on the ubuntu-22.04 runner
+      # `libgstreamer1.0-dev` pulls an unsatisfiable `libunwind-dev`, which makes
+      # apt bail out with "held broken packages" and fails the whole step. We
+      # don't compile against gstreamer headers, so the runtime plugin packages
+      # are all the media-framework bundler needs.
       - name: Install Linux system dependencies
         run: |
           sudo apt-get update
@@ -142,11 +149,8 @@ jobs:
             libssl-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
-            libgtk-3-dev \
             patchelf \
             file \
-            libgstreamer1.0-dev \
-            libgstreamer-plugins-base1.0-dev \
             gstreamer1.0-plugins-base \
             gstreamer1.0-plugins-good
 
