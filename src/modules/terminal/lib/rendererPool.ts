@@ -46,6 +46,14 @@ export type Slot = {
   readonly host: HTMLDivElement;
   webglAddon: WebglAddon | null;
   webglCanvases: HTMLCanvasElement[];
+  /** Rapid WebGL context losses since the last stable period. Used to detect a
+   * thrash loop (context lost immediately + repeatedly) and stop re-attaching. */
+  webglLossCount: number;
+  /** performance.now() of the most recent context loss, for the stability reset. */
+  webglLastLossAt: number;
+  /** Once true, this slot stays on the DOM renderer for good (WebGL proved
+   * unstable here) — no more re-attach attempts. */
+  webglGaveUp: boolean;
   currentLeafId: number | null;
   oscDisposers: (() => void)[];
   observer: ResizeObserver | null;
@@ -221,6 +229,9 @@ function createSlot(): Slot {
     host,
     webglAddon: null,
     webglCanvases: [],
+    webglLossCount: 0,
+    webglLastLossAt: 0,
+    webglGaveUp: false,
     currentLeafId: null,
     oscDisposers: [],
     observer: null,
@@ -608,9 +619,19 @@ function detachSlotFromLeaf(slot: Slot): void {
 }
 
 const WEBGL_RECOVERY_DELAY_MS = 250;
+/** Rapid context losses before we give up on WebGL for a slot and stay on the
+ * DOM renderer. Some WebKitGTK + NVIDIA setups lose the context immediately and
+ * repeatedly; re-attaching each time thrashes the terminal between GPU and DOM
+ * (~4×/s) — far laggier than just using the DOM renderer. */
+const WEBGL_MAX_LOSSES = 3;
+/** If a slot goes this long without a context loss, treat WebGL as stable again
+ * and reset its loss counter, so a genuine one-off later (sleep/wake, GPU reset)
+ * still gets a fresh recovery attempt rather than counting toward the cap. */
+const WEBGL_STABILITY_RESET_MS = 60_000;
 
 function attachWebgl(slot: Slot): void {
   if (slot.webglAddon || !slot.term.element) return;
+  if (slot.webglGaveUp) return;
   if (!usePreferencesStore.getState().terminalWebglEnabled) return;
   const elem = slot.term.element;
   const before = new Set<HTMLCanvasElement>(
@@ -619,19 +640,46 @@ function attachWebgl(slot: Slot): void {
   try {
     const webgl = new WebglAddon();
     webgl.onContextLoss(() => {
-      const cur = slot.webglAddon;
-      if (cur === webgl) {
+      // Capture this addon's canvases before detaching so we can hard-release
+      // them — otherwise the abandoned canvas keeps painting its last frame
+      // (a frozen ghost cursor) on top of the DOM renderer, and leaks per loss.
+      let canvases: HTMLCanvasElement[] = [];
+      if (slot.webglAddon === webgl) {
+        canvases = slot.webglCanvases;
         slot.webglAddon = null;
         slot.webglCanvases = [];
       }
-      try {
-        webgl.dispose();
-      } catch {}
+      hardTeardownWebgl(webgl, canvases);
+      // Count losses to tell a one-off (sleep/wake, GPU reset) apart from a
+      // thrash loop. If WebGL was stable for a while, this is fresh — reset the
+      // counter so the one-off still gets a recovery attempt.
+      const now = performance.now();
+      if (now - slot.webglLastLossAt > WEBGL_STABILITY_RESET_MS) {
+        slot.webglLossCount = 0;
+      }
+      slot.webglLastLossAt = now;
+      slot.webglLossCount += 1;
+      // Repeated rapid losses → WebGL is unstable on this machine. Stop the
+      // re-attach thrash and stay on the DOM renderer for good (this slot).
+      if (slot.webglLossCount >= WEBGL_MAX_LOSSES) {
+        slot.webglGaveUp = true;
+        // Force the DOM renderer to repaint every row now that the GPU layer is
+        // gone, so the cursor and cells draw clean instead of inheriting stale
+        // state from the dead WebGL frame.
+        try {
+          slot.term.refresh(0, slot.term.rows - 1);
+        } catch {}
+        console.warn(
+          "[nexis-webgl] repeated context loss — staying on DOM renderer",
+        );
+        return;
+      }
       // Recovery: WebKit may transiently lose contexts on sleep/wake or GPU
       // reset; without re-attach the slot would silently fall back to DOM
       // forever. Defer past WebKit's reset window before retrying.
       setTimeout(() => {
         if (slot.webglAddon) return;
+        if (slot.webglGaveUp) return;
         if (!usePreferencesStore.getState().terminalWebglEnabled) return;
         attachWebgl(slot);
       }, WEBGL_RECOVERY_DELAY_MS);
@@ -647,11 +695,19 @@ function attachWebgl(slot: Slot): void {
   }
 }
 
-function disposeSlotWebgl(slot: Slot): void {
-  if (!slot.webglAddon) return;
-  const addon = slot.webglAddon;
-  for (const canvas of slot.webglCanvases) releaseCanvasContext(canvas);
-  slot.webglCanvases = [];
+/**
+ * Fully tear down a WebGL addon and the canvases it added: lose each GL context
+ * and zero its dimensions (so a dead/frozen GPU layer can't sit over the DOM
+ * renderer and leave a ghost cursor), dispose the addon, then null its internal
+ * renderer refs to drop the dead context for GC. Shared by the manual toggle-off
+ * path and the context-loss handler — both must clean up identically, or a
+ * context-loss fallback leaves the abandoned canvas painting stale pixels.
+ */
+function hardTeardownWebgl(
+  addon: WebglAddon,
+  canvases: HTMLCanvasElement[],
+): void {
+  for (const canvas of canvases) releaseCanvasContext(canvas);
   try {
     addon.dispose();
   } catch (e) {
@@ -674,7 +730,15 @@ function disposeSlotWebgl(slot: Slot): void {
       addon as unknown as { _renderer?: unknown; _renderService?: unknown }
     )._renderService = null;
   } catch {}
+}
+
+function disposeSlotWebgl(slot: Slot): void {
+  if (!slot.webglAddon) return;
+  const addon = slot.webglAddon;
+  const canvases = slot.webglCanvases;
+  slot.webglCanvases = [];
   slot.webglAddon = null;
+  hardTeardownWebgl(addon, canvases);
 }
 
 function releaseCanvasContext(canvas: HTMLCanvasElement): void {
@@ -701,8 +765,15 @@ function releaseCanvasContext(canvas: HTMLCanvasElement): void {
 
 export function applyWebglPreference(enabled: boolean): void {
   for (const slot of slots) {
-    if (enabled && !slot.webglAddon) attachWebgl(slot);
-    else if (!enabled && slot.webglAddon) disposeSlotWebgl(slot);
+    if (enabled) {
+      // Explicit user opt-in clears an earlier auto-give-up so WebGL gets a
+      // fresh chance (and its loss counter restarts from clean).
+      slot.webglGaveUp = false;
+      slot.webglLossCount = 0;
+      if (!slot.webglAddon) attachWebgl(slot);
+    } else if (slot.webglAddon) {
+      disposeSlotWebgl(slot);
+    }
   }
 }
 

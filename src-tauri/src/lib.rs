@@ -43,8 +43,58 @@ fn parse_launch_dir() -> Option<String> {
     None
 }
 
+/// WebKitGTK 2.44+ renders through a DMABUF-backed accelerated-compositing path
+/// by default. On the NVIDIA proprietary driver that path is buggy and slow —
+/// tearing, stutter, and high CPU across every frame (terminal scroll, editor,
+/// the whole webview). Disabling it makes WebKitGTK fall back to the reliable
+/// GL/EGL compositor, which is dramatically smoother on NVIDIA.
+///
+/// This is scoped tightly on purpose: Mesa (Intel/AMD) drives the DMABUF path
+/// well and is *faster* with it on, so we only flip the switch when the NVIDIA
+/// proprietary driver is actually loaded. A user who has already set the env
+/// var (either value) always wins — we never clobber an explicit choice.
+///
+/// Must run before the webview (and its forked WebKit web/network processes)
+/// come up, i.e. before `tauri::Builder::run`, so the children inherit it.
+#[cfg(target_os = "linux")]
+fn tune_linux_webkit() {
+    use std::path::Path;
+
+    // KDE's KWin draws its own server-side titlebar for GTK/WebKit windows even
+    // when the app sets `decorations: false`, producing a double title bar
+    // (KWin's bar stacked on top of our custom header). Forcing GTK client-side
+    // decorations makes KWin defer decoration ownership to the app, so with
+    // decorations off there is simply no titlebar. Harmless on GNOME/wlroots,
+    // which already default to CSD. Respect an explicit user value.
+    if std::env::var_os("GTK_CSD").is_none() {
+        std::env::set_var("GTK_CSD", "1");
+    }
+
+    // `/proc/driver/nvidia/version` exists only for the proprietary driver;
+    // `/dev/nvidia0` is the belt-and-suspenders check. Both are host paths and
+    // remain visible from inside an AppImage.
+    let nvidia_proprietary =
+        Path::new("/proc/driver/nvidia/version").exists() || Path::new("/dev/nvidia0").exists();
+    if !nvidia_proprietary {
+        return;
+    }
+    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_some() {
+        return; // respect an explicit user override
+    }
+    std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    eprintln!(
+        "[nexis] NVIDIA driver detected — set WEBKIT_DISABLE_DMABUF_RENDERER=1 \
+         to avoid WebKitGTK render lag (override by exporting it yourself)"
+    );
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Tune the webview before anything spawns a thread or forks the WebKit web
+    // process, so the setting is in place when the compositor initializes.
+    #[cfg(target_os = "linux")]
+    tune_linux_webkit();
+
     // Install first so a panic anywhere during setup is still captured.
     crash::install_panic_hook();
     workspace::init_launch_cwd();
@@ -81,6 +131,24 @@ pub fn run() {
         .manage(ml::MlState::default())
         .manage(http_share::HttpShareState::default())
         .manage(LaunchDir(Mutex::new(parse_launch_dir())))
+        .setup(|_app| {
+            // Re-assert undecorated after the webview is up (webkit2gtk can
+            // reset window hints during init) and log the actual state so a
+            // lingering KDE title bar can be diagnosed as "KWin ignored us"
+            // rather than "config never applied".
+            #[cfg(target_os = "linux")]
+            {
+                use tauri::Manager;
+                if let Some(win) = _app.get_webview_window("main") {
+                    let _ = win.set_decorations(false);
+                    match win.is_decorated() {
+                        Ok(d) => eprintln!("[nexis] main window is_decorated = {d}"),
+                        Err(e) => eprintln!("[nexis] is_decorated query failed: {e}"),
+                    }
+                }
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             pty::pty_open,
             pty::pty_write,

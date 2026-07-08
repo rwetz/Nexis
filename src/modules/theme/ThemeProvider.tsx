@@ -25,6 +25,7 @@ import {
   type ThemePref,
 } from "@/modules/settings/store";
 import { flushSync } from "react-dom";
+import { IS_LINUX } from "@/lib/platform";
 import { applyTheme, clearTheme } from "./applyTheme";
 
 /**
@@ -33,13 +34,20 @@ import { applyTheme, clearTheme } from "./applyTheme";
  * the React update synchronous so the browser captures the new palette in the
  * transition's "after" snapshot. Degrades to a plain update where the API is
  * unavailable or the user prefers reduced motion.
+ *
+ * Disabled entirely on Linux: the webview there is WebKitGTK, whose view-
+ * transition path captures a full-page GPU snapshot to composite the crossfade.
+ * On the NVIDIA proprietary driver that snapshot crashes the WebKit web process
+ * (silent renderer death — no Rust panic, so nothing in the crash dir), taking
+ * the window down on every theme switch. The crossfade is cosmetic, so Linux
+ * falls back to an instant swap. Related: lib.rs tune_linux_webkit.
  */
 function withViewTransition(mutate: () => void): void {
   const doc = document as Document & {
     startViewTransition?: (cb: () => void) => unknown;
   };
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduce || typeof doc.startViewTransition !== "function") {
+  if (reduce || IS_LINUX || typeof doc.startViewTransition !== "function") {
     mutate();
     return;
   }

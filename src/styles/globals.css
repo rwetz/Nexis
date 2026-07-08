@@ -559,3 +559,16 @@ textarea,
 ::view-transition-new(root) {
   animation-duration: 0.25s;
 }
+
+/* Linux: drop backdrop-filter. WebKitGTK re-composites the blurred backdrop
+ * region every frame, which is cheap on Mesa but very expensive on the NVIDIA
+ * proprietary driver — and worst on sticky headers and side panels, which
+ * repaint on every scroll. Every surface that opts into `backdrop-blur*`
+ * already carries an opacity-backed background color (bg-card/80, bg-popover/90,
+ * bg-black/30, …), so it stays legible without the frosted glass. Keyed off the
+ * data-os attribute set in main.tsx. Unlayered + !important so it wins over the
+ * Tailwind utility regardless of cascade layering. */
+html[data-os="linux"] [class*="backdrop-blur"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}

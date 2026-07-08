@@ -132,24 +132,28 @@ pub async fn workspace_current_dir(
 // (file dialogs, plugin chdir) can't shift the value seen by IPC or spawn.
 static LAUNCH_CWD: OnceLock<Option<PathBuf>> = OnceLock::new();
 
+/// `GetCurrentDirectoryW` can return `\\?\`-prefixed paths on Windows. Strip the
+/// verbatim prefix so the path is usable everywhere (CreateProcessW cwd, prompt
+/// display, git operations). No-op off Windows — kept as a named function rather
+/// than an inline closure so clippy doesn't (correctly) see the non-Windows body
+/// as an identity `map`.
+fn normalize_launch_dir(p: PathBuf) -> PathBuf {
+    #[cfg(windows)]
+    {
+        let s = p.to_string_lossy();
+        if let Some(stripped) = s.strip_prefix(r"\\?\") {
+            return PathBuf::from(stripped);
+        }
+    }
+    p
+}
+
 pub fn init_launch_cwd() {
     LAUNCH_CWD.get_or_init(|| {
         std::env::current_dir()
             .ok()
             .filter(|p| is_usable_launch_dir(p))
-            .map(|p| {
-                // `GetCurrentDirectoryW` can return `\\?\`-prefixed paths on
-                // Windows. Strip it so the path is usable everywhere
-                // (CreateProcessW cwd, prompt display, git operations).
-                #[cfg(windows)]
-                {
-                    let s = p.to_string_lossy();
-                    if let Some(stripped) = s.strip_prefix(r"\\?\") {
-                        return PathBuf::from(stripped);
-                    }
-                }
-                p
-            })
+            .map(normalize_launch_dir)
     });
 }
 
