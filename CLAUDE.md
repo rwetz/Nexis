@@ -24,7 +24,7 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 ## Known bug pitfalls
 
-**These invariants are enforced by the build, not just this document.** Two tripwire suites scan the source tree and fail with a message naming the pitfall: `src-tauri/tests/pitfall_invariants.rs` (ConPTY lifecycle lock, `-Command` launch, `authorize_spawn_cwd`, `Command::new` confinement, PTY lock-poison handling) and `src/lib/pitfall-guards.test.ts` (`pty_open` confinement, `writePref` routing, composer `disabled`, reasoning pruning, Zustand selector references). `src-tauri/clippy.toml` additionally bans raw `std::process::Command::new` via `disallowed-methods`. **If one of these fails, fix the code — never weaken or delete the tripwire.** They exist because every guarded invariant has been broken at least once by a refactor that looked harmless.
+**These invariants are enforced by the build, not just this document.** Two tripwire suites scan the source tree and fail with a message naming the pitfall: `src-tauri/tests/pitfall_invariants.rs` (ConPTY lifecycle lock, `-Command` launch, `authorize_spawn_cwd`, `Command::new` confinement, PTY lock-poison handling) and `src/lib/pitfall-guards.test.ts` (`pty_open` confinement, `writePref` routing, composer `disabled`, reasoning pruning, Zustand selector references, CodeMirror zoom exemption). `src-tauri/clippy.toml` additionally bans raw `std::process::Command::new` via `disallowed-methods`. **If one of these fails, fix the code — never weaken or delete the tripwire.** They exist because every guarded invariant has been broken at least once by a refactor that looked harmless.
 
 ### 1. ConPTY lifecycle race (Windows — CRITICAL)
 **Symptom:** New terminal opens blank — cursor visible but shell never prints output.
@@ -212,6 +212,17 @@ const leftItems = statusBarItems.filter((i) => i.side === "left");
 ```
 
 **Future danger:** Any Zustand selector that calls `.filter()`, `.map()`, `.slice()`, object spread `{ ...s.foo }`, or any other expression that creates a new reference on every call will trigger this. The rule: **selectors must return a stable reference** — either a primitive, or the same object/array reference from the store (not a derived one). Use `useShallow` from `zustand/react/shallow` when you genuinely need a derived array/object from the selector.
+
+---
+
+### 15. CodeMirror under CSS zoom → clicks land on the wrong line
+**Symptom:** After changing app zoom (Ctrl+= / Ctrl+-), clicking in the code editor places the cursor on a different line than the one clicked — the offset grows with distance from the top (at zoom 1.4, clicking line 13 lands on ~line 19, i.e. 13 × 1.4). Persists across restarts because `zoomLevel` is saved in preferences.
+
+**Root cause:** App zoom is implemented as CSS `zoom: var(--app-zoom)` on `.zoom-content` (`src/styles/globals.css`). WebKitGTK's caret-from-point APIs, which CodeMirror's `posAtCoords` relies on, do not account for a non-standardized ancestor CSS `zoom`, so mouse coordinates and document geometry disagree by exactly the zoom factor. Same class of problem that made the terminal and REPL `zoom-exempt` from the start — the editor was never exempted.
+
+**Fix in place:** Two halves, both required: `.zoom-content .cm-editor { zoom: calc(1 / var(--app-zoom, 1)) }` in `globals.css` neutralizes the ancestor zoom (net scale 1.0, coordinates trustworthy), and the shared editor theme in `src/modules/editor/lib/extensions.ts` sets `.cm-scroller` `fontSize: calc(13px * var(--app-zoom, 1))` so zooming still visibly scales the code. Covers every CodeMirror instance (EditorPane, GitDiffPane, AiDiffPane) via the `.cm-editor` selector.
+
+**Future danger:** Do not put a CodeMirror editor under a CSS-`zoom`ed ancestor without the exemption, and do not "simplify" the font-size back to a plain `13px` (that silently makes zoom a no-op for the editor). If a new pane renders CodeMirror *outside* `.zoom-content` or inside an already `zoom-exempt` container, the `.zoom-content .cm-editor` rule composes correctly (it only fires under `.zoom-content`) — but check click accuracy at zoom ≠ 1 anyway. Enforced by `pitfall 15` in `src/lib/pitfall-guards.test.ts`.
 
 ---
 

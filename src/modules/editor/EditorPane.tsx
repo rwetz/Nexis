@@ -199,9 +199,17 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       projectHintsRef.current = deriveProjectHints(path);
     }, [path]);
 
+    // Reactive workspace root: `live` starts as a NOOP (root = null) and is
+    // re-registered by App once explorerRoot/launchCwd/home hydrate. Restored
+    // tabs mount before that, so activateLsp must re-run when the root
+    // appears — a one-shot check here left LSP permanently dead after an app
+    // reload (no diagnostics, empty Problems counts). Selector returns a
+    // primitive, so it's pitfall-#14 safe.
+    const workspaceRoot = useChatStore((s) => s.live.getWorkspaceRoot());
+
     // Activate LSP when the editor view is ready and a file is loaded
     useEffect(() => {
-      if (!editorView || doc.status !== "ready") return;
+      if (!editorView || doc.status !== "ready" || !workspaceRoot) return;
       const readyDoc = doc as { status: "ready"; content: string; size: number };
       let cancelled = false;
       void activateLsp(editorView, lspCompartmentRef.current, {
@@ -227,7 +235,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         lspHandleRef.current = null;
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editorView, path, doc.status === "ready"]);
+    }, [editorView, path, doc.status === "ready", workspaceRoot]);
 
     // Notify LSP on content changes
     const onChangeWithLsp = (value: string) => {
@@ -576,8 +584,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         </div>
       );
     }
-
-    const workspaceRoot = useChatStore.getState().live.getWorkspaceRoot();
 
     return (
       <div className="flex h-full min-h-0 flex-col">

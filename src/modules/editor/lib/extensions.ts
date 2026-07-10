@@ -55,7 +55,10 @@ export function buildSharedExtensions(): Extension[] {
       },
       ".cm-scroller": {
         fontFamily: detectMonoFontFamily(),
-        fontSize: "13px",
+        // App zoom must reach the editor via font-size, never via an ancestor
+        // CSS zoom — .cm-editor is zoom-exempt in globals.css because zoomed
+        // clicks land on the wrong line in WebKitGTK (CLAUDE.md pitfall #15).
+        fontSize: "calc(13px * var(--app-zoom, 1))",
         lineHeight: "1.55",
         backgroundColor: "transparent !important",
       },
@@ -148,6 +151,23 @@ export function buildSharedExtensions(): Extension[] {
         backgroundColor: "var(--popover)",
         color: "var(--popover-foreground)",
         borderColor: "var(--border)",
+      },
+      // Lint/hover tooltips: CM's base theme paints these light gray, which
+      // reads as broken white boxes on the app's dark themes (none of the
+      // bundled editor themes style tooltips).
+      ".cm-tooltip": {
+        backgroundColor: "var(--popover)",
+        color: "var(--popover-foreground)",
+        border: "1px solid var(--border)",
+        borderRadius: "6px",
+        overflow: "hidden",
+      },
+      ".cm-tooltip .cm-diagnostic": {
+        padding: "4px 8px",
+        fontSize: "11px",
+      },
+      ".cm-tooltip-lint": {
+        maxWidth: "480px",
       },
     }),
   ];

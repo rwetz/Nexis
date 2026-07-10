@@ -145,4 +145,28 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
         `(CLAUDE.md pitfall #14):\n${offenders.join("\n")}`,
     ).toEqual([]);
   });
+
+  // Pitfall #15: CodeMirror under an ancestor CSS zoom maps clicks to the
+  // wrong line on WebKitGTK (zoom 1.4 → click line 13, cursor lands line 19).
+  // The fix is two-part and both halves must stay: .cm-editor is zoom-exempt
+  // in globals.css, and app zoom reaches the code via a font-size that scales
+  // with --app-zoom in the shared editor theme.
+  it("pitfall 15: CodeMirror is exempt from CSS zoom and scales via font-size", () => {
+    const css = readSrc("styles/globals.css");
+    const exemptRule = /\.zoom-content \.cm-editor\s*\{[^}]*zoom:\s*calc\(\s*1\s*\/\s*var\(--app-zoom/;
+    expect(
+      exemptRule.test(css),
+      "globals.css must keep the `.zoom-content .cm-editor { zoom: calc(1 / " +
+        "var(--app-zoom, 1)) }` exemption — without it, CSS zoom makes every " +
+        "editor click land on the wrong line on WebKitGTK (CLAUDE.md pitfall #15)",
+    ).toBe(true);
+
+    const theme = readSrc("modules/editor/lib/extensions.ts");
+    expect(
+      /fontSize:\s*"calc\([^"]*var\(--app-zoom/.test(theme),
+      "the shared editor theme must scale .cm-scroller font-size by " +
+        "var(--app-zoom) — the editor is zoom-exempt, so this is the only way " +
+        "app zoom reaches the code (CLAUDE.md pitfall #15)",
+    ).toBe(true);
+  });
 });

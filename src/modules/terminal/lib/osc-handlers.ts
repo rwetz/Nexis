@@ -114,7 +114,9 @@ function addExitDecoration(
   const ok = code === 0;
   dec.onRender((el) => {
     el.style.width = "2px";
-    el.style.height = "100%";
+    // Leave height alone: xterm sizes the element to one cell row. A "100%"
+    // override resolves against the decoration container (the whole screen),
+    // which painted the bar down the entire terminal instead of one line.
     el.style.borderRadius = "1px";
     el.style.background = ok
       ? "var(--terminal-ansi-green)"

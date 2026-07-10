@@ -177,6 +177,15 @@
 .zoom-exempt {
   zoom: calc(1 / var(--app-zoom));
 }
+/* CodeMirror cannot map clicks to document positions under an ancestor CSS
+ * zoom: WebKitGTK's caret-from-point APIs ignore the zoom factor, so at
+ * zoom 1.4 a click on line 13 lands on line ~19. Every editor is therefore
+ * zoom-exempt (net scale 1.0 — same trick the terminal uses), and zoom is
+ * applied to the code by scaling the editor font-size with --app-zoom in
+ * src/modules/editor/lib/extensions.ts instead. CLAUDE.md pitfall #15. */
+.zoom-content .cm-editor {
+  zoom: calc(1 / var(--app-zoom, 1));
+}
 
 /* Custom window chrome (Linux/Windows): the OS gives us a transparent
  * borderless window, and we paint the rounded corners + border + shadow

@@ -29,6 +29,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[pty]] — terminal sessions end to end
 - [[ai]] — agent loop, providers, tools, subagents, compaction
 - [[settings-sync]] — preferences storage and cross-window sync
+- [[editor]] — CodeMirror panes, shared extensions, autocomplete, zoom interplay
 
 ## Flows (`flows/`)
 
