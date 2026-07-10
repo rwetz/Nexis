@@ -5,6 +5,12 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 ---
 
+## Knowledge vault — `docs/vault/`
+
+`docs/vault/` is an Obsidian-compatible knowledge base mapping this codebase (module maps, subsystem guides, flows, decisions, runbooks). **Before working on an unfamiliar subsystem, read `docs/vault/Home.md` and the relevant `subsystems/` note** — it's cheaper than rediscovering structure by grepping. **After non-trivial work, update the touched note**: fix stale claims, add what you had to discover the hard way; create a note from `templates/` if real discovery happened and none exists. Rules in `docs/vault/conventions.md`. The vault is a map, not a record — CHANGELOG.md stays the record of what shipped, and this file stays authoritative for invariants/pitfalls; the vault links to them, never restates them.
+
+---
+
 ## CHANGELOG is the record — keep it current (TOP PRIORITY)
 
 `CHANGELOG.md` is the **single source of truth for what shipped**. Maintaining it — detailed, accurate, and up to date — is a top-priority part of every change, not an afterthought.

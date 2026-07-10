@@ -1,0 +1,44 @@
+---
+type: map
+description: The Tauri IPC seam — every command family, its Rust handler, and the frontend file that calls it.
+---
+
+# IPC surface (frontend ↔ Rust)
+
+The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/lib.rs` (~90 commands as of 2026-07 — that macro is the authoritative list; this note is the map of families and seams).
+
+**Convention:** each family has one frontend "bridge" file that owns the `invoke()` calls. Don't scatter raw `invoke("cmd_x")` through components — go through (or extend) the bridge.
+
+| Family | Commands (prefix) | Rust handler | Frontend seam |
+|---|---|---|---|
+| PTY | `pty_open/write/resize/close` | `modules/pty/mod.rs` | `terminal/lib/pty-bridge.ts` — see [[terminal-tab-open]] |
+| Filesystem | `fs_*`, `list_subdirs` | `modules/fs/{file,tree,mutate,search,grep}.rs` | `ai/lib/native.ts` (AI tools), `editor/lib/useDocument.ts` |
+| Git | `git_*` (25 cmds: status, diff, stage, commit, stash, worktree…) | `modules/git/commands.rs` | `ai/lib/native.ts`; source-control UI |
+| Shell one-shots & sessions | `shell_run_command`, `shell_session_*`, `shell_bg_*`, `*_shell_history` | `modules/shell/mod.rs` | `ai/lib/native.ts`, `ai/tools/shell.ts`; also `editor/lib/formatter.ts`, `ports/`, `ssh/` |
+| Workspace / WSL | `workspace_authorize`, `workspace_current_dir`, `wsl_*`, `get_launch_dir` | `modules/workspace.rs`, `lib.rs` | `workspace/env.ts`, `lib/launchDir.ts`, and every bridge that spawns with a cwd |
+| Secrets | `secrets_get/set/delete/get_all` | `modules/secrets.rs` (OS keychain) | `ai/lib/keyring.ts` |
+| LSP / DAP | `lsp_*`, `dap_*` | `modules/lsp/mod.rs`, `modules/dap/mod.rs` | `lsp/client.ts`, `debugger/debugSession.ts` |
+| AI HTTP proxy | `ai_http_request`, `ai_http_stream`, `lm_ping` | `modules/net.rs` | `ai/lib/proxyFetch.ts` — see [[ai]] |
+| ML engine | `ml_*` (11 cmds) | `modules/ml.rs` | `ml/lib/engine-bridge.ts` |
+| Python | `py_detect_envs` | `modules/python.rs` | `python/usePythonEnv.ts`, `ml/store.ts` |
+| Share server | `http_share_*` | `modules/http_share.rs` | `share/useShareServer.ts` |
+| Recording | `save_cast_recording` | `modules/recording.rs` | `terminal/lib/useRecording.ts` |
+| Crash reports | `list_crash_reports` | `modules/crash.rs` | (settings/diagnostics UI) |
+
+## Streaming: Channels, not events
+
+High-volume data uses `tauri::ipc::Channel` passed as a command argument, not global events:
+
+- `pty_open` takes `on_data: Channel<Response>` + `on_exit: Channel<i32>` (`pty/mod.rs`)
+- `ai_http_stream` takes `on_event: Channel<AiStreamEvent>` (`net.rs`)
+
+## Global events (`emit`/`listen`)
+
+Low-volume broadcast only. Frontend-to-frontend cross-window sync: `nexis://prefs-changed` (see [[settings-sync]]), `nexis://ai-keys-changed`, `nexis://ai-agents-changed`, `nexis://ai-snippets-changed`, `nexis://code-snippets-changed`, `nexis://custom-themes-changed`, `nexis://theme-edit`. Rust→frontend: `lsp:workspace:applyEdit`, `ml:proto`, `ml:exit`.
+
+## Adding a command — checklist
+
+1. `#[tauri::command]` fn in the right `modules/` file; subprocesses via `proc::command()` only (CLAUDE.md pitfall #4)
+2. Register it in `generate_handler![]` in `lib.rs` (forgetting this = runtime "command not found")
+3. Call it from the family's bridge file; if it takes a user-supplied cwd, call `workspace_authorize` first (pitfall #1C)
+4. Big/streaming payloads → `Channel`, not events

@@ -37,3 +37,6 @@ e2e/.drivers/
 wdio-*.json
 
 # Leftover source archives
+
+# Obsidian personal config (docs/vault is the shared vault; .obsidian is per-user)
+docs/vault/.obsidian/
