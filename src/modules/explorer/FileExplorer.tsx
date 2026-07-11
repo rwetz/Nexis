@@ -277,9 +277,31 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
         return null;
       };
 
+      // Abandon the drag without moving anything. Used when the mouseup was
+      // never delivered: released outside the window or a mid-drag focus
+      // steal (no pointer capture on these mousemove/mouseup listeners, and
+      // Wayland won't deliver the release to an unfocused surface). Without
+      // this, dragRef stays armed and the document-wide grabbing cursor
+      // sticks until some future mouseup inside the app.
+      const cancelDrag = () => {
+        dragRef.current = null;
+        targetDirRef.current = null;
+        clearHoverExpand();
+        setDragSource(null);
+        setDropTargetRow(null);
+      };
+      const onBlur = () => cancelDrag();
+
       const onMouseMove = (e: MouseEvent) => {
         const s = dragRef.current;
         if (!s) return;
+        // First move back inside after a swallowed mouseup arrives with no
+        // buttons held — the release happened where we couldn't see it, so
+        // cancel rather than drop onto whatever is under the pointer now.
+        if (e.buttons === 0) {
+          cancelDrag();
+          return;
+        }
         if (!s.dragging) {
           if (
             Math.abs(e.clientX - s.startX) < THRESHOLD &&
@@ -314,9 +336,11 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
 
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
+      window.addEventListener("blur", onBlur);
       return () => {
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
+        window.removeEventListener("blur", onBlur);
       };
     }, [clearHoverExpand]);
 
@@ -326,7 +350,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
       if (dragSource === null) return;
       const prevCursor = document.body.style.cursor;
       const prevSelect = document.body.style.userSelect;
-      document.body.style.cursor = "grabbing";
+      document.body.style.cursor = "url('/cursors/grabbing.png') 10 14, grabbing";
       document.body.style.userSelect = "none";
       return () => {
         document.body.style.cursor = prevCursor;

@@ -102,6 +102,16 @@ export function TabBar({
       const s = dragState.current;
       if (!s) return;
 
+      // The mouseup for this drag was swallowed (released outside the window
+      // — these listeners take no pointer capture, and Wayland won't deliver
+      // the release to an unfocused surface). The first move back inside
+      // arrives with no buttons held: finish the drag as a normal drop so
+      // the state and the document-wide grabbing cursor don't stay stuck.
+      if (e.buttons === 0) {
+        onMouseUp();
+        return;
+      }
+
       // Cross threshold → enter drag mode, snapshot current order
       if (!s.dragging) {
         if (Math.abs(e.clientX - s.startX) < 5) return;
@@ -162,11 +172,22 @@ export function TabBar({
       setDragOrder(null);
     };
 
+    // Focus stolen mid-drag (Alt-Tab, native window drag): abandon without
+    // committing a reorder the user never completed.
+    const onBlur = () => {
+      dragState.current = null;
+      dragOrderRef.current = null;
+      setDraggingId(null);
+      setDragOrder(null);
+    };
+
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("blur", onBlur);
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("blur", onBlur);
     };
   }, [onReorder]);
 

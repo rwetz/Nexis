@@ -15,6 +15,14 @@ function ResizablePanelGroup({
   return (
     <ResizablePrimitive.Group
       data-slot="resizable-panel-group"
+      // While a handle is hovered/dragged the library injects a global
+      // `*, *:hover { cursor: <resize> !important }` stylesheet. WebKitGTK is
+      // slow to re-evaluate the cursor when that rule toggles (and a dropped
+      // pointer event leaves it applied outright), so the resize cursor bled
+      // over neighboring UI — e.g. the file explorer next to the sidebar
+      // handle. Disable it; the handle carries its own cursor via CSS on
+      // [data-slot="resizable-handle"] in globals.css.
+      disableCursor
       className={cn(
         "flex h-full w-full aria-[orientation=vertical]:flex-col",
         className

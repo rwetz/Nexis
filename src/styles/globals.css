@@ -448,6 +448,17 @@ textarea,
 .cursor-nwse-resize  { cursor: url('/cursors/nwse_resize.png') 16 13,nwse-resize; }
 .cursor-zoom-in      { cursor: url('/cursors/zoom_in.png') 9 9,     zoom-in;      }
 .cursor-zoom-out     { cursor: url('/cursors/zoom_out.png') 9 9,    zoom-out;     }
+
+/* Panel resize handles: react-resizable-panels' global cursor rule is
+ * disabled (see components/ui/resizable.tsx), so the handle element itself
+ * carries the resize cursor. A separator's aria-orientation is the inverse
+ * of its group's orientation: vertical separator = column resize. */
+[data-slot="resizable-handle"] {
+  cursor: url('/cursors/col_resize.png') 16 13, col-resize;
+}
+[data-slot="resizable-handle"][aria-orientation="horizontal"] {
+  cursor: url('/cursors/row_resize.png') 16 13, row-resize;
+}
 .cursor-copy         { cursor: url('/cursors/copy.png') 5 5,        copy;         }
 .cursor-alias        { cursor: url('/cursors/alias.png') 5 5,       alias;        }
 
