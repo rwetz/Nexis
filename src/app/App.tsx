@@ -10,6 +10,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { WindowResizeEdges } from "@/components/WindowResizeEdges";
 import { QuickFilePicker } from "@/components/QuickFilePicker";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { WorkspaceSearch } from "@/components/WorkspaceSearch";
@@ -1526,6 +1527,9 @@ export default function App() {
       <MotionConfig reducedMotion="user" transition={{ duration: 0.2 }}>
       <TooltipProvider>
         <div className="relative flex h-screen flex-col overflow-hidden bg-background text-foreground">
+          {/* Outside .zoom-content on purpose — CSS zoom would scale the
+              fixed-position hit strips away from the real window edges. */}
+          <WindowResizeEdges />
           <Header
             tabs={tabs}
             activeId={activeId}

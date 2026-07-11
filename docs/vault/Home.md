@@ -30,6 +30,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[ai]] — agent loop, providers, tools, subagents, compaction
 - [[settings-sync]] — preferences storage and cross-window sync
 - [[editor]] — CodeMirror panes, shared extensions, autocomplete, zoom interplay
+- [[window-chrome]] — borderless chrome: decorations config, drag region, window controls, Linux edge resize
 
 ## Flows (`flows/`)
 
