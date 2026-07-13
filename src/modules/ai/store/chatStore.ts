@@ -553,6 +553,14 @@ export function hasKeyForModel(modelId: ModelId): boolean {
   return providerNeedsKey(provider) ? !!apiKeys[provider] : true;
 }
 
+/**
+ * UI update throttle for `useChat` subscribers, in ms. Without it every
+ * streamed part re-renders all four consumers (panel, mini window, bridge),
+ * and several of them re-scan the whole conversation per token. 50 ms is
+ * imperceptible next to token cadence but caps the re-render rate at 20/s.
+ */
+export const STREAM_THROTTLE_MS = 50;
+
 export function getOrCreateChat(sessionId: string): Chat<UIMessage> {
   const existing = chats.get(sessionId);
   if (existing) {

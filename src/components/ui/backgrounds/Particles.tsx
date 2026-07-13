@@ -6,6 +6,7 @@
 
 import { Renderer, Camera, Geometry, Program, Mesh } from "ogl";
 import { useEffect, useRef } from "react";
+import { runRafLoopWhileVisible } from "./rafLoop";
 
 const vertex = /* glsl */ `
   attribute vec3 position;
@@ -155,25 +156,23 @@ export function ParticlesBackground({
 
     const particles = new Mesh(gl, { mode: gl.POINTS, geometry, program });
 
-    let rafId: number;
     let lastTime = performance.now();
     let elapsed = 0;
 
-    const update = (t: number) => {
-      rafId = requestAnimationFrame(update);
-      elapsed += (t - lastTime) * speed;
+    const stopLoop = runRafLoopWhileVisible((t) => {
+      // Clamp the delta so time doesn't leap after a hidden-window pause.
+      elapsed += Math.min(t - lastTime, 100) * speed;
       lastTime = t;
       (program.uniforms as Record<string, { value: unknown }>).uTime.value = elapsed * 0.001;
       particles.rotation.x = Math.sin(elapsed * 0.0002) * 0.1;
       particles.rotation.y = Math.cos(elapsed * 0.0005) * 0.15;
       (particles.rotation as { z: number }).z += 0.01 * speed;
       renderer.render({ scene: particles, camera });
-    };
-    rafId = requestAnimationFrame(update);
+    });
 
     return () => {
       window.removeEventListener("resize", resize);
-      cancelAnimationFrame(rafId);
+      stopLoop();
       if (container.contains(gl.canvas)) container.removeChild(gl.canvas);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

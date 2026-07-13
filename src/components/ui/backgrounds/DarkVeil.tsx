@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { memo, useEffect, useRef } from "react";
+import { runRafLoopWhileVisible } from "./rafLoop";
 import { Renderer, Program, Mesh, Triangle, Vec2 } from "ogl";
 
 const vertex = /* glsl */`
@@ -148,9 +149,8 @@ export const DarkVeilBackground = memo(function DarkVeilBackground({
     resize();
 
     const start = performance.now();
-    let frame = 0;
 
-    const loop = () => {
+    const stopLoop = runRafLoopWhileVisible(() => {
       const p = propsRef.current;
       program.uniforms.uTime.value  = ((performance.now() - start) / 1000) * p.speed;
       program.uniforms.uHueShift.value  = p.hueShift;
@@ -159,13 +159,10 @@ export const DarkVeilBackground = memo(function DarkVeilBackground({
       program.uniforms.uScanFreq.value  = p.scanlineFrequency;
       program.uniforms.uWarp.value      = p.warpAmount;
       renderer.render({ scene: mesh });
-      frame = requestAnimationFrame(loop);
-    };
-
-    loop();
+    });
 
     return () => {
-      cancelAnimationFrame(frame);
+      stopLoop();
       ro.disconnect();
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };

@@ -38,7 +38,7 @@ import { useEffect, useMemo } from "react";
 import { estimateCost, getModel, getModelContextLimit } from "../config";
 import type { SessionMeta } from "../lib/sessions";
 import { useAgentsStore } from "../store/agentsStore";
-import { getOrCreateChat, useChatStore } from "../store/chatStore";
+import { getOrCreateChat, STREAM_THROTTLE_MS, useChatStore } from "../store/chatStore";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { usePlanStore } from "../store/planStore";
 import { AgentSwitcher } from "./AgentSwitcher";
@@ -137,7 +137,10 @@ function Body({
   const composer = useComposer();
 
   const chat = useMemo(() => getOrCreateChat(sessionId), [sessionId]);
-  const helpers = useChat<UIMessage>({ chat });
+  const helpers = useChat<UIMessage>({
+    chat,
+    experimental_throttle: STREAM_THROTTLE_MS,
+  });
   const isBusy =
     helpers.status === "submitted" || helpers.status === "streaming";
 

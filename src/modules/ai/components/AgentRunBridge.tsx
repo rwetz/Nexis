@@ -13,6 +13,7 @@ import { resolvePath } from "../tools/tools";
 import {
   flushPersist,
   getOrCreateChat,
+  STREAM_THROTTLE_MS,
   useChatStore,
   type AgentRunStatus,
 } from "../store/chatStore";
@@ -68,6 +69,7 @@ function Bridge({
   const chat = useMemo(() => getOrCreateChat(sessionId), [sessionId]);
   const { status, messages, addToolApprovalResponse } = useChat<UIMessage>({
     chat,
+    experimental_throttle: STREAM_THROTTLE_MS,
   });
   const patch = useChatStore((s) => s.patchAgentMeta);
   const openMini = useChatStore((s) => s.openMini);

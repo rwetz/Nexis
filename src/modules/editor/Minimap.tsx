@@ -6,7 +6,8 @@
 
 import { cn } from "@/lib/utils";
 import type { EditorView } from "@codemirror/view";
-import { useCallback, useEffect, useRef, useState } from "react";
+import type { Text } from "@codemirror/state";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 type Props = {
   view: EditorView | undefined;
@@ -14,24 +15,19 @@ type Props = {
 };
 
 type MinimapState = {
+  /** Stable reference while the document is unchanged — keyed on doc identity
+   * so the memoized line strips skip re-rendering on scroll/interval ticks. */
   lines: string[];
   viewportTop: number;
   viewportHeight: number;
 };
 
-function getMinimapState(view: EditorView): MinimapState {
-  const doc = view.state.doc;
+function extractLines(doc: Text): string[] {
   const lines: string[] = [];
   for (let i = 1; i <= doc.lines; i++) {
     lines.push(doc.line(i).text);
   }
-  const dom = view.scrollDOM;
-  const totalHeight = Math.max(dom.scrollHeight, 1);
-  return {
-    lines,
-    viewportTop: dom.scrollTop / totalHeight,
-    viewportHeight: Math.min(1, dom.clientHeight / totalHeight),
-  };
+  return lines;
 }
 
 function lineClass(text: string): string {
@@ -43,24 +39,97 @@ function lineClass(text: string): string {
   return "bg-foreground/30";
 }
 
+/**
+ * Line strips, memoized on the `lines` array reference. Extracting every doc
+ * line and diffing one div per line used to happen 5×/sec on an interval AND
+ * per scroll event — on a 10k-line file that was the biggest editor-side CPU
+ * sink. Now it only happens when the document actually changes.
+ */
+const MinimapLines = memo(function MinimapLines({
+  lines,
+  lineHeightPx,
+}: {
+  lines: string[];
+  lineHeightPx: number;
+}) {
+  return (
+    <div className="absolute inset-0 flex flex-col py-0.5">
+      {lines.map((text, i) => {
+        const maxWidth = 48;
+        const cls = lineClass(text);
+        if (!cls) {
+          return (
+            <div key={i} style={{ height: `${lineHeightPx}px` }} />
+          );
+        }
+        const contentWidth = Math.min(maxWidth, Math.max(2, (text.trim().length / 80) * maxWidth));
+        return (
+          <div
+            key={i}
+            className={cn("rounded-[1px]", cls)}
+            style={{ height: `${lineHeightPx}px`, width: `${contentWidth}px`, marginLeft: "2px" }}
+          />
+        );
+      })}
+    </div>
+  );
+});
+
 export function Minimap({ view, className }: Props) {
   const [state, setState] = useState<MinimapState | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
+  const lastDocRef = useRef<Text | null>(null);
+  const linesRef = useRef<string[]>([]);
+  const scrollRaf = useRef<number | null>(null);
 
   const refresh = useCallback(() => {
     if (!view) return;
-    setState(getMinimapState(view));
+    const doc = view.state.doc;
+    if (lastDocRef.current !== doc) {
+      lastDocRef.current = doc;
+      linesRef.current = extractLines(doc);
+    }
+    const lines = linesRef.current;
+    const dom = view.scrollDOM;
+    const totalHeight = Math.max(dom.scrollHeight, 1);
+    const viewportTop = dom.scrollTop / totalHeight;
+    const viewportHeight = Math.min(1, dom.clientHeight / totalHeight);
+    // Bail out with the previous state object when nothing changed so the
+    // idle interval tick doesn't re-render at all.
+    setState((prev) =>
+      prev &&
+      prev.lines === lines &&
+      prev.viewportTop === viewportTop &&
+      prev.viewportHeight === viewportHeight
+        ? prev
+        : { lines, viewportTop, viewportHeight },
+    );
   }, [view]);
 
   useEffect(() => {
     if (!view) return;
+    lastDocRef.current = null;
     refresh();
+    // Interval catches doc edits (there is no update-listener hook from here);
+    // it's cheap now — line extraction only runs when the doc reference moved.
     const interval = setInterval(refresh, 200);
-    const onScroll = () => refresh();
+    // Scroll only moves the viewport indicator; coalesce to one refresh per
+    // frame instead of one per scroll event.
+    const onScroll = () => {
+      if (scrollRaf.current !== null) return;
+      scrollRaf.current = requestAnimationFrame(() => {
+        scrollRaf.current = null;
+        refresh();
+      });
+    };
     view.scrollDOM.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       clearInterval(interval);
+      if (scrollRaf.current !== null) {
+        cancelAnimationFrame(scrollRaf.current);
+        scrollRaf.current = null;
+      }
       view.scrollDOM.removeEventListener("scroll", onScroll);
     };
   }, [view, refresh]);
@@ -100,26 +169,7 @@ export function Minimap({ view, className }: Props) {
       )}
       onMouseDown={onMouseDown}
     >
-      {/* Line strips */}
-      <div className="absolute inset-0 flex flex-col py-0.5">
-        {lines.map((text, i) => {
-          const maxWidth = 48;
-          const cls = lineClass(text);
-          if (!cls) {
-            return (
-              <div key={i} style={{ height: `${lineHeightPx}px` }} />
-            );
-          }
-          const contentWidth = Math.min(maxWidth, Math.max(2, (text.trim().length / 80) * maxWidth));
-          return (
-            <div
-              key={i}
-              className={cn("rounded-[1px]", cls)}
-              style={{ height: `${lineHeightPx}px`, width: `${contentWidth}px`, marginLeft: "2px" }}
-            />
-          );
-        })}
-      </div>
+      <MinimapLines lines={lines} lineHeightPx={lineHeightPx} />
 
       {/* Viewport indicator */}
       <div

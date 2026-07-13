@@ -49,7 +49,7 @@ import { PlanDiffReview } from "./PlanDiffReview";
 import { TodoStrip } from "./TodoStrip";
 import { estimateCost, getModel, getModelContextLimit } from "../config";
 import type { SessionMeta } from "../lib/sessions";
-import { getOrCreateChat, useChatStore } from "../store/chatStore";
+import { getOrCreateChat, STREAM_THROTTLE_MS, useChatStore } from "../store/chatStore";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { usePlanStore } from "../store/planStore";
 
@@ -472,7 +472,10 @@ function PlanModeStrip() {
 
 function ChatAreaInner({ sessionId }: { sessionId: string }) {
   const chat = useMemo(() => getOrCreateChat(sessionId), [sessionId]);
-  const helpers = useChat<UIMessage>({ chat });
+  const helpers = useChat<UIMessage>({
+    chat,
+    experimental_throttle: STREAM_THROTTLE_MS,
+  });
 
   return (
     <div className="flex min-h-0 flex-1 flex-col [&_.text-sm]:text-[12px] [&_p]:leading-relaxed">
@@ -680,7 +683,10 @@ export function FloatingAiPanel() {
     () => (sessionId ? getOrCreateChat(sessionId) : null),
     [sessionId],
   );
-  const helpers = useChat<UIMessage>({ chat: chat! });
+  const helpers = useChat<UIMessage>({
+    chat: chat!,
+    experimental_throttle: STREAM_THROTTLE_MS,
+  });
   const messages = chat ? helpers.messages : [];
 
   // ── Drag ──────────────────────────────────────────────────────────────────

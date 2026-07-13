@@ -1500,11 +1500,16 @@ function ProgressBlock({
   const lastValues = useMlStore((s) => s.lastValues);
   const [, forceTick] = useState(0);
 
-  // 1 Hz repaint for the elapsed timer while training.
+  // 1 Hz repaint for the elapsed timer — only while the run is actually
+  // ticking. Unconditional, this re-rendered the whole panel every second
+  // even for a finished/paused run left open in the sidebar.
+  const timerActive =
+    ["starting", "running", "cancelling"].includes(run.status) && !run.paused;
   useEffect(() => {
+    if (!timerActive) return;
     const t = window.setInterval(() => forceTick((n) => n + 1), 1000);
     return () => window.clearInterval(t);
-  }, []);
+  }, [timerActive]);
 
   const names = Object.keys(lastValues);
   const hero = headlineMetric(names);

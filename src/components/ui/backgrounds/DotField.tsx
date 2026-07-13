@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { memo, useEffect, useRef } from "react";
+import { runRafLoopWhileVisible } from "./rafLoop";
 
 const TWO_PI = Math.PI * 2;
 
@@ -51,7 +52,6 @@ export const DotFieldBackground = memo(function DotFieldBackground({
   const glowRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<Dot[]>([]);
   const mouseRef = useRef({ x: -9999, y: -9999, prevX: -9999, prevY: -9999, speed: 0 });
-  const rafRef = useRef(0);
   const sizeRef = useRef({ w: 0, h: 0 });
   const glowOpacityRef = useRef(0);
   const engagementRef = useRef(0);
@@ -101,12 +101,14 @@ export const DotFieldBackground = memo(function DotFieldBackground({
         }
       }
       dotsRef.current = dots;
+      idleFrames = 0; // grid changed — repaint even if at rest
     }
 
     function onMouseMove(e: MouseEvent) {
       const rect = container!.getBoundingClientRect();
       mouseRef.current.x = e.clientX - rect.left;
       mouseRef.current.y = e.clientY - rect.top;
+      idleFrames = 0; // wake the at-rest fast path immediately
     }
 
     function updateMouseSpeed() {
@@ -120,10 +122,40 @@ export const DotFieldBackground = memo(function DotFieldBackground({
       m.prevY = m.y;
     }
 
-    const speedInterval = setInterval(updateMouseSpeed, 20);
+    // Mouse-speed sampling happens inside the rAF tick (every ~20 ms by
+    // timestamp) instead of on a separate 50 Hz interval — intervals keep
+    // firing while the window is hidden; the rAF loop pauses with it.
+    let lastSpeedSample = 0;
     let frameCount = 0;
+    // Frames spent fully at rest (no engagement, no wave/sparkle). Past the
+    // settle window we skip clear+redraw entirely — the canvas already shows
+    // the settled state, so an idle window costs ~zero CPU/GPU.
+    let idleFrames = 0;
+    const IDLE_SETTLE_FRAMES = 120; // ~2 s: lets the lerp-back fully converge
+    // The fill gradient only depends on size + colors — rebuilding it (and
+    // re-parsing two color stops) every frame was pure waste.
+    let cachedGrad: CanvasGradient | null = null;
+    let cachedGradKey = "";
 
-    function tick() {
+    function tick(now: number) {
+      if (now - lastSpeedSample >= 20) {
+        lastSpeedSample = now;
+        updateMouseSpeed();
+      }
+
+      const p0 = propsRef.current;
+      const atRest =
+        engagementRef.current === 0 &&
+        mouseRef.current.speed === 0 &&
+        p0.waveAmplitude <= 0 &&
+        !p0.sparkle;
+      if (atRest) {
+        if (idleFrames >= IDLE_SETTLE_FRAMES) return; // fully settled — skip
+        idleFrames++;
+      } else {
+        idleFrames = 0;
+      }
+
       frameCount++;
       const dots = dotsRef.current;
       const m = mouseRef.current;
@@ -146,10 +178,14 @@ export const DotFieldBackground = memo(function DotFieldBackground({
       }
 
       ctx!.clearRect(0, 0, w, h);
-      const grad = ctx!.createLinearGradient(0, 0, w, h);
-      grad.addColorStop(0, p.gradientFrom);
-      grad.addColorStop(1, p.gradientTo);
-      ctx!.fillStyle = grad;
+      const gradKey = `${w}x${h}:${p.gradientFrom}:${p.gradientTo}`;
+      if (!cachedGrad || cachedGradKey !== gradKey) {
+        cachedGrad = ctx!.createLinearGradient(0, 0, w, h);
+        cachedGrad.addColorStop(0, p.gradientFrom);
+        cachedGrad.addColorStop(1, p.gradientTo);
+        cachedGradKey = gradKey;
+      }
+      ctx!.fillStyle = cachedGrad;
 
       const cr = p.cursorRadius;
       const crSq = cr * cr;
@@ -213,8 +249,6 @@ export const DotFieldBackground = memo(function DotFieldBackground({
         }
       }
       ctx!.fill();
-
-      rafRef.current = requestAnimationFrame(tick);
     }
 
     function onResize() {
@@ -225,7 +259,7 @@ export const DotFieldBackground = memo(function DotFieldBackground({
     doResize();
     window.addEventListener("resize", onResize);
     window.addEventListener("mousemove", onMouseMove, { passive: true });
-    rafRef.current = requestAnimationFrame(tick);
+    const stopLoop = runRafLoopWhileVisible(tick);
 
     rebuildRef.current = () => {
       const { w, h } = sizeRef.current;
@@ -233,8 +267,7 @@ export const DotFieldBackground = memo(function DotFieldBackground({
     };
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      clearInterval(speedInterval);
+      stopLoop();
       clearTimeout(resizeTimer);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("mousemove", onMouseMove);

@@ -6,6 +6,7 @@
 
 import { Renderer, Program, Mesh, Triangle, Color } from "ogl";
 import { useEffect, useRef } from "react";
+import { runRafLoopWhileVisible } from "./rafLoop";
 
 const vertexShader = `
 attribute vec2 position;
@@ -119,7 +120,6 @@ export function ThreadsBackground({
   opacity = 0.5,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number>(0);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -169,15 +169,13 @@ export function ThreadsBackground({
     window.addEventListener("resize", resize);
     resize();
 
-    const update = (t: number) => {
+    const stopLoop = runRafLoopWhileVisible((t) => {
       (program.uniforms as Record<string, { value: unknown }>).iTime.value = t * 0.001;
       renderer.render({ scene: mesh });
-      rafRef.current = requestAnimationFrame(update);
-    };
-    rafRef.current = requestAnimationFrame(update);
+    });
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
+      stopLoop();
       window.removeEventListener("resize", resize);
       if (container.contains(gl.canvas)) container.removeChild(gl.canvas);
       gl.getExtension("WEBGL_lose_context")?.loseContext();

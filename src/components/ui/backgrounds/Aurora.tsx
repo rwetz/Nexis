@@ -6,6 +6,7 @@
 
 import { Renderer, Program, Mesh, Color, Triangle } from "ogl";
 import { useEffect, useRef } from "react";
+import { runRafLoopWhileVisible } from "./rafLoop";
 
 const VERT = `#version 300 es
 in vec2 position;
@@ -175,9 +176,7 @@ export function AuroraBackground({
     const mesh = new Mesh(gl, { geometry, program });
     ctn.appendChild(gl.canvas);
 
-    let rafId = 0;
-    const update = (t: number) => {
-      rafId = requestAnimationFrame(update);
+    const stopLoop = runRafLoopWhileVisible((t) => {
       const p = propsRef.current;
       const uniforms = program!.uniforms as Record<string, { value: unknown }>;
       uniforms.uTime.value = t * 0.001 * (p.speed ?? 1);
@@ -185,12 +184,11 @@ export function AuroraBackground({
       uniforms.uBlend.value = p.blend ?? 0.5;
       uniforms.uColorStops.value = (p.colorStops ?? colorStops).map(toRgb);
       renderer.render({ scene: mesh });
-    };
-    rafId = requestAnimationFrame(update);
+    });
     resize();
 
     return () => {
-      cancelAnimationFrame(rafId);
+      stopLoop();
       window.removeEventListener("resize", resize);
       if (gl.canvas.parentNode === ctn) ctn.removeChild(gl.canvas);
       gl.getExtension("WEBGL_lose_context")?.loseContext();
