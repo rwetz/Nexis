@@ -70,8 +70,8 @@ import { PreviewStack, type PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
 import { openNewWindow } from "@/modules/window/openNewWindow";
 import { WelcomeScreen } from "./WelcomeScreen";
-import { SettingsDialog } from "@/settings/SettingsDialog";
 import { usePreferencesStore } from "@/modules/settings/preferences";
+import { useSettingsDialogStore } from "@/modules/settings/settingsDialogStore";
 import { onKeysChanged, setTerminalEnvVars } from "@/modules/settings/store";
 import {
   ShortcutsDialog,
@@ -85,7 +85,6 @@ import { ProblemsPanel } from "@/modules/problems/ProblemsPanel";
 import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
 import { SnippetsPanel } from "@/modules/snippets";
 import { TestRunnerPanel } from "@/modules/testrunner";
-import { DatabasePanel } from "@/modules/database/DatabasePanel";
 import { BuildPanel } from "@/modules/build/BuildPanel";
 import { CodeReviewPanel } from "@/modules/code-review";
 import { SharePanel } from "@/modules/share";
@@ -100,9 +99,6 @@ import { PortsPanel } from "@/modules/ports";
 import { ProfilesPanel } from "@/modules/profiles";
 import { ReplPanel, sendToRepl } from "@/modules/repl";
 import { ReleasePanel } from "@/modules/release";
-import { MlPanel } from "@/modules/ml";
-import { DebuggerPanel } from "@/modules/debugger/DebuggerPanel";
-import { DebugToolbar } from "@/modules/debugger/DebugToolbar";
 import {
   SourceControlPanel,
   useSourceControl,
@@ -159,6 +155,23 @@ const NotebookStackLazy = lazy(() =>
 );
 const ImageStackLazy = lazy(() =>
   import("@/modules/image-viewer").then((m) => ({ default: m.ImageStack })),
+);
+// Heavy, rarely-open panels: keep them out of the main chunk so app startup
+// doesn't pay their parse cost. Same pattern as the tab stacks above.
+const SettingsDialogLazy = lazy(() =>
+  import("@/settings/SettingsDialog").then((m) => ({ default: m.SettingsDialog })),
+);
+const MlPanelLazy = lazy(() =>
+  import("@/modules/ml/MlPanel").then((m) => ({ default: m.MlPanel })),
+);
+const DatabasePanelLazy = lazy(() =>
+  import("@/modules/database/DatabasePanel").then((m) => ({ default: m.DatabasePanel })),
+);
+const DebuggerPanelLazy = lazy(() =>
+  import("@/modules/debugger/DebuggerPanel").then((m) => ({ default: m.DebuggerPanel })),
+);
+const DebugToolbarLazy = lazy(() =>
+  import("@/modules/debugger/DebugToolbar").then((m) => ({ default: m.DebugToolbar })),
 );
 
 
@@ -265,6 +278,11 @@ export default function App() {
 
   const [home, setHome] = useState<string | null>(null);
   const [pendingCloseTab, setPendingCloseTab] = useState<number | null>(null);
+  // Mount the (lazy) settings dialog only once it has been opened, then keep
+  // it mounted so the Radix close animation still plays on later closes.
+  const settingsOpen = useSettingsDialogStore((s) => s.isOpen);
+  const settingsEverOpenedRef = useRef(false);
+  if (settingsOpen) settingsEverOpenedRef.current = true;
   const workspaceEnv = useWorkspaceEnvStore((s) => s.env);
   const setWorkspaceEnv = useWorkspaceEnvStore((s) => s.setEnv);
   const [launchCwd, setLaunchCwd] = useState<string | null>(null);
@@ -1625,7 +1643,7 @@ export default function App() {
                     ) : sidebarView === "tests" ? (
                       <TestRunnerPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "database" ? (
-                      <DatabasePanel />
+                      <Suspense fallback={null}><DatabasePanelLazy /></Suspense>
                     ) : sidebarView === "build" ? (
                       <BuildPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "code-review" ? (
@@ -1671,16 +1689,16 @@ export default function App() {
                     ) : sidebarView === "debugger" ? (
                       <div className="flex h-full flex-col">
                         <div className="flex shrink-0 items-center border-b border-border/40 px-1 py-1">
-                          <DebugToolbar />
+                          <Suspense fallback={null}><DebugToolbarLazy /></Suspense>
                         </div>
                         <div className="min-h-0 flex-1 overflow-hidden">
-                          <DebuggerPanel />
+                          <Suspense fallback={null}><DebuggerPanelLazy /></Suspense>
                         </div>
                       </div>
                     ) : sidebarView === "release" ? (
                       <ReleasePanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "ml" ? (
-                      <MlPanel workspaceRoot={explorerRoot} />
+                      <Suspense fallback={null}><MlPanelLazy workspaceRoot={explorerRoot} /></Suspense>
                     ) : (
                       <SourceControlPanel
                         open
@@ -1832,7 +1850,11 @@ export default function App() {
             onOpenChange={setShortcutsOpen}
           />
 
-          <SettingsDialog />
+          {(settingsOpen || settingsEverOpenedRef.current) && (
+            <Suspense fallback={null}>
+              <SettingsDialogLazy />
+            </Suspense>
+          )}
 
           <NewEditorDialog
             open={newEditorOpen}

@@ -12,7 +12,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
 import { SerializeAddon } from "@xterm/addon-serialize";
 import { WebLinksAddon } from "@xterm/addon-web-links";
-import { WebglAddon } from "@xterm/addon-webgl";
+import type { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import { terminalWordNavigationSequence } from "./keymap";
 
@@ -629,7 +629,36 @@ const WEBGL_MAX_LOSSES = 3;
  * still gets a fresh recovery attempt rather than counting toward the cap. */
 const WEBGL_STABILITY_RESET_MS = 60_000;
 
+/**
+ * Lazy import of the WebGL addon (~110 KB GPU pipeline). vite.config.ts
+ * splits it into its own chunk precisely so the terminal doesn't pull it in
+ * upfront — a static import here re-eagered it into the startup preload set.
+ * The pre-check flags (webglAddon/webglGaveUp/pref) are re-validated after
+ * the await in attachWebgl, so a toggle during the load can't double-attach.
+ */
+let webglModule: Promise<typeof import("@xterm/addon-webgl")> | null = null;
+function loadWebglAddon(): Promise<typeof import("@xterm/addon-webgl")> {
+  webglModule ??= import("@xterm/addon-webgl").catch((e) => {
+    webglModule = null;
+    throw e;
+  });
+  return webglModule;
+}
+
 function attachWebgl(slot: Slot): void {
+  if (slot.webglAddon || !slot.term.element) return;
+  if (slot.webglGaveUp) return;
+  if (!usePreferencesStore.getState().terminalWebglEnabled) return;
+  loadWebglAddon()
+    .then(({ WebglAddon }) => attachWebglWith(slot, WebglAddon))
+    .catch((e) => console.warn("[nexis-webgl] addon load failed:", e));
+}
+
+function attachWebglWith(
+  slot: Slot,
+  WebglAddon: typeof import("@xterm/addon-webgl").WebglAddon,
+): void {
+  // Re-check: state may have changed while the chunk loaded.
   if (slot.webglAddon || !slot.term.element) return;
   if (slot.webglGaveUp) return;
   if (!usePreferencesStore.getState().terminalWebglEnabled) return;

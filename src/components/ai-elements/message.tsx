@@ -21,16 +21,25 @@ import type { UIMessage } from "ai";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import {
   createContext,
+  lazy,
   memo,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { Streamdown } from "streamdown";
+import type { Streamdown } from "streamdown";
 import { ChatStreamingProvider } from "./chat-code";
 import { MarkdownCode } from "./markdown-code";
+
+// Lazy: a static import would put the whole remark/rehype/micromark pipeline
+// (~480 KB) in the startup preload set for every user, AI panel opened or not.
+// Loads on the first rendered assistant message instead.
+const StreamdownLazy = lazy(() =>
+  import("streamdown").then((m) => ({ default: m.Streamdown })),
+);
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -332,14 +341,16 @@ const streamdownComponents = { code: MarkdownCode };
 export const MessageResponse = memo(
   ({ className, streaming = false, ...props }: MessageResponseProps) => (
     <ChatStreamingProvider value={streaming}>
-      <Streamdown
-        className={cn(
-          "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-          className,
-        )}
-        components={streamdownComponents}
-        {...props}
-      />
+      <Suspense fallback={null}>
+        <StreamdownLazy
+          className={cn(
+            "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+            className,
+          )}
+          components={streamdownComponents}
+          {...props}
+        />
+      </Suspense>
     </ChatStreamingProvider>
   ),
   (prevProps, nextProps) =>

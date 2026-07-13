@@ -15,8 +15,11 @@
 import type { Plugin } from "@/lib/plugins/types";
 import { combineDisposables } from "@/lib/plugins/types";
 import { createElement } from "react";
-import { MlStatusPill } from "@/modules/ml";
-import { initMlSubscriptions } from "@/modules/ml";
+// Import from the concrete files, not the "@/modules/ml" barrel — the barrel
+// re-exports MlPanel (2k+ lines), which would drag the whole panel into the
+// main chunk and defeat App.tsx's lazy `import("@/modules/ml/MlPanel")`.
+import { MlStatusPill } from "@/modules/ml/MlStatusPill";
+import { initMlSubscriptions } from "@/modules/ml/store";
 
 export const mlPlugin: Plugin = {
   id: "nexis.ml",

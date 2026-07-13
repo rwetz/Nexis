@@ -36,7 +36,26 @@ export default defineConfig(async ({ mode }) => ({
       },
       output: {
         manualChunks(id: string) {
+          // Vite/Rollup helper virtual modules (preload helper, commonjs
+          // interop). Left unassigned, Rollup colocates them in whichever
+          // chunk references them first — which can be a lazy manual chunk,
+          // silently forcing it into the startup preload set. Checked before
+          // the node_modules guard because virtual ids have no path.
+          if (id.includes("vite/preload-helper") || id.includes("commonjsHelpers"))
+            return "ui-utils";
+
           if (!id.includes("node_modules")) return;
+
+          // Ubiquitous tiny utils imported by nearly every component (cn()).
+          // Same colocation hazard as above: without an explicit assignment,
+          // tailwind-merge + clsx actually landed inside the lazy `streamdown`
+          // chunk, making main statically import it and defeating its split.
+          if (
+            id.includes("/tailwind-merge/") ||
+            id.includes("/clsx/") ||
+            id.includes("/class-variance-authority/")
+          )
+            return "ui-utils";
 
           // ── AI provider SDKs ───────────────────────────────────────────────
           // Each provider in its own chunk — unused providers don't bloat the
