@@ -19,6 +19,7 @@ use std::time::Duration;
 
 use serde::Serialize;
 use shared_child::SharedChild;
+use tauri::Manager;
 
 #[cfg(windows)]
 use crate::modules::workspace::validate_wsl_distro_name;
@@ -174,35 +175,44 @@ impl Default for ShellState {
 }
 
 #[tauri::command]
-pub fn shell_session_open(
-    state: tauri::State<ShellState>,
-    registry: tauri::State<WorkspaceRegistry>,
+pub async fn shell_session_open(
+    app: tauri::AppHandle,
     cwd: Option<String>,
     workspace: Option<WorkspaceEnv>,
 ) -> Result<u32, String> {
-    let workspace = WorkspaceEnv::from_option(workspace);
-    authorize_spawn_cwd(&registry, cwd.as_deref(), &workspace)?;
-    let initial = match cwd.as_deref().filter(|s| !s.is_empty()) {
-        Some(c) => c.to_string(),
-        None => {
-            if let WorkspaceEnv::Wsl { distro } = &workspace {
-                crate::modules::workspace::wsl_home(distro.clone())?
-            } else {
-                crate::modules::fs::to_canon(dirs::home_dir().unwrap_or_else(|| PathBuf::from("/")))
+    // Heavy: resolving the initial cwd can spawn `wsl.exe` (cold WSL start is
+    // seconds). State is re-fetched from the AppHandle inside the closure —
+    // same pattern as git/commands.rs `blocking`.
+    crate::modules::heavy(move || {
+        let state = app.state::<ShellState>();
+        let registry = app.state::<WorkspaceRegistry>();
+        let workspace = WorkspaceEnv::from_option(workspace);
+        authorize_spawn_cwd(&registry, cwd.as_deref(), &workspace)?;
+        let initial = match cwd.as_deref().filter(|s| !s.is_empty()) {
+            Some(c) => c.to_string(),
+            None => {
+                if let WorkspaceEnv::Wsl { distro } = &workspace {
+                    crate::modules::workspace::wsl_home_blocking(distro.clone())?
+                } else {
+                    crate::modules::fs::to_canon(
+                        dirs::home_dir().unwrap_or_else(|| PathBuf::from("/")),
+                    )
+                }
             }
-        }
-    };
-    let session = Arc::new(ShellSession::new(initial, workspace));
-    let id = state.next_session_id.fetch_add(1, Ordering::Relaxed);
-    // Poison recovery on all session/bg map locks in this module: these run in
-    // Tauri command handlers, where a panic kills the worker thread (pitfall #9)
-    // and a poisoned map would otherwise brick every shell tool call (pitfall #8).
-    state
-        .sessions
-        .write()
-        .unwrap_or_else(|e| e.into_inner())
-        .insert(id, session);
-    Ok(id)
+        };
+        let session = Arc::new(ShellSession::new(initial, workspace));
+        let id = state.next_session_id.fetch_add(1, Ordering::Relaxed);
+        // Poison recovery on all session/bg map locks in this module: these run in
+        // Tauri command handlers, where a panic kills the worker thread (pitfall #9)
+        // and a poisoned map would otherwise brick every shell tool call (pitfall #8).
+        state
+            .sessions
+            .write()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(id, session);
+        Ok(id)
+    })
+    .await
 }
 
 #[tauri::command]
@@ -249,23 +259,27 @@ pub fn shell_session_close(state: tauri::State<ShellState>, id: u32) -> Result<(
 }
 
 #[tauri::command]
-pub fn shell_bg_spawn(
-    state: tauri::State<ShellState>,
-    registry: tauri::State<WorkspaceRegistry>,
+pub async fn shell_bg_spawn(
+    app: tauri::AppHandle,
     command: String,
     cwd: Option<String>,
     workspace: Option<WorkspaceEnv>,
 ) -> Result<u32, String> {
-    let workspace = WorkspaceEnv::from_option(workspace);
-    authorize_spawn_cwd(&registry, cwd.as_deref(), &workspace)?;
-    let proc = background::spawn(command, cwd, workspace)?;
-    let id = state.next_bg_id.fetch_add(1, Ordering::Relaxed);
-    state
-        .bg
-        .write()
-        .unwrap_or_else(|e| e.into_inner())
-        .insert(id, proc);
-    Ok(id)
+    crate::modules::heavy(move || {
+        let state = app.state::<ShellState>();
+        let registry = app.state::<WorkspaceRegistry>();
+        let workspace = WorkspaceEnv::from_option(workspace);
+        authorize_spawn_cwd(&registry, cwd.as_deref(), &workspace)?;
+        let proc = background::spawn(command, cwd, workspace)?;
+        let id = state.next_bg_id.fetch_add(1, Ordering::Relaxed);
+        state
+            .bg
+            .write()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(id, proc);
+        Ok(id)
+    })
+    .await
 }
 
 #[tauri::command]
@@ -478,8 +492,10 @@ const SEARCH_MAX_LIMIT: usize = 500;
 ///
 /// Returns an empty list on any error (missing file, permission denied, etc.).
 #[tauri::command]
-pub fn read_shell_history() -> Vec<String> {
-    load_history(HISTORY_HARD_CAP)
+pub async fn read_shell_history() -> Vec<String> {
+    tauri::async_runtime::spawn_blocking(|| load_history(HISTORY_HARD_CAP))
+        .await
+        .unwrap_or_default()
 }
 
 /// Search history in Rust and return only matching entries.
@@ -494,23 +510,27 @@ pub fn read_shell_history() -> Vec<String> {
 ///
 /// Returns entries newest-first.
 #[tauri::command]
-pub fn search_shell_history(query: String, limit: Option<usize>) -> Vec<String> {
-    let cap = limit
-        .unwrap_or(SEARCH_DEFAULT_LIMIT)
-        .clamp(1, SEARCH_MAX_LIMIT);
+pub async fn search_shell_history(query: String, limit: Option<usize>) -> Vec<String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let cap = limit
+            .unwrap_or(SEARCH_DEFAULT_LIMIT)
+            .clamp(1, SEARCH_MAX_LIMIT);
 
-    let history = load_history(HISTORY_HARD_CAP);
+        let history = load_history(HISTORY_HARD_CAP);
 
-    if query.is_empty() {
-        return history.into_iter().take(cap).collect();
-    }
+        if query.is_empty() {
+            return history.into_iter().take(cap).collect();
+        }
 
-    let q = query.to_lowercase();
-    history
-        .into_iter()
-        .filter(|cmd| cmd.to_lowercase().contains(&q))
-        .take(cap)
-        .collect()
+        let q = query.to_lowercase();
+        history
+            .into_iter()
+            .filter(|cmd| cmd.to_lowercase().contains(&q))
+            .take(cap)
+            .collect()
+    })
+    .await
+    .unwrap_or_default()
 }
 
 fn drain<R: Read>(reader: &mut R) -> (Vec<u8>, bool) {

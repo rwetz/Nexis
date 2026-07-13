@@ -468,7 +468,14 @@ pub async fn wsl_default_distro() -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-pub fn wsl_home(distro: String) -> Result<String, String> {
+pub async fn wsl_home(distro: String) -> Result<String, String> {
+    // Spawns wsl.exe — seconds on a cold distro, so never on the main thread.
+    crate::modules::heavy(move || wsl_home_blocking(distro)).await
+}
+
+/// Blocking body of `wsl_home`, for callers already off the main thread
+/// (pty_open's spawn_blocking, shell_session_open's heavy closure).
+pub fn wsl_home_blocking(distro: String) -> Result<String, String> {
     #[cfg(not(windows))]
     {
         let _ = distro;

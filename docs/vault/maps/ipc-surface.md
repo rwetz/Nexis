@@ -36,9 +36,22 @@ High-volume data uses `tauri::ipc::Channel` passed as a command argument, not gl
 
 Low-volume broadcast only. Frontend-to-frontend cross-window sync: `nexis://prefs-changed` (see [[settings-sync]]), `nexis://ai-keys-changed`, `nexis://ai-agents-changed`, `nexis://ai-snippets-changed`, `nexis://code-snippets-changed`, `nexis://custom-themes-changed`, `nexis://theme-edit`. Rust→frontend: `lsp:workspace:applyEdit`, `ml:proto`, `ml:exit`.
 
+## Sync vs async — main-thread rule
+
+Tauri runs non-`async` commands **on the main thread**: while one runs, the UI event loop and every
+queued IPC call (terminal keystrokes included) wait behind it. Anything that touches the filesystem,
+walks directories, or spawns a process must be `pub async fn` with its body in
+`crate::modules::heavy(move || { ... }).await` (`modules/mod.rs`, spawn_blocking under the hood) — the
+fs/shell/ml/workspace/crash families all follow this as of 2026-07. Git uses its own registry-aware
+`blocking()` helper in `git/commands.rs`; commands that take `State` re-fetch it from an `AppHandle`
+inside the closure (see `shell_session_open`). Commands that only lock a map and return
+(`pty_resize`, `pty_close`, `shell_bg_*`, `lsp_notify`, …) stay sync on purpose — don't cargo-cult
+`heavy()` onto them. `pty_write` is a special case: sync but enqueue-only (see [[pty]]).
+
 ## Adding a command — checklist
 
 1. `#[tauri::command]` fn in the right `modules/` file; subprocesses via `proc::command()` only (CLAUDE.md pitfall #4)
-2. Register it in `generate_handler![]` in `lib.rs` (forgetting this = runtime "command not found")
-3. Call it from the family's bridge file; if it takes a user-supplied cwd, call `workspace_authorize` first (pitfall #1C)
-4. Big/streaming payloads → `Channel`, not events
+2. If it does I/O, walks dirs, or spawns anything: `async fn` + `modules::heavy()` (see "Sync vs async" above)
+3. Register it in `generate_handler![]` in `lib.rs` (forgetting this = runtime "command not found")
+4. Call it from the family's bridge file; if it takes a user-supplied cwd, call `workspace_authorize` first (pitfall #1C)
+5. Big/streaming payloads → `Channel`, not events

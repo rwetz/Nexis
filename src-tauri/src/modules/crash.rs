@@ -139,7 +139,13 @@ pub struct CrashReport {
 /// List recent crash reports, most recent first, for the frontend to surface.
 /// Reads only our own crash directory — no user-supplied paths involved.
 #[tauri::command]
-pub fn list_crash_reports() -> Vec<CrashReport> {
+pub async fn list_crash_reports() -> Vec<CrashReport> {
+    tauri::async_runtime::spawn_blocking(list_crash_reports_blocking)
+        .await
+        .unwrap_or_default()
+}
+
+fn list_crash_reports_blocking() -> Vec<CrashReport> {
     let Some(dir) = crash_dir() else {
         return Vec::new();
     };

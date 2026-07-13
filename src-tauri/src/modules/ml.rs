@@ -141,24 +141,29 @@ fn parse_version(stdout: &str) -> Option<String> {
 
 /// Try `<exe> --version` for each candidate path; first success wins.
 #[tauri::command]
-pub fn ml_detect(candidates: Vec<String>) -> Result<MlDetectResult, String> {
-    let mut last_err = String::from("no candidates given");
-    for exe in &candidates {
-        if !is_nexis_ml_exe(exe) {
-            last_err = format!("not a nexis-ml binary: {exe}");
-            continue;
-        }
-        match engine_version(std::path::Path::new(exe)) {
-            Ok(version) => {
-                return Ok(MlDetectResult {
-                    exe: exe.clone(),
-                    version,
-                })
+pub async fn ml_detect(candidates: Vec<String>) -> Result<MlDetectResult, String> {
+    // Each probe spawns the candidate binary — a Python-based engine imports
+    // torch on startup (seconds per candidate). Never on the main thread.
+    crate::modules::heavy(move || {
+        let mut last_err = String::from("no candidates given");
+        for exe in &candidates {
+            if !is_nexis_ml_exe(exe) {
+                last_err = format!("not a nexis-ml binary: {exe}");
+                continue;
             }
-            Err(e) => last_err = format!("{exe}: {e}"),
+            match engine_version(std::path::Path::new(exe)) {
+                Ok(version) => {
+                    return Ok(MlDetectResult {
+                        exe: exe.clone(),
+                        version,
+                    })
+                }
+                Err(e) => last_err = format!("{exe}: {e}"),
+            }
         }
-    }
-    Err(last_err)
+        Err(last_err)
+    })
+    .await
 }
 
 /// Path to the managed standalone-engine binary (under the app's local data
@@ -264,27 +269,37 @@ pub async fn ml_download(app: AppHandle, url: String) -> Result<MlDetectResult, 
 /// version, CUDA availability, GPU name). Blocking — importing torch
 /// takes a few seconds — so the frontend calls it fire-and-forget.
 #[tauri::command]
-pub fn ml_env(exe: String) -> Result<String, String> {
-    if !is_nexis_ml_exe(&exe) {
-        return Err(format!("not a nexis-ml binary: {exe}"));
-    }
-    let mut cmd = proc::command(&exe);
-    cmd.arg("env")
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null());
-    let out = cmd.output().map_err(|e| format!("{exe}: {e}"))?;
-    if !out.status.success() {
-        return Err(format!("{exe} env: exit {:?}", out.status.code()));
-    }
-    Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+pub async fn ml_env(exe: String) -> Result<String, String> {
+    crate::modules::heavy(move || {
+        if !is_nexis_ml_exe(&exe) {
+            return Err(format!("not a nexis-ml binary: {exe}"));
+        }
+        let mut cmd = proc::command(&exe);
+        cmd.arg("env")
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null());
+        let out = cmd.output().map_err(|e| format!("{exe}: {e}"))?;
+        if !out.status.success() {
+            return Err(format!("{exe} env: exit {:?}", out.status.code()));
+        }
+        Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
+    })
+    .await
 }
 
 /// Best-effort NVIDIA GPU detection via nvidia-smi (present whenever
 /// the NVIDIA driver is installed). Returns the GPU name or None —
 /// used to offer the CUDA torch build even before the engine exists.
 #[tauri::command]
-pub fn ml_gpu_probe() -> Option<String> {
+pub async fn ml_gpu_probe() -> Option<String> {
+    tauri::async_runtime::spawn_blocking(ml_gpu_probe_blocking)
+        .await
+        .ok()
+        .flatten()
+}
+
+fn ml_gpu_probe_blocking() -> Option<String> {
     let mut cmd = proc::command("nvidia-smi");
     cmd.args(["--query-gpu=name", "--format=csv,noheader"])
         .stdin(Stdio::null())

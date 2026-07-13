@@ -11,7 +11,6 @@ mod session;
 pub(crate) mod shell_init;
 
 use std::collections::HashMap;
-use std::io::Write;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, RwLock};
 use std::thread;
@@ -91,19 +90,16 @@ pub fn pty_write(state: tauri::State<PtyState>, id: u32, data: String) -> Result
             log::warn!("pty_write: unknown id={id}");
             "no session".to_string()
         })?;
-    // Bind to a local so the MutexGuard temporary drops before `session` —
-    // see rustc note on tail-expression temporary drop order.
-    let result = session
-        .writer
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .write_all(data.as_bytes())
-        .map_err(|e| {
-            // EPIPE is expected if the child already exited.
-            log::debug!("pty_write id={id} failed: {e}");
-            e.to_string()
-        });
-    result
+    // Enqueue to the session's writer thread instead of writing here. The
+    // direct write could block the main thread: if the child stops reading
+    // (Ctrl+S flow control, stopped process) the kernel pipe buffer fills and
+    // `write_all` stalls the whole app. The FIFO channel keeps byte order =
+    // IPC arrival order (a spawn_blocking per write would not).
+    session.write_tx.send(data.into_bytes()).map_err(|_| {
+        // Writer thread gone — child exited and the pipe closed (EPIPE-like).
+        log::debug!("pty_write id={id}: writer thread closed");
+        "pty writer closed".to_string()
+    })
 }
 
 #[tauri::command]

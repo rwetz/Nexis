@@ -193,38 +193,44 @@ pub struct FileStat {
 }
 
 #[tauri::command]
-pub fn fs_read_file(path: String, workspace: Option<WorkspaceEnv>) -> Result<ReadResult, String> {
-    let workspace = WorkspaceEnv::from_option(workspace);
-    let p = resolve_path(&path, &workspace);
-    let meta = std::fs::metadata(&p).map_err(|e| {
-        log::debug!("fs_read_file stat({}) failed: {e}", p.display());
-        e.to_string()
-    })?;
+pub async fn fs_read_file(
+    path: String,
+    workspace: Option<WorkspaceEnv>,
+) -> Result<ReadResult, String> {
+    crate::modules::heavy(move || {
+        let workspace = WorkspaceEnv::from_option(workspace);
+        let p = resolve_path(&path, &workspace);
+        let meta = std::fs::metadata(&p).map_err(|e| {
+            log::debug!("fs_read_file stat({}) failed: {e}", p.display());
+            e.to_string()
+        })?;
 
-    let size = meta.len();
-    if size > MAX_READ_BYTES {
-        return Ok(ReadResult::TooLarge {
-            size,
-            limit: MAX_READ_BYTES,
-        });
-    }
+        let size = meta.len();
+        if size > MAX_READ_BYTES {
+            return Ok(ReadResult::TooLarge {
+                size,
+                limit: MAX_READ_BYTES,
+            });
+        }
 
-    let bytes = std::fs::read(&p).map_err(|e| {
-        log::debug!("fs_read_file read({}) failed: {e}", p.display());
-        e.to_string()
-    })?;
+        let bytes = std::fs::read(&p).map_err(|e| {
+            log::debug!("fs_read_file read({}) failed: {e}", p.display());
+            e.to_string()
+        })?;
 
-    // Null-byte sniff on the first chunk. Not perfect (misses UTF-16 BOM
-    // cases) but catches the common "this is a PNG" mistake cheaply.
-    let sniff_len = bytes.len().min(BINARY_SNIFF_BYTES);
-    if bytes[..sniff_len].contains(&0) {
-        return Ok(ReadResult::Binary { size });
-    }
+        // Null-byte sniff on the first chunk. Not perfect (misses UTF-16 BOM
+        // cases) but catches the common "this is a PNG" mistake cheaply.
+        let sniff_len = bytes.len().min(BINARY_SNIFF_BYTES);
+        if bytes[..sniff_len].contains(&0) {
+            return Ok(ReadResult::Binary { size });
+        }
 
-    match String::from_utf8(bytes) {
-        Ok(content) => Ok(ReadResult::Text { content, size }),
-        Err(_) => Ok(ReadResult::Binary { size }),
-    }
+        match String::from_utf8(bytes) {
+            Ok(content) => Ok(ReadResult::Text { content, size }),
+            Err(_) => Ok(ReadResult::Binary { size }),
+        }
+    })
+    .await
 }
 
 #[derive(Serialize, Clone)]
@@ -248,73 +254,85 @@ fn write_atomic(target: &Path, content: &[u8]) -> std::io::Result<()> {
 }
 
 #[tauri::command]
-pub fn fs_write_file(
+pub async fn fs_write_file(
     path: String,
     content: String,
     workspace: Option<WorkspaceEnv>,
     source: Option<String>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    let workspace = WorkspaceEnv::from_option(workspace);
-    let target = resolve_path(&path, &workspace);
+    crate::modules::heavy(move || {
+        let workspace = WorkspaceEnv::from_option(workspace);
+        let target = resolve_path(&path, &workspace);
 
-    write_atomic(&target, content.as_bytes()).map_err(|e| {
-        log::warn!("fs_write_file({}) failed: {e}", target.display());
-        e.to_string()
-    })?;
+        write_atomic(&target, content.as_bytes()).map_err(|e| {
+            log::warn!("fs_write_file({}) failed: {e}", target.display());
+            e.to_string()
+        })?;
 
-    let _ = app.emit(
-        "fs:file-written",
-        FileWrittenEvent {
-            path: path.clone(),
-            source,
-        },
-    );
+        let _ = app.emit(
+            "fs:file-written",
+            FileWrittenEvent {
+                path: path.clone(),
+                source,
+            },
+        );
 
-    Ok(())
-}
-
-#[tauri::command]
-pub fn fs_canonicalize(path: String, workspace: Option<WorkspaceEnv>) -> Result<String, String> {
-    let workspace = WorkspaceEnv::from_option(workspace);
-    let p = resolve_path(&path, &workspace);
-    let canon = std::fs::canonicalize(&p).map_err(|e| e.to_string())?;
-    // Strip the Windows `\\?\` extended-length prefix so the frontend's
-    // path comparator sees the same form regardless of OS.
-    let s = canon.to_string_lossy().to_string();
-    let s = s.strip_prefix(r"\\?\").unwrap_or(&s).to_string();
-    Ok(s.replace('\\', "/"))
-}
-
-#[tauri::command]
-pub fn fs_stat(path: String, workspace: Option<WorkspaceEnv>) -> Result<FileStat, String> {
-    let workspace = WorkspaceEnv::from_option(workspace);
-    let p = resolve_path(&path, &workspace);
-    let meta = std::fs::metadata(&p).map_err(|e| e.to_string())?;
-    // `metadata()` follows symlinks, so its file_type() can never report one;
-    // only `symlink_metadata()` sees the link itself. Dir stays first so a
-    // symlink-to-dir keeps reporting "dir" (callers use kind == "dir" checks).
-    let kind = if meta.is_dir() {
-        StatKind::Dir
-    } else if std::fs::symlink_metadata(&p)
-        .map(|m| m.file_type().is_symlink())
-        .unwrap_or(false)
-    {
-        StatKind::Symlink
-    } else {
-        StatKind::File
-    };
-    let mtime = meta
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-        .map(|d| d.as_millis() as u64)
-        .unwrap_or(0);
-    Ok(FileStat {
-        size: meta.len(),
-        mtime,
-        kind,
+        Ok(())
     })
+    .await
+}
+
+#[tauri::command]
+pub async fn fs_canonicalize(
+    path: String,
+    workspace: Option<WorkspaceEnv>,
+) -> Result<String, String> {
+    crate::modules::heavy(move || {
+        let workspace = WorkspaceEnv::from_option(workspace);
+        let p = resolve_path(&path, &workspace);
+        let canon = std::fs::canonicalize(&p).map_err(|e| e.to_string())?;
+        // Strip the Windows `\\?\` extended-length prefix so the frontend's
+        // path comparator sees the same form regardless of OS.
+        let s = canon.to_string_lossy().to_string();
+        let s = s.strip_prefix(r"\\?\").unwrap_or(&s).to_string();
+        Ok(s.replace('\\', "/"))
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn fs_stat(path: String, workspace: Option<WorkspaceEnv>) -> Result<FileStat, String> {
+    crate::modules::heavy(move || {
+        let workspace = WorkspaceEnv::from_option(workspace);
+        let p = resolve_path(&path, &workspace);
+        let meta = std::fs::metadata(&p).map_err(|e| e.to_string())?;
+        // `metadata()` follows symlinks, so its file_type() can never report one;
+        // only `symlink_metadata()` sees the link itself. Dir stays first so a
+        // symlink-to-dir keeps reporting "dir" (callers use kind == "dir" checks).
+        let kind = if meta.is_dir() {
+            StatKind::Dir
+        } else if std::fs::symlink_metadata(&p)
+            .map(|m| m.file_type().is_symlink())
+            .unwrap_or(false)
+        {
+            StatKind::Symlink
+        } else {
+            StatKind::File
+        };
+        let mtime = meta
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+        Ok(FileStat {
+            size: meta.len(),
+            mtime,
+            kind,
+        })
+    })
+    .await
 }
 
 /// Result type for AI agent file reads — includes the canonical path so the
@@ -353,62 +371,65 @@ pub enum ReadAiResult {
 /// returning `Refused`, so the caller can surface a meaningful ENOENT to the
 /// model.
 #[tauri::command]
-pub fn fs_read_file_ai(
+pub async fn fs_read_file_ai(
     path: String,
     workspace: Option<WorkspaceEnv>,
 ) -> Result<ReadAiResult, String> {
-    let workspace = WorkspaceEnv::from_option(workspace);
-    let p = resolve_path(&path, &workspace);
+    crate::modules::heavy(move || {
+        let workspace = WorkspaceEnv::from_option(workspace);
+        let p = resolve_path(&path, &workspace);
 
-    // Phase 1: safety check on the raw (user-visible) path.
-    if let Err(reason) = check_ai_path(&p) {
-        return Ok(ReadAiResult::Refused { reason });
-    }
+        // Phase 1: safety check on the raw (user-visible) path.
+        if let Err(reason) = check_ai_path(&p) {
+            return Ok(ReadAiResult::Refused { reason });
+        }
 
-    // Phase 2: canonicalize — resolves symlinks, drive-letter case, etc.
-    let canon = match std::fs::canonicalize(&p) {
-        Ok(c) => c,
-        // Not found or permission error — surface as an OS error so the model
-        // can see a real ENOENT rather than a misleading "Refused".
-        Err(e) => return Err(e.to_string()),
-    };
+        // Phase 2: canonicalize — resolves symlinks, drive-letter case, etc.
+        let canon = match std::fs::canonicalize(&p) {
+            Ok(c) => c,
+            // Not found or permission error — surface as an OS error so the model
+            // can see a real ENOENT rather than a misleading "Refused".
+            Err(e) => return Err(e.to_string()),
+        };
 
-    // Phase 3: re-check the canonical path to defeat symlink traversal.
-    if let Err(reason) = check_ai_path(&canon) {
-        return Ok(ReadAiResult::Refused { reason });
-    }
+        // Phase 3: re-check the canonical path to defeat symlink traversal.
+        if let Err(reason) = check_ai_path(&canon) {
+            return Ok(ReadAiResult::Refused { reason });
+        }
 
-    let canonical = {
-        let s = canon.to_string_lossy().to_string();
-        let s = s.strip_prefix(r"\\?\").unwrap_or(&s).to_string();
-        s.replace('\\', "/")
-    };
+        let canonical = {
+            let s = canon.to_string_lossy().to_string();
+            let s = s.strip_prefix(r"\\?\").unwrap_or(&s).to_string();
+            s.replace('\\', "/")
+        };
 
-    // Phase 4: read the file (same logic as fs_read_file).
-    let meta = std::fs::metadata(&canon).map_err(|e| e.to_string())?;
-    let size = meta.len();
-    if size > MAX_READ_BYTES {
-        return Ok(ReadAiResult::TooLarge {
-            canonical,
-            size,
-            limit: MAX_READ_BYTES,
-        });
-    }
+        // Phase 4: read the file (same logic as fs_read_file).
+        let meta = std::fs::metadata(&canon).map_err(|e| e.to_string())?;
+        let size = meta.len();
+        if size > MAX_READ_BYTES {
+            return Ok(ReadAiResult::TooLarge {
+                canonical,
+                size,
+                limit: MAX_READ_BYTES,
+            });
+        }
 
-    let bytes = std::fs::read(&canon).map_err(|e| e.to_string())?;
-    let sniff_len = bytes.len().min(BINARY_SNIFF_BYTES);
-    if bytes[..sniff_len].contains(&0) {
-        return Ok(ReadAiResult::Binary { canonical, size });
-    }
+        let bytes = std::fs::read(&canon).map_err(|e| e.to_string())?;
+        let sniff_len = bytes.len().min(BINARY_SNIFF_BYTES);
+        if bytes[..sniff_len].contains(&0) {
+            return Ok(ReadAiResult::Binary { canonical, size });
+        }
 
-    match String::from_utf8(bytes) {
-        Ok(content) => Ok(ReadAiResult::Text {
-            canonical,
-            content,
-            size,
-        }),
-        Err(_) => Ok(ReadAiResult::Binary { canonical, size }),
-    }
+        match String::from_utf8(bytes) {
+            Ok(content) => Ok(ReadAiResult::Text {
+                canonical,
+                content,
+                size,
+            }),
+            Err(_) => Ok(ReadAiResult::Binary { canonical, size }),
+        }
+    })
+    .await
 }
 
 #[cfg(all(test, unix))]

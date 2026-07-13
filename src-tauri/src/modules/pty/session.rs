@@ -48,7 +48,16 @@ pub struct Session {
     #[cfg(windows)]
     _job: Option<super::job::PtyJob>,
     pub killer: Mutex<Box<dyn ChildKiller + Send + Sync>>,
-    pub writer: Arc<Mutex<Box<dyn Write + Send>>>,
+    /// FIFO input queue drained by the dedicated writer thread. `pty_write`
+    /// enqueues here (never blocks); the thread does the actual pipe write,
+    /// which can stall if the child stops reading (Ctrl+S, stopped process).
+    /// Dropping the Session drops this sender, which ends the writer thread.
+    pub write_tx: std::sync::mpsc::Sender<Vec<u8>>,
+    /// Not read directly — held so the input side of the master pipe stays
+    /// open for the Session's lifetime and drops in field order (before
+    /// `master`), per the drop-order contract above. The writer/reader
+    /// threads hold their own clones of this Arc.
+    _writer: Arc<Mutex<Box<dyn Write + Send>>>,
     pub master: Mutex<Box<dyn MasterPty + Send>>,
 }
 
@@ -184,11 +193,14 @@ pub fn spawn(
         None => None,
     };
 
+    let (write_tx, write_rx) = std::sync::mpsc::channel::<Vec<u8>>();
+
     let session = Arc::new(Session {
         #[cfg(windows)]
         _job: job,
         killer: Mutex::new(killer),
-        writer: writer.clone(),
+        write_tx,
+        _writer: writer.clone(),
         master: Mutex::new(pair.master),
     });
 
@@ -204,6 +216,25 @@ pub fn spawn(
         done: done.clone(),
         pending: pending.clone(),
     };
+
+    // Input writer thread: drains the pty_write FIFO queue and does the
+    // blocking pipe writes, so a full kernel pipe (child stopped reading)
+    // stalls only this thread — never the IPC handler. Exits when the last
+    // sender (held by the Session) drops, or on a write error (child gone).
+    let writer_for_input = writer.clone();
+    thread::Builder::new()
+        .name("nexis-pty-writer".into())
+        .spawn(move || {
+            for chunk in write_rx {
+                let mut w = writer_for_input.lock().unwrap_or_else(|e| e.into_inner());
+                if let Err(e) = w.write_all(&chunk) {
+                    // EPIPE is expected once the child exits.
+                    log::debug!("pty writer thread exiting: {e}");
+                    break;
+                }
+            }
+        })
+        .map_err(|e| format!("spawn pty writer thread: {e}"))?;
 
     let pending_r = pending.clone();
     let writer_for_da = writer.clone();

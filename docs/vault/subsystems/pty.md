@@ -10,7 +10,7 @@ Terminal sessions end to end: frontend xterm.js ↔ Tauri IPC ↔ Rust PTY threa
 ## Key files
 
 - `src/modules/terminal/lib/pty-bridge.ts` — frontend seam; `openPty` **must call `workspace_authorize` before `pty_open`** for any user-supplied cwd
-- `src-tauri/src/modules/pty/session.rs` — session lifecycle, reader/flusher/waiter threads, `CONPTY_LIFECYCLE_LOCK`, `MAX_PENDING` (4 MiB backpressure cap)
+- `src-tauri/src/modules/pty/session.rs` — session lifecycle, reader/flusher/waiter/writer threads, `CONPTY_LIFECYCLE_LOCK`, `MAX_PENDING` (4 MiB backpressure cap)
 - `src-tauri/src/modules/pty/shell_init.rs` — shell profile injection; profiles cached at `~/.cache/nexis/shell-integration/` via `write_if_changed`
 - Thread names are prefixed `nexis-pty-*` — searchable in logs
 
@@ -20,6 +20,7 @@ Terminal sessions end to end: frontend xterm.js ↔ Tauri IPC ↔ Rust PTY threa
 - PowerShell launches via `-Command` + `NEXIS_PWSH_PROFILE` env var, never `-File`
 - Shared PTY mutexes recover from poison with `unwrap_or_else(|e| e.into_inner())` — no bare `.unwrap()`
 - No `.unwrap()`/`.expect()` on the drop-thread spawn path
+- Input goes through a per-session `nexis-pty-writer` thread fed by a FIFO channel (`Session.write_tx`); `pty_write` only enqueues. Keep it that way: a direct `write_all` in the command blocks the main thread when the child stops reading (Ctrl+S), and a `spawn_blocking` per write can reorder rapid keystrokes — the channel is what guarantees byte order.
 
 ## Debugging entry points
 
