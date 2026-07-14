@@ -240,11 +240,10 @@ fn exe_name() -> &'static str {
 }
 
 fn find_nexis_ml() -> Option<PathBuf> {
-    // 1) Anything on PATH.
-    if let Ok(path) = std::env::var("PATH") {
-        let sep = if cfg!(windows) { ';' } else { ':' };
-        for dir in path.split(sep) {
-            let cand = PathBuf::from(dir).join(exe_name());
+    // 1) Anything on PATH (split_paths handles the per-OS separator).
+    if let Some(path) = std::env::var_os("PATH") {
+        for dir in std::env::split_paths(&path) {
+            let cand = dir.join(exe_name());
             if cand.is_file() {
                 return Some(cand);
             }
