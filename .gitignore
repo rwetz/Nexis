@@ -40,3 +40,4 @@ wdio-*.json
 
 # Obsidian personal config (docs/vault is the shared vault; .obsidian is per-user)
 docs/vault/.obsidian/
+.claude/settings.local.json

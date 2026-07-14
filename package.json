@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:kill": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/kill-dev.ps1",
+    "dev:kill": "node scripts/kill-dev.mjs",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",

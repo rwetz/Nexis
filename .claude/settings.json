@@ -6,11 +6,10 @@
         "hooks": [
           {
             "type": "command",
-            "shell": "powershell",
             "if": "Bash(git push*)",
             "timeout": 600,
             "statusMessage": "Running pre-push checks (pnpm test + cargo test)...",
-            "command": "pnpm test; if ($LASTEXITCODE -ne 0) { '{\"continue\":false,\"stopReason\":\"Pre-push blocked: pnpm test failed. Fix Vitest failures before pushing.\"}'; exit 1 }; cargo test --manifest-path src-tauri/Cargo.toml -- --skip authorize_spawn_cwd_blocks_symlink_escape; if ($LASTEXITCODE -ne 0) { '{\"continue\":false,\"stopReason\":\"Pre-push blocked: cargo test failed. Fix Rust test failures before pushing.\"}'; exit 1 }"
+            "command": "pnpm test || { echo '{\"continue\":false,\"stopReason\":\"Pre-push blocked: pnpm test failed. Fix Vitest failures before pushing.\"}'; exit 1; }; cargo test --manifest-path src-tauri/Cargo.toml -- --skip authorize_spawn_cwd_blocks_symlink_escape || { echo '{\"continue\":false,\"stopReason\":\"Pre-push blocked: cargo test failed. Fix Rust test failures before pushing.\"}'; exit 1; }"
           }
         ]
       }
