@@ -49,7 +49,7 @@ The complete, versioned history of every shipped feature lives in **[CHANGELOG.m
 ## Later
 
 - [ ] **Remote workspace** — browse, edit, and run code on remote machines entirely over SSH; the file explorer and editor work against the remote filesystem via SFTP while the terminal is already there; the goal is a seamless local feel with zero local clones required
-- [ ] **Selective TS → Rust migration** — profile hot paths (terminal input dispatch, diff rendering, file-tree diffing), identify where a Rust implementation gives a measurable win, migrate incrementally without growing bundle size
+- [ ] **Selective TS → Rust migration** — profile hot paths (terminal input dispatch, diff rendering, file-tree diffing), identify where a Rust implementation gives a measurable win, migrate incrementally without growing bundle size; Zed's SumTree (summary-carrying copy-on-write B+-tree) is the reference design if diff rendering or tree diffing is the target (`ZED_INSPIRATION.md` §2.6)
 - [ ] **Multiplayer terminal input (authenticated)** — the 1.18.0 live view is deliberately read-only because the LAN share server has no auth; full multiplayer (remote viewers typing into the shared terminal) needs an auth story first — e.g. a per-session token in the share URL plus an input-consent toggle on the host
 
 ---
@@ -71,7 +71,15 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 - 🟡 Secret-redaction lint — a test/util that scans outbound surfaces (logs, crash bundles, recordings, share stream) for API-key / `Authorization:`-shaped strings and refuses to emit them.
 
 **Performance & resource safety**
-- 🟡 Lazy-load the debugger / database / Jupyter panels the way language packs already are, so they cost nothing at startup for users who never open them.
+(See `ZED_INSPIRATION.md` and `TERAX_INSPIRATION.md` for the research behind the derived items below.)
+- ✅ **WebGL/slot reaping in the renderer pool** — detach WebGL from parked slots after a grace period (keep one warm slot), dispose idle slots beyond it; today five parked terminals hold five live GL contexts + DOM trees forever, the same shape as upstream's 914 MB webview-RSS bug (Terax notes §2.1).
+- ✅ Alt-screen-aware pool eviction — prefer evicting non-TUI slots so vim/htop never get the lossy serialize round-trip (Terax notes §2.2).
+- ✅ Replace the `motion` library with native CSS animations where no layout animation is needed — compositor-side frames on WebKitGTK + startup JS win (Terax notes §2.3).
+- 🟡 Verify frontend-generated device-query replies (DA/DSR/CPR) route through the ordered PTY writer path — upstream hit this ordering class in July 2026 (Terax notes §1.3).
+- ✅ Criterion benchmark harness for Rust hot paths — PTY reader→flusher throughput, `fs_grep`, git stdout parsing; prerequisite for the TS → Rust migration item under "Later" (Zed notes §2.1).
+- ✅ Add non-shipping `[profile.profiling]` (release + symbols, no strip) and `[profile.release-fast]` (no LTO) cargo profiles so perf work doesn't fight fat-LTO build times; the shipping profile stays as-is (Zed notes §2.2).
+- ✅ Adopt Zed's workspace clippy denies we lack: `redundant_clone`, `dbg_macro`, `todo` (Zed notes §2.3).
+- 🟡 Snapshot-pattern refactors — replace lock-shaped sharing with cheap `Arc` copy-on-write snapshots for git status recomputation and file-tree diffing; also the design basis for persistent-session scrollback (Zed notes §2.4).
 - 🟡 Large-file editor mode — detect file size on open and auto-disable LSP/lint/minimap/folding above a threshold, with a banner offering to re-enable.
 - ✅ Opt-in memory self-report — a debug status-bar readout of scrollback bytes, recording size, and AI-history tokens so resource creep is visible during development.
 
@@ -83,6 +91,14 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 - 🟡 Unicode/grapheme correctness golden-file suite — CJK width, emoji ZWJ sequences, combining marks, zero-width handling — so rendering-width bugs surface in CI.
 - ✅ Shell-integration resilience — detect missing prompt markers (pitfall #6 territory) and fall back gracefully instead of mis-tracking cwd.
 - 🟡 Editor autosave + crash recovery — periodic dirty-buffer snapshots to a scratch dir, offered for recovery on next launch.
+
+**Docs (nexis-wiki — separate repo)**
+Structure ideas taken from zed.dev/docs; detail in `ZED_INSPIRATION.md` §1.
+- ✅ "Coming from…" migration guides — Warp, iTerm2, Windows Terminal, kitty/alacritty, VS Code terminal; highest-leverage docs addition.
+- ✅ Top-level Privacy & Security section — no-telemetry stance, per-provider AI data flow, tool approval, path guards; it's a differentiator, currently undocumented publicly.
+- 🟡 Generated Reference section — all-settings page generated from the settings store schema, keybindings table, CLI flags; hand-written reference pages rot.
+- 🟡 Per-platform troubleshooting pages seeded from the internal pitfall checklists (e.g. public "blank terminal on Windows" walkthrough of CLAUDE.md pitfall #1, in user language).
+- 🟡 "Developing Nexis" section — build from source, architecture front door linking to the repo, profiling guide.
 
 **Stretch features**
 - 🟡 Git-backed AI checkpoints — snapshot to a hidden ref/stash before any agent edit/multi-edit; surface a one-click "revert this agent action". Turns the scariest part of an agentic terminal into a safe, reversible operation, and it's all local git.
