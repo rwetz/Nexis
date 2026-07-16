@@ -35,6 +35,7 @@ import {
   setTerminalFontFamily,
   setTerminalLetterSpacing,
   setTerminalFontSize,
+  setTerminalOsc52Clipboard,
   setTerminalScrollback,
   setTerminalSuggestionsEnabled,
   setTerminalWebglEnabled,
@@ -91,6 +92,9 @@ export function GeneralSection() {
   );
   const terminalCursorStyle = usePreferencesStore((s) => s.terminalCursorStyle);
   const terminalCursorBlink = usePreferencesStore((s) => s.terminalCursorBlink);
+  const terminalOsc52Clipboard = usePreferencesStore(
+    (s) => s.terminalOsc52Clipboard,
+  );
   const zoomLevel = usePreferencesStore((s) => s.zoomLevel);
   const wordWrap = usePreferencesStore((s) => s.wordWrap);
 
@@ -363,6 +367,15 @@ export function GeneralSection() {
           <Switch
             checked={terminalCursorBlink}
             onCheckedChange={(v) => void setTerminalCursorBlink(v)}
+          />
+        </SettingRow>
+        <SettingRow
+          title="Program clipboard access (OSC 52)"
+          description="Let terminal programs (tmux, vim, ssh) copy to your clipboard. Reading the clipboard is always blocked."
+        >
+          <Switch
+            checked={terminalOsc52Clipboard}
+            onCheckedChange={(v) => void setTerminalOsc52Clipboard(v)}
           />
         </SettingRow>
       </div>

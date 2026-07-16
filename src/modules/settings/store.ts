@@ -161,6 +161,9 @@ export type Preferences = {
   terminalSuggestionsEnabled: boolean;
   terminalCursorStyle: TerminalCursorStyle;
   terminalCursorBlink: boolean;
+  /** OSC 52 clipboard *writes* (copy from tmux/vim/ssh). Reads are always
+   * blocked in the handler regardless of this setting — see osc-handlers.ts. */
+  terminalOsc52Clipboard: boolean;
   toolApprovalPolicies: Record<string, ToolApprovalPolicy>;
   wordWrap: boolean;
   /** Open the ML Lab panel automatically when a training run starts. */
@@ -218,6 +221,7 @@ const KEY_FORMAT_ON_SAVE = "formatOnSave";
 const KEY_TERMINAL_SUGGESTIONS = "terminalSuggestionsEnabled";
 const KEY_TERMINAL_CURSOR_STYLE = "terminalCursorStyle";
 const KEY_TERMINAL_CURSOR_BLINK = "terminalCursorBlink";
+const KEY_TERMINAL_OSC52_CLIPBOARD = "terminalOsc52Clipboard";
 const KEY_TOOL_APPROVAL_POLICIES = "toolApprovalPolicies";
 const KEY_WORD_WRAP = "wordWrap";
 const KEY_ML_AUTO_OPEN = "mlAutoOpenOnTrain";
@@ -287,6 +291,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   terminalSuggestionsEnabled: true,
   terminalCursorStyle: "bar",
   terminalCursorBlink: false,
+  terminalOsc52Clipboard: true,
   toolApprovalPolicies: {},
   wordWrap: false,
   mlAutoOpenOnTrain: false,
@@ -443,6 +448,9 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalCursorBlink:
       get<boolean>(KEY_TERMINAL_CURSOR_BLINK) ??
       DEFAULT_PREFERENCES.terminalCursorBlink,
+    terminalOsc52Clipboard:
+      get<boolean>(KEY_TERMINAL_OSC52_CLIPBOARD) ??
+      DEFAULT_PREFERENCES.terminalOsc52Clipboard,
     toolApprovalPolicies:
       get<Record<string, ToolApprovalPolicy>>(KEY_TOOL_APPROVAL_POLICIES) ??
       DEFAULT_PREFERENCES.toolApprovalPolicies,
@@ -686,6 +694,10 @@ export async function setTerminalCursorBlink(value: boolean): Promise<void> {
   await writePref(KEY_TERMINAL_CURSOR_BLINK, value);
 }
 
+export async function setTerminalOsc52Clipboard(value: boolean): Promise<void> {
+  await writePref(KEY_TERMINAL_OSC52_CLIPBOARD, value);
+}
+
 export async function setToolApprovalPolicies(
   value: Record<string, ToolApprovalPolicy>,
 ): Promise<void> {
@@ -764,6 +776,7 @@ export async function onPreferencesChange(
     [KEY_TERMINAL_SUGGESTIONS]: "terminalSuggestionsEnabled",
     [KEY_TERMINAL_CURSOR_STYLE]: "terminalCursorStyle",
     [KEY_TERMINAL_CURSOR_BLINK]: "terminalCursorBlink",
+    [KEY_TERMINAL_OSC52_CLIPBOARD]: "terminalOsc52Clipboard",
     [KEY_TOOL_APPROVAL_POLICIES]: "toolApprovalPolicies",
     [KEY_FORMATTERS]: "formatters",
     [KEY_FORMAT_ON_SAVE]: "formatOnSave",

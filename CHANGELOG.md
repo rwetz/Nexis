@@ -2,6 +2,11 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [Unreleased]
+
+### Added
+- **OSC 52 clipboard support — programs inside the terminal (tmux, vim, anything over ssh) can now copy to the system clipboard.** Write-only by design: an OSC 52 *read* request (`Pd` = `?`) asks the terminal to type the system clipboard back into the PTY, handing its contents to whatever program — or remote host — printed the sequence, so reads are consumed silently with no reply, unconditionally. Writes are gated behind a new **Settings → General → "Program clipboard access (OSC 52)"** toggle (`terminalOsc52Clipboard`, default on, routed through `writePref()` so it syncs live across windows and applies to open terminals without a rebind). The selection parameter (`c`, `p`, `s`, …) is ignored — everything targets the one system clipboard, matching most emulators — and base64 payloads over ~1 MB (~750 KB of text) are dropped as not-a-human-copy. Handler in `src/modules/terminal/lib/osc-handlers.ts` with tests covering the read-block, pref gating, malformed/oversized payloads, and UTF-8 decoding. (Adopted from upstream terax-ai 0.8.1 — see `TERAX_INSPIRATION.md` §1.2.)
+
 ## [1.20.6] — 2026-07-12
 
 A performance release. The headline: heavy Tauri commands no longer run on the main thread, so a workspace-wide grep from the AI agent, a `node_modules` delete, or the explorer's refresh poll can't stall terminal keystrokes or freeze the window anymore — and PTY input got a dedicated writer thread so a flow-stopped shell can't wedge the app on paste. Startup also got measurably lighter (2.8 MB → 2.1 MB of preloaded JS; main chunk 978 KB → 813 KB) by fixing four silently-defeated code-splits and lazy-loading the Settings/ML/Database/Debugger panels, and the biggest steady-state render sinks (per-token AI streaming re-renders, the editor minimap, always-on background animations) were throttled, memoized, or paused. Rounding it out: the Linux borderless-window fixes and editor/zoom/LSP fixes that landed since 1.20.5.

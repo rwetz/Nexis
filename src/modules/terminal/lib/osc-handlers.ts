@@ -155,6 +155,56 @@ export function registerTitleHandler(
   };
 }
 
+/** Cap on the base64 payload of an OSC 52 write (~750 KB of text). Anything
+ * larger is almost certainly not a human copy and gets dropped outright. */
+const OSC52_MAX_B64_LEN = 1_000_000;
+
+/**
+ * OSC 52 — clipboard access from terminal programs (tmux, vim, anything over
+ * ssh). **Write-only by design**: a read request (`Pd` = `?`) asks us to type
+ * the system clipboard back into the PTY, which hands its contents to
+ * whatever program — or remote host — printed the sequence. Reads are always
+ * consumed silently, no reply, regardless of the setting; only writes are
+ * honored, and only while `isEnabled()` (the user preference) is true.
+ *
+ * The selection parameter (`c`, `p`, `s`, …) is ignored — everything targets
+ * the one system clipboard, matching most emulators.
+ */
+export function registerClipboardHandler(
+  term: Terminal,
+  isEnabled: () => boolean,
+  writeClipboard: (text: string) => Promise<void> = (text) =>
+    navigator.clipboard.writeText(text),
+): () => void {
+  const d = term.parser.registerOscHandler(52, (data) => {
+    const sep = data.indexOf(";");
+    if (sep === -1) return true; // malformed — consume, never pass through
+    const payload = data.slice(sep + 1);
+    if (payload === "?") return true; // read request — always blocked
+    if (!isEnabled()) return true;
+    if (payload.length > OSC52_MAX_B64_LEN) return true;
+    const text = decodeOsc52(payload);
+    if (text) {
+      writeClipboard(text).catch((e) =>
+        console.warn("[nexis] OSC 52 clipboard write failed:", e),
+      );
+    }
+    return true;
+  });
+  return () => d.dispose();
+}
+
+function decodeOsc52(b64: string): string | null {
+  try {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return null;
+  }
+}
+
 function parseOsc7(data: string): string | null {
   const m = data.match(/^file:\/\/[^/]*(\/.*)$/);
   if (!m) return null;

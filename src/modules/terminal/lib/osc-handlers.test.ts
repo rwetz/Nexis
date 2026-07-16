@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Terminal } from "@xterm/xterm";
 import {
   createShellIntegrationState,
+  registerClipboardHandler,
   registerCwdHandler,
   registerPromptTracker,
   registerTitleHandler,
@@ -147,5 +148,83 @@ describe("OSC 0/2 title handler", () => {
     expect(onTitle).toHaveBeenCalledTimes(2);
     expect(onTitle).toHaveBeenNthCalledWith(1, "from osc0");
     expect(onTitle).toHaveBeenNthCalledWith(2, "from osc2");
+  });
+});
+
+describe("OSC 52 clipboard handler — write-only, pref-gated", () => {
+  /** `Pc;Pd` payload with `Pd` base64 of the given text, like tmux emits. */
+  const payload = (text: string) => `c;${btoa(text)}`;
+
+  function setup(enabled = true) {
+    const { term, handlers } = makeFakeTerm();
+    const writeClipboard = vi.fn().mockResolvedValue(undefined);
+    const dispose = registerClipboardHandler(term, () => enabled, writeClipboard);
+    return { handlers, writeClipboard, dispose };
+  }
+
+  it("writes decoded base64 text to the clipboard when enabled", () => {
+    const { handlers, writeClipboard } = setup();
+    expect(handlers.get(52)?.(payload("hello from tmux"))).toBe(true);
+    expect(writeClipboard).toHaveBeenCalledWith("hello from tmux");
+  });
+
+  it("decodes multi-byte UTF-8 payloads correctly", () => {
+    const { handlers, writeClipboard } = setup();
+    // btoa can't take non-Latin-1 input directly — encode bytes first, the
+    // same way a real terminal program base64s raw UTF-8.
+    const bytes = new TextEncoder().encode("naïve — 日本語");
+    const b64 = btoa(String.fromCharCode(...bytes));
+    handlers.get(52)?.(`c;${b64}`);
+    expect(writeClipboard).toHaveBeenCalledWith("naïve — 日本語");
+  });
+
+  it("always blocks read requests (Pd = '?'), even when enabled", () => {
+    // A read would type the system clipboard back into the PTY — clipboard
+    // exfiltration to whatever printed the sequence. Consumed, no reply.
+    const { handlers, writeClipboard } = setup(true);
+    expect(handlers.get(52)?.("c;?")).toBe(true);
+    expect(writeClipboard).not.toHaveBeenCalled();
+  });
+
+  it("consumes but ignores writes when the preference is off", () => {
+    const { handlers, writeClipboard } = setup(false);
+    // Returning true even when disabled: the sequence must never leak
+    // through to another handler or the screen.
+    expect(handlers.get(52)?.(payload("blocked"))).toBe(true);
+    expect(writeClipboard).not.toHaveBeenCalled();
+  });
+
+  it("re-reads the preference on every sequence (live toggle, no rebind)", () => {
+    const { term, handlers } = makeFakeTerm();
+    const writeClipboard = vi.fn().mockResolvedValue(undefined);
+    let enabled = false;
+    registerClipboardHandler(term, () => enabled, writeClipboard);
+
+    handlers.get(52)?.(payload("while off"));
+    enabled = true;
+    handlers.get(52)?.(payload("while on"));
+
+    expect(writeClipboard).toHaveBeenCalledTimes(1);
+    expect(writeClipboard).toHaveBeenCalledWith("while on");
+  });
+
+  it("consumes malformed payloads (no separator, bad base64) without writing", () => {
+    const { handlers, writeClipboard } = setup();
+    expect(handlers.get(52)?.("no-separator")).toBe(true);
+    expect(handlers.get(52)?.("c;!!!not-base64!!!")).toBe(true);
+    expect(writeClipboard).not.toHaveBeenCalled();
+  });
+
+  it("drops oversized payloads (> ~750 KB decoded)", () => {
+    const { handlers, writeClipboard } = setup();
+    handlers.get(52)?.(`c;${"A".repeat(1_000_001)}`);
+    expect(writeClipboard).not.toHaveBeenCalled();
+  });
+
+  it("stops handling after the disposer runs", () => {
+    const { handlers, writeClipboard, dispose } = setup();
+    dispose();
+    expect(handlers.get(52)).toBeUndefined();
+    expect(writeClipboard).not.toHaveBeenCalled();
   });
 });

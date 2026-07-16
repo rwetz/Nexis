@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { DormantRing } from "./dormantRing";
 import {
   createShellIntegrationState,
+  registerClipboardHandler,
   registerCwdHandler,
   registerPromptTracker,
   registerTitleHandler,
@@ -260,7 +261,13 @@ function bindLeafToSlot(leafId: number, s: Session): void {
       const title = registerTitleHandler(term, (t) => {
         s.callbacks.onTitle?.(t);
       });
-      return [prompt.dispose, cwd, title];
+      // Write-only OSC 52 (copy from tmux/vim/ssh to the system clipboard),
+      // gated live by the preference; reads stay blocked inside the handler.
+      const clipboard = registerClipboardHandler(
+        term,
+        () => usePreferencesStore.getState().terminalOsc52Clipboard,
+      );
+      return [prompt.dispose, cwd, title, clipboard];
     },
     onSearchReady: (addon) => s.callbacks.onSearchReady?.(addon),
   });
