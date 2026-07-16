@@ -7,7 +7,7 @@
 pub mod commands;
 mod errors;
 mod operations;
-mod parser;
+pub(crate) mod parser;
 mod process;
 mod types;
 mod utils;

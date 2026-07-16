@@ -101,7 +101,7 @@ pub fn panel_snapshot(
 
     let status = status_inner(&canonical_root)?;
     let repo = GitRepoInfo {
-        repo_root: canonical_root.git_path.clone(),
+        repo_root: canonical_root.git_path,
         branch: status.branch.clone(),
         upstream: status.upstream.clone(),
         is_detached: status.is_detached,
@@ -746,7 +746,7 @@ pub fn commit_file_diff(
     ];
     diff_args.push(rel.clone().into());
     if original_rel != rel {
-        diff_args.push(original_rel.clone().into());
+        diff_args.push(original_rel.into());
     }
     let patch_output = run_git(
         &repo_root.workspace,

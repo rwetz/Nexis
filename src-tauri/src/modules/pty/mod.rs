@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-mod da_filter;
+pub(crate) mod da_filter;
 #[cfg(windows)]
 mod job;
 mod session;

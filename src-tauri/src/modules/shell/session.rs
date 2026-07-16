@@ -282,7 +282,7 @@ mod tests {
     #[test]
     fn fuzz_strip_cwd_sentinel_never_panics_and_resists_spoofing() {
         let s = ShellSession::new("/tmp".into(), WorkspaceEnv::Local);
-        let real = s.sentinel.clone();
+        let real = &s.sentinel;
 
         const PIECES: &[&str] = &[
             "output line\n",
@@ -306,8 +306,8 @@ mod tests {
                 stdout.push_str(PIECES[(rng.next_u64() as usize) % PIECES.len()]);
             }
             // The call itself is the no-panic assertion.
-            let (clean, cwd) = strip_cwd_sentinel(&stdout, "/fallback", &real);
-            if stdout.contains(&real) {
+            let (clean, cwd) = strip_cwd_sentinel(&stdout, "/fallback", real);
+            if stdout.contains(real.as_str()) {
                 assert!(cwd.is_some(), "real sentinel present but no cwd extracted");
             } else {
                 // Anti-spoof: without the exact session sentinel, stdout passes

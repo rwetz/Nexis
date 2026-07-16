@@ -462,7 +462,7 @@ pub fn ml_spawn(
         // frontend treats ml:exit as authoritative only when no
         // run.finished arrived.
         let child = session.child.clone();
-        let app_handle = app.clone();
+        let app_handle = app;
         thread::Builder::new()
             .name(format!("nexis-ml-waiter-{sid}"))
             .spawn(move || {
@@ -618,7 +618,7 @@ pub fn ml_install(
     spawn_line_streamer(app.clone(), sid, stderr, "pip-err")?;
     {
         let child = session.child.clone();
-        let app_handle = app.clone();
+        let app_handle = app;
         thread::Builder::new()
             .name(format!("nexis-ml-pip-waiter-{sid}"))
             .spawn(move || {

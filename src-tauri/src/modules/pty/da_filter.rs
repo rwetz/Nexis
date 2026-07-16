@@ -27,6 +27,12 @@ pub struct DaFilter {
     hold: Vec<u8>,
 }
 
+impl Default for DaFilter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DaFilter {
     pub fn new() -> Self {
         DaFilter {

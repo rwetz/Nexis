@@ -55,7 +55,6 @@ impl DapSession {
 
         {
             let pending = pending.clone();
-            let app = app.clone();
             thread::spawn(move || {
                 reader_loop(BufReader::new(stdout), pending, app, session_id);
             });

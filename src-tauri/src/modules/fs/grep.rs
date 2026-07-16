@@ -133,7 +133,6 @@ pub async fn fs_grep(
                 scanned.fetch_add(1, Ordering::Relaxed);
 
                 let abs = display_path(path, &root_path, &root_display, &workspace);
-                let rel_clone = rel.clone();
                 let mut searcher = SearcherBuilder::new()
                     .binary_detection(BinaryDetection::quit(b'\x00'))
                     .line_number(true)
@@ -153,7 +152,7 @@ pub async fn fs_grep(
                         }
                         guard.push(GrepHit {
                             path: abs.clone(),
-                            rel: rel_clone.clone(),
+                            rel: rel.clone(),
                             line: line_num,
                             text: line_text,
                         });

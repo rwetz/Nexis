@@ -54,6 +54,21 @@ futures-util = "0.3"
 tokio = { version = "1", default-features = false, features = ["rt"] }
 tempfile = "3"
 
+[dev-dependencies]
+# Benchmarks only — never compiled into shipping builds (dev-dependency +
+# the bench target requires the non-default `bench-internals` feature).
+criterion = "0.5"
+
+[features]
+# Exposes hot-path internals to benches/ (see lib.rs::bench_internals).
+# Never enabled by default; do not enable in shipping builds.
+bench-internals = []
+
+[[bench]]
+name = "hot_paths"
+harness = false
+required-features = ["bench-internals"]
+
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
@@ -80,9 +95,35 @@ tauri-plugin-window-state = "2"
 [profile.dev]
 incremental = true
 
+# Shipping profile — size-first (10 MB budget enforced in release CI).
+# Do not relax fat LTO / strip here; use the non-shipping profiles below
+# for perf iteration and profiling instead.
 [profile.release]
 codegen-units = 1
 lto = "fat"
 opt-level = "s"
 panic = "abort"
 strip = true
+
+# perf/flamegraph against optimized code — keeps symbols, never ships.
+# `cargo build --profile profiling`
+[profile.profiling]
+inherits = "release"
+debug = "limited"
+strip = false
+lto = "thin"
+
+# "is it fast enough?" iteration loop without the fat-LTO wait — never ships.
+# `cargo build --profile release-fast`
+[profile.release-fast]
+inherits = "release"
+lto = false
+codegen-units = 16
+
+[lints.clippy]
+# Perf paper-cut catcher (nursery lint — warn, promoted to deny by CI's
+# `clippy -- -D warnings`; #[allow] per-site if it false-positives).
+redundant_clone = "warn"
+# Hygiene: nothing half-finished reaches CI.
+dbg_macro = "warn"
+todo = "warn"

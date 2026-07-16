@@ -6,6 +6,18 @@
 
 mod modules;
 
+/// Benchmark-only surface. Criterion benches live outside the crate and can
+/// only reach public items, so the hot-path internals they measure are
+/// re-exported here behind a non-default feature. Nothing in a shipping build
+/// enables `bench-internals`; run with:
+///   cargo bench --features bench-internals
+#[cfg(feature = "bench-internals")]
+pub mod bench_internals {
+    pub use crate::modules::fs::grep::fs_grep;
+    pub use crate::modules::git::parser::parse_porcelain_v2;
+    pub use crate::modules::pty::da_filter::DaFilter;
+}
+
 use modules::{
     crash, dap, fs, git, http_share, lsp, ml, net, pty, python, recording, secrets, shell,
     workspace,
