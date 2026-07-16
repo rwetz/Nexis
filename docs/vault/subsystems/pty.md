@@ -10,6 +10,7 @@ Terminal sessions end to end: frontend xterm.js ↔ Tauri IPC ↔ Rust PTY threa
 ## Key files
 
 - `src/modules/terminal/lib/pty-bridge.ts` — frontend seam; `openPty` **must call `workspace_authorize` before `pty_open`** for any user-supplied cwd
+- `src/modules/terminal/lib/rendererPool.ts` — xterm slot pool; parked slots lose WebGL after `SLOT_REAP_GRACE_MS` and are disposed beyond `WARM_PARKED_SLOTS` (as of 2026-07). Deliberate GL teardown must go through `disposeSlotWebgl` so it doesn't count toward the involuntary-loss thrash heuristic
 - `src/modules/terminal/lib/osc-handlers.ts` — OSC 7 (cwd, gated by 133 in-command state), 133 (prompt marks), 0/2 (title), 52 (clipboard — **write-only**; reads are always consumed silently, writes gated by the `terminalOsc52Clipboard` pref)
 - `src-tauri/src/modules/pty/session.rs` — session lifecycle, reader/flusher/waiter/writer threads, `CONPTY_LIFECYCLE_LOCK`, `MAX_PENDING` (4 MiB backpressure cap)
 - `src-tauri/src/modules/pty/shell_init.rs` — shell profile injection; profiles cached at `~/.cache/nexis/shell-integration/` via `write_if_changed`

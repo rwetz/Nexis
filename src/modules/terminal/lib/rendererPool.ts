@@ -21,6 +21,21 @@ const FIT_DEBOUNCE_MS = 8;
 const PTY_RESIZE_DEBOUNCE_MS = 256;
 const SNAPSHOT_SCROLLBACK_CAP = 5_000;
 
+/**
+ * Parked-slot reaping (design informed by upstream terax's 0.8.0 perf pass,
+ * which fixed a 914 MB webview-RSS report caused by exactly this shape):
+ * without reaping, every slot ever parked keeps its xterm buffers, DOM tree,
+ * and live WebGL context (texture atlas included) for the rest of the
+ * session. After a grace period a parked slot loses its WebGL context (DOM
+ * renderer is fine for something invisible; more idle GL contexts also mean
+ * more context-loss events on fragile drivers — the Linux/NVIDIA surface
+ * 1.20.5 fought). Parked slots beyond a small warm set are disposed entirely.
+ * Adoption re-attaches WebGL on the spot.
+ */
+export const SLOT_REAP_GRACE_MS = 30_000;
+/** Grace-expired parked slots kept alive (xterm + DOM) for instant re-adopt. */
+export const WARM_PARKED_SLOTS = 1;
+
 export type SlotAdapter = {
   resolveLeaf(leafId: number): LeafBridge | null;
   evictLeaf(leafId: number): void;
@@ -59,6 +74,8 @@ export type Slot = {
   observer: ResizeObserver | null;
   fitTimer: ReturnType<typeof setTimeout> | null;
   ptyTimer: ReturnType<typeof setTimeout> | null;
+  /** Grace timer started when the slot is parked; fires reapParkedSlot. */
+  reapTimer: ReturnType<typeof setTimeout> | null;
   unhideRaf: number | null;
   lastCols: number;
   lastRows: number;
@@ -68,6 +85,9 @@ export type Slot = {
 };
 
 const slots: Slot[] = [];
+// Monotonic — slot ids are never reused even after a reaped slot is spliced
+// out of the pool, so `data-nexis-slot` stays unambiguous in DOM snapshots.
+let nextSlotId = 0;
 let recyclerEl: HTMLDivElement | null = null;
 let adapter: SlotAdapter | null = null;
 
@@ -214,14 +234,15 @@ function createSlot(): Slot {
     new WebLinksAddon((_e, uri) => openUrl(uri).catch(console.error)),
   );
 
+  const id = nextSlotId++;
   const host = document.createElement("div");
   host.style.cssText = "width:100%;height:100%;";
-  host.setAttribute("data-nexis-slot", String(slots.length));
+  host.setAttribute("data-nexis-slot", String(id));
   getRecycler().appendChild(host);
   term.open(host);
 
   const slot: Slot = {
-    id: slots.length,
+    id,
     term,
     fitAddon,
     searchAddon,
@@ -237,6 +258,7 @@ function createSlot(): Slot {
     observer: null,
     fitTimer: null,
     ptyTimer: null,
+    reapTimer: null,
     unhideRaf: null,
     lastCols: term.cols,
     lastRows: term.rows,
@@ -401,6 +423,12 @@ function bindSlot(slot: Slot, p: AcquireParams): void {
   // Start fresh input tracking for the new leaf
   inputBuffers.delete(p.leafId);
   activeSuggestions.delete(p.leafId);
+
+  // Slot is live again: cancel any pending reap and restore WebGL if it was
+  // reaped while parked (attachWebgl no-ops when already attached, when the
+  // pref is off, or when this slot gave up on WebGL).
+  cancelReap(slot);
+  attachWebgl(slot);
 
   cancelPendingUnhide(slot);
   slot.host.style.visibility = "hidden";
@@ -616,6 +644,69 @@ function detachSlotFromLeaf(slot: Slot): void {
 
   slot.currentLeafId = null;
   slot.lastUsedAt = performance.now();
+  scheduleReap(slot);
+}
+
+function scheduleReap(slot: Slot): void {
+  cancelReap(slot);
+  slot.reapTimer = setTimeout(() => {
+    slot.reapTimer = null;
+    reapParkedSlot(slot);
+  }, SLOT_REAP_GRACE_MS);
+}
+
+function cancelReap(slot: Slot): void {
+  if (slot.reapTimer !== null) {
+    clearTimeout(slot.reapTimer);
+    slot.reapTimer = null;
+  }
+}
+
+/**
+ * Grace expired on a parked slot. Release its GL context (a hidden slot never
+ * needs GPU frames; adoption re-attaches), then dispose grace-expired parked
+ * slots beyond the warm set entirely — xterm buffers, host DOM, everything.
+ *
+ * This goes through disposeSlotWebgl, the same deliberate-teardown path as
+ * the settings toggle: it never counts toward webglLossCount/webglGaveUp
+ * (the 1.20.5 thrash heuristic is for *involuntary* losses only).
+ */
+function reapParkedSlot(slot: Slot): void {
+  if (slot.currentLeafId !== null) return; // adopted since; nothing to reap
+  disposeSlotWebgl(slot);
+  const expired = slots.filter(
+    (s) => s.currentLeafId === null && s.reapTimer === null,
+  );
+  expired.sort((a, b) => b.lastUsedAt - a.lastUsedAt);
+  for (const victim of expired.slice(WARM_PARKED_SLOTS)) {
+    disposeSlotEntirely(victim);
+  }
+}
+
+function disposeSlotEntirely(slot: Slot): void {
+  cancelReap(slot);
+  disposeSlotWebgl(slot);
+  cancelPendingUnhide(slot);
+  slot.observer?.disconnect();
+  slot.observer = null;
+  if (slot.fitTimer) clearTimeout(slot.fitTimer);
+  if (slot.ptyTimer) clearTimeout(slot.ptyTimer);
+  slot.fitTimer = null;
+  slot.ptyTimer = null;
+  for (const d of slot.oscDisposers) {
+    try {
+      d();
+    } catch {}
+  }
+  slot.oscDisposers = [];
+  try {
+    slot.term.dispose();
+  } catch (e) {
+    console.warn("[nexis] slot dispose failed:", e);
+  }
+  slot.host.remove();
+  const i = slots.indexOf(slot);
+  if (i >= 0) slots.splice(i, 1);
 }
 
 const WEBGL_RECOVERY_DELAY_MS = 250;
@@ -799,7 +890,11 @@ export function applyWebglPreference(enabled: boolean): void {
       // fresh chance (and its loss counter restarts from clean).
       slot.webglGaveUp = false;
       slot.webglLossCount = 0;
-      if (!slot.webglAddon) attachWebgl(slot);
+      // Skip grace-expired parked slots: their GL context was deliberately
+      // reaped, and re-attaching here would resurrect it with no reap timer
+      // left to collect it. Adoption re-attaches WebGL anyway.
+      const reaped = slot.currentLeafId === null && slot.reapTimer === null;
+      if (!slot.webglAddon && !reaped) attachWebgl(slot);
     } else if (slot.webglAddon) {
       disposeSlotWebgl(slot);
     }
