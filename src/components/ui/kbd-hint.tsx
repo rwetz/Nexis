@@ -4,9 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
-import { tween } from "@/lib/motion";
 
 type Props = {
   keys: string[];
@@ -18,16 +16,13 @@ type Props = {
 /**
  * Inline contextual keyboard hint — a muted label + key chips that fades in
  * where it's relevant (empty states, hover affordances, near actions).
- * Linear-style. Respects reduced motion via the app-root MotionConfig.
+ * Linear-style. Respects reduced motion via the global animate-in rule.
  */
 export function KbdHint({ keys, label, className }: Props) {
   return (
-    <motion.span
-      initial={{ opacity: 0, y: 2 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={tween.base}
+    <span
       className={cn(
-        "inline-flex items-center gap-1 text-[10px] text-muted-foreground/70",
+        "animate-in fade-in slide-in-from-bottom-0.5 duration-200 inline-flex items-center gap-1 text-[10px] text-muted-foreground/70",
         className,
       )}
     >
@@ -42,6 +37,6 @@ export function KbdHint({ keys, label, className }: Props) {
           </kbd>
         ))}
       </span>
-    </motion.span>
+    </span>
   );
 }

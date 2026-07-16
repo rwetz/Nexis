@@ -30,8 +30,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Tab } from "./lib/tabTypes";
 import { editorAnyDirty } from "./lib/tabTypes";
 
@@ -94,6 +93,49 @@ export function TabBar({
   useEffect(() => { dragOrderRef.current = dragOrder; }, [dragOrder]);
 
   const [draggingId, setDraggingId] = useState<number | null>(null);
+
+  // Sliding active-tab indicator. Formerly a motion `layoutId` shared-layout
+  // element; now a single measured span whose left/width follow the active
+  // trigger via a CSS transition — same slide, zero animation JS per frame.
+  // The strip ref is the positioned ancestor the coordinates resolve against.
+  const stripRef = useRef<HTMLDivElement>(null);
+  const [indicator, setIndicator] = useState<{
+    left: number;
+    width: number;
+  } | null>(null);
+
+  useLayoutEffect(() => {
+    const strip = stripRef.current;
+    const measure = () => {
+      const active = strip?.querySelector<HTMLElement>(
+        `[data-tab-id="${activeId}"]`,
+      );
+      if (!strip || !active) {
+        setIndicator(null);
+        return;
+      }
+      // Rect deltas stay correct regardless of the outer horizontal scroll —
+      // both rects live in viewport space and the indicator scrolls with the
+      // strip content. The ±6px matches the old `inset-x-1.5`.
+      const stripRect = strip.getBoundingClientRect();
+      const rect = active.getBoundingClientRect();
+      const next = {
+        left: rect.left - stripRect.left + 6,
+        width: Math.max(0, rect.width - 12),
+      };
+      setIndicator((prev) =>
+        prev && prev.left === next.left && prev.width === next.width
+          ? prev
+          : next,
+      );
+    };
+    measure();
+    // Tab labels change width live (cwd updates, font load) — re-measure on
+    // any size change inside the strip, not just on React state changes.
+    const ro = new ResizeObserver(measure);
+    if (strip) ro.observe(strip);
+    return () => ro.disconnect();
+  }, [activeId, tabs, dragOrder, compact]);
 
   useEffect(() => {
     if (!onReorder) return;
@@ -228,7 +270,16 @@ export function TabBar({
       data-tauri-drag-region
       className="min-w-0 shrink overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
-      <div className="flex w-max items-center gap-0.5">
+      <div ref={stripRef} className="relative flex w-max items-center gap-0.5">
+        {/* Sliding brand-colored active indicator — a single measured element
+            that follows the active tab via a CSS left/width transition. */}
+        {indicator && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute top-0 z-10 h-[2px] rounded-full bg-brand shadow-[0_0_8px_var(--brand)] transition-[left,width] duration-200 ease-out"
+            style={{ left: indicator.left, width: indicator.width }}
+          />
+        )}
         <Tabs
           value={String(activeId)}
           onValueChange={(v) => onSelect(Number(v))}
@@ -266,17 +317,6 @@ export function TabBar({
                     draggingId === t.id && "opacity-50 ring-1 ring-primary/30",
                   )}
                 >
-                  {/* Sliding brand-colored active indicator — a single
-                      shared-layout element that animates between tabs as the
-                      selection changes, with a soft brand glow. */}
-                  {t.id === activeId && (
-                    <motion.span
-                      layoutId="tab-active-indicator"
-                      aria-hidden
-                      className="absolute inset-x-1.5 top-0 h-[2px] rounded-full bg-brand shadow-[0_0_8px_var(--brand)]"
-                      transition={{ type: "spring", stiffness: 480, damping: 36 }}
-                    />
-                  )}
                   <span
                     className={cn(
                       "flex items-center gap-1.5 truncate",

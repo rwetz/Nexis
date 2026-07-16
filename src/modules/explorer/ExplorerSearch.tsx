@@ -21,7 +21,6 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { currentWorkspaceEnv } from "@/modules/workspace";
-import { motion } from "motion/react";
 import {
   forwardRef,
   useEffect,
@@ -176,11 +175,7 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
   return (
     <div className="flex flex-col">
       {open ? (
-        <motion.div
-          className="relative shrink-0 px-2 py-1.5"
-          initial={{ opacity: 0, transform: "translateY(-15px)" }}
-          animate={{ opacity: 1, transform: "translateY(0px)" }}
-        >
+        <div className="animate-in fade-in slide-in-from-top-[15px] duration-200 relative shrink-0 px-2 py-1.5">
           <HugeiconsIcon
             icon={Search01Icon}
             size={13}
@@ -228,7 +223,7 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
               <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} />
             </button>
           ) : null}
-        </motion.div>
+        </div>
       ) : null}
 
       {active ? (

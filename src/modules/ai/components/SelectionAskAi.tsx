@@ -8,7 +8,6 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { fmtShortcut, MOD_KEY } from "@/lib/platform";
 import { BubbleChatIcon, BubbleChatSparkIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { motion } from "motion/react";
 import { useEffect } from "react";
 
 export type SelectionAskAiProps = {
@@ -34,14 +33,10 @@ export function SelectionAskAi({ x, y, onAsk, onExplain, onDismiss }: SelectionA
   const left = Math.max(8, Math.min(x - 120, window.innerWidth - 248));
 
   return (
-    <motion.div
+    <div
       data-selection-ask-ai
-      initial={{ opacity: 0, y: 4, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 4, scale: 0.95 }}
-      transition={{ duration: 0.12, ease: "easeOut" }}
       style={{ top, left }}
-      className="fixed z-50 flex gap-1"
+      className="animate-in fade-in zoom-in-95 slide-in-from-bottom-1 duration-150 fixed z-50 flex gap-1"
     >
       <button
         type="button"
@@ -69,6 +64,6 @@ export function SelectionAskAi({ x, y, onAsk, onExplain, onDismiss }: SelectionA
         <HugeiconsIcon icon={BubbleChatSparkIcon} size={11} strokeWidth={1.75} className="opacity-70" />
         <span>Explain</span>
       </button>
-    </motion.div>
+    </div>
   );
 }

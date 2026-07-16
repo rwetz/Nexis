@@ -16,8 +16,6 @@ import {
   TerminalIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { AnimatePresence, motion } from "motion/react";
-import { spring } from "@/lib/motion";
 import { createContext, memo, useContext, useEffect, useRef, useState } from "react";
 
 import { Shimmer } from "./shimmer";
@@ -276,23 +274,19 @@ function CopyButton({ text }: { text: string }) {
       className="size-5 shrink-0 text-muted-foreground hover:text-foreground"
       aria-label={copied ? "Copied" : "Copy code"}
     >
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.span
-          key={copied ? "check" : "copy"}
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.5, opacity: 0 }}
-          transition={spring.snappy}
-          className="flex items-center justify-center"
-        >
-          <HugeiconsIcon
-            icon={copied ? CheckmarkCircle01Icon : CopyIcon}
-            size={11}
-            strokeWidth={1.75}
-            className={copied ? "text-emerald-500" : undefined}
-          />
-        </motion.span>
-      </AnimatePresence>
+      {/* Keyed remount pops the swapped icon in via CSS (no exit frame —
+          the old icon disappears instantly, which reads fine at 11px). */}
+      <span
+        key={copied ? "check" : "copy"}
+        className="animate-in fade-in zoom-in-50 duration-150 flex items-center justify-center"
+      >
+        <HugeiconsIcon
+          icon={copied ? CheckmarkCircle01Icon : CopyIcon}
+          size={11}
+          strokeWidth={1.75}
+          className={copied ? "text-emerald-500" : undefined}
+        />
+      </span>
     </Button>
   );
 }

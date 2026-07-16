@@ -19,7 +19,6 @@ import {
   Mic01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 
 const MODELS = [
@@ -38,15 +37,11 @@ type Props = {
 
 export function AiTools({ aiOpen, canSubmit, onOpenAi, onSubmit }: Props) {
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <>
       {aiOpen ? (
-        <motion.div
+        <div
           key="tools"
-          initial={{ opacity: 0, y: 2 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -2 }}
-          transition={{ duration: 0.12, ease: "easeOut" }}
-          className="flex items-center gap-0.5"
+          className="animate-in fade-in slide-in-from-bottom-0.5 duration-150 flex items-center gap-0.5"
         >
           <ModelSelector />
           <ToolButton title="Voice input">
@@ -60,16 +55,13 @@ export function AiTools({ aiOpen, canSubmit, onOpenAi, onSubmit }: Props) {
           >
             <HugeiconsIcon icon={ArrowUp01Icon} size={13} strokeWidth={2} />
           </Button>
-        </motion.div>
+        </div>
       ) : (
-        <motion.button
+        <button
           key="open"
-          initial={{ opacity: 0, y: 2 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -2 }}
-          transition={{ duration: 0.12, ease: "easeOut" }}
+          type="button"
           onClick={onOpenAi}
-          className="flex h-7 items-center gap-2 rounded-md border border-border/60 bg-card px-2 text-xs text-muted-foreground hover:text-foreground"
+          className="animate-in fade-in slide-in-from-bottom-0.5 duration-150 flex h-7 items-center gap-2 rounded-md border border-border/60 bg-card px-2 text-xs text-muted-foreground hover:text-foreground"
         >
           Open AI Agent
           <KbdGroup>
@@ -77,9 +69,9 @@ export function AiTools({ aiOpen, canSubmit, onOpenAi, onSubmit }: Props) {
               {fmtShortcut(MOD_KEY, "I")}
             </Kbd>
           </KbdGroup>
-        </motion.button>
+        </button>
       )}
-    </AnimatePresence>
+    </>
   );
 }
 

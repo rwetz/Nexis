@@ -16,7 +16,6 @@ import {
   TerminalIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useComposer, type FileAttachment } from "../lib/composer";
 import { useWorkspaceFiles } from "../hooks/useWorkspaceFiles";
@@ -363,25 +362,19 @@ export function AiInputBar({ compact }: { compact?: boolean } = {}) {
           )}
         </Popover>
 
-        <AnimatePresence initial={false}>
-          {voiceLabel && (
-            <motion.div
-              key={voiceLabel}
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.12 }}
-              className="flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground"
-            >
-              {c.voice.recording ? (
-                <span className="size-1.5 animate-pulse rounded-full bg-destructive" />
-              ) : (
-                <Spinner className="size-3" />
-              )}
-              <span className="truncate">{voiceLabel}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {voiceLabel && (
+          <div
+            key={voiceLabel}
+            className="animate-in fade-in slide-in-from-bottom-0.5 duration-150 flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground"
+          >
+            {c.voice.recording ? (
+              <span className="size-1.5 animate-pulse rounded-full bg-destructive" />
+            ) : (
+              <Spinner className="size-3" />
+            )}
+            <span className="truncate">{voiceLabel}</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -406,16 +399,10 @@ function ChipsRow({
     return null;
   return (
     <div className="flex flex-wrap gap-1">
-      <AnimatePresence initial={false}>
-        {commands.map((cmd) => (
-          <motion.div
+      {commands.map((cmd) => (
+          <div
             key={`cmd-${cmd.name}`}
-            layout
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            transition={{ duration: 0.12 }}
-            className="group flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-[11px]"
+            className="animate-in fade-in zoom-in-90 duration-150 group flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-[11px]"
             title={cmd.label}
           >
             <HugeiconsIcon
@@ -433,17 +420,12 @@ function ChipsRow({
             >
               <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
             </button>
-          </motion.div>
+          </div>
         ))}
         {snippets.map((s) => (
-          <motion.div
+          <div
             key={`snip-${s.id}`}
-            layout
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            transition={{ duration: 0.12 }}
-            className="group flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary"
+            className="animate-in fade-in zoom-in-90 duration-150 group flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary"
             title={s.description || s.name}
           >
             <HugeiconsIcon
@@ -461,17 +443,12 @@ function ChipsRow({
             >
               <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
             </button>
-          </motion.div>
+          </div>
         ))}
         {files.map((f) => (
-          <motion.div
+          <div
             key={f.id}
-            layout
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.92 }}
-            transition={{ duration: 0.12 }}
-            className="group flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-[11px]"
+            className="animate-in fade-in zoom-in-90 duration-150 group flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-[11px]"
           >
             {f.kind === "image" && f.url ? (
               <img src={f.url} alt="" className="size-4 rounded object-cover" />
@@ -503,9 +480,8 @@ function ChipsRow({
             >
               <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
             </button>
-          </motion.div>
+          </div>
         ))}
-      </AnimatePresence>
     </div>
   );
 }

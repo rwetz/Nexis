@@ -132,8 +132,6 @@ export default defineConfig(async ({ mode }) => ({
             return "streamdown";
 
           // ── Animation / 3D ─────────────────────────────────────────────────
-          if (id.includes("/motion/") || id.includes("framer-motion"))
-            return "motion";
           if (id.includes("/ogl/")) return "ogl-bg";
 
           // ── React core ─────────────────────────────────────────────────────

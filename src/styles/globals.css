@@ -293,6 +293,38 @@ html *::-webkit-scrollbar {
   display: none;
 }
 
+/* The `motion` library was replaced with tw-animate-css entrances + CSS
+ * transitions (compositor-side frames on WebKitGTK, no per-frame JS). motion's
+ * MotionConfig honored the OS reduced-motion setting app-wide; this rule keeps
+ * that promise for every animate-in/animate-out utility. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-out {
+    animation-duration: 0s !important;
+  }
+}
+
+/* AI streaming-label shimmer (CSS port of the former motion variant in
+ * ai-elements/shimmer.tsx — sweeps background-position across bg-clip-text). */
+@keyframes nexis-shimmer {
+  from {
+    background-position: 100% center;
+  }
+  to {
+    background-position: 0% center;
+  }
+}
+
+.nexis-shimmer {
+  animation: nexis-shimmer var(--shimmer-duration, 2s) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nexis-shimmer {
+    animation: none;
+  }
+}
+
 @keyframes nexis-collapsible-down {
   from {
     height: 0;

@@ -33,7 +33,6 @@ import {
   TerminalIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { motion } from "motion/react";
 import { useEffect, useMemo } from "react";
 import { estimateCost, getModel, getModelContextLimit } from "../config";
 import type { SessionMeta } from "../lib/sessions";
@@ -92,13 +91,10 @@ export function AiMiniWindow() {
   }, [closeMini]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 12, scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 320, damping: 32 }}
+    <div
       data-ai-mini-window
       className={cn(
+        "animate-in fade-in slide-in-from-bottom-3 zoom-in-[0.98] duration-200 ease-out",
         "no-scrollbar-deep fixed right-4 bottom-24 z-40 flex flex-col overflow-hidden",
         "h-[min(42rem,calc(100vh-7rem))] w-[min(34rem,calc(100vw-2rem))]",
         "rounded-2xl border border-border/60 bg-card text-[12px]",
@@ -120,7 +116,7 @@ export function AiMiniWindow() {
         <EmptyShell onClose={closeMini} onExpand={expandToPanel} />
       )}
       <PlanDiffReview />
-    </motion.div>
+    </div>
   );
 }
 
