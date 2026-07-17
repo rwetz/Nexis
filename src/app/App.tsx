@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { packEnabled } from "@/lib/packs";
+import { packEnabled, viewEnabled } from "@/lib/packs";
 import { dirname } from "@/lib/path";
 import { useSidebarState, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "./useSidebarState";
 import type { PanelImperativeHandle } from "react-resizable-panels";
@@ -80,7 +80,7 @@ import {
   type ShortcutHandlers,
   type ShortcutId,
 } from "@/modules/shortcuts";
-import { SidebarRail } from "@/modules/sidebar";
+import { PackGatePlaceholder, SidebarRail } from "@/modules/sidebar";
 import { ActivityPanel, useBackgroundProcesses } from "@/modules/processes";
 import { ProblemsPanel } from "@/modules/problems/ProblemsPanel";
 import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
@@ -1604,7 +1604,16 @@ export default function App() {
                 <div className="flex h-full min-h-0 flex-col border-r border-border/60 bg-card">
                   <div className="min-h-0 flex-1">
                     <ErrorBoundary>
-                    {sidebarView === "recent-files" ? (
+                    {!viewEnabled(sidebarView, enabledPacks) ? (
+                      // The active view's pack is disabled (settings toggle,
+                      // preset, or a decoupled open request for a gated
+                      // view): offer to enable the pack in place instead of
+                      // silently snapping back to the explorer.
+                      <PackGatePlaceholder
+                        view={sidebarView}
+                        onShowExplorer={() => persistSidebarView("explorer")}
+                      />
+                    ) : sidebarView === "recent-files" ? (
                       <RecentFilesPanel onOpenFile={handleOpenFile} />
                     ) : sidebarView === "explorer" ? (
                       <FileExplorer

@@ -5,10 +5,8 @@
 // ╚══════════════════════════════════════╝
 
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { viewEnabled } from "@/lib/packs";
 import { isSidebarViewId, type SidebarViewId } from "@/modules/sidebar";
 import type { FileExplorerHandle } from "@/modules/explorer";
-import { usePreferencesStore } from "@/modules/settings/preferences";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -38,7 +36,10 @@ function readSidebarWidth(): number {
 function readSidebarView(): SidebarViewId {
   try {
     const stored = window.localStorage.getItem(SIDEBAR_VIEW_STORAGE_KEY);
-    if (stored === "explorer" || stored === "source-control") return stored;
+    // Any valid view restores, including pack-owned ones: heavy panels are
+    // lazy-loaded, and a view whose pack got disabled in the meantime lands
+    // on the PackGatePlaceholder instead of a broken panel.
+    if (isSidebarViewId(stored)) return stored;
   } catch {
     // ignore
   }
@@ -77,15 +78,11 @@ export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null
     }
   }, []);
 
-  // If the active view's expansion pack is disabled (settings toggle in
-  // another window, first-run preset), fall back to the explorer rather
-  // than leaving a panel visible that the rail no longer offers.
-  const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
-  useEffect(() => {
-    if (!viewEnabled(sidebarView, enabledPacks)) {
-      persistSidebarView("explorer");
-    }
-  }, [enabledPacks, sidebarView, persistSidebarView]);
+  // When the active view's expansion pack is disabled (settings toggle in
+  // another window, first-run preset), the view id deliberately stays put:
+  // App.tsx renders PackGatePlaceholder in the panel slot, offering to
+  // enable the pack in place. Re-enabling restores the panel without any
+  // view switch; leaving via "Show Files" or the rail moves on normally.
 
   const toggleSidebar = useCallback(() => {
     const p = sidebarRef.current;
@@ -101,10 +98,9 @@ export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (!isSidebarViewId(detail)) return;
-      // Decoupled callers (status pills, plugins) can't know the pack
-      // config — drop requests for views whose pack is disabled.
-      const packs = usePreferencesStore.getState().enabledPacks;
-      if (!viewEnabled(detail, packs)) return;
+      // Decoupled callers (status pills, plugins, deep links) can't know
+      // the pack config — requests for gated views go through and land on
+      // the PackGatePlaceholder ("enable X?") rather than being dropped.
       const panel = sidebarRef.current;
       if (panel && panel.getSize().asPercentage <= 0) {
         panel.resize(`${sidebarWidthRef.current}px`);
