@@ -57,6 +57,7 @@ import { useDebugStore } from "@/modules/debugger/debugSession";
 
 initVimGlobals();
 import { resolveLanguage } from "./lib/languageResolver";
+import { useLanguageOverrides } from "./lib/languageOverrides";
 import { useDocument } from "./lib/useDocument";
 import { formatFile } from "./lib/formatter";
 import { inlineCompletion } from "./lib/autocomplete/inlineExtension";
@@ -446,11 +447,14 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       });
     }, [wordWrap]);
 
+    const languageOverride = useLanguageOverrides(
+      (s) => s.overrides[path] ?? null,
+    );
     useEffect(() => {
       let cancelled = false;
       const ext = path.split(".").pop()?.toLowerCase() ?? null;
-      languageRef.current = ext;
-      resolveLanguage(path).then((ext) => {
+      languageRef.current = languageOverride ?? ext;
+      resolveLanguage(path, languageOverride).then((ext) => {
         if (cancelled) return;
         const view = cmRef.current?.view;
         if (!view) return;
@@ -461,7 +465,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       return () => {
         cancelled = true;
       };
-    }, [path, doc.status]);
+    }, [path, doc.status, languageOverride]);
 
     useImperativeHandle(
       ref,

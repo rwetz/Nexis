@@ -224,22 +224,13 @@ export function resolveLanguageSync(filename: string): Extension | null {
   return key ? (cache.get(key) ?? null) : null;
 }
 
-export async function resolveLanguage(
-  filename: string,
+async function loadExtension(
+  key: string,
+  loader: LanguageLoader,
+  extName: string | null,
 ): Promise<Extension | null> {
-  const key = cacheKey(filename);
-  if (!key) return null;
   const cached = cache.get(key);
   if (cached !== undefined) return cached;
-
-  const lower = filename.toLowerCase();
-  const base = lower.split("/").pop() ?? lower;
-  const loader = filenameOverrides[base] ?? loaders[extOf(base) ?? ""];
-  if (!loader) {
-    cache.set(key, null);
-    return null;
-  }
-
   const result = await loader();
   let ext: Extension;
   if (isStreamParser(result)) {
@@ -249,7 +240,6 @@ export async function resolveLanguage(
     );
     // StreamParser languages have no error nodes, so pair them with the
     // bracket-balance linter where brackets are reliably balanced.
-    const extName = extOf(base);
     ext =
       extName && DELIMITER_CHECK_EXTENSIONS.has(extName)
         ? [lang, delimiterLinter()]
@@ -265,8 +255,113 @@ export async function resolveLanguage(
   return ext;
 }
 
+/**
+ * Resolve the CodeMirror language for a file. `overrideId` (a `loaders` key,
+ * or `"plain"` for no highlighting) takes precedence over detection — it
+ * backs the per-file language dropdown in the editor pane header.
+ */
+export async function resolveLanguage(
+  filename: string,
+  overrideId?: string | null,
+): Promise<Extension | null> {
+  if (overrideId === PLAIN_LANGUAGE_ID) return null;
+  if (overrideId && loaders[overrideId]) {
+    return loadExtension(`ext:${overrideId}`, loaders[overrideId], overrideId);
+  }
+
+  const key = cacheKey(filename);
+  if (!key) return null;
+
+  const lower = filename.toLowerCase();
+  const base = lower.split("/").pop() ?? lower;
+  const loader = filenameOverrides[base] ?? loaders[extOf(base) ?? ""];
+  if (!loader) {
+    cache.set(key, null);
+    return null;
+  }
+  return loadExtension(key, loader, extOf(base));
+}
+
 export function preloadLanguages(filenames: string[]): void {
   for (const f of filenames) {
     void resolveLanguage(f).catch(() => {});
   }
+}
+
+/** Override id meaning "no syntax highlighting". */
+export const PLAIN_LANGUAGE_ID = "plain";
+
+/**
+ * Curated choices for the per-file language dropdown. Each id is a `loaders`
+ * key (one representative extension per language) except `plain`.
+ */
+export const LANGUAGE_CHOICES: ReadonlyArray<{ id: string; label: string }> = [
+  { id: "c", label: "C" },
+  { id: "cpp", label: "C++" },
+  { id: "cs", label: "C#" },
+  { id: "css", label: "CSS" },
+  { id: "dart", label: "Dart" },
+  { id: "dockerfile", label: "Dockerfile" },
+  { id: "ex", label: "Elixir" },
+  { id: "go", label: "Go" },
+  { id: "graphql", label: "GraphQL" },
+  { id: "hs", label: "Haskell" },
+  { id: "html", label: "HTML" },
+  { id: "java", label: "Java" },
+  { id: "js", label: "JavaScript" },
+  { id: "jsx", label: "JSX" },
+  { id: "json", label: "JSON" },
+  { id: "kt", label: "Kotlin" },
+  { id: "lua", label: "Lua" },
+  { id: "md", label: "Markdown" },
+  { id: "conf", label: "Nginx" },
+  { id: "php", label: "PHP" },
+  { id: "ps1", label: "PowerShell" },
+  { id: "proto", label: "Protobuf" },
+  { id: "py", label: "Python" },
+  { id: "r", label: "R" },
+  { id: "rb", label: "Ruby" },
+  { id: "rs", label: "Rust" },
+  { id: "scala", label: "Scala" },
+  { id: "scss", label: "SCSS" },
+  { id: "sh", label: "Shell" },
+  { id: "sql", label: "SQL" },
+  { id: "svelte", label: "Svelte" },
+  { id: "swift", label: "Swift" },
+  { id: "toml", label: "TOML" },
+  { id: "tsx", label: "TSX" },
+  { id: "ts", label: "TypeScript" },
+  { id: "vue", label: "Vue" },
+  { id: "yaml", label: "YAML" },
+];
+
+/** Filename-based detections mapped back to a representative choice id. */
+const filenameToChoiceId: Record<string, string> = {
+  dockerfile: "dockerfile",
+  "dockerfile.dev": "dockerfile",
+  "nginx.conf": "conf",
+  gemfile: "rb",
+  rakefile: "rb",
+  podfile: "rb",
+  fastfile: "rb",
+  guardfile: "rb",
+  brewfile: "rb",
+};
+
+/**
+ * The loader key detection would pick for this file, or null when the file
+ * has no known language. Drives the dropdown's "Auto" label.
+ */
+export function detectedLanguageId(filename: string): string | null {
+  const lower = filename.toLowerCase();
+  const base = lower.split("/").pop() ?? lower;
+  if (filenameToChoiceId[base]) return filenameToChoiceId[base];
+  const ext = extOf(base);
+  return ext && loaders[ext] ? ext : null;
+}
+
+/** Display label for a loader key (falls back to the raw id). */
+export function languageLabel(id: string | null): string {
+  if (!id || id === PLAIN_LANGUAGE_ID) return "Plain Text";
+  return LANGUAGE_CHOICES.find((c) => c.id === id)?.label ?? id;
 }

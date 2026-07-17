@@ -19,10 +19,23 @@ import {
   TextAlignLeftIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import type { EditorPaneNode } from "@/modules/tabs";
 import { EditorPane, type EditorPaneHandle } from "./EditorPane";
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { buildRunCommand } from "./lib/runCommand";
+import {
+  LANGUAGE_CHOICES,
+  PLAIN_LANGUAGE_ID,
+  detectedLanguageId,
+  languageLabel,
+} from "./lib/languageResolver";
+import { useLanguageOverrides } from "./lib/languageOverrides";
 
 export type EditorLeafBundle = {
   setRef: (h: EditorPaneHandle | null) => void;
@@ -53,11 +66,16 @@ export function EditorPaneTreeView({
   split = false,
 }: Props) {
   const wordWrap = usePreferencesStore((s) => s.wordWrap);
+  // Stable store reference (pitfall #14) — indexed per leaf below.
+  const languageOverrides = useLanguageOverrides((s) => s.overrides);
+  const setLanguageOverride = useLanguageOverrides((s) => s.setOverride);
 
   if (node.kind === "leaf") {
     const focused = node.id === activeLeafId;
     const b = getBundle(node.id);
     const rc = onRunFile ? buildRunCommand(node.path) : null;
+    const langOverride = languageOverrides[node.path] ?? null;
+    const detectedLang = detectedLanguageId(node.path);
     return (
       <div
         onMouseDownCapture={() => {
@@ -76,6 +94,33 @@ export function EditorPaneTreeView({
             onNavigate={onNavigateToFolder}
           />
           <div className="flex shrink-0 items-center gap-1">
+            <Select
+              value={langOverride ?? "auto"}
+              onValueChange={(v) =>
+                setLanguageOverride(node.path, v === "auto" ? null : v)
+              }
+            >
+              <SelectTrigger
+                size="sm"
+                title="Syntax language for this file"
+                className="h-5 gap-1 rounded border-0 bg-transparent px-1.5 text-[11px] text-muted-foreground shadow-none hover:bg-muted hover:text-foreground"
+              >
+                {languageLabel(langOverride ?? detectedLang)}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto" className="text-[12px]">
+                  Auto ({languageLabel(detectedLang)})
+                </SelectItem>
+                <SelectItem value={PLAIN_LANGUAGE_ID} className="text-[12px]">
+                  Plain Text
+                </SelectItem>
+                {LANGUAGE_CHOICES.map((c) => (
+                  <SelectItem key={c.id} value={c.id} className="text-[12px]">
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <button
               type="button"
               title={wordWrap ? "Disable word wrap" : "Enable word wrap"}
