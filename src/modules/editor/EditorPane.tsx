@@ -9,6 +9,7 @@ import { foldAll, unfoldAll } from "@codemirror/language";
 import {
   findNext,
   findPrevious,
+  gotoLine,
   SearchQuery,
   setSearchQuery,
 } from "@codemirror/search";
@@ -90,6 +91,8 @@ export type EditorPaneHandle = {
   redo: () => void;
   /** Open the LSP code-action (refactor) dialog for the current selection. */
   openCodeActions: () => void;
+  /** Open CodeMirror's go-to-line panel. */
+  openGotoLine: () => void;
 };
 
 type Props = {
@@ -549,6 +552,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
             await saveRef.current();
             openCodeActionRef.current?.(range);
           })();
+        },
+        openGotoLine: () => {
+          const view = cmRef.current?.view;
+          if (view) gotoLine(view);
         },
       }),
       [path],

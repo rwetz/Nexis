@@ -52,6 +52,7 @@ export type ShortcutId =
   | "editor.undo"
   | "editor.redo"
   | "editor.codeActions"
+  | "editor.goToLine"
   | "workspace.switch";
 
 export type ShortcutGroup =
@@ -349,6 +350,12 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Refactor (LSP code actions)",
     group: "Editor",
     defaultBindings: [{ [MOD_PROP]: true, shift: true, key: "r" }],
+  },
+  {
+    id: "editor.goToLine",
+    label: "Go to line",
+    group: "Editor",
+    defaultBindings: [{ alt: true, key: "g" }],
   },
 ];
 

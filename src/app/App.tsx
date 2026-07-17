@@ -1277,6 +1277,10 @@ export default function App() {
         if (activeEditorLeafId !== null)
           editorRefs.current.get(activeEditorLeafId)?.openCodeActions();
       },
+      "editor.goToLine": () => {
+        if (activeEditorLeafId !== null)
+          editorRefs.current.get(activeEditorLeafId)?.openGotoLine();
+      },
       "editor.undo": () =>
         activeEditorLeafId !== null &&
         editorRefs.current.get(activeEditorLeafId)?.undo(),
@@ -1313,7 +1317,8 @@ export default function App() {
         id === "editor.undo" ||
         id === "editor.redo" ||
         id === "editor.formatDocument" ||
-        id === "editor.codeActions"
+        id === "editor.codeActions" ||
+        id === "editor.goToLine"
       ) {
         return activeTab?.kind !== "editor";
       }
