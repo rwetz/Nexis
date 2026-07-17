@@ -7,6 +7,11 @@
 import { EXT_TO_LANGUAGE_ID } from "./constants";
 import * as fileIconsMod from "./fileIcons";
 import * as folderIconsMod from "./folderIcons";
+// `?url` emits the JSONs as plain assets and imports only their URL strings —
+// the data is fetched and parsed with the native JSON parser below instead of
+// being compiled into (and executed as) a ~750 KB of JS module chunks.
+import catIconsUrl from "@iconify-json/catppuccin/icons.json?url";
+import vscIconsUrl from "./vscodeFolderIcons.json?url";
 
 const catFileNames = fileIconsMod.fileNames as Record<string, string>;
 const catFileExtensions = fileIconsMod.fileExtensions as Record<string, string>;
@@ -33,24 +38,35 @@ let VSC_W = 32;
 let VSC_H = 32;
 
 // Lazy-load the icon JSONs off the critical path.
+async function fetchIconSet(url: string): Promise<IconifySet> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`icon set ${url}: HTTP ${res.status}`);
+  return (await res.json()) as IconifySet;
+}
+
 let loadPromise: Promise<void> | null = null;
 function ensureLoaded(): Promise<void> {
   if (cat && vsc) return Promise.resolve();
   if (loadPromise) return loadPromise;
   loadPromise = Promise.all([
-    import("@iconify-json/catppuccin/icons.json").then((mod) => {
-      const data = mod.default as unknown as IconifySet;
+    fetchIconSet(catIconsUrl).then((data) => {
       cat = data;
       CAT_W = data.width ?? 16;
       CAT_H = data.height ?? 16;
     }),
-    import("./vscodeFolderIcons.json").then((mod) => {
-      const data = mod.default as unknown as IconifySet;
+    fetchIconSet(vscIconsUrl).then((data) => {
       vsc = data;
       VSC_W = data.width ?? 32;
       VSC_H = data.height ?? 32;
     }),
-  ]).then(() => {});
+  ])
+    .then(() => {})
+    .catch((e) => {
+      // Allow a retry on the next preloadIcons() call instead of caching the
+      // rejection forever (same lesson as pitfall #10).
+      loadPromise = null;
+      console.warn("[nexis] icon set load failed:", e);
+    });
   return loadPromise;
 }
 

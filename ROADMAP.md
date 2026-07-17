@@ -98,7 +98,7 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 - 🟡 Large-file editor mode — detect file size on open and auto-disable LSP/lint/minimap/folding above a threshold, with a banner offering to re-enable. (Upstream terax shipped this in 0.8.5, confirming demand.)
 - ✅ Opt-in memory self-report — a debug status-bar readout of scrollback bytes, recording size, and AI-history tokens so resource creep is visible during development; include GL-context and renderer-pool slot counts so the slot-reaping win stays proven.
 - ✅ Minimap `<canvas>` rewrite — drive it from a CodeMirror `updateListener`, dropping the 200 ms interval and per-line DOM entirely; the cheap memoization fix shipped in 1.20.6, this is the nice-to-have on top.
-- ✅ `vscodeFolderIcons.json` (437 KB) ships as a JS module — load via `fetch` + `JSON.parse` (or a JSON module import) instead of executing a 437 KB JS module; and don't regress the un-preloaded `icons` chunk into main.
+- [x] ~~`vscodeFolderIcons.json` ships as a JS module~~ — done, both icon JSONs now fetch as static assets (see CHANGELOG `[Unreleased]`).
 - 🟡 React Compiler evaluation — try `babel-plugin-react-compiler` in the Vite react plugin (React 19 already in place); potentially large win for a UI that re-renders on terminal title/cwd churn, medium risk around CodeMirror/xterm ref patterns. Run `npx react-compiler-healthcheck` first.
 - 🟡 Native FS watcher — `notify` crate emitting a debounced `nexis://fs-changed` event, replacing the explorer's 3 s `tree.refresh` poll; weigh ~200–300 KB against the binary budget.
 

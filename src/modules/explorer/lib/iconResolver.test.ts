@@ -4,6 +4,8 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { fileIconUrl, folderIconUrl, preloadIcons } from "./iconResolver";
 
@@ -11,7 +13,20 @@ function decoded(url: string): string {
   return decodeURIComponent(url.replace(/^data:image\/svg\+xml;utf8,/, ""));
 }
 
+// The resolver loads its icon sets via fetch() of Vite `?url` asset imports.
+// In the node test environment those resolve to dev-server paths ("/src/…",
+// "/@fs/…") that fetch can't reach — serve them from disk instead.
+function assetUrlToFsPath(u: string): string {
+  const clean = u.split("?")[0];
+  if (clean.startsWith("/@fs/")) return clean.slice("/@fs".length);
+  return path.join(process.cwd(), clean.replace(/^\//, ""));
+}
+
 beforeAll(async () => {
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const bytes = await readFile(assetUrlToFsPath(String(input)));
+    return new Response(bytes);
+  }) as typeof fetch;
   await preloadIcons();
 });
 
