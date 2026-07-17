@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { packEnabled } from "@/lib/packs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Settings01Icon } from "@hugeicons/core-free-icons";
@@ -31,6 +32,7 @@ type Props = {
 
 export function ShortcutsDialog({ open, onOpenChange }: Props) {
   const userShortcuts = usePreferencesStore((s) => s.shortcuts);
+  const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
 
   const onOpenSettings = () => {
     onOpenChange(false);
@@ -61,7 +63,9 @@ export function ShortcutsDialog({ open, onOpenChange }: Props) {
         <ScrollArea className="max-h-[70vh] min-h-0 pr-2">
           <div className="flex flex-col gap-5">
             {SHORTCUT_GROUPS.map((group) => {
-              const items = SHORTCUTS.filter((s) => s.group === group);
+              const items = SHORTCUTS.filter(
+                (s) => s.group === group && packEnabled(s.pack, enabledPacks),
+              );
               if (items.length === 0) return null;
               return (
                 <section key={group} className="flex flex-col gap-2">

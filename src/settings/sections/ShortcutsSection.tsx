@@ -7,6 +7,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { packEnabled } from "@/lib/packs";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setShortcuts } from "@/modules/settings/store";
 import {
@@ -38,19 +39,25 @@ import {
 
 export function ShortcutsSection() {
   const userShortcuts = usePreferencesStore((s) => s.shortcuts);
+  const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
   const [search, setSearch] = useState("");
   const [recordingId, setRecordingId] = useState<ShortcutId | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const filteredShortcuts = useMemo(() => {
-    if (!search) return SHORTCUTS;
+    // Shortcuts owned by a disabled expansion pack are inert (see
+    // useGlobalShortcuts), so don't offer to customize them either.
+    const available = SHORTCUTS.filter((s) =>
+      packEnabled(s.pack, enabledPacks),
+    );
+    if (!search) return available;
     const lower = search.toLowerCase();
-    return SHORTCUTS.filter(
+    return available.filter(
       (s) =>
         s.label.toLowerCase().includes(lower) ||
         s.group.toLowerCase().includes(lower)
     );
-  }, [search]);
+  }, [search, enabledPacks]);
 
   const onRecord = (id: ShortcutId, binding: KeyBinding) => {
     const next = { ...userShortcuts, [id]: [binding] };

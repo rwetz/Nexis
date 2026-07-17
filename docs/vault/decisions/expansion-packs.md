@@ -6,7 +6,7 @@ description: Feature surface is split into a fixed core plus toggleable "expansi
 # Feature surface splits into core + expansion packs
 
 **Date:** 2026-07
-**Status:** active — V1 implemented 2026-07; V2–V4 phases tracked in ROADMAP.md ("Up next")
+**Status:** active — V1 implemented 2026-07; V2 gating (palette/keybindings/settings rows) implemented 2026-07; remaining phases tracked in ROADMAP.md ("Up next")
 
 ## Context
 
@@ -25,7 +25,8 @@ The sidebar rail exposes ~24 panels. The average CS-focused user needs a fractio
    - `ml-lab` — ml (owns the future nexis-ml download flow)
    - `advanced` — share, notes, shell-snippets, snippets, release
 5. **Config:** `enabledPacks: PackId[]` in the preferences store, routed through `writePref()` (cross-window sync — CLAUDE.md pitfall #2). **Default = all packs on** so existing users see no change on upgrade. A `packsOnboarded` marker pref gates the one-time first-run preset picker (Bare-Bones / Standard / Everything — presets are just bundles of toggles over the same config).
-6. **Gating points:** `SidebarRail` filters its item list; App.tsx falls back to `explorer` when the active view's pack is disabled; `PluginHost` skips plugins whose pack is off (mlPlugin → `ml-lab`). Pinned-rail entries of disabled packs are filtered at render but kept in storage so re-enabling restores them.
+6. **Gating points:** `SidebarRail` filters its item list; App.tsx falls back to `explorer` when the active view's pack is disabled; `PluginHost` skips plugins whose pack is off (mlPlugin → `ml-lab`). Pinned-rail entries of disabled packs are filtered at render but kept in storage so re-enabling restores them; the same survive-in-storage rule applies to keybinding customizations of gated shortcuts.
+7. **Non-view surfaces gate through `packEnabled()`** (`src/lib/packs.ts`): `Shortcut.pack` and `CommandDef.pack` declare ownership; a disabled pack's palette entries disappear, its keybindings go inert in `useGlobalShortcuts` (behave as unbound), and its rows hide from the shortcuts dialog + Settings → Shortcuts. Tests in `shortcuts.test.ts` pin each tagged shortcut to `packForView()` of the view it opens. Any new gated surface (e.g. V3 install-flow settings) should use the same predicate.
 
 ## Alternatives rejected
 

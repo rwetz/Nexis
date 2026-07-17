@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { Command } from "cmdk";
+import type { PackId } from "@/lib/packs";
 import { cn } from "@/lib/utils";
 import { Search01Icon, Settings01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -18,6 +19,10 @@ export type CommandDef = {
   icon?: typeof Settings01Icon;
   action: () => void;
   keywords?: string[];
+  /** Expansion pack that owns the targeted feature (see src/lib/packs.ts).
+   * The caller filters out commands of disabled packs before rendering.
+   * Omit for core commands. */
+  pack?: PackId;
 };
 
 type Props = {

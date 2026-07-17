@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { useEffect, useRef } from "react";
+import { packEnabled } from "@/lib/packs";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
   SHORTCUTS,
@@ -28,11 +29,14 @@ export function useGlobalShortcuts(
 
   // Access the shortcuts from the store
   const userShortcuts = usePreferencesStore((s) => s.shortcuts);
+  const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const { handlers, options } = latest.current;
       for (const s of SHORTCUTS) {
+        // A shortcut owned by a disabled expansion pack behaves as unbound.
+        if (!packEnabled(s.pack, enabledPacks)) continue;
         if (e.repeat && !s.allowRepeat) continue;
         const bindings = userShortcuts[s.id] || s.defaultBindings;
         const isMatch = bindings.some((b) => matchBinding(e, b, s.id));
@@ -49,5 +53,5 @@ export function useGlobalShortcuts(
     window.addEventListener("keydown", onKey, { capture: true });
     return () =>
       window.removeEventListener("keydown", onKey, { capture: true });
-  }, [userShortcuts]);
+  }, [userShortcuts, enabledPacks]);
 }

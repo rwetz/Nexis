@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { packEnabled } from "@/lib/packs";
 import { dirname } from "@/lib/path";
 import { useSidebarState, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "./useSidebarState";
 import type { PanelImperativeHandle } from "react-resizable-panels";
@@ -1133,8 +1134,17 @@ export default function App() {
     { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
     { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
     { id: "sidebar.sc",          label: "Show source control",      category: "View",    action: () => persistSidebarView("source-control") },
-    { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes") },
+    { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
   ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView]);
+
+  // Commands owned by a disabled expansion pack disappear from the palette,
+  // mirroring how the rail hides their views (V2 gating; decision doc in
+  // docs/vault/decisions/expansion-packs.md).
+  const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
+  const visiblePaletteCommands = useMemo(
+    () => paletteCommands.filter((c) => packEnabled(c.pack, enabledPacks)),
+    [paletteCommands, enabledPacks],
+  );
 
   const handleCloseTabOrPane = useCallback(() => {
     const t = tabsRef.current.find((x) => x.id === activeId);
@@ -1833,7 +1843,7 @@ export default function App() {
 
           {commandPaletteOpen && (
             <CommandPalette
-              commands={paletteCommands}
+              commands={visiblePaletteCommands}
               onClose={() => setCommandPaletteOpen(false)}
             />
           )}

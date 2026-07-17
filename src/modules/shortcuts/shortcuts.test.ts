@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { describe, expect, it } from "vitest";
+import { packForView } from "@/lib/packs";
 import { matchBinding, SHORTCUTS, type KeyBinding } from "./shortcuts";
 
 /** matchBinding only reads key + modifier flags, so a plain object works. */
@@ -86,5 +87,24 @@ describe("SHORTCUTS registry", () => {
     expect(s).toBeDefined();
     expect(s?.displayOnly).toBeUndefined();
     expect(s?.defaultBindings[0]).toMatchObject({ shift: true, key: "r" });
+  });
+
+  it("shortcuts that target a pack-owned sidebar view carry that view's pack", () => {
+    // These handlers open (or write to a store surfaced only by) a
+    // pack-owned sidebar view. Tagging them keeps the binding inert and
+    // hidden while the pack is disabled — otherwise the key would open a
+    // panel the rail no longer offers (the V1 gating leak).
+    const owned: Record<string, Parameters<typeof packForView>[0]> = {
+      "repl.sendSelection": "repl",
+      "refactor.captureSelection": "refactor",
+      "bookmark.toggle": "bookmarks",
+    };
+    for (const [id, view] of Object.entries(owned)) {
+      const s = SHORTCUTS.find((x) => x.id === id);
+      expect(s, `${id} missing from SHORTCUTS`).toBeDefined();
+      expect(s?.pack, `${id} must be owned by packForView("${view}")`).toBe(
+        packForView(view),
+      );
+    }
   });
 });

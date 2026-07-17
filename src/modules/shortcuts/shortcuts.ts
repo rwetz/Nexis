@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import type { PackId } from "@/lib/packs";
 import { IS_MAC, MOD_PROP } from "@/lib/platform";
 
 /**
@@ -77,6 +78,10 @@ export type Shortcut = {
   allowRepeat?: boolean;
   /** Show in the shortcuts list but not editable (e.g. range shortcuts). */
   displayOnly?: boolean;
+  /** Expansion pack that owns the feature this shortcut targets (see
+   * src/lib/packs.ts). While the pack is disabled the binding is inert and
+   * hidden from the shortcuts dialog/settings. Omit for core shortcuts. */
+  pack?: PackId;
 };
 
 export const SHORTCUTS: Shortcut[] = [
@@ -254,18 +259,21 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Send selection to REPL",
     group: "AI",
     defaultBindings: [{ alt: true, shift: true, key: "r" }],
+    pack: "dev-tools",
   },
   {
     id: "refactor.captureSelection",
     label: "Refactor selection with AI",
     group: "AI",
     defaultBindings: [{ alt: true, shift: true, key: "x" }],
+    pack: "ai-extras",
   },
   {
     id: "bookmark.toggle",
     label: "Toggle bookmark at current position",
     group: "Editor",
     defaultBindings: [{ alt: true, key: "d" }],
+    pack: "navigation-plus",
   },
   {
     id: "sidebar.toggle",

@@ -114,13 +114,23 @@ export function packForView(view: SidebarViewId): PackId | null {
   return VIEW_TO_PACK.get(view) ?? null;
 }
 
+/** Whether a feature owned by `pack` is available under the given pack
+ *  config. Core features (no owning pack) pass `null`/`undefined` and are
+ *  always available. Used for any pack-gated surface that isn't a sidebar
+ *  view: palette commands, keybindings, settings rows. */
+export function packEnabled(
+  pack: PackId | null | undefined,
+  enabledPacks: readonly PackId[],
+): boolean {
+  return pack == null || enabledPacks.includes(pack);
+}
+
 /** Whether a sidebar view is available under the given pack config. */
 export function viewEnabled(
   view: SidebarViewId,
   enabledPacks: readonly PackId[],
 ): boolean {
-  const pack = VIEW_TO_PACK.get(view);
-  return pack === undefined || enabledPacks.includes(pack);
+  return packEnabled(VIEW_TO_PACK.get(view), enabledPacks);
 }
 
 /** Sanity: every sidebar view is core or claimed by exactly one pack.

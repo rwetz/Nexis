@@ -11,6 +11,7 @@ import {
   PACK_IDS,
   PACK_PRESETS,
   PACKS,
+  packEnabled,
   packForView,
   unclaimedViews,
   viewEnabled,
@@ -64,5 +65,13 @@ describe("expansion packs taxonomy", () => {
     expect(viewEnabled("ml", ["ml-lab"])).toBe(true);
     expect(viewEnabled("debugger", ["ml-lab"])).toBe(false);
     expect(viewEnabled("debugger", ["code-tools"])).toBe(true);
+  });
+
+  it("packEnabled treats ownerless features as core", () => {
+    expect(packEnabled(null, [])).toBe(true);
+    expect(packEnabled(undefined, [])).toBe(true);
+    expect(packEnabled("dev-tools", [])).toBe(false);
+    expect(packEnabled("dev-tools", ["dev-tools"])).toBe(true);
+    expect(packEnabled("dev-tools", ["ml-lab"])).toBe(false);
   });
 });
