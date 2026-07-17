@@ -213,6 +213,7 @@ function termOptions() {
     fontFamily: prefs.terminalFontFamily || detectMonoFontFamily(),
     letterSpacing: prefs.terminalLetterSpacing,
     fontSize: Math.max(4, Math.round(prefs.terminalFontSize * prefs.zoomLevel)),
+    fontWeight: prefs.terminalFontWeight,
     theme: buildTerminalTheme(),
     cursorBlink: prefs.terminalCursorBlink,
     cursorStyle: prefs.terminalCursorStyle,
@@ -912,6 +913,14 @@ export function applyFontSize(size: number): void {
       const bridge = adapter?.resolveLeaf(slot.currentLeafId);
       bridge?.resizePty(slot.term.cols, slot.term.rows);
     }
+  }
+}
+
+export function applyFontWeight(weight: number): void {
+  for (const slot of slots) {
+    if (slot.term.options.fontWeight === weight) continue;
+    slot.term.options.fontWeight = weight;
+    slot.fitAddon.fit();
   }
 }
 

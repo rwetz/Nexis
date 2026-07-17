@@ -152,6 +152,8 @@ export type Preferences = {
   terminalFontFamily: string;
   terminalLetterSpacing: number;
   terminalFontSize: number;
+  /** CSS font-weight for regular terminal text (bold text stays bold). */
+  terminalFontWeight: number;
   terminalScrollback: number;
   lastWslDistro: string | null;
   zoomLevel: number;
@@ -220,6 +222,7 @@ const KEY_TERMINAL_WEBGL_ENABLED = "terminalWebglEnabled";
 const KEY_TERMINAL_FONT_FAMILY = "terminalFontFamily";
 const KEY_TERMINAL_LETTER_SPACING = "terminalLetterSpacing";
 const KEY_TERMINAL_FONT_SIZE = "terminalFontSize";
+const KEY_TERMINAL_FONT_WEIGHT = "terminalFontWeight";
 const KEY_TERMINAL_SCROLLBACK = "terminalScrollback";
 const KEY_LAST_WSL_DISTRO = "lastWslDistro";
 const KEY_ZOOM_LEVEL = "zoomLevel";
@@ -244,6 +247,15 @@ export const TERMINAL_FONT_SIZE_MAX = 32;
 
 export const TERMINAL_FONT_SIZES = [
   10, 12, 13, 14, 15, 16, 18, 20, 22, 24,
+] as const;
+
+export const TERMINAL_FONT_WEIGHT_DEFAULT = 400;
+export const TERMINAL_FONT_WEIGHTS = [
+  { value: 300, label: "Light" },
+  { value: 400, label: "Normal" },
+  { value: 500, label: "Medium" },
+  { value: 600, label: "Semibold" },
+  { value: 700, label: "Bold" },
 ] as const;
 
 export const TERMINAL_SCROLLBACK_DEFAULT = 2000;
@@ -293,6 +305,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   terminalFontFamily: "",
   terminalLetterSpacing: 0,
   terminalFontSize: TERMINAL_FONT_SIZE_DEFAULT,
+  terminalFontWeight: TERMINAL_FONT_WEIGHT_DEFAULT,
   terminalScrollback: TERMINAL_SCROLLBACK_DEFAULT,
   lastWslDistro: null,
   zoomLevel: 1.0,
@@ -436,6 +449,10 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalFontSize:
       get<number>(KEY_TERMINAL_FONT_SIZE) ??
       DEFAULT_PREFERENCES.terminalFontSize,
+    terminalFontWeight: clampFontWeight(
+      get<number>(KEY_TERMINAL_FONT_WEIGHT) ??
+        DEFAULT_PREFERENCES.terminalFontWeight,
+    ),
     terminalScrollback: clampScrollback(
       get<number>(KEY_TERMINAL_SCROLLBACK) ??
         DEFAULT_PREFERENCES.terminalScrollback,
@@ -669,6 +686,15 @@ export async function setTerminalFontSize(value: number): Promise<void> {
   await writePref(KEY_TERMINAL_FONT_SIZE, clamped);
 }
 
+function clampFontWeight(v: number): number {
+  if (!Number.isFinite(v)) return TERMINAL_FONT_WEIGHT_DEFAULT;
+  return Math.min(900, Math.max(100, Math.round(v / 100) * 100));
+}
+
+export async function setTerminalFontWeight(value: number): Promise<void> {
+  await writePref(KEY_TERMINAL_FONT_WEIGHT, clampFontWeight(value));
+}
+
 function clampScrollback(value: number): number {
   if (!Number.isFinite(value)) return TERMINAL_SCROLLBACK_DEFAULT;
   return Math.min(
@@ -805,6 +831,7 @@ export async function onPreferencesChange(
     [KEY_TERMINAL_FONT_FAMILY]: "terminalFontFamily",
     [KEY_TERMINAL_LETTER_SPACING]: "terminalLetterSpacing",
     [KEY_TERMINAL_FONT_SIZE]: "terminalFontSize",
+    [KEY_TERMINAL_FONT_WEIGHT]: "terminalFontWeight",
     [KEY_TERMINAL_SCROLLBACK]: "terminalScrollback",
     [KEY_LAST_WSL_DISTRO]: "lastWslDistro",
     [KEY_ZOOM_LEVEL]: "zoomLevel",

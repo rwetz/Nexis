@@ -25,6 +25,7 @@ import type { TerminalCursorStyle, ThemePref } from "@/modules/settings/store";
 import {
   TERMINAL_CURSOR_STYLE_LABELS,
   TERMINAL_FONT_SIZES,
+  TERMINAL_FONT_WEIGHTS,
   TERMINAL_SCROLLBACK_PRESETS,
   setAutostart,
   setRestoreTabs,
@@ -35,6 +36,7 @@ import {
   setTerminalFontFamily,
   setTerminalLetterSpacing,
   setTerminalFontSize,
+  setTerminalFontWeight,
   setTerminalOsc52Clipboard,
   setTerminalConfirmCloseBusy,
   setTerminalScrollback,
@@ -87,6 +89,7 @@ export function GeneralSection() {
     (s) => s.terminalLetterSpacing,
   );
   const terminalFontSize = usePreferencesStore((s) => s.terminalFontSize);
+  const terminalFontWeight = usePreferencesStore((s) => s.terminalFontWeight);
   const terminalScrollback = usePreferencesStore((s) => s.terminalScrollback);
   const terminalSuggestionsEnabled = usePreferencesStore(
     (s) => s.terminalSuggestionsEnabled,
@@ -308,6 +311,30 @@ export function GeneralSection() {
               {TERMINAL_FONT_SIZES.map((size) => (
                 <SelectItem key={size} value={String(size)} className="text-[12px]">
                   {size} px
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </SettingRow>
+        <SettingRow
+          title="Font weight"
+          description="Weight of regular terminal text. Bold output stays bold."
+        >
+          <Select
+            value={String(terminalFontWeight)}
+            onValueChange={(v) => void setTerminalFontWeight(Number(v))}
+          >
+            <SelectTrigger size="sm" className="h-8 w-28 text-[12px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TERMINAL_FONT_WEIGHTS.map((w) => (
+                <SelectItem
+                  key={w.value}
+                  value={String(w.value)}
+                  className="text-[12px]"
+                >
+                  {w.label}
                 </SelectItem>
               ))}
             </SelectContent>
