@@ -187,6 +187,88 @@ fn pitfall_1b_powershell_launches_with_command_not_file() {
     );
 }
 
+/// 1.20.6 performance sweep — Tauri runs non-`async` commands on the main
+/// thread, so a sync heavy command stalls the UI event loop and every queued
+/// IPC call (terminal keystrokes included) behind it. These commands were all
+/// converted to `async fn` + the blocking pool in 1.20.6; a refactor that
+/// quietly drops the `async` reintroduces app-wide stalls with no test
+/// failure and no visible error. New heavy commands (filesystem walks,
+/// subprocess probes, anything that can take >10ms) belong on this list.
+#[test]
+fn heavy_commands_stay_async() {
+    const HEAVY_COMMANDS: &[&str] = &[
+        // filesystem walks / IO
+        "fs_grep",
+        "fs_glob",
+        "fs_search",
+        "fs_list_files",
+        "fs_read_dir",
+        "list_subdirs",
+        "fs_read_file",
+        "fs_write_file",
+        "fs_read_file_ai",
+        "fs_delete",
+        "fs_create_file",
+        "fs_create_dir",
+        "fs_rename",
+        // process spawns / probes
+        "shell_session_open",
+        "shell_session_run",
+        "shell_run_command",
+        "shell_bg_spawn",
+        "read_shell_history",
+        "search_shell_history",
+        "ml_detect",
+        "ml_env",
+        "ml_gpu_probe",
+        "ml_download",
+        "ml_install_local",
+        "wsl_home",
+        "wsl_list_distros",
+        "wsl_default_distro",
+        "list_crash_reports",
+        // PTY spawn (ConPTY setup + shell process launch)
+        "pty_open",
+    ];
+
+    let mut files = Vec::new();
+    rust_files(&src_dir(), &mut files);
+    let sources: Vec<(PathBuf, String)> = files
+        .into_iter()
+        .map(|f| {
+            let text = fs::read_to_string(&f).unwrap_or_else(|e| panic!("{}: {e}", f.display()));
+            (f, text)
+        })
+        .collect();
+
+    for name in HEAVY_COMMANDS {
+        let sync_sig = format!("pub fn {name}(");
+        let async_sig = format!("pub async fn {name}(");
+        let mut found = false;
+        for (file, text) in &sources {
+            let prod = production_code(text);
+            assert!(
+                !prod.contains(&sync_sig),
+                "{}: `{name}` is a known-heavy command declared as a sync `pub fn` — \
+                 Tauri runs it on the main thread, stalling the UI and all queued IPC \
+                 (the exact class of freeze fixed in 1.20.6). Declare it `pub async fn` \
+                 and run the work via modules::heavy()/spawn_blocking.",
+                file.display()
+            );
+            if prod.contains(&async_sig) {
+                found = true;
+            }
+        }
+        assert!(
+            found,
+            "heavy command `{name}` not found as `pub async fn` anywhere under src/ — \
+             if it was renamed, update HEAVY_COMMANDS in tests/pitfall_invariants.rs; \
+             if it was removed, delete it from the list (re-read the 1.20.6 CHANGELOG \
+             entry first)"
+        );
+    }
+}
+
 /// CLAUDE.md pitfall #8 — these subsystems share mutexes/RwLocks between
 /// reader threads and Tauri command handlers; a bare `.unwrap()` on a lock
 /// turns one panicked thread into a permanently dead subsystem (silent
