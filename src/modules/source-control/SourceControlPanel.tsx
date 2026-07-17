@@ -53,6 +53,15 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { native, type GitBranchEntry } from "@/modules/ai/lib/native";
 import type { SourceControlSummary } from "./useSourceControl";
 import {
   useSourceControlPanel,
@@ -459,15 +468,24 @@ export const SourceControlPanel = memo(function SourceControlPanel({
         ) : null}
         <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-3 pb-2.5 pt-3">
           <div className="flex min-w-0 items-center gap-1.5">
-            <div className="inline-flex min-w-0 items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-[11.5px] font-medium leading-none text-foreground transition-colors hover:bg-foreground/10">
-              <HugeiconsIcon
-                icon={FolderGitTwoIcon}
-                size={12}
-                strokeWidth={1.9}
-                className="shrink-0 text-muted-foreground"
+            {scm.repo ? (
+              <BranchSwitcher
+                repoRoot={scm.repo.repoRoot}
+                label={repoLabel}
+                disabled={!!scm.actionBusy || !!sourceControl.busyAction}
+                onSwitched={handleRefresh}
               />
-              <span className="max-w-[140px] truncate">{repoLabel}</span>
-            </div>
+            ) : (
+              <div className="inline-flex min-w-0 items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-[11.5px] font-medium leading-none text-foreground transition-colors hover:bg-foreground/10">
+                <HugeiconsIcon
+                  icon={FolderGitTwoIcon}
+                  size={12}
+                  strokeWidth={1.9}
+                  className="shrink-0 text-muted-foreground"
+                />
+                <span className="max-w-[140px] truncate">{repoLabel}</span>
+              </div>
+            )}
             {scm.status && (scm.status.ahead > 0 || scm.status.behind > 0) ? (
               <div className="flex shrink-0 items-center gap-0.5 text-[10px] font-semibold tabular-nums leading-none text-muted-foreground">
                 {scm.status.ahead > 0 ? (
@@ -912,6 +930,123 @@ function PanelCenter({
       ) : null}
       {action}
     </div>
+  );
+}
+
+/**
+ * The header branch chip, now a dropdown: click to list local branches
+ * (most recent commit first) and check one out. The menu stays open while
+ * the switch runs and on error, so failures (dirty tree conflicts, etc.)
+ * are visible where the click happened.
+ */
+function BranchSwitcher({
+  repoRoot,
+  label,
+  disabled,
+  onSwitched,
+}: {
+  repoRoot: string;
+  label: string;
+  disabled: boolean;
+  onSwitched: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [branches, setBranches] = useState<GitBranchEntry[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleOpenChange = (next: boolean) => {
+    if (busy) return; // don't close mid-checkout
+    setOpen(next);
+    if (!next) return;
+    setError(null);
+    setBranches(null);
+    native
+      .gitBranches(repoRoot)
+      .then(setBranches)
+      .catch((e) =>
+        setError(typeof e === "string" ? e : "Failed to list branches"),
+      );
+  };
+
+  const handleSelect = async (branch: GitBranchEntry) => {
+    if (branch.current || busy || disabled) return;
+    setBusy(branch.name);
+    setError(null);
+    try {
+      await native.gitCheckoutBranch(repoRoot, branch.name);
+      setBusy(null);
+      setOpen(false);
+      onSwitched();
+    } catch (e) {
+      setBusy(null);
+      setError(typeof e === "string" ? e : "Checkout failed");
+    }
+  };
+
+  return (
+    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          title="Switch branch"
+          className="inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-[11.5px] font-medium leading-none text-foreground transition-colors hover:bg-foreground/10"
+        >
+          <HugeiconsIcon
+            icon={GitBranchIcon}
+            size={12}
+            strokeWidth={1.9}
+            className="shrink-0 text-muted-foreground"
+          />
+          <span className="max-w-[140px] truncate">{label}</span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-72 min-w-52 overflow-y-auto">
+        <DropdownMenuLabel className="text-[11px] text-muted-foreground">
+          Switch branch
+        </DropdownMenuLabel>
+        {branches === null && !error ? (
+          <div className="flex items-center gap-2 px-2 py-1.5 text-[12px] text-muted-foreground">
+            <Spinner className="size-3" /> Loading branches…
+          </div>
+        ) : null}
+        {branches?.map((b) => (
+          <DropdownMenuItem
+            key={b.name}
+            disabled={disabled || (!!busy && busy !== b.name)}
+            onSelect={(e) => {
+              e.preventDefault();
+              void handleSelect(b);
+            }}
+            className="text-[12px]"
+          >
+            <span className="w-3 shrink-0 text-center">
+              {busy === b.name ? (
+                <Spinner className="size-3" />
+              ) : b.current ? (
+                "✓"
+              ) : (
+                ""
+              )}
+            </span>
+            <span className="truncate font-mono">{b.name}</span>
+          </DropdownMenuItem>
+        ))}
+        {branches?.length === 0 ? (
+          <div className="px-2 py-1.5 text-[12px] text-muted-foreground">
+            No local branches
+          </div>
+        ) : null}
+        {error ? (
+          <>
+            <DropdownMenuSeparator />
+            <div className="max-w-64 whitespace-pre-wrap px-2 py-1.5 text-[11px] text-red-400">
+              {error}
+            </div>
+          </>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

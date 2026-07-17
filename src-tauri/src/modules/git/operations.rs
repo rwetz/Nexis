@@ -933,6 +933,66 @@ pub fn pull_ff_only(
     ensure_success(&output, "git pull --ff-only failed")
 }
 
+/// Local branches, most recently committed first, current branch flagged.
+pub fn branch_list(
+    registry: &WorkspaceRegistry,
+    repo_root: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<Vec<crate::modules::git::types::GitBranchEntry>> {
+    let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
+    ensure_git_available(&repo_root.workspace)?;
+    let output = run_git(
+        &repo_root.workspace,
+        Some(&repo_root.git_path),
+        [
+            "for-each-ref",
+            "refs/heads",
+            "--sort=-committerdate",
+            "--format=%(refname:short)\x00%(HEAD)",
+        ],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git for-each-ref failed")?;
+    let text = String::from_utf8_lossy(&output.stdout);
+    let mut entries = Vec::new();
+    for line in text.lines() {
+        let mut parts = line.splitn(2, '\x00');
+        let name = parts.next().unwrap_or("").to_string();
+        if name.is_empty() {
+            continue;
+        }
+        let current = parts.next().unwrap_or("") == "*";
+        entries.push(crate::modules::git::types::GitBranchEntry { name, current });
+    }
+    Ok(entries)
+}
+
+/// `git switch <branch>`. The name must be an existing local branch (checked
+/// against `branch_list`), which both gives a clear error for stale UI state
+/// and rules out option-injection via a leading `-`.
+pub fn checkout_branch(
+    registry: &WorkspaceRegistry,
+    repo_root: &str,
+    branch: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<()> {
+    let known = branch_list(registry, repo_root, workspace)?;
+    if !known.iter().any(|b| b.name == branch) {
+        return Err(GitError::command(
+            "git switch failed",
+            format!("unknown branch '{branch}'"),
+        ));
+    }
+    let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
+    let output = run_git(
+        &repo_root.workspace,
+        Some(&repo_root.git_path),
+        ["switch", branch],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git switch failed")
+}
+
 fn nothing_to_commit(output: &GitOutput) -> bool {
     let stderr = String::from_utf8_lossy(&output.stderr).to_ascii_lowercase();
     let stdout = String::from_utf8_lossy(&output.stdout).to_ascii_lowercase();

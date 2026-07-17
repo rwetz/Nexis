@@ -138,6 +138,11 @@ export type GitStashEntry = {
   timestampSecs: number;
 };
 
+export type GitBranchEntry = {
+  name: string;
+  current: boolean;
+};
+
 export type GitSubmoduleEntry = {
   path: string;
   name: string;
@@ -336,6 +341,17 @@ export const native = {
     invoke<GitCommitResult>("git_commit", {
       repoRoot,
       message,
+      workspace: currentWorkspaceEnv(),
+    }),
+  gitBranches: (repoRoot: string) =>
+    invoke<GitBranchEntry[]>("git_branches", {
+      repoRoot,
+      workspace: currentWorkspaceEnv(),
+    }),
+  gitCheckoutBranch: (repoRoot: string, branch: string) =>
+    invoke<void>("git_checkout_branch", {
+      repoRoot,
+      branch,
       workspace: currentWorkspaceEnv(),
     }),
   gitFetch: (repoRoot: string) =>

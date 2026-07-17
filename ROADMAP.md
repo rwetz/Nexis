@@ -71,7 +71,7 @@ Candidates from a survey of upstream terax-ai v0.6.4 → v0.8.5 (researched 2026
 - [x] ~~**MRU Ctrl+Tab switcher**~~ — done (see CHANGELOG `[Unreleased]`).
 - [x] ~~**Confirm before closing a tab with a running process**~~ — done (see CHANGELOG `[Unreleased]`).
 - [x] ~~**Zen mode**~~ — done (see CHANGELOG `[Unreleased]`).
-- ✅ **Small settings wins** — terminal font weight, user-selectable default shell (detection order is hardcoded today), editor language override dropdown, go-to-line, and branch *checkout* from the source-control panel (create exists, switch doesn't).
+- [x] ~~**Small settings wins**~~ — done: terminal font weight, default shell, editor language override, go-to-line, branch checkout all shipped (see CHANGELOG `[Unreleased]`).
 
 ---
 

@@ -140,6 +140,13 @@ pub struct GitStashEntry {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct GitBranchEntry {
+    pub name: String,
+    pub current: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GitSubmoduleEntry {
     pub path: String,
     pub name: String,
