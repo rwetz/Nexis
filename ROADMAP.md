@@ -45,7 +45,10 @@ The complete, versioned history of every shipped feature lives in **[CHANGELOG.m
   - [x] **V1 — end-to-end slice**: packs config in prefs (`enabledPacks`, cross-window sync), rail/panel/plugin gating, Settings → Features section, first-run preset picker (Bare-Bones / Standard / Everything)
   - [ ] **V2 — finish the gating mechanism**: migrate hardwired panels into the plugin registry one per PR as they're touched (Debugger/Database/Advanced group first — already lazy-loaded); needs a design pass first — `PanelContribution` has no icon/group/pack fields and the rail doesn't render registry panels yet. (Palette/keybinding/settings-row gating shipped — `packEnabled()` in `src/lib/packs.ts` is the predicate for any new gated surface, incl. V3's future install-flow settings.)
   - [ ] **V4 — polish, driven by real usage**: discoverability for Bare-Bones users; per-pack settings / simpler feature variants only if users ask (deliberately cut from V1). (The "enable this pack?" placeholder shipped; V3's pinned-checksum install flow shipped — decision in `docs/vault/decisions/nexis-ml-artifact-pinning.md`. Follow-up for nexis-ml-rs CI: publish `checksums.txt` per release so Nexis pins can be cross-checked against CI output.)
-- [ ] **Persistent terminal sessions** — PTY sessions survive Nexis restarts; reconnect to a running shell without losing scrollback or process state; native implementation inspired by tmux session persistence but without the terminal multiplexer overhead
+- [ ] **Persistent terminal sessions** — PTY sessions survive Nexis restarts; reconnect to a running shell without losing scrollback or process state; native implementation inspired by tmux session persistence but without the terminal multiplexer overhead. Two independently shippable milestones:
+  - **Milestone A — scrollback continuity (no broker)**: on exit, serialize each terminal tab's buffer (reuse the renderer pool's existing `SerializeAddon` path) to per-session files under `~/.cache/nexis/session-snapshots/`; on relaunch, restore the buffer into the new tab above a themed "— session restored, previous shell ended —" divider, then spawn a fresh shell in the saved cwd. Tab persistence gains a stable session id to find its snapshot. Private tabs never persist; snapshot files deleted on tab close. Setting: Settings → Terminal → "Restore scrollback on relaunch" (default on). Pitfalls: atomic snapshot writes (tmp + rename), restore before the first PTY byte, respect the 4 MiB pending-buffer cap on replay.
+  - **Milestone B — live process persistence (PTY broker)**: shells keep running while Nexis is closed. PTY ownership moves to the same `nexis` binary launched headless (`nexis --pty-broker` — no second binary), talked to over a named pipe (Windows) / Unix socket with a length-prefixed `open/write/resize/close/list/attach` protocol plus a streamed output channel and a capped ring buffer replayed on `attach`. Per-tab opt-in ("Keep alive after close") + global default; private tabs excluded; broker exits with its last session; user-only socket permissions + random token handshake. Windows carry-overs: the ConPTY lifecycle lock and `hide_console` discipline move into the broker; ConPTY handles can't cross processes, so the broker owns the full PTY lifecycle. Non-goals: no tmux-style server-side window management, no multi-client input, no reboot survival.
+- [ ] **ML Lab follow-ups** — publish `nexis-ml` to PyPI (trusted-publisher setup on pypi.org — external, blocks the panel's Python-engine install button working from a cold machine); close the Rust-engine feature gaps (config-only today: no textgen/blank templates, no inference playground, no HTML report); image-template ONNX export. Design record and known limits in `ML_SUITE.md`; the nexis-ml-rs `checksums.txt` CI follow-up is tracked under expansion packs V4 above.
 - [ ] **Custom AI tool authoring** — write and test new agent tools in TypeScript using the Plugin API; a first-party SDK with type definitions, a local test harness, and one-command installation into a workspace
 
 ---
@@ -53,8 +56,22 @@ The complete, versioned history of every shipped feature lives in **[CHANGELOG.m
 ## Later
 
 - [ ] **Remote workspace** — browse, edit, and run code on remote machines entirely over SSH; the file explorer and editor work against the remote filesystem via SFTP while the terminal is already there; the goal is a seamless local feel with zero local clones required
-- [ ] **Selective TS → Rust migration** — profile hot paths (terminal input dispatch, diff rendering, file-tree diffing), identify where a Rust implementation gives a measurable win, migrate incrementally without growing bundle size; Zed's SumTree (summary-carrying copy-on-write B+-tree) is the reference design if diff rendering or tree diffing is the target (`ZED_INSPIRATION.md` §2.6)
+- [ ] **Selective TS → Rust migration** — profile hot paths (terminal input dispatch, diff rendering, file-tree diffing), identify where a Rust implementation gives a measurable win, migrate incrementally without growing bundle size; Zed's SumTree (summary-carrying copy-on-write B+-tree, `sum_tree` crate in their repo — one tree answers offset→line, line→hunk, path→subtree-size without separate indexes) is the reference design if diff rendering or tree diffing is the target; don't build it until a benchmark says the naive version is the bottleneck
 - [ ] **Multiplayer terminal input (authenticated)** — the 1.18.0 live view is deliberately read-only because the LAN share server has no auth; full multiplayer (remote viewers typing into the shared terminal) needs an auth story first — e.g. a per-session token in the share URL plus an input-consent toggle on the host
+
+---
+
+## Feature backlog — upstream terax adoption
+
+Candidates from a survey of upstream terax-ai v0.6.4 → v0.8.5 (researched 2026-07-15; the full research notes — `TERAX_INSPIRATION.md`, `ZED_INSPIRATION.md`, `OPTIMIZATIONS.md`, `UI_IMPROVEMENTS.md`, `PLAN.md` — were consolidated into this file on 2026-07-17 and live in git history). A pool, not commitments — each is a product call. OSC 52 clipboard already landed from this list. Feasibility: ✅ doable now · 🟡 moderate · 🟠 heavy lift.
+
+- 🟠 **Block-mode terminal** — Warp-style command blocks as a layer over the existing renderer pool, *no renderer rewrite needed* (upstream disproved our 1.20.1 assumption): OSC 133 markers (already parsed for the exit gutter) drive per-command decorations; the full mode adds a custom input bar with OSC-133-gated stdin routing so vim/htop/sudo still work. Known limitations to inherit knowingly: block tabs are single-pane, and the mode depends on OSC 133 shell integration (which Nexis already injects). Suggested first slice: decorations + block navigation only — pure frontend over existing markers.
+- 🟡 **Spaces — persisted tab groups** with drag-to-organize, above tabs; natural fit with the existing layout-persistence store.
+- 🟡 **whisper.cpp speech-to-text** — fully offline voice input by shelling out to a user-installed binary (like Ollama/LM Studio — never embedded, per the size-budget hard limit); voice is OpenAI-only today.
+- ✅ **MRU Ctrl+Tab switcher** — hold-Ctrl overlay with release-to-select, replacing the current positional next-tab.
+- ✅ **Confirm before closing a tab with a running process** — Nexis closes silently today; child processes are already tracked per session, so the check is cheap.
+- ✅ **Zen mode** — hide header + status bar; pairs well with the borderless chrome.
+- ✅ **Small settings wins** — terminal font weight, user-selectable default shell (detection order is hardcoded today), editor language override dropdown, go-to-line, and branch *checkout* from the source-control panel (create exists, switch doesn't).
 
 ---
 
@@ -75,21 +92,21 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 - 🟡 Secret-redaction lint — a test/util that scans outbound surfaces (logs, crash bundles, recordings, share stream) for API-key / `Authorization:`-shaped strings and refuses to emit them.
 
 **Performance & resource safety**
-(See `ZED_INSPIRATION.md` and `TERAX_INSPIRATION.md` for the research behind the derived items below.)
-- ✅ **WebGL/slot reaping in the renderer pool** — detach WebGL from parked slots after a grace period (keep one warm slot), dispose idle slots beyond it; today five parked terminals hold five live GL contexts + DOM trees forever, the same shape as upstream's 914 MB webview-RSS bug (Terax notes §2.1).
-- ✅ Alt-screen-aware pool eviction — prefer evicting non-TUI slots so vim/htop never get the lossy serialize round-trip (Terax notes §2.2).
-- ✅ Replace the `motion` library with native CSS animations where no layout animation is needed — compositor-side frames on WebKitGTK + startup JS win (Terax notes §2.3).
-- 🟡 Verify frontend-generated device-query replies (DA/DSR/CPR) route through the ordered PTY writer path — upstream hit this ordering class in July 2026 (Terax notes §1.3).
-- ✅ Criterion benchmark harness for Rust hot paths — PTY reader→flusher throughput, `fs_grep`, git stdout parsing; prerequisite for the TS → Rust migration item under "Later" (Zed notes §2.1).
-- ✅ Add non-shipping `[profile.profiling]` (release + symbols, no strip) and `[profile.release-fast]` (no LTO) cargo profiles so perf work doesn't fight fat-LTO build times; the shipping profile stays as-is (Zed notes §2.2).
-- ✅ Adopt Zed's workspace clippy denies we lack: `redundant_clone`, `dbg_macro`, `todo` (Zed notes §2.3).
-- 🟡 Snapshot-pattern refactors — replace lock-shaped sharing with cheap `Arc` copy-on-write snapshots for git status recomputation and file-tree diffing; also the design basis for persistent-session scrollback (Zed notes §2.4).
-- 🟡 Large-file editor mode — detect file size on open and auto-disable LSP/lint/minimap/folding above a threshold, with a banner offering to re-enable.
-- ✅ Opt-in memory self-report — a debug status-bar readout of scrollback bytes, recording size, and AI-history tokens so resource creep is visible during development.
+(Derived from the 2026-07 Zed/terax research and the 2026-07-11 optimization sweep — full notes in git history, see the feature-backlog section above. The slot-reaping, alt-screen eviction, motion→CSS, Criterion harness, cargo-profile, and clippy-lint items that used to live here all shipped — see CHANGELOG `[Unreleased]`.)
+- 🟡 Verify frontend-generated device-query replies (DA/DSR/CPR, generated frontend-side) route through the ordered per-session PTY writer path and can't interleave with user keystrokes — upstream terax hit exactly this ordering class in July 2026 (their #1004), the class Nexis solved for regular input in 1.20.6.
+- 🟡 Snapshot-pattern refactors — replace lock-shaped sharing with cheap `Arc` copy-on-write snapshots for git status recomputation and file-tree diffing; also the design basis for persistent-session scrollback. Zed's rule of thumb: if a background task needs a `Mutex` on the hot path, the data structure is wrong — make reads snapshot-cheap instead (our poisoned-mutex pitfalls #8/#9 are downstream symptoms of lock-shaped sharing).
+- 🟡 Large-file editor mode — detect file size on open and auto-disable LSP/lint/minimap/folding above a threshold, with a banner offering to re-enable. (Upstream terax shipped this in 0.8.5, confirming demand.)
+- ✅ Opt-in memory self-report — a debug status-bar readout of scrollback bytes, recording size, and AI-history tokens so resource creep is visible during development; include GL-context and renderer-pool slot counts so the slot-reaping win stays proven.
+- ✅ Minimap `<canvas>` rewrite — drive it from a CodeMirror `updateListener`, dropping the 200 ms interval and per-line DOM entirely; the cheap memoization fix shipped in 1.20.6, this is the nice-to-have on top.
+- ✅ `vscodeFolderIcons.json` (437 KB) ships as a JS module — load via `fetch` + `JSON.parse` (or a JSON module import) instead of executing a 437 KB JS module; and don't regress the un-preloaded `icons` chunk into main.
+- 🟡 React Compiler evaluation — try `babel-plugin-react-compiler` in the Vite react plugin (React 19 already in place); potentially large win for a UI that re-renders on terminal title/cwd churn, medium risk around CodeMirror/xterm ref patterns. Run `npx react-compiler-healthcheck` first.
+- 🟡 Native FS watcher — `notify` crate emitting a debounced `nexis://fs-changed` event, replacing the explorer's 3 s `tree.refresh` poll; weigh ~200–300 KB against the binary budget.
 
 **Testing & observability**
 - 🟡 E2E coverage for the blank-terminal pitfalls — script the exact ConPTY failure modes (close-tab-then-open, cross-drive `cd` + new tab, PowerShell first-prompt) so pitfall #1 can never silently regress.
 - 🟡 Diagnostics bundle export — one button that zips logs + versions + sanitized config + the last asciinema recording for bug reports (everything stays local, user attaches it manually).
+- ✅ Sync-command audit tripwire — a pitfall-style test asserting that commands on a known "heavy" list are `async`, so a future new command can't silently reintroduce the main-thread stalls fixed in 1.20.6.
+- 🟡 tmux resize desync test — targeted test for xterm grid vs PTY winsize desync after a pane resize; upstream terax has this open as #981 and Nexis's debounced fit + `pty_resize` may or may not be immune.
 
 **Terminal & editor robustness**
 - 🟡 Unicode/grapheme correctness golden-file suite — CJK width, emoji ZWJ sequences, combining marks, zero-width handling — so rendering-width bugs surface in CI.
@@ -97,7 +114,7 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 - 🟡 Editor autosave + crash recovery — periodic dirty-buffer snapshots to a scratch dir, offered for recovery on next launch.
 
 **Docs (nexis-wiki — separate repo)**
-Structure ideas taken from zed.dev/docs; detail in `ZED_INSPIRATION.md` §1.
+Structure ideas taken from zed.dev/docs (July 2026 sidebar survey — full notes in git history).
 - ✅ "Coming from…" migration guides — Warp, iTerm2, Windows Terminal, kitty/alacritty, VS Code terminal; highest-leverage docs addition.
 - ✅ Top-level Privacy & Security section — no-telemetry stance, per-provider AI data flow, tool approval, path guards; it's a differentiator, currently undocumented publicly.
 - 🟡 Generated Reference section — all-settings page generated from the settings store schema, keybindings table, CLI flags; hand-written reference pages rot.
@@ -108,6 +125,7 @@ Structure ideas taken from zed.dev/docs; detail in `ZED_INSPIRATION.md` §1.
 - 🟡 Git-backed AI checkpoints — snapshot to a hidden ref/stash before any agent edit/multi-edit; surface a one-click "revert this agent action". Turns the scariest part of an agentic terminal into a safe, reversible operation, and it's all local git.
 - 🟠 Local semantic code index — embeddings over the workspace for sharper AI context retrieval; needs an embeddings source and a small vector store, weighed against the size budget.
 - 🟡 Command prediction — next-command suggestions from recent context (BYOK or local), fitting the existing inline-suggestion UI.
+- 🟡 App icon / brand refresh — the current icon (black/white woven mesh) reads as a placeholder; a redesign should draw from the welcome screen's animated blue gradient, the app's strongest visual identity (deferred P8 from the June 2026 UI critique — everything else from that critique shipped in 1.15.0).
 - 🟠 Plugin sandboxing + first-party SDK — a sandboxed, typed, install-from-workspace SDK with a local test harness (pairs with "Custom AI tool authoring" above).
 - 🟠🔴 Collaborative editing (CRDT) — real-time co-editing via a yjs/automerge-class CRDT; powerful but a major subsystem and a networking story, probably beyond a terminal-first tool's scope.
 
