@@ -36,6 +36,7 @@ import {
   setTerminalLetterSpacing,
   setTerminalFontSize,
   setTerminalOsc52Clipboard,
+  setTerminalConfirmCloseBusy,
   setTerminalScrollback,
   setTerminalSuggestionsEnabled,
   setTerminalWebglEnabled,
@@ -94,6 +95,9 @@ export function GeneralSection() {
   const terminalCursorBlink = usePreferencesStore((s) => s.terminalCursorBlink);
   const terminalOsc52Clipboard = usePreferencesStore(
     (s) => s.terminalOsc52Clipboard,
+  );
+  const terminalConfirmCloseBusy = usePreferencesStore(
+    (s) => s.terminalConfirmCloseBusy,
   );
   const zoomLevel = usePreferencesStore((s) => s.zoomLevel);
   const wordWrap = usePreferencesStore((s) => s.wordWrap);
@@ -376,6 +380,15 @@ export function GeneralSection() {
           <Switch
             checked={terminalOsc52Clipboard}
             onCheckedChange={(v) => void setTerminalOsc52Clipboard(v)}
+          />
+        </SettingRow>
+        <SettingRow
+          title="Confirm closing a busy terminal"
+          description="Ask before closing a tab or pane while a command is still running in it."
+        >
+          <Switch
+            checked={terminalConfirmCloseBusy}
+            onCheckedChange={(v) => void setTerminalConfirmCloseBusy(v)}
           />
         </SettingRow>
       </div>

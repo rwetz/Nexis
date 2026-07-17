@@ -165,6 +165,9 @@ export type Preferences = {
   /** OSC 52 clipboard *writes* (copy from tmux/vim/ssh). Reads are always
    * blocked in the handler regardless of this setting — see osc-handlers.ts. */
   terminalOsc52Clipboard: boolean;
+  /** Ask before closing a terminal tab/pane whose shell is mid-command
+   * (OSC 133 in-command). Without shell integration the check is silent. */
+  terminalConfirmCloseBusy: boolean;
   toolApprovalPolicies: Record<string, ToolApprovalPolicy>;
   wordWrap: boolean;
   /** Open the ML Lab panel automatically when a training run starts. */
@@ -228,6 +231,7 @@ const KEY_TERMINAL_SUGGESTIONS = "terminalSuggestionsEnabled";
 const KEY_TERMINAL_CURSOR_STYLE = "terminalCursorStyle";
 const KEY_TERMINAL_CURSOR_BLINK = "terminalCursorBlink";
 const KEY_TERMINAL_OSC52_CLIPBOARD = "terminalOsc52Clipboard";
+const KEY_TERMINAL_CONFIRM_CLOSE_BUSY = "terminalConfirmCloseBusy";
 const KEY_TOOL_APPROVAL_POLICIES = "toolApprovalPolicies";
 const KEY_WORD_WRAP = "wordWrap";
 const KEY_ML_AUTO_OPEN = "mlAutoOpenOnTrain";
@@ -300,6 +304,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   terminalCursorStyle: "bar",
   terminalCursorBlink: false,
   terminalOsc52Clipboard: true,
+  terminalConfirmCloseBusy: true,
   toolApprovalPolicies: {},
   wordWrap: false,
   mlAutoOpenOnTrain: false,
@@ -461,6 +466,9 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalOsc52Clipboard:
       get<boolean>(KEY_TERMINAL_OSC52_CLIPBOARD) ??
       DEFAULT_PREFERENCES.terminalOsc52Clipboard,
+    terminalConfirmCloseBusy:
+      get<boolean>(KEY_TERMINAL_CONFIRM_CLOSE_BUSY) ??
+      DEFAULT_PREFERENCES.terminalConfirmCloseBusy,
     toolApprovalPolicies:
       get<Record<string, ToolApprovalPolicy>>(KEY_TOOL_APPROVAL_POLICIES) ??
       DEFAULT_PREFERENCES.toolApprovalPolicies,
@@ -715,6 +723,10 @@ export async function setTerminalOsc52Clipboard(value: boolean): Promise<void> {
   await writePref(KEY_TERMINAL_OSC52_CLIPBOARD, value);
 }
 
+export async function setTerminalConfirmCloseBusy(value: boolean): Promise<void> {
+  await writePref(KEY_TERMINAL_CONFIRM_CLOSE_BUSY, value);
+}
+
 export async function setToolApprovalPolicies(
   value: Record<string, ToolApprovalPolicy>,
 ): Promise<void> {
@@ -802,6 +814,7 @@ export async function onPreferencesChange(
     [KEY_TERMINAL_CURSOR_STYLE]: "terminalCursorStyle",
     [KEY_TERMINAL_CURSOR_BLINK]: "terminalCursorBlink",
     [KEY_TERMINAL_OSC52_CLIPBOARD]: "terminalOsc52Clipboard",
+    [KEY_TERMINAL_CONFIRM_CLOSE_BUSY]: "terminalConfirmCloseBusy",
     [KEY_TOOL_APPROVAL_POLICIES]: "toolApprovalPolicies",
     [KEY_FORMATTERS]: "formatters",
     [KEY_FORMAT_ON_SAVE]: "formatOnSave",

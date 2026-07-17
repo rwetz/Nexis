@@ -9,6 +9,7 @@ export { TerminalStack } from "./TerminalStack";
 export {
   disposeSession,
   respawnSession,
+  sessionHasRunningCommand,
 } from "./lib/useTerminalSession";
 export { writeToLeaf } from "./lib/rendererPool";
 export {

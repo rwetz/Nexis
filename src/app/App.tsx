@@ -112,6 +112,7 @@ import { PackOnboardingDialog } from "@/modules/settings/PackOnboardingDialog";
 import {
   MAX_PANES_PER_TAB,
   TabSwitcher,
+  labelFor,
   useMruTabSwitcher,
   useTabs,
   useWorkspaceCwd,
@@ -127,6 +128,7 @@ import {
   hasLeaf,
   leafIds,
   respawnSession,
+  sessionHasRunningCommand,
   TerminalStack,
   type TerminalPaneHandle,
 } from "@/modules/terminal";
@@ -281,6 +283,14 @@ export default function App() {
 
   const [home, setHome] = useState<string | null>(null);
   const [pendingCloseTab, setPendingCloseTab] = useState<number | null>(null);
+  // A terminal close intercepted because a command is still running (OSC 133
+  // in-command). Which close to re-run on confirm is encoded in `kind`.
+  const [pendingCloseBusy, setPendingCloseBusy] = useState<
+    | { kind: "tab"; id: number }
+    | { kind: "pane"; tabId: number }
+    | { kind: "leaf"; leafId: number }
+    | null
+  >(null);
   // Mount the (lazy) settings dialog only once it has been opened, then keep
   // it mounted so the Radix close animation still plays on later closes.
   const settingsOpen = useSettingsDialogStore((s) => s.isOpen);
@@ -638,6 +648,14 @@ export default function App() {
         setPendingCloseTab(id);
         return;
       }
+      if (
+        t?.kind === "terminal" &&
+        usePreferencesStore.getState().terminalConfirmCloseBusy &&
+        leafIds(t.paneTree).some(sessionHasRunningCommand)
+      ) {
+        setPendingCloseBusy({ kind: "tab", id });
+        return;
+      }
       disposeTab(id);
     },
     [tabs, disposeTab],
@@ -653,6 +671,34 @@ export default function App() {
   const cancelClose = useCallback(() => {
     setPendingCloseTab(null);
   }, []);
+
+  const confirmCloseBusy = useCallback(() => {
+    if (!pendingCloseBusy) return;
+    if (pendingCloseBusy.kind === "tab") disposeTab(pendingCloseBusy.id);
+    else if (pendingCloseBusy.kind === "pane")
+      closeActivePane(pendingCloseBusy.tabId);
+    else closePaneByLeaf(pendingCloseBusy.leafId);
+    setPendingCloseBusy(null);
+  }, [pendingCloseBusy, disposeTab, closeActivePane, closePaneByLeaf]);
+
+  const cancelCloseBusy = useCallback(() => {
+    setPendingCloseBusy(null);
+  }, []);
+
+  /** Tab whose terminal the pending busy-close would kill (for dialog text). */
+  const busyCloseTab = useMemo(() => {
+    if (!pendingCloseBusy) return null;
+    if (pendingCloseBusy.kind === "tab")
+      return tabs.find((t) => t.id === pendingCloseBusy.id) ?? null;
+    if (pendingCloseBusy.kind === "pane")
+      return tabs.find((t) => t.id === pendingCloseBusy.tabId) ?? null;
+    return (
+      tabs.find(
+        (t) =>
+          t.kind === "terminal" && hasLeaf(t.paneTree, pendingCloseBusy.leafId),
+      ) ?? null
+    );
+  }, [pendingCloseBusy, tabs]);
 
   // MRU Ctrl+Tab: hold-to-cycle overlay ordered by recency, release-to-select
   // (replaces the old positional next/previous cycle).
@@ -1149,6 +1195,13 @@ export default function App() {
   const handleCloseTabOrPane = useCallback(() => {
     const t = tabsRef.current.find((x) => x.id === activeId);
     if (t?.kind === "terminal" && leafIds(t.paneTree).length > 1) {
+      if (
+        usePreferencesStore.getState().terminalConfirmCloseBusy &&
+        sessionHasRunningCommand(t.activeLeafId)
+      ) {
+        setPendingCloseBusy({ kind: "pane", tabId: activeId });
+        return;
+      }
       closeActivePane(activeId);
       return;
     }
@@ -1339,6 +1392,20 @@ export default function App() {
     [closePaneByLeaf],
   );
 
+  const handleClosePane = useCallback(
+    (leafId: number) => {
+      if (
+        usePreferencesStore.getState().terminalConfirmCloseBusy &&
+        sessionHasRunningCommand(leafId)
+      ) {
+        setPendingCloseBusy({ kind: "leaf", leafId });
+        return;
+      }
+      closePaneByLeaf(leafId);
+    },
+    [closePaneByLeaf],
+  );
+
   const handleEditorDirty = useCallback(
     (leafId: number, dirty: boolean) => setEditorLeafDirty(leafId, dirty),
     [setEditorLeafDirty],
@@ -1445,7 +1512,7 @@ export default function App() {
           onTitle={handleTerminalTitle}
           onExit={handleLeafExit}
           onFocusLeaf={handleFocusLeaf}
-          onClosePane={closePaneByLeaf}
+          onClosePane={handleClosePane}
         />
       </div>
       <div
@@ -1913,6 +1980,30 @@ export default function App() {
                   Cancel
                 </AlertDialogCancel>
                 <AlertDialogAction onClick={confirmClose}>
+                  Close Anyway
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog
+            open={pendingCloseBusy !== null}
+            onOpenChange={(open) => !open && cancelCloseBusy()}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Process Still Running</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {busyCloseTab
+                    ? `A command is still running in "${labelFor(busyCloseTab)}". Closing will kill it. Close anyway?`
+                    : "A command is still running in this terminal. Closing will kill it. Close anyway?"}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={cancelCloseBusy}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={confirmCloseBusy}>
                   Close Anyway
                 </AlertDialogAction>
               </AlertDialogFooter>

@@ -15,6 +15,7 @@ import {
   registerCwdHandler,
   registerPromptTracker,
   registerTitleHandler,
+  type ShellIntegrationState,
 } from "./osc-handlers";
 import { openPty, type PtySession } from "./pty-bridge";
 import {
@@ -69,6 +70,12 @@ type Session = {
    * moment `s.pty` is assigned. Each entry already includes the line ending.
    */
   pendingWrites: string[];
+  /**
+   * OSC 133 in-command flag, session-level so it survives slot rebinds (a
+   * command started before a tab was backgrounded is still running when the
+   * tab comes back). Read by sessionHasRunningCommand for close-confirm.
+   */
+  shellState: ShellIntegrationState;
 };
 
 const sessions = new Map<number, Session>();
@@ -102,6 +109,17 @@ export function onTerminalOutput(listener: (leafId: number) => void): () => void
 export function getSessionDimensions(leafId: number): { cols: number; rows: number } {
   const s = sessions.get(leafId);
   return { cols: s?.cols ?? 80, rows: s?.rows ?? 24 };
+}
+
+/**
+ * True while the leaf's shell is inside a running command (between OSC 133
+ * B/C and the next D/A). Used by the close-tab confirmation. Requires shell
+ * integration — without prompt markers this is always false, so closing
+ * stays silent (fail-open by design; we can't tell busy from idle).
+ */
+export function sessionHasRunningCommand(leafId: number): boolean {
+  const s = sessions.get(leafId);
+  return !!s && !s.disposed && !s.shellExited && s.shellState.inCommand;
 }
 
 configureRendererPool({
@@ -176,6 +194,7 @@ function ensureSession(leafId: number, initialCwd?: string): Session {
     hasSlot: false,
     altScreenAtRelease: false,
     pendingWrites: [],
+    shellState: createShellIntegrationState(),
   };
   sessions.set(leafId, session);
 
@@ -246,8 +265,9 @@ function bindLeafToSlot(leafId: number, s: Session): void {
       // Shared in-command flag — see osc-handlers.ts. The prompt tracker
       // flips it on OSC 133 B/C/D/A; the cwd handler reads it to ignore OSC
       // 7 emitted by untrusted command output (remote SSH, `cat` of an
-      // attacker file, etc.).
-      const shellState = createShellIntegrationState();
+      // attacker file, etc.). Session-level, not per-bind, so the flag is
+      // still correct after a background/foreground slot cycle.
+      const shellState = s.shellState;
       const prompt = registerPromptTracker(term, shellState);
       const cwd = registerCwdHandler(
         term,
@@ -355,6 +375,7 @@ export async function respawnSession(
   s.pendingExit = null;
   s.altScreenAtRelease = false;
   s.pendingWrites = [];
+  s.shellState.inCommand = false;
 
   const slot = getSlotForLeaf(leafId);
   if (slot) {

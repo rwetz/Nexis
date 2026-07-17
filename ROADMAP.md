@@ -69,7 +69,7 @@ Candidates from a survey of upstream terax-ai v0.6.4 → v0.8.5 (researched 2026
 - 🟡 **Spaces — persisted tab groups** with drag-to-organize, above tabs; natural fit with the existing layout-persistence store.
 - 🟡 **whisper.cpp speech-to-text** — fully offline voice input by shelling out to a user-installed binary (like Ollama/LM Studio — never embedded, per the size-budget hard limit); voice is OpenAI-only today.
 - [x] ~~**MRU Ctrl+Tab switcher**~~ — done (see CHANGELOG `[Unreleased]`).
-- ✅ **Confirm before closing a tab with a running process** — Nexis closes silently today; child processes are already tracked per session, so the check is cheap.
+- [x] ~~**Confirm before closing a tab with a running process**~~ — done (see CHANGELOG `[Unreleased]`).
 - ✅ **Zen mode** — hide header + status bar; pairs well with the borderless chrome.
 - ✅ **Small settings wins** — terminal font weight, user-selectable default shell (detection order is hardcoded today), editor language override dropdown, go-to-line, and branch *checkout* from the source-control panel (create exists, switch doesn't).
 

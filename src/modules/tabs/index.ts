@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-export { TabBar } from "./TabBar";
+export { TabBar, labelFor } from "./TabBar";
 export { TabSwitcher } from "./TabSwitcher";
 export { useTabs } from "./lib/useTabs";
 export { useMruTabSwitcher } from "./lib/useMruTabSwitcher";
