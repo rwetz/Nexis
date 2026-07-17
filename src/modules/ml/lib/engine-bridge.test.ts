@@ -10,9 +10,13 @@ import {
   buildCandidates,
   detectEngine,
   downloadEngine,
+  engineInstallPin,
   engineKindFromEnv,
   engineSupportsTemplate,
+  installLocalEngine,
   managedEngineCandidate,
+  managedEngineStatus,
+  uninstallEngine,
   probeEnv,
   resetEngineDetection,
   sendInfer,
@@ -312,22 +316,66 @@ describe("serve bridge", () => {
     expect(await managedEngineCandidate()).toBeNull();
   });
 
-  it("downloadEngine invokes ml_download with the url", async () => {
-    let args: unknown;
+  it("downloadEngine invokes ml_download with no URL — the pin owns it", async () => {
+    // The download URL and checksum are compiled into the Rust pin; the
+    // frontend must not be able to point the installer anywhere else.
+    let args: unknown = "unset";
     invokeMock.mockImplementation(async (cmd: string, a?: unknown) => {
       if (cmd === "ml_download") {
         args = a;
-        return { exe: "C:\\data\\engine\\nexis-ml.exe", version: "0.5.0" };
+        return { exe: "C:\\data\\engine\\nexis-ml.exe", version: "0.8.0" };
       }
       return null;
     });
 
-    const res = await downloadEngine("https://example.com/nexis-ml.exe");
+    const res = await downloadEngine();
 
-    expect(args).toEqual({ url: "https://example.com/nexis-ml.exe" });
+    expect(args).toBeUndefined();
     expect(res).toEqual({
       exe: "C:\\data\\engine\\nexis-ml.exe",
-      version: "0.5.0",
+      version: "0.8.0",
     });
+  });
+
+  it("engineInstallPin returns the pin and resolves null on error", async () => {
+    const pin = {
+      version: "0.8.0",
+      url: "https://github.com/rwetz/nexis-ml-rs/releases/download/v0.8.0/nexis-ml-linux-x64",
+      sizeBytes: 26113824,
+      sha256: "18a4981b476e639cfd4cc6722f4eea4686612568253c59a3f3591a63ba8bc5e9",
+    };
+    invokeMock.mockImplementation(async (cmd: string) =>
+      cmd === "ml_engine_pin" ? pin : null,
+    );
+    expect(await engineInstallPin()).toEqual(pin);
+
+    invokeMock.mockImplementation(async () => {
+      throw new Error("boom");
+    });
+    expect(await engineInstallPin()).toBeNull();
+  });
+
+  it("installLocalEngine passes the file path to ml_install_local", async () => {
+    let args: unknown;
+    invokeMock.mockImplementation(async (cmd: string, a?: unknown) => {
+      if (cmd === "ml_install_local") {
+        args = a;
+        return { exe: "/data/engine/nexis-ml", version: "0.8.0" };
+      }
+      return null;
+    });
+    await installLocalEngine("/tmp/nexis-ml-linux-x64");
+    expect(args).toEqual({ path: "/tmp/nexis-ml-linux-x64" });
+  });
+
+  it("managedEngineStatus and uninstallEngine hit their commands", async () => {
+    invokeMock.mockImplementation(async (cmd: string) => {
+      if (cmd === "ml_engine_status")
+        return { installed: true, path: "/data/engine/nexis-ml", sizeBytes: 42 };
+      if (cmd === "ml_uninstall") return 42;
+      return null;
+    });
+    expect(await managedEngineStatus()).toMatchObject({ installed: true });
+    expect(await uninstallEngine()).toBe(42);
   });
 });

@@ -127,23 +127,58 @@ export function managedEngineCandidate(): Promise<string | null> {
   return invoke<string>("ml_managed_engine_path").catch(() => null);
 }
 
+/** The compiled-in engine release pin: what the consent dialog shows and
+ *  what the Rust side will enforce (exact tag + SHA-256, never "latest"). */
+export type EnginePin = {
+  version: string;
+  url: string;
+  sizeBytes: number;
+  sha256: string;
+};
+
 /**
- * The GitHub release download URL for the standalone engine binary matching
- * this OS/arch, or null on a platform with no prebuilt binary. Resolved by
- * the Rust side (it knows the target triple).
+ * The pinned engine release for this OS/arch, or null on a platform with no
+ * prebuilt binary. Resolved by the Rust side (it owns the pin and knows the
+ * target triple).
  */
-export function engineReleaseUrl(): Promise<string | null> {
-  return invoke<string | null>("ml_engine_release_url").catch(() => null);
+export function engineInstallPin(): Promise<EnginePin | null> {
+  return invoke<EnginePin | null>("ml_engine_pin").catch(() => null);
 }
 
 /**
- * Download a standalone `nexis-ml` engine binary from `url` (https) into the
- * managed dir and verify it — the "no Python on this machine" install path,
- * mirroring how an LSP server is fetched. Resolves to the installed engine's
- * path + version (usable exactly like a detected engine).
+ * Download the pinned standalone engine into the managed dir — the "no
+ * Python on this machine" install path. The URL and SHA-256 live in the Rust
+ * pin; the bytes are hash-verified before they touch disk or run. Resolves
+ * to the installed engine's path + version (usable exactly like a detected
+ * engine). Call only after the user consented (the panel's dialog).
  */
-export function downloadEngine(url: string): Promise<EngineDetectResult> {
-  return invoke<EngineDetectResult>("ml_download", { url });
+export function downloadEngine(): Promise<EngineDetectResult> {
+  return invoke<EngineDetectResult>("ml_download");
+}
+
+/**
+ * Install the pinned engine from a file already on disk (offline path for
+ * air-gapped machines). Same hash gate as the download; a self-built binary
+ * fails it — those stay usable via PATH/venv detection instead.
+ */
+export function installLocalEngine(path: string): Promise<EngineDetectResult> {
+  return invoke<EngineDetectResult>("ml_install_local", { path });
+}
+
+export type ManagedEngineStatus = {
+  installed: boolean;
+  path: string;
+  sizeBytes: number;
+};
+
+/** Whether the managed (downloaded) engine exists and its disk footprint. */
+export function managedEngineStatus(): Promise<ManagedEngineStatus | null> {
+  return invoke<ManagedEngineStatus>("ml_engine_status").catch(() => null);
+}
+
+/** Delete the managed engine binary; resolves to the freed byte count. */
+export function uninstallEngine(): Promise<number> {
+  return invoke<number>("ml_uninstall");
 }
 
 // ── Spawning ──────────────────────────────────────────────────────────────────

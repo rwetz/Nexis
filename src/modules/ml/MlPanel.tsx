@@ -57,6 +57,7 @@ import type { MetricStats, RunSummary } from "./lib/protocol";
 import {
   engineSupportsTemplate,
   type EngineKind,
+  type EnginePin,
   type MlEnvInfo,
   type MlTemplate,
 } from "./lib/engine-bridge";
@@ -114,6 +115,8 @@ export function MlPanel({ workspaceRoot }: Props) {
   const installPython = useMlStore((s) => s.installPython);
   const installing = useMlStore((s) => s.installing);
   const downloadingEngine = useMlStore((s) => s.downloadingEngine);
+  const enginePin = useMlStore((s) => s.enginePin);
+  const managedEngine = useMlStore((s) => s.managedEngine);
   const envInfo = useMlStore((s) => s.envInfo);
   const hostGpu = useMlStore((s) => s.hostGpu);
   const projects = useMlStore((s) => s.projects);
@@ -134,6 +137,8 @@ export function MlPanel({ workspaceRoot }: Props) {
   const installEngine = useMlStore((s) => s.installEngine);
   const upgradeToGpu = useMlStore((s) => s.upgradeToGpu);
   const downloadStandaloneEngine = useMlStore((s) => s.downloadStandaloneEngine);
+  const installLocalCopy = useMlStore((s) => s.installLocalCopy);
+  const uninstallManagedEngine = useMlStore((s) => s.uninstallManagedEngine);
   const refreshProjects = useMlStore((s) => s.refreshProjects);
   const selectProject = useMlStore((s) => s.selectProject);
   const createProject = useMlStore((s) => s.createProject);
@@ -231,11 +236,13 @@ export function MlPanel({ workspaceRoot }: Props) {
             installPython={installPython}
             installing={installing}
             downloadingEngine={downloadingEngine}
+            pin={enginePin}
             hostGpu={hostGpu}
             logs={logs}
             error={engineError}
             onInstall={(useGpu) => void installEngine(workspaceRoot, useGpu)}
             onDownloadEngine={() => void downloadStandaloneEngine()}
+            onInstallLocal={(path) => void installLocalCopy(path)}
             onRetry={() => void redetect(workspaceRoot)}
           />
         ) : engineStatus === "detecting" || engineStatus === "idle" ? (
@@ -513,6 +520,30 @@ export function MlPanel({ workspaceRoot }: Props) {
               />
               Open this panel automatically when training starts
             </label>
+
+            {/* Managed (downloaded) engine footprint + uninstall. Engines
+                found in venvs/PATH are not Nexis's to remove. */}
+            {managedEngine?.installed ? (
+              <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>
+                  Downloaded engine on disk:{" "}
+                  {Math.max(
+                    1,
+                    Math.round(managedEngine.sizeBytes / (1024 * 1024)),
+                  )}{" "}
+                  MB
+                </span>
+                <button
+                  type="button"
+                  disabled={busy || downloadingEngine}
+                  onClick={() => void uninstallManagedEngine(workspaceRoot)}
+                  title="Deletes the downloaded engine binary and frees the disk space. Engines installed in a venv or on PATH are unaffected; you can re-download any time."
+                  className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] transition-colors hover:border-destructive/50 hover:text-destructive disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : null}
           </>
         )}
       </div>
@@ -526,27 +557,37 @@ function SetupCard({
   installPython,
   installing,
   downloadingEngine,
+  pin,
   hostGpu,
   logs,
   error,
   onInstall,
   onDownloadEngine,
+  onInstallLocal,
   onRetry,
 }: {
   installPython: string | null;
   installing: boolean;
   downloadingEngine: boolean;
+  pin: EnginePin | null;
   hostGpu: string | null;
   logs: string[];
   error: string | null;
   onInstall: (useGpu: boolean) => void;
   onDownloadEngine: () => void;
+  onInstallLocal: (path: string) => void;
   onRetry: () => void;
 }) {
   // GPU build is the better experience when a card exists; default on.
   const [useGpu, setUseGpu] = useState(true);
+  // The standalone download goes through an explicit consent step showing
+  // exactly what will be fetched and the checksum it must match (V3).
+  const [confirmingDownload, setConfirmingDownload] = useState(false);
+  const [localPath, setLocalPath] = useState("");
   const gpu = hostGpu != null;
   const sizeNote = gpu && useGpu ? "~3 GB" : "~200 MB";
+  const pinMb = pin ? Math.max(1, Math.round(pin.sizeBytes / (1024 * 1024))) : null;
+  const pinAsset = pin?.url.split("/").pop() ?? "the release binary";
   return (
     <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
       <p className="mb-1 text-[12px] font-semibold">Set up the ML engine</p>
@@ -568,7 +609,8 @@ function SetupCard({
         <>
           <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
             <span className="size-1.5 animate-pulse rounded-full bg-sky-500" />
-            Downloading the standalone engine (~31 MB)…
+            Downloading and verifying the standalone engine
+            {pinMb ? ` (~${pinMb} MB)` : ""}…
           </p>
           <LogView logs={logs} />
         </>
@@ -610,18 +652,104 @@ function SetupCard({
       ) : null}
       {!installing && !downloadingEngine ? (
         <div className="mt-2 border-t border-border/40 pt-2">
-          <button
-            type="button"
-            onClick={onDownloadEngine}
-            className="w-full rounded-md border border-border/60 px-3 py-1.5 text-[11px] font-medium text-foreground/90 transition-opacity hover:opacity-90"
-          >
-            Download standalone engine — no Python (~31 MB)
-          </button>
-          <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">
-            A single binary that trains tabular & image models on your GPU
-            (no PyTorch download), with the inference playground built in
-            (v0.8+). Text generation needs the Python engine above.
-          </p>
+          {confirmingDownload && pin ? (
+            <div className="rounded-md border border-border/60 bg-background/60 p-2">
+              <p className="mb-1 text-[11px] font-semibold">
+                Download nexis-ml {pin.version}?
+              </p>
+              <dl className="mb-1.5 flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+                <div className="flex gap-1">
+                  <dt className="shrink-0 text-muted-foreground/60">From</dt>
+                  <dd className="min-w-0 truncate font-mono" title={pin.url}>
+                    github.com/rwetz/nexis-ml-rs · {pinAsset}
+                  </dd>
+                </div>
+                <div className="flex gap-1">
+                  <dt className="shrink-0 text-muted-foreground/60">Size</dt>
+                  <dd>{pinMb} MB</dd>
+                </div>
+                <div className="flex gap-1">
+                  <dt className="shrink-0 text-muted-foreground/60">SHA-256</dt>
+                  <dd className="min-w-0 truncate font-mono" title={pin.sha256}>
+                    {pin.sha256}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mb-1.5 text-[10px] leading-snug text-muted-foreground/70">
+                Nexis verifies the download against this pinned checksum before
+                it can run. This is the only thing the ML Lab ever downloads.
+              </p>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmingDownload(false);
+                    onDownloadEngine();
+                  }}
+                  className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  Download & verify
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDownload(false)}
+                  className="rounded-md border border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  // No pin = no prebuilt for this platform; let the store
+                  // surface its "not available" error instead of consenting
+                  // to nothing.
+                  pin ? setConfirmingDownload(true) : onDownloadEngine()
+                }
+                className="w-full rounded-md border border-border/60 px-3 py-1.5 text-[11px] font-medium text-foreground/90 transition-opacity hover:opacity-90"
+              >
+                Download standalone engine — no Python
+                {pinMb ? ` (~${pinMb} MB)` : ""}
+              </button>
+              <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">
+                A single binary that trains tabular & image models on your GPU
+                (no PyTorch download), with the inference playground built in
+                (v0.8+). Text generation needs the Python engine above.
+              </p>
+            </>
+          )}
+          {pin ? (
+            <details className="mt-1.5">
+              <summary className="cursor-pointer select-none text-[10px] text-muted-foreground/70 hover:text-muted-foreground">
+                Offline? Install from a local copy
+              </summary>
+              <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">
+                Download <span className="font-mono">{pinAsset}</span> from the{" "}
+                {pin.version} release on another machine, bring it over, and
+                point Nexis at the file. The same checksum check applies.
+              </p>
+              <div className="mt-1 flex gap-1.5">
+                <input
+                  type="text"
+                  value={localPath}
+                  onChange={(e) => setLocalPath(e.target.value)}
+                  placeholder={`/path/to/${pinAsset}`}
+                  className="min-w-0 flex-1 rounded border border-border/60 bg-background px-2 py-1 font-mono text-[10px] outline-none placeholder:text-muted-foreground/40 focus:border-foreground/40"
+                />
+                <button
+                  type="button"
+                  disabled={!localPath.trim()}
+                  onClick={() => onInstallLocal(localPath)}
+                  className="rounded border border-border/60 px-2 py-1 text-[10px] font-medium text-foreground/90 transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  Verify & install
+                </button>
+              </div>
+            </details>
+          ) : null}
         </div>
       ) : null}
       <button

@@ -14,7 +14,7 @@ The sidebar rail exposes ~24 panels. The average CS-focused user needs a fractio
 
 ## Decision
 
-1. **Packs are enablement gating, not installation.** Tauri ships all JS in the binary and heavy panels are already lazy-loaded, so a disabled pack costs ~nothing at runtime and *zero bytes* are saved by disabling it. UI language says "enable", never "install". The one exception is **nexis-ml**: a genuine on-demand download, owned by the ML Lab pack (separate follow-up; needs consent prompt + pinned checksum/signature + offline path).
+1. **Packs are enablement gating, not installation.** Tauri ships all JS in the binary and heavy panels are already lazy-loaded, so a disabled pack costs ~nothing at runtime and *zero bytes* are saved by disabling it. UI language says "enable", never "install". The one exception is **nexis-ml**: a genuine on-demand download, owned by the ML Lab pack — consent prompt, pinned SHA-256 verification, offline local-copy path, and uninstall implemented; see [[nexis-ml-artifact-pinning]].
 2. **AI chat via API is core; ML Lab is a pack.** The boundary is *"talks to an API you configured"* (core — BYOK, inert without keys) vs *"manages local runtimes and models"* (pack). The agent/chat surface is the product's identity and is not removable.
 3. **Core (never gated):** terminal, editor, `explorer`, `recent-files`, `source-control`, `agent-queue`, AI chat/agent.
 4. **Pack taxonomy (pack → sidebar view ids):**

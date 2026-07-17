@@ -190,56 +190,120 @@ pub fn ml_managed_engine_path(app: AppHandle) -> Result<String, String> {
     Ok(managed_engine_exe(&app)?.to_string_lossy().to_string())
 }
 
-/// GitHub "latest release" download URL for the standalone engine binary
-/// matching this OS/arch, or None on a platform with no prebuilt binary.
-/// The panel's "download engine" button passes this to `ml_download`. A
-/// fixed base (the project's own releases) — not user-supplied.
-#[tauri::command]
-pub fn ml_engine_release_url() -> Option<String> {
-    // macOS standalone builds are deferred — no prebuilt asset is published
-    // for it, so Mac falls through to None (the panel guides users to the
-    // Python engine instead of offering a download that would 404).
-    let asset = if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
-        "nexis-ml-windows-x64.exe"
-    } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
-        "nexis-ml-linux-x64"
-    } else {
-        return None;
-    };
-    Some(format!(
-        "https://github.com/rwetz/nexis-ml-rs/releases/latest/download/{asset}"
-    ))
+// ── Pinned engine release ─────────────────────────────────────────────────────
+//
+// The install flow only accepts bytes matching this compiled-in pin (ROADMAP
+// V3 decision: pinned SHA-256 + pinned tag, hosted on the project's GitHub
+// Releases). "latest" is deliberately not used — a compromised or replaced
+// release asset must fail the hash check here rather than run once with
+// `--version` as its only vetting. Shipping a new engine therefore means
+// bumping this pin in a Nexis release: update TAG/VERSION, download the
+// assets, and paste the `sha256sum` output. The nexis-ml-rs release workflow
+// should also publish a checksums.txt so the pin can be cross-checked against
+// CI output instead of a local download.
+
+/// Release tag the download URL points at.
+const ENGINE_TAG: &str = "v0.8.0";
+/// Version string `nexis-ml --version` must report after install.
+const ENGINE_VERSION: &str = "0.8.0";
+
+/// Per-platform pinned asset: release file name, byte size (shown in the
+/// consent UI; not a security boundary), and SHA-256 of the exact bytes.
+struct EngineAsset {
+    name: &'static str,
+    size: u64,
+    sha256: &'static str,
 }
 
-/// Download a standalone `nexis-ml` engine binary from `url` (https) into the
-/// managed engine dir, verify it via `--version`, and return its path +
-/// version. The "download → locate → detect" path for machines without a
-/// Python toolchain — mirrors how an LSP server is fetched. The frontend then
-/// uses the returned path exactly like a detected engine.
-#[tauri::command]
-pub async fn ml_download(app: AppHandle, url: String) -> Result<MlDetectResult, String> {
-    if !url.starts_with("https://") {
-        return Err("engine download url must be https".into());
+/// The pinned asset for this OS/arch, or None on a platform with no prebuilt
+/// binary. macOS standalone builds are deferred — the panel guides Mac users
+/// to the Python engine instead of offering a download that would 404.
+fn engine_asset() -> Option<&'static EngineAsset> {
+    if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
+        Some(&EngineAsset {
+            name: "nexis-ml-windows-x64.exe",
+            size: 34_814_464,
+            sha256: "f8d7eacd6d9517277fbf40869b0589f689efeb8c76c0425dee31e68a95357dbf",
+        })
+    } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+        Some(&EngineAsset {
+            name: "nexis-ml-linux-x64",
+            size: 26_113_824,
+            sha256: "18a4981b476e639cfd4cc6722f4eea4686612568253c59a3f3591a63ba8bc5e9",
+        })
+    } else {
+        None
     }
-    let exe = managed_engine_exe(&app)?;
+}
+
+fn engine_asset_url(asset: &EngineAsset) -> String {
+    format!(
+        "https://github.com/rwetz/nexis-ml-rs/releases/download/{ENGINE_TAG}/{}",
+        asset.name
+    )
+}
+
+/// Everything the consent dialog shows before the user agrees to download:
+/// what version, from where, how big, and the hash Nexis will enforce.
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct EnginePinInfo {
+    pub version: String,
+    pub url: String,
+    pub size_bytes: u64,
+    pub sha256: String,
+}
+
+/// The pinned engine release for this platform (None = no prebuilt binary).
+#[tauri::command]
+pub fn ml_engine_pin() -> Option<EnginePinInfo> {
+    let asset = engine_asset()?;
+    Some(EnginePinInfo {
+        version: ENGINE_VERSION.to_string(),
+        url: engine_asset_url(asset),
+        size_bytes: asset.size,
+        sha256: asset.sha256.to_string(),
+    })
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::digest(bytes);
+    let mut out = String::with_capacity(64);
+    for b in digest {
+        use std::fmt::Write;
+        let _ = write!(out, "{b:02x}");
+    }
+    out
+}
+
+/// Hash-gate for every install path (download and local copy): the bytes
+/// must match the pinned SHA-256 *before* they are written to the managed
+/// dir or executed. Self-built engines are still usable — detection accepts
+/// them from PATH/venvs — but the managed dir only ever holds pinned bytes.
+fn verify_pinned_bytes(bytes: &[u8], asset: &EngineAsset) -> Result<(), String> {
+    let actual = sha256_hex(bytes);
+    if actual != asset.sha256 {
+        return Err(format!(
+            "engine integrity check failed: expected sha256 {} ({} v{}), got {} — \
+             refusing to install. If you built this binary yourself, keep it on \
+             PATH or in a venv instead; Nexis only manages pin-verified engines.",
+            asset.sha256, asset.name, ENGINE_VERSION, actual
+        ));
+    }
+    Ok(())
+}
+
+/// Write verified engine bytes into the managed dir (temp sibling + rename so
+/// a crash never leaves a half-written binary), then confirm the binary runs
+/// and reports exactly the pinned version.
+fn install_verified_bytes(app: &AppHandle, bytes: &[u8]) -> Result<MlDetectResult, String> {
+    let exe = managed_engine_exe(app)?;
     if let Some(parent) = exe.parent() {
         std::fs::create_dir_all(parent).map_err(|e| format!("create engine dir: {e}"))?;
     }
-
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(300))
-        .build()
-        .map_err(|e| e.to_string())?;
-    let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
-    if !resp.status().is_success() {
-        return Err(format!("download failed: HTTP {}", resp.status().as_u16()));
-    }
-    let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
-
-    // Write to a temp sibling, mark executable (unix), then rename onto the
-    // target so a partial download never leaves a half-written binary.
     let tmp = exe.with_extension("download");
-    std::fs::write(&tmp, &bytes).map_err(|e| format!("write engine: {e}"))?;
+    std::fs::write(&tmp, bytes).map_err(|e| format!("write engine: {e}"))?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -252,10 +316,16 @@ pub async fn ml_download(app: AppHandle, url: String) -> Result<MlDetectResult, 
     std::fs::rename(&tmp, &exe).map_err(|e| format!("install engine: {e}"))?;
 
     match engine_version(&exe) {
-        Ok(version) => Ok(MlDetectResult {
+        Ok(version) if version == ENGINE_VERSION => Ok(MlDetectResult {
             exe: exe.to_string_lossy().to_string(),
             version,
         }),
+        Ok(version) => {
+            let _ = std::fs::remove_file(&exe);
+            Err(format!(
+                "engine reported version {version}, expected {ENGINE_VERSION} — removed"
+            ))
+        }
         Err(e) => {
             let _ = std::fs::remove_file(&exe);
             Err(format!(
@@ -263,6 +333,89 @@ pub async fn ml_download(app: AppHandle, url: String) -> Result<MlDetectResult, 
             ))
         }
     }
+}
+
+/// Download the pinned standalone `nexis-ml` engine release into the managed
+/// engine dir. The URL is derived from the compiled-in pin — never
+/// frontend-supplied — and the bytes are SHA-256-verified against the pin
+/// before touching disk or being executed. The "download → verify → detect"
+/// path for machines without a Python toolchain.
+#[tauri::command]
+pub async fn ml_download(app: AppHandle) -> Result<MlDetectResult, String> {
+    let asset = engine_asset().ok_or("no prebuilt engine for this platform")?;
+    let url = engine_asset_url(asset);
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(300))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("download failed: HTTP {}", resp.status().as_u16()));
+    }
+    let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
+
+    // Hashing 25-35 MB + the post-install --version probe block; keep them
+    // off the main thread like every other heavy command.
+    crate::modules::heavy(move || {
+        verify_pinned_bytes(&bytes, asset)?;
+        install_verified_bytes(&app, &bytes)
+    })
+    .await
+}
+
+/// Install the pinned engine from a file already on disk — the offline path
+/// for air-gapped machines (download the release asset elsewhere, carry it
+/// over). Same SHA-256 gate as the download path: only the pinned bytes are
+/// accepted into the managed dir.
+#[tauri::command]
+pub async fn ml_install_local(app: AppHandle, path: String) -> Result<MlDetectResult, String> {
+    let asset = engine_asset().ok_or("no prebuilt engine for this platform")?;
+    crate::modules::heavy(move || {
+        let bytes = std::fs::read(&path).map_err(|e| format!("read {path}: {e}"))?;
+        verify_pinned_bytes(&bytes, asset)?;
+        install_verified_bytes(&app, &bytes)
+    })
+    .await
+}
+
+/// Managed-engine footprint for the settings/panel readout.
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ManagedEngineStatus {
+    pub installed: bool,
+    pub path: String,
+    pub size_bytes: u64,
+}
+
+/// Whether the managed (downloaded) engine exists and how much disk it uses.
+/// Engines detected from PATH/venvs are not Nexis's to account for.
+#[tauri::command]
+pub fn ml_engine_status(app: AppHandle) -> Result<ManagedEngineStatus, String> {
+    let exe = managed_engine_exe(&app)?;
+    let size = std::fs::metadata(&exe).map(|m| m.len()).unwrap_or(0);
+    Ok(ManagedEngineStatus {
+        installed: size > 0,
+        path: exe.to_string_lossy().to_string(),
+        size_bytes: size,
+    })
+}
+
+/// Delete the managed engine binary (and its dir if now empty). Returns the
+/// freed byte count. Detection falls back to PATH/venv engines afterwards.
+#[tauri::command]
+pub fn ml_uninstall(app: AppHandle) -> Result<u64, String> {
+    let exe = managed_engine_exe(&app)?;
+    let size = std::fs::metadata(&exe).map(|m| m.len()).unwrap_or(0);
+    match std::fs::remove_file(&exe) {
+        Ok(()) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(0),
+        Err(e) => return Err(format!("remove engine: {e}")),
+    }
+    if let Some(parent) = exe.parent() {
+        let _ = std::fs::remove_dir(parent); // only succeeds if empty — fine
+    }
+    Ok(size)
 }
 
 /// Run `nexis-ml env` and return its JSON capability report (torch
@@ -696,6 +849,54 @@ mod tests {
         assert!(!is_nexis_ml_exe(""));
         // Path tricks must not slip through the stem check
         assert!(!is_nexis_ml_exe(r"cmd.exe /c nexis-ml"));
+    }
+
+    #[test]
+    fn sha256_hex_matches_known_vector() {
+        // NIST test vector: sha256("abc")
+        assert_eq!(
+            sha256_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+        assert_eq!(
+            sha256_hex(b""),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+    }
+
+    #[test]
+    fn engine_pin_is_well_formed() {
+        // The pin is the security boundary of the install flow — a malformed
+        // hash would make every install fail (fail-closed, but still a bug).
+        if let Some(asset) = engine_asset() {
+            assert_eq!(asset.sha256.len(), 64, "sha256 must be 64 hex chars");
+            assert!(asset.sha256.chars().all(|c| c.is_ascii_hexdigit()));
+            assert!(
+                asset.sha256.chars().all(|c| !c.is_ascii_uppercase()),
+                "pin must be lowercase hex (sha256_hex emits lowercase)"
+            );
+            assert!(asset.size > 0);
+            assert!(asset.name.starts_with("nexis-ml-"));
+            let url = engine_asset_url(asset);
+            assert!(url.starts_with("https://github.com/rwetz/nexis-ml-rs/releases/download/"));
+            assert!(
+                url.contains(ENGINE_TAG),
+                "url must pin the exact tag, never 'latest'"
+            );
+        }
+        assert!(ENGINE_TAG.strip_prefix('v') == Some(ENGINE_VERSION));
+    }
+
+    #[test]
+    fn verify_pinned_bytes_rejects_mismatch() {
+        let asset = EngineAsset {
+            name: "nexis-ml-test",
+            size: 3,
+            sha256: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        };
+        assert!(verify_pinned_bytes(b"abc", &asset).is_ok());
+        let err = verify_pinned_bytes(b"abd", &asset).unwrap_err();
+        assert!(err.contains("integrity check failed"));
     }
 
     #[test]

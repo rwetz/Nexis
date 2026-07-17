@@ -23,11 +23,13 @@ import {
   cancelRun,
   detectEngine,
   downloadEngine,
+  engineInstallPin,
   engineKindFromEnv,
-  engineReleaseUrl,
   engineSupportsTemplate,
+  installLocalEngine,
   killRun,
   managedEngineCandidate,
+  managedEngineStatus,
   probeEnv,
   probeGpu,
   resetEngineDetection,
@@ -40,9 +42,13 @@ import {
   spawnServe,
   spawnTrain,
   subscribeMlEvents,
+  uninstallEngine,
+  type EngineDetectResult,
   type EngineKind,
+  type EnginePin,
   type ExitPayload,
   type InstallFlavor,
+  type ManagedEngineStatus,
   type MlEnvInfo,
   type MlTemplate,
   type ProtoPayload,
@@ -268,6 +274,12 @@ type MlStore = {
   installFlavor: InstallFlavor | null;
   /** Downloading the standalone Rust engine (no-Python path). */
   downloadingEngine: boolean;
+  /** The compiled-in engine release pin (version/url/size/sha256), for the
+   *  consent dialog. null = not fetched yet or no prebuilt for platform. */
+  enginePin: EnginePin | null;
+  /** Managed (downloaded) engine footprint, for the disk-usage readout and
+   *  the uninstall row. null until first refreshed. */
+  managedEngine: ManagedEngineStatus | null;
   /** What the installed engine can do (torch / CUDA), once probed. */
   envInfo: MlEnvInfo | null;
   /** NVIDIA GPU reported by the driver, engine not required. */
@@ -324,8 +336,21 @@ type MlStore = {
   installEngine: (workspaceRoot: string | null, useGpu: boolean) => Promise<void>;
   /** Swap the engine's CPU torch for the CUDA build. */
   upgradeToGpu: (workspaceRoot: string | null) => Promise<void>;
-  /** Download the standalone Rust engine (no Python needed). */
+  /** Download the standalone Rust engine (no Python needed). The caller
+   *  must have shown the consent dialog first (EngineConsentDialog). */
   downloadStandaloneEngine: () => Promise<void>;
+  /** Offline path: install the pinned engine from a local file. */
+  installLocalCopy: (path: string) => Promise<void>;
+  /** Remove the managed engine binary and re-detect (PATH/venv engines
+   *  keep working). */
+  uninstallManagedEngine: (workspaceRoot: string | null) => Promise<void>;
+  /** Refresh enginePin + managedEngine (cheap; called from detect). */
+  refreshEngineMeta: () => Promise<void>;
+  /** Shared tail of both managed-install paths (download / local copy). */
+  _finishManagedInstall: (
+    pending: Promise<EngineDetectResult>,
+    verb: "download" | "install",
+  ) => Promise<void>;
   refreshProjects: (workspaceRoot: string) => Promise<void>;
   selectProject: (dir: string) => void;
   createProject: (
@@ -416,6 +441,8 @@ export const useMlStore = create<MlStore>((set, get) => ({
   installQueue: [],
   installFlavor: null,
   downloadingEngine: false,
+  enginePin: null,
+  managedEngine: null,
   envInfo: null,
   hostGpu: null,
 
@@ -445,6 +472,8 @@ export const useMlStore = create<MlStore>((set, get) => ({
   async detect(workspaceRoot) {
     if (get().engineStatus === "detecting") return;
     set({ engineStatus: "detecting", engineError: null });
+    // Pin + managed-engine footprint for the setup card (cheap, local).
+    void get().refreshEngineMeta();
     // Driver-level GPU check, independent of python/torch (cheap).
     void probeGpu()
       .then((name) => set({ hostGpu: name }))
@@ -534,30 +563,51 @@ export const useMlStore = create<MlStore>((set, get) => ({
 
   async downloadStandaloneEngine() {
     if (get().downloadingEngine || get().installing) return;
-    const url = await engineReleaseUrl();
-    if (!url) {
+    const pin = get().enginePin ?? (await engineInstallPin());
+    if (!pin) {
       set({
         engineError: "No prebuilt standalone engine for this platform yet.",
       });
       return;
     }
+    const mb = (pin.sizeBytes / (1024 * 1024)).toFixed(0);
     set((s) => ({
       downloadingEngine: true,
       engineError: null,
-      logs: pushLog(s.logs, "downloading the standalone engine (~31 MB)…"),
+      logs: pushLog(
+        s.logs,
+        `downloading nexis-ml ${pin.version} (${mb} MB, sha256-verified)…`,
+      ),
     }));
+    await get()._finishManagedInstall(downloadEngine(), "download");
+  },
+
+  async installLocalCopy(path) {
+    if (get().downloadingEngine || get().installing) return;
+    const trimmed = path.trim();
+    if (!trimmed) return;
+    set((s) => ({
+      downloadingEngine: true,
+      engineError: null,
+      logs: pushLog(s.logs, `verifying local engine copy: ${trimmed}`),
+    }));
+    await get()._finishManagedInstall(installLocalEngine(trimmed), "install");
+  },
+
+  async _finishManagedInstall(pending, verb) {
     try {
-      const res = await downloadEngine(url);
+      const res = await pending;
       set((s) => ({
         downloadingEngine: false,
         engineStatus: "ready",
         engineExe: res.exe,
         engineVersion: res.version,
-        // The downloaded standalone binary is always the Rust engine.
+        // The managed standalone binary is always the Rust engine.
         engineKind: "rust",
         engineError: null,
         logs: pushLog(s.logs, `standalone engine ready (${res.version})`),
       }));
+      void get().refreshEngineMeta();
       void probeEnv(res.exe)
         .then((env) =>
           set((s) => ({
@@ -569,10 +619,35 @@ export const useMlStore = create<MlStore>((set, get) => ({
     } catch (err) {
       set((s) => ({
         downloadingEngine: false,
-        engineError: `Engine download failed: ${String(err)}`,
-        logs: pushLog(s.logs, `engine download failed: ${String(err)}`),
+        engineError: `Engine ${verb} failed: ${String(err)}`,
+        logs: pushLog(s.logs, `engine ${verb} failed: ${String(err)}`),
       }));
     }
+  },
+
+  async uninstallManagedEngine(workspaceRoot) {
+    if (get().downloadingEngine || get().installing) return;
+    try {
+      const freed = await uninstallEngine();
+      const mb = (freed / (1024 * 1024)).toFixed(0);
+      set((s) => ({
+        logs: pushLog(s.logs, `managed engine removed (freed ${mb} MB)`),
+      }));
+    } catch (err) {
+      set({ engineError: `Engine uninstall failed: ${String(err)}` });
+      return;
+    }
+    await get().refreshEngineMeta();
+    // The engine may still exist in a venv/PATH — let detection decide.
+    await get().redetect(workspaceRoot);
+  },
+
+  async refreshEngineMeta() {
+    const [pin, managed] = await Promise.all([
+      engineInstallPin(),
+      managedEngineStatus(),
+    ]);
+    set({ enginePin: pin, managedEngine: managed });
   },
 
   async _startNextInstall() {
