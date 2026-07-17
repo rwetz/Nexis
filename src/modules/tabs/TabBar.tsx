@@ -30,7 +30,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Tab } from "./lib/tabTypes";
 import { editorAnyDirty } from "./lib/tabTypes";
 
@@ -93,49 +93,6 @@ export function TabBar({
   useEffect(() => { dragOrderRef.current = dragOrder; }, [dragOrder]);
 
   const [draggingId, setDraggingId] = useState<number | null>(null);
-
-  // Sliding active-tab indicator. Formerly a motion `layoutId` shared-layout
-  // element; now a single measured span whose left/width follow the active
-  // trigger via a CSS transition — same slide, zero animation JS per frame.
-  // The strip ref is the positioned ancestor the coordinates resolve against.
-  const stripRef = useRef<HTMLDivElement>(null);
-  const [indicator, setIndicator] = useState<{
-    left: number;
-    width: number;
-  } | null>(null);
-
-  useLayoutEffect(() => {
-    const strip = stripRef.current;
-    const measure = () => {
-      const active = strip?.querySelector<HTMLElement>(
-        `[data-tab-id="${activeId}"]`,
-      );
-      if (!strip || !active) {
-        setIndicator(null);
-        return;
-      }
-      // Rect deltas stay correct regardless of the outer horizontal scroll —
-      // both rects live in viewport space and the indicator scrolls with the
-      // strip content. The ±6px matches the old `inset-x-1.5`.
-      const stripRect = strip.getBoundingClientRect();
-      const rect = active.getBoundingClientRect();
-      const next = {
-        left: rect.left - stripRect.left + 6,
-        width: Math.max(0, rect.width - 12),
-      };
-      setIndicator((prev) =>
-        prev && prev.left === next.left && prev.width === next.width
-          ? prev
-          : next,
-      );
-    };
-    measure();
-    // Tab labels change width live (cwd updates, font load) — re-measure on
-    // any size change inside the strip, not just on React state changes.
-    const ro = new ResizeObserver(measure);
-    if (strip) ro.observe(strip);
-    return () => ro.disconnect();
-  }, [activeId, tabs, dragOrder, compact]);
 
   useEffect(() => {
     if (!onReorder) return;
@@ -270,16 +227,7 @@ export function TabBar({
       data-tauri-drag-region
       className="min-w-0 shrink overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
-      <div ref={stripRef} className="relative flex w-max items-center gap-0.5">
-        {/* Sliding brand-colored active indicator — a single measured element
-            that follows the active tab via a CSS left/width transition. */}
-        {indicator && (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute top-0 z-10 h-[2px] rounded-full bg-brand shadow-[0_0_8px_var(--brand)] transition-[left,width] duration-200 ease-out"
-            style={{ left: indicator.left, width: indicator.width }}
-          />
-        )}
+      <div className="relative flex w-max items-center gap-0.5">
         <Tabs
           value={String(activeId)}
           onValueChange={(v) => onSelect(Number(v))}
@@ -311,7 +259,12 @@ export function TabBar({
                     };
                   }}
                   className={cn(
+                    // Active state reads by fill + text contrast alone; the
+                    // base TabsTrigger focus ring is suppressed because Radix
+                    // tabs activate on focus, so the active style *is* the
+                    // keyboard focus indicator.
                     "group relative h-7 shrink-0 gap-1.5 rounded-md text-xs text-muted-foreground transition-colors data-[state=active]:bg-accent data-[state=active]:text-foreground hover:text-foreground/80 justify-between",
+                    "focus-visible:ring-0 focus-visible:outline-none",
                     compact ? "px-1.5!" : "ps-2! pe-1!",
                     onReorder && "cursor-grab",
                     draggingId === t.id && "opacity-50 ring-1 ring-primary/30",
