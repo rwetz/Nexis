@@ -37,6 +37,7 @@ import {
   setTerminalLetterSpacing,
   setTerminalFontSize,
   setTerminalFontWeight,
+  setDefaultShellPath,
   setTerminalOsc52Clipboard,
   setTerminalConfirmCloseBusy,
   setTerminalScrollback,
@@ -90,6 +91,7 @@ export function GeneralSection() {
   );
   const terminalFontSize = usePreferencesStore((s) => s.terminalFontSize);
   const terminalFontWeight = usePreferencesStore((s) => s.terminalFontWeight);
+  const defaultShellPath = usePreferencesStore((s) => s.defaultShellPath);
   const terminalScrollback = usePreferencesStore((s) => s.terminalScrollback);
   const terminalSuggestionsEnabled = usePreferencesStore(
     (s) => s.terminalSuggestionsEnabled,
@@ -265,6 +267,18 @@ export function GeneralSection() {
           <Switch
             checked={terminalSuggestionsEnabled}
             onCheckedChange={(v) => void setTerminalSuggestionsEnabled(v)}
+          />
+        </SettingRow>
+        <SettingRow
+          title="Default shell"
+          description="Full path to the shell for new terminals (e.g. /usr/bin/fish). Leave blank to auto-detect; a path that doesn't exist falls back to auto-detect. Applies to new tabs."
+        >
+          <input
+            type="text"
+            value={defaultShellPath}
+            placeholder="Auto-detect"
+            onChange={(e) => void setDefaultShellPath(e.target.value)}
+            className="h-8 w-48 rounded-md border border-border bg-background px-2.5 text-[12px] outline-none focus:border-foreground/40"
           />
         </SettingRow>
         <SettingRow

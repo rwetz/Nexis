@@ -154,6 +154,10 @@ export type Preferences = {
   terminalFontSize: number;
   /** CSS font-weight for regular terminal text (bold text stays bold). */
   terminalFontWeight: number;
+  /** Full path of the shell for new terminals; "" = auto-detect (login
+   * shell / $SHELL on unix, pwsh → powershell → cmd on Windows). A path
+   * that doesn't exist falls back to auto-detection Rust-side. */
+  defaultShellPath: string;
   terminalScrollback: number;
   lastWslDistro: string | null;
   zoomLevel: number;
@@ -223,6 +227,7 @@ const KEY_TERMINAL_FONT_FAMILY = "terminalFontFamily";
 const KEY_TERMINAL_LETTER_SPACING = "terminalLetterSpacing";
 const KEY_TERMINAL_FONT_SIZE = "terminalFontSize";
 const KEY_TERMINAL_FONT_WEIGHT = "terminalFontWeight";
+const KEY_DEFAULT_SHELL_PATH = "defaultShellPath";
 const KEY_TERMINAL_SCROLLBACK = "terminalScrollback";
 const KEY_LAST_WSL_DISTRO = "lastWslDistro";
 const KEY_ZOOM_LEVEL = "zoomLevel";
@@ -306,6 +311,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   terminalLetterSpacing: 0,
   terminalFontSize: TERMINAL_FONT_SIZE_DEFAULT,
   terminalFontWeight: TERMINAL_FONT_WEIGHT_DEFAULT,
+  defaultShellPath: "",
   terminalScrollback: TERMINAL_SCROLLBACK_DEFAULT,
   lastWslDistro: null,
   zoomLevel: 1.0,
@@ -453,6 +459,9 @@ export async function loadPreferences(): Promise<Preferences> {
       get<number>(KEY_TERMINAL_FONT_WEIGHT) ??
         DEFAULT_PREFERENCES.terminalFontWeight,
     ),
+    defaultShellPath:
+      get<string>(KEY_DEFAULT_SHELL_PATH) ??
+      DEFAULT_PREFERENCES.defaultShellPath,
     terminalScrollback: clampScrollback(
       get<number>(KEY_TERMINAL_SCROLLBACK) ??
         DEFAULT_PREFERENCES.terminalScrollback,
@@ -695,6 +704,10 @@ export async function setTerminalFontWeight(value: number): Promise<void> {
   await writePref(KEY_TERMINAL_FONT_WEIGHT, clampFontWeight(value));
 }
 
+export async function setDefaultShellPath(value: string): Promise<void> {
+  await writePref(KEY_DEFAULT_SHELL_PATH, value.trim());
+}
+
 function clampScrollback(value: number): number {
   if (!Number.isFinite(value)) return TERMINAL_SCROLLBACK_DEFAULT;
   return Math.min(
@@ -832,6 +845,7 @@ export async function onPreferencesChange(
     [KEY_TERMINAL_LETTER_SPACING]: "terminalLetterSpacing",
     [KEY_TERMINAL_FONT_SIZE]: "terminalFontSize",
     [KEY_TERMINAL_FONT_WEIGHT]: "terminalFontWeight",
+    [KEY_DEFAULT_SHELL_PATH]: "defaultShellPath",
     [KEY_TERMINAL_SCROLLBACK]: "terminalScrollback",
     [KEY_LAST_WSL_DISTRO]: "lastWslDistro",
     [KEY_ZOOM_LEVEL]: "zoomLevel",

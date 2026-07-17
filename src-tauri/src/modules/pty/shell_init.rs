@@ -52,11 +52,13 @@ pub fn build_command(
     cwd: Option<String>,
     workspace: WorkspaceEnv,
     extra_env: HashMap<String, String>,
+    shell_override: Option<String>,
 ) -> Result<CommandBuilder, String> {
+    let shell_override = sanitize_shell_override(shell_override);
     #[cfg(unix)]
     {
         let _ = workspace;
-        let mut cmd = unix::build(cwd)?;
+        let mut cmd = unix::build(cwd, shell_override)?;
         for (k, v) in extra_env {
             cmd.env(k, v);
         }
@@ -64,11 +66,28 @@ pub fn build_command(
     }
     #[cfg(windows)]
     {
-        let mut cmd = windows::build(cwd, workspace)?;
+        let mut cmd = windows::build(cwd, workspace, shell_override)?;
         for (k, v) in extra_env {
             cmd.env(k, v);
         }
         Ok(cmd)
+    }
+}
+
+/// The user's "default shell" preference. Only honored when it names an
+/// existing file — a typo'd path falls back to auto-detection instead of
+/// spawning a shell that instantly fails (which renders as the pitfall-#1
+/// blank terminal). Empty/whitespace means "auto-detect".
+fn sanitize_shell_override(shell: Option<String>) -> Option<String> {
+    let s = shell?.trim().to_string();
+    if s.is_empty() {
+        return None;
+    }
+    if std::path::Path::new(&s).is_file() {
+        Some(s)
+    } else {
+        log::warn!("default shell '{s}' not found; falling back to auto-detection");
+        None
     }
 }
 
@@ -139,8 +158,12 @@ mod unix {
     }
 
     impl Shell {
-        pub fn detect() -> (Shell, String) {
-            let path = login_shell()
+        pub fn detect(shell_override: Option<String>) -> (Shell, String) {
+            // A user-set default shell (already validated to exist) wins over
+            // the login shell / $SHELL detection order. It still gets shell
+            // integration when it's a shell we know.
+            let path = shell_override
+                .or_else(login_shell)
                 .or_else(|| std::env::var("SHELL").ok())
                 .filter(|s| !s.is_empty())
                 .unwrap_or_else(|| "/bin/zsh".into());
@@ -171,8 +194,11 @@ mod unix {
         }
     }
 
-    pub fn build(cwd: Option<String>) -> Result<CommandBuilder, String> {
-        let (shell, shell_path) = Shell::detect();
+    pub fn build(
+        cwd: Option<String>,
+        shell_override: Option<String>,
+    ) -> Result<CommandBuilder, String> {
+        let (shell, shell_path) = Shell::detect(shell_override);
         let mut cmd = CommandBuilder::new(&shell_path);
         super::apply_common(&mut cmd, cwd);
 
@@ -302,11 +328,19 @@ mod windows {
         args: Vec<String>,
     }
 
-    pub fn build(cwd: Option<String>, workspace: WorkspaceEnv) -> Result<CommandBuilder, String> {
+    pub fn build(
+        cwd: Option<String>,
+        workspace: WorkspaceEnv,
+        shell_override: Option<String>,
+    ) -> Result<CommandBuilder, String> {
         if let WorkspaceEnv::Wsl { distro } = workspace {
+            // WSL sessions use the distro's login shell; the host-side default
+            // shell preference does not apply inside the distro.
             return build_wsl(cwd, distro);
         }
-        let shell_path = super::windows_shell_path();
+        let shell_path = shell_override
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(super::windows_shell_path);
         let shell_name = shell_path
             .file_name()
             .and_then(|s| s.to_str())
