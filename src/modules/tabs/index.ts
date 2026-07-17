@@ -5,7 +5,9 @@
 // ╚══════════════════════════════════════╝
 
 export { TabBar } from "./TabBar";
+export { TabSwitcher } from "./TabSwitcher";
 export { useTabs } from "./lib/useTabs";
+export { useMruTabSwitcher } from "./lib/useMruTabSwitcher";
 export {
   MAX_PANES_PER_TAB,
   editorActiveLeaf,

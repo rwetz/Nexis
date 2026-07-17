@@ -111,6 +111,8 @@ import { PluginHost } from "@/lib/plugins/PluginHost";
 import { PackOnboardingDialog } from "@/modules/settings/PackOnboardingDialog";
 import {
   MAX_PANES_PER_TAB,
+  TabSwitcher,
+  useMruTabSwitcher,
   useTabs,
   useWorkspaceCwd,
   setSavedTabsEnabled,
@@ -652,15 +654,13 @@ export default function App() {
     setPendingCloseTab(null);
   }, []);
 
-  const cycleTab = useCallback(
-    (delta: 1 | -1) => {
-      if (tabs.length < 2) return;
-      const idx = tabs.findIndex((t) => t.id === activeId);
-      const nextIdx = (idx + delta + tabs.length) % tabs.length;
-      setActiveId(tabs[nextIdx].id);
-    },
-    [tabs, activeId, setActiveId],
-  );
+  // MRU Ctrl+Tab: hold-to-cycle overlay ordered by recency, release-to-select
+  // (replaces the old positional next/previous cycle).
+  const {
+    switcher: tabSwitcher,
+    cycle: cycleTab,
+    pick: pickSwitcherTab,
+  } = useMruTabSwitcher({ tabs, activeId, setActiveId });
 
   const captureActiveSelection = useCallback((): string | null => {
     const t = tabs.find((x) => x.id === activeId);
@@ -1162,8 +1162,8 @@ export default function App() {
       "tab.newPreview": () => openPreviewTab(""),
       "tab.newEditor": () => setNewEditorOpen(true),
       "tab.close": handleCloseTabOrPane,
-      "tab.next": () => cycleTab(1),
-      "tab.prev": () => cycleTab(-1),
+      "tab.next": (e) => cycleTab(1, e),
+      "tab.prev": (e) => cycleTab(-1, e),
       "tab.selectByIndex": (e) => selectByIndex(parseInt(e.key, 10) - 1),
       "pane.splitRight": () => splitActivePaneInActiveTab("row"),
       "pane.splitDown": () => splitActivePaneInActiveTab("col"),
@@ -1854,6 +1854,15 @@ export default function App() {
             <CommandPalette
               commands={visiblePaletteCommands}
               onClose={() => setCommandPaletteOpen(false)}
+            />
+          )}
+
+          {tabSwitcher && (
+            <TabSwitcher
+              tabs={tabs}
+              order={tabSwitcher.order}
+              index={tabSwitcher.index}
+              onPick={pickSwitcherTab}
             />
           )}
 
