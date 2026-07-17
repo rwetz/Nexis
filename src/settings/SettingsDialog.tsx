@@ -18,6 +18,7 @@ import {
   CodeIcon,
   InformationCircleIcon,
   KeyboardIcon,
+  LayersIcon,
   PaintBoardIcon,
   Settings01Icon,
   UserMultiple02Icon,
@@ -31,6 +32,7 @@ import { useSettingsDialogStore } from "@/modules/settings/settingsDialogStore";
 import { AboutSection } from "./sections/AboutSection";
 import { AgentsSection } from "./sections/AgentsSection";
 import { EnvironmentSection } from "./sections/EnvironmentSection";
+import { FeaturesSection } from "./sections/FeaturesSection";
 import { FormattersSection } from "./sections/FormattersSection";
 import { GeneralSection } from "./sections/GeneralSection";
 import { ModelsSection } from "./sections/ModelsSection";
@@ -44,6 +46,7 @@ const TABS: {
   component: () => JSX.Element;
 }[] = [
   { id: "general",     label: "General",     icon: Settings01Icon,       component: GeneralSection },
+  { id: "features",    label: "Features",    icon: LayersIcon,           component: FeaturesSection },
   { id: "themes",      label: "Themes",      icon: PaintBoardIcon,       component: ThemesSection },
   { id: "shortcuts",   label: "Shortcuts",   icon: KeyboardIcon,         component: ShortcutsSection },
   { id: "models",      label: "Models",      icon: AiScanIcon,           component: ModelsSection },

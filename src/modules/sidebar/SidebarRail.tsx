@@ -48,6 +48,8 @@ import {
   SearchCodeIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { viewEnabled } from "@/lib/packs";
+import { usePreferencesStore } from "@/modules/settings/preferences";
 import type { SidebarViewId } from "./types";
 
 export const SIDEBAR_RAIL_HEIGHT = 40;
@@ -153,13 +155,20 @@ export function SidebarRail({
     { id: "release",        label: "Release",          icon: RocketIcon,        group: "Advanced" },
   ];
 
-  const itemMap = new Map(allItems.map((i) => [i.id, i]));
+  // Views whose expansion pack is off disappear from the rail and the
+  // overflow popover. Pinned ids stay in storage so re-enabling a pack
+  // restores the user's pins. (Selector returns the store's own array —
+  // filtering happens locally; see CLAUDE.md pitfall #14.)
+  const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
+  const visibleItems = allItems.filter((i) => viewEnabled(i.id, enabledPacks));
+
+  const itemMap = new Map(visibleItems.map((i) => [i.id, i]));
 
   const pinnedItems = pinned
     .map((id) => itemMap.get(id))
     .filter((x): x is RailItemDef => x != null);
 
-  const overflowItems = allItems.filter((i) => !pinned.includes(i.id));
+  const overflowItems = visibleItems.filter((i) => !pinned.includes(i.id));
 
   const pin = useCallback((id: SidebarViewId) => {
     setPinned((prev) => {
@@ -228,7 +237,7 @@ export function SidebarRail({
             className="w-56 gap-0 p-2"
           >
             {RAIL_GROUPS.map((group, i) => {
-              const items = allItems.filter((item) => item.group === group);
+              const items = visibleItems.filter((item) => item.group === group);
               if (items.length === 0) return null;
               return (
                 <div key={group}>

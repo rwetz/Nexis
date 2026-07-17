@@ -8,6 +8,7 @@ import { useSettingsDialogStore } from "./settingsDialogStore";
 
 export type SettingsTab =
   | "general"
+  | "features"
   | "themes"
   | "shortcuts"
   | "models"

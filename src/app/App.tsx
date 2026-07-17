@@ -107,6 +107,7 @@ import { StatusBar } from "@/modules/statusbar";
 import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
 import { pushRecentWorkspace } from "@/modules/workspace/useRecentWorkspaces";
 import { PluginHost } from "@/lib/plugins/PluginHost";
+import { PackOnboardingDialog } from "@/modules/settings/PackOnboardingDialog";
 import {
   MAX_PANES_PER_TAB,
   useTabs,
@@ -1790,6 +1791,9 @@ export default function App() {
 
           {/* Activates all first-party plugins (status bar items, panels, etc.) */}
           <PluginHost />
+
+          {/* One-time expansion-pack preset picker (Settings → Features later) */}
+          <PackOnboardingDialog />
 
           {miniOpen && hasComposer ? <AiMiniWindow key="ai-mini" /> : null}
           {askPopup ? (

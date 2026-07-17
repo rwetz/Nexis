@@ -17,6 +17,7 @@ import {
   type AutocompleteProviderId,
   type ModelId,
 } from "@/modules/ai/config";
+import { isPackId, PACK_IDS, type PackId } from "@/lib/packs";
 import type { KeyBinding, ShortcutId } from "@/modules/shortcuts/shortcuts";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { LazyStore } from "@tauri-apps/plugin-store";
@@ -168,6 +169,11 @@ export type Preferences = {
   wordWrap: boolean;
   /** Open the ML Lab panel automatically when a training run starts. */
   mlAutoOpenOnTrain: boolean;
+  /** Expansion packs currently enabled — see src/lib/packs.ts for the
+   * taxonomy. Default is all packs on so upgrades change nothing. */
+  enabledPacks: PackId[];
+  /** Set once the first-run pack preset picker has been answered. */
+  packsOnboarded: boolean;
 };
 
 const STORE_PATH = "nexis-settings.json";
@@ -225,6 +231,8 @@ const KEY_TERMINAL_OSC52_CLIPBOARD = "terminalOsc52Clipboard";
 const KEY_TOOL_APPROVAL_POLICIES = "toolApprovalPolicies";
 const KEY_WORD_WRAP = "wordWrap";
 const KEY_ML_AUTO_OPEN = "mlAutoOpenOnTrain";
+const KEY_ENABLED_PACKS = "enabledPacks";
+const KEY_PACKS_ONBOARDED = "packsOnboarded";
 
 export const TERMINAL_FONT_SIZE_DEFAULT = 14;
 export const TERMINAL_FONT_SIZE_MIN = 8;
@@ -295,6 +303,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   toolApprovalPolicies: {},
   wordWrap: false,
   mlAutoOpenOnTrain: false,
+  enabledPacks: [...PACK_IDS],
+  packsOnboarded: false,
 };
 
 function mergeFormatters(
@@ -457,6 +467,13 @@ export async function loadPreferences(): Promise<Preferences> {
     wordWrap: get<boolean>(KEY_WORD_WRAP) ?? DEFAULT_PREFERENCES.wordWrap,
     mlAutoOpenOnTrain:
       get<boolean>(KEY_ML_AUTO_OPEN) ?? DEFAULT_PREFERENCES.mlAutoOpenOnTrain,
+    // Unknown ids (renamed/removed packs in an older or newer config) are
+    // dropped rather than kept as dead entries.
+    enabledPacks: (
+      get<string[]>(KEY_ENABLED_PACKS) ?? DEFAULT_PREFERENCES.enabledPacks
+    ).filter(isPackId),
+    packsOnboarded:
+      get<boolean>(KEY_PACKS_ONBOARDED) ?? DEFAULT_PREFERENCES.packsOnboarded,
   };
 }
 
@@ -722,6 +739,14 @@ export async function setMlAutoOpenOnTrain(value: boolean): Promise<void> {
   await writePref(KEY_ML_AUTO_OPEN, value);
 }
 
+export async function setEnabledPacks(packs: PackId[]): Promise<void> {
+  await writePref(KEY_ENABLED_PACKS, packs);
+}
+
+export async function setPacksOnboarded(value: boolean): Promise<void> {
+  await writePref(KEY_PACKS_ONBOARDED, value);
+}
+
 export type PrefKey = keyof Preferences;
 
 /** Subscribe to changes from any window (settings → main). */
@@ -782,6 +807,8 @@ export async function onPreferencesChange(
     [KEY_FORMAT_ON_SAVE]: "formatOnSave",
     [KEY_WORD_WRAP]: "wordWrap",
     [KEY_ML_AUTO_OPEN]: "mlAutoOpenOnTrain",
+    [KEY_ENABLED_PACKS]: "enabledPacks",
+    [KEY_PACKS_ONBOARDED]: "packsOnboarded",
   };
   // Same-process writes still fire onChange immediately; cross-window writes
   // arrive via the Tauri event emitted by writePref().

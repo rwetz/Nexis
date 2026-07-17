@@ -5,8 +5,10 @@
 // ╚══════════════════════════════════════╝
 
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
+import { viewEnabled } from "@/lib/packs";
 import { isSidebarViewId, type SidebarViewId } from "@/modules/sidebar";
 import type { FileExplorerHandle } from "@/modules/explorer";
+import { usePreferencesStore } from "@/modules/settings/preferences";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -75,6 +77,16 @@ export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null
     }
   }, []);
 
+  // If the active view's expansion pack is disabled (settings toggle in
+  // another window, first-run preset), fall back to the explorer rather
+  // than leaving a panel visible that the rail no longer offers.
+  const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
+  useEffect(() => {
+    if (!viewEnabled(sidebarView, enabledPacks)) {
+      persistSidebarView("explorer");
+    }
+  }, [enabledPacks, sidebarView, persistSidebarView]);
+
   const toggleSidebar = useCallback(() => {
     const p = sidebarRef.current;
     if (!p) return;
@@ -89,6 +101,10 @@ export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (!isSidebarViewId(detail)) return;
+      // Decoupled callers (status pills, plugins) can't know the pack
+      // config — drop requests for views whose pack is disabled.
+      const packs = usePreferencesStore.getState().enabledPacks;
+      if (!viewEnabled(detail, packs)) return;
       const panel = sidebarRef.current;
       if (panel && panel.getSize().asPercentage <= 0) {
         panel.resize(`${sidebarWidthRef.current}px`);

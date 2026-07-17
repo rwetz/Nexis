@@ -111,6 +111,10 @@ export type Plugin = {
   id: string;
   /** Human-readable name shown in diagnostics/settings. */
   name: string;
+  /** Expansion pack this plugin belongs to (see src/lib/packs.ts). The
+   * plugin is only activated while its pack is enabled; omit for plugins
+   * that are part of the core surface. */
+  pack?: import("@/lib/packs").PackId;
   /**
    * Called once when the app mounts. Register contributions here.
    * Return a Disposable to clean up on unmount (optional).

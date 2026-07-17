@@ -24,6 +24,7 @@ import { initMlSubscriptions } from "@/modules/ml/store";
 export const mlPlugin: Plugin = {
   id: "nexis.ml",
   name: "ML Suite",
+  pack: "ml-lab",
 
   activate(api) {
     const unsubscribe = initMlSubscriptions();
