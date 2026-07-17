@@ -283,6 +283,10 @@ export default function App() {
 
   const [home, setHome] = useState<string | null>(null);
   const [pendingCloseTab, setPendingCloseTab] = useState<number | null>(null);
+  // Zen mode: hide header + status bar for a distraction-free terminal.
+  // Session-only on purpose — restoring a chrome-less window on relaunch
+  // with no visible way back would read as breakage.
+  const [zenMode, setZenMode] = useState(false);
   // A terminal close intercepted because a command is still running (OSC 133
   // in-command). Which close to re-run on confirm is encoded in `kind`.
   const [pendingCloseBusy, setPendingCloseBusy] = useState<
@@ -1176,6 +1180,7 @@ export default function App() {
     { id: "view.zoomIn",         label: "Zoom in",                  category: "View",    action: zoomIn },
     { id: "view.zoomOut",        label: "Zoom out",                 category: "View",    action: zoomOut },
     { id: "view.zoomReset",      label: "Reset zoom",               category: "View",    action: zoomReset },
+    { id: "view.zenMode",        label: "Toggle zen mode",          category: "View",    action: () => setZenMode((v) => !v), keywords: ["distraction free", "hide header"] },
     { id: "pane.splitRight",     label: "Split pane right",         category: "Panes",   action: () => splitActivePaneInActiveTab("row") },
     { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
     { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
@@ -1263,6 +1268,7 @@ export default function App() {
       "view.zoomIn": zoomIn,
       "view.zoomOut": zoomOut,
       "view.zoomReset": zoomReset,
+      "view.zenMode": () => setZenMode((v) => !v),
       "editor.formatDocument": () => {
         if (activeEditorLeafId !== null)
           void editorRefs.current.get(activeEditorLeafId)?.format();
@@ -1624,6 +1630,9 @@ export default function App() {
           {/* Outside .zoom-content on purpose — CSS zoom would scale the
               fixed-position hit strips away from the real window edges. */}
           <WindowResizeEdges />
+          {/* display:none (not unmount) so header search state and the
+              SearchInline ref survive toggling zen. */}
+          <div className={zenMode ? "hidden" : "contents"}>
           <Header
             tabs={tabs}
             activeId={activeId}
@@ -1650,6 +1659,7 @@ export default function App() {
             searchTarget={searchTarget}
             searchRef={searchInlineRef}
           />
+          </div>
 
           <main className="zoom-content flex min-h-0 flex-1 flex-col">
             <ResizablePanelGroup
@@ -1853,6 +1863,7 @@ export default function App() {
             </ResizablePanelGroup>
           </main>
 
+          <div className={zenMode ? "hidden" : "contents"}>
           <StatusBar
             cwd={activeCwd}
             filePath={activeFilePath}
@@ -1867,6 +1878,7 @@ export default function App() {
             problemsOpen={problemsOpen}
             onToggleProblems={() => setProblemsOpen((v) => !v)}
           />
+          </div>
 
           {hasComposer ? (
             <AgentRunBridge

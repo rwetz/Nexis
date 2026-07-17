@@ -40,6 +40,7 @@ export type ShortcutId =
   | "view.zoomIn"
   | "view.zoomOut"
   | "view.zoomReset"
+  | "view.zenMode"
   | "ai.toggle"
   | "ai.askSelection"
   | "repl.sendSelection"
@@ -312,6 +313,12 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Reset zoom",
     group: "View",
     defaultBindings: [{ [MOD_PROP]: true, key: "0" }],
+  },
+  {
+    id: "view.zenMode",
+    label: "Toggle zen mode",
+    group: "View",
+    defaultBindings: [{ alt: true, key: "z" }],
   },
   {
     id: "editor.formatDocument",
