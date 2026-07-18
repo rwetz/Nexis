@@ -12,7 +12,7 @@ CodeMirror 6 via `@uiw/react-codemirror`. Three pane types render CM instances �
 - `src/modules/editor/lib/extensions.ts` — shared compartments + `buildSharedExtensions()`; the `.cm-scroller` theme here is where editor font/line-height live
 - `src/modules/editor/EditorPane.tsx` — main pane; wires LSP (`modules/lsp/lspExtension.ts`), breakpoints, vim, snippets, inline completion
 - `src/modules/editor/lib/autocomplete/inlineExtension.ts` — AI ghost-text completion (StateField + widget decoration, LRU cache, debounced driver)
-- `src/modules/editor/lib/useDocument.ts` — file load/save/dirty state
+- `src/modules/editor/lib/useDocument.ts` — file load/save/dirty state; also owns crash recovery: debounced dirty-buffer autosaves via `autosave-bridge.ts` → `modules/autosave.rs` (path-keyed by pinned FNV-1a hash, collision-guarded), offered back as a Restore/Discard banner when an autosave differs from disk on load
 - `src/modules/editor/Minimap.tsx` — separate DOM sibling, polls the view every 200 ms; not a CM extension
 - `src/lib/useZoom.ts` + `.zoom-content` / `.zoom-exempt` in `src/styles/globals.css` — app zoom (CSS `zoom`), which the editor must be exempt from
 

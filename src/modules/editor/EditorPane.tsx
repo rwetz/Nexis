@@ -135,7 +135,8 @@ function deriveProjectHints(filePath: string): string[] {
 
 export const EditorPane = forwardRef<EditorPaneHandle, Props>(
   function EditorPane({ path, onDirtyChange, onSaved, onClose }, ref) {
-    const { doc, onChange, save, reload, reloadForce } = useDocument({ path, onDirtyChange });
+    const { doc, onChange, save, reload, reloadForce, applyRecovery, discardRecovery } =
+      useDocument({ path, onDirtyChange });
     const reloadRef = useRef(reload);
     reloadRef.current = reload;
     const reloadForceRef = useRef(reloadForce);
@@ -644,6 +645,30 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
 
     return (
       <div className="flex h-full min-h-0 flex-col">
+        {doc.recovered !== null && (
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+            <span>
+              Unsaved changes from a previous session were recovered for this
+              file.
+            </span>
+            <span className="flex shrink-0 gap-1.5">
+              <button
+                type="button"
+                className="rounded border border-border px-2 py-0.5 hover:bg-accent hover:text-accent-foreground"
+                onClick={applyRecovery}
+              >
+                Restore
+              </button>
+              <button
+                type="button"
+                className="rounded border border-border px-2 py-0.5 hover:bg-accent hover:text-accent-foreground"
+                onClick={discardRecovery}
+              >
+                Discard
+              </button>
+            </span>
+          </div>
+        )}
         {toolingDisabled && (
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
             <span>

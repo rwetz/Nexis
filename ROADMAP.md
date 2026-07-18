@@ -111,7 +111,7 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 **Terminal & editor robustness**
 - 🟡 Unicode/grapheme correctness golden-file suite — CJK width, emoji ZWJ sequences, combining marks, zero-width handling — so rendering-width bugs surface in CI.
 - [x] ~~Shell-integration resilience~~ — done: missing markers detected, OS-level cwd fallback on Linux (see CHANGELOG `[Unreleased]`).
-- 🟡 Editor autosave + crash recovery — periodic dirty-buffer snapshots to a scratch dir, offered for recovery on next launch.
+- [x] ~~Editor autosave + crash recovery~~ — done (see CHANGELOG `[Unreleased]`).
 
 **Docs (nexis-wiki — separate repo)**
 Structure ideas taken from zed.dev/docs (July 2026 sidebar survey — full notes in git history).
