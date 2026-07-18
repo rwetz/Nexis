@@ -149,6 +149,12 @@ jobs:
       # *runtime* gstreamer plugins that `appimage.bundleMediaFramework: true`
       # bundles into the AppImage.
       #
+      # xdg-utils provides /usr/bin/xdg-open, which the Tauri Linux bundler
+      # requires at bundle time. The amd64 ubuntu-22.04 image ships it
+      # preinstalled; the ubuntu-22.04-arm image does NOT, so the arm64 leg
+      # fails at bundling ("xdg-open binary not found") without it. Explicit
+      # here so both arches bundle — a no-op on amd64 where it already exists.
+      #
       # Do NOT add the gstreamer `-dev` packages: on the ubuntu-22.04 runner
       # `libgstreamer1.0-dev` pulls an unsatisfiable `libunwind-dev`, which makes
       # apt bail out with "held broken packages" and fails the whole step. We
@@ -164,6 +170,7 @@ jobs:
             librsvg2-dev \
             patchelf \
             file \
+            xdg-utils \
             gstreamer1.0-plugins-base \
             gstreamer1.0-plugins-good
 
