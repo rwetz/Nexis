@@ -86,7 +86,7 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 - ✅ Graceful-degradation matrix — render a visible "X not installed → install with …" state for every missing external tool (LSP/DAP/formatters/git) instead of a silent no-op, with a test that asserts the degraded UI appears.
 
 **Security**
-- 🟡 Content-Security-Policy for the webview — lock down `connect-src`/`img-src`/`script-src` (matters because the preview pane loads untrusted local dev servers and markdown can embed remote images).
+- [x] ~~Content-Security-Policy for the webview~~ — done: a strict CSP already shipped in the initial build (script-src 'self', remote images blocked); the remaining gap — blanket `https:` in `connect-src` — is now pinned to the updater endpoint (see CHANGELOG `[Unreleased]`). `frame-src http: https:` intentionally remains for the preview address bar; narrowing it to localhost is a product call, tracked nowhere until someone wants it.
 - 🟡 LAN-share auth + a persistent "🔴 Sharing on" status-bar indicator + a bound-interface picker; ensure secret redaction also covers the shared HTML/SSE/WS stream.
 - 🟡 AI command audit log — append-only record of every shell command the agent ran, paired with a "require approval for commands matching <pattern>" rule set.
 - 🟡 Secret-redaction lint — a test/util that scans outbound surfaces (logs, crash bundles, recordings, share stream) for API-key / `Authorization:`-shaped strings and refuses to emit them.
