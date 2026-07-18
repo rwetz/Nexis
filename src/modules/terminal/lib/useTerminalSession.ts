@@ -15,6 +15,7 @@ import {
   registerCwdHandler,
   registerPromptTracker,
   registerTitleHandler,
+  type CommandFailure,
   type ShellIntegrationState,
 } from "./osc-handlers";
 import { openPty, ptyCwd, type PtySession } from "./pty-bridge";
@@ -410,7 +411,20 @@ function bindLeafToSlot(leafId: number, s: Session): void {
       // attacker file, etc.). Session-level, not per-bind, so the flag is
       // still correct after a background/foreground slot cycle.
       const shellState = s.shellState;
-      const prompt = registerPromptTracker(term, shellState);
+      // Failed-command "✦ Explain" chip: capture is buffer-local, the click
+      // just dispatches a window event — App.tsx bridges it into the AI
+      // composer (same decoupling as selections and explorer attachments).
+      const prompt = registerPromptTracker(term, shellState, {
+        isEnabled: () =>
+          usePreferencesStore.getState().terminalExplainFailures,
+        getCwd: () => s.lastCwd,
+        onExplain: (failure) =>
+          window.dispatchEvent(
+            new CustomEvent<CommandFailure>("nexis:ai-explain-failure", {
+              detail: failure,
+            }),
+          ),
+      });
       const cwd = registerCwdHandler(
         term,
         (next) => {

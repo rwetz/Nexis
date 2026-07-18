@@ -131,6 +131,7 @@ import {
   respawnSession,
   sessionHasRunningCommand,
   TerminalStack,
+  type CommandFailure,
   type TerminalPaneHandle,
 } from "@/modules/terminal";
 import {
@@ -848,6 +849,36 @@ export default function App() {
     window.dispatchEvent(new CustomEvent("nexis:ai-do-submit", { detail: "Explain this:" }));
     setAskPopup(null);
   }, [hasComposer, captureActiveSelection, attachSelection, openMini, activeTab]);
+
+  // Failed-command "✦ Explain" chip (osc-handlers.ts). The terminal only
+  // dispatches this window event — the same decoupling as selections — and
+  // this bridge attaches the captured command/output as terminal context,
+  // then auto-submits a fix-suggestion prompt.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const failure = (e as CustomEvent<CommandFailure>).detail;
+      if (!failure) return;
+      if (!hasComposer) {
+        void openSettingsWindow("models");
+        return;
+      }
+      const context = [
+        `Command (exit code ${failure.exitCode}${failure.cwd ? `, cwd: ${failure.cwd}` : ""}):`,
+        failure.command || "(command line unavailable)",
+        ...(failure.output ? ["", "Output:", failure.output] : []),
+      ].join("\n");
+      attachSelection(context, "terminal");
+      openMini();
+      window.dispatchEvent(
+        new CustomEvent("nexis:ai-do-submit", {
+          detail:
+            "This terminal command failed. Explain what went wrong and suggest a fix.",
+        }),
+      );
+    };
+    window.addEventListener("nexis:ai-explain-failure", handler);
+    return () => window.removeEventListener("nexis:ai-explain-failure", handler);
+  }, [hasComposer, attachSelection, openMini]);
 
   // Handle LSP go-to-definition cross-file navigation.
   // EditorPane dispatches "nexis:open-file" when definition is in another file.

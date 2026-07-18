@@ -43,6 +43,7 @@ import {
   setTerminalRestoreScrollback,
   setTerminalOsc52Clipboard,
   setTerminalConfirmCloseBusy,
+  setTerminalExplainFailures,
   setTerminalScrollback,
   setTerminalSuggestionsEnabled,
   setTerminalWebglEnabled,
@@ -143,6 +144,9 @@ export function GeneralSection() {
   );
   const terminalConfirmCloseBusy = usePreferencesStore(
     (s) => s.terminalConfirmCloseBusy,
+  );
+  const terminalExplainFailures = usePreferencesStore(
+    (s) => s.terminalExplainFailures,
   );
   const zoomLevel = usePreferencesStore((s) => s.zoomLevel);
   const wordWrap = usePreferencesStore((s) => s.wordWrap);
@@ -470,6 +474,15 @@ export function GeneralSection() {
           <Switch
             checked={terminalConfirmCloseBusy}
             onCheckedChange={(v) => void setTerminalConfirmCloseBusy(v)}
+          />
+        </SettingRow>
+        <SettingRow
+          title="Explain failed commands with AI"
+          description="Show an inline “✦ Explain” button on commands that exit with an error. Clicking sends the command and its output to the AI chat. Requires shell integration."
+        >
+          <Switch
+            checked={terminalExplainFailures}
+            onCheckedChange={(v) => void setTerminalExplainFailures(v)}
           />
         </SettingRow>
       </div>

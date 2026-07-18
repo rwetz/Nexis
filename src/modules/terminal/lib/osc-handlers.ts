@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import type { IDecoration, IMarker, Terminal } from "@xterm/xterm";
+import type { IBuffer, IDecoration, IMarker, Terminal } from "@xterm/xterm";
 
 /**
  * Cross-handler state shared between the OSC 7 cwd handler and the OSC 133
@@ -57,12 +57,59 @@ export type PromptTracker = {
   dispose: () => void;
 };
 
+/**
+ * Everything captured about a failed command for the AI "Explain" flow.
+ * Captured at OSC 133 D time (buffer content is final for that command),
+ * delivered when the user clicks the inline chip.
+ */
+export type CommandFailure = {
+  /** The command line as typed. zsh and bash place the OSC 133 B marker at
+   * the start of the prompt (they prepend it to PS1), so on those shells
+   * this includes the rendered prompt prefix — harmless for the model. */
+  command: string;
+  /** Command output, tail-biased and capped (errors live at the end). */
+  output: string;
+  exitCode: number;
+  /** cwd the command ran in. Read at D time, which is before the shell's
+   * post-command OSC 7 fires — so a failed `cd`-ish command can't skew it. */
+  cwd: string | null;
+};
+
+export type FailureExplainOptions = {
+  /** Live preference check — read at each command exit, no rebind needed. */
+  isEnabled: () => boolean;
+  /** cwd the command ran in; called at OSC 133 D time. */
+  getCwd: () => string | null;
+  /** Invoked when the user clicks the inline "✦ Explain" chip. */
+  onExplain: (failure: CommandFailure) => void;
+};
+
+/** SIGINT exit — a deliberate Ctrl+C is a cancel, not a failure to explain. */
+const EXIT_SIGINT = 130;
+
 export function registerPromptTracker(
   term: Terminal,
   state?: ShellIntegrationState,
+  explain?: FailureExplainOptions,
 ): PromptTracker {
   let marker: IMarker | null = null;
+  // Failed-command capture state, one command at a time. `cmdMarker` pins
+  // the line where input begins (B), `outMarker` the first output line (C).
+  // PowerShell's profile emits no C — the capture degrades, see
+  // captureFailedCommand. `sawExec` distinguishes a real execution from a
+  // bare Enter on an empty prompt (precmd re-emits D with the stale $?).
+  let cmdMarker: IMarker | null = null;
+  let cmdStartX = 0;
+  let outMarker: IMarker | null = null;
+  let sawExec = false;
   const decorations: IDecoration[] = [];
+  const disposeCommandMarkers = () => {
+    cmdMarker?.dispose();
+    cmdMarker = null;
+    outMarker?.dispose();
+    outMarker = null;
+    sawExec = false;
+  };
   const d = term.parser.registerOscHandler(133, (data) => {
     if (state) state.markersSeen = true;
     // OSC 133 A — start of new prompt (between commands).
@@ -73,20 +120,44 @@ export function registerPromptTracker(
       // must persist down the scrollback. xterm disposes the marker for us
       // once it scrolls past the buffer, which tears down its decoration too.
       marker = term.registerMarker(0);
+      disposeCommandMarkers();
     } else if (data.startsWith("B")) {
       // OSC 133 B — command begins. From here on, treat all output as
       // untrusted until we see D (command exit) or the next A (new prompt).
       if (state) state.inCommand = true;
+      cmdMarker?.dispose();
+      cmdMarker = term.registerMarker(0);
+      cmdStartX = term.buffer?.active?.cursorX ?? 0;
     } else if (data.startsWith("C")) {
       // OSC 133 C — command pre-execution marker; still inside command.
       if (state) state.inCommand = true;
+      outMarker?.dispose();
+      outMarker = term.registerMarker(0);
+      sawExec = true;
     } else if (data.startsWith("D")) {
       // OSC 133 D;<exitcode> — command ends. Accent the command's prompt line
       // green/red in the gutter so success/failure is scannable at a glance.
       if (state) state.inCommand = false;
       if (marker && !marker.isDisposed) {
-        addExitDecoration(term, marker, parseExitCode(data), decorations);
+        const code = parseExitCode(data);
+        addExitDecoration(term, marker, code, decorations);
+        if (explain && code !== 0 && code !== EXIT_SIGINT && explain.isEnabled()) {
+          const capture = captureFailedCommand(term, cmdMarker, cmdStartX, outMarker);
+          // Require evidence a command actually ran: a C marker, or output.
+          // Bare Enter after a failure re-emits D with the stale status and
+          // must not grow a chip on the empty prompt line.
+          if (capture && (sawExec || capture.output.length > 0)) {
+            addExplainDecoration(
+              term,
+              marker,
+              { ...capture, exitCode: code, cwd: explain.getCwd() },
+              decorations,
+              explain.onExplain,
+            );
+          }
+        }
       }
+      disposeCommandMarkers();
     }
     return true;
   });
@@ -98,6 +169,7 @@ export function registerPromptTracker(
       decorations.length = 0;
       marker?.dispose();
       marker = null;
+      disposeCommandMarkers();
     },
   };
 }
@@ -136,6 +208,153 @@ function addExitDecoration(
       : "var(--terminal-ansi-red)";
     el.style.opacity = "0.85";
     el.style.pointerEvents = "none";
+  });
+}
+
+// Caps for the failed-command capture. Errors live at the end of output, so
+// truncation keeps the tail. The capture is held in a closure per failed
+// command until its marker scrolls out, so the cap is also a memory bound.
+const MAX_COMMAND_CHARS = 2_000;
+const MAX_OUTPUT_LINES = 200;
+const MAX_OUTPUT_CHARS = 16_000;
+const TRUNCATION_NOTE = "[… earlier output truncated …]";
+
+/**
+ * Extract the failed command and its output from the buffer at OSC 133 D
+ * time. All bytes printed before the D sequence are already in the buffer
+ * (the parser is in-order), so the content between the B/C markers and the
+ * cursor is exactly this command's transcript.
+ *
+ * Without a C marker (PowerShell's profile emits only A/B/D) the command is
+ * taken as the B line plus its wrapped continuation rows, and everything
+ * below is treated as output — multi-line PS commands land in `output`,
+ * which the model copes with fine.
+ */
+function captureFailedCommand(
+  term: Terminal,
+  cmdMarker: IMarker | null,
+  cmdStartX: number,
+  outMarker: IMarker | null,
+): { command: string; output: string } | null {
+  const buf = term.buffer?.active;
+  if (!buf || !cmdMarker || cmdMarker.isDisposed) return null;
+  // The cursor sits where D was emitted — on a fresh line below the last
+  // output line when output ended in a newline (the common case).
+  const cursorLine = buf.baseY + buf.cursorY;
+  const lastLine = buf.cursorX > 0 ? cursorLine : cursorLine - 1;
+
+  const cmdLine = cmdMarker.line;
+  let cmdEnd: number;
+  let outStart: number;
+  if (outMarker && !outMarker.isDisposed) {
+    cmdEnd = Math.max(cmdLine, outMarker.line - 1);
+    outStart = outMarker.line;
+  } else {
+    cmdEnd = cmdLine;
+    while (cmdEnd < lastLine && buf.getLine(cmdEnd + 1)?.isWrapped) cmdEnd++;
+    outStart = cmdEnd + 1;
+  }
+
+  const command = readLines(buf, cmdLine, Math.min(cmdEnd, lastLine), cmdStartX)
+    .slice(0, MAX_COMMAND_CHARS)
+    .trim();
+
+  let output = "";
+  if (outStart <= lastLine) {
+    let from = outStart;
+    let truncated = false;
+    if (lastLine - from + 1 > MAX_OUTPUT_LINES) {
+      from = lastLine - MAX_OUTPUT_LINES + 1;
+      truncated = true;
+    }
+    output = readLines(buf, from, lastLine, 0);
+    if (output.length > MAX_OUTPUT_CHARS) {
+      output = output.slice(output.length - MAX_OUTPUT_CHARS);
+      truncated = true;
+    }
+    output = output.replace(/\s+$/, "");
+    if (truncated) output = `${TRUNCATION_NOTE}\n${output}`;
+  }
+  return { command, output };
+}
+
+/** Read buffer rows [from..to], joining wrapped rows without a newline.
+ * `firstCol` skips the prompt prefix on the first row (cursor x at B). */
+function readLines(buf: IBuffer, from: number, to: number, firstCol: number): string {
+  let text = "";
+  for (let y = from; y <= to; y++) {
+    const line = buf.getLine(y);
+    if (!line) continue;
+    const row = line.translateToString(true, y === from ? firstCol : 0);
+    if (y === from) text = row;
+    else text += (line.isWrapped ? "" : "\n") + row;
+  }
+  return text;
+}
+
+/** Cells reserved at the right edge of the command line for the chip. The
+ * element itself shrinks to max-content, so this is a placement hint. */
+const EXPLAIN_CHIP_CELLS = 12;
+
+/**
+ * Add the clickable "✦ Explain" chip on a failed command's prompt line,
+ * right-anchored. The decoration element itself is the chip — no child
+ * nodes, no `document.*` — so the logic stays testable in a Node test
+ * environment, and handlers are assigned as properties (not addEventListener)
+ * so xterm re-invoking onRender on every paint can't stack listeners.
+ */
+function addExplainDecoration(
+  term: Terminal,
+  marker: IMarker,
+  failure: CommandFailure,
+  decorations: IDecoration[],
+  onExplain: (failure: CommandFailure) => void,
+): void {
+  if (typeof term.registerDecoration !== "function") return;
+  const dec = term.registerDecoration({
+    marker,
+    anchor: "right",
+    x: 0,
+    width: EXPLAIN_CHIP_CELLS,
+    layer: "top",
+  });
+  if (!dec) return;
+  decorations.push(dec);
+  dec.onDispose(() => {
+    const i = decorations.indexOf(dec);
+    if (i >= 0) decorations.splice(i, 1);
+  });
+  dec.onRender((el) => {
+    el.textContent = "✦ Explain";
+    el.title = `Explain this failure with AI (exit code ${failure.exitCode})`;
+    const s = el.style;
+    // xterm re-applies its own width each paint; ours must win every render.
+    s.width = "max-content";
+    s.height = "auto";
+    s.padding = "0 7px";
+    s.fontSize = "10px";
+    s.lineHeight = "16px";
+    s.fontFamily = "var(--font-sans, ui-sans-serif, system-ui, sans-serif)";
+    s.borderRadius = "8px";
+    s.color = "var(--terminal-ansi-red)";
+    s.background = "color-mix(in srgb, var(--terminal-ansi-red) 12%, transparent)";
+    s.border = "1px solid color-mix(in srgb, var(--terminal-ansi-red) 35%, transparent)";
+    s.cursor = "pointer";
+    s.pointerEvents = "auto";
+    s.userSelect = "none";
+    s.opacity = "0.6";
+    s.zIndex = "10";
+    el.onmouseenter = () => {
+      el.style.opacity = "1";
+    };
+    el.onmouseleave = () => {
+      el.style.opacity = "0.6";
+    };
+    el.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onExplain(failure);
+    };
   });
 }
 

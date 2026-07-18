@@ -130,6 +130,263 @@ describe("OSC 7 cwd handler — gated by OSC 133 in-command state", () => {
   });
 });
 
+describe("OSC 133 failed-command Explain chip", () => {
+  type FakeMarker = { line: number; isDisposed: boolean; dispose: () => void };
+  type FakeDecoration = {
+    options: { anchor?: string };
+    disposed: boolean;
+    render: ((el: HTMLElement) => void) | null;
+    dispose: () => void;
+    onRender: (cb: (el: HTMLElement) => void) => void;
+    onDispose: (cb: () => void) => void;
+  };
+
+  /**
+   * Buffer-capable fake: real marker lines (recorded at the cursor position
+   * at registration time), a line store for translateToString, and captured
+   * decorations so tests can render the chip and click it — all without a
+   * DOM, since the chip deliberately styles the decoration element itself.
+   */
+  function makeBufferTerm(lines: string[], wrappedRows: number[] = []) {
+    const handlers = new Map<number, OscHandler>();
+    const wrapped = new Set(wrappedRows);
+    const cursor = { x: 0, y: 0 };
+    const decorations: FakeDecoration[] = [];
+    const term = {
+      parser: {
+        registerOscHandler(code: number, handler: OscHandler) {
+          handlers.set(code, handler);
+          return { dispose: () => handlers.delete(code) };
+        },
+      },
+      registerMarker(): FakeMarker {
+        const m: FakeMarker = {
+          line: cursor.y,
+          isDisposed: false,
+          dispose: () => {
+            m.isDisposed = true;
+          },
+        };
+        return m;
+      },
+      registerDecoration(options: { anchor?: string }): FakeDecoration {
+        const dec: FakeDecoration = {
+          options,
+          disposed: false,
+          render: null,
+          dispose: () => {
+            dec.disposed = true;
+          },
+          onRender: (cb) => {
+            dec.render = cb;
+          },
+          onDispose: () => {},
+        };
+        decorations.push(dec);
+        return dec;
+      },
+      buffer: {
+        active: {
+          baseY: 0,
+          get cursorY() {
+            return cursor.y;
+          },
+          get cursorX() {
+            return cursor.x;
+          },
+          getLine: (y: number) =>
+            y >= 0 && y < lines.length
+              ? {
+                  isWrapped: wrapped.has(y),
+                  translateToString: (_trim: boolean, start = 0) =>
+                    (lines[y] ?? "").slice(start).replace(/\s+$/, ""),
+                }
+              : undefined,
+        },
+      },
+    } as unknown as Terminal;
+    return { term, handlers, cursor, decorations };
+  }
+
+  /** Minimal stand-in for the decoration element the chip styles. */
+  function makeChipEl() {
+    return {
+      style: {} as Record<string, string>,
+      textContent: "",
+      title: "",
+      onclick: null as
+        | ((e: { preventDefault: () => void; stopPropagation: () => void }) => void)
+        | null,
+      onmouseenter: null as (() => void) | null,
+      onmouseleave: null as (() => void) | null,
+    };
+  }
+
+  const clickEvent = () => ({ preventDefault: vi.fn(), stopPropagation: vi.fn() });
+
+  type Fake = ReturnType<typeof makeBufferTerm>;
+
+  /** Drive one full prompt cycle: A → B (input starts at `promptLen`) →
+   * optional C on `cLine` → D with `exit`, cursor left at end position. */
+  function runCommand(
+    t: Fake,
+    opts: {
+      promptLine: number;
+      promptLen: number;
+      exit: string;
+      cLine?: number;
+      endLine: number;
+      endX?: number;
+    },
+  ) {
+    const h = t.handlers.get(133);
+    t.cursor.y = opts.promptLine;
+    t.cursor.x = 0;
+    h?.("A");
+    t.cursor.x = opts.promptLen;
+    h?.("B");
+    if (opts.cLine !== undefined) {
+      t.cursor.y = opts.cLine;
+      t.cursor.x = 0;
+      h?.("C");
+    }
+    t.cursor.y = opts.endLine;
+    t.cursor.x = opts.endX ?? 0;
+    h?.(`D;${opts.exit}`);
+  }
+
+  const chipsOf = (t: Fake) =>
+    t.decorations.filter((d) => d.options.anchor === "right");
+
+  function setup(lines: string[], wrappedRows: number[] = [], enabled = true) {
+    const t = makeBufferTerm(lines, wrappedRows);
+    const onExplain = vi.fn();
+    const tracker = registerPromptTracker(t.term, createShellIntegrationState(), {
+      isEnabled: () => enabled,
+      getCwd: () => "/home/me/dev",
+      onExplain,
+    });
+    return { ...t, onExplain, tracker };
+  }
+
+  it("captures command, output, exit code, and cwd; clicking fires onExplain", () => {
+    const t = setup([
+      "~/dev ❯ cargo build",
+      "error[E0308]: mismatched types",
+      "error: could not compile",
+    ]);
+    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "101", endLine: 3 });
+
+    const chips = chipsOf(t);
+    expect(chips).toHaveLength(1);
+
+    const el = makeChipEl();
+    chips[0].render?.(el as unknown as HTMLElement);
+    expect(el.textContent).toBe("✦ Explain");
+    expect(el.title).toContain("exit code 101");
+    expect(el.style.pointerEvents).toBe("auto");
+
+    el.onclick?.(clickEvent());
+    expect(t.onExplain).toHaveBeenCalledTimes(1);
+    expect(t.onExplain).toHaveBeenCalledWith({
+      command: "cargo build",
+      output: "error[E0308]: mismatched types\nerror: could not compile",
+      exitCode: 101,
+      cwd: "/home/me/dev",
+    });
+  });
+
+  it("adds no chip on exit 0 (the green gutter bar still appears)", () => {
+    const t = setup(["~/dev ❯ ls", "file.txt"]);
+    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "0", endLine: 2 });
+    expect(chipsOf(t)).toHaveLength(0);
+    // The plain exit-status gutter decoration is still registered.
+    expect(t.decorations.length).toBe(1);
+  });
+
+  it("adds no chip on SIGINT (exit 130) — Ctrl+C is a cancel, not a failure", () => {
+    const t = setup(["~/dev ❯ sleep 100", "^C"]);
+    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "130", endLine: 2 });
+    expect(chipsOf(t)).toHaveLength(0);
+  });
+
+  it("adds no chip when the preference is off", () => {
+    const t = setup(["~/dev ❯ cargo build", "error: boom"], [], false);
+    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "101", endLine: 2 });
+    expect(chipsOf(t)).toHaveLength(0);
+  });
+
+  it("adds no chip for a bare Enter re-emitting the stale exit status", () => {
+    const t = setup(["~/dev ❯ cargo build", "error: boom", "~/dev ❯"]);
+    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "101", endLine: 2 });
+    // Empty prompt on line 2: Enter without a command — precmd re-emits
+    // D with the stale nonzero status, no C fires, no output is printed.
+    runCommand(t, { promptLine: 2, promptLen: 8, exit: "101", endLine: 3 });
+    expect(chipsOf(t)).toHaveLength(1);
+  });
+
+  it("degrades without OSC 133 C (PowerShell): B line is the command, rest is output", () => {
+    const t = setup([
+      "PS C:\\Users\\me> git puhs",
+      "git: 'puhs' is not a git command.",
+    ]);
+    runCommand(t, { promptLine: 0, promptLen: 16, exit: "1", endLine: 2 });
+
+    const chips = chipsOf(t);
+    expect(chips).toHaveLength(1);
+    const el = makeChipEl();
+    chips[0].render?.(el as unknown as HTMLElement);
+    el.onclick?.(clickEvent());
+    expect(t.onExplain).toHaveBeenCalledWith({
+      command: "git puhs",
+      output: "git: 'puhs' is not a git command.",
+      exitCode: 1,
+      cwd: "/home/me/dev",
+    });
+  });
+
+  it("joins wrapped command rows without a newline", () => {
+    const t = setup(
+      ["~ ❯ echo aaaa", "bbbb wrapped", "out"],
+      [1], // row 1 is a soft-wrap continuation of row 0
+    );
+    runCommand(t, { promptLine: 0, promptLen: 4, cLine: 2, exit: "1", endLine: 3 });
+
+    const el = makeChipEl();
+    chipsOf(t)[0].render?.(el as unknown as HTMLElement);
+    el.onclick?.(clickEvent());
+    expect(t.onExplain).toHaveBeenCalledWith(
+      expect.objectContaining({ command: "echo aaaabbbb wrapped", output: "out" }),
+    );
+  });
+
+  it("tail-truncates long output and says so", () => {
+    const lines = ["~ ❯ seq 300"];
+    for (let i = 1; i <= 300; i++) lines.push(`line-${i}`);
+    const t = setup(lines);
+    runCommand(t, { promptLine: 0, promptLen: 4, cLine: 1, exit: "1", endLine: 301 });
+
+    const el = makeChipEl();
+    chipsOf(t)[0].render?.(el as unknown as HTMLElement);
+    el.onclick?.(clickEvent());
+    const failure = t.onExplain.mock.calls[0][0];
+    expect(failure.output.startsWith("[… earlier output truncated …]")).toBe(true);
+    expect(failure.output).toContain("line-300");
+    expect(failure.output).not.toContain("line-100\n");
+  });
+
+  it("disposes chip decorations with the tracker", () => {
+    const t = setup(["~/dev ❯ false", ""]);
+    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "1", endLine: 1, endX: 0 });
+    // `false` printed nothing: no output and C fired — chip still appears
+    // (sawExec is the evidence a command ran).
+    const chips = chipsOf(t);
+    expect(chips).toHaveLength(1);
+    t.tracker.dispose();
+    expect(chips[0].disposed).toBe(true);
+  });
+});
+
 describe("OSC 0/2 title handler", () => {
   it("fires onTitle when OSC 0 is received", () => {
     const { term, handlers } = makeFakeTerm();

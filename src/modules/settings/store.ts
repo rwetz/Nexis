@@ -174,6 +174,10 @@ export type Preferences = {
   /** Ask before closing a terminal tab/pane whose shell is mid-command
    * (OSC 133 in-command). Without shell integration the check is silent. */
   terminalConfirmCloseBusy: boolean;
+  /** Inline "✦ Explain" chip on commands that exit nonzero (needs OSC 133
+   * shell integration, like the exit gutter). Clicking sends the command,
+   * its output, and the cwd to the AI chat — see osc-handlers.ts. */
+  terminalExplainFailures: boolean;
   toolApprovalPolicies: Record<string, ToolApprovalPolicy>;
   wordWrap: boolean;
   /** Open the ML Lab panel automatically when a training run starts. */
@@ -249,6 +253,7 @@ const KEY_TERMINAL_CURSOR_STYLE = "terminalCursorStyle";
 const KEY_TERMINAL_CURSOR_BLINK = "terminalCursorBlink";
 const KEY_TERMINAL_OSC52_CLIPBOARD = "terminalOsc52Clipboard";
 const KEY_TERMINAL_CONFIRM_CLOSE_BUSY = "terminalConfirmCloseBusy";
+const KEY_TERMINAL_EXPLAIN_FAILURES = "terminalExplainFailures";
 const KEY_TOOL_APPROVAL_POLICIES = "toolApprovalPolicies";
 const KEY_WORD_WRAP = "wordWrap";
 const KEY_ML_AUTO_OPEN = "mlAutoOpenOnTrain";
@@ -336,6 +341,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   terminalCursorBlink: false,
   terminalOsc52Clipboard: true,
   terminalConfirmCloseBusy: true,
+  terminalExplainFailures: true,
   toolApprovalPolicies: {},
   wordWrap: false,
   mlAutoOpenOnTrain: false,
@@ -510,6 +516,9 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalConfirmCloseBusy:
       get<boolean>(KEY_TERMINAL_CONFIRM_CLOSE_BUSY) ??
       DEFAULT_PREFERENCES.terminalConfirmCloseBusy,
+    terminalExplainFailures:
+      get<boolean>(KEY_TERMINAL_EXPLAIN_FAILURES) ??
+      DEFAULT_PREFERENCES.terminalExplainFailures,
     toolApprovalPolicies:
       get<Record<string, ToolApprovalPolicy>>(KEY_TOOL_APPROVAL_POLICIES) ??
       DEFAULT_PREFERENCES.toolApprovalPolicies,
@@ -789,6 +798,10 @@ export async function setTerminalConfirmCloseBusy(value: boolean): Promise<void>
   await writePref(KEY_TERMINAL_CONFIRM_CLOSE_BUSY, value);
 }
 
+export async function setTerminalExplainFailures(value: boolean): Promise<void> {
+  await writePref(KEY_TERMINAL_EXPLAIN_FAILURES, value);
+}
+
 export async function setToolApprovalPolicies(
   value: Record<string, ToolApprovalPolicy>,
 ): Promise<void> {
@@ -893,6 +906,7 @@ export async function onPreferencesChange(
     [KEY_TERMINAL_CURSOR_BLINK]: "terminalCursorBlink",
     [KEY_TERMINAL_OSC52_CLIPBOARD]: "terminalOsc52Clipboard",
     [KEY_TERMINAL_CONFIRM_CLOSE_BUSY]: "terminalConfirmCloseBusy",
+    [KEY_TERMINAL_EXPLAIN_FAILURES]: "terminalExplainFailures",
     [KEY_TOOL_APPROVAL_POLICIES]: "toolApprovalPolicies",
     [KEY_FORMATTERS]: "formatters",
     [KEY_FORMAT_ON_SAVE]: "formatOnSave",
