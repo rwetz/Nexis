@@ -183,6 +183,9 @@ export type Preferences = {
   enabledPacks: PackId[];
   /** Set once the first-run pack preset picker has been answered. */
   packsOnboarded: boolean;
+  /** Debug status-bar readout of memory posture (slots/GL/scrollback/AI
+   * history/recording). Development aid; polls only while enabled. */
+  debugMemoryReport: boolean;
 };
 
 const STORE_PATH = "nexis-settings.json";
@@ -245,6 +248,7 @@ const KEY_WORD_WRAP = "wordWrap";
 const KEY_ML_AUTO_OPEN = "mlAutoOpenOnTrain";
 const KEY_ENABLED_PACKS = "enabledPacks";
 const KEY_PACKS_ONBOARDED = "packsOnboarded";
+const KEY_DEBUG_MEMORY_REPORT = "debugMemoryReport";
 
 export const TERMINAL_FONT_SIZE_DEFAULT = 14;
 export const TERMINAL_FONT_SIZE_MIN = 8;
@@ -329,6 +333,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   mlAutoOpenOnTrain: false,
   enabledPacks: [...PACK_IDS],
   packsOnboarded: false,
+  debugMemoryReport: false,
 };
 
 function mergeFormatters(
@@ -508,6 +513,9 @@ export async function loadPreferences(): Promise<Preferences> {
     ).filter(isPackId),
     packsOnboarded:
       get<boolean>(KEY_PACKS_ONBOARDED) ?? DEFAULT_PREFERENCES.packsOnboarded,
+    debugMemoryReport:
+      get<boolean>(KEY_DEBUG_MEMORY_REPORT) ??
+      DEFAULT_PREFERENCES.debugMemoryReport,
   };
 }
 
@@ -798,6 +806,10 @@ export async function setPacksOnboarded(value: boolean): Promise<void> {
   await writePref(KEY_PACKS_ONBOARDED, value);
 }
 
+export async function setDebugMemoryReport(value: boolean): Promise<void> {
+  await writePref(KEY_DEBUG_MEMORY_REPORT, value);
+}
+
 export type PrefKey = keyof Preferences;
 
 /** Subscribe to changes from any window (settings → main). */
@@ -863,6 +875,7 @@ export async function onPreferencesChange(
     [KEY_ML_AUTO_OPEN]: "mlAutoOpenOnTrain",
     [KEY_ENABLED_PACKS]: "enabledPacks",
     [KEY_PACKS_ONBOARDED]: "packsOnboarded",
+    [KEY_DEBUG_MEMORY_REPORT]: "debugMemoryReport",
   };
   // Same-process writes still fire onChange immediately; cross-window writes
   // arrive via the Tauri event emitted by writePref().

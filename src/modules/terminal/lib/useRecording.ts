@@ -33,6 +33,16 @@ const decoder = new TextDecoder("utf-8", { fatal: false });
 // appending and emit a single truncation notice, keeping the .cast valid.
 const MAX_RECORDING_BYTES = 64 * 1024 * 1024;
 
+// Live recording sizes per leaf, for the debug memory self-report.
+const recordingBytes = new Map<number, number>();
+
+/** Total bytes accumulated across all in-flight recordings. */
+export function totalRecordingBytes(): number {
+  let total = 0;
+  for (const n of recordingBytes.values()) total += n;
+  return total;
+}
+
 export function useRecording(leafId: number) {
   const [isRecording, setIsRecording] = useState(false);
   const [lastSavedPath, setLastSavedPath] = useState<string | null>(null);
@@ -66,8 +76,10 @@ export function useRecording(leafId: number) {
         return;
       }
       state.bytes += text.length;
+      recordingBytes.set(leafId, state.bytes);
       state.events.push([elapsed, "o", text]);
     });
+    recordingBytes.set(leafId, 0);
     setIsRecording(true);
   }, [leafId]);
 
@@ -76,6 +88,7 @@ export function useRecording(leafId: number) {
     if (!state) return null;
     registerRecordingHandler(leafId, null);
     stateRef.current = null;
+    recordingBytes.delete(leafId);
     setIsRecording(false);
 
     const nowSec = Math.floor(Date.now() / 1000);
@@ -108,6 +121,7 @@ export function useRecording(leafId: number) {
   const cancelRecording = useCallback(() => {
     registerRecordingHandler(leafId, null);
     stateRef.current = null;
+    recordingBytes.delete(leafId);
     setIsRecording(false);
   }, [leafId]);
 

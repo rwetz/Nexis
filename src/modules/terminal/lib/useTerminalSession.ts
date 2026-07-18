@@ -121,6 +121,24 @@ export function getSessionDimensions(leafId: number): { cols: number; rows: numb
 }
 
 /**
+ * Session-side memory posture for the debug self-report: dormant-ring bytes
+ * (output buffered for hidden tabs) and parked snapshot strings.
+ */
+export function sessionMemoryStats(): {
+  sessions: number;
+  dormantBytes: number;
+  snapshotBytes: number;
+} {
+  let dormantBytes = 0;
+  let snapshotBytes = 0;
+  for (const s of sessions.values()) {
+    dormantBytes += s.dormantRing.byteLength();
+    snapshotBytes += s.snapshot?.length ?? 0;
+  }
+  return { sessions: sessions.size, dormantBytes, snapshotBytes };
+}
+
+/**
  * True while the leaf's shell is inside a running command (between OSC 133
  * B/C and the next D/A). Used by the close-tab confirmation. Requires shell
  * integration — without prompt markers this is always false, so closing

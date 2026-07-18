@@ -196,6 +196,30 @@ export function poolSize(): number {
   return slots.length;
 }
 
+/**
+ * Cheap snapshot of pool memory posture for the debug self-report: slot and
+ * live-GL-context counts (the slot-reaping win), plus buffered scrollback
+ * lines summed over both xterm buffers per slot (arithmetic only — never
+ * serializes buffer contents).
+ */
+export function poolMemoryStats(): {
+  slots: number;
+  adopted: number;
+  glContexts: number;
+  bufferedLines: number;
+} {
+  let adopted = 0;
+  let glContexts = 0;
+  let bufferedLines = 0;
+  for (const slot of slots) {
+    if (slot.currentLeafId !== null) adopted++;
+    if (slot.webglAddon) glContexts++;
+    bufferedLines +=
+      slot.term.buffer.normal.length + slot.term.buffer.alternate.length;
+  }
+  return { slots: slots.length, adopted, glContexts, bufferedLines };
+}
+
 function getRecycler(): HTMLDivElement {
   if (recyclerEl && recyclerEl.isConnected) return recyclerEl;
   const el = document.createElement("div");

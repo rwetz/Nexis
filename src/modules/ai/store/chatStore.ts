@@ -472,6 +472,7 @@ export const useChatStore = create<StoreState>((set, get) => ({
     chats.get(id)?.stop();
     chats.delete(id);
     seedMessages.delete(id);
+    latestHistories.delete(id);
     const pend = pendingPersist.get(id);
     if (pend) {
       clearTimeout(pend.timer);
@@ -509,6 +510,9 @@ export const useChatStore = create<StoreState>((set, get) => ({
   },
 
   persistMessages: (id, messages) => {
+    // Reference only — sized lazily by approxHistoryBytes() when the debug
+    // memory self-report is enabled; free otherwise.
+    latestHistories.set(id, messages);
     // Debounce the message-blob write so streaming doesn't pound the store.
     const existing = pendingPersist.get(id);
     if (existing) clearTimeout(existing.timer);
@@ -540,6 +544,27 @@ export const useChatStore = create<StoreState>((set, get) => ({
 
 export function getAgentMeta(): AgentMeta {
   return useChatStore.getState().agentMeta;
+}
+
+// Latest message arrays per session (references, not copies) — only sized
+// when the debug memory self-report asks.
+const latestHistories = new Map<string, UIMessage[]>();
+
+/**
+ * Approximate serialized size of all live chat histories this run. Tool
+ * results are untrusted objects (pitfall #11), so serialization failures
+ * count a conservative constant instead of throwing.
+ */
+export function approxHistoryBytes(): number {
+  let total = 0;
+  for (const messages of latestHistories.values()) {
+    try {
+      total += JSON.stringify(messages).length;
+    } catch {
+      total += messages.length * 256;
+    }
+  }
+  return total;
 }
 
 export function getActiveProviderKey(): string | null {

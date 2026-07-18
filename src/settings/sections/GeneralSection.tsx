@@ -38,6 +38,7 @@ import {
   setTerminalFontSize,
   setTerminalFontWeight,
   setDefaultShellPath,
+  setDebugMemoryReport,
   setTerminalOsc52Clipboard,
   setTerminalConfirmCloseBusy,
   setTerminalScrollback,
@@ -92,6 +93,7 @@ export function GeneralSection() {
   const terminalFontSize = usePreferencesStore((s) => s.terminalFontSize);
   const terminalFontWeight = usePreferencesStore((s) => s.terminalFontWeight);
   const defaultShellPath = usePreferencesStore((s) => s.defaultShellPath);
+  const debugMemoryReport = usePreferencesStore((s) => s.debugMemoryReport);
   const terminalScrollback = usePreferencesStore((s) => s.terminalScrollback);
   const terminalSuggestionsEnabled = usePreferencesStore(
     (s) => s.terminalSuggestionsEnabled,
@@ -465,6 +467,19 @@ export function GeneralSection() {
             />
           </SettingRow>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label>Debug</Label>
+        <SettingRow
+          title="Memory self-report"
+          description="Show a status-bar readout of renderer slots, WebGL contexts, scrollback, recording size, and AI-history size. Development aid; polls every 2 s while on."
+        >
+          <Switch
+            checked={debugMemoryReport}
+            onCheckedChange={(v) => void setDebugMemoryReport(v)}
+          />
+        </SettingRow>
       </div>
     </div>
   );
