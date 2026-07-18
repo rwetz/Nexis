@@ -2,7 +2,9 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
-## [Unreleased]
+## [1.21.0] — 2026-07-18
+
+A security-and-AI release. The headline security work: LAN sharing is no longer open to anyone who can reach the port — every share session mints a token checked on all routes, with a bind-interface picker (all / LAN-only / localhost) and a persistent "Sharing on" status-bar pill so it can't run unnoticed; secret redaction now scrubs the share stream and saved recordings; the webview's `connect-src` is pinned to the updater endpoint instead of blanket HTTPS; every agent shell command is written to an append-only audit log; and the nexis-ml engine download is a consented, SHA-256-pinned install flow. On the AI side, three terminal-native affordances land: **AI command search** (describe a command in plain English, get it inserted at the prompt — never auto-run), a **"✦ Explain" chip** on any failed command, and a **scoped auto-approve** policy that runs a strict read-only allowlist without prompting while everything else still asks. Reliability got a PTY stall watchdog, editor autosave with crash recovery, scrollback that survives a relaunch (persistent sessions, Milestone A), and shell-integration cwd fallback; performance got the minimap rewritten on canvas, parked-slot WebGL reaping, and the `motion` library replaced by plain CSS. Rounding it out: the sidebar's feature surface is now core + opt-in expansion packs, plus zen mode, MRU Ctrl+Tab, OSC 52 clipboard, a diagnostics-bundle export, and a batch of settings wins.
 
 ### Security
 - **LAN sharing now requires the link, not just the network — plus a bind-interface picker and a persistent "Sharing on" pill.** The share server previously served the conversation or terminal to *anyone* who could reach the port, always on every interface (`0.0.0.0`). Four changes close this out:
