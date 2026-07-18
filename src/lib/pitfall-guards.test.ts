@@ -184,6 +184,11 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
       /redactSensitive\(data\)/.test(share),
       "useShareServer.pushStream must pass data through redactSensitive() before http_share_push_stream",
     ).toBe(true);
+    expect(
+      /redactSensitive\(opts\.buildHtml\(token\)\)/.test(share),
+      "startShare must scrub the INITIAL page through redactSensitive() before http_share_start — " +
+        "it is the first thing a viewer downloads (this path shipped unredacted once; keep it covered)",
+    ).toBe(true);
 
     const recording = readSrc("modules/terminal/lib/useRecording.ts");
     expect(

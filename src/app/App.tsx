@@ -88,7 +88,7 @@ import { SnippetsPanel } from "@/modules/snippets";
 import { TestRunnerPanel } from "@/modules/testrunner";
 import { BuildPanel } from "@/modules/build/BuildPanel";
 import { CodeReviewPanel } from "@/modules/code-review";
-import { SharePanel } from "@/modules/share";
+import { SharePanel, registerShareTerminalBufferProvider } from "@/modules/share";
 import { SymbolSearchPanel } from "@/modules/symbol-search";
 import { RefactorPanel, setRefactorCode } from "@/modules/refactor";
 import { PromptTemplatesPanel } from "@/modules/prompt-templates";
@@ -231,6 +231,17 @@ export default function App() {
     return t && t.kind === "terminal" ? t : null;
   }, [tabs, activeId]);
   const activeLeafId = activeTerminalTab?.activeLeafId ?? null;
+
+  // The LAN share's live push loop runs at module level (sharing survives the
+  // panel closing), so it needs a registered way to read the active terminal's
+  // buffer rather than a prop.
+  useEffect(() => {
+    registerShareTerminalBufferProvider(() =>
+      activeLeafId !== null
+        ? (terminalRefs.current.get(activeLeafId)?.getBuffer(500) ?? null)
+        : null,
+    );
+  }, [activeLeafId]);
 
   // Editor handles are keyed by leaf id (a tab can host several file panes);
   // the active leaf is the "current" editor for save/format/find/undo.
@@ -1764,15 +1775,7 @@ export default function App() {
                     ) : sidebarView === "refactor" ? (
                       <RefactorPanel />
                     ) : sidebarView === "share" ? (
-                      <SharePanel
-                        getTerminalBuffer={() => {
-                          const t = tabs.find(
-                            (x) => x.id === activeId && x.kind === "terminal",
-                          );
-                          if (!t || t.kind !== "terminal") return null;
-                          return terminalRefs.current.get(t.activeLeafId)?.getBuffer(500) ?? null;
-                        }}
-                      />
+                      <SharePanel />
                     ) : sidebarView === "prompt-templates" ? (
                       <PromptTemplatesPanel />
                     ) : sidebarView === "bookmarks" ? (

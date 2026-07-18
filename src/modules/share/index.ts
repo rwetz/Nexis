@@ -5,5 +5,22 @@
 // ╚══════════════════════════════════════╝
 
 export { SharePanel } from "./SharePanel";
-export { useShareServer, conversationToHtml, terminalToHtml } from "./useShareServer";
-export type { ShareMessage, UseShareServerReturn } from "./useShareServer";
+export { SharingPill } from "./SharingPill";
+export {
+  useShareStore,
+  startShare,
+  stopShare,
+  updateShare,
+  pushShareStream,
+  shareUrl,
+  refreshShareLanIp,
+  registerShareTerminalBufferProvider,
+  conversationToHtml,
+  terminalToHtml,
+} from "./useShareServer";
+export type {
+  ShareMessage,
+  ShareTarget,
+  ShareBindChoice,
+  ShareServerStatus,
+} from "./useShareServer";

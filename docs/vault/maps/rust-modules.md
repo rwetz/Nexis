@@ -15,7 +15,7 @@ As of 2026-07. One-liners are orientation, not spec — verify in code, and fix 
 - `shell/` — one-shot / session shell execution for AI tools
 - `lsp/` / `dap/` — language server and debug adapter process management
 - `net.rs` / `secrets.rs` / `recording.rs` — network, secret storage, recording; `#![warn(clippy::unwrap_used, clippy::expect_used)]` — no unwrap/expect in production code here
-- `http_share.rs` — local HTTP sharing
+- `http_share.rs` — local HTTP sharing (stdlib-only server; every route token-gated `?k=`, constant-time compare; caller-chosen bind address)
 - `ml.rs` / `python.rs` — ML engine and python probing
 - `crash.rs` — crash handling
 

@@ -16,9 +16,16 @@
  * instantly instead of on the ~2 s SSE cadence. Still stdlib-only — the
  * RFC 6455 handshake (SHA-1 + base64) and framing are implemented inline.
  * /stream remains as a fallback for clients without WebSocket support.
+ *
+ * v4: every route now requires a per-session token (`?k=<token>` — generated
+ * frontend-side, compared constant-time) so possession of the link, not mere
+ * LAN presence, is what grants viewing. The listener can also bind a caller-
+ * chosen address (all interfaces / localhost / one specific IP) instead of
+ * unconditional 0.0.0.0.
  */
 use std::io::{BufRead, BufReader, Read, Write};
-use std::net::TcpListener;
+use std::net::{IpAddr, SocketAddr, TcpListener};
+use std::str::FromStr;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -38,18 +45,16 @@ struct RunningServer {
 }
 
 impl RunningServer {
-    fn start(html: String, desired_port: u16) -> Result<Self, String> {
-        let bind_addr = if desired_port == 0 {
-            "0.0.0.0:0".to_string()
-        } else {
-            format!("0.0.0.0:{desired_port}")
-        };
-        let listener = TcpListener::bind(&bind_addr).map_err(|e| format!("bind: {e}"))?;
+    fn start(html: String, desired_port: u16, bind: IpAddr, token: String) -> Result<Self, String> {
+        validate_token(&token)?;
+        let listener = TcpListener::bind(SocketAddr::new(bind, desired_port))
+            .map_err(|e| format!("bind: {e}"))?;
         let port = listener.local_addr().map_err(|e| e.to_string())?.port();
 
         let content = Arc::new(Mutex::new(html));
         let shutdown = Arc::new(Mutex::new(false));
         let stream_clients: StreamClients = Arc::new(Mutex::new(Vec::new()));
+        let token: Arc<str> = token.into();
 
         let content_clone = Arc::clone(&content);
         let shutdown_clone = Arc::clone(&shutdown);
@@ -74,12 +79,14 @@ impl RunningServer {
                             let content_snap = Arc::clone(&content_clone);
                             let shutdown_snap = Arc::clone(&shutdown_clone);
                             let clients_snap = Arc::clone(&stream_clients_clone);
+                            let token_snap = Arc::clone(&token);
                             thread::spawn(move || {
                                 handle_connection(
                                     stream,
                                     content_snap,
                                     shutdown_snap,
                                     clients_snap,
+                                    token_snap,
                                 );
                             });
                         }
@@ -138,12 +145,60 @@ impl Drop for RunningServer {
 /// stream. 64 KiB is far above any legitimate HTTP request header section.
 const MAX_REQUEST_HEADER_BYTES: u64 = 64 * 1024;
 
-/// Read the request line, dispatch to the right handler.
+/// The frontend generates the token (crypto.getRandomValues, 32 hex chars);
+/// this floor exists so a bug there can't silently start an effectively
+/// unauthenticated server with a guessable one-char token. Fail closed.
+fn validate_token(token: &str) -> Result<(), String> {
+    if token.len() < 16 {
+        return Err("share token too short (min 16 chars)".into());
+    }
+    if !token.bytes().all(|b| b.is_ascii_alphanumeric()) {
+        return Err("share token must be ASCII alphanumeric".into());
+    }
+    Ok(())
+}
+
+/// Constant-time byte comparison — a plain `==` short-circuits on the first
+/// mismatching byte, which leaks prefix-match timing to a LAN attacker
+/// guessing the token. Length is not secret.
+fn ct_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff = 0u8;
+    for (x, y) in a.iter().zip(b) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}
+
+/// Split a request line ("GET /path?query HTTP/1.1") into (path, query).
+/// Returns None for anything that isn't a well-formed GET.
+fn parse_get_target(request_line: &str) -> Option<(&str, &str)> {
+    let mut parts = request_line.split_whitespace();
+    if parts.next()? != "GET" {
+        return None;
+    }
+    let target = parts.next()?;
+    Some(match target.split_once('?') {
+        Some((path, query)) => (path, query),
+        None => (target, ""),
+    })
+}
+
+/// Extract the `k` parameter from a query string. No percent-decoding: valid
+/// tokens are ASCII alphanumeric, so an encoded token simply won't match.
+fn query_token(query: &str) -> Option<&str> {
+    query.split('&').find_map(|pair| pair.strip_prefix("k="))
+}
+
+/// Read the request line, check the share token, dispatch to the right handler.
 fn handle_connection(
     stream: std::net::TcpStream,
     content: Arc<Mutex<String>>,
     shutdown: Arc<Mutex<bool>>,
     stream_clients: StreamClients,
+    token: Arc<str>,
 ) {
     // Clone the stream so we can have a BufReader for the request and keep the
     // original for writing the response.
@@ -185,13 +240,28 @@ fn handle_connection(
         }
     }
 
+    // Parse the target and gate EVERY route on the share token. A request
+    // without the token learns nothing about what is being shared — not even
+    // whether it's a conversation or a terminal.
+    let Some((path, query)) = parse_get_target(&request_line) else {
+        serve_bad_request(stream, "malformed request");
+        return;
+    };
+    let authorized = query_token(query)
+        .map(|k| ct_eq(k.as_bytes(), token.as_bytes()))
+        .unwrap_or(false);
+    if !authorized {
+        serve_forbidden(stream);
+        return;
+    }
+
     // Route by path
-    if request_line.contains("GET /ws") {
+    if path == "/ws" {
         match ws_key {
             Some(key) => serve_ws(stream, &key, shutdown, stream_clients),
             None => serve_bad_request(stream, "missing Sec-WebSocket-Key"),
         }
-    } else if request_line.contains("GET /stream") {
+    } else if path == "/stream" {
         serve_sse(stream, shutdown, stream_clients);
     } else {
         let html = content.lock().map(|g| g.clone()).unwrap_or_default();
@@ -209,6 +279,22 @@ fn serve_bad_request(mut stream: std::net::TcpStream, reason: &str) {
          \r\n\
          {reason}",
         reason.len()
+    );
+    let _ = stream.write_all(response.as_bytes());
+}
+
+/// Reject a request whose share token is missing or wrong.
+fn serve_forbidden(mut stream: std::net::TcpStream) {
+    let body = "This share link is invalid or has expired. \
+                Ask the person sharing for the current link.";
+    let response = format!(
+        "HTTP/1.1 403 Forbidden\r\n\
+         Content-Type: text/plain\r\n\
+         Content-Length: {}\r\n\
+         Connection: close\r\n\
+         \r\n\
+         {body}",
+        body.len()
     );
     let _ = stream.write_all(response.as_bytes());
 }
@@ -545,25 +631,52 @@ pub struct HttpShareState {
 // ── Tauri commands ────────────────────────────────────────────────────────────
 
 /// Start (or restart) the share server with the given HTML content.
-/// Pass `port = 0` to auto-assign a free port.
+/// Pass `port = 0` to auto-assign a free port. `bind` is the address to
+/// listen on — omitted means all interfaces (0.0.0.0); pass "127.0.0.1" to
+/// restrict viewing to this machine, or one interface's IP to expose only
+/// that network. `token` is the per-session view token every request must
+/// present as `?k=<token>` (generated frontend-side, validated here).
 /// Returns the actual port number the server is listening on.
 #[tauri::command]
 pub fn http_share_start(
     html: String,
     port: u16,
+    bind: Option<String>,
+    token: String,
     state: tauri::State<'_, HttpShareState>,
 ) -> Result<u16, String> {
+    let bind_ip = match bind.as_deref() {
+        None | Some("") => IpAddr::from_str("0.0.0.0").map_err(|e| e.to_string())?,
+        Some(s) => IpAddr::from_str(s).map_err(|_| format!("invalid bind address: {s}"))?,
+    };
     if let Ok(mut guard) = state.server.lock() {
         if let Some(srv) = guard.take() {
             srv.stop();
         }
-        let srv = RunningServer::start(html, port)?;
+        let srv = RunningServer::start(html, port, bind_ip, token)?;
         let actual_port = srv.port();
         *guard = Some(srv);
         Ok(actual_port)
     } else {
         Err("state mutex poisoned".into())
     }
+}
+
+/// Best-effort primary LAN IP of this machine, for display in the share URL.
+/// The UDP "connect" performs only a local route lookup — no packet is sent.
+/// Returns None when offline or when the primary route is loopback (the
+/// frontend then falls back to placeholder text). On multi-homed machines
+/// (VPN up, several NICs) this is the default-route interface — a display
+/// hint, not an authority on reachability.
+#[tauri::command]
+pub fn http_share_lan_ip() -> Option<String> {
+    let socket = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("8.8.8.8:80").ok()?;
+    let ip = socket.local_addr().ok()?.ip();
+    if ip.is_loopback() || ip.is_unspecified() {
+        return None;
+    }
+    Some(ip.to_string())
 }
 
 /// Push updated HTML content to the already-running server without restarting.
@@ -710,10 +823,54 @@ mod tests {
         }
     }
 
+    #[test]
+    fn ct_eq_semantics() {
+        assert!(ct_eq(b"tokentokentoken1", b"tokentokentoken1"));
+        assert!(!ct_eq(b"tokentokentoken1", b"tokentokentoken2"));
+        assert!(!ct_eq(b"short", b"longerthanshort"));
+        assert!(ct_eq(b"", b""));
+    }
+
+    #[test]
+    fn token_validation_fails_closed() {
+        assert!(validate_token("abcDEF0123456789").is_ok());
+        assert!(validate_token("tooshort").is_err());
+        // Long enough but non-alphanumeric (would break URL embedding and
+        // could smuggle query/header syntax) → rejected.
+        assert!(validate_token("abcDEF0123456789&x=1").is_err());
+        assert!(validate_token("").is_err());
+    }
+
+    #[test]
+    fn get_target_parsing() {
+        assert_eq!(
+            parse_get_target("GET /ws?k=abc HTTP/1.1\r\n"),
+            Some(("/ws", "k=abc"))
+        );
+        assert_eq!(parse_get_target("GET / HTTP/1.1\r\n"), Some(("/", "")));
+        assert_eq!(parse_get_target("POST / HTTP/1.1\r\n"), None);
+        assert_eq!(parse_get_target("garbage"), None);
+        assert_eq!(query_token("a=1&k=tok&b=2"), Some("tok"));
+        assert_eq!(query_token("kk=nope"), None);
+        assert_eq!(query_token(""), None);
+    }
+
     // ── Loopback integration ──────────────────────────────────────────────
 
     use std::io::{BufRead, BufReader};
     use std::net::TcpStream;
+
+    const TEST_TOKEN: &str = "testtokentesttoken00";
+
+    fn start_srv(html: &str) -> RunningServer {
+        RunningServer::start(
+            html.into(),
+            0,
+            IpAddr::from_str("127.0.0.1").unwrap(),
+            TEST_TOKEN.into(),
+        )
+        .expect("start")
+    }
 
     fn connect(port: u16) -> TcpStream {
         let s = TcpStream::connect(("127.0.0.1", port)).expect("connect");
@@ -739,12 +896,12 @@ mod tests {
 
     #[test]
     fn loopback_serves_html_and_live_updates() {
-        let srv = RunningServer::start("<html>one</html>".into(), 0).expect("start");
+        let srv = start_srv("<html>one</html>");
         let port = srv.port();
 
         let mut stream = connect(port);
         stream
-            .write_all(b"GET / HTTP/1.1\r\nHost: x\r\n\r\n")
+            .write_all(format!("GET /?k={TEST_TOKEN} HTTP/1.1\r\nHost: x\r\n\r\n").as_bytes())
             .unwrap();
         let mut reader = BufReader::new(stream.try_clone().unwrap());
         let (status, headers) = read_http_head(&mut reader);
@@ -757,7 +914,7 @@ mod tests {
         srv.update("<html>two</html>".into());
         let mut stream = connect(port);
         stream
-            .write_all(b"GET / HTTP/1.1\r\nHost: x\r\n\r\n")
+            .write_all(format!("GET /?k={TEST_TOKEN} HTTP/1.1\r\nHost: x\r\n\r\n").as_bytes())
             .unwrap();
         let mut reader = BufReader::new(stream);
         let _ = read_http_head(&mut reader);
@@ -769,19 +926,81 @@ mod tests {
     }
 
     #[test]
+    fn loopback_missing_or_wrong_token_is_403_with_no_content() {
+        let srv = start_srv("<html>SECRET-CONTENT</html>");
+        let port = srv.port();
+
+        // No token, wrong token, and prefix-of-token on every route — all 403,
+        // and the shared HTML must never appear in the response.
+        for req in [
+            "GET / HTTP/1.1\r\nHost: x\r\n\r\n".to_string(),
+            "GET /?k=wrongwrongwrongwrong HTTP/1.1\r\nHost: x\r\n\r\n".to_string(),
+            format!("GET /?k={} HTTP/1.1\r\nHost: x\r\n\r\n", &TEST_TOKEN[..16]),
+            "GET /stream HTTP/1.1\r\nHost: x\r\n\r\n".to_string(),
+            "GET /ws HTTP/1.1\r\nHost: x\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n"
+                .to_string(),
+        ] {
+            let mut stream = connect(port);
+            stream.write_all(req.as_bytes()).unwrap();
+            let mut reader = BufReader::new(stream);
+            let (status, _) = read_http_head(&mut reader);
+            assert!(
+                status.starts_with("HTTP/1.1 403"),
+                "req {req:?} got: {status}"
+            );
+            let mut body = String::new();
+            reader.read_to_string(&mut body).unwrap();
+            assert!(
+                !body.contains("SECRET-CONTENT"),
+                "req {req:?} leaked content"
+            );
+        }
+
+        srv.stop();
+    }
+
+    #[test]
+    fn loopback_token_reaches_all_routes() {
+        // /stream with the token answers 200 with SSE headers.
+        let srv = start_srv("x");
+        let port = srv.port();
+
+        let mut stream = connect(port);
+        stream
+            .write_all(format!("GET /stream?k={TEST_TOKEN} HTTP/1.1\r\nHost: x\r\n\r\n").as_bytes())
+            .unwrap();
+        let mut reader = BufReader::new(stream.try_clone().unwrap());
+        let (status, headers) = read_http_head(&mut reader);
+        assert!(status.starts_with("HTTP/1.1 200"), "got: {status}");
+        assert!(headers.to_lowercase().contains("text/event-stream"));
+
+        srv.stop();
+    }
+
+    #[test]
+    fn start_rejects_weak_tokens() {
+        let ip = IpAddr::from_str("127.0.0.1").unwrap();
+        assert!(RunningServer::start("x".into(), 0, ip, "short".into()).is_err());
+        assert!(RunningServer::start("x".into(), 0, ip, "has spaces in it yes".into()).is_err());
+    }
+
+    #[test]
     fn loopback_ws_handshake_and_broadcast() {
-        let srv = RunningServer::start("x".into(), 0).expect("start");
+        let srv = start_srv("x");
         let port = srv.port();
 
         let mut stream = connect(port);
         stream
             .write_all(
-                b"GET /ws HTTP/1.1\r\n\
-                  Host: x\r\n\
-                  Upgrade: websocket\r\n\
-                  Connection: Upgrade\r\n\
-                  Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\
-                  Sec-WebSocket-Version: 13\r\n\r\n",
+                format!(
+                    "GET /ws?k={TEST_TOKEN} HTTP/1.1\r\n\
+                     Host: x\r\n\
+                     Upgrade: websocket\r\n\
+                     Connection: Upgrade\r\n\
+                     Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\
+                     Sec-WebSocket-Version: 13\r\n\r\n"
+                )
+                .as_bytes(),
             )
             .unwrap();
 
@@ -812,12 +1031,12 @@ mod tests {
 
     #[test]
     fn loopback_ws_without_key_is_rejected() {
-        let srv = RunningServer::start("x".into(), 0).expect("start");
+        let srv = start_srv("x");
         let port = srv.port();
 
         let mut stream = connect(port);
         stream
-            .write_all(b"GET /ws HTTP/1.1\r\nHost: x\r\n\r\n")
+            .write_all(format!("GET /ws?k={TEST_TOKEN} HTTP/1.1\r\nHost: x\r\n\r\n").as_bytes())
             .unwrap();
         let mut reader = BufReader::new(stream);
         let (status, _) = read_http_head(&mut reader);

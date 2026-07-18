@@ -21,6 +21,7 @@ import type { WorkspaceEnv } from "@/modules/workspace";
 import { useDiagnosticsStore } from "@/modules/problems/diagnosticsStore";
 import { usePluginRegistry } from "@/lib/plugins/registry";
 import { usePreferencesStore } from "@/modules/settings/preferences";
+import { SharingPill } from "@/modules/share";
 import { MemoryReportPill } from "./MemoryReportPill";
 import { FpsPill } from "./FpsPill";
 import { cn } from "@/lib/utils";
@@ -113,6 +114,9 @@ export function StatusBar({
           const C = item.render;
           return <span key={item.id}><C /></span>;
         })}
+
+        {/* Always mounted while sharing runs — not gated by pack or panel */}
+        <SharingPill />
 
         {privateActive ? (
           <Tooltip>

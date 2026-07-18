@@ -21,7 +21,7 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | AI HTTP proxy | `ai_http_request`, `ai_http_stream`, `lm_ping` | `modules/net.rs` | `ai/lib/proxyFetch.ts` — see [[ai]] |
 | ML engine | `ml_*` (11 cmds) | `modules/ml.rs` | `ml/lib/engine-bridge.ts` |
 | Python | `py_detect_envs` | `modules/python.rs` | `python/usePythonEnv.ts`, `ml/store.ts` |
-| Share server | `http_share_*` | `modules/http_share.rs` | `share/useShareServer.ts` |
+| Share server | `http_share_*` (start takes `bind` + `token`; `http_share_lan_ip` probes the primary LAN IP) | `modules/http_share.rs` | `share/useShareServer.ts` (global Zustand store — sharing survives panel close) |
 | Recording | `save_cast_recording` | `modules/recording.rs` | `terminal/lib/useRecording.ts` |
 | Session snapshots | `session_snapshot_save/load/delete/gc` | `modules/snapshots.rs` | `terminal/lib/snapshot-bridge.ts` |
 | Editor autosave | `editor_autosave_write/read/delete/sweep` | `modules/autosave.rs` | `editor/lib/autosave-bridge.ts` |

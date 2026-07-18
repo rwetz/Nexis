@@ -272,6 +272,7 @@ pub fn run() {
             http_share::http_share_update,
             http_share::http_share_stop,
             http_share::http_share_push_stream,
+            http_share::http_share_lan_ip,
             crash::list_crash_reports,
             diagnostics::diagnostics_export,
         ])

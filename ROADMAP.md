@@ -57,7 +57,7 @@ The complete, versioned history of every shipped feature lives in **[CHANGELOG.m
 
 - [ ] **Remote workspace** — browse, edit, and run code on remote machines entirely over SSH; the file explorer and editor work against the remote filesystem via SFTP while the terminal is already there; the goal is a seamless local feel with zero local clones required
 - [ ] **Selective TS → Rust migration** — profile hot paths (terminal input dispatch, diff rendering, file-tree diffing), identify where a Rust implementation gives a measurable win, migrate incrementally without growing bundle size; Zed's SumTree (summary-carrying copy-on-write B+-tree, `sum_tree` crate in their repo — one tree answers offset→line, line→hunk, path→subtree-size without separate indexes) is the reference design if diff rendering or tree diffing is the target; don't build it until a benchmark says the naive version is the bottleneck
-- [ ] **Multiplayer terminal input (authenticated)** — the 1.18.0 live view is deliberately read-only because the LAN share server has no auth; full multiplayer (remote viewers typing into the shared terminal) needs an auth story first — e.g. a per-session token in the share URL plus an input-consent toggle on the host
+- [ ] **Multiplayer terminal input (authenticated)** — the live view stays read-only for now, but the auth prerequisite shipped: the share URL carries a per-session token checked on every route (incl. `/ws`). Remaining for full multiplayer (remote viewers typing into the shared terminal): an input-consent toggle on the host, an input message protocol on the WS channel, and routing through the ordered per-session PTY writer
 
 ---
 
@@ -75,6 +75,30 @@ Candidates from a survey of upstream terax-ai v0.6.4 → v0.8.5 (researched 2026
 
 ---
 
+## Feature backlog — Warp / Zed / lightweight-terminal survey
+
+A second inspiration pass (2026-07-18), this time against Warp, Zed, Ghostty, WezTerm, and Kitty rather than terax — looking for what each does *best* and where it fits without crossing a hard limit above (no accounts, no bundled inference, no VS Code scope creep). A pool, not commitments. Feasibility: ✅ doable now · 🟡 moderate · 🟠 heavy lift.
+
+**Terminal UX**
+- 🟡 **Inline image rendering (Sixel + iTerm2 inline images).** Kitty/WezTerm/iTerm2 all render images straight into the scrollback — `icat`, `chafa`, a `curl`'d PNG, or (the interesting one for us) a `nexis-ml` training-run plot `cat`'d straight into the terminal instead of only living in the ML Lab panel. [`xterm-addon-image`](https://github.com/jerch/xterm-addon-image) (MIT, same author lineage as several `@xterm/addon-*` packages already in `package.json`) implements Sixel and the iTerm2 protocol as a drop-in xterm.js addon — no renderer rewrite needed. Kitty's own graphics protocol is a separate spec and a later stretch, not part of this slice.
+- ✅ **Quick terminal — global-hotkey drop-down overlay.** iTerm2's Hotkey Window and Ghostty's Quick Terminal summon a terminal from any app with one keystroke and dismiss on blur; Warp doesn't have this, but it's one of the most-cited reasons people keep a second terminal app around. `tauri-plugin-global-shortcut` (official — same plugin family as `tauri-plugin-autostart`/`tauri-plugin-window-state` already in `Cargo.toml`) plus a small always-alive borderless window covers it; reuses the existing PTY/session machinery, no new backend surface.
+- 🟡 **"Explain / Fix" on a failed command.** Nexis already captures the exit code per command via OSC 133 for the gutter bar — a nonzero exit could surface a small inline "🤖 Explain this failure" affordance next to the gutter that sends the command, cwd, and captured output to the AI chat with a fix-suggestion prompt. Warp's flagship AI feature, and here it's mostly wiring: no new capture path needed, just a UI trigger off data Nexis already has.
+
+**AI / agent**
+- 🟡 **Natural-language → command (Warp's "AI Command Search").** Distinct from the "Command prediction" item below: type intent in plain English into the terminal (or a dedicated composer), get back a runnable command plus a one-line explanation, confirm before it goes to the shell. BYOK-friendly — just another agent-style call to the configured provider; the interesting part is the terminal-input UX (a mode switch, not a new panel).
+- 🟡 **Parameterized command workflows.** The existing Snippets panel (Advanced pack) stores static text; Warp Drive's "workflows" add `{{placeholder}}` args filled via a small form before running. A natural, low-risk evolution of the current snippets store rather than a new subsystem — Nexis snippets are already local-only, so there's no cloud-sync question to answer.
+- 🟡 **Scoped auto-approve mode for trusted, low-risk commands.** The AI command audit log (see CHANGELOG `[Unreleased]`) deliberately deferred pattern-based approval rules until an auto-approve mode exists to make them meaningful — this is that mode: an opt-in, narrow allowlist (e.g. read-only `git status`/`ls`/`cat`, no shell metacharacters), everything still appended to the audit log, everything else falling back to today's unconditional approval. Warp's "Yolo mode" is the cautionary example of what *not* to default to.
+- 🟡 **Local edit-prediction via Zeta.** Zed's [Zeta](https://huggingface.co/zed-industries/zeta) is an open-weight, Qwen2.5-Coder-based next-edit-prediction model purpose-built for "what's the next small edit" rather than general chat. Running it through Ollama would give the editor's inline-completion and the "Command prediction" item below a local, zero-cost option — fits the existing BYOK/local-model shelling-out pattern exactly (no bundled inference, same posture as Ollama/LM Studio/MLX today).
+- 🟡 **Shell-history semantic search.** Extends the "Local semantic code index" item below to also index command history — Warp Drive's "what was that docker command from last week" without an account or cloud sync, since the vector store would already be local.
+
+**Editor**
+- 🟡 **Grep results as an editable multibuffer.** Zed's standout editor feature: search-result matches across many files open as one scrollable, directly-editable view instead of jumping file to file, committing changes back per-file on save. Pairs cleanly with the existing `fs_grep` backend (already built on the same `grep-regex`/`grep-searcher`/`grep-matcher` crates ripgrep itself uses) — the new work is a CodeMirror view that maps regions back to source files, not a new search engine.
+
+**Architecture / open-source tech note**
+- 🟡 **`wasmtime` for the plugin-sandboxing stretch item.** Zed's own extension system already solved "sandboxed, typed, third-party code" with `wasmtime` + the WASM component model — worth adopting the same approach for the "Plugin sandboxing + first-party SDK" item below rather than re-deriving a sandbox story from scratch. Binary-size cost needs a real measurement before committing either way.
+
+---
+
 ## Hardening backlog
 
 Reliability, security, and performance ideas tracked for the "bulletproof and solid" goal (migrated here from the former `IDEAS.md` brainstorm). These are a raw pool, not commitments. Feasibility: ✅ doable now · 🟡 moderate · 🟠 heavy lift.
@@ -87,9 +111,9 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 
 **Security**
 - [x] ~~Content-Security-Policy for the webview~~ — done: a strict CSP already shipped in the initial build (script-src 'self', remote images blocked); the remaining gap — blanket `https:` in `connect-src` — is now pinned to the updater endpoint (see CHANGELOG `[Unreleased]`). `frame-src http: https:` intentionally remains for the preview address bar; narrowing it to localhost is a product call, tracked nowhere until someone wants it.
-- 🟡 LAN-share auth + a persistent "🔴 Sharing on" status-bar indicator + a bound-interface picker; ensure secret redaction also covers the shared HTML/SSE/WS stream.
+- [x] ~~LAN-share auth + "🔴 Sharing on" indicator + bound-interface picker~~ — done: tokenized links (constant-time-checked `?k=` on every route), a bind picker (all / LAN-only / localhost), the persistent status-bar pill, and redaction extended to the initial page (see CHANGELOG `[Unreleased]`). Sharing also now survives closing the panel — the pill is what keeps it honest.
 - [x] ~~AI command audit log~~ — done (see CHANGELOG `[Unreleased]`). The pattern-approval half was deliberately skipped: both agent shell tools already require approval unconditionally, so pattern rules only become meaningful if an auto-approve mode ever ships — build them together with that mode, not before.
-- [x] ~~Secret-redaction lint~~ — done: `redactSensitive()` now wired into the share stream and recordings, with a tripwire keeping the surfaces covered and a full pattern test suite (see CHANGELOG `[Unreleased]`). The "🔴 Sharing on" indicator / share-auth half of the LAN item is still open below.
+- [x] ~~Secret-redaction lint~~ — done: `redactSensitive()` now wired into the share stream and recordings, with a tripwire keeping the surfaces covered and a full pattern test suite (see CHANGELOG `[Unreleased]`). The "🔴 Sharing on" indicator / share-auth half of the LAN item has since shipped too (see above).
 
 **Performance & resource safety**
 (Derived from the 2026-07 Zed/terax research and the 2026-07-11 optimization sweep — full notes in git history, see the feature-backlog section above. The slot-reaping, alt-screen eviction, motion→CSS, Criterion harness, cargo-profile, and clippy-lint items that used to live here all shipped — see CHANGELOG `[Unreleased]`.)
