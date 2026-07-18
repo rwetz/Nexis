@@ -31,7 +31,7 @@ import { CodeActionDialog } from "./CodeActionDialog";
 import { Minimap } from "./Minimap";
 import type { LspRange } from "@/modules/lsp/protocol";
 import { useChatStore } from "@/modules/ai/store/chatStore";
-import { EditorSelection, Prec } from "@codemirror/state";
+import { Compartment, EditorSelection, Prec } from "@codemirror/state";
 import { vim } from "@replit/codemirror-vim";
 import {
   buildSharedExtensions,
@@ -101,6 +101,23 @@ type Props = {
   onSaved?: () => void;
   onClose?: () => void;
 };
+
+/**
+ * Large-file mode: above this size the pane opens with the heavy language
+ * tooling off — LSP, lint, folding, minimap, AI completion — and a banner
+ * offering to enable it anyway. The buffer itself still opens (CodeMirror
+ * handles multi-MB documents fine; it's the tooling churn that doesn't).
+ * Distinct from the hard fs_read_file cap, which refuses to open at all.
+ */
+export const LARGE_FILE_BYTES = 2 * 1024 * 1024;
+
+/** Paths where the user clicked "Enable anyway" — remembered for the session
+ * so switching tabs doesn't re-disable tooling they explicitly asked for. */
+const largeFileOverrides = new Set<string>();
+
+/** Lint on/off switch for large-file mode. Compartments are reusable keys —
+ * each editor state tracks its own configuration for it. */
+const lintCompartment = new Compartment();
 
 function deriveProjectHints(filePath: string): string[] {
   const hints: string[] = [];
@@ -198,6 +215,32 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
 
     const [editorView, setEditorView] = useState<EditorView | undefined>(undefined);
 
+    // Large-file mode — recomputed when the document (re)loads. The ref
+    // mirrors the state for the stable extensions array (AI completion reads
+    // it per keystroke; the array itself must never change identity).
+    const [toolingDisabled, setToolingDisabled] = useState(false);
+    const toolingDisabledRef = useRef(false);
+    toolingDisabledRef.current = toolingDisabled;
+    const docReady = doc.status === "ready";
+    const docSize = doc.status === "ready" ? doc.size : 0;
+    useEffect(() => {
+      setToolingDisabled(
+        docReady && docSize > LARGE_FILE_BYTES && !largeFileOverrides.has(path),
+      );
+    }, [docReady, docSize, path]);
+
+    // Lint follows the mode via its compartment: the extensions array stays
+    // identity-stable, only the compartment's contents change.
+    useEffect(() => {
+      const view = cmRef.current?.view;
+      if (!view) return;
+      view.dispatch({
+        effects: lintCompartment.reconfigure(
+          toolingDisabled ? [] : syntaxLinter(),
+        ),
+      });
+    }, [toolingDisabled, editorView]);
+
     const projectHintsRef = useRef<string[] | null>(null);
     useEffect(() => {
       projectHintsRef.current = deriveProjectHints(path);
@@ -211,9 +254,12 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     // primitive, so it's pitfall-#14 safe.
     const workspaceRoot = useChatStore((s) => s.live.getWorkspaceRoot());
 
-    // Activate LSP when the editor view is ready and a file is loaded
+    // Activate LSP when the editor view is ready and a file is loaded.
+    // Large-file mode holds it off; "Enable anyway" flips toolingDisabled and
+    // re-runs this effect, activating LSP on the spot.
     useEffect(() => {
       if (!editorView || doc.status !== "ready" || !workspaceRoot) return;
+      if (toolingDisabled) return;
       const readyDoc = doc as { status: "ready"; content: string; size: number };
       let cancelled = false;
       void activateLsp(editorView, lspCompartmentRef.current, {
@@ -239,7 +285,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         lspHandleRef.current = null;
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editorView, path, doc.status === "ready", workspaceRoot]);
+    }, [editorView, path, doc.status === "ready", workspaceRoot, toolingDisabled]);
 
     // Notify LSP on content changes
     const onChangeWithLsp = (value: string) => {
@@ -339,7 +385,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           close: () => onCloseRef.current?.(),
         })),
         ...buildSharedExtensions(),
-        syntaxLinter(),
+        lintCompartment.of(syntaxLinter()),
         // LSP seed (filled by activateLsp when view is ready)
         lspSeedExtension(lspCompartmentRef.current),
         // Breakpoint gutter
@@ -365,7 +411,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
                       ? s.openaiCompatibleModelId
                       : s.autocompleteModelId;
             return {
-              enabled: s.autocompleteEnabled,
+              enabled: s.autocompleteEnabled && !toolingDisabledRef.current,
               provider: p,
               modelId,
               apiKey: apiKeyRef.current,
@@ -598,6 +644,24 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
 
     return (
       <div className="flex h-full min-h-0 flex-col">
+        {toolingDisabled && (
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+            <span>
+              Large file ({formatBytes(doc.size)}) — language server, linting,
+              folding, minimap, and AI completion are off for performance.
+            </span>
+            <button
+              type="button"
+              className="shrink-0 rounded border border-border px-2 py-0.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={() => {
+                largeFileOverrides.add(path);
+                setToolingDisabled(false);
+              }}
+            >
+              Enable anyway
+            </button>
+          </div>
+        )}
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <CodeMirror
             ref={cmRef}
@@ -611,7 +675,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
             basicSetup={{
               lineNumbers: true,
               highlightActiveLineGutter: true,
-              foldGutter: true,
+              foldGutter: !toolingDisabled,
               bracketMatching: true,
               closeBrackets: true,
               autocompletion: true,
@@ -620,7 +684,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
               searchKeymap: true,
             }}
           />
-          <Minimap view={editorView} />
+          {!toolingDisabled && <Minimap view={editorView} />}
         </div>
         {codeActionRange && workspaceRoot && (
           <CodeActionDialog
