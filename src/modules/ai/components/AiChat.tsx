@@ -48,28 +48,49 @@ import type {
 import { memo, useCallback, useEffect, useMemo } from "react";
 import { AiToolApproval } from "./AiToolApproval";
 import { usePreferencesStore } from "@/modules/settings/preferences";
+import { resolveApprovalPolicy } from "../lib/security";
 
 function AutoApprovalEffect({
   approvalId,
   approved,
   toolName,
   onApproval,
+  safe,
+  detail,
 }: {
   approvalId: string;
   approved: boolean;
   toolName: string;
   onApproval: (id: string, ok: boolean) => void;
+  /** True when approval came from the scoped read-only policy, not blanket "auto". */
+  safe?: boolean;
+  /** Extra context shown after the tool name (e.g. the shell command). */
+  detail?: string | null;
 }) {
   useEffect(() => {
     const t = setTimeout(() => onApproval(approvalId, approved), 0);
     return () => clearTimeout(t);
   }, [approvalId, approved, onApproval]);
   return (
-    <div className="flex items-center gap-1.5 py-0.5 text-[11px] text-muted-foreground">
-      <span className={cn(approved ? "text-emerald-500" : "text-rose-500")}>
-        {approved ? "Auto-approved" : "Auto-denied"}
+    <div className="flex min-w-0 items-center gap-1.5 py-0.5 text-[11px] text-muted-foreground">
+      <span
+        className={cn(
+          "shrink-0",
+          approved ? "text-emerald-500" : "text-rose-500",
+        )}
+      >
+        {approved
+          ? safe
+            ? "Auto-approved · read-only"
+            : "Auto-approved"
+          : "Auto-denied"}
       </span>
-      <span className="font-mono">{toolName}</span>
+      <span className="shrink-0 font-mono">{toolName}</span>
+      {detail && (
+        <span className="truncate font-mono text-muted-foreground/70">
+          {detail}
+        </span>
+      )}
     </div>
   );
 }
@@ -666,12 +687,22 @@ const RenderedTool = memo(function RenderedTool({
   );
 
   if (part.state === "approval-requested") {
-    if (policy === "auto" || policy === "deny") {
+    // "auto-safe" collapses per-call: eligible read-only bash_run commands
+    // become "auto", everything else falls back to the prompt card.
+    const effective = resolveApprovalPolicy(policy, toolName, part.input);
+    if (effective === "auto" || effective === "deny") {
+      const command = (part.input as { command?: unknown } | null)?.command;
       return (
         <AutoApprovalEffect
           approvalId={part.approval.id}
-          approved={policy === "auto"}
+          approved={effective === "auto"}
           toolName={toolName}
+          safe={policy === "auto-safe"}
+          detail={
+            policy === "auto-safe" && typeof command === "string"
+              ? command
+              : null
+          }
           onApproval={onApproval}
         />
       );

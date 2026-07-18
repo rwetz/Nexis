@@ -327,6 +327,199 @@ export async function checkWritableCanonical(
   }
 }
 
+/**
+ * Eligibility test for the opt-in "auto-approve read-only" shell policy
+ * (`ToolApprovalPolicy` value `"auto-safe"` on `bash_run`).
+ *
+ * Philosophy: this is an allowlist, not a denylist — a command is eligible
+ * only when every part of it is affirmatively recognized as read-only. The
+ * failure mode of a rejection is just today's approval prompt, so every rule
+ * errs hard toward rejecting: no pipes, redirects, substitutions, quoting,
+ * globs, or non-ASCII anywhere; a curated set of read-only binaries; git
+ * confined to read-only subcommands with `-c`/`--git-dir`-style global flags
+ * structurally impossible (the token after `git` must itself be an
+ * allowlisted subcommand). Path-shaped arguments must pass the same
+ * `checkReadable` guards as the auto-approving fs read tools, so the mode
+ * cannot read anything those tools couldn't already — including via
+ * `git show <rev>:.env` (colon segments are checked individually) and
+ * `--flag=<path>` values.
+ *
+ * The scope is deliberately narrower than useful: rg/grep/find are excluded
+ * (recursive readers surface protected content from innocent-looking
+ * starting points), as are env/printenv (the environment carries secrets),
+ * and `bash_background` never consults this predicate at all.
+ */
+const AUTO_APPROVE_SIMPLE_BINARIES = new Set([
+  "ls",
+  "cat",
+  "head",
+  "tail",
+  "wc",
+  "stat",
+  "file",
+  "du",
+  "df",
+  "pwd",
+  "whoami",
+  "date",
+  "uname",
+  "hostname",
+  "which",
+  "echo",
+]);
+
+const AUTO_APPROVE_GIT_SUBCOMMANDS = new Set([
+  "status",
+  "log",
+  "diff",
+  "show",
+  "blame",
+  "shortlog",
+  "describe",
+  "ls-files",
+  "rev-parse",
+]);
+
+/** `git branch` only lists when every arg is one of these; anything else
+ * (a bare name creates, `-d`/`-D`/`-m` mutate) falls back to the prompt. */
+const AUTO_APPROVE_GIT_BRANCH_FLAGS = new Set([
+  "-a",
+  "-r",
+  "-v",
+  "-vv",
+  "--all",
+  "--list",
+  "--remotes",
+  "--show-current",
+  "--verbose",
+  "--merged",
+  "--no-merged",
+]);
+
+const AUTO_APPROVE_GIT_REMOTE_FLAGS = new Set(["-v", "--verbose"]);
+
+/** Any of these anywhere in the command means the shell would do more than
+ * run one plain argv: control flow, redirection, substitution, quoting,
+ * globbing, brace/history expansion. `%` is here because the Windows agent
+ * shell can be `cmd.exe` (`cmd /C …`), where `%VAR%` expands — a token the
+ * literal `checkReadable` pass can't see through (`cat %SOMEPATH%`); the
+ * cost is that `--pretty=format:%h`-style commands fall back to the prompt.
+ * `~` is deliberately absent — tilde paths are literal enough for
+ * `checkReadable` to vet. */
+const AUTO_APPROVE_REJECT_CHARS = /[;&|<>`$(){}\\'"*?[\]!#^%]/;
+
+/** A flag token must be dashes + alphanumerics only. This is what blocks
+ * attached-value smuggling like `file -f/home/me/.ssh/id_rsa` (a path can
+ * never match) while still admitting `-la`, `-n50`, `--max-depth`. */
+const AUTO_APPROVE_FLAG_SHAPE = /^--?[a-zA-Z0-9][a-zA-Z0-9-]*$/;
+
+function autoApproveFlagOk(token: string): boolean {
+  if (token === "--") return true; // conventional args separator
+  const eq = token.indexOf("=");
+  if (eq === -1) return AUTO_APPROVE_FLAG_SHAPE.test(token);
+  // `--flag=value`: the value may name a file the command will read
+  // (`wc --files0-from=.env`), so it takes the full readable check.
+  const name = token.slice(0, eq);
+  const value = token.slice(eq + 1);
+  return (
+    AUTO_APPROVE_FLAG_SHAPE.test(name) &&
+    value.length > 0 &&
+    checkReadable(value).ok
+  );
+}
+
+function autoApproveGitArgOk(token: string): boolean {
+  if (token.startsWith("-")) {
+    // --output/--output-* write files; --ext-diff/--textconv execute
+    // repo-configured commands. Everything else must be flag-shaped.
+    if (token.startsWith("--output")) return false;
+    if (token === "--ext-diff" || token === "--textconv") return false;
+    return autoApproveFlagOk(token);
+  }
+  if (!checkReadable(token).ok) return false;
+  // git's <rev>:<path> syntax reads repo content by path — `HEAD:.env`
+  // must be as ineligible as `.env` itself.
+  for (const seg of token.split(":")) {
+    if (seg.length > 0 && !checkReadable(seg).ok) return false;
+  }
+  return true;
+}
+
+export function checkAutoApprove(cmd: string): SafetyResult {
+  const no = (reason: string): SafetyResult => ({ ok: false, reason });
+  if (typeof cmd !== "string") return no("not a string");
+  const c = cmd.trim();
+  if (c.length === 0) return no("empty command");
+  if (c.length > 1024) return no("command too long");
+  // Printable ASCII only. Rejects control bytes, and — unlike
+  // checkShellCommand's targeted bidi list — all homoglyph/invisible-Unicode
+  // tricks wholesale. A Cyrillic-с `сat` falls back to the prompt.
+  if (!/^[\x20-\x7e]+$/.test(c)) return no("non-ASCII or control characters");
+  if (AUTO_APPROVE_REJECT_CHARS.test(c)) return no("shell metacharacters");
+  const tokens = c.split(/\s+/);
+  if (tokens.length > 100) return no("too many arguments");
+  // Bare lowercase word only: no paths (`/bin/ls`), no env-assignment
+  // prefixes (`FOO=bar git …` — `=` fails the shape).
+  const head = tokens[0].toLowerCase();
+  if (!/^[a-z0-9._-]+$/.test(head)) return no("command name is not a bare word");
+
+  if (head === "git") {
+    const sub = tokens[1];
+    if (!sub) return no("bare git");
+    const rest = tokens.slice(2);
+    if (sub === "remote") {
+      return rest.every((t) => AUTO_APPROVE_GIT_REMOTE_FLAGS.has(t))
+        ? { ok: true }
+        : no("git remote is only eligible for listing");
+    }
+    if (sub === "branch") {
+      return rest.every((t) => AUTO_APPROVE_GIT_BRANCH_FLAGS.has(t))
+        ? { ok: true }
+        : no("git branch is only eligible for listing");
+    }
+    if (!AUTO_APPROVE_GIT_SUBCOMMANDS.has(sub)) {
+      return no(`git ${sub} is not on the read-only allowlist`);
+    }
+    for (const t of rest) {
+      if (!autoApproveGitArgOk(t)) return no(`argument not eligible: ${t}`);
+    }
+    return { ok: true };
+  }
+
+  if (AUTO_APPROVE_SIMPLE_BINARIES.has(head)) {
+    for (const t of tokens.slice(1)) {
+      if (t.startsWith("-")) {
+        if (!autoApproveFlagOk(t)) return no(`flag not eligible: ${t}`);
+      } else if (!checkReadable(t).ok) {
+        return no(`argument not eligible: ${t}`);
+      }
+    }
+    return { ok: true };
+  }
+
+  return no(`"${head}" is not on the read-only allowlist`);
+}
+
+/**
+ * Collapse a stored per-tool approval policy to what the approval UI should
+ * do for this specific call. `"auto-safe"` is only meaningful on `bash_run`
+ * with a string command that passes {@link checkAutoApprove}; in every other
+ * shape it degrades to `"prompt"` — including a hand-edited settings file
+ * that puts `"auto-safe"` on a non-shell tool.
+ */
+export function resolveApprovalPolicy(
+  policy: "auto" | "auto-safe" | "prompt" | "deny" | undefined,
+  toolName: string,
+  input: unknown,
+): "auto" | "prompt" | "deny" {
+  const p = policy ?? "prompt";
+  if (p !== "auto-safe") return p;
+  if (toolName !== "bash_run") return "prompt";
+  const command = (input as { command?: unknown } | null | undefined)?.command;
+  if (typeof command !== "string") return "prompt";
+  return checkAutoApprove(command).ok ? "auto" : "prompt";
+}
+
 export function checkShellCommand(cmd: string): SafetyResult {
   const c = cmd.trim();
   if (c.length === 0) {

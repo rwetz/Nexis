@@ -74,7 +74,10 @@ export type FormatterConfig = {
   enabled: boolean;
 };
 
-export type ToolApprovalPolicy = "auto" | "prompt" | "deny";
+/** Per-tool approval behavior. `"auto-safe"` (offered for `bash_run` only)
+ * auto-approves commands passing `checkAutoApprove` in `ai/lib/security.ts`
+ * — a strict read-only allowlist — and prompts for everything else. */
+export type ToolApprovalPolicy = "auto" | "auto-safe" | "prompt" | "deny";
 
 export type TerminalCursorStyle = "bar" | "block" | "underline";
 

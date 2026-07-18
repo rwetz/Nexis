@@ -6,11 +6,40 @@
 
 import { tool } from "ai";
 import { z } from "zod";
-import { auditAgentCommand } from "../lib/audit";
+import { auditAgentCommand, type AuditEntry } from "../lib/audit";
 import { native } from "../lib/native";
-import { checkShellCommand } from "../lib/security";
+import { checkAutoApprove, checkShellCommand } from "../lib/security";
 import type { ToolContext } from "./context";
 import { currentWorkspaceEnv, workspaceScopeKey } from "@/modules/workspace";
+import { usePreferencesStore } from "@/modules/settings/preferences";
+
+/**
+ * Audit-log annotation of how the approval gate was passed. Recomputed from
+ * the current policy rather than threaded from the approval UI (the SDK's
+ * execute path has no visibility into who answered the approval). A policy
+ * flipped between approval and execution can mislabel that one entry — the
+ * annotation is advisory; the command line itself is authoritative.
+ */
+function approvalMode(
+  toolId: "bash_run" | "bash_background",
+  command: string,
+): NonNullable<AuditEntry["approval"]> {
+  try {
+    const policy =
+      usePreferencesStore.getState().toolApprovalPolicies?.[toolId] ?? "prompt";
+    if (policy === "auto") return "auto";
+    if (
+      policy === "auto-safe" &&
+      toolId === "bash_run" &&
+      checkAutoApprove(command).ok
+    ) {
+      return "auto-safe";
+    }
+  } catch {
+    // Store unavailable (tests) — the conservative label is fine.
+  }
+  return "user";
+}
 
 /**
  * Per-session lazy shell-session id. The agent gets one persistent shell per
@@ -72,6 +101,7 @@ export function buildShellTools(ctx: ToolContext) {
             exit_code: r.exit_code,
             timed_out: r.timed_out,
             session: sid,
+            approval: approvalMode("bash_run", command),
           });
           return {
             command,
@@ -111,6 +141,7 @@ export function buildShellTools(ctx: ToolContext) {
             cwd: effectiveCwd,
             handle,
             session: ctx.getSessionId() ?? undefined,
+            approval: approvalMode("bash_background", command),
           });
           return { handle, command, cwd: effectiveCwd, ok: true };
         } catch (e) {

@@ -21,6 +21,9 @@ export type AuditEntry = {
   handle?: number;
   reason?: string;
   session?: string;
+  /** How the approval gate was passed: an explicit user click, the blanket
+   * per-tool "auto" policy, or the scoped read-only "auto-safe" policy. */
+  approval?: "user" | "auto" | "auto-safe";
 };
 
 /** Best-effort, non-throwing append. Safe to call from any tool path. */

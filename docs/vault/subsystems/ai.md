@@ -23,6 +23,10 @@ The chat/agent feature. Built on the Vercel AI SDK (`ai` package); everything ru
 - `tools/shell.ts` memoizes session shells in `sessionShells`; the rejection-eviction in its `.catch()` is load-bearing (pitfall #10)
 - Rust-side execution goes through `lib/native.ts` — the AI's bridge to `fs_*`, `git_*`, `shell_*`, `lsp_*`, `dap_*` commands (see [[ipc-surface]])
 
+## Tool approval
+
+Per-tool policies (`toolApprovalPolicies` pref, Settings → Agents): `prompt` (default) / `auto` / `deny`, plus `auto-safe` on `bash_run` only — auto-approves commands passing `checkAutoApprove` (`lib/security.ts`), a strict read-only allowlist (curated binaries + read-only git subcommands, no shell metacharacters, every path arg through `checkReadable` — including `--flag=value` values and git `rev:path` colon segments). Dispatch happens in `AiChat.tsx`'s `RenderedTool` via `resolveApprovalPolicy` (also `lib/security.ts` — pure, tested); `auto-safe` on any other tool or a non-string command degrades to `prompt`. Audit entries record how the gate was passed (`approval: user | auto | auto-safe`), recomputed from the live policy in `tools/shell.ts` (advisory — the SDK's execute path can't see who answered the approval).
+
 ## Subagents
 
 `agents/runSubagent.ts` runs typed subagents from `agents/registry.ts` (read-only fs+search tools, `generateText`, max 12 steps). It passes a **single prompt string, no message history** — which is why it doesn't call `pruneMessages`. If subagents ever gain conversation history, pitfall #3 applies to them too.

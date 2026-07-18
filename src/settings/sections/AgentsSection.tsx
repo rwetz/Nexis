@@ -591,6 +591,19 @@ const POLICY_OPTIONS: { value: ToolApprovalPolicy; label: string; description: s
   { value: "deny", label: "Always deny", description: "Block without asking" },
 ];
 
+// Only the foreground shell tool gets the scoped option — a "read-only"
+// background daemon is a contradiction, and file tools have the diff review.
+const BASH_RUN_POLICY_OPTIONS: typeof POLICY_OPTIONS = [
+  POLICY_OPTIONS[0],
+  {
+    value: "auto-safe",
+    label: "Auto-approve read-only",
+    description:
+      "Run allowlisted read-only commands without asking; ask for everything else",
+  },
+  ...POLICY_OPTIONS.slice(1),
+];
+
 function ToolPoliciesBlock() {
   const policies = usePreferencesStore((s) => s.toolApprovalPolicies);
 
@@ -604,10 +617,15 @@ function ToolPoliciesBlock() {
       <Label>Tool approval policies</Label>
       <p className="text-[11px] text-muted-foreground leading-relaxed">
         Per-tool approval behavior. "Auto-approve" lets the AI run the tool without pausing.
+        For shell commands, "Auto-approve read-only" auto-runs only a narrow allowlist —
+        read-only git subcommands, ls, cat, and similar, with no pipes, redirects, or
+        substitutions, and secret-file guards on every path — and still asks for everything
+        else. Every command lands in the audit log either way.
       </p>
       <div className="flex flex-col gap-1 rounded-lg border border-border/60 bg-card/40 overflow-hidden">
         {APPROVAL_TOOL_LABELS.map(({ id, label }) => {
           const policy = policies[id] ?? "prompt";
+          const options = id === "bash_run" ? BASH_RUN_POLICY_OPTIONS : POLICY_OPTIONS;
           return (
             <div
               key={id}
@@ -621,11 +639,11 @@ function ToolPoliciesBlock() {
                 value={policy}
                 onValueChange={(v) => setPolicy(id, v as ToolApprovalPolicy)}
               >
-                <SelectTrigger size="sm" className="h-7 w-36 text-[11px] shrink-0">
+                <SelectTrigger size="sm" className="h-7 w-44 text-[11px] shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {POLICY_OPTIONS.map((opt) => (
+                  {options.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value} className="text-[11px]">
                       {opt.label}
                     </SelectItem>
