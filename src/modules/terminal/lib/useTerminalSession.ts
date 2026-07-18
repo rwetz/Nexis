@@ -17,7 +17,7 @@ import {
   registerTitleHandler,
   type ShellIntegrationState,
 } from "./osc-handlers";
-import { openPty, type PtySession } from "./pty-bridge";
+import { openPty, ptyCwd, type PtySession } from "./pty-bridge";
 import {
   acquireSlot,
   applyFontFamily,
@@ -77,6 +77,14 @@ type Session = {
    * tab comes back). Read by sessionHasRunningCommand for close-confirm.
    */
   shellState: ShellIntegrationState;
+  /**
+   * cwd-fallback timers: a one-shot check a few seconds after PTY open, then
+   * a low-rate pty_cwd poll while shell integration stays silent. Both are
+   * cleared on dispose/respawn; the poll self-cancels the moment a real
+   * OSC 7/133 marker arrives.
+   */
+  integrationCheckTimer: ReturnType<typeof setTimeout> | null;
+  cwdPollTimer: ReturnType<typeof setInterval> | null;
 };
 
 const sessions = new Map<number, Session>();
@@ -196,6 +204,8 @@ function ensureSession(leafId: number, initialCwd?: string): Session {
     altScreenAtRelease: false,
     pendingWrites: [],
     shellState: createShellIntegrationState(),
+    integrationCheckTimer: null,
+    cwdPollTimer: null,
   };
   sessions.set(leafId, session);
 
@@ -247,6 +257,62 @@ async function openPtyForSession(
     cwd,
     Object.keys(extraEnv).length > 0 ? extraEnv : undefined,
     prefs.defaultShellPath || undefined,
+  );
+}
+
+// cwd fallback (shell-integration resilience): if no OSC 7/133 marker has
+// arrived shortly after the shell started, its rc files likely don't source
+// the Nexis integration — poll the shell process's real cwd at a low rate so
+// new tabs, suggestions, and the git panel don't silently track a stale cwd.
+// Linux-only in practice (pty_cwd resolves null elsewhere; the poll stops).
+const INTEGRATION_CHECK_MS = 5000;
+const CWD_POLL_MS = 3000;
+
+function clearCwdFallback(s: Session): void {
+  if (s.integrationCheckTimer) {
+    clearTimeout(s.integrationCheckTimer);
+    s.integrationCheckTimer = null;
+  }
+  if (s.cwdPollTimer) {
+    clearInterval(s.cwdPollTimer);
+    s.cwdPollTimer = null;
+  }
+}
+
+function scheduleCwdFallback(leafId: number, s: Session): void {
+  clearCwdFallback(s);
+  s.integrationCheckTimer = setTimeout(() => {
+    s.integrationCheckTimer = null;
+    if (s.disposed || s.shellExited || !s.pty) return;
+    if (s.shellState.markersSeen) return; // integration works — nothing to do
+    logMissingIntegration(leafId);
+    const ptyId = s.pty.id;
+    s.cwdPollTimer = setInterval(() => {
+      // Integration can arrive late (e.g. user manually sources the profile).
+      if (s.disposed || s.shellExited || s.shellState.markersSeen) {
+        clearCwdFallback(s);
+        return;
+      }
+      ptyCwd(ptyId)
+        .then((cwd) => {
+          if (!cwd || s.disposed || s.shellState.markersSeen) return;
+          if (s.lastCwd === cwd) return;
+          s.lastCwd = cwd;
+          s.callbacks.onCwd?.(cwd);
+        })
+        .catch(() => clearCwdFallback(s));
+    }, CWD_POLL_MS);
+  }, INTEGRATION_CHECK_MS);
+}
+
+let loggedMissingIntegration = false;
+function logMissingIntegration(leafId: number): void {
+  if (loggedMissingIntegration) return;
+  loggedMissingIntegration = true;
+  console.info(
+    `[nexis] leaf ${leafId}: no shell-integration markers after ${INTEGRATION_CHECK_MS}ms — ` +
+      "falling back to OS-level cwd tracking (prompt exit gutter and cwd-spoofing " +
+      "protection unavailable without integration)",
   );
 }
 
@@ -339,6 +405,7 @@ function attachSession(
         }
         s.pty = pty;
         if (s.cols > 0 && s.rows > 0) pty.resize(s.cols, s.rows);
+        scheduleCwdFallback(leafId, s);
         // Drain writes that arrived before the PTY IPC call completed.
         if (s.pendingWrites.length > 0) {
           const queued = s.pendingWrites.splice(0);
@@ -379,6 +446,8 @@ export async function respawnSession(
   s.altScreenAtRelease = false;
   s.pendingWrites = [];
   s.shellState.inCommand = false;
+  s.shellState.markersSeen = false;
+  clearCwdFallback(s);
 
   const slot = getSlotForLeaf(leafId);
   if (slot) {
@@ -403,12 +472,14 @@ export async function respawnSession(
   }
   s.pty = pty;
   if (s.cols > 0 && s.rows > 0) pty.resize(s.cols, s.rows);
+  scheduleCwdFallback(leafId, s);
 }
 
 export function disposeSession(leafId: number): void {
   const s = sessions.get(leafId);
   if (!s) return;
   s.disposed = true;
+  clearCwdFallback(s);
   unbindLeafFromSlot(leafId, s);
   s.snapshot = null;
   s.pty?.close();

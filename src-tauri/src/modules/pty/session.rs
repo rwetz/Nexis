@@ -59,6 +59,10 @@ pub struct Session {
     /// threads hold their own clones of this Arc.
     _writer: Arc<Mutex<Box<dyn Write + Send>>>,
     pub master: Mutex<Box<dyn MasterPty + Send>>,
+    /// Shell process id, for the /proc-based cwd fallback (`pty_cwd`) when
+    /// shell integration never reports OSC 7. None if the PTY backend
+    /// couldn't report one.
+    pub child_pid: Option<u32>,
 }
 
 impl Drop for Session {
@@ -197,6 +201,7 @@ pub fn spawn(
 
     let (write_tx, write_rx) = std::sync::mpsc::channel::<Vec<u8>>();
 
+    let child_pid = child.process_id();
     let session = Arc::new(Session {
         #[cfg(windows)]
         _job: job,
@@ -204,6 +209,7 @@ pub fn spawn(
         write_tx,
         _writer: writer.clone(),
         master: Mutex::new(pair.master),
+        child_pid,
     });
 
     let pending: Arc<(Mutex<Vec<u8>>, Condvar)> =

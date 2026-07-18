@@ -84,6 +84,31 @@ describe("OSC 7 cwd handler — gated by OSC 133 in-command state", () => {
     expect(onCwd).toHaveBeenCalledWith("/home/me/new-cwd");
   });
 
+  it("marks integration as seen on OSC 133 and accepted OSC 7 only", () => {
+    const { term, handlers } = makeFakeTerm();
+    const state = createShellIntegrationState();
+    registerPromptTracker(term, state);
+    registerCwdHandler(term, vi.fn(), state);
+    expect(state.markersSeen).toBe(false);
+
+    // A rejected in-command OSC 7 (untrusted output) must NOT flip the flag —
+    // it would switch off the OS-level cwd fallback for a shell that has no
+    // real integration.
+    state.inCommand = true;
+    handlers.get(7)?.("file://host/etc");
+    expect(state.markersSeen).toBe(false);
+    state.inCommand = false;
+
+    handlers.get(7)?.("file://host/home/me");
+    expect(state.markersSeen).toBe(true);
+
+    const fresh = createShellIntegrationState();
+    const { term: term2, handlers: handlers2 } = makeFakeTerm();
+    registerPromptTracker(term2, fresh);
+    handlers2.get(133)?.("A");
+    expect(fresh.markersSeen).toBe(true);
+  });
+
   it("works without state for backwards compatibility (legacy callers)", () => {
     // The state parameter is optional — when omitted, OSC 7 is always
     // honored (legacy behavior). Tests must confirm we didn't break this.

@@ -140,6 +140,37 @@ pub fn pty_resize(
     result
 }
 
+/// Best-effort real cwd of the session's shell process, for cwd tracking
+/// when shell integration never delivers OSC 7 (custom shells, stripped
+/// rc files). Linux only — /proc/<pid>/cwd readlink; other platforms return
+/// None and the frontend simply keeps whatever cwd it last knew.
+#[tauri::command]
+pub fn pty_cwd(state: tauri::State<PtyState>, id: u32) -> Result<Option<String>, String> {
+    let session = state
+        .sessions
+        .read()
+        .unwrap_or_else(|e| e.into_inner())
+        .get(&id)
+        .cloned()
+        .ok_or_else(|| "no session".to_string())?;
+    #[cfg(target_os = "linux")]
+    {
+        let Some(pid) = session.child_pid else {
+            return Ok(None);
+        };
+        match std::fs::read_link(format!("/proc/{pid}/cwd")) {
+            Ok(p) => Ok(Some(p.to_string_lossy().into_owned())),
+            // Process exited or unreadable — not an error worth surfacing.
+            Err(_) => Ok(None),
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = session;
+        Ok(None)
+    }
+}
+
 #[tauri::command]
 pub fn pty_close(state: tauri::State<PtyState>, id: u32) -> Result<(), String> {
     let session = state

@@ -11,7 +11,7 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 
 | Family | Commands (prefix) | Rust handler | Frontend seam |
 |---|---|---|---|
-| PTY | `pty_open/write/resize/close` | `modules/pty/mod.rs` | `terminal/lib/pty-bridge.ts` — see [[terminal-tab-open]] |
+| PTY | `pty_open/write/resize/close/cwd` | `modules/pty/mod.rs` | `terminal/lib/pty-bridge.ts` — see [[terminal-tab-open]] |
 | Filesystem | `fs_*`, `list_subdirs` | `modules/fs/{file,tree,mutate,search,grep}.rs` | `ai/lib/native.ts` (AI tools), `editor/lib/useDocument.ts` |
 | Git | `git_*` (25 cmds: status, diff, stage, commit, stash, worktree…) | `modules/git/commands.rs` | `ai/lib/native.ts`; source-control UI |
 | Shell one-shots & sessions | `shell_run_command`, `shell_session_*`, `shell_bg_*`, `*_shell_history` | `modules/shell/mod.rs` | `ai/lib/native.ts`, `ai/tools/shell.ts`; also `editor/lib/formatter.ts`, `ports/`, `ssh/` |
@@ -46,7 +46,8 @@ fs/shell/ml/workspace/crash families all follow this as of 2026-07. Git uses its
 `blocking()` helper in `git/commands.rs`; commands that take `State` re-fetch it from an `AppHandle`
 inside the closure (see `shell_session_open`). Commands that only lock a map and return
 (`pty_resize`, `pty_close`, `shell_bg_*`, `lsp_notify`, …) stay sync on purpose — don't cargo-cult
-`heavy()` onto them. `pty_write` is a special case: sync but enqueue-only (see [[pty]]).
+`heavy()` onto them. `pty_write` is a special case: sync but enqueue-only (see [[pty]]). `pty_cwd` is
+sync on purpose too: a `/proc` readlink is a single non-blocking syscall, not disk I/O.
 
 ## Adding a command — checklist
 

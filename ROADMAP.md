@@ -110,7 +110,7 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 
 **Terminal & editor robustness**
 - 🟡 Unicode/grapheme correctness golden-file suite — CJK width, emoji ZWJ sequences, combining marks, zero-width handling — so rendering-width bugs surface in CI.
-- ✅ Shell-integration resilience — detect missing prompt markers (pitfall #6 territory) and fall back gracefully instead of mis-tracking cwd.
+- [x] ~~Shell-integration resilience~~ — done: missing markers detected, OS-level cwd fallback on Linux (see CHANGELOG `[Unreleased]`).
 - 🟡 Editor autosave + crash recovery — periodic dirty-buffer snapshots to a scratch dir, offered for recovery on next launch.
 
 **Docs (nexis-wiki — separate repo)**

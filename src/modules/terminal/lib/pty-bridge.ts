@@ -19,6 +19,15 @@ export type PtySession = {
   close: () => Promise<void>;
 };
 
+/**
+ * Best-effort real cwd of a PTY session's shell process (Linux: readlink
+ * /proc/<pid>/cwd; other platforms resolve to null). Used as a cwd-tracking
+ * fallback when shell integration never emits OSC 7.
+ */
+export async function ptyCwd(id: number): Promise<string | null> {
+  return invoke<string | null>("pty_cwd", { id });
+}
+
 export async function openPty(
   cols: number,
   rows: number,

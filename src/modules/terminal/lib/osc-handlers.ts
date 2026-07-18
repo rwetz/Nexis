@@ -16,10 +16,19 @@ import type { IDecoration, IMarker, Terminal } from "@xterm/xterm";
  */
 export type ShellIntegrationState = {
   inCommand: boolean;
+  /**
+   * True once shell integration has proven itself: any OSC 133 prompt
+   * marker, or an OSC 7 accepted outside a running command. While false,
+   * cwd tracking falls back to asking the OS for the shell's real cwd
+   * (pty_cwd) instead of silently mis-tracking. Deliberately NOT set by
+   * rejected in-command OSC 7 — untrusted output must not be able to
+   * switch the fallback off.
+   */
+  markersSeen: boolean;
 };
 
 export function createShellIntegrationState(): ShellIntegrationState {
-  return { inCommand: false };
+  return { inCommand: false, markersSeen: false };
 }
 
 export function registerCwdHandler(
@@ -34,7 +43,10 @@ export function registerCwdHandler(
     // between commands via its precmd/PROMPT_COMMAND hook.
     if (state?.inCommand) return true;
     const cwd = parseOsc7(data);
-    if (cwd) onCwd(cwd);
+    if (cwd) {
+      if (state) state.markersSeen = true;
+      onCwd(cwd);
+    }
     return true;
   });
   return () => d.dispose();
@@ -52,6 +64,7 @@ export function registerPromptTracker(
   let marker: IMarker | null = null;
   const decorations: IDecoration[] = [];
   const d = term.parser.registerOscHandler(133, (data) => {
+    if (state) state.markersSeen = true;
     // OSC 133 A — start of new prompt (between commands).
     if (data.startsWith("A")) {
       if (state) state.inCommand = false;
