@@ -23,6 +23,7 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | Python | `py_detect_envs` | `modules/python.rs` | `python/usePythonEnv.ts`, `ml/store.ts` |
 | Share server | `http_share_*` | `modules/http_share.rs` | `share/useShareServer.ts` |
 | Recording | `save_cast_recording` | `modules/recording.rs` | `terminal/lib/useRecording.ts` |
+| Session snapshots | `session_snapshot_save/load/delete/gc` | `modules/snapshots.rs` | `terminal/lib/snapshot-bridge.ts` |
 | Crash reports | `list_crash_reports` | `modules/crash.rs` | (settings/diagnostics UI) |
 
 ## Streaming: Channels, not events

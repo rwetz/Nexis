@@ -20,7 +20,17 @@ import {
   updateLeaf,
   type SplitDir,
 } from "@/modules/terminal/lib/panes";
-import { disposeSession } from "@/modules/terminal/lib/useTerminalSession";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { usePreferencesStore } from "@/modules/settings/preferences";
+import {
+  deleteSessionSnapshot,
+  gcSessionSnapshots,
+  saveSessionSnapshot,
+} from "@/modules/terminal/lib/snapshot-bridge";
+import {
+  disposeSession,
+  serializeSessionForExit,
+} from "@/modules/terminal/lib/useTerminalSession";
 import {
   MAX_PANES_PER_TAB,
   basename,
@@ -119,6 +129,71 @@ export function useTabs(initial?: Partial<TerminalTab>) {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [tabs, activeId]);
+
+  // ─── Exit snapshots (persistent sessions, Milestone A) ─────────────────────
+  // On window close: mint snapshot ids for terminal tabs that lack one, save
+  // tab state immediately (the debounced save may never fire), serialize each
+  // non-private terminal's buffer to disk, and gc files for closed tabs. With
+  // "Restore scrollback on relaunch" off, the gc keep-list is empty — every
+  // snapshot file is wiped, so the restore path never sees one.
+  const saveExitState = useCallback(async () => {
+    const restoreScrollback =
+      usePreferencesStore.getState().terminalRestoreScrollback;
+    const tabs = tabsRef.current.map((t) =>
+      t.kind === "terminal" && !t.private && !t.snapshotId && restoreScrollback
+        ? { ...t, snapshotId: crypto.randomUUID() }
+        : t,
+    );
+    saveTabState(tabs, activeIdRef.current);
+    const keep: string[] = [];
+    const ops: Promise<void>[] = [];
+    if (restoreScrollback) {
+      for (const t of tabs) {
+        if (t.kind !== "terminal" || t.private || !t.snapshotId) continue;
+        const content = serializeSessionForExit(t.activeLeafId);
+        if (!content) continue;
+        keep.push(t.snapshotId);
+        ops.push(
+          saveSessionSnapshot(t.snapshotId, content).catch((e) =>
+            console.warn("[nexis] exit snapshot save failed:", e),
+          ),
+        );
+      }
+    }
+    ops.push(
+      gcSessionSnapshots(keep).catch((e) =>
+        console.warn("[nexis] snapshot gc failed:", e),
+      ),
+    );
+    await Promise.all(ops);
+  }, []);
+
+  useEffect(() => {
+    if (isFreshWindow()) return;
+    let exiting = false;
+    const win = getCurrentWindow();
+    const unlisten = win.onCloseRequested((event) => {
+      // Second close request while saving (or restore disabled): let the
+      // window close normally.
+      if (exiting || !shouldRestoreTabs()) return;
+      event.preventDefault();
+      exiting = true;
+      void (async () => {
+        try {
+          await Promise.race([
+            saveExitState(),
+            // Never let a hung IPC call block exit.
+            new Promise((resolve) => setTimeout(resolve, 1500)),
+          ]);
+        } finally {
+          void win.destroy();
+        }
+      })();
+    });
+    return () => {
+      void unlisten.then((f) => f());
+    };
+  }, [saveExitState]);
 
   const newTab = useCallback((cwd?: string) => {
     const tabId = nextIdRef.current++;
@@ -582,12 +657,14 @@ export function useTabs(initial?: Partial<TerminalTab>) {
 
   const closeTab = useCallback((id: number) => {
     let toDispose: number[] = [];
+    let snapToDelete: string | null = null;
     setTabs((curr) => {
       const idx = curr.findIndex((t) => t.id === id);
       if (idx === -1) return curr;
       const target = curr[idx];
       if (target && target.kind === "terminal") {
         toDispose = leafIds(target.paneTree);
+        snapToDelete = target.snapshotId ?? null;
       }
       const next = curr.filter((t) => t.id !== id);
       if (next.length > 0) {
@@ -598,6 +675,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
       return next;
     });
     for (const lid of toDispose) disposeSession(lid);
+    if (snapToDelete) void deleteSessionSnapshot(snapToDelete).catch(() => {});
   }, []);
 
   const updateTab = useCallback((id: number, patch: TabPatch) => {
@@ -766,6 +844,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
 
   const closePaneByLeaf = useCallback((leafId: number): void => {
     let didRemove = false;
+    let snapToDelete: string | null = null;
     setTabs((curr) => {
       const tab = curr.find(
         (t) => t.kind === "terminal" && hasLeaf(t.paneTree, leafId),
@@ -780,6 +859,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
           active === tab.id ? next[Math.max(0, idx - 1)].id : active,
         );
         didRemove = true;
+        snapToDelete = tab.snapshotId ?? null;
         return next;
       }
       const remaining = leafIds(newTree);
@@ -796,11 +876,13 @@ export function useTabs(initial?: Partial<TerminalTab>) {
       );
     });
     if (didRemove) disposeSession(leafId);
+    if (snapToDelete) void deleteSessionSnapshot(snapToDelete).catch(() => {});
   }, []);
 
   const closeActivePane = useCallback((tabId: number): boolean => {
     let closedTab = false;
     let removedLeaf: number | null = null;
+    let snapToDelete: string | null = null;
     setTabs((curr) => {
       const t = curr.find((x) => x.id === tabId);
       if (!t || t.kind !== "terminal") return curr;
@@ -815,6 +897,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
         );
         closedTab = true;
         removedLeaf = target;
+        snapToDelete = t.snapshotId ?? null;
         return next;
       }
       const remaining = leafIds(newTree);
@@ -829,6 +912,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
       );
     });
     if (removedLeaf !== null) disposeSession(removedLeaf);
+    if (snapToDelete) void deleteSessionSnapshot(snapToDelete).catch(() => {});
     return closedTab;
   }, []);
 
@@ -1004,9 +1088,13 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     const tabId = nextIdRef.current++;
     const leafId = nextIdRef.current++;
     let toDispose: number[] = [];
+    let snapsToDelete: string[] = [];
     setTabs((curr) => {
       toDispose = curr.flatMap((t) =>
         t.kind === "terminal" ? leafIds(t.paneTree) : [],
+      );
+      snapsToDelete = curr.flatMap((t) =>
+        t.kind === "terminal" && t.snapshotId ? [t.snapshotId] : [],
       );
       return [
         {
@@ -1021,6 +1109,8 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     });
     setActiveId(tabId);
     for (const lid of toDispose) disposeSession(lid);
+    for (const snap of snapsToDelete)
+      void deleteSessionSnapshot(snap).catch(() => {});
   }, []);
 
   return {

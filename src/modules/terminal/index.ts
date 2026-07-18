@@ -12,6 +12,7 @@ export {
   sessionHasRunningCommand,
 } from "./lib/useTerminalSession";
 export { writeToLeaf } from "./lib/rendererPool";
+export { gcSessionSnapshots } from "./lib/snapshot-bridge";
 export {
   findLeafCwd,
   hasLeaf,

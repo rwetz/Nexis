@@ -18,8 +18,11 @@ import {
   type ShellIntegrationState,
 } from "./osc-handlers";
 import { openPty, ptyCwd, type PtySession } from "./pty-bridge";
+import { takePendingSessionRestore } from "./sessionRestore";
+import { loadSessionSnapshot } from "./snapshot-bridge";
 import {
   acquireSlot,
+  serializeLeafSnapshot,
   applyFontFamily,
   applyFontSize,
   applyFontWeight,
@@ -139,6 +142,32 @@ export function sessionMemoryStats(): {
 }
 
 /**
+ * Serialized buffer contents of a leaf for the exit-snapshot path. A leaf
+ * that's on screen serializes straight from its slot; a parked leaf already
+ * carries its serialized form plus any output that arrived while dormant —
+ * appending the ring bytes after the snapshot string replays in exactly the
+ * order bindSlot would have written them. Alt-screen rings are skipped for
+ * the same reason bindSlot discards them: incremental TUI updates can't be
+ * replayed coherently onto a stale snapshot.
+ */
+export function serializeSessionForExit(leafId: number): string | null {
+  const s = sessions.get(leafId);
+  if (!s || s.disposed) return null;
+  const live = serializeLeafSnapshot(leafId);
+  if (live !== null) return live;
+  let out = s.snapshot ?? "";
+  if (!s.altScreenAtRelease && s.dormantRing.byteLength() > 0) {
+    const decoder = new TextDecoder("utf-8", { fatal: false });
+    let tail = "";
+    s.dormantRing.drain((bytes) => {
+      tail += decoder.decode(bytes, { stream: true });
+    });
+    out += tail + decoder.decode();
+  }
+  return out.length > 0 ? out : null;
+}
+
+/**
  * True while the leaf's shell is inside a running command (between OSC 133
  * B/C and the next D/A). Used by the close-tab confirmation. Requires shell
  * integration — without prompt markers this is always false, so closing
@@ -232,8 +261,34 @@ function ensureSession(leafId: number, initialCwd?: string): Session {
     await document.fonts.ready;
   })();
 
+  // Scrollback restore (persistent sessions Milestone A): a restored tab
+  // registered its snapshot id before this leaf mounted. Chain the load into
+  // `ready` so the buffer is in place before attachSession binds the slot and
+  // opens the PTY — that ordering guarantees the previous session's scrollback
+  // paints above the divider before the fresh shell's first byte arrives.
+  const restoreId = takePendingSessionRestore(leafId);
+  if (restoreId) {
+    session.ready = session.ready.then(async () => {
+      const prefs = usePreferencesStore.getState();
+      if (prefs.hydrated && !prefs.terminalRestoreScrollback) return;
+      try {
+        const data = await loadSessionSnapshot(restoreId);
+        if (data && !session.disposed && session.snapshot === null) {
+          session.snapshot = data + RESTORE_DIVIDER;
+        }
+      } catch (e) {
+        console.warn("[nexis] scrollback restore failed:", e);
+      }
+    });
+  }
+
   return session;
 }
+
+/** Dim, theme-following separator between restored scrollback and the fresh
+ * shell spawned underneath it. */
+const RESTORE_DIVIDER =
+  "\r\n\x1b[0m\x1b[2m── session restored · previous shell ended ──\x1b[22m\r\n\r\n";
 
 function deliverPtyBytes(leafId: number, bytes: Uint8Array): void {
   const s = sessions.get(leafId);

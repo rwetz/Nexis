@@ -39,6 +39,7 @@ import {
   setTerminalFontWeight,
   setDefaultShellPath,
   setDebugMemoryReport,
+  setTerminalRestoreScrollback,
   setTerminalOsc52Clipboard,
   setTerminalConfirmCloseBusy,
   setTerminalScrollback,
@@ -94,6 +95,9 @@ export function GeneralSection() {
   const terminalFontWeight = usePreferencesStore((s) => s.terminalFontWeight);
   const defaultShellPath = usePreferencesStore((s) => s.defaultShellPath);
   const debugMemoryReport = usePreferencesStore((s) => s.debugMemoryReport);
+  const terminalRestoreScrollback = usePreferencesStore(
+    (s) => s.terminalRestoreScrollback,
+  );
   const terminalScrollback = usePreferencesStore((s) => s.terminalScrollback);
   const terminalSuggestionsEnabled = usePreferencesStore(
     (s) => s.terminalSuggestionsEnabled,
@@ -464,6 +468,15 @@ export function GeneralSection() {
             <Switch
               checked={restoreTabs}
               onCheckedChange={(v) => void setRestoreTabs(v)}
+            />
+          </SettingRow>
+          <SettingRow
+            title="Restore scrollback on relaunch"
+            description="Restored terminal tabs replay their previous scrollback above a divider before the new shell starts. Requires tab restore; private tabs never persist."
+          >
+            <Switch
+              checked={terminalRestoreScrollback}
+              onCheckedChange={(v) => void setTerminalRestoreScrollback(v)}
             />
           </SettingRow>
         </div>

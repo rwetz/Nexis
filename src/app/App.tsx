@@ -125,6 +125,7 @@ import {
 import {
   disposeSession,
   findLeafCwd,
+  gcSessionSnapshots,
   hasLeaf,
   leafIds,
   respawnSession,
@@ -483,10 +484,13 @@ export default function App() {
     setSelectedModelId(prefDefaultModel);
   }, [prefsHydrated, prefDefaultModel, setSelectedModelId]);
   // Keep the localStorage restore-tabs flag in sync with the Tauri preference.
-  // When disabled, this also clears any saved tab state.
+  // When disabled, this also clears any saved tab state — and the scrollback
+  // snapshots on disk, which are useless without tab restore and would
+  // otherwise linger (the exit-time gc only runs while tab restore is on).
   useEffect(() => {
     if (!prefsHydrated) return;
     setSavedTabsEnabled(prefRestoreTabs);
+    if (!prefRestoreTabs) void gcSessionSnapshots([]).catch(() => {});
   }, [prefsHydrated, prefRestoreTabs]);
 
   const hydrateSessions = useChatStore((s) => s.hydrateSessions);

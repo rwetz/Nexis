@@ -7,6 +7,7 @@
 import type { EditorPaneNode, Tab, EditorTab, TerminalTab } from "./tabTypes";
 import { basename, editorActivePath } from "./tabTypes";
 import { leaves } from "@/modules/terminal/lib/panes";
+import { registerPendingSessionRestore } from "@/modules/terminal/lib/sessionRestore";
 
 // ─── Storage keys & constants ──────────────────────────────────────────────────
 
@@ -21,6 +22,8 @@ type PersistedTerminalTab = {
   title: string;
   cwd?: string;
   private?: boolean;
+  /** Scrollback-snapshot id (see TerminalTab.snapshotId). */
+  snap?: string;
 };
 /** Editor pane tree, mirrored structurally (ids are reassigned on restore). */
 type PersistedEditorNode =
@@ -99,7 +102,13 @@ export function serializeTabState(tabs: Tab[], activeId: number): PersistedTabSt
   const persisted: PersistedTab[] = [];
   for (const t of tabs) {
     if (t.kind === "terminal") {
-      persisted.push({ kind: "terminal", title: t.title, cwd: t.cwd, private: t.private });
+      persisted.push({
+        kind: "terminal",
+        title: t.title,
+        cwd: t.cwd,
+        private: t.private,
+        ...(t.snapshotId && !t.private && { snap: t.snapshotId }),
+      });
     } else if (t.kind === "editor") {
       // Skip a lone, unpinned preview pane (matches the old behavior); split or
       // pinned tabs persist their full pane tree.
@@ -148,7 +157,14 @@ export function buildTabsFromSaved(
         paneTree: { kind: "leaf", id: leafId, cwd: p.cwd },
         activeLeafId: leafId,
         ...(p.private && { private: true }),
+        ...(p.snap && !p.private && { snapshotId: p.snap }),
       };
+      if (tab.snapshotId) {
+        // The new leaf replays its saved scrollback (if the file exists)
+        // before its fresh shell spawns. Safe to re-register: this builder
+        // runs more than once during init with deterministic ids.
+        registerPendingSessionRestore(leafId, tab.snapshotId);
+      }
       tabs.push(tab);
       if (i === saved.activeIndex) activeId = tabId;
     } else if (p.kind === "editor") {

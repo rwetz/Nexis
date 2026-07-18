@@ -37,6 +37,8 @@ export default defineConfig({
         "src/modules/ai/lib/security.ts",
         "src/modules/ai/tools/shell.ts",
         "src/modules/tabs/lib/mru.ts",
+        "src/modules/tabs/lib/tabPersistence.ts",
+        "src/modules/terminal/lib/sessionRestore.ts",
         "src/modules/terminal/lib/keymap.ts",
         "src/modules/terminal/lib/osc-handlers.ts",
         "src/modules/terminal/lib/pty-bridge.ts",

@@ -635,6 +635,17 @@ function serializeSlot(slot: Slot): SerializeOutput {
   };
 }
 
+/**
+ * Serialize a bound leaf's buffer without releasing the slot. Used by the
+ * exit-snapshot path ("restore scrollback on relaunch") for leaves that are
+ * currently on screen; parked leaves already carry their serialized form in
+ * Session.snapshot.
+ */
+export function serializeLeafSnapshot(leafId: number): string | null {
+  const slot = slots.find((s) => s.currentLeafId === leafId);
+  return slot ? serializeSlot(slot).snapshot : null;
+}
+
 function detachSlotFromLeaf(slot: Slot): void {
   // Clean up input tracking state for the departing leaf
   if (slot.currentLeafId !== null) {

@@ -30,6 +30,12 @@ export type TerminalTab = {
   activeLeafId: number;
   /** AI agent cannot read buffer / context of this terminal. */
   private?: boolean;
+  /**
+   * Stable id keying this tab's scrollback snapshot file on disk (restore
+   * scrollback on relaunch). Minted lazily at exit-snapshot time, carried
+   * across relaunches via tab persistence. Never set on private tabs.
+   */
+  snapshotId?: string;
 };
 
 /**

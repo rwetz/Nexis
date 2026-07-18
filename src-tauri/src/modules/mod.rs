@@ -18,6 +18,7 @@ pub mod python;
 pub mod recording;
 pub mod secrets;
 pub mod shell;
+pub mod snapshots;
 pub mod workspace;
 
 /// Run a blocking closure on the blocking thread pool and await it.

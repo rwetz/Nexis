@@ -20,7 +20,7 @@ pub mod bench_internals {
 
 use modules::{
     crash, dap, fs, git, http_share, lsp, ml, net, pty, python, recording, secrets, shell,
-    workspace,
+    snapshots, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -258,6 +258,10 @@ pub fn run() {
             net::ai_http_stream,
             python::py_detect_envs,
             recording::save_cast_recording,
+            snapshots::session_snapshot_save,
+            snapshots::session_snapshot_load,
+            snapshots::session_snapshot_delete,
+            snapshots::session_snapshot_gc,
             http_share::http_share_start,
             http_share::http_share_update,
             http_share::http_share_stop,

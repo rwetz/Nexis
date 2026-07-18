@@ -28,6 +28,10 @@ Terminal sessions end to end: frontend xterm.js ↔ Tauri IPC ↔ Rust PTY threa
 
 If no integration marker arrives ~5 s after PTY open (`markersSeen` still false), `useTerminalSession.ts` logs once and starts a 3 s `pty_cwd` poll — a `/proc/<pid>/cwd` readlink via `Session.child_pid`, Linux-only (other platforms return `None` and the frontend keeps its last-known cwd). The poll self-cancels the moment a real marker arrives, and both timers are cleared on dispose/respawn (`clearCwdFallback`). Without integration the exit gutter and in-command OSC 7 spoof-gating are still unavailable — this fallback only rescues cwd tracking (tab labels, new-tab cwd, git panel).
 
+## Scrollback restore on relaunch (2026-07, persistent sessions Milestone A)
+
+Exit path: `useTabs`'s `onCloseRequested` handler mints per-tab snapshot ids, force-saves tab state, serializes each non-private terminal's active pane (`serializeSessionForExit` — live slots via `serializeLeafSnapshot`, parked ones from `Session.snapshot` + dormant ring), and writes through `snapshot-bridge.ts` → `modules/snapshots.rs` (atomic tmp+rename under `~/.cache/nexis/session-snapshots/`), then destroys the window; a 1.5 s race caps how long exit can block. Restore path: `buildTabsFromSaved` registers leafId → snapshotId in `sessionRestore.ts`; `ensureSession` chains the load into `Session.ready` **before** attach binds the slot and opens the PTY — that ordering is what guarantees the replay lands before the first shell byte. The divider string lives in `useTerminalSession.ts` (`RESTORE_DIVIDER`). Exit-time gc (and the restore-tabs-off path in App.tsx) keeps the snapshot dir from accumulating orphans.
+
 ## Debugging entry points
 
 - Blank terminal → follow the 5-step checklist in CLAUDE.md pitfall #1
