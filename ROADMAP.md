@@ -104,7 +104,7 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 
 **Testing & observability**
 - 🟡 E2E coverage for the blank-terminal pitfalls — script the exact ConPTY failure modes (close-tab-then-open, cross-drive `cd` + new tab, PowerShell first-prompt) so pitfall #1 can never silently regress.
-- 🟡 Diagnostics bundle export — one button that zips logs + versions + sanitized config + the last asciinema recording for bug reports (everything stays local, user attaches it manually).
+- [x] ~~Diagnostics bundle export~~ — done (see CHANGELOG `[Unreleased]`).
 - [x] ~~Sync-command audit tripwire~~ — done (see CHANGELOG `[Unreleased]`).
 - 🟡 tmux resize desync test — targeted test for xterm grid vs PTY winsize desync after a pane resize; upstream terax has this open as #981 and Nexis's debounced fit + `pty_resize` may or may not be immune.
 

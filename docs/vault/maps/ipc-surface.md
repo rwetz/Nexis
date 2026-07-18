@@ -26,6 +26,7 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | Session snapshots | `session_snapshot_save/load/delete/gc` | `modules/snapshots.rs` | `terminal/lib/snapshot-bridge.ts` |
 | Editor autosave | `editor_autosave_write/read/delete/sweep` | `modules/autosave.rs` | `editor/lib/autosave-bridge.ts` |
 | Crash reports | `list_crash_reports` | `modules/crash.rs` | (settings/diagnostics UI) |
+| Diagnostics | `diagnostics_export` | `modules/diagnostics.rs` (hand-rolled store-only zip) | `settings/sections/GeneralSection.tsx` |
 
 ## Streaming: Channels, not events
 

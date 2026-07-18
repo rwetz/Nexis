@@ -58,7 +58,11 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
-import { useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { redactSensitive } from "@/modules/ai/lib/redact";
+import { DEFAULT_PREFERENCES } from "@/modules/settings/store";
 import { SectionHeader } from "../components/SectionHeader";
 import { SettingRow } from "../components/SettingRow";
 
@@ -97,6 +101,33 @@ export function GeneralSection() {
   const defaultShellPath = usePreferencesStore((s) => s.defaultShellPath);
   const debugMemoryReport = usePreferencesStore((s) => s.debugMemoryReport);
   const debugFpsMeter = usePreferencesStore((s) => s.debugFpsMeter);
+  const [diagBusy, setDiagBusy] = useState(false);
+  const [diagResult, setDiagResult] = useState<string | null>(null);
+
+  const exportDiagnostics = async () => {
+    setDiagBusy(true);
+    setDiagResult(null);
+    try {
+      // Only real preference keys — the store state also carries hydration
+      // flags and actions. Redacted before it ever crosses IPC.
+      const state = usePreferencesStore.getState();
+      const prefs = Object.fromEntries(
+        Object.keys(DEFAULT_PREFERENCES).map((k) => [
+          k,
+          state[k as keyof typeof DEFAULT_PREFERENCES],
+        ]),
+      );
+      const sanitizedConfig = redactSensitive(JSON.stringify(prefs, null, 2));
+      const path = await invoke<string>("diagnostics_export", {
+        sanitizedConfig,
+      });
+      setDiagResult(path);
+    } catch (e) {
+      setDiagResult(`Export failed: ${String(e)}`);
+    } finally {
+      setDiagBusy(false);
+    }
+  };
   const terminalRestoreScrollback = usePreferencesStore(
     (s) => s.terminalRestoreScrollback,
   );
@@ -486,6 +517,22 @@ export function GeneralSection() {
 
       <div className="flex flex-col gap-2">
         <Label>Debug</Label>
+        <SettingRow
+          title="Diagnostics bundle"
+          description={
+            diagResult ??
+            "Export a zip of logs, versions, redacted settings, recent crash reports, and the newest recording — for attaching to bug reports. Nothing leaves this machine."
+          }
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={diagBusy}
+            onClick={() => void exportDiagnostics()}
+          >
+            {diagBusy ? "Exporting…" : "Export"}
+          </Button>
+        </SettingRow>
         <SettingRow
           title="FPS meter"
           description="Show a status-bar frame-rate readout (requestAnimationFrame-based, so it measures main-thread jank). Development aid; runs only while on."

@@ -19,8 +19,8 @@ pub mod bench_internals {
 }
 
 use modules::{
-    autosave, crash, dap, fs, git, http_share, lsp, ml, net, pty, python, recording, secrets,
-    shell, snapshots, workspace,
+    autosave, crash, dap, diagnostics, fs, git, http_share, lsp, ml, net, pty, python, recording,
+    secrets, shell, snapshots, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -271,6 +271,7 @@ pub fn run() {
             http_share::http_share_stop,
             http_share::http_share_push_stream,
             crash::list_crash_reports,
+            diagnostics::diagnostics_export,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
