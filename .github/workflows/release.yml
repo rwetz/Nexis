@@ -101,11 +101,24 @@ jobs:
             src-tauri/target/release/bundle/msi/*.msi
 
   build-linux:
-    name: Build Linux bundles
-    # Build on the oldest supported runner so the AppImage's glibc/webkit
-    # baseline is as broad as possible — it will still run on newer distros
-    # (including Arch-based CachyOS) but not vice-versa.
-    runs-on: ubuntu-22.04
+    name: Build Linux bundles (${{ matrix.arch }})
+    # Build each Linux architecture natively on its own runner — no cross-
+    # compilation, so the webkit2gtk/rsvg/appindicator system stack resolves
+    # per-arch straight from apt (cross-compiling that stack is the painful
+    # part and buys nothing here). Each leg uses the oldest supported runner
+    # for its arch so the AppImage's glibc/webkit baseline is as broad as
+    # possible — it still runs on newer distros (including Arch-based
+    # CachyOS) but not vice-versa. fail-fast is off so a flaky leg (e.g. a
+    # transient apt failure) can't abort a healthy one mid-release.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            arch: amd64
+          - runner: ubuntu-22.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
