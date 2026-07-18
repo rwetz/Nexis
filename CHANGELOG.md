@@ -2,10 +2,10 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
-## [Unreleased]
+## [1.21.1] — 2026-07-18
 
 ### Added
-- **Native ARM64 (aarch64) Linux builds.** The release workflow's `build-linux` job is now a native build matrix — the existing `ubuntu-22.04` (amd64) runner plus an `ubuntu-22.04-arm` (arm64) runner — so every tagged release ships aarch64 AppImage/deb/rpm bundles alongside the amd64 ones. Built natively rather than cross-compiled, because the webkit2gtk/rsvg/appindicator system stack is painful to cross-compile and buys nothing over a native runner; `fail-fast` is off so a flaky leg can't abort a healthy one mid-release. Windows stays x64-only for now. (Takes effect on the next tag after 1.21.0 — the 1.21.0 build predates this and is amd64-only.)
+- **Native ARM64 (aarch64) Linux builds.** The release workflow's `build-linux` job is now a native build matrix — the existing `ubuntu-22.04` (amd64) runner plus an `ubuntu-22.04-arm` (arm64) runner — so every tagged release ships aarch64 AppImage/deb/rpm bundles alongside the amd64 ones. Built natively rather than cross-compiled, because the webkit2gtk/rsvg/appindicator system stack is painful to cross-compile and buys nothing over a native runner; `fail-fast` is off so a flaky leg can't abort a healthy one mid-release. Windows stays x64-only for now. This is the first release to ship aarch64 bundles; 1.21.0 predated the workflow change and is amd64-only.
 
 ## [1.21.0] — 2026-07-18
 
