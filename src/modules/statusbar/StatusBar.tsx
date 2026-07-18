@@ -22,6 +22,7 @@ import { useDiagnosticsStore } from "@/modules/problems/diagnosticsStore";
 import { usePluginRegistry } from "@/lib/plugins/registry";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { MemoryReportPill } from "./MemoryReportPill";
+import { FpsPill } from "./FpsPill";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -54,6 +55,7 @@ export function StatusBar({
   const errorCount = useDiagnosticsStore((s) => s.errorCount);
   const warningCount = useDiagnosticsStore((s) => s.warningCount);
   const debugMemoryReport = usePreferencesStore((s) => s.debugMemoryReport);
+  const debugFpsMeter = usePreferencesStore((s) => s.debugFpsMeter);
 
   // Plugin-contributed status bar items — select the stable array from the
   // store, then filter locally so the selector never returns a new reference
@@ -128,6 +130,7 @@ export function StatusBar({
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
+        {debugFpsMeter ? <FpsPill /> : null}
         {debugMemoryReport ? <MemoryReportPill /> : null}
         {/* Plugin-contributed right items (e.g. Python env pill) */}
         {rightItems.map((item) => {

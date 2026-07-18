@@ -189,6 +189,9 @@ export type Preferences = {
   /** Restore terminal scrollback on relaunch (persistent sessions Milestone
    * A). Only meaningful while restoreTabs is on. */
   terminalRestoreScrollback: boolean;
+  /** Debug status-bar FPS meter (rAF-based main-thread jank readout).
+   * Development aid; the rAF loop only runs while enabled. */
+  debugFpsMeter: boolean;
 };
 
 const STORE_PATH = "nexis-settings.json";
@@ -253,6 +256,7 @@ const KEY_ENABLED_PACKS = "enabledPacks";
 const KEY_PACKS_ONBOARDED = "packsOnboarded";
 const KEY_DEBUG_MEMORY_REPORT = "debugMemoryReport";
 const KEY_TERMINAL_RESTORE_SCROLLBACK = "terminalRestoreScrollback";
+const KEY_DEBUG_FPS_METER = "debugFpsMeter";
 
 export const TERMINAL_FONT_SIZE_DEFAULT = 14;
 export const TERMINAL_FONT_SIZE_MIN = 8;
@@ -339,6 +343,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   packsOnboarded: false,
   debugMemoryReport: false,
   terminalRestoreScrollback: true,
+  debugFpsMeter: false,
 };
 
 function mergeFormatters(
@@ -524,6 +529,8 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalRestoreScrollback:
       get<boolean>(KEY_TERMINAL_RESTORE_SCROLLBACK) ??
       DEFAULT_PREFERENCES.terminalRestoreScrollback,
+    debugFpsMeter:
+      get<boolean>(KEY_DEBUG_FPS_METER) ?? DEFAULT_PREFERENCES.debugFpsMeter,
   };
 }
 
@@ -824,6 +831,10 @@ export async function setTerminalRestoreScrollback(
   await writePref(KEY_TERMINAL_RESTORE_SCROLLBACK, value);
 }
 
+export async function setDebugFpsMeter(value: boolean): Promise<void> {
+  await writePref(KEY_DEBUG_FPS_METER, value);
+}
+
 export type PrefKey = keyof Preferences;
 
 /** Subscribe to changes from any window (settings → main). */
@@ -891,6 +902,7 @@ export async function onPreferencesChange(
     [KEY_PACKS_ONBOARDED]: "packsOnboarded",
     [KEY_DEBUG_MEMORY_REPORT]: "debugMemoryReport",
     [KEY_TERMINAL_RESTORE_SCROLLBACK]: "terminalRestoreScrollback",
+    [KEY_DEBUG_FPS_METER]: "debugFpsMeter",
   };
   // Same-process writes still fire onChange immediately; cross-window writes
   // arrive via the Tauri event emitted by writePref().

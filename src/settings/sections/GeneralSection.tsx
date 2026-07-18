@@ -38,6 +38,7 @@ import {
   setTerminalFontSize,
   setTerminalFontWeight,
   setDefaultShellPath,
+  setDebugFpsMeter,
   setDebugMemoryReport,
   setTerminalRestoreScrollback,
   setTerminalOsc52Clipboard,
@@ -95,6 +96,7 @@ export function GeneralSection() {
   const terminalFontWeight = usePreferencesStore((s) => s.terminalFontWeight);
   const defaultShellPath = usePreferencesStore((s) => s.defaultShellPath);
   const debugMemoryReport = usePreferencesStore((s) => s.debugMemoryReport);
+  const debugFpsMeter = usePreferencesStore((s) => s.debugFpsMeter);
   const terminalRestoreScrollback = usePreferencesStore(
     (s) => s.terminalRestoreScrollback,
   );
@@ -484,6 +486,15 @@ export function GeneralSection() {
 
       <div className="flex flex-col gap-2">
         <Label>Debug</Label>
+        <SettingRow
+          title="FPS meter"
+          description="Show a status-bar frame-rate readout (requestAnimationFrame-based, so it measures main-thread jank). Development aid; runs only while on."
+        >
+          <Switch
+            checked={debugFpsMeter}
+            onCheckedChange={(v) => void setDebugFpsMeter(v)}
+          />
+        </SettingRow>
         <SettingRow
           title="Memory self-report"
           description="Show a status-bar readout of renderer slots, WebGL contexts, scrollback, recording size, and AI-history size. Development aid; polls every 2 s while on."
