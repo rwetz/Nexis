@@ -58,6 +58,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -517,6 +518,22 @@ export function GeneralSection() {
 
       <div className="flex flex-col gap-2">
         <Label>Debug</Label>
+        <SettingRow
+          title="AI command audit log"
+          description="Every shell command the AI agent runs (or is blocked from running) is appended to an audit log you can review. The file is never truncated by the app."
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              void invoke<string>("ai_audit_log_path")
+                .then((p) => revealItemInDir(p))
+                .catch(() => {})
+            }
+          >
+            Reveal
+          </Button>
+        </SettingRow>
         <SettingRow
           title="Diagnostics bundle"
           description={

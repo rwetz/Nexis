@@ -19,8 +19,8 @@ pub mod bench_internals {
 }
 
 use modules::{
-    autosave, crash, dap, diagnostics, fs, git, http_share, lsp, ml, net, pty, python, recording,
-    secrets, shell, snapshots, workspace,
+    ai_audit, autosave, crash, dap, diagnostics, fs, git, http_share, lsp, ml, net, pty, python,
+    recording, secrets, shell, snapshots, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -258,6 +258,8 @@ pub fn run() {
             net::ai_http_stream,
             python::py_detect_envs,
             recording::save_cast_recording,
+            ai_audit::ai_audit_append,
+            ai_audit::ai_audit_log_path,
             autosave::editor_autosave_write,
             autosave::editor_autosave_read,
             autosave::editor_autosave_delete,

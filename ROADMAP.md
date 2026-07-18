@@ -88,7 +88,7 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 **Security**
 - [x] ~~Content-Security-Policy for the webview~~ — done: a strict CSP already shipped in the initial build (script-src 'self', remote images blocked); the remaining gap — blanket `https:` in `connect-src` — is now pinned to the updater endpoint (see CHANGELOG `[Unreleased]`). `frame-src http: https:` intentionally remains for the preview address bar; narrowing it to localhost is a product call, tracked nowhere until someone wants it.
 - 🟡 LAN-share auth + a persistent "🔴 Sharing on" status-bar indicator + a bound-interface picker; ensure secret redaction also covers the shared HTML/SSE/WS stream.
-- 🟡 AI command audit log — append-only record of every shell command the agent ran, paired with a "require approval for commands matching <pattern>" rule set.
+- [x] ~~AI command audit log~~ — done (see CHANGELOG `[Unreleased]`). The pattern-approval half was deliberately skipped: both agent shell tools already require approval unconditionally, so pattern rules only become meaningful if an auto-approve mode ever ships — build them together with that mode, not before.
 - [x] ~~Secret-redaction lint~~ — done: `redactSensitive()` now wired into the share stream and recordings, with a tripwire keeping the surfaces covered and a full pattern test suite (see CHANGELOG `[Unreleased]`). The "🔴 Sharing on" indicator / share-auth half of the LAN item is still open below.
 
 **Performance & resource safety**

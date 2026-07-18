@@ -6,6 +6,7 @@
 
 import { tool } from "ai";
 import { z } from "zod";
+import { auditAgentCommand } from "../lib/audit";
 import { native } from "../lib/native";
 import { checkShellCommand } from "../lib/security";
 import type { ToolContext } from "./context";
@@ -49,7 +50,10 @@ export function buildShellTools(ctx: ToolContext) {
       needsApproval: true,
       execute: async ({ command, timeout_secs }) => {
         const safety = checkShellCommand(command);
-        if (!safety.ok) return { error: safety.reason };
+        if (!safety.ok) {
+          auditAgentCommand({ kind: "blocked", command, reason: safety.reason });
+          return { error: safety.reason };
+        }
         const sid = ctx.getSessionId();
         if (!sid) return { error: "no active chat session" };
         try {
@@ -61,6 +65,14 @@ export function buildShellTools(ctx: ToolContext) {
             cwd,
             timeout_secs,
           );
+          auditAgentCommand({
+            kind: "run",
+            command,
+            cwd,
+            exit_code: r.exit_code,
+            timed_out: r.timed_out,
+            session: sid,
+          });
           return {
             command,
             stdout: r.stdout,
@@ -86,10 +98,20 @@ export function buildShellTools(ctx: ToolContext) {
       needsApproval: true,
       execute: async ({ command, cwd }) => {
         const safety = checkShellCommand(command);
-        if (!safety.ok) return { error: safety.reason };
+        if (!safety.ok) {
+          auditAgentCommand({ kind: "blocked", command, reason: safety.reason });
+          return { error: safety.reason };
+        }
         const effectiveCwd = cwd ?? ctx.getCwd();
         try {
           const handle = await native.shellBgSpawn(command, effectiveCwd);
+          auditAgentCommand({
+            kind: "background",
+            command,
+            cwd: effectiveCwd,
+            handle,
+            session: ctx.getSessionId() ?? undefined,
+          });
           return { handle, command, cwd: effectiveCwd, ok: true };
         } catch (e) {
           return { error: String(e) };
@@ -135,6 +157,7 @@ export function buildShellTools(ctx: ToolContext) {
       execute: async ({ handle }) => {
         try {
           await native.shellBgKill(handle);
+          auditAgentCommand({ kind: "kill", handle });
           return { handle, ok: true };
         } catch (e) {
           return { error: String(e) };

@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+pub mod ai_audit;
 pub mod autosave;
 pub mod crash;
 pub mod dap;
