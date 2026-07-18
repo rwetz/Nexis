@@ -9,6 +9,7 @@ pub(crate) mod da_filter;
 mod job;
 mod session;
 pub(crate) mod shell_init;
+mod watchdog;
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};

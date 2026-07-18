@@ -16,6 +16,7 @@ use tauri::ipc::{Channel, Response};
 
 use super::da_filter::DaFilter;
 use super::shell_init;
+use super::watchdog;
 use crate::modules::workspace::WorkspaceEnv;
 
 // Flusher coalesces a short window after first-byte arrival so we send chunks,
@@ -244,11 +245,18 @@ pub fn spawn(
         })
         .map_err(|e| format!("spawn pty writer thread: {e}"))?;
 
+    // Watchdog sentinels: flipped when the reader/flusher thread exits for
+    // any reason, panic included (pitfall #8 defense-in-depth — see watchdog.rs).
+    let reader_finished = Arc::new(AtomicBool::new(false));
+    let flusher_finished = Arc::new(AtomicBool::new(false));
+
     let pending_r = pending.clone();
     let writer_for_da = writer.clone();
+    let reader_sentinel = reader_finished.clone();
     let reader_thread = thread::Builder::new()
         .name("nexis-pty-reader".into())
         .spawn(move || {
+            let _alive = watchdog::SetOnDrop(reader_sentinel);
             let mut buf = [0u8; READ_BUF];
             let mut filtered: Vec<u8> = Vec::with_capacity(READ_BUF);
             let mut da_filter = DaFilter::new();
@@ -300,9 +308,11 @@ pub fn spawn(
     let on_data_flush = on_data.clone();
     let pending_f = pending.clone();
     let done_f = done.clone();
+    let flusher_sentinel = flusher_finished.clone();
     thread::Builder::new()
         .name("nexis-pty-flusher".into())
         .spawn(move || {
+            let _alive = watchdog::SetOnDrop(flusher_sentinel);
             let (lock, cv) = &*pending_f;
             loop {
                 {
@@ -330,6 +340,15 @@ pub fn spawn(
             }
         })
         .map_err(|e| format!("spawn pty flusher thread: {e}"))?;
+
+    // The watchdog needs its own channel handle — it must be able to surface
+    // a notice precisely when the flusher (the normal sender) is dead.
+    watchdog::watch(
+        reader_finished,
+        flusher_finished,
+        done.clone(),
+        on_data.clone(),
+    );
 
     let on_data_exit = on_data;
     let pending_e = pending;

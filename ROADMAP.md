@@ -81,7 +81,7 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 
 **Reliability & correctness**
 - 🟡 Extend the panic-lint gate (`clippy::unwrap_used`/`expect_used`) from the security-critical command modules (net, secrets, recording) to the remaining `#[tauri::command]` modules, converting each production `unwrap`/`expect` to real error handling as it's enabled.
-- 🟡 PTY thread watchdog — detect a silently-dead reader/flusher/waiter thread (pitfall #8) via a heartbeat counter and surface "terminal stalled — reopen?" instead of an invisible hang.
+- [x] ~~PTY thread watchdog~~ — done, via thread-exit sentinels rather than heartbeats (a blocked-but-alive thread is healthy; only actual thread death is a stall — see CHANGELOG `[Unreleased]`).
 - 🟡 Windows startup self-test for the ConPTY path — open a hidden PTY, round-trip a sentinel, and warn if the #1 blank-terminal condition is present *before* the user hits it.
 - ✅ Graceful-degradation matrix — render a visible "X not installed → install with …" state for every missing external tool (LSP/DAP/formatters/git) instead of a silent no-op, with a test that asserts the degraded UI appears.
 
