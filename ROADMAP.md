@@ -89,7 +89,7 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 - [x] ~~Content-Security-Policy for the webview~~ — done: a strict CSP already shipped in the initial build (script-src 'self', remote images blocked); the remaining gap — blanket `https:` in `connect-src` — is now pinned to the updater endpoint (see CHANGELOG `[Unreleased]`). `frame-src http: https:` intentionally remains for the preview address bar; narrowing it to localhost is a product call, tracked nowhere until someone wants it.
 - 🟡 LAN-share auth + a persistent "🔴 Sharing on" status-bar indicator + a bound-interface picker; ensure secret redaction also covers the shared HTML/SSE/WS stream.
 - 🟡 AI command audit log — append-only record of every shell command the agent ran, paired with a "require approval for commands matching <pattern>" rule set.
-- 🟡 Secret-redaction lint — a test/util that scans outbound surfaces (logs, crash bundles, recordings, share stream) for API-key / `Authorization:`-shaped strings and refuses to emit them.
+- [x] ~~Secret-redaction lint~~ — done: `redactSensitive()` now wired into the share stream and recordings, with a tripwire keeping the surfaces covered and a full pattern test suite (see CHANGELOG `[Unreleased]`). The "🔴 Sharing on" indicator / share-auth half of the LAN item is still open below.
 
 **Performance & resource safety**
 (Derived from the 2026-07 Zed/terax research and the 2026-07-11 optimization sweep — full notes in git history, see the feature-backlog section above. The slot-reaping, alt-screen eviction, motion→CSS, Criterion harness, cargo-profile, and clippy-lint items that used to live here all shipped — see CHANGELOG `[Unreleased]`.)

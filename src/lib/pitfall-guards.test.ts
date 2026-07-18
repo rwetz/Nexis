@@ -169,4 +169,26 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
         "app zoom reaches the code (CLAUDE.md pitfall #15)",
     ).toBe(true);
   });
+
+  it("secret redaction: outbound surfaces route through redactSensitive", () => {
+    // The LAN share stream and saved recordings leave the machine (viewers,
+    // bug-report attachments). Key-shaped strings captured from terminal
+    // output must be scrubbed at these seams. If this fails, wire
+    // redactSensitive() back into the named call path — do not delete this.
+    const share = readSrc("modules/share/useShareServer.ts");
+    expect(
+      /http_share_update.*redactSensitive|redactSensitive\(html\)/s.test(share),
+      "useShareServer.update must pass html through redactSensitive() before http_share_update",
+    ).toBe(true);
+    expect(
+      /redactSensitive\(data\)/.test(share),
+      "useShareServer.pushStream must pass data through redactSensitive() before http_share_push_stream",
+    ).toBe(true);
+
+    const recording = readSrc("modules/terminal/lib/useRecording.ts");
+    expect(
+      /redactSensitive\(/.test(recording),
+      "useRecording's save path must scrub event text with redactSensitive() before save_cast_recording",
+    ).toBe(true);
+  });
 });

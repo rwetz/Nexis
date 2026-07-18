@@ -12,6 +12,7 @@
  */
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useRef, useState } from "react";
+import { redactSensitive } from "@/modules/ai/lib/redact";
 import { getSessionDimensions, registerRecordingHandler } from "./useTerminalSession";
 
 type CastEvent = [number, "o", string];
@@ -105,7 +106,14 @@ export function useRecording(leafId: number) {
       timestamp: startSec,
       title: "Nexis terminal recording",
     });
-    const lines = [header, ...state.events.map((e) => JSON.stringify(e))];
+    // Recordings get attached to bug reports and shared — key-shaped strings
+    // captured from terminal output are scrubbed before the file exists.
+    const lines = [
+      header,
+      ...state.events.map(([t, kind, text]) =>
+        JSON.stringify([t, kind, kind === "o" ? redactSensitive(text) : text]),
+      ),
+    ];
     const content = lines.join("\n") + "\n";
 
     try {

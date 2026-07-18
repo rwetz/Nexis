@@ -12,6 +12,7 @@
  */
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useRef, useState } from "react";
+import { redactSensitive } from "@/modules/ai/lib/redact";
 
 export type ShareServerStatus = "stopped" | "starting" | "running" | "error";
 
@@ -50,10 +51,13 @@ export function useShareServer(): UseShareServerReturn {
     }
   }, []);
 
+  // Everything leaving over the LAN share is redacted first — key-shaped
+  // strings in scrollback (an `export OPENAI_API_KEY=` earlier in the
+  // session, a token in command output) must never reach remote viewers.
   const update = useCallback(async (html: string) => {
     if (status !== "running") return;
     try {
-      await invoke("http_share_update", { html });
+      await invoke("http_share_update", { html: redactSensitive(html) });
     } catch {
       // Non-fatal — server might have been stopped externally
     }
@@ -61,7 +65,7 @@ export function useShareServer(): UseShareServerReturn {
 
   const pushStream = useCallback(async (data: string) => {
     try {
-      await invoke("http_share_push_stream", { data });
+      await invoke("http_share_push_stream", { data: redactSensitive(data) });
     } catch {
       // Ignore — server may be stopped
     }

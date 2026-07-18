@@ -34,6 +34,7 @@ export default defineConfig({
         "src/lib/path.ts",
         "src/lib/plugins/registry.ts",
         "src/modules/ai/lib/compact.ts",
+        "src/modules/ai/lib/redact.ts",
         "src/modules/ai/lib/security.ts",
         "src/modules/ai/tools/shell.ts",
         "src/modules/tabs/lib/mru.ts",
