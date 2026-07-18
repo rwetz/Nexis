@@ -16,6 +16,7 @@ import { useTerminalSession } from "./lib/useTerminalSession";
 import { useTerminalSuggestions } from "./lib/useTerminalSuggestions";
 import { useRecording } from "./lib/useRecording";
 import { TerminalSuggestionOverlay } from "./components/TerminalSuggestionOverlay";
+import { AiCommandBar } from "./components/AiCommandBar";
 
 export type TerminalPaneHandle = {
   write: (data: string) => void;
@@ -63,6 +64,8 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
     const { suggestion } = useTerminalSuggestions(leafId);
     const { isRecording, startRecording, stopAndSave } = useRecording(leafId);
     const [savedToast, setSavedToast] = useState<string | null>(null);
+    const [aiBarOpen, setAiBarOpen] = useState(false);
+    const lastCwdRef = useRef<string | null>(initialCwd ?? null);
 
     const session = useTerminalSession({
       leafId,
@@ -72,7 +75,10 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
       initialCwd,
       onSearchReady: (a) => onSearchReady?.(leafId, a),
       onExit: (c) => onExit?.(leafId, c),
-      onCwd: (c) => onCwd?.(leafId, c),
+      onCwd: (c) => {
+        lastCwdRef.current = c;
+        onCwd?.(leafId, c);
+      },
       onTitle: (t) => onTitle?.(leafId, t),
     });
 
@@ -81,6 +87,17 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
       const id = requestAnimationFrame(() => session.applyTheme());
       return () => cancelAnimationFrame(id);
     }, [resolvedMode, themeId, customThemes, session]);
+
+    // The natural-language command bar (App.tsx dispatches the event from
+    // the "terminal.aiCommand" shortcut with no leaf targeting; the visible
+    // active pane is the one that answers).
+    useEffect(() => {
+      if (!visible || !focused) return;
+      const handler = () => setAiBarOpen((v) => !v);
+      window.addEventListener("nexis:terminal-ai-command", handler);
+      return () =>
+        window.removeEventListener("nexis:terminal-ai-command", handler);
+    }, [visible, focused]);
 
     useImperativeHandle(
       ref,
@@ -157,6 +174,23 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
             text={suggestion.text}
             x={suggestion.x}
             y={suggestion.y}
+          />
+        )}
+
+        {aiBarOpen && visible && (
+          <AiCommandBar
+            cwd={lastCwdRef.current}
+            onInsert={(command) => {
+              // Insert only — no trailing newline; the user's Enter at the
+              // prompt is the run confirmation.
+              session.write(command);
+              setAiBarOpen(false);
+              session.focus();
+            }}
+            onClose={() => {
+              setAiBarOpen(false);
+              session.focus();
+            }}
           />
         )}
 

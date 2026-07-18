@@ -37,6 +37,7 @@ Per-tool policies (`toolApprovalPolicies` pref, Settings → Agents): `prompt` (
 - `lib/keyring.ts` — API keys in the OS keychain via `secrets_*`; cross-window change signal is `nexis://ai-keys-changed`
 - `lib/security.ts` — hardened path checks; keeps a **deliberate private basename** (do not consolidate into `lib/path.ts` — pitfall #12 exception)
 - `lib/compact.ts`, `lib/redact.ts`, `lib/sessions.ts`, `lib/slashCommands.ts`, `lib/todos.ts` — compaction, secret redaction, session persistence, slash commands, todo state
+- `lib/nlCommand.ts` — natural-language → command for the terminal's AI command bar (`terminal/components/AiCommandBar.tsx`, opened via the `terminal.aiCommand` shortcut → `nexis:terminal-ai-command` event). Insert-only contract: the parser rejects multi-line/control-char suggestions because the result is written into the PTY input line, where a stray `\r` would self-execute — keep `sanitizeCommand` strict
 - `store/` — five Zustand stores ([[zustand-stores]]); `chatStore.ts` is the big one
 - `components/AiInputBar.tsx` — composer; **never re-add `disabled={c.isBusy}`** (pitfall #5)
 

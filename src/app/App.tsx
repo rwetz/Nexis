@@ -1223,6 +1223,7 @@ export default function App() {
     { id: "settings.shortcuts",  label: "Open keyboard shortcuts",  category: "General", action: () => setShortcutsOpen(true) },
     { id: "window.new",          label: "New window",               category: "General", action: () => void openNewWindow() },
     { id: "ai.toggle",           label: "Toggle AI panel",          category: "AI",      action: togglePanelAndFocus },
+    { id: "terminal.aiCommand",  label: "AI command search",        category: "AI",      action: () => window.dispatchEvent(new CustomEvent("nexis:terminal-ai-command")), keywords: ["natural language", "generate command"] },
     { id: "view.zoomIn",         label: "Zoom in",                  category: "View",    action: zoomIn },
     { id: "view.zoomOut",        label: "Zoom out",                 category: "View",    action: zoomOut },
     { id: "view.zoomReset",      label: "Reset zoom",               category: "View",    action: zoomReset },
@@ -1281,6 +1282,8 @@ export default function App() {
       "search.focus": () => searchInlineRef.current?.focus(),
       "ai.toggle": togglePanelAndFocus,
       "ai.askSelection": askFromSelection,
+      "terminal.aiCommand": () =>
+        window.dispatchEvent(new CustomEvent("nexis:terminal-ai-command")),
       "repl.sendSelection": () => {
         const sel = captureActiveSelection();
         if (sel) {

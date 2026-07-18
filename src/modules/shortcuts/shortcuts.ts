@@ -43,6 +43,7 @@ export type ShortcutId =
   | "view.zenMode"
   | "ai.toggle"
   | "ai.askSelection"
+  | "terminal.aiCommand"
   | "repl.sendSelection"
   | "refactor.captureSelection"
   | "bookmark.toggle"
@@ -255,6 +256,12 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Ask AI about selection",
     group: "AI",
     defaultBindings: [{ [MOD_PROP]: true, key: "l" }],
+  },
+  {
+    id: "terminal.aiCommand",
+    label: "AI command search (natural language → command)",
+    group: "AI",
+    defaultBindings: [{ [MOD_PROP]: true, shift: true, key: "i" }],
   },
   {
     id: "repl.sendSelection",
