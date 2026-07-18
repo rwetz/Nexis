@@ -97,7 +97,7 @@ Reliability, security, and performance ideas tracked for the "bulletproof and so
 - 🟡 Snapshot-pattern refactors — replace lock-shaped sharing with cheap `Arc` copy-on-write snapshots for git status recomputation and file-tree diffing; also the design basis for persistent-session scrollback. Zed's rule of thumb: if a background task needs a `Mutex` on the hot path, the data structure is wrong — make reads snapshot-cheap instead (our poisoned-mutex pitfalls #8/#9 are downstream symptoms of lock-shaped sharing).
 - [x] ~~Large-file editor mode~~ — done (see CHANGELOG `[Unreleased]`).
 - [x] ~~Opt-in memory self-report~~ — done (see CHANGELOG `[Unreleased]`).
-- ✅ Minimap `<canvas>` rewrite — drive it from a CodeMirror `updateListener`, dropping the 200 ms interval and per-line DOM entirely; the cheap memoization fix shipped in 1.20.6, this is the nice-to-have on top.
+- [x] ~~Minimap `<canvas>` rewrite~~ — done (see CHANGELOG `[Unreleased]`).
 - [x] ~~`vscodeFolderIcons.json` ships as a JS module~~ — done, both icon JSONs now fetch as static assets (see CHANGELOG `[Unreleased]`).
 - 🟡 React Compiler evaluation — try `babel-plugin-react-compiler` in the Vite react plugin (React 19 already in place); potentially large win for a UI that re-renders on terminal title/cwd churn, medium risk around CodeMirror/xterm ref patterns. Run `npx react-compiler-healthcheck` first.
 - 🟡 Native FS watcher — `notify` crate emitting a debounced `nexis://fs-changed` event, replacing the explorer's 3 s `tree.refresh` poll; weigh ~200–300 KB against the binary budget.

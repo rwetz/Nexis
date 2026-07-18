@@ -28,7 +28,7 @@ import {
 } from "react";
 import { RenameDialog } from "./RenameDialog";
 import { CodeActionDialog } from "./CodeActionDialog";
-import { Minimap } from "./Minimap";
+import { Minimap, minimapUpdateExtension } from "./Minimap";
 import type { LspRange } from "@/modules/lsp/protocol";
 import { useChatStore } from "@/modules/ai/store/chatStore";
 import { Compartment, EditorSelection, Prec } from "@codemirror/state";
@@ -386,6 +386,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           close: () => onCloseRef.current?.(),
         })),
         ...buildSharedExtensions(),
+        // Pushes doc/geometry changes to the mounted Minimap (module-level
+        // const, so the extensions array keeps its stable identity).
+        minimapUpdateExtension,
         lintCompartment.of(syntaxLinter()),
         // LSP seed (filled by activateLsp when view is ready)
         lspSeedExtension(lspCompartmentRef.current),

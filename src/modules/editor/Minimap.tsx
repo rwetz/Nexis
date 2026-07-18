@@ -5,22 +5,34 @@
 // ╚══════════════════════════════════════╝
 
 import { cn } from "@/lib/utils";
-import type { EditorView } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 import type { Text } from "@codemirror/state";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type Props = {
   view: EditorView | undefined;
   className?: string;
 };
 
-type MinimapState = {
-  /** Stable reference while the document is unchanged — keyed on doc identity
-   * so the memoized line strips skip re-rendering on scroll/interval ticks. */
-  lines: string[];
-  viewportTop: number;
-  viewportHeight: number;
-};
+// ─── Update plumbing ───────────────────────────────────────────────────────
+// The minimap is a DOM sibling of the editor, not an extension — so doc
+// changes are delivered through this updateListener, which EditorPane
+// includes in its (identity-stable) extensions array. Each mounted Minimap
+// registers a callback; with none mounted the listener is a no-op. This
+// replaces the old 200 ms polling interval outright.
+
+const listeners = new Set<(view: EditorView) => void>();
+
+export const minimapUpdateExtension = EditorView.updateListener.of((u) => {
+  if (u.docChanged || u.geometryChanged) {
+    for (const l of listeners) l(u.view);
+  }
+});
+
+// ─── Rendering ─────────────────────────────────────────────────────────────
+
+const WIDTH_PX = 52;
+const CONTENT_MAX_PX = 48;
 
 function extractLines(doc: Text): string[] {
   const lines: string[] = [];
@@ -30,134 +42,175 @@ function extractLines(doc: Text): string[] {
   return lines;
 }
 
-function lineClass(text: string): string {
-  const trimmed = text.trim();
-  if (!trimmed) return "";
-  if (trimmed.startsWith("//") || trimmed.startsWith("#") || trimmed.startsWith("*")) {
-    return "bg-muted-foreground/25";
-  }
-  return "bg-foreground/30";
+function isCommentish(trimmed: string): boolean {
+  return (
+    trimmed.startsWith("//") || trimmed.startsWith("#") || trimmed.startsWith("*")
+  );
 }
 
 /**
- * Line strips, memoized on the `lines` array reference. Extracting every doc
- * line and diffing one div per line used to happen 5×/sec on an interval AND
- * per scroll event — on a 10k-line file that was the biggest editor-side CPU
- * sink. Now it only happens when the document actually changes.
+ * Minimap as a single `<canvas>`: one fillRect per non-empty line, redrawn
+ * only when the document (or geometry) actually changes, via
+ * `minimapUpdateExtension`. Replaces the per-line-div implementation and its
+ * 200 ms interval — on a 10k-line file that was 10k DOM nodes diffed on a
+ * timer; now it's one canvas repaint on edit and zero work at idle. The
+ * viewport indicator stays a div and moves on scroll without repainting.
  */
-const MinimapLines = memo(function MinimapLines({
-  lines,
-  lineHeightPx,
-}: {
-  lines: string[];
-  lineHeightPx: number;
-}) {
-  return (
-    <div className="absolute inset-0 flex flex-col py-0.5">
-      {lines.map((text, i) => {
-        const maxWidth = 48;
-        const cls = lineClass(text);
-        if (!cls) {
-          return (
-            <div key={i} style={{ height: `${lineHeightPx}px` }} />
-          );
-        }
-        const contentWidth = Math.min(maxWidth, Math.max(2, (text.trim().length / 80) * maxWidth));
-        return (
-          <div
-            key={i}
-            className={cn("rounded-[1px]", cls)}
-            style={{ height: `${lineHeightPx}px`, width: `${contentWidth}px`, marginLeft: "2px" }}
-          />
-        );
-      })}
-    </div>
-  );
-});
-
 export function Minimap({ view, className }: Props) {
-  const [state, setState] = useState<MinimapState | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDragging = useRef(false);
   const lastDocRef = useRef<Text | null>(null);
   const linesRef = useRef<string[]>([]);
+  const drawRaf = useRef<number | null>(null);
   const scrollRaf = useRef<number | null>(null);
+  const [viewport, setViewport] = useState<{ top: number; h: number } | null>(
+    null,
+  );
 
-  const refresh = useCallback(() => {
-    if (!view) return;
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!view || !canvas || !container) return;
     const doc = view.state.doc;
     if (lastDocRef.current !== doc) {
       lastDocRef.current = doc;
       linesRef.current = extractLines(doc);
     }
     const lines = linesRef.current;
+    const cssH = Math.max(container.clientHeight, 1);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(WIDTH_PX * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.width = `${WIDTH_PX}px`;
+    canvas.style.height = `${cssH}px`;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, WIDTH_PX, cssH);
+    // Resolve the theme's foreground through the container so the strip
+    // colors follow light/dark and custom themes without any config.
+    const fg = getComputedStyle(container).color;
+    const lineHeight = Math.max(1, Math.min(3, 400 / Math.max(lines.length, 1)));
+    const stripHeight = Math.max(lineHeight * 0.8, 1);
+    ctx.fillStyle = fg;
+    for (let i = 0; i < lines.length; i++) {
+      const y = 2 + i * lineHeight;
+      if (y > cssH) break;
+      const trimmed = lines[i].trim();
+      if (!trimmed) continue;
+      ctx.globalAlpha = isCommentish(trimmed) ? 0.25 : 0.3;
+      const w = Math.min(
+        CONTENT_MAX_PX,
+        Math.max(2, (trimmed.length / 80) * CONTENT_MAX_PX),
+      );
+      ctx.fillRect(2, y, w, stripHeight);
+    }
+    ctx.globalAlpha = 1;
+  }, [view]);
+
+  const scheduleDraw = useCallback(() => {
+    if (drawRaf.current !== null) return;
+    drawRaf.current = requestAnimationFrame(() => {
+      drawRaf.current = null;
+      draw();
+    });
+  }, [draw]);
+
+  const updateViewport = useCallback(() => {
+    if (!view) return;
     const dom = view.scrollDOM;
-    const totalHeight = Math.max(dom.scrollHeight, 1);
-    const viewportTop = dom.scrollTop / totalHeight;
-    const viewportHeight = Math.min(1, dom.clientHeight / totalHeight);
-    // Bail out with the previous state object when nothing changed so the
-    // idle interval tick doesn't re-render at all.
-    setState((prev) =>
-      prev &&
-      prev.lines === lines &&
-      prev.viewportTop === viewportTop &&
-      prev.viewportHeight === viewportHeight
-        ? prev
-        : { lines, viewportTop, viewportHeight },
+    const total = Math.max(dom.scrollHeight, 1);
+    const top = dom.scrollTop / total;
+    const h = Math.min(1, dom.clientHeight / total);
+    setViewport((prev) =>
+      prev && prev.top === top && prev.h === h ? prev : { top, h },
     );
   }, [view]);
 
   useEffect(() => {
     if (!view) return;
     lastDocRef.current = null;
-    refresh();
-    // Interval catches doc edits (there is no update-listener hook from here);
-    // it's cheap now — line extraction only runs when the doc reference moved.
-    const interval = setInterval(refresh, 200);
-    // Scroll only moves the viewport indicator; coalesce to one refresh per
-    // frame instead of one per scroll event.
+    draw();
+    updateViewport();
+
+    // Doc/geometry changes arrive from the CM updateListener; filter to this
+    // pane's view (the extension is shared by every editor pane).
+    const onUpdate = (v: EditorView) => {
+      if (v !== view) return;
+      scheduleDraw();
+      updateViewport();
+    };
+    listeners.add(onUpdate);
+
+    // Scroll only moves the indicator — one state write per frame, no repaint.
     const onScroll = () => {
       if (scrollRaf.current !== null) return;
       scrollRaf.current = requestAnimationFrame(() => {
         scrollRaf.current = null;
-        refresh();
+        updateViewport();
       });
     };
     view.scrollDOM.addEventListener("scroll", onScroll, { passive: true });
+
+    // Container resize (pane splits, window resize) rescales the canvas.
+    const ro = new ResizeObserver(() => {
+      scheduleDraw();
+      updateViewport();
+    });
+    if (containerRef.current) ro.observe(containerRef.current);
+
     return () => {
-      clearInterval(interval);
+      listeners.delete(onUpdate);
+      view.scrollDOM.removeEventListener("scroll", onScroll);
+      ro.disconnect();
+      if (drawRaf.current !== null) {
+        cancelAnimationFrame(drawRaf.current);
+        drawRaf.current = null;
+      }
       if (scrollRaf.current !== null) {
         cancelAnimationFrame(scrollRaf.current);
         scrollRaf.current = null;
       }
-      view.scrollDOM.removeEventListener("scroll", onScroll);
     };
-  }, [view, refresh]);
+  }, [view, draw, scheduleDraw, updateViewport]);
 
-  const scrollTo = useCallback((e: React.MouseEvent<HTMLDivElement> | MouseEvent) => {
-    if (!view || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-    const totalHeight = view.scrollDOM.scrollHeight;
-    view.scrollDOM.scrollTop = ratio * totalHeight - view.scrollDOM.clientHeight / 2;
-    refresh();
-  }, [view, refresh]);
+  const scrollTo = useCallback(
+    (e: React.MouseEvent<HTMLDivElement> | MouseEvent) => {
+      if (!view || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const ratio = Math.max(
+        0,
+        Math.min(1, (e.clientY - rect.top) / rect.height),
+      );
+      const totalHeight = view.scrollDOM.scrollHeight;
+      view.scrollDOM.scrollTop =
+        ratio * totalHeight - view.scrollDOM.clientHeight / 2;
+      updateViewport();
+    },
+    [view, updateViewport],
+  );
 
-  const onMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    isDragging.current = true;
-    scrollTo(e);
+  const onMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      isDragging.current = true;
+      scrollTo(e);
 
-    const onMove = (ev: MouseEvent) => { if (isDragging.current) scrollTo(ev); };
-    const onUp = () => { isDragging.current = false; window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-  }, [scrollTo]);
+      const onMove = (ev: MouseEvent) => {
+        if (isDragging.current) scrollTo(ev);
+      };
+      const onUp = () => {
+        isDragging.current = false;
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    [scrollTo],
+  );
 
-  if (!state) return null;
-
-  const { lines, viewportTop, viewportHeight } = state;
-  const lineCount = Math.max(lines.length, 1);
-  const lineHeightPx = Math.max(1, Math.min(3, 400 / lineCount));
+  if (!view) return null;
 
   return (
     <div
@@ -169,16 +222,18 @@ export function Minimap({ view, className }: Props) {
       )}
       onMouseDown={onMouseDown}
     >
-      <MinimapLines lines={lines} lineHeightPx={lineHeightPx} />
+      <canvas ref={canvasRef} className="absolute inset-0" />
 
       {/* Viewport indicator */}
-      <div
-        className="absolute left-0 right-0 border border-primary/30 bg-primary/[0.08] pointer-events-none"
-        style={{
-          top: `${viewportTop * 100}%`,
-          height: `${viewportHeight * 100}%`,
-        }}
-      />
+      {viewport && (
+        <div
+          className="absolute left-0 right-0 border border-primary/30 bg-primary/[0.08] pointer-events-none"
+          style={{
+            top: `${viewport.top * 100}%`,
+            height: `${viewport.h * 100}%`,
+          }}
+        />
+      )}
     </div>
   );
 }
