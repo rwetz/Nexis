@@ -23,7 +23,7 @@ Terminal sessions end to end: frontend xterm.js ↔ Tauri IPC ↔ Rust PTY threa
 - PowerShell launches via `-Command` + `NEXIS_PWSH_PROFILE` env var, never `-File`
 - Shared PTY mutexes recover from poison with `unwrap_or_else(|e| e.into_inner())` — no bare `.unwrap()`
 - No `.unwrap()`/`.expect()` on the drop-thread spawn path
-- Input goes through a per-session `nexis-pty-writer` thread fed by a FIFO channel (`Session.write_tx`); `pty_write` only enqueues. Keep it that way: a direct `write_all` in the command blocks the main thread when the child stops reading (Ctrl+S), and a `spawn_blocking` per write can reorder rapid keystrokes — the channel is what guarantees byte order.
+- Input goes through a per-session `nexis-pty-writer` thread fed by a FIFO channel (`Session.write_tx`); `pty_write` only enqueues. Keep it that way: a direct `write_all` in the command blocks the main thread when the child stops reading (Ctrl+S), and a `spawn_blocking` per write can reorder rapid keystrokes — the channel is what guarantees byte order. Device-query replies (DA/DSR/CPR) that xterm generates frontend-side ride the same `onData` → `pty_write` path, so they can't interleave with keystrokes — as long as `pty_write` stays sync and pty-bridge stays the only invoke site, both tripwired (`pty_write_stays_sync_and_enqueue_only` in pitfall_invariants.rs; `pty_write` confinement in pitfall-guards.test.ts).
 
 ## cwd tracking when integration is missing (2026-07)
 

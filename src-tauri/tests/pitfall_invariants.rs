@@ -269,6 +269,52 @@ fn heavy_commands_stay_async() {
     }
 }
 
+/// Hardening backlog (2026-07) — PTY input byte order. xterm.js emits
+/// frontend-generated device-query replies (DA/DSR/CPR cursor reports) through
+/// the same `onData` stream as user keystrokes, and every write reaches Rust
+/// as an ordinary `pty_write` call. Order on the PTY therefore rests on two
+/// properties of `pty_write`, both invisible to a unit test:
+/// (a) it stays a **sync** command — Tauri executes sync commands on the main
+///     thread in IPC arrival order, while async commands run concurrently and
+///     two rapid writes could enqueue reordered;
+/// (b) it only **enqueues** to `Session.write_tx` — the single per-session
+///     `nexis-pty-writer` thread is what serializes bytes onto the PTY.
+/// Upstream terax hit exactly this reply-vs-keystroke interleaving class in
+/// July 2026 (their #1004); Nexis is immune only while both properties hold.
+/// (The frontend half — `pty_write` invoked only from pty-bridge.ts — is
+/// guarded in src/lib/pitfall-guards.test.ts.)
+#[test]
+fn pty_write_stays_sync_and_enqueue_only() {
+    let module = read_src("modules/pty/mod.rs");
+    assert!(
+        !production_code(&module).contains("pub async fn pty_write("),
+        "pty_write must stay a sync command — async commands run concurrently, so two \
+         rapid writes (keystrokes, DA/DSR/CPR query replies) can reach the writer \
+         channel out of order"
+    );
+    let body = fn_body(&module, "pub fn pty_write(", "pty/mod.rs");
+    assert!(
+        body.contains("write_tx.send("),
+        "pty_write must enqueue to Session.write_tx — the per-session writer thread is \
+         what guarantees byte order on the PTY"
+    );
+    // Comment lines don't count — the function's own comment explains *why*
+    // spawn_blocking is banned, which must not trip the ban itself.
+    let code_only: String = body
+        .lines()
+        .filter(|l| !l.trim_start().starts_with("//"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    for banned in ["spawn_blocking", "thread::spawn", "write_all"] {
+        assert!(
+            !code_only.contains(banned),
+            "pty_write must not use {banned}: a direct write can block the main thread \
+             (Ctrl+S flow control) and a per-write task can reorder rapid writes — \
+             enqueue to the writer channel only"
+        );
+    }
+}
+
 /// CLAUDE.md pitfall #8 — these subsystems share mutexes/RwLocks between
 /// reader threads and Tauri command handlers; a bare `.unwrap()` on a lock
 /// turns one panicked thread into a permanently dead subsystem (silent

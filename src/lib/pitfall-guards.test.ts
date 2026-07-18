@@ -65,6 +65,27 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
     ).toEqual([]);
   });
 
+  // PTY input ordering (hardening backlog 2026-07): xterm emits device-query
+  // replies (DA/DSR/CPR) through the same onData stream as keystrokes, and
+  // byte order on the PTY holds because every write funnels through the one
+  // pty_write invoke in pty-bridge.ts into the per-session writer channel.
+  // A second invoke site is a parallel path that can interleave replies into
+  // the middle of user input — upstream terax's #1004 bug class. The Rust
+  // half (pty_write stays sync + enqueue-only) is guarded in
+  // src-tauri/tests/pitfall_invariants.rs.
+  it("pty ordering: pty_write is only invoked via pty-bridge.ts", () => {
+    const offenders = sourceFiles()
+      .filter(([, text]) => text.includes('"pty_write"'))
+      .map(([rel]) => rel)
+      .filter((rel) => rel !== "modules/terminal/lib/pty-bridge.ts");
+    expect(
+      offenders,
+      `these files invoke pty_write directly — write through the PtySession returned ` +
+        `by openPty() (pty-bridge.ts); a second write path can interleave ` +
+        `device-query replies (DA/DSR/CPR) with user keystrokes on the PTY`,
+    ).toEqual([]);
+  });
+
   // Pitfall #2: LazyStore.onChange only fires within the writing process.
   // Every preference write must go through writePref(), which mirrors the
   // change to other windows via a Tauri event. A raw store.set()+store.save()
