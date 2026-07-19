@@ -7,7 +7,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Terminal } from "@xterm/xterm";
 import {
+  adjacentPromptLine,
   createShellIntegrationState,
+  scrollToAdjacentPrompt,
   registerClipboardHandler,
   registerCwdHandler,
   registerPromptTracker,
@@ -508,5 +510,60 @@ describe("OSC 52 clipboard handler — write-only, pref-gated", () => {
     dispose();
     expect(handlers.get(52)).toBeUndefined();
     expect(writeClipboard).not.toHaveBeenCalled();
+  });
+});
+
+describe("prompt-block navigation", () => {
+  it("picks the nearest prompt above/below the viewport top", () => {
+    const lines = [0, 12, 40, 41, 90];
+    expect(adjacentPromptLine(lines, 41, -1)).toBe(40);
+    expect(adjacentPromptLine(lines, 41, 1)).toBe(90);
+    expect(adjacentPromptLine(lines, 0, -1)).toBeNull();
+    expect(adjacentPromptLine(lines, 90, 1)).toBeNull();
+  });
+
+  it("returns null at the ends rather than clamping", () => {
+    expect(adjacentPromptLine([], 10, -1)).toBeNull();
+    expect(adjacentPromptLine([5], 5, -1)).toBeNull();
+    expect(adjacentPromptLine([5], 5, 1)).toBeNull();
+  });
+
+  it("scrolls to the previous prompt and skips disposed markers", () => {
+    const { term, handlers } = makeFakeTerm();
+    const lines: number[] = [];
+    const markers: { line: number; isDisposed: boolean; dispose: () => void }[] = [];
+    (term as unknown as { registerMarker: () => unknown }).registerMarker = () => {
+      const m = { line: lines.length * 10, isDisposed: false, dispose: () => {} };
+      lines.push(m.line);
+      markers.push(m);
+      return m;
+    };
+    const scrollToLine = vi.fn();
+    Object.assign(term, {
+      scrollToLine,
+      buffer: { active: { viewportY: 25 } },
+    });
+
+    const tracker = registerPromptTracker(term);
+    handlers.get(133)?.("A"); // line 0
+    handlers.get(133)?.("A"); // line 10
+    handlers.get(133)?.("A"); // line 20
+
+    expect(scrollToAdjacentPrompt(term, -1)).toBe(true);
+    expect(scrollToLine).toHaveBeenLastCalledWith(20);
+
+    markers[2].isDisposed = true; // scrolled out of the buffer
+    expect(scrollToAdjacentPrompt(term, -1)).toBe(true);
+    expect(scrollToLine).toHaveBeenLastCalledWith(10);
+
+    tracker.dispose();
+  });
+
+  it("is a no-op without shell integration (no prompt markers)", () => {
+    const { term } = makeFakeTerm();
+    const scrollToLine = vi.fn();
+    Object.assign(term, { scrollToLine, buffer: { active: { viewportY: 0 } } });
+    expect(scrollToAdjacentPrompt(term, -1)).toBe(false);
+    expect(scrollToLine).not.toHaveBeenCalled();
   });
 });

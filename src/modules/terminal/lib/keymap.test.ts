@@ -5,7 +5,10 @@
 // ╚══════════════════════════════════════╝
 
 import { describe, expect, it } from "vitest";
-import { terminalWordNavigationSequence } from "./keymap";
+import {
+  terminalPromptJumpDirection,
+  terminalWordNavigationSequence,
+} from "./keymap";
 
 describe("terminalWordNavigationSequence", () => {
   it("maps Option+Left to readline word-left", () => {
@@ -77,6 +80,69 @@ describe("terminalWordNavigationSequence", () => {
         key: "a",
         code: "KeyA",
       }),
+    ).toBeNull();
+  });
+});
+
+describe("terminalPromptJumpDirection", () => {
+  const base = {
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    key: "ArrowUp",
+    code: "ArrowUp",
+  };
+
+  it("maps Ctrl+Shift+Up/Down to previous/next prompt off macOS", () => {
+    expect(
+      terminalPromptJumpDirection({ ...base, ctrlKey: true, shiftKey: true }, false),
+    ).toBe(-1);
+    expect(
+      terminalPromptJumpDirection(
+        { ...base, ctrlKey: true, shiftKey: true, key: "ArrowDown", code: "ArrowDown" },
+        false,
+      ),
+    ).toBe(1);
+  });
+
+  it("maps Cmd+Shift+Up/Down on macOS", () => {
+    expect(
+      terminalPromptJumpDirection({ ...base, metaKey: true, shiftKey: true }, true),
+    ).toBe(-1);
+    expect(
+      terminalPromptJumpDirection(
+        { ...base, metaKey: true, shiftKey: true, key: "ArrowDown", code: "ArrowDown" },
+        true,
+      ),
+    ).toBe(1);
+  });
+
+  it("ignores the other platform's modifier", () => {
+    expect(
+      terminalPromptJumpDirection({ ...base, metaKey: true, shiftKey: true }, false),
+    ).toBeNull();
+    expect(
+      terminalPromptJumpDirection({ ...base, ctrlKey: true, shiftKey: true }, true),
+    ).toBeNull();
+  });
+
+  it("requires Shift, so plain Ctrl+Up still reaches the PTY", () => {
+    expect(terminalPromptJumpDirection({ ...base, ctrlKey: true }, false)).toBeNull();
+  });
+
+  it("ignores chords with Alt and non-arrow keys", () => {
+    expect(
+      terminalPromptJumpDirection(
+        { ...base, ctrlKey: true, shiftKey: true, altKey: true },
+        false,
+      ),
+    ).toBeNull();
+    expect(
+      terminalPromptJumpDirection(
+        { ...base, ctrlKey: true, shiftKey: true, key: "k", code: "KeyK" },
+        false,
+      ),
     ).toBeNull();
   });
 });

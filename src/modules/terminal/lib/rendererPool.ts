@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { detectMonoFontFamily } from "@/lib/fonts";
+import { IS_MAC } from "@/lib/platform";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { buildTerminalTheme } from "@/styles/terminalTheme";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -14,7 +15,11 @@ import { SerializeAddon } from "@xterm/addon-serialize";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import type { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
-import { terminalWordNavigationSequence } from "./keymap";
+import {
+  terminalPromptJumpDirection,
+  terminalWordNavigationSequence,
+} from "./keymap";
+import { scrollToAdjacentPrompt } from "./osc-handlers";
 
 export const POOL_MAX_SIZE = 5;
 const FIT_DEBOUNCE_MS = 8;
@@ -337,6 +342,16 @@ function createSlot(): Slot {
       window.dispatchEvent(
         new CustomEvent("nexis:history-open", { detail: { leafId } }),
       );
+      return false;
+    }
+
+    // Prompt-block navigation. Swallowed even when the jump is a no-op (no
+    // shell integration, or already at the first/last prompt) so the chord
+    // never leaks to the PTY as a stray escape sequence.
+    const jump = terminalPromptJumpDirection(event, IS_MAC);
+    if (jump) {
+      event.preventDefault();
+      if (event.type === "keydown") scrollToAdjacentPrompt(slot.term, jump);
       return false;
     }
 

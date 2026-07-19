@@ -139,7 +139,7 @@ sequences, parsed in `terminal/lib/osc-handlers.ts`.
 | Sequence | Meaning | Used for |
 |---|---|---|
 | OSC 7 | current working directory | tab titles, new-tab cwd inheritance, git panel |
-| OSC 133 A/B/C/D | prompt start / command start / output start / command end + exit code | exit-status gutter, command boundaries, failure detection |
+| OSC 133 A/B/C/D | prompt start / command start / output start / command end + exit code | exit-status gutter, command boundaries, failure detection, prompt-block navigation |
 | OSC 0 / 2 | window title | live tab titles |
 | OSC 52 | clipboard | **write-only**, pref-gated (see below) |
 

@@ -58,6 +58,61 @@ export type PromptTracker = {
 };
 
 /**
+ * Every live prompt marker (OSC 133 A) for a terminal, in buffer order, so
+ * prompt-block navigation can jump between commands. Keyed by Terminal rather
+ * than threaded through the session so the renderer pool's key handler — which
+ * only ever has the `Terminal` — can reach it without new plumbing. A WeakMap
+ * means a reaped slot's entry goes away with the terminal.
+ *
+ * Markers are disposed by xterm when their line scrolls out of the buffer, so
+ * the array is pruned lazily on read rather than eagerly.
+ */
+const promptMarkers = new WeakMap<Terminal, IMarker[]>();
+
+/**
+ * Pick the prompt line to scroll to. `lines` need not be sorted or unique.
+ * `dir` is -1 for the previous (older) prompt above the viewport top, 1 for
+ * the next (newer) one below it. Returns null when there is nothing further
+ * in that direction — the caller leaves the viewport alone rather than
+ * clamping, so repeated presses at either end are a no-op, not a jitter.
+ */
+export function adjacentPromptLine(
+  lines: number[],
+  viewportY: number,
+  dir: -1 | 1,
+): number | null {
+  let best: number | null = null;
+  for (const line of lines) {
+    if (dir === -1) {
+      if (line < viewportY && (best === null || line > best)) best = line;
+    } else if (line > viewportY && (best === null || line < best)) best = line;
+  }
+  return best;
+}
+
+/**
+ * Scroll the terminal to the previous / next command prompt. Returns true if
+ * the viewport moved, so the caller can decide whether to swallow the key.
+ */
+export function scrollToAdjacentPrompt(term: Terminal, dir: -1 | 1): boolean {
+  const markers = promptMarkers.get(term);
+  if (!markers || markers.length === 0) return false;
+  // Prune here (rather than on every OSC 133 A) so the cost lands on the rare
+  // navigation keypress instead of on every prompt the shell draws.
+  const live = markers.filter((m) => !m.isDisposed);
+  if (live.length !== markers.length) promptMarkers.set(term, live);
+  const viewportY = term.buffer?.active?.viewportY ?? 0;
+  const target = adjacentPromptLine(
+    live.map((m) => m.line),
+    viewportY,
+    dir,
+  );
+  if (target === null) return false;
+  term.scrollToLine(target);
+  return true;
+}
+
+/**
  * Everything captured about a failed command for the AI "Explain" flow.
  * Captured at OSC 133 D time (buffer content is final for that command),
  * delivered when the user clicks the inline chip.
@@ -120,6 +175,7 @@ export function registerPromptTracker(
       // must persist down the scrollback. xterm disposes the marker for us
       // once it scrolls past the buffer, which tears down its decoration too.
       marker = term.registerMarker(0);
+      if (marker) recordPromptMarker(term, marker);
       disposeCommandMarkers();
     } else if (data.startsWith("B")) {
       // OSC 133 B — command begins. From here on, treat all output as
@@ -167,11 +223,33 @@ export function registerPromptTracker(
       d.dispose();
       for (const dec of decorations.slice()) dec.dispose();
       decorations.length = 0;
+      // Only drop our navigation index — the markers themselves belong to the
+      // terminal (their exit decorations may still be on screen) and xterm
+      // disposes them when they scroll out.
+      promptMarkers.delete(term);
       marker?.dispose();
       marker = null;
       disposeCommandMarkers();
     },
   };
+}
+
+/**
+ * Cap on retained prompt markers. Well above any plausible visible scrollback
+ * (xterm's default is 1000 lines and a prompt costs at least one), so it only
+ * bounds the pathological case of a huge `scrollback` setting.
+ */
+const MAX_PROMPT_MARKERS = 2_000;
+
+function recordPromptMarker(term: Terminal, marker: IMarker): void {
+  const markers = promptMarkers.get(term);
+  if (!markers) {
+    promptMarkers.set(term, [marker]);
+    return;
+  }
+  markers.push(marker);
+  if (markers.length > MAX_PROMPT_MARKERS)
+    markers.splice(0, markers.length - MAX_PROMPT_MARKERS);
 }
 
 /** Exit code from an OSC 133 `D` payload ("D", "D;0", "D;1;…"). Missing → 0. */
