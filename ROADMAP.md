@@ -39,6 +39,55 @@ The complete, versioned history of every shipped feature lives in **[CHANGELOG.m
 
 ---
 
+## Custom feature requests (top priority)
+
+Owner-requested work, ahead of everything below it. These are handed out **one at a time** as normal
+requests — each bullet is scoped to stand alone as a single task, so pick one, finish it, changelog it,
+and stop. Don't batch them.
+
+- [ ] **btop-style resource analyzer** — a real system-resource panel: CPU (per-core), memory, swap, disk
+  I/O, network throughput, and a sortable process table with kill/signal actions. Live-updating charts in
+  the btop idiom (braille/block sparklines, not a dashboard of gauges). Sampling belongs in Rust behind a
+  `sysinfo`-class crate with a polling command, not a shell-out to `btop` — check the binary-size budget
+  before committing to the dependency. Pairs with the existing `processes` module rather than replacing
+  it; decide up front whether this absorbs that panel or sits beside it.
+
+- [ ] **Lumen ↔ Nexis integration** — cross-compatibility between Lumen and Nexis: shared/portable
+  config and theme formats, launching one from the other, and a defined handoff for workspace and session
+  state. Start with a written interop contract (what's shared, what's owned by which app, what the
+  versioning story is) before writing code — this is a design task first and an implementation task
+  second.
+
+- [ ] **Completely fresh theme set** — replace the inherited terax themes outright rather than recoloring
+  them. New named themes, original palettes, designed as a set with a consistent contrast ramp; verify
+  legibility for terminal ANSI colors, editor syntax, and diff view in each. Keep the `.nexis-theme`
+  custom-theme format and live preview working throughout. Part of the visual-identity split below.
+
+- [ ] **New icon set** — app icon (all platform sizes/formats, including the Windows installer and
+  context-menu branding) plus in-app iconography wherever terax-derived marks remain. Original artwork;
+  audit `public/` and the Tauri bundle config for every place the old assets are referenced.
+
+- [ ] **SignPath.io code signing for Windows** — get Windows builds signed so SmartScreen and Defender
+  stop blocking installs. Includes: SignPath project/OSS-sponsorship setup, wiring the signing step into
+  the release workflow for the NSIS and MSI artifacts, and confirming a clean download-and-install on a
+  fresh Windows VM. Largely external/account work — the blocking step is the SignPath approval, so start
+  that early.
+
+- [x] **Proper `/docs` folder** — done: `docs/` now holds a top-level index, `docs/architecture/` with
+  five prose guides (two-process model, PTY & shell integration, renderer pool, AI subsystem, security
+  model), and the existing `docs/vault/`. README explains the split and how to open the vault in Obsidian.
+  `ML_LAB_GUIDE.md` and `ML_SUITE.md` moved out of the repo root into `docs/` too.
+  *Remaining follow-up:* port over anything still worth keeping from terax's own docs that Nexis hasn't
+  documented independently.
+
+- [ ] **Ongoing: visual differentiation from terax** — a standing item, not a one-shot. Nexis should not
+  read as a reskin. Sweep the UI surface for inherited layout, spacing, motion, and component idioms and
+  make deliberate choices instead of default-inherited ones. Track what's been re-done so this doesn't
+  get re-litigated; the credit in the README stays regardless — differentiation is about identity, not
+  about hiding the lineage.
+
+---
+
 ## Up next
 
 - [ ] **Expansion packs — core + opt-in feature surface** — the sidebar's ~24 panels split into a fixed core (terminal, editor, Files, Recent Files, Source Control, AI chat via API) plus toggleable packs (navigation-plus, code-tools, ai-extras, dev-tools, ml-lab, advanced). Enablement gating, not installation — nothing is downloaded except the future nexis-ml flow. Taxonomy and decisions in `docs/vault/decisions/expansion-packs.md`; taxonomy source of truth in `src/lib/packs.ts`.
