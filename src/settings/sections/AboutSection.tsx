@@ -75,7 +75,7 @@ export function AboutSection() {
       <SectionHeader title="About" description="" />
 
       <div className="flex items-center gap-4 rounded-xl border border-border/60 bg-card/60 p-5">
-        <img src="/logo (1) (1).png" alt="Nexis" className="size-12" draggable={false} />
+        <img src="/nexis-mark.svg" alt="Nexis" className="size-12" draggable={false} />
         <div className="flex min-w-0 flex-col">
           <span className="text-[15px] font-semibold tracking-tight">
             {name}

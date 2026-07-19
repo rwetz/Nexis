@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 export { ThemeProvider, useTheme, type Theme, type ThemeModePref } from "./ThemeProvider";
-export { listBuiltinThemes, getBuiltinTheme, getDefaultTheme } from "./themes";
+export { listBuiltinThemes, listNexisThemes, listCommunityThemes, getBuiltinTheme, getDefaultTheme, migrateThemeId } from "./themes";
 export { validateTheme, type ValidationResult } from "./validateTheme";
 export { parseThemeFile, writeThemeFile, deleteThemeFile, themeFilePath, emitThemeEdit, onThemeEdit, isThemeFilePath, starterTheme, type ThemeEditRequest } from "./themeFiles";
 export { saveCustomTheme, deleteCustomTheme, listCustomThemes, onCustomThemesChange } from "./customThemes";

@@ -6,16 +6,20 @@
 
 /** Per-theme accent colors for the AnimatedFolder component. */
 const FOLDER_COLORS: Record<string, { dark: string; light: string }> = {
+  // Nexis themes — each entry is the theme's own `primary`.
   "nexis-default": { dark: "#5227FF", light: "#4318D6" },
-  "claude":        { dark: "#d97757", light: "#c15f3c" },
+  "halcyon":       { dark: "#b3a0ff", light: "#6e4fc1" },
+  "meridian":      { dark: "#81b2ff", light: "#2865c3" },
+  "cinder":        { dark: "#8bb7db", light: "#446d8f" },
+  "aurelian":      { dark: "#e5a323", light: "#8b6000" },
+  "thicket":       { dark: "#68ca80", light: "#0a7e3a" },
+  "vermillion":    { dark: "#ff8987", light: "#b3363d" },
+  // Community themes.
   "tokyo-night":   { dark: "#7aa2f7", light: "#4B80E8" },
-  "nord":          { dark: "#81a1c1", light: "#5e81ac" },
-  "tide":          { dark: "#6cb6b0", light: "#3d8f89" },
-  "sage":          { dark: "#8aaf60", light: "#5d7a45" },
   "catppuccin":    { dark: "#cba6f7", light: "#8839ef" },
+  "nord":          { dark: "#81a1c1", light: "#5e81ac" },
   "gruvbox":       { dark: "#d79921", light: "#b57614" },
   "rose-pine":     { dark: "#c4a7e7", light: "#b4637a" },
-  "caffeine":      { dark: "#c08040", light: "#8b5e2b" },
 };
 
 const FALLBACK = FOLDER_COLORS["nexis-default"];

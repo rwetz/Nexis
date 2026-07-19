@@ -5,31 +5,53 @@
 // ╚══════════════════════════════════════╝
 
 import { DEFAULT_THEME_ID, type Theme } from "../types";
-import { caffeine } from "./caffeine";
-import { catppuccin } from "./catppuccin";
-import { claude } from "./claude";
-import { gruvbox } from "./gruvbox";
+import { aurelian } from "./aurelian";
+import { cinder } from "./cinder";
+import { catppuccin } from "./community/catppuccin";
+import { gruvbox } from "./community/gruvbox";
+import { nord } from "./community/nord";
+import { rosePine } from "./community/rose-pine";
+import { tokyoNight } from "./community/tokyo-night";
+import { halcyon } from "./halcyon";
+import { meridian } from "./meridian";
 import { nexisDefault } from "./nexis-default";
-import { nord } from "./nord";
-import { rosePine } from "./rose-pine";
-import { sage } from "./sage";
-import { tide } from "./tide";
-import { tokyoNight } from "./tokyo-night";
+import { thicket } from "./thicket";
+import { vermillion } from "./vermillion";
 
-const BUILTIN: Theme[] = [
+/**
+ * Nexis-designed themes. Every one is generated from a single shared OKLCH
+ * ramp (see `themes.contrast.test.ts` for the floors it guarantees), so the
+ * set holds one contrast profile across six different hue families and both
+ * light and dark. These are original palettes, not recolours of anything.
+ */
+const NEXIS: Theme[] = [
   nexisDefault,
-  claude,
-  tokyoNight,
-  nord,
-  tide,
-  sage,
-  catppuccin,
-  gruvbox,
-  rosePine,
-  caffeine,
+  halcyon,
+  meridian,
+  cinder,
+  aurelian,
+  thicket,
+  vermillion,
 ];
 
+/**
+ * Community palettes, kept as their authors defined them and credited to
+ * them. They deliberately do NOT follow the Nexis ramp — recolouring them to
+ * fit would defeat the point of shipping them.
+ */
+const COMMUNITY: Theme[] = [tokyoNight, catppuccin, nord, gruvbox, rosePine];
+
+const BUILTIN: Theme[] = [...NEXIS, ...COMMUNITY];
+
 const BY_ID = new Map<string, Theme>(BUILTIN.map((t) => [t.id, t]));
+
+export function listNexisThemes(): Theme[] {
+  return NEXIS;
+}
+
+export function listCommunityThemes(): Theme[] {
+  return COMMUNITY;
+}
 
 export function listBuiltinThemes(): Theme[] {
   return BUILTIN;
@@ -37,6 +59,22 @@ export function listBuiltinThemes(): Theme[] {
 
 export function getBuiltinTheme(id: string): Theme | undefined {
   return BY_ID.get(id);
+}
+
+/**
+ * Themes retired when the inherited set was replaced by the Nexis set, mapped
+ * to their closest survivor by hue. Without this a user sitting on one of the
+ * removed ids silently snaps back to `nexis-default` and loses their choice.
+ */
+const RETIRED: Record<string, string> = {
+  claude: "vermillion",
+  caffeine: "aurelian",
+  tide: "meridian",
+  sage: "thicket",
+};
+
+export function migrateThemeId(id: string): string {
+  return RETIRED[id] ?? id;
 }
 
 export function getDefaultTheme(): Theme {

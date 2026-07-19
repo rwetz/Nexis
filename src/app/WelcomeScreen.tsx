@@ -71,7 +71,7 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
             style={{ background: `radial-gradient(ellipse at center, ${folderColor}33 0%, transparent 70%)` }}
           />
           <img
-            src="/logo (1) (1).png"
+            src="/nexis-mark.svg"
             alt="Nexis"
             className="relative size-16 drop-shadow-lg"
             draggable={false}

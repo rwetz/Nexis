@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/logo (1) (1).png" width="128" height="128" alt="Nexis" />
+  <img src="public/nexis-mark.png" width="128" height="128" alt="Nexis" />
   <h1>Nexis</h1>
 
   <p><strong>Open-source lightweight cross-platform AI-native terminal (ADE)</strong></p>

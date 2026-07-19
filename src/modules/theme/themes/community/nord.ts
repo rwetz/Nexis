@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import type { Theme } from "../types";
+import type { Theme } from "../../types";
 
 const NORD_ANSI = [
   "#3b4252", "#bf616a", "#a3be8c", "#ebcb8b",
@@ -16,6 +16,7 @@ const NORD_ANSI = [
 export const nord: Theme = {
   id: "nord",
   name: "Nord",
+  author: "Arctic Ice Studio",
   description: "Arctic, north-bluish palette.",
   editorTheme: { dark: "nord", light: "xcode-light" },
   variants: {

@@ -23,14 +23,18 @@ import {
 } from "@/modules/theme/bgImageStore";
 import { deleteCustomTheme, saveCustomTheme } from "@/modules/theme/customThemes";
 import { deleteThemeFile, emitThemeEdit } from "@/modules/theme/themeFiles";
-import { getBuiltinTheme, listBuiltinThemes } from "@/modules/theme/themes";
+import {
+  getBuiltinTheme,
+  listCommunityThemes,
+  listNexisThemes,
+} from "@/modules/theme/themes";
 import { validateTheme } from "@/modules/theme/validateTheme";
 import { DEFAULT_THEME_ID } from "@/modules/theme/types";
 import type { Theme } from "@/modules/theme/types";
 import { Edit02Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { SectionHeader } from "../components/SectionHeader";
 
 // ─── Animated background option metadata ─────────────────────────────────────
@@ -77,15 +81,8 @@ function animBgPreview(id: AnimatedBgId, primary: string): string {
 
 export function ThemesSection() {
   const { themeId, setThemeId, resolvedMode, customThemes } = useTheme();
-  const builtinThemes = listBuiltinThemes();
-  const themes = useMemo(
-    () => [...builtinThemes, ...customThemes],
-    [builtinThemes, customThemes],
-  );
-  const customIds = useMemo(
-    () => new Set(customThemes.map((t) => t.id)),
-    [customThemes],
-  );
+  const nexisThemes = listNexisThemes();
+  const communityThemes = listCommunityThemes();
 
   const [importError, setImportError] = useState<string | null>(null);
   const [bgError, setBgError] = useState<string | null>(null);
@@ -248,86 +245,35 @@ export function ThemesSection() {
             {importError}
           </div>
         ) : null}
-        <div className="grid grid-cols-2 gap-2">
-          {themes.map((t) => {
-            const v =
-              t.variants[resolvedMode] ?? t.variants.dark ?? t.variants.light;
-            const c = v?.colors;
-            const swatchBg = c?.background ?? "var(--background)";
-            const swatchFg = c?.foreground ?? "var(--foreground)";
-            const swatchAccent = c?.primary ?? c?.accent ?? "var(--accent)";
-            const swatchMuted = c?.muted ?? "var(--muted)";
-            const selected = themeId === t.id;
-            const isCustom = customIds.has(t.id);
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setThemeId(t.id)}
-                className={cn(
-                  "group flex items-center gap-3 rounded-lg border p-2.5 text-left transition-all",
-                  selected
-                    ? "border-foreground/60 ring-1 ring-foreground/20"
-                    : "border-border/60 hover:border-border",
-                )}
-              >
-                <div
-                  className="flex h-10 w-14 shrink-0 items-center justify-center gap-1 rounded-md border border-border/40"
-                  style={{ background: swatchBg }}
-                >
-                  <span
-                    className="h-5 w-2 rounded-sm"
-                    style={{ background: swatchAccent }}
-                  />
-                  <span
-                    className="h-5 w-2 rounded-sm"
-                    style={{ background: swatchFg, opacity: 0.7 }}
-                  />
-                  <span
-                    className="h-5 w-2 rounded-sm"
-                    style={{ background: swatchMuted }}
-                  />
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-[12.5px] font-medium">
-                    {t.name}
-                  </span>
-                  {t.description ? (
-                    <span className="truncate text-[11px] text-muted-foreground">
-                      {t.description}
-                    </span>
-                  ) : null}
-                </div>
-                {isCustom ? (
-                  <span className="ml-1 flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
-                    <span
-                      role="button"
-                      aria-label={`Edit ${t.name}`}
-                      className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditTheme(t.id);
-                      }}
-                    >
-                      <HugeiconsIcon icon={Edit02Icon} size={12} strokeWidth={1.75} />
-                    </span>
-                    <span
-                      role="button"
-                      aria-label={`Remove ${t.name}`}
-                      className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void onRemoveCustomTheme(t.id);
-                      }}
-                    >
-                      ×
-                    </span>
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
+        <ThemeGroup
+          label="Nexis"
+          hint="Designed as a set — one contrast ramp across six hue families."
+          themes={nexisThemes}
+          themeId={themeId}
+          resolvedMode={resolvedMode}
+          onSelect={setThemeId}
+        />
+
+        <ThemeGroup
+          label="Community themes"
+          hint="Palettes by their original authors, kept as they designed them."
+          themes={communityThemes}
+          themeId={themeId}
+          resolvedMode={resolvedMode}
+          onSelect={setThemeId}
+        />
+
+        {customThemes.length > 0 ? (
+          <ThemeGroup
+            label="Your themes"
+            themes={customThemes}
+            themeId={themeId}
+            resolvedMode={resolvedMode}
+            onSelect={setThemeId}
+            onEdit={onEditTheme}
+            onRemove={(id) => void onRemoveCustomTheme(id)}
+          />
+        ) : null}
       </div>
 
       <div
@@ -499,6 +445,125 @@ export function ThemesSection() {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ThemeGroup({
+  label,
+  hint,
+  themes,
+  themeId,
+  resolvedMode,
+  onSelect,
+  onEdit,
+  onRemove,
+}: {
+  label: string;
+  hint?: string;
+  themes: Theme[];
+  themeId: string;
+  resolvedMode: "dark" | "light";
+  onSelect: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onRemove?: (id: string) => void;
+}) {
+  if (themes.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1.5 pt-1">
+      <div className="flex items-baseline gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
+        {hint ? (
+          <span className="truncate text-[10.5px] text-muted-foreground/70">
+            {hint}
+          </span>
+        ) : null}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {themes.map((t) => {
+          const v =
+            t.variants[resolvedMode] ?? t.variants.dark ?? t.variants.light;
+          const c = v?.colors;
+          const swatchBg = c?.background ?? "var(--background)";
+          const swatchFg = c?.foreground ?? "var(--foreground)";
+          const swatchAccent = c?.primary ?? c?.accent ?? "var(--accent)";
+          const swatchMuted = c?.muted ?? "var(--muted)";
+          const selected = themeId === t.id;
+          const subtitle = t.author
+            ? `by ${t.author}`
+            : (t.description ?? null);
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onSelect(t.id)}
+              title={t.description}
+              className={cn(
+                "group flex items-center gap-3 rounded-lg border p-2.5 text-left transition-all",
+                selected
+                  ? "border-foreground/60 ring-1 ring-foreground/20"
+                  : "border-border/60 hover:border-border",
+              )}
+            >
+              <div
+                className="flex h-10 w-14 shrink-0 items-center justify-center gap-1 rounded-md border border-border/40"
+                style={{ background: swatchBg }}
+              >
+                <span
+                  className="h-5 w-2 rounded-sm"
+                  style={{ background: swatchAccent }}
+                />
+                <span
+                  className="h-5 w-2 rounded-sm"
+                  style={{ background: swatchFg, opacity: 0.7 }}
+                />
+                <span
+                  className="h-5 w-2 rounded-sm"
+                  style={{ background: swatchMuted }}
+                />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-[12.5px] font-medium">
+                  {t.name}
+                </span>
+                {subtitle ? (
+                  <span className="truncate text-[11px] text-muted-foreground">
+                    {subtitle}
+                  </span>
+                ) : null}
+              </div>
+              {onEdit && onRemove ? (
+                <span className="ml-1 flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
+                  <span
+                    role="button"
+                    aria-label={`Edit ${t.name}`}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(t.id);
+                    }}
+                  >
+                    <HugeiconsIcon icon={Edit02Icon} size={12} strokeWidth={1.75} />
+                  </span>
+                  <span
+                    role="button"
+                    aria-label={`Remove ${t.name}`}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove(t.id);
+                    }}
+                  >
+                    ×
+                  </span>
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

@@ -58,14 +58,16 @@ and stop. Don't batch them.
   versioning story is) before writing code — this is a design task first and an implementation task
   second.
 
-- [ ] **Completely fresh theme set** — replace the inherited terax themes outright rather than recoloring
-  them. New named themes, original palettes, designed as a set with a consistent contrast ramp; verify
-  legibility for terminal ANSI colors, editor syntax, and diff view in each. Keep the `.nexis-theme`
-  custom-theme format and live preview working throughout. Part of the visual-identity split below.
+- [x] **Completely fresh theme set** — done: six original themes (Halcyon, Meridian, Cinder, Aurelian,
+  Thicket, Vermillion), each with light *and* dark, generated from one shared OKLCH ramp by
+  `scripts/generate-theme-palettes.py` with contrast floors enforced at generation and re-asserted in CI.
+  Community palettes moved to their own credited section; the terax-derived ones retired with a migration.
 
-- [ ] **New icon set** — app icon (all platform sizes/formats, including the Windows installer and
-  context-menu branding) plus in-app iconography wherever terax-derived marks remain. Original artwork;
-  audit `public/` and the Tauri bundle config for every place the old assets are referenced.
+- [x] **New icon set** — done: original prompt-caret mark, source SVG in `src-tauri/icons/`, full platform
+  set regenerated via `tauri icon`, NSIS header redrawn at the correct 150×57, and the in-app PNG replaced
+  by `public/nexis-mark.svg`.
+  *Remaining follow-up:* Windows context-menu / file-association branding was not part of this pass —
+  Nexis doesn't register shell verbs yet, so there was nothing to rebrand. Revisit if that ships.
 
 - [ ] **SignPath.io code signing for Windows** — get Windows builds signed so SmartScreen and Defender
   stop blocking installs. Includes: SignPath project/OSS-sponsorship setup, wiring the signing step into
@@ -85,6 +87,8 @@ and stop. Don't batch them.
   make deliberate choices instead of default-inherited ones. Track what's been re-done so this doesn't
   get re-litigated; the credit in the README stays regardless — differentiation is about identity, not
   about hiding the lineage.
+  *Re-done so far:* the theme set and the icon/mark (both above). *Still inherited:* layout and spacing
+  scale, panel/rail component idioms, motion and transition timings.
 
 ---
 
@@ -198,7 +202,6 @@ Structure ideas taken from zed.dev/docs (July 2026 sidebar survey — full notes
 - 🟡 Git-backed AI checkpoints — snapshot to a hidden ref/stash before any agent edit/multi-edit; surface a one-click "revert this agent action". Turns the scariest part of an agentic terminal into a safe, reversible operation, and it's all local git.
 - 🟠 Local semantic code index — embeddings over the workspace for sharper AI context retrieval; needs an embeddings source and a small vector store, weighed against the size budget.
 - 🟡 Command prediction — next-command suggestions from recent context (BYOK or local), fitting the existing inline-suggestion UI.
-- 🟡 App icon / brand refresh — the current icon (black/white woven mesh) reads as a placeholder; a redesign should draw from the welcome screen's animated blue gradient, the app's strongest visual identity (deferred P8 from the June 2026 UI critique — everything else from that critique shipped in 1.15.0).
 - 🟠 Plugin sandboxing + first-party SDK — a sandboxed, typed, install-from-workspace SDK with a local test harness (pairs with "Custom AI tool authoring" above).
 - 🟠🔴 Collaborative editing (CRDT) — real-time co-editing via a yjs/automerge-class CRDT; powerful but a major subsystem and a networking story, probably beyond a terminal-first tool's scope.
 
