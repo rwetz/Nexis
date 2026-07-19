@@ -2,10 +2,15 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
-## [Unreleased]
+## [1.21.2] — 2026-07-18
+
+A supply-chain patch release: it upgrades `quick-xml` past two high-severity XML denial-of-service advisories that were failing `cargo audit`, and clears a Windows-only clippy failure that was blocking CI. No app-behavior changes — same features as 1.21.1, with the dependency tree and the lint gate back to green.
 
 ### Security
 - **`quick-xml` upgraded 0.39.4 → 0.41.0 — closes two high-severity DoS advisories (RUSTSEC-2026-0194/0195).** The quadratic-time duplicate-attribute check and the unbounded `xmlns` namespace-declaration allocation both enable memory/CPU-exhaustion denial of service on a malicious XML document. `quick-xml` is a transitive dependency (`tauri-utils → plist → quick-xml`), and the fix needed no Tauri bump: `plist` moved 1.9.0 → 1.10.0 — permitted by Tauri's `plist = "^1"` — which requires `quick-xml ^0.41`, so a plain `cargo update -p plist` pulled the fixed version. Practical exposure here was low (the crate parses our own bundler/config property-list XML, not attacker-controlled runtime input), but `cargo audit` fails hard on any vulnerability, so this keeps the CI supply-chain gate green. The two now-obsolete advisory ignores were removed from `src-tauri/deny.toml` (they'd otherwise silently suppress a future regression); `cargo deny check` stays clean.
+
+### Fixed
+- **Windows clippy gate no longer fails on `child_pid` dead code.** The `Session.child_pid` field is read only by the Linux-only `/proc/<pid>/cwd` cwd fallback (`pty_cwd`, `#[cfg(target_os = "linux")]`) but is set on every platform, so on Windows/macOS it counted as dead code — and the CI clippy job (which runs on `windows-latest` specifically to lint the Windows `cfg` paths) promoted it to a hard error under `-D warnings`. Gated an `allow(dead_code)` to non-Linux targets, so the lint still enforces that the Linux fallback actually reads the field. Latent since the fallback shipped; it only surfaced once the backlog of unpushed commits reached CI.
 
 ## [1.21.1] — 2026-07-18
 
