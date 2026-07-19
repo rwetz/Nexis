@@ -62,7 +62,10 @@ pub struct Session {
     pub master: Mutex<Box<dyn MasterPty + Send>>,
     /// Shell process id, for the /proc-based cwd fallback (`pty_cwd`) when
     /// shell integration never reports OSC 7. None if the PTY backend
-    /// couldn't report one.
+    /// couldn't report one. Read only on Linux — the `pty_cwd` reader is
+    /// `#[cfg(target_os = "linux")]` — but set on every platform, so allow it
+    /// to be dead code off-Linux without weakening the lint where it IS read.
+    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
     pub child_pid: Option<u32>,
 }
 
