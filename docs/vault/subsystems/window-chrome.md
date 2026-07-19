@@ -20,18 +20,25 @@ macOS keeps native decorations (overlay title bar, traffic lights).
 - `src/components/WindowControls.tsx` — custom min/max/close buttons
 - `src/components/WindowResizeEdges.tsx` — Linux-only invisible edge/corner strips that call `startResizeDragging()`; see gotcha below
 - `src/modules/window/openNewWindow.ts` — secondary windows must repeat the platform chrome options; they don't inherit the config-file overrides
+- `src/modules/window/quickTerminal.ts` — the quick-terminal drop-down window (create / toggle / hide); `quickTerminalConfig.ts` holds its pure geometry + accelerator logic, `useQuickTerminal.ts` the hotkey registration and dismiss-on-blur hooks
 
 ## Invariants / gotchas
 
 - **An undecorated GTK window has no resize borders.** The grab zone around a normal Linux window belongs to the CSD shadow; `decorations: false` removes it, so edge resize + resize cursors must come from `WindowResizeEdges` in the webview. Windows needs no equivalent — tao gives undecorated windows native `WM_NCHITTEST` resize borders. Don't remove the component or scope it wider than Linux.
 - `WindowResizeEdges` must mount **outside `.zoom-content`** (app zoom would scale the hit strips off the window edges) and keeps `pointer-events-auto` so Radix modals (`pointer-events: none` on `<body>`) don't disable resizing.
 - The double-title-bar / KWin story and why `GTK_CSD=1` + the `set_decorations` re-assert exist: see the 1.20.5 "borderless window chrome" entry in CHANGELOG.md.
+- **The quick terminal owns its own visibility — `main.tsx` must not auto-show it.** Every other window starts hidden and is shown by a `setTimeout` in `main.tsx` once React has painted. The quick terminal is explicitly excluded by label: it is shown only after `toggleQuickTerminal` has positioned it on the active monitor, so auto-showing flashes it at the default centred position, and it would also re-summon itself uninvited if the webview reloaded while hidden. If you add another window that manages its own visibility, exclude it there too.
+- **Dismiss hides, never closes.** Destroying the quick-terminal webview would kill its shell and make every summon a cold start. `hideQuickTerminal` is the only dismiss path.
+- **The global accelerator is registered from the main window only.** A global shortcut is process-wide; registering from every window either fails as a duplicate or fires the handler once per open window. `useQuickTerminalHotkey` guards on the `main` label.
+- Global-shortcut registration is best-effort: a conflicting accelerator (another app already owns it) throws, and that is logged, not propagated — the user gets an inert hotkey they can change in Settings rather than a failed startup.
 
 ## Debugging entry points
 
 - Double title bar on KDE → is `GTK_CSD=1` still set before webview fork? Check `[nexis] main window is_decorated = …` in stderr.
 - Square corners / opaque window → platform conf JSON missing or `data-chrome` not set (`USE_CUSTOM_WINDOW_CONTROLS` false when `platform()` throws).
 - Can't resize on Linux → `WindowResizeEdges` unmounted (thinks it's maximized?) or strips buried under a higher `z-index`.
+- Quick-terminal hotkey does nothing → check the devtools console of the **main** window for `[nexis] quick terminal hotkey registration failed:` (usually another app owns the accelerator); confirm `quickTerminalEnabled` is on and the accelerator passes `isPlausibleAccelerator`.
+- Quick terminal opens on the wrong monitor → `currentMonitor()` returned null (positioning is skipped) or the geometry's scale-factor divide is off; `quickTerminalConfig.test.ts` covers the HiDPI and secondary-origin cases.
 
 ## Related
 
