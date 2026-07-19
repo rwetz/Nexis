@@ -72,6 +72,10 @@ import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
 import { openNewWindow } from "@/modules/window/openNewWindow";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { usePreferencesStore } from "@/modules/settings/preferences";
+import {
+  useQuickTerminalDismiss,
+  useQuickTerminalHotkey,
+} from "@/modules/window/useQuickTerminal";
 import { useSettingsDialogStore } from "@/modules/settings/settingsDialogStore";
 import { onKeysChanged, setTerminalEnvVars } from "@/modules/settings/store";
 import {
@@ -294,12 +298,25 @@ export default function App() {
     setWorkspaceSwitcherOpen,
   } = useDialogCoordinator();
 
+  // Quick terminal: the hotkey registers only in the main window, the dismiss
+  // behaviour applies only in the drop-down. Both no-op elsewhere.
+  useQuickTerminalHotkey();
+  useQuickTerminalDismiss();
+
   const [home, setHome] = useState<string | null>(null);
   const [pendingCloseTab, setPendingCloseTab] = useState<number | null>(null);
   // Zen mode: hide header + status bar for a distraction-free terminal.
   // Session-only on purpose — restoring a chrome-less window on relaunch
   // with no visible way back would read as breakage.
-  const [zenMode, setZenMode] = useState(false);
+  //
+  // The quick-terminal drop-down (`/?quick=1`) starts in zen mode: it is a
+  // borderless overlay summoned by a hotkey, so app chrome would be noise. It
+  // stays toggleable from the palette like anywhere else.
+  const [zenMode, setZenMode] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).has("quick"),
+  );
   // A terminal close intercepted because a command is still running (OSC 133
   // in-command). Which close to re-run on confirm is encoded in `kind`.
   const [pendingCloseBusy, setPendingCloseBusy] = useState<

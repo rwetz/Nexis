@@ -18,6 +18,11 @@ import {
   type ModelId,
 } from "@/modules/ai/config";
 import { isPackId, PACK_IDS, type PackId } from "@/lib/packs";
+import {
+  clampQuickTerminalHeight,
+  DEFAULT_QUICK_TERMINAL_HOTKEY,
+  QUICK_TERMINAL_DEFAULT_HEIGHT,
+} from "@/modules/window/quickTerminalConfig";
 import type { KeyBinding, ShortcutId } from "@/modules/shortcuts/shortcuts";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { LazyStore } from "@tauri-apps/plugin-store";
@@ -196,6 +201,16 @@ export type Preferences = {
   /** Restore terminal scrollback on relaunch (persistent sessions Milestone
    * A). Only meaningful while restoreTabs is on. */
   terminalRestoreScrollback: boolean;
+  /** Quick terminal: global-hotkey drop-down window. Off by default — it
+   * claims a system-wide accelerator, which is not something to take without
+   * being asked. */
+  quickTerminalEnabled: boolean;
+  /** Tauri accelerator that summons the quick terminal. */
+  quickTerminalHotkey: string;
+  /** Drop-down height as a fraction of the active monitor's height. */
+  quickTerminalHeight: number;
+  /** Hide the quick terminal when it loses focus (Ghostty's autohide). */
+  quickTerminalHideOnBlur: boolean;
   /** Debug status-bar FPS meter (rAF-based main-thread jank readout).
    * Development aid; the rAF loop only runs while enabled. */
   debugFpsMeter: boolean;
@@ -264,6 +279,10 @@ const KEY_ENABLED_PACKS = "enabledPacks";
 const KEY_PACKS_ONBOARDED = "packsOnboarded";
 const KEY_DEBUG_MEMORY_REPORT = "debugMemoryReport";
 const KEY_TERMINAL_RESTORE_SCROLLBACK = "terminalRestoreScrollback";
+const KEY_QUICK_TERMINAL_ENABLED = "quickTerminalEnabled";
+const KEY_QUICK_TERMINAL_HOTKEY = "quickTerminalHotkey";
+const KEY_QUICK_TERMINAL_HEIGHT = "quickTerminalHeight";
+const KEY_QUICK_TERMINAL_HIDE_ON_BLUR = "quickTerminalHideOnBlur";
 const KEY_DEBUG_FPS_METER = "debugFpsMeter";
 
 export const TERMINAL_FONT_SIZE_DEFAULT = 14;
@@ -352,6 +371,10 @@ export const DEFAULT_PREFERENCES: Preferences = {
   packsOnboarded: false,
   debugMemoryReport: false,
   terminalRestoreScrollback: true,
+  quickTerminalEnabled: false,
+  quickTerminalHotkey: DEFAULT_QUICK_TERMINAL_HOTKEY,
+  quickTerminalHeight: QUICK_TERMINAL_DEFAULT_HEIGHT,
+  quickTerminalHideOnBlur: true,
   debugFpsMeter: false,
 };
 
@@ -541,6 +564,18 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalRestoreScrollback:
       get<boolean>(KEY_TERMINAL_RESTORE_SCROLLBACK) ??
       DEFAULT_PREFERENCES.terminalRestoreScrollback,
+    quickTerminalEnabled:
+      get<boolean>(KEY_QUICK_TERMINAL_ENABLED) ??
+      DEFAULT_PREFERENCES.quickTerminalEnabled,
+    quickTerminalHotkey:
+      get<string>(KEY_QUICK_TERMINAL_HOTKEY) ??
+      DEFAULT_PREFERENCES.quickTerminalHotkey,
+    quickTerminalHeight:
+      get<number>(KEY_QUICK_TERMINAL_HEIGHT) ??
+      DEFAULT_PREFERENCES.quickTerminalHeight,
+    quickTerminalHideOnBlur:
+      get<boolean>(KEY_QUICK_TERMINAL_HIDE_ON_BLUR) ??
+      DEFAULT_PREFERENCES.quickTerminalHideOnBlur,
     debugFpsMeter:
       get<boolean>(KEY_DEBUG_FPS_METER) ?? DEFAULT_PREFERENCES.debugFpsMeter,
   };
@@ -610,6 +645,24 @@ export async function setRestoreWindowState(value: boolean): Promise<void> {
 
 export async function setRestoreTabs(value: boolean): Promise<void> {
   await writePref(KEY_RESTORE_TABS, value);
+}
+
+export async function setQuickTerminalEnabled(value: boolean): Promise<void> {
+  await writePref(KEY_QUICK_TERMINAL_ENABLED, value);
+}
+
+export async function setQuickTerminalHotkey(value: string): Promise<void> {
+  await writePref(KEY_QUICK_TERMINAL_HOTKEY, value);
+}
+
+export async function setQuickTerminalHeight(value: number): Promise<void> {
+  await writePref(KEY_QUICK_TERMINAL_HEIGHT, clampQuickTerminalHeight(value));
+}
+
+export async function setQuickTerminalHideOnBlur(
+  value: boolean,
+): Promise<void> {
+  await writePref(KEY_QUICK_TERMINAL_HIDE_ON_BLUR, value);
 }
 
 export async function setAutocompleteEnabled(value: boolean): Promise<void> {
@@ -919,6 +972,10 @@ export async function onPreferencesChange(
     [KEY_PACKS_ONBOARDED]: "packsOnboarded",
     [KEY_DEBUG_MEMORY_REPORT]: "debugMemoryReport",
     [KEY_TERMINAL_RESTORE_SCROLLBACK]: "terminalRestoreScrollback",
+    [KEY_QUICK_TERMINAL_ENABLED]: "quickTerminalEnabled",
+    [KEY_QUICK_TERMINAL_HOTKEY]: "quickTerminalHotkey",
+    [KEY_QUICK_TERMINAL_HEIGHT]: "quickTerminalHeight",
+    [KEY_QUICK_TERMINAL_HIDE_ON_BLUR]: "quickTerminalHideOnBlur",
     [KEY_DEBUG_FPS_METER]: "debugFpsMeter",
   };
   // Same-process writes still fire onChange immediately; cross-window writes

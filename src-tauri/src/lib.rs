@@ -135,6 +135,10 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_autostart::Builder::new().build())
+        // Quick terminal's global hotkey. The accelerator itself is registered
+        // from the frontend (it is a user preference), so no handler is wired
+        // here — this only makes the plugin's IPC surface available.
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_os::init())
         .plugin(

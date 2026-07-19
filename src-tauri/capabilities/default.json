@@ -5,6 +5,7 @@
   "windows": [
     "main",
     "settings",
+    "quick-terminal",
     "nexis-*"
   ],
   "permissions": [
@@ -19,6 +20,13 @@
     "core:window:allow-internal-toggle-maximize",
     "core:window:allow-show",
     "core:window:allow-set-focus",
+    "core:window:allow-hide",
+    "core:window:allow-is-visible",
+    "core:window:allow-set-position",
+    "core:window:allow-set-size",
+    "core:window:allow-set-always-on-top",
+    "core:window:allow-current-monitor",
+    "global-shortcut:default",
     "core:event:allow-listen",
     "core:event:allow-unlisten",
     "opener:default",

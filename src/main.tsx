@@ -12,6 +12,7 @@ import "@xterm/xterm/css/xterm.css";
 import "./styles/globals.css";
 
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { QUICK_TERMINAL_LABEL } from "@/modules/window/quickTerminalConfig";
 import ReactDOM from "react-dom/client";
 import App from "./app/App";
 import { initLaunchDir } from "./lib/launchDir";
@@ -37,11 +38,19 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 // Window starts hidden (per tauri.conf.json) so users never see a transparent
 // shadow-only frame before React paints. Use setTimeout — rAF is throttled
 // while the window is hidden and would never fire.
-const showWindow = () => {
-  getCurrentWindow()
-    .show()
-    .catch((e) => console.error("window.show failed:", e));
-};
-setTimeout(showWindow, 50);
-// Safety net: if the first show somehow fails to take effect, force again.
-setTimeout(showWindow, 500);
+//
+// The quick terminal is exempt: its visibility is owned entirely by the
+// hotkey toggle, which shows it only after positioning it on the active
+// monitor. Auto-showing here would both flash it at the default centred
+// position and re-summon it uninvited if the webview ever reloads while
+// hidden.
+if (getCurrentWindow().label !== QUICK_TERMINAL_LABEL) {
+  const showWindow = () => {
+    getCurrentWindow()
+      .show()
+      .catch((e) => console.error("window.show failed:", e));
+  };
+  setTimeout(showWindow, 50);
+  // Safety net: if the first show somehow fails to take effect, force again.
+  setTimeout(showWindow, 500);
+}

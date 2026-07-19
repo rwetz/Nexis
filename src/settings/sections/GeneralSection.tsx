@@ -23,11 +23,18 @@ import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import type { TerminalCursorStyle, ThemePref } from "@/modules/settings/store";
 import {
+  formatAccelerator,
+  QUICK_TERMINAL_HEIGHTS,
+} from "@/modules/window/quickTerminalConfig";
+import {
   TERMINAL_CURSOR_STYLE_LABELS,
   TERMINAL_FONT_SIZES,
   TERMINAL_FONT_WEIGHTS,
   TERMINAL_SCROLLBACK_PRESETS,
   setAutostart,
+  setQuickTerminalEnabled,
+  setQuickTerminalHeight,
+  setQuickTerminalHideOnBlur,
   setRestoreTabs,
   setRestoreWindowState,
   setShowHidden,
@@ -89,6 +96,14 @@ export function GeneralSection() {
   const autostart = usePreferencesStore((s) => s.autostart);
   const restoreWindowState = usePreferencesStore((s) => s.restoreWindowState);
   const restoreTabs = usePreferencesStore((s) => s.restoreTabs);
+  const quickTerminalEnabled = usePreferencesStore(
+    (s) => s.quickTerminalEnabled,
+  );
+  const quickTerminalHotkey = usePreferencesStore((s) => s.quickTerminalHotkey);
+  const quickTerminalHeight = usePreferencesStore((s) => s.quickTerminalHeight);
+  const quickTerminalHideOnBlur = usePreferencesStore(
+    (s) => s.quickTerminalHideOnBlur,
+  );
   const vimMode = usePreferencesStore((s) => s.vimMode);
   const showHidden = usePreferencesStore((s) => s.showHidden);
   const terminalWebglEnabled = usePreferencesStore(
@@ -526,6 +541,52 @@ export function GeneralSection() {
               onCheckedChange={(v) => void setTerminalRestoreScrollback(v)}
             />
           </SettingRow>
+          <SettingRow
+            title="Quick terminal"
+            description={`Summon a drop-down terminal from any app with ${formatAccelerator(quickTerminalHotkey)}. Press again to dismiss it.`}
+          >
+            <Switch
+              checked={quickTerminalEnabled}
+              onCheckedChange={(v) => void setQuickTerminalEnabled(v)}
+            />
+          </SettingRow>
+          {quickTerminalEnabled && (
+            <>
+              <SettingRow
+                title="Quick terminal height"
+                description="How far the drop-down covers the screen it opens on."
+              >
+                <Select
+                  value={String(quickTerminalHeight)}
+                  onValueChange={(v) => void setQuickTerminalHeight(Number(v))}
+                >
+                  <SelectTrigger size="sm" className="h-8 w-28 text-[12px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {QUICK_TERMINAL_HEIGHTS.map((v) => (
+                      <SelectItem
+                        key={v}
+                        value={String(v)}
+                        className="text-[12px]"
+                      >
+                        {Math.round(v * 100)}%
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SettingRow>
+              <SettingRow
+                title="Dismiss quick terminal on focus loss"
+                description="Hide the drop-down as soon as you click away. Turn off to keep it pinned while you work in another app."
+              >
+                <Switch
+                  checked={quickTerminalHideOnBlur}
+                  onCheckedChange={(v) => void setQuickTerminalHideOnBlur(v)}
+                />
+              </SettingRow>
+            </>
+          )}
         </div>
       </div>
 
