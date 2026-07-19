@@ -1,0 +1,100 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
+import type { Theme } from "../types";
+
+export const halcyon: Theme = {
+  id: "halcyon",
+  name: "Halcyon",
+  description: "Indigo and violet — the Nexis signature palette.",
+  editorTheme: { dark: "aura", light: "github-light" },
+  variants: {
+    dark: {
+      colors: {
+        background: "#111117",
+        foreground: "#e7e6ef",
+        card: "#19181f",
+        cardForeground: "#e7e6ef",
+        popover: "#19181f",
+        popoverForeground: "#e7e6ef",
+        primary: "#b3a0ff",
+        primaryForeground: "#111116",
+        secondary: "#24232b",
+        secondaryForeground: "#e7e6ef",
+        muted: "#24232b",
+        mutedForeground: "#9e9da9",
+        accent: "#2b2a32",
+        accentForeground: "#e7e6ef",
+        destructive: "#e8605b",
+        border: "rgba(231,230,239,0.10)",
+        input: "rgba(231,230,239,0.14)",
+        ring: "#b3a0ff",
+        sidebar: "#0c0b11",
+        sidebarForeground: "#e7e6ef",
+        sidebarPrimary: "#b3a0ff",
+        sidebarPrimaryForeground: "#111116",
+        sidebarAccent: "#2b2a32",
+        sidebarAccentForeground: "#e7e6ef",
+        sidebarBorder: "rgba(231,230,239,0.10)",
+        sidebarRing: "#b3a0ff",
+        radius: "0.5rem",
+      },
+      terminal: {
+        cursor: "#b3a0ff",
+        cursorAccent: "#111117",
+        selection: "rgba(179,160,255,0.26)",
+        ansi: [
+          "#25242d", "#ec7a66", "#55b86c", "#c49a00",
+          "#66a0f9", "#cc7ed3", "#00b6bc", "#cfced8",
+          "#5b5963", "#ffab9c", "#6ce187", "#efbd10",
+          "#a1c6ff", "#f79eff", "#00dfe6", "#f1f0fb",
+        ],
+      },
+    },
+    light: {
+      colors: {
+        background: "#f8f8fc",
+        foreground: "#26242f",
+        card: "#ffffff",
+        cardForeground: "#26242f",
+        popover: "#ffffff",
+        popoverForeground: "#26242f",
+        primary: "#6e4fc1",
+        primaryForeground: "#fdfdff",
+        secondary: "#eae9f1",
+        secondaryForeground: "#26242f",
+        muted: "#eae9f1",
+        mutedForeground: "#666572",
+        accent: "#e5e4ee",
+        accentForeground: "#26242f",
+        destructive: "#b91c1e",
+        border: "rgba(38,36,47,0.14)",
+        input: "rgba(38,36,47,0.18)",
+        ring: "#6e4fc1",
+        sidebar: "#f1f0f6",
+        sidebarForeground: "#26242f",
+        sidebarPrimary: "#6e4fc1",
+        sidebarPrimaryForeground: "#fdfdff",
+        sidebarAccent: "#e5e4ee",
+        sidebarAccentForeground: "#26242f",
+        sidebarBorder: "rgba(38,36,47,0.14)",
+        sidebarRing: "#6e4fc1",
+        radius: "0.5rem",
+      },
+      terminal: {
+        cursor: "#6e4fc1",
+        cursorAccent: "#f8f8fc",
+        selection: "rgba(110,79,193,0.20)",
+        ansi: [
+          "#2e2d35", "#ba4d3c", "#1f8b41", "#8f7000",
+          "#3c73c8", "#9d53a4", "#008589", "#72717a",
+          "#63626c", "#a82a19", "#00732f", "#765b00",
+          "#195aba", "#8a3492", "#006d71", "#2b2a32",
+        ],
+      },
+    },
+  },
+};

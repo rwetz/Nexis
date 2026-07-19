@@ -4,11 +4,12 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import type { Theme } from "../types";
+import type { Theme } from "../../types";
 
 export const rosePine: Theme = {
   id: "rose-pine",
   name: "Rosé Pine",
+  author: "Rosé Pine",
   description: "Soho vibes, all-natural pine and rose.",
   editorTheme: { dark: "atomone", light: "xcode-light" },
   variants: {

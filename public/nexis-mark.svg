@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="64 64 896 896" width="896" height="896">
+  <defs>
+    <linearGradient id="plate" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#221645"/>
+      <stop offset="0.55" stop-color="#120E26"/>
+      <stop offset="1" stop-color="#08060F"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.74" cy="0.12" r="0.82">
+      <stop offset="0" stop-color="#5227FF" stop-opacity="0.60"/>
+      <stop offset="0.5" stop-color="#5227FF" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#5227FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="stroke" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#D8CBFF"/>
+      <stop offset="0.45" stop-color="#8B6BFF"/>
+      <stop offset="1" stop-color="#3FD2E8"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="plateClip">
+      <rect x="64" y="64" width="896" height="896" rx="212" ry="212"/>
+    </clipPath>
+  </defs>
+
+  <!-- plate -->
+  <rect x="64" y="64" width="896" height="896" rx="212" ry="212" fill="url(#plate)"/>
+  <g clip-path="url(#plateClip)">
+    <rect x="64" y="64" width="896" height="896" fill="url(#glow)"/>
+  </g>
+  <rect x="68" y="68" width="888" height="888" rx="208" ry="208"
+        fill="none" stroke="url(#edge)" stroke-width="8"/>
+
+  <!-- prompt lockup, optically centred on the plate -->
+  <g transform="translate(-25,0)">
+    <!-- caret: one continuous folded stroke -->
+    <path d="M 300 300 L 540 512 L 300 724"
+          fill="none" stroke="url(#stroke)" stroke-width="104"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- cursor, sharing the caret's baseline -->
+    <rect x="606" y="672" width="220" height="104" rx="52" ry="52"
+          fill="#F4F1FF" opacity="0.96"/>
+  </g>
+</svg>

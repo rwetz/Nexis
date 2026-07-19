@@ -1,0 +1,100 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
+import type { Theme } from "../types";
+
+export const thicket: Theme = {
+  id: "thicket",
+  name: "Thicket",
+  description: "Forest greens with a moss accent — quiet and matte.",
+  editorTheme: { dark: "atomone", light: "github-light" },
+  variants: {
+    dark: {
+      colors: {
+        background: "#0e130f",
+        foreground: "#e2eae3",
+        card: "#151b16",
+        cardForeground: "#e2eae3",
+        popover: "#151b16",
+        popoverForeground: "#e2eae3",
+        primary: "#68ca80",
+        primaryForeground: "#0e130f",
+        secondary: "#202721",
+        secondaryForeground: "#e2eae3",
+        muted: "#202721",
+        mutedForeground: "#97a299",
+        accent: "#252d27",
+        accentForeground: "#e2eae3",
+        destructive: "#e8605b",
+        border: "rgba(226,234,227,0.10)",
+        input: "rgba(226,234,227,0.14)",
+        ring: "#68ca80",
+        sidebar: "#090e0a",
+        sidebarForeground: "#e2eae3",
+        sidebarPrimary: "#68ca80",
+        sidebarPrimaryForeground: "#0e130f",
+        sidebarAccent: "#252d27",
+        sidebarAccentForeground: "#e2eae3",
+        sidebarBorder: "rgba(226,234,227,0.10)",
+        sidebarRing: "#68ca80",
+        radius: "0.5rem",
+      },
+      terminal: {
+        cursor: "#68ca80",
+        cursorAccent: "#0e130f",
+        selection: "rgba(104,202,128,0.26)",
+        ansi: [
+          "#202821", "#e77c77", "#6db466", "#c9972a",
+          "#5ea4ef", "#c185d6", "#00b7b3", "#c9d2cb",
+          "#545e56", "#ffaaa4", "#88dc80", "#f4b93b",
+          "#98c8ff", "#e8a7ff", "#00e0db", "#ebf5ed",
+        ],
+      },
+    },
+    light: {
+      colors: {
+        background: "#f6faf6",
+        foreground: "#1f2921",
+        card: "#ffffff",
+        cardForeground: "#1f2921",
+        popover: "#ffffff",
+        popoverForeground: "#1f2921",
+        primary: "#0a7e3a",
+        primaryForeground: "#fafffb",
+        secondary: "#e5ece6",
+        secondaryForeground: "#1f2921",
+        muted: "#e5ece6",
+        mutedForeground: "#5f6a61",
+        accent: "#dfe8e1",
+        accentForeground: "#1f2921",
+        destructive: "#b91c1e",
+        border: "rgba(31,41,33,0.14)",
+        input: "rgba(31,41,33,0.18)",
+        ring: "#0a7e3a",
+        sidebar: "#eef2ef",
+        sidebarForeground: "#1f2921",
+        sidebarPrimary: "#0a7e3a",
+        sidebarPrimaryForeground: "#fafffb",
+        sidebarAccent: "#dfe8e1",
+        sidebarAccentForeground: "#1f2921",
+        sidebarBorder: "rgba(31,41,33,0.14)",
+        sidebarRing: "#0a7e3a",
+        radius: "0.5rem",
+      },
+      terminal: {
+        cursor: "#0a7e3a",
+        cursorAccent: "#f6faf6",
+        selection: "rgba(10,126,58,0.20)",
+        ansi: [
+          "#28302a", "#b5504d", "#41873a", "#966c00",
+          "#3177bf", "#9359a7", "#008683", "#6c756e",
+          "#5d665f", "#a33032", "#1b7314", "#7b5800",
+          "#0060ad", "#803d96", "#006e6b", "#262d28",
+        ],
+      },
+    },
+  },
+};

@@ -4,11 +4,12 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import type { Theme } from "../types";
+import type { Theme } from "../../types";
 
 export const tokyoNight: Theme = {
   id: "tokyo-night",
   name: "Tokyo Night",
+  author: "Enkia",
   description: "Calm, blue-leaning dark theme.",
   editorTheme: { dark: "tokyo-night" },
   variants: {

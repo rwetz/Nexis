@@ -58,7 +58,7 @@ import {
   onCustomThemesChange,
 } from "./customThemes";
 import { SurfaceLayer } from "./SurfaceLayer";
-import { getBuiltinTheme, getDefaultTheme } from "./themes";
+import { getBuiltinTheme, getDefaultTheme, migrateThemeId } from "./themes";
 import type { Theme } from "./types";
 
 export type { Theme };
@@ -95,7 +95,9 @@ function writeFastMode(t: ThemePref): void {
 
 function readFastThemeId(): string {
   if (typeof window === "undefined") return DEFAULT_THEME_ID;
-  return window.localStorage.getItem(FAST_PATH_THEME_ID) ?? DEFAULT_THEME_ID;
+  return migrateThemeId(
+    window.localStorage.getItem(FAST_PATH_THEME_ID) ?? DEFAULT_THEME_ID,
+  );
 }
 
 function writeFastThemeId(id: string): void {
@@ -120,18 +122,22 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
     let alive = true;
     void loadPreferences().then((p) => {
       if (!alive) return;
+      const id = migrateThemeId(p.themeId);
       setModeState(p.theme);
-      setThemeIdState(p.themeId);
+      setThemeIdState(id);
       writeFastMode(p.theme);
-      writeFastThemeId(p.themeId);
+      writeFastThemeId(id);
+      // Write the migration back so it happens once, not on every launch.
+      if (id !== p.themeId) void persistThemeId(id);
     });
     const unlistenP = onPreferencesChange((key, value) => {
       if (key === "theme" && (value === "system" || value === "light" || value === "dark")) {
         setModeState(value);
         writeFastMode(value);
       } else if (key === "themeId" && typeof value === "string") {
-        setThemeIdState(value);
-        writeFastThemeId(value);
+        const id = migrateThemeId(value);
+        setThemeIdState(id);
+        writeFastThemeId(id);
       }
     });
     return () => {

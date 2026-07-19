@@ -20,7 +20,7 @@ pub mod bench_internals {
 
 use modules::{
     ai_audit, autosave, crash, dap, diagnostics, fs, git, http_share, lsp, ml, net, pty, python,
-    recording, secrets, shell, snapshots, workspace,
+    recording, secrets, shell, snapshots, winstate, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -113,6 +113,19 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
+        // Must be registered BEFORE the window-state plugin: plugin setups run
+        // in registration order, and this repairs the saved geometry on disk so
+        // the restore below reads values that already fit the current displays.
+        // Doing it here rather than after the window exists is deliberate — see
+        // the module docs for why post-hoc resizing cannot work.
+        .plugin(
+            tauri::plugin::Builder::<tauri::Wry, ()>::new("nexis-window-state-sanitize")
+                .setup(|app, _api| {
+                    winstate::sanitize_saved_state(app);
+                    Ok(())
+                })
+                .build(),
+        )
         // Skip restoring VISIBLE — frontend calls window.show() after first
         // paint so the user never sees a transparent window-shadow flash on
         // Windows/Linux.

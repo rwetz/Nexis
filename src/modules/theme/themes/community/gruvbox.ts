@@ -4,11 +4,12 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import type { Theme } from "../types";
+import type { Theme } from "../../types";
 
 export const gruvbox: Theme = {
   id: "gruvbox",
   name: "Gruvbox",
+  author: "Pavel Pertsev",
   description: "Warm, earthy retro palette.",
   editorTheme: { dark: "atomone", light: "github-light" },
   variants: {
