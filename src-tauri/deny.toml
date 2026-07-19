@@ -15,15 +15,11 @@
 # signal we can act on — and tolerate the transitive ones.
 unmaintained = "workspace"
 yanked = "deny"
-ignore = [
-    # quick-xml 0.39.4 DoS advisories (quadratic duplicate-attribute check /
-    # unbounded xmlns allocation). Fixed in 0.41.0, but quick-xml comes in
-    # only transitively via tauri-utils/plist, which pin 0.39.x — no fix path
-    # until Tauri bumps it. Exposure is parsing our own local plist/config
-    # XML, never attacker-controlled input. Re-check on every Tauri upgrade.
-    "RUSTSEC-2026-0194",
-    "RUSTSEC-2026-0195",
-]
+# No advisory ignores: the quick-xml 0.39.4 DoS advisories (RUSTSEC-2026-0194/
+# 0195) that used to live here are resolved for real — `plist` moved 1.9.0 →
+# 1.10.0 (permitted by Tauri's `plist = "^1"`), pulling quick-xml 0.41.0.
+# Keep this empty; prefer a real dependency bump over suppressing a vuln.
+ignore = []
 
 [licenses]
 # Permissive + weak-copyleft licenses we accept. Anything not on this list

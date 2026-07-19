@@ -2,6 +2,11 @@
 
 All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [SemVer](https://semver.org/) (pre-`1.0`, minor bumps may include breaking changes).
 
+## [Unreleased]
+
+### Security
+- **`quick-xml` upgraded 0.39.4 → 0.41.0 — closes two high-severity DoS advisories (RUSTSEC-2026-0194/0195).** The quadratic-time duplicate-attribute check and the unbounded `xmlns` namespace-declaration allocation both enable memory/CPU-exhaustion denial of service on a malicious XML document. `quick-xml` is a transitive dependency (`tauri-utils → plist → quick-xml`), and the fix needed no Tauri bump: `plist` moved 1.9.0 → 1.10.0 — permitted by Tauri's `plist = "^1"` — which requires `quick-xml ^0.41`, so a plain `cargo update -p plist` pulled the fixed version. Practical exposure here was low (the crate parses our own bundler/config property-list XML, not attacker-controlled runtime input), but `cargo audit` fails hard on any vulnerability, so this keeps the CI supply-chain gate green. The two now-obsolete advisory ignores were removed from `src-tauri/deny.toml` (they'd otherwise silently suppress a future regression); `cargo deny check` stays clean.
+
 ## [1.21.1] — 2026-07-18
 
 ### Added
