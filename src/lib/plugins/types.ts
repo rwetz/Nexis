@@ -17,6 +17,7 @@
 
 import type React from "react";
 import type { PackId } from "@/lib/packs";
+import type { ToolContribution } from "@/modules/ai/tools/plugin-tools";
 
 /** The icon object shape Hugeicons components accept. */
 type HugeiconsIconType = Parameters<
@@ -96,6 +97,14 @@ export type PanelContribution = {
   order?: number;
 };
 
+// ── Contribution: Agent tool ──────────────────────────────────────────────────
+
+export type {
+  ToolApproval,
+  ToolContribution,
+} from "@/modules/ai/tools/plugin-tools";
+
+
 // ── Contribution: Command ─────────────────────────────────────────────────────
 
 export type CommandContribution = {
@@ -125,6 +134,13 @@ export type PluginAPI = {
   // Contributions
   registerStatusBarItem(item: StatusBarItem): Disposable;
   registerPanel(panel: PanelContribution): Disposable;
+  /**
+   * Contribute an agent tool. Admission is enforced when the tool list is
+   * built, not here: a contribution that shadows a built-in name, uses an
+   * invalid name, or lacks a description is logged and skipped rather than
+   * breaking the agent loop. See `modules/ai/tools/plugin-tools.ts`.
+   */
+  registerTool(tool: ToolContribution): Disposable;
   registerCommand(cmd: CommandContribution): Disposable;
 
   // Event bus

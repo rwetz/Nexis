@@ -10,6 +10,7 @@ Two audiences, two shapes of documentation. Pick the one that matches what you'r
 | Know **what shipped** | [CHANGELOG.md](../CHANGELOG.md) — the record |
 | Know **what's planned** | [ROADMAP.md](../ROADMAP.md) — a to-do list, not a record |
 | Avoid a **known landmine** | [CLAUDE.md](../CLAUDE.md) — invariants and pitfalls, authoritative |
+| Add your own **AI agent tool** | [architecture/custom-ai-tools.md](architecture/custom-ai-tools.md) |
 | Use or extend the **ML Lab** | [ML_LAB_GUIDE.md](ML_LAB_GUIDE.md) (user guide) · [ML_SUITE.md](ML_SUITE.md) (protocol + design record) |
 
 ## architecture/ vs vault/
@@ -25,6 +26,10 @@ roughly in reading order:
 3. [terminal-renderer-pool.md](architecture/terminal-renderer-pool.md) — how many tabs stay cheap
 4. [ai-subsystem.md](architecture/ai-subsystem.md) — the agent loop, tools, approval
 5. [security-model.md](architecture/security-model.md) — what's trusted, what's gated, what's blocked
+
+Plus one how-to guide:
+
+- [custom-ai-tools.md](architecture/custom-ai-tools.md) — writing your own agent tool with `pnpm tool:new`
 
 **`vault/`** is a navigational index — file-level maps, one-line-per-thing inventories, and cross-links.
 Read it to find the right file fast. It uses Obsidian `[[wiki-links]]`, which GitHub renders as literal

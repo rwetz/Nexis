@@ -4,7 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { usePluginRegistry } from "@/lib/plugins/registry";
 import { buildEditTools } from "./edit";
+import { buildPluginTools } from "./plugin-tools";
 import { buildFsTools } from "./fs";
 import { buildSearchTools } from "./search";
 import { buildShellTools } from "./shell";
@@ -35,6 +37,12 @@ export { resolvePath, type ToolContext } from "./context";
  */
 export function buildTools(ctx: import("./context").ToolContext) {
   return {
+    // Plugin-contributed tools are spread FIRST so the built-ins that follow
+    // always win a name collision. `buildPluginTools` already refuses
+    // reserved names, so this is belt-and-braces — but the ordering is what
+    // makes a future built-in added without updating RESERVED_TOOL_NAMES
+    // fail safe rather than get silently replaced by a plugin's tool.
+    ...buildPluginTools(usePluginRegistry.getState().tools, ctx),
     ...buildFsTools(ctx),
     ...buildEditTools(ctx),
     ...buildSearchTools(ctx),

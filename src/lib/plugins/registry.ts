@@ -18,11 +18,15 @@ import type {
   PluginEvent,
   PluginEventMap,
   StatusBarItem,
+  ToolContribution,
 } from "./types";
 
 type RegistryState = {
   statusBarItems: StatusBarItem[];
   panels: PanelContribution[];
+  /** Agent tools contributed by plugins. Admission happens at build time in
+   *  `buildPluginTools` — the registry stores whatever was registered. */
+  tools: ToolContribution[];
   commands: Map<string, CommandContribution>;
   // event bus listeners (not stored in Zustand — just a local Map)
 };
@@ -32,6 +36,8 @@ type RegistryActions = {
   _removeStatusBarItem(id: string): void;
   _addPanel(panel: PanelContribution): void;
   _removePanel(id: string): void;
+  _addTool(tool: ToolContribution): void;
+  _removeTool(id: string): void;
   _addCommand(cmd: CommandContribution): void;
   _removeCommand(id: string): void;
 };
@@ -40,6 +46,7 @@ export const usePluginRegistry = create<RegistryState & RegistryActions>(
   (set, get) => ({
     statusBarItems: [],
     panels: [],
+    tools: [],
     commands: new Map(),
 
     _addStatusBarItem(item) {
@@ -60,6 +67,13 @@ export const usePluginRegistry = create<RegistryState & RegistryActions>(
     },
     _removePanel(id) {
       set((s) => ({ panels: s.panels.filter((x) => x.id !== id) }));
+    },
+
+    _addTool(tool) {
+      set((s) => ({ tools: [...s.tools, tool] }));
+    },
+    _removeTool(id) {
+      set((s) => ({ tools: s.tools.filter((x) => x.id !== id) }));
     },
 
     _addCommand(cmd) {
@@ -133,6 +147,15 @@ export function createPluginAPI(): PluginAPI {
       return {
         dispose() {
           usePluginRegistry.getState()._removePanel(panel.id);
+        },
+      };
+    },
+
+    registerTool(toolContribution) {
+      registry._addTool(toolContribution);
+      return {
+        dispose() {
+          usePluginRegistry.getState()._removeTool(toolContribution.id);
         },
       };
     },

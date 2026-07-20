@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "wdio run e2e/wdio.conf.ts",
-    "icons:folders": "node scripts/generate-vscode-folder-icons.mjs"
+    "icons:folders": "node scripts/generate-vscode-folder-icons.mjs",
+    "tool:new": "node scripts/new-ai-tool.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.71",
