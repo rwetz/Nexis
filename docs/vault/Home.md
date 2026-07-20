@@ -32,6 +32,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[editor]] — CodeMirror panes, shared extensions, autocomplete, zoom interplay
 - [[theming]] — theme data → CSS variables, the generated Nexis ramp, community and custom sets
 - [[window-chrome]] — borderless chrome: decorations config, drag region, window controls, Linux edge resize
+- [[system-monitor]] — btop-style resource analyzer: sysinfo sampling, braille charts, process table
 
 ## Flows (`flows/`)
 

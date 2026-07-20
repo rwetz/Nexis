@@ -24,6 +24,9 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | Share server | `http_share_*` (start takes `bind` + `token`; `http_share_lan_ip` probes the primary LAN IP) | `modules/http_share.rs` | `share/useShareServer.ts` (global Zustand store — sharing survives panel close) |
 | Recording | `save_cast_recording` | `modules/recording.rs` | `terminal/lib/useRecording.ts` |
 | Session snapshots | `session_snapshot_save/load/delete/gc` | `modules/snapshots.rs` | `terminal/lib/snapshot-bridge.ts` |
+| AI checkpoints | `git_checkpoint_create/list/restore/delete` | `modules/git/operations.rs` (checkpoint section) | `ai/lib/checkpoint.ts` (create, from edit tools) · `source-control/CheckpointSection.tsx` (list/restore) |
+| FS watching | `fs_watch_start`, `fs_watch_stop` + `nexis://fs-changed` event | `modules/fswatch.rs` | `ai/lib/native.ts` → `explorer/FileExplorer.tsx` |
+| System monitor | `sysmon_sample`, `sysmon_kill` | `modules/sysmon.rs` | `ai/lib/native.ts` → `sysmon/useSystemMonitor.ts` |
 | Editor autosave | `editor_autosave_write/read/delete/sweep` | `modules/autosave.rs` | `editor/lib/autosave-bridge.ts` |
 | Crash reports | `list_crash_reports` | `modules/crash.rs` | (settings/diagnostics UI) |
 | Diagnostics | `diagnostics_export` | `modules/diagnostics.rs` (hand-rolled store-only zip) | `settings/sections/GeneralSection.tsx` |

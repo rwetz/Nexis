@@ -6,7 +6,7 @@ description: Feature surface is split into a fixed core plus toggleable "expansi
 # Feature surface splits into core + expansion packs
 
 **Date:** 2026-07
-**Status:** active — V1 implemented 2026-07; V2 gating (palette/keybindings/settings rows) + V4 "enable pack?" placeholder implemented 2026-07; remaining phases tracked in ROADMAP.md ("Up next")
+**Status:** active — V1 implemented 2026-07; V2 gating (palette/keybindings/settings rows) + V4 "enable pack?" placeholder implemented 2026-07; V2 registry-panel mechanism implemented 2026-07-19; remaining phases tracked in ROADMAP.md ("Up next")
 
 ## Context
 
@@ -40,4 +40,20 @@ The sidebar rail exposes ~24 panels. The average CS-focused user needs a fractio
 - Adding a sidebar panel now requires assigning it a pack (or explicitly core) — keep the taxonomy in one module (`src/lib/packs.ts`) so this is a one-line decision.
 - Session restore / deep links referencing a disabled pack's view must degrade gracefully (fallback view; later: "enable X?" placeholder).
 - Pack dependencies are deliberately not modeled (`requires:` was considered) — packs are designed to be independent; keep it that way.
-- Long tail: migrating panels into the plugin registry (`src/lib/plugins/registry.ts`) one at a time makes commands/status-bar items gate through the same mechanism instead of per-site `if`s. V1 gates only the rail + panel switch + plugin activation.
+- Long tail: migrating panels into the plugin registry (`src/lib/plugins/registry.ts`) one at a time makes commands/status-bar items gate through the same mechanism instead of per-site `if`s. V1 gated only the rail + panel switch + plugin activation.
+
+## V2 addendum — registry-contributed sidebar panels (2026-07-19)
+
+The V1 registry could *store* a `PanelContribution` but nothing rendered one: the type had no icon/group/pack, and the rail only knew its hardwired list. Both are now closed.
+
+**Design:**
+
+1. **Namespaced view ids, not a widened union.** A contributed panel's view id is `` `plugin:${contributionId}` `` (`PluginPanelViewId`); `SidebarView = SidebarViewId | PluginPanelViewId`. Widening `SidebarViewId` to `string` was rejected — it would forfeit exhaustiveness on the built-in switch and let a contribution shadow a built-in view. With a namespace, a plugin registering `id: "explorer"` yields `plugin:explorer`, which is a *different* view and cannot displace the real one.
+2. **Persistence validates without the registry.** `isSidebarView` accepts the prefix shape alone, because sidebar state is restored from localStorage *before* any plugin registers. A persisted plugin view is therefore normally unresolved on first render.
+3. **Unresolved ≠ invalid.** `PluginPanelSlot` renders a neutral "isn't available" state for a `missing` contribution rather than redirecting to the explorer. A redirect would silently discard the user's view on every launch, and would do so more often on slower machines — the failure would look like a preference that won't stick.
+4. **The pack lives on the contribution.** `packForView()` only maps built-ins, so `PanelContribution.pack` is the gating source for contributed panels and `PackGatePlaceholder` takes an optional explicit `pack`. Same "enable this pack?" UI for both kinds.
+5. **Ungrouped panels land in Advanced**, and `order` (default 0, tie-broken by title) keeps the rail stable as plugins register in nondeterministic order.
+
+Resolution logic is pure and unit-tested in `src/modules/sidebar/pluginPanels.ts` — the awkward states (missing / gated / ready, bottom-vs-sidebar, ordering) are exactly what a DOM test could not check cheaply here.
+
+**Migration path for built-ins (deliberately not started).** Moving a hardwired panel into the registry changes its persisted view id (`database` → `plugin:…`) and would orphan saved sidebar state and pinned-rail entries. Any such migration must therefore ship with a one-time id remap in `readSidebarView` and `loadPinned`, in the same change. That cost is why migration stays incremental and per-panel rather than a single sweep.

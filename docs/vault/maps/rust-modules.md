@@ -16,6 +16,8 @@ As of 2026-07. One-liners are orientation, not spec — verify in code, and fix 
 - `lsp/` / `dap/` — language server and debug adapter process management
 - `net.rs` / `secrets.rs` / `recording.rs` — network, secret storage, recording; `#![warn(clippy::unwrap_used, clippy::expect_used)]` — no unwrap/expect in production code here
 - `http_share.rs` — local HTTP sharing (stdlib-only server; every route token-gated `?k=`, constant-time compare; caller-chosen bind address)
+- `fswatch.rs` — native filesystem watching for the explorer (`notify`), replacing a 3 s poll. `fs_watch_start` returns **false** when the watch can't be established (inotify limit on big trees) — the frontend must keep polling in that case. Events are debounced 250 ms and filtered against `IGNORED_DIRS` in Rust
+- `sysmon.rs` — system resource sampling for the System Monitor panel (`sysinfo`, feature-minimal). Process-global stateful `Sampler` — rates are deltas between refreshes. See [[system-monitor]].
 - `ml.rs` / `python.rs` — ML engine and python probing
 - `crash.rs` — crash handling
 

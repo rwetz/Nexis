@@ -36,7 +36,7 @@ As of 2026-07. One-liners are orientation, not spec — verify in code, and fix 
 
 - `markdown` · `preview` · `image-viewer` — viewers/renderers
 - `snippets` / `shell-snippets` / `prompt-templates` — reusable content
-- `profiles` — shell profiles · `theme` — theming · `notifications` · `processes` — process list · `agent-queue` — queued agent runs · `refactor` · `share` — sharing (pairs with `http_share.rs`) · `updater` — app updates
+- `profiles` — shell profiles · `theme` — theming · `notifications` · `processes` — Nexis's own background processes · `sysmon` — system resource analyzer ([[system-monitor]]) · `agent-queue` — queued agent runs · `refactor` · `share` — sharing (pairs with `http_share.rs`) · `updater` — app updates
 
 ## Shared (outside modules/)
 
