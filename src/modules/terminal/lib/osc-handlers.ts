@@ -196,7 +196,14 @@ export function registerPromptTracker(
       if (state) state.inCommand = false;
       if (marker && !marker.isDisposed) {
         const code = parseExitCode(data);
-        addExitDecoration(term, marker, code, decorations);
+        // Read the command now, while the buffer still holds this block.
+        addExitDecoration(
+          term,
+          marker,
+          code,
+          decorations,
+          readCommandText(term, cmdMarker, cmdStartX, outMarker),
+        );
         if (explain && code !== 0 && code !== EXIT_SIGINT && explain.isEnabled()) {
           const capture = captureFailedCommand(term, cmdMarker, cmdStartX, outMarker);
           // Require evidence a command actually ran: a C marker, or output.
@@ -259,11 +266,22 @@ function parseExitCode(data: string): number {
 }
 
 /** Add a thin green/red gutter bar on a command's prompt line, by exit code. */
+/**
+ * The exit-status bar in the gutter, which doubles as the per-command block
+ * affordance: hovering names the command and its exit status, clicking copies
+ * the command.
+ *
+ * `command` is captured at D time and closed over — the buffer rows it came
+ * from may have scrolled away or been overwritten by the time anyone clicks,
+ * so reading lazily would hand back the wrong text (or nothing) exactly when
+ * the scrollback is long enough for this to be useful.
+ */
 function addExitDecoration(
   term: Terminal,
   marker: IMarker,
   code: number,
   decorations: IDecoration[],
+  command = "",
 ): void {
   // Decorations aren't guaranteed (older xterm builds / headless test mocks).
   if (typeof term.registerDecoration !== "function") return;
@@ -275,17 +293,49 @@ function addExitDecoration(
     if (i >= 0) decorations.splice(i, 1);
   });
   const ok = code === 0;
+  const label = command
+    ? `${command}\n${ok ? "Exit 0" : `Exit ${code}`} — click to copy command`
+    : ok
+      ? "Exit 0"
+      : `Exit ${code}`;
   dec.onRender((el) => {
-    el.style.width = "2px";
+    // Widen the *hit* area without widening the bar: a 2px target is not
+    // clickable in practice, so the element spans the gutter and paints the
+    // bar with an inset border instead of a background.
+    el.style.width = command ? "6px" : "2px";
     // Leave height alone: xterm sizes the element to one cell row. A "100%"
     // override resolves against the decoration container (the whole screen),
     // which painted the bar down the entire terminal instead of one line.
     el.style.borderRadius = "1px";
-    el.style.background = ok
-      ? "var(--terminal-ansi-green)"
-      : "var(--terminal-ansi-red)";
+    const color = ok ? "var(--terminal-ansi-green)" : "var(--terminal-ansi-red)";
+    if (command) {
+      el.style.background = "transparent";
+      el.style.borderLeft = `2px solid ${color}`;
+      el.style.cursor = "pointer";
+      el.style.pointerEvents = "auto";
+      el.title = label;
+      // Assigned as properties, not addEventListener: xterm re-invokes
+      // onRender on every paint, and listeners would stack (same rule the
+      // Explain chip follows).
+      el.onmouseenter = () => {
+        el.style.background = `color-mix(in srgb, ${color} 22%, transparent)`;
+      };
+      el.onmouseleave = () => {
+        el.style.background = "transparent";
+      };
+      el.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        void navigator.clipboard?.writeText(command).catch((err) => {
+          console.warn("[nexis] block copy failed:", err);
+        });
+      };
+    } else {
+      el.style.width = "2px";
+      el.style.background = color;
+      el.style.pointerEvents = "none";
+    }
     el.style.opacity = "0.85";
-    el.style.pointerEvents = "none";
   });
 }
 
@@ -314,24 +364,10 @@ function captureFailedCommand(
   cmdStartX: number,
   outMarker: IMarker | null,
 ): { command: string; output: string } | null {
-  const buf = term.buffer?.active;
-  if (!buf || !cmdMarker || cmdMarker.isDisposed) return null;
-  // The cursor sits where D was emitted — on a fresh line below the last
-  // output line when output ended in a newline (the common case).
-  const cursorLine = buf.baseY + buf.cursorY;
-  const lastLine = buf.cursorX > 0 ? cursorLine : cursorLine - 1;
-
-  const cmdLine = cmdMarker.line;
-  let cmdEnd: number;
-  let outStart: number;
-  if (outMarker && !outMarker.isDisposed) {
-    cmdEnd = Math.max(cmdLine, outMarker.line - 1);
-    outStart = outMarker.line;
-  } else {
-    cmdEnd = cmdLine;
-    while (cmdEnd < lastLine && buf.getLine(cmdEnd + 1)?.isWrapped) cmdEnd++;
-    outStart = cmdEnd + 1;
-  }
+  const bounds = commandBounds(term, cmdMarker, outMarker);
+  if (!bounds) return null;
+  const buf = term.buffer.active;
+  const { cmdLine, cmdEnd, outStart, lastLine } = bounds;
 
   const command = readLines(buf, cmdLine, Math.min(cmdEnd, lastLine), cmdStartX)
     .slice(0, MAX_COMMAND_CHARS)
@@ -354,6 +390,69 @@ function captureFailedCommand(
     if (truncated) output = `${TRUNCATION_NOTE}\n${output}`;
   }
   return { command, output };
+}
+
+/**
+ * Line boundaries of the command that just finished, resolved at OSC 133 D
+ * time (the buffer is final for that command — the parser is in-order, so
+ * everything it printed is already there).
+ *
+ * Shared by the failed-command capture and the block gutter's copy action so
+ * the two can never disagree about where a command ends and its output
+ * begins — they used to be the same code, and a divergence here would show
+ * up as the copied command silently including a line of output.
+ */
+function commandBounds(
+  term: Terminal,
+  cmdMarker: IMarker | null,
+  outMarker: IMarker | null,
+): { cmdLine: number; cmdEnd: number; outStart: number; lastLine: number } | null {
+  const buf = term.buffer?.active;
+  if (!buf || !cmdMarker || cmdMarker.isDisposed) return null;
+  // The cursor sits where D was emitted — on a fresh line below the last
+  // output line when output ended in a newline (the common case).
+  const cursorLine = buf.baseY + buf.cursorY;
+  const lastLine = buf.cursorX > 0 ? cursorLine : cursorLine - 1;
+
+  const cmdLine = cmdMarker.line;
+  let cmdEnd: number;
+  let outStart: number;
+  if (outMarker && !outMarker.isDisposed) {
+    cmdEnd = Math.max(cmdLine, outMarker.line - 1);
+    outStart = outMarker.line;
+  } else {
+    cmdEnd = cmdLine;
+    while (cmdEnd < lastLine && buf.getLine(cmdEnd + 1)?.isWrapped) cmdEnd++;
+    outStart = cmdEnd + 1;
+  }
+  return { cmdLine, cmdEnd, outStart, lastLine };
+}
+
+/**
+ * Just the command text of the block that finished, for the gutter's
+ * click-to-copy action.
+ *
+ * Only the command is retained per block, never its output: a block index
+ * spans the whole scrollback (up to `MAX_PROMPT_MARKERS`), and holding each
+ * command's output would put tens of megabytes behind a feature that exists
+ * to copy a one-line command. Output stays reachable through selection.
+ */
+function readCommandText(
+  term: Terminal,
+  cmdMarker: IMarker | null,
+  cmdStartX: number,
+  outMarker: IMarker | null,
+): string {
+  const bounds = commandBounds(term, cmdMarker, outMarker);
+  if (!bounds) return "";
+  return readLines(
+    term.buffer.active,
+    bounds.cmdLine,
+    Math.min(bounds.cmdEnd, bounds.lastLine),
+    cmdStartX,
+  )
+    .slice(0, MAX_COMMAND_CHARS)
+    .trim();
 }
 
 /** Read buffer rows [from..to], joining wrapped rows without a newline.

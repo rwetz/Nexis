@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Terminal } from "@xterm/xterm";
 import {
   adjacentPromptLine,
@@ -386,6 +386,95 @@ describe("OSC 133 failed-command Explain chip", () => {
     expect(chips).toHaveLength(1);
     t.tracker.dispose();
     expect(chips[0].disposed).toBe(true);
+  });
+
+  describe("block gutter — per-command decoration with click-to-copy", () => {
+    /** The gutter bar is the decoration with no anchor (the chip is right-anchored). */
+    const gutterOf = (t: Fake) =>
+      t.decorations.filter((d) => d.options.anchor === undefined);
+
+    function clipboardSpy() {
+      const writeText = vi.fn(() => Promise.resolve());
+      vi.stubGlobal("navigator", { clipboard: { writeText } });
+      return writeText;
+    }
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("copies the command when the gutter bar is clicked", () => {
+      const writeText = clipboardSpy();
+      const t = setup(["~/dev ❯ cargo build", "ok"]);
+      runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "0", endLine: 2 });
+
+      const bars = gutterOf(t);
+      expect(bars).toHaveLength(1);
+      const el = makeChipEl();
+      bars[0].render?.(el as unknown as HTMLElement);
+
+      expect(el.title).toContain("cargo build");
+      expect(el.style.pointerEvents).toBe("auto");
+      el.onclick?.(clickEvent());
+      expect(writeText).toHaveBeenCalledWith("cargo build");
+    });
+
+    it("names the exit status in the hover title for a successful command", () => {
+      clipboardSpy();
+      const t = setup(["~/dev ❯ true", ""]);
+      runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "0", endLine: 1, endX: 0 });
+      const el = makeChipEl();
+      gutterOf(t)[0].render?.(el as unknown as HTMLElement);
+      expect(el.title).toContain("Exit 0");
+    });
+
+    it("names a nonzero exit status", () => {
+      clipboardSpy();
+      const t = setup(["~/dev ❯ false", ""]);
+      runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "1", endLine: 1, endX: 0 });
+      const el = makeChipEl();
+      gutterOf(t)[0].render?.(el as unknown as HTMLElement);
+      expect(el.title).toContain("Exit 1");
+    });
+
+    it("stays inert with no command text rather than offering an empty copy", () => {
+      clipboardSpy();
+      // No B marker => no command was captured. The bar must fall back to the
+      // plain non-interactive form instead of copying an empty string.
+      const t = setup(["~/dev ❯ ", ""]);
+      const h = t.handlers.get(133);
+      t.cursor.y = 0;
+      h?.("A");
+      h?.("D;0");
+      const el = makeChipEl();
+      gutterOf(t)[0].render?.(el as unknown as HTMLElement);
+      expect(el.style.pointerEvents).toBe("none");
+      expect(el.onclick).toBeNull();
+    });
+
+    it("re-rendering does not stack handlers (xterm repaints call onRender again)", () => {
+      const writeText = clipboardSpy();
+      const t = setup(["~/dev ❯ ls", "a"]);
+      runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "0", endLine: 2 });
+      const el = makeChipEl();
+      const bar = gutterOf(t)[0];
+      bar.render?.(el as unknown as HTMLElement);
+      bar.render?.(el as unknown as HTMLElement);
+      bar.render?.(el as unknown as HTMLElement);
+      el.onclick?.(clickEvent());
+      // Property assignment, not addEventListener: exactly one write.
+      expect(writeText).toHaveBeenCalledTimes(1);
+    });
+
+    it("hover paints and clears the highlight", () => {
+      clipboardSpy();
+      const t = setup(["~/dev ❯ ls", "a"]);
+      runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "0", endLine: 2 });
+      const el = makeChipEl();
+      gutterOf(t)[0].render?.(el as unknown as HTMLElement);
+      el.onmouseenter?.();
+      expect(el.style.background).not.toBe("transparent");
+      el.onmouseleave?.();
+      expect(el.style.background).toBe("transparent");
+    });
   });
 });
 
