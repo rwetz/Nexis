@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { invoke } from "@tauri-apps/api/core";
+import { clearMissingTool, reportMissingTool } from "@/lib/missingTools";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
   type LspCodeAction,
@@ -128,9 +129,18 @@ class LspClientManager {
 
       this.sessions.set(key, entry);
       ensureApplyEditListener();
+      // Installing a server mid-session should retire its notice without a
+      // restart.
+      clearMissingTool(group);
       return sessionId;
     } catch {
-      // Server not installed or failed to start — silently degrade
+      // The server is not installed, or failed to start. Nexis deliberately
+      // does not bundle language servers (binary-size budget), so this is an
+      // expected state rather than an error — but it must not be *silent*:
+      // completions simply never appearing, with nothing saying why, is the
+      // exact failure the degradation matrix exists to end. The status bar
+      // surfaces this with an install command.
+      reportMissingTool(group);
       return null;
     }
   }

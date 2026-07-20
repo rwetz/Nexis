@@ -23,6 +23,7 @@ import { usePluginRegistry } from "@/lib/plugins/registry";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { SharingPill } from "@/modules/share";
 import { MemoryReportPill } from "./MemoryReportPill";
+import { MissingToolsPill } from "./MissingToolsPill";
 import { FpsPill } from "./FpsPill";
 import { cn } from "@/lib/utils";
 
@@ -117,6 +118,7 @@ export function StatusBar({
 
         {/* Always mounted while sharing runs — not gated by pack or panel */}
         <SharingPill />
+        <MissingToolsPill />
 
         {privateActive ? (
           <Tooltip>

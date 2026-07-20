@@ -9,6 +9,7 @@ import {
   type GitRepoInfo,
   type GitStatusSnapshot,
 } from "@/modules/ai/lib/native";
+import { noteGitErrorIfMissing } from "@/lib/missingTools";
 import { useWorkspaceEnvStore, workspaceScopeKey } from "@/modules/workspace";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -332,13 +333,18 @@ export function useSourceControl(
         }));
       } catch (error) {
         if (requestId !== requestIdRef.current) return;
+        const message = normalizeError(error);
+        // "git is not available" is a degraded environment, not a repo error:
+        // surface it once in the status bar with an install command instead
+        // of leaving every git surface mysteriously empty.
+        noteGitErrorIfMissing(message);
         setState((current) => ({
           ...current,
           repo: null,
           hasRepo: false,
           status: null,
           isLoading: false,
-          localError: normalizeError(error),
+          localError: message,
         }));
       } finally {
         lastRefreshAtRef.current = Date.now();

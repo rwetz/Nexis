@@ -118,3 +118,24 @@ impl From<GitError> for String {
 }
 
 pub type Result<T> = std::result::Result<T, GitError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The frontend matches this exact phrase to raise the "git not installed"
+    /// notice with an install command (`noteGitErrorIfMissing` in
+    /// `src/lib/missingTools.ts`). Git errors cross IPC as plain strings, so
+    /// the wording is the only thing linking the two sides — changing it here
+    /// without updating there silently returns git to a degraded-but-unexplained
+    /// state. Update both, or neither.
+    #[test]
+    fn not_installed_message_stays_in_sync_with_the_frontend_matcher() {
+        assert!(
+            GitError::NotInstalled
+                .to_string()
+                .contains("git is not available on PATH"),
+            "frontend degradation notice matches on this phrase"
+        );
+    }
+}
