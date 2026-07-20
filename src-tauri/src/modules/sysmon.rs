@@ -459,19 +459,40 @@ mod tests {
     }
 
     /// Signalling a pid that does not exist is the normal poll-interval race
-    /// (the row was sampled a second ago), not an error. Pid 0 is never a
-    /// signalable user process on any supported platform.
+    /// (the row was sampled a second ago), not an error — `sysmon_kill` takes
+    /// its `else { return Ok(false) }` branch rather than surfacing a failure.
+    ///
+    /// The pid is found by enumerating the live table and taking one that is
+    /// absent from it, not hardcoded. Pid 0 was the original choice and is
+    /// wrong on Windows, where it is the System Idle Process and *does*
+    /// enumerate — that made this test fail only on Windows, and only
+    /// sometimes.
     #[test]
     fn killing_a_nonexistent_pid_reports_false_rather_than_erroring() {
         let mut s = Sampler::new();
         s.system.refresh_processes_specifics(
-            ProcessesToUpdate::Some(&[Pid::from_u32(0)]),
+            ProcessesToUpdate::All,
+            true,
+            ProcessRefreshKind::nothing(),
+        );
+        let live: std::collections::HashSet<u32> =
+            s.system.processes().keys().map(|p| p.as_u32()).collect();
+        // Walk down from the top of the pid space: the high end is far from
+        // where the OS is currently allocating, so a gap is found immediately
+        // and is unlikely to be filled by a process spawning mid-test.
+        let absent = (1..=u32::MAX)
+            .rev()
+            .find(|pid| !live.contains(pid))
+            .expect("some pid in the space must be unused");
+
+        s.system.refresh_processes_specifics(
+            ProcessesToUpdate::Some(&[Pid::from_u32(absent)]),
             true,
             ProcessRefreshKind::nothing(),
         );
         assert!(
-            s.system.process(Pid::from_u32(0)).is_none(),
-            "pid 0 should not resolve to a signalable process"
+            s.system.process(Pid::from_u32(absent)).is_none(),
+            "pid {absent} was absent from the process table but still resolved"
         );
     }
 
