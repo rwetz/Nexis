@@ -31,12 +31,17 @@ export default defineConfig({
       // loaded in the Node test environment without full mocking; including them
       // would show misleading 0% numbers.
       include: [
+        "src/lib/externalTools.ts",
+        "src/lib/missingTools.ts",
         "src/lib/path.ts",
         "src/lib/plugins/registry.ts",
         "src/modules/ai/lib/compact.ts",
         "src/modules/ai/lib/redact.ts",
         "src/modules/ai/lib/security.ts",
+        "src/modules/ai/tools/plugin-tools.ts",
         "src/modules/ai/tools/shell.ts",
+        "src/modules/sidebar/pluginPanels.ts",
+        "src/modules/sysmon/braille.ts",
         "src/modules/tabs/lib/mru.ts",
         "src/modules/tabs/lib/tabPersistence.ts",
         "src/modules/terminal/lib/sessionRestore.ts",
@@ -45,15 +50,15 @@ export default defineConfig({
         "src/modules/terminal/lib/pty-bridge.ts",
       ],
       // Minimum-coverage gate (IDEAS D4): floors sit a few points below the
-      // current numbers (lines/statements ~72%, branches ~82%, functions ~56%)
+      // current numbers (lines/statements ~84%, branches ~87%, functions ~74%)
       // so ordinary churn doesn't flake the build, but a real regression that
       // drops coverage fails `pnpm test:coverage` — which CI now runs.
       // Ratchet these up as coverage improves; never lower them to make CI pass.
       thresholds: {
-        lines: 70,
-        branches: 78,
-        functions: 52,
-        statements: 70,
+        lines: 82,
+        branches: 85,
+        functions: 71,
+        statements: 82,
       },
     },
   },
