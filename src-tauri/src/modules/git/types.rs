@@ -143,6 +143,23 @@ pub struct GitStashEntry {
     pub timestamp_secs: i64,
 }
 
+/// A pre-edit snapshot taken before an AI agent modifies files.
+///
+/// Stored as a commit object under `refs/nexis/checkpoints/*` — reachable
+/// enough that git won't garbage-collect it, invisible enough that it never
+/// appears in `git log`, `git branch`, or a push.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitCheckpoint {
+    /// Full ref, e.g. `refs/nexis/checkpoints/1721430000123`.
+    pub ref_name: String,
+    /// Commit object the ref points at.
+    pub sha: String,
+    /// What the agent was about to do.
+    pub label: String,
+    pub timestamp_secs: i64,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitBranchEntry {

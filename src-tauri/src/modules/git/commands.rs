@@ -13,9 +13,9 @@ use tauri::{AppHandle, Manager};
 
 use crate::modules::git::operations;
 use crate::modules::git::types::{
-    DiscardEntry, GitBranchEntry, GitCommitFileChange, GitCommitResult, GitDiffContentResult,
-    GitDiffResult, GitLogEntry, GitPanelSnapshot, GitPushResult, GitRepoInfo, GitStashEntry,
-    GitStatusSnapshot, GitSubmoduleEntry, GitWorktreeEntry,
+    DiscardEntry, GitBranchEntry, GitCheckpoint, GitCommitFileChange, GitCommitResult,
+    GitDiffContentResult, GitDiffResult, GitLogEntry, GitPanelSnapshot, GitPushResult, GitRepoInfo,
+    GitStashEntry, GitStatusSnapshot, GitSubmoduleEntry, GitWorktreeEntry,
 };
 use crate::modules::workspace::{WorkspaceEnv, WorkspaceRegistry};
 
@@ -458,6 +458,65 @@ pub async fn git_worktree_prune(
     let workspace = WorkspaceEnv::from_option(workspace);
     blocking(app, move |r| {
         operations::worktree_prune(r, &repo_root, &workspace).map_err(Into::into)
+    })
+    .await
+}
+
+// ── AI checkpoints ───────────────────────────────────────────────────────────
+
+/// Snapshot the working tree before an agent edit. `Ok(None)` means the tree
+/// was clean and no checkpoint was needed.
+#[tauri::command]
+pub async fn git_checkpoint_create(
+    repo_root: String,
+    label: String,
+    workspace: Option<WorkspaceEnv>,
+    app: AppHandle,
+) -> Result<Option<GitCheckpoint>, String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
+    blocking(app, move |r| {
+        operations::checkpoint_create(r, &repo_root, &label, &workspace).map_err(Into::into)
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn git_checkpoint_list(
+    repo_root: String,
+    workspace: Option<WorkspaceEnv>,
+    app: AppHandle,
+) -> Result<Vec<GitCheckpoint>, String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
+    blocking(app, move |r| {
+        operations::checkpoint_list(r, &repo_root, &workspace).map_err(Into::into)
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn git_checkpoint_restore(
+    repo_root: String,
+    ref_name: String,
+    workspace: Option<WorkspaceEnv>,
+    app: AppHandle,
+) -> Result<(), String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
+    blocking(app, move |r| {
+        operations::checkpoint_restore(r, &repo_root, &ref_name, &workspace).map_err(Into::into)
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn git_checkpoint_delete(
+    repo_root: String,
+    ref_name: String,
+    workspace: Option<WorkspaceEnv>,
+    app: AppHandle,
+) -> Result<(), String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
+    blocking(app, move |r| {
+        operations::checkpoint_delete(r, &repo_root, &ref_name, &workspace).map_err(Into::into)
     })
     .await
 }

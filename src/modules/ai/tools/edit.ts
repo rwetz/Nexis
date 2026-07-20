@@ -9,6 +9,7 @@ import { z } from "zod";
 import { native } from "../lib/native";
 import { checkWritableCanonical } from "../lib/security";
 import { newQueuedEditId, usePlanStore } from "../store/planStore";
+import { checkpointBeforeEdit } from "../lib/checkpoint";
 import { resolvePath, type ToolContext } from "./context";
 
 type EditResult =
@@ -149,6 +150,9 @@ export function buildEditTools(ctx: ToolContext) {
             path: abs,
           };
         }
+        // Snapshot before writing so the whole edit is revertible. Never
+        // gates the edit — see checkpointBeforeEdit.
+        await checkpointBeforeEdit(ctx, "edit");
         return applyEdits(
           abs,
           [{ old_string, new_string, replace_all }],
@@ -186,6 +190,7 @@ export function buildEditTools(ctx: ToolContext) {
             path: abs,
           };
         }
+        await checkpointBeforeEdit(ctx, "multi_edit");
         return applyEdits(abs, edits, "multi_edit", ctx.readCache);
       },
     }),

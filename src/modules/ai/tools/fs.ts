@@ -13,6 +13,7 @@ import {
   checkWritableCanonical,
 } from "../lib/security";
 import { newQueuedEditId, usePlanStore } from "../store/planStore";
+import { checkpointBeforeEdit } from "../lib/checkpoint";
 import { resolvePath, type ToolContext } from "./context";
 
 const READ_BYTE_CAP = 25 * 1024;
@@ -187,6 +188,10 @@ export function buildFsTools(ctx: ToolContext) {
         }
 
         try {
+          // Checkpoint only on the real write — the plan-review path above
+          // enqueues rather than writing, so a checkpoint there would snapshot
+          // a tree nothing is about to change.
+          await checkpointBeforeEdit(ctx, "write_file");
           await native.writeFile(abs, content);
           ctx.readCache.set(abs, { size: content.length, hash: djb2(content) });
           return { path: abs, bytesWritten: content.length, ok: true };

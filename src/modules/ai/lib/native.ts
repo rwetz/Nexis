@@ -26,6 +26,14 @@ export type DirEntry = {
   mtime: number;
 };
 
+/** A pre-edit snapshot (see `git/operations.rs` checkpoint section). */
+export type GitCheckpoint = {
+  refName: string;
+  sha: string;
+  label: string;
+  timestampSecs: number;
+};
+
 export type CommandOutput = {
   stdout: string;
   stderr: string;
@@ -284,6 +292,30 @@ export const native = {
         exit_code: number | null;
       }[]
     >("shell_bg_list"),
+  /** Snapshot the tree before an agent edit. Null = clean tree, nothing to save. */
+  gitCheckpointCreate: (repoRoot: string, label: string) =>
+    invoke<GitCheckpoint | null>("git_checkpoint_create", {
+      repoRoot,
+      label,
+      workspace: currentWorkspaceEnv(),
+    }),
+  gitCheckpointList: (repoRoot: string) =>
+    invoke<GitCheckpoint[]>("git_checkpoint_list", {
+      repoRoot,
+      workspace: currentWorkspaceEnv(),
+    }),
+  gitCheckpointRestore: (repoRoot: string, refName: string) =>
+    invoke<void>("git_checkpoint_restore", {
+      repoRoot,
+      refName,
+      workspace: currentWorkspaceEnv(),
+    }),
+  gitCheckpointDelete: (repoRoot: string, refName: string) =>
+    invoke<void>("git_checkpoint_delete", {
+      repoRoot,
+      refName,
+      workspace: currentWorkspaceEnv(),
+    }),
   gitResolveRepo: (cwd: string) =>
     invoke<GitRepoInfo | null>("git_resolve_repo", {
       cwd,

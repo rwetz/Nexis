@@ -69,6 +69,7 @@ import {
   type SourceControlFileEntry,
 } from "./useSourceControlPanel";
 import { PrDescriptionDialog } from "./PrDescriptionDialog";
+import { CheckpointSection } from "./CheckpointSection";
 import { StashSection } from "./StashSection";
 import { SubmoduleSection } from "./SubmoduleSection";
 import { ConflictSection } from "./ConflictSection";
@@ -865,6 +866,13 @@ export const SourceControlPanel = memo(function SourceControlPanel({
           <StashSection
             repoRoot={scm.repo.repoRoot}
             onStashApplied={() => void sourceControl.refresh()}
+          />
+        )}
+
+        {scm.repo && (
+          <CheckpointSection
+            repoRoot={scm.repo.repoRoot}
+            onRestored={() => void sourceControl.refresh()}
           />
         )}
 

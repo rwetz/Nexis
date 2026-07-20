@@ -19,9 +19,10 @@ use crate::modules::git::process::{
     read_text_file, run_git,
 };
 use crate::modules::git::types::{
-    DiscardEntry, GitCommitFileChange, GitCommitResult, GitDiffContentResult, GitDiffResult,
-    GitLogEntry, GitOutput, GitPanelSnapshot, GitPushResult, GitRepoInfo, GitStatusSnapshot,
-    GitSubmoduleEntry, GitWorktreeEntry, TextSource, DEFAULT_TIMEOUT_SECS, NETWORK_TIMEOUT_SECS,
+    DiscardEntry, GitCheckpoint, GitCommitFileChange, GitCommitResult, GitDiffContentResult,
+    GitDiffResult, GitLogEntry, GitOutput, GitPanelSnapshot, GitPushResult, GitRepoInfo,
+    GitStatusSnapshot, GitSubmoduleEntry, GitWorktreeEntry, TextSource, DEFAULT_TIMEOUT_SECS,
+    NETWORK_TIMEOUT_SECS,
 };
 use crate::modules::git::utils::{
     authorized_repo_root, canonical_dir, resolve_within_repo, split_upstream, ResolvedGitDirectory,
@@ -1345,4 +1346,357 @@ pub fn worktree_prune(
     )?;
     ensure_success(&out, "git worktree prune")?;
     Ok(())
+}
+
+// ── AI checkpoints ───────────────────────────────────────────────────────────
+//
+// A checkpoint is a snapshot of the working tree taken immediately before an
+// agent edits files, so "undo what the AI just did" is one operation instead
+// of a manual diff review.
+//
+// `git stash create` is the primitive: it builds a commit object representing
+// the current state and prints its SHA **without touching the index, the
+// working tree, or the stash list**. That last property is what makes it safe
+// to call on every agent edit — an approach based on `git stash push` would
+// mutate the user's working tree, and one based on a real commit would
+// pollute their history.
+//
+// The SHA is then anchored under `refs/nexis/checkpoints/` so git cannot
+// garbage-collect it. That namespace is deliberate: refs outside
+// `refs/heads` and `refs/tags` never show up in `git log`, `git branch`, or a
+// default push, so checkpoints stay invisible to normal use.
+//
+// **Known limitation:** `git stash create` snapshots tracked files only. A
+// brand-new file the agent creates is untracked and therefore not in the
+// checkpoint. That is the deliberate trade: the dangerous, hard-to-undo case
+// is an agent overwriting code you already had, and deleting a file it newly
+// created is trivial by comparison. `--include-untracked` is not used because
+// its support on `stash create` is not dependable across the git versions
+// Nexis supports (>= 2.23).
+
+const CHECKPOINT_REF_PREFIX: &str = "refs/nexis/checkpoints/";
+
+/// Take a checkpoint. Returns `None` when there was nothing to snapshot —
+/// a clean tree needs no checkpoint, and creating an empty one would bury the
+/// useful entries under noise.
+pub fn checkpoint_create(
+    registry: &WorkspaceRegistry,
+    repo_root: &str,
+    label: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<Option<GitCheckpoint>> {
+    let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
+    ensure_git_available(&repo_root.workspace)?;
+
+    let created = run_git(
+        &repo_root.workspace,
+        Some(&repo_root.git_path),
+        ["stash", "create"],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&created, "git stash create failed")?;
+    let sha = String::from_utf8_lossy(&created.stdout).trim().to_string();
+    if sha.is_empty() {
+        return Ok(None); // clean tree
+    }
+
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH);
+    let timestamp_secs = now.as_ref().map(|d| d.as_secs() as i64).unwrap_or(0);
+    // Milliseconds so two checkpoints in the same second don't collide and
+    // silently overwrite each other.
+    let millis = now.map(|d| d.as_millis()).unwrap_or(0);
+
+    // The label lives in the REF NAME, not in `update-ref -m`. That flag
+    // writes the reflog, which git does not keep for refs outside
+    // refs/heads|remotes|notes by default — and the commit's own subject is
+    // git's "WIP on <branch>" boilerplate from `stash create`, which would
+    // show the user nothing about what the agent was doing.
+    let slug = slugify_label(label);
+    let ref_name = if slug.is_empty() {
+        format!("{CHECKPOINT_REF_PREFIX}{millis}")
+    } else {
+        format!("{CHECKPOINT_REF_PREFIX}{millis}-{slug}")
+    };
+
+    let updated = run_git(
+        &repo_root.workspace,
+        Some(&repo_root.git_path),
+        ["update-ref", &ref_name, &sha],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&updated, "git update-ref failed")?;
+
+    Ok(Some(GitCheckpoint {
+        ref_name,
+        sha,
+        label: label.to_string(),
+        timestamp_secs,
+    }))
+}
+
+/// Checkpoints, newest first.
+pub fn checkpoint_list(
+    registry: &WorkspaceRegistry,
+    repo_root: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<Vec<GitCheckpoint>> {
+    let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
+    ensure_git_available(&repo_root.workspace)?;
+    let output = run_git(
+        &repo_root.workspace,
+        Some(&repo_root.git_path),
+        [
+            "for-each-ref",
+            "--sort=-creatordate",
+            "--format=%(refname)%00%(objectname)%00%(creatordate:unix)",
+            CHECKPOINT_REF_PREFIX,
+        ],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git for-each-ref failed")?;
+    Ok(parse_checkpoints(&String::from_utf8_lossy(&output.stdout)))
+}
+
+/// Split the NUL-delimited `for-each-ref` output into checkpoints.
+///
+/// Separated out so the parsing is testable without a repo — a malformed line
+/// must be skipped, not panic the whole listing.
+fn parse_checkpoints(text: &str) -> Vec<GitCheckpoint> {
+    let mut out = Vec::new();
+    for line in text.lines() {
+        if line.is_empty() {
+            continue;
+        }
+        let mut parts = line.split('\u{0}');
+        let (Some(ref_name), Some(sha), Some(ts)) = (parts.next(), parts.next(), parts.next())
+        else {
+            continue;
+        };
+        if ref_name.is_empty() || sha.is_empty() {
+            continue;
+        }
+        out.push(GitCheckpoint {
+            label: label_from_ref(ref_name),
+            ref_name: ref_name.to_string(),
+            sha: sha.to_string(),
+            timestamp_secs: ts.parse().unwrap_or(0),
+        });
+    }
+    out
+}
+
+/// Reduce a label to something a git ref name accepts.
+///
+/// Ref names forbid spaces and a list of punctuation, and `validate_checkpoint_ref`
+/// narrows that further to alphanumerics and dashes. Capped at 26 characters so
+/// the whole suffix (13-digit millis + dash + slug) stays inside the 40-char
+/// limit that validator enforces.
+fn slugify_label(label: &str) -> String {
+    let mut out = String::new();
+    let mut last_dash = true; // suppress a leading dash
+    for ch in label.chars() {
+        if out.len() >= 26 {
+            break;
+        }
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch.to_ascii_lowercase());
+            last_dash = false;
+        } else if !last_dash {
+            out.push('-');
+            last_dash = true;
+        }
+    }
+    while out.ends_with('-') {
+        out.pop();
+    }
+    out
+}
+
+/// Recover the human label from a checkpoint ref name.
+fn label_from_ref(ref_name: &str) -> String {
+    let Some(suffix) = ref_name.strip_prefix(CHECKPOINT_REF_PREFIX) else {
+        return String::new();
+    };
+    // `<millis>` alone (no label) or `<millis>-<slug>`.
+    match suffix.split_once('-') {
+        Some((_, slug)) if !slug.is_empty() => slug.replace('-', " "),
+        _ => String::new(),
+    }
+}
+
+/// Restore a checkpoint over the working tree.
+///
+/// Uses `git restore --source=<sha> --worktree`, **not** `git stash apply`.
+/// The stash route was tried first and is wrong here: `stash apply` refuses
+/// when the working tree has conflicting local changes, and the agent's edit
+/// *is* exactly such a change — so it failed in precisely the situation the
+/// revert button exists for. `git restore` overwrites the tracked paths from
+/// the snapshot, which is what "undo that edit" has to mean. (It also needs
+/// only git 2.23, which is already the minimum Nexis requires.)
+///
+/// Because that overwrite is destructive to anything changed since the
+/// checkpoint, a fresh checkpoint is taken first — so the revert is itself
+/// revertible, and a mis-click costs one more click rather than the work.
+///
+/// The `:/` pathspec means "the repository root" regardless of the process's
+/// cwd, so the restore covers the whole tree rather than a subdirectory.
+/// Untracked files the agent created are left alone: they were never in the
+/// snapshot (see the module note on `stash create`), and deleting a new file
+/// is trivial next to recovering an overwritten one.
+pub fn checkpoint_restore(
+    registry: &WorkspaceRegistry,
+    repo_root: &str,
+    ref_name: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<()> {
+    validate_checkpoint_ref(ref_name)?;
+    // Safety net first. A failure here must not block the restore the user
+    // asked for, so the result is deliberately ignored.
+    let _ = checkpoint_create(registry, repo_root, "before revert", workspace);
+
+    let resolved = authorized_repo_root(registry, repo_root, workspace)?;
+    ensure_git_available(&resolved.workspace)?;
+    let output = run_git(
+        &resolved.workspace,
+        Some(&resolved.git_path),
+        ["restore", "--source", ref_name, "--worktree", "--", ":/"],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git restore failed")
+}
+
+/// Delete a checkpoint ref.
+pub fn checkpoint_delete(
+    registry: &WorkspaceRegistry,
+    repo_root: &str,
+    ref_name: &str,
+    workspace: &WorkspaceEnv,
+) -> Result<()> {
+    let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
+    ensure_git_available(&repo_root.workspace)?;
+    validate_checkpoint_ref(ref_name)?;
+    let output = run_git(
+        &repo_root.workspace,
+        Some(&repo_root.git_path),
+        ["update-ref", "-d", ref_name],
+        DEFAULT_TIMEOUT_SECS,
+    )?;
+    ensure_success(&output, "git update-ref -d failed")
+}
+
+/// Refuse any ref outside the checkpoint namespace.
+///
+/// `ref_name` arrives over IPC, and both restore and delete are destructive:
+/// without this, a crafted value could `stash apply` an arbitrary commit over
+/// the user's tree, or delete `refs/heads/main`. The webview is not a trust
+/// boundary we lean on — same posture as the snapshot-id validation.
+fn validate_checkpoint_ref(ref_name: &str) -> Result<()> {
+    let suffix = ref_name.strip_prefix(CHECKPOINT_REF_PREFIX);
+    let ok = suffix.is_some_and(|s| {
+        !s.is_empty() && s.len() <= 40 && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-')
+    });
+    if ok {
+        Ok(())
+    } else {
+        Err(GitError::command(
+            "checkpoint ref validation",
+            format!("invalid checkpoint ref: {ref_name}"),
+        ))
+    }
+}
+
+#[cfg(test)]
+mod checkpoint_tests {
+    use super::*;
+
+    #[test]
+    fn parses_for_each_ref_output() {
+        let text = "refs/nexis/checkpoints/1721430000123-multi-edit\u{0}abc123\u{0}1721430000\n";
+        let parsed = parse_checkpoints(text);
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(
+            parsed[0].ref_name,
+            "refs/nexis/checkpoints/1721430000123-multi-edit"
+        );
+        assert_eq!(parsed[0].sha, "abc123");
+        assert_eq!(parsed[0].timestamp_secs, 1721430000);
+        assert_eq!(parsed[0].label, "multi edit");
+    }
+
+    #[test]
+    fn keeps_an_unlabelled_checkpoint() {
+        // Still restorable, so it must not be dropped from the list.
+        let parsed = parse_checkpoints("refs/nexis/checkpoints/1\u{0}sha\u{0}5\n");
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].label, "");
+    }
+
+    #[test]
+    fn skips_malformed_lines_instead_of_failing_the_listing() {
+        let text = "garbage\n\nrefs/nexis/checkpoints/2-x\u{0}sha2\u{0}9\n";
+        let parsed = parse_checkpoints(text);
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0].sha, "sha2");
+    }
+
+    #[test]
+    fn slugifies_a_label_into_a_legal_ref_component() {
+        assert_eq!(slugify_label("before multi_edit"), "before-multi-edit");
+        assert_eq!(slugify_label("write_file: src/a.rs"), "write-file-src-a-rs");
+        // Leading/trailing punctuation must not leave stray dashes — a ref
+        // component ending in '-' is ugly and re-parses to a trailing space.
+        assert_eq!(slugify_label("  !!spaced!!  "), "spaced");
+        assert_eq!(slugify_label(""), "");
+        assert_eq!(slugify_label("!!!"), "");
+    }
+
+    #[test]
+    fn caps_the_slug_so_the_ref_passes_validation() {
+        // 13-digit millis + '-' + slug must stay within the validator's
+        // 40-char suffix limit.
+        let slug = slugify_label(&"averylongtoolname".repeat(5));
+        assert!(slug.len() <= 26, "slug was {} chars", slug.len());
+        let ref_name = format!("{CHECKPOINT_REF_PREFIX}1721430000123-{slug}");
+        assert!(validate_checkpoint_ref(&ref_name).is_ok());
+    }
+
+    #[test]
+    fn round_trips_a_label_through_the_ref_name() {
+        // The label survives the trip because it is encoded in the ref name;
+        // the commit's own subject is git's "WIP on <branch>" boilerplate.
+        let slug = slugify_label("before multi_edit");
+        let ref_name = format!("{CHECKPOINT_REF_PREFIX}1721430000123-{slug}");
+        assert_eq!(label_from_ref(&ref_name), "before multi edit");
+    }
+
+    #[test]
+    fn label_is_empty_for_a_ref_with_no_slug() {
+        assert_eq!(label_from_ref("refs/nexis/checkpoints/1721430000123"), "");
+        assert_eq!(label_from_ref("refs/heads/main"), "");
+    }
+
+    #[test]
+    fn accepts_a_well_formed_checkpoint_ref() {
+        assert!(validate_checkpoint_ref("refs/nexis/checkpoints/1721430000123").is_ok());
+    }
+
+    #[test]
+    fn rejects_refs_outside_the_checkpoint_namespace() {
+        // Both of these are destructive if allowed through: the first would
+        // let restore apply an arbitrary commit, the second would let delete
+        // remove a branch.
+        for bad in [
+            "refs/heads/main",
+            "refs/nexis/checkpoints/../../heads/main",
+            "refs/nexis/checkpoints/",
+            "",
+            "HEAD",
+            "refs/nexis/checkpoints/a/b",
+        ] {
+            assert!(
+                validate_checkpoint_ref(bad).is_err(),
+                "{bad} should be rejected"
+            );
+        }
+    }
 }
