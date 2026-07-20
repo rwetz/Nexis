@@ -16,6 +16,11 @@
 //! the PTY reader→flusher split so a metric burst becomes one event, not
 //! thousands. Lock recovery follows pitfall #8 (`unwrap_or_else(into_inner)`).
 
+// Panic-lint gate: no `.unwrap()`/`.expect()` in production code here.
+// Tests may still panic (allow-*-in-tests in clippy.toml). CI's
+// `clippy -- -D warnings` turns a new one into a build failure.
+#![warn(clippy::unwrap_used, clippy::expect_used)]
+
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
 use std::process::{ChildStdin, Stdio};

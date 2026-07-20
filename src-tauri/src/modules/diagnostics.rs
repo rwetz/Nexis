@@ -13,6 +13,11 @@
 //! rather than a zip crate — logs and JSON are small, and the <10 MB
 //! release-binary budget outweighs smaller bundles.
 
+// Panic-lint gate: no `.unwrap()`/`.expect()` in production code here.
+// Tests may still panic (allow-*-in-tests in clippy.toml). CI's
+// `clippy -- -D warnings` turns a new one into a build failure.
+#![warn(clippy::unwrap_used, clippy::expect_used)]
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};

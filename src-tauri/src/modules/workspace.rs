@@ -4,6 +4,11 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+// Panic-lint gate: no `.unwrap()`/`.expect()` in production code here.
+// Tests may still panic (allow-*-in-tests in clippy.toml). CI's
+// `clippy -- -D warnings` turns a new one into a build failure.
+#![warn(clippy::unwrap_used, clippy::expect_used)]
+
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};

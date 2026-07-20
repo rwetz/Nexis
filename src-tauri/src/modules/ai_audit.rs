@@ -11,6 +11,11 @@
 //! file is never rewritten or truncated by the app; rotation is the user's
 //! call (it grows ~200 bytes per agent command).
 
+// Panic-lint gate: no `.unwrap()`/`.expect()` in production code here.
+// Tests may still panic (allow-*-in-tests in clippy.toml). CI's
+// `clippy -- -D warnings` turns a new one into a build failure.
+#![warn(clippy::unwrap_used, clippy::expect_used)]
+
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;

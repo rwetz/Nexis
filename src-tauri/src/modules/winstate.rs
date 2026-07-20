@@ -30,6 +30,11 @@
 //! plugin's stored size are the same space, which is what makes the comparison
 //! valid.
 
+// Panic-lint gate: no `.unwrap()`/`.expect()` in production code here.
+// Tests may still panic (allow-*-in-tests in clippy.toml). CI's
+// `clippy -- -D warnings` turns a new one into a build failure.
+#![warn(clippy::unwrap_used, clippy::expect_used)]
+
 use serde_json::Value;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager, Runtime};

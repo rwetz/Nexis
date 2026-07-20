@@ -11,6 +11,11 @@
 //! atomic (tmp + rename) so a crash mid-write never leaves a half snapshot
 //! for the next launch to replay.
 
+// Panic-lint gate: no `.unwrap()`/`.expect()` in production code here.
+// Tests may still panic (allow-*-in-tests in clippy.toml). CI's
+// `clippy -- -D warnings` turns a new one into a build failure.
+#![warn(clippy::unwrap_used, clippy::expect_used)]
+
 use std::fs;
 use std::path::{Path, PathBuf};
 

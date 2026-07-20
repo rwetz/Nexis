@@ -13,6 +13,11 @@
 //! `{cache}/nexis/crash/` before the abort, and exposes a command so the
 //! frontend can surface "Nexis recovered from a crash" on the next launch.
 
+// Panic-lint gate: no `.unwrap()`/`.expect()` in production code here.
+// Tests may still panic (allow-*-in-tests in clippy.toml). CI's
+// `clippy -- -D warnings` turns a new one into a build failure.
+#![warn(clippy::unwrap_used, clippy::expect_used)]
+
 use std::backtrace::Backtrace;
 use std::fs;
 use std::io::Write;

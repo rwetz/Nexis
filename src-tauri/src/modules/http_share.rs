@@ -4,6 +4,11 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+// Panic-lint gate: no `.unwrap()`/`.expect()` in production code here.
+// Tests may still panic (allow-*-in-tests in clippy.toml). CI's
+// `clippy -- -D warnings` turns a new one into a build failure.
+#![warn(clippy::unwrap_used, clippy::expect_used)]
+
 /*!
  * http_share — a minimal TCP server that serves an HTML page on a local port
  * so users can open the current AI conversation or terminal snapshot in a

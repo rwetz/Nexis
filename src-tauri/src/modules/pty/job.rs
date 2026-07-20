@@ -8,6 +8,10 @@
 //! Dropping the handle kills the whole tree — only reliable orphan guard
 //! on Windows.
 
+// Panic-lint gate: no `.unwrap()`/`.expect()` in production code here.
+// Tests may still panic (allow-*-in-tests in clippy.toml). CI's
+// `clippy -- -D warnings` turns a new one into a build failure.
+#![warn(clippy::unwrap_used, clippy::expect_used)]
 #![cfg(windows)]
 
 use std::io;
