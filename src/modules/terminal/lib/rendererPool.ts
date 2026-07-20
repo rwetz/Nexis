@@ -10,6 +10,7 @@ import { usePreferencesStore } from "@/modules/settings/preferences";
 import { buildTerminalTheme } from "@/styles/terminalTheme";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { FitAddon } from "@xterm/addon-fit";
+import { ImageAddon } from "@xterm/addon-image";
 import { SearchAddon } from "@xterm/addon-search";
 import { SerializeAddon } from "@xterm/addon-serialize";
 import { WebLinksAddon } from "@xterm/addon-web-links";
@@ -22,6 +23,24 @@ import {
 import { scrollToAdjacentPrompt } from "./osc-handlers";
 
 export const POOL_MAX_SIZE = 5;
+
+/**
+ * Inline-image (Sixel / iTerm2 IIP) settings.
+ *
+ * `storageLimit` is per-terminal, and this pool keeps up to `POOL_MAX_SIZE`
+ * live terminals — the addon's 128 MB default would therefore authorize
+ * ~640 MB of decoded RGBA across a full pool, which is far outside what a
+ * terminal should ever hold. 16 MB caps the pool at ~80 MB worst case while
+ * still holding a healthy run of plots or `icat` output; the storage is FIFO,
+ * so exceeding it evicts the oldest images rather than dropping new ones.
+ *
+ * `enableSizeReports` stays on (the default) because it is what lets
+ * image-emitting tools ask for the cell/window pixel size and scale correctly
+ * — without it `img2sixel` and friends guess. The replies it generates ride
+ * the same `onData` → `pty_write` writer path as keystrokes, so they inherit
+ * the ordering guarantee rather than racing ahead of typed input.
+ */
+const IMAGE_ADDON_OPTIONS = { storageLimit: 16 } as const;
 const FIT_DEBOUNCE_MS = 8;
 const PTY_RESIZE_DEBOUNCE_MS = 256;
 const SNAPSHOT_SCROLLBACK_CAP = 5_000;
@@ -63,6 +82,8 @@ export type Slot = {
   readonly fitAddon: FitAddon;
   readonly searchAddon: SearchAddon;
   readonly serializeAddon: SerializeAddon;
+  /** Sixel / iTerm2 inline images. Its storage must be reset on recycle. */
+  readonly imageAddon: ImageAddon;
   readonly host: HTMLDivElement;
   webglAddon: WebglAddon | null;
   webglCanvases: HTMLCanvasElement[];
@@ -257,9 +278,11 @@ function createSlot(): Slot {
   const fitAddon = new FitAddon();
   const searchAddon = new SearchAddon();
   const serializeAddon = new SerializeAddon();
+  const imageAddon = new ImageAddon(IMAGE_ADDON_OPTIONS);
   term.loadAddon(fitAddon);
   term.loadAddon(searchAddon);
   term.loadAddon(serializeAddon);
+  term.loadAddon(imageAddon);
   term.loadAddon(
     new WebLinksAddon((_e, uri) => openUrl(uri).catch(console.error)),
   );
@@ -277,6 +300,7 @@ function createSlot(): Slot {
     fitAddon,
     searchAddon,
     serializeAddon,
+    imageAddon,
     host,
     webglAddon: null,
     webglCanvases: [],
@@ -480,6 +504,16 @@ function bindSlot(slot: Slot, p: AcquireParams): void {
   slot.term.options.disableStdin = p.shellExited;
   slot.term.clear();
   slot.term.reset();
+  // Explicit, not redundant: slots are recycled between unrelated terminal
+  // sessions, and decoded images live in the addon's own FIFO storage rather
+  // than in the xterm buffer that `reset()` clears. Without this, a new
+  // terminal can surface images produced by whichever session held the slot
+  // before it — and keep their memory alive indefinitely.
+  try {
+    slot.imageAddon.reset();
+  } catch (e) {
+    console.warn("[nexis] image addon reset failed:", e);
+  }
 
   if (
     p.cols > 0 &&

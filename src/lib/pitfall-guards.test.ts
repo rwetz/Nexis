@@ -217,4 +217,28 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
       "useRecording's save path must scrub event text with redactSensitive() before save_cast_recording",
     ).toBe(true);
   });
+
+  it("inline images: recycled slots reset the image addon's storage", () => {
+    // Renderer slots are pooled and reused across unrelated terminal
+    // sessions. Decoded Sixel/IIP images live in the addon's own FIFO
+    // storage, NOT in the xterm buffer that term.reset() clears — so
+    // acquireSlot must reset the addon explicitly. Without it a fresh
+    // terminal can surface the previous session's images and hold their
+    // memory indefinitely.
+    const pool = readSrc("modules/terminal/lib/rendererPool.ts");
+    expect(
+      /imageAddon\.reset\(\)/.test(pool),
+      "acquireSlot must call slot.imageAddon.reset() when recycling a slot — " +
+        "term.reset() does not clear decoded image storage",
+    ).toBe(true);
+
+    // A per-terminal storage cap is load-bearing: the addon defaults to
+    // 128 MB, and POOL_MAX_SIZE terminals at that default would authorize
+    // well over half a gigabyte of decoded RGBA.
+    expect(
+      /storageLimit:\s*\d+/.test(pool),
+      "the ImageAddon must be constructed with an explicit storageLimit — " +
+        "the 128 MB default is per-terminal and this pool holds POOL_MAX_SIZE of them",
+    ).toBe(true);
+  });
 });
