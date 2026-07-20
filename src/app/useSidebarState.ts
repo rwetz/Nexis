@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { isSidebarViewId, type SidebarViewId } from "@/modules/sidebar";
+import { isSidebarView, type SidebarView } from "@/modules/sidebar";
 import type { FileExplorerHandle } from "@/modules/explorer";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 
@@ -33,13 +33,13 @@ function readSidebarWidth(): number {
   }
 }
 
-function readSidebarView(): SidebarViewId {
+function readSidebarView(): SidebarView {
   try {
     const stored = window.localStorage.getItem(SIDEBAR_VIEW_STORAGE_KEY);
     // Any valid view restores, including pack-owned ones: heavy panels are
     // lazy-loaded, and a view whose pack got disabled in the meantime lands
     // on the PackGatePlaceholder instead of a broken panel.
-    if (isSidebarViewId(stored)) return stored;
+    if (isSidebarView(stored)) return stored;
   } catch {
     // ignore
   }
@@ -57,7 +57,7 @@ export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null
   const sidebarRef = useRef<PanelImperativeHandle | null>(null);
   const sidebarWidthRef = useRef(readSidebarWidth());
   const sidebarWidthWriteTimerRef = useRef(0);
-  const [sidebarView, setSidebarViewState] = useState<SidebarViewId>(readSidebarView);
+  const [sidebarView, setSidebarViewState] = useState<SidebarView>(readSidebarView);
   const explorerReturnFocusRef = useRef<HTMLElement | null>(null);
 
   // Flush the debounced width write on unmount so we don't leak the timer.
@@ -69,7 +69,7 @@ export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null
     };
   }, []);
 
-  const persistSidebarView = useCallback((view: SidebarViewId) => {
+  const persistSidebarView = useCallback((view: SidebarView) => {
     setSidebarViewState(view);
     try {
       window.localStorage.setItem(SIDEBAR_VIEW_STORAGE_KEY, view);
@@ -97,7 +97,7 @@ export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (!isSidebarViewId(detail)) return;
+      if (!isSidebarView(detail)) return;
       // Decoupled callers (status pills, plugins, deep links) can't know
       // the pack config — requests for gated views go through and land on
       // the PackGatePlaceholder ("enable X?") rather than being dropped.
@@ -112,7 +112,7 @@ export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null
   }, [persistSidebarView]);
 
   const cycleSidebarView = useCallback(
-    (view: SidebarViewId) => {
+    (view: SidebarView) => {
       const panel = sidebarRef.current;
       const collapsed = panel ? panel.getSize().asPercentage <= 0 : false;
       if (collapsed) {

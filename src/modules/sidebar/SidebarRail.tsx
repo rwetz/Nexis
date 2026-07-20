@@ -27,6 +27,7 @@ import {
   ListViewIcon,
   MoreHorizontalIcon,
   PinIcon,
+  CpuIcon,
   Router01Icon,
   RocketIcon,
   TaskAdd01Icon,
@@ -49,14 +50,16 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { viewEnabled } from "@/lib/packs";
+import { usePluginRegistry } from "@/lib/plugins/registry";
 import { usePreferencesStore } from "@/modules/settings/preferences";
-import type { SidebarViewId } from "./types";
+import { visiblePluginPanels } from "./pluginPanels";
+import { isSidebarViewId, pluginPanelViewId, type SidebarView } from "./types";
 
 export const SIDEBAR_RAIL_HEIGHT = 40;
 
 const STORAGE_KEY = "nexis:pinned-rail-items";
 
-const DEFAULT_PINNED: SidebarViewId[] = [
+const DEFAULT_PINNED: SidebarView[] = [
   "explorer",
   "recent-files",
   "source-control",
@@ -71,15 +74,15 @@ const DEFAULT_PINNED: SidebarViewId[] = [
 /** One-time promotions of new views into existing users' pinned rails.
  *  Each runs once (tracked by the marker key) and respects a user who
  *  later unpins the item. */
-const PIN_PROMOTIONS: { id: SidebarViewId; marker: string }[] = [
+const PIN_PROMOTIONS: { id: SidebarView; marker: string }[] = [
   { id: "ml", marker: "nexis:rail-promoted:ml" },
 ];
 
-function loadPinned(): SidebarViewId[] {
+function loadPinned(): SidebarView[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      let pinned = JSON.parse(raw) as SidebarViewId[];
+      let pinned = JSON.parse(raw) as SidebarView[];
       for (const promo of PIN_PROMOTIONS) {
         if (localStorage.getItem(promo.marker)) continue;
         localStorage.setItem(promo.marker, "1");
@@ -94,7 +97,7 @@ function loadPinned(): SidebarViewId[] {
   return DEFAULT_PINNED;
 }
 
-function savePinned(ids: SidebarViewId[]) {
+function savePinned(ids: SidebarView[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
 }
 
@@ -103,7 +106,7 @@ type RailGroup = "Navigation" | "Code" | "AI" | "Dev Tools" | "Advanced";
 const RAIL_GROUPS: RailGroup[] = ["Navigation", "Code", "AI", "Dev Tools", "Advanced"];
 
 type RailItemDef = {
-  id: SidebarViewId;
+  id: SidebarView;
   label: string;
   icon: Parameters<typeof HugeiconsIcon>[0]["icon"];
   group: RailGroup;
@@ -111,8 +114,8 @@ type RailItemDef = {
 };
 
 type Props = {
-  activeView: SidebarViewId;
-  onSelectView: (view: SidebarViewId) => void;
+  activeView: SidebarView;
+  onSelectView: (view: SidebarView) => void;
   changedCount: number;
   runningProcessCount?: number;
   onOpenHistory?: () => void;
@@ -125,10 +128,10 @@ export function SidebarRail({
   runningProcessCount,
   onOpenHistory,
 }: Props) {
-  const [pinned, setPinned] = useState<SidebarViewId[]>(loadPinned);
+  const [pinned, setPinned] = useState<SidebarView[]>(loadPinned);
   const [popoverOpen, setPopoverOpen] = useState(false);
 
-  const allItems: RailItemDef[] = [
+  const builtinItems: RailItemDef[] = [
     { id: "explorer",        label: "Files",            icon: FolderTreeIcon,    group: "Navigation" },
     { id: "recent-files",   label: "Recent Files",     icon: Clock01Icon,       group: "Navigation" },
     { id: "outline",        label: "Outline",          icon: ListViewIcon,      group: "Navigation" },
@@ -142,6 +145,7 @@ export function SidebarRail({
     { id: "refactor",       label: "AI Refactor",      icon: MagicWand01Icon,   group: "AI" },
     { id: "prompt-templates", label: "Prompt Templates", icon: FlashIcon,       group: "AI" },
     { id: "processes",      label: "Activity",         icon: TaskAdd01Icon,     group: "Dev Tools", badge: runningProcessCount },
+    { id: "system-monitor", label: "System Monitor",   icon: CpuIcon,           group: "Dev Tools" },
     { id: "ports",          label: "Ports",            icon: Router01Icon,      group: "Dev Tools" },
     { id: "repl",           label: "REPL",             icon: ComputerTerminal01Icon, group: "Dev Tools" },
     { id: "database",       label: "Database",         icon: Database01Icon,    group: "Dev Tools" },
@@ -157,10 +161,31 @@ export function SidebarRail({
 
   // Views whose expansion pack is off disappear from the rail and the
   // overflow popover. Pinned ids stay in storage so re-enabling a pack
-  // restores the user's pins. (Selector returns the store's own array —
+  // restores the user's pins. (Selectors return the stores' own arrays —
   // filtering happens locally; see CLAUDE.md pitfall #14.)
   const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
-  const visibleItems = allItems.filter((i) => viewEnabled(i.id, enabledPacks));
+  const registryPanels = usePluginRegistry((s) => s.panels);
+
+  // Registry-contributed sidebar panels (expansion packs V2) appear beside
+  // the built-ins and are gated by their own declared pack. They're resolved
+  // here rather than merged into `builtinItems` so a contribution can never
+  // displace or shadow a built-in row.
+  const pluginItems: RailItemDef[] = visiblePluginPanels(
+    registryPanels,
+    enabledPacks,
+  ).map((p) => ({
+    id: pluginPanelViewId(p.id),
+    label: p.title,
+    icon: p.icon ?? LayersIcon,
+    group: p.group ?? "Advanced",
+  }));
+
+  const visibleItems = [
+    ...builtinItems.filter(
+      (i) => isSidebarViewId(i.id) && viewEnabled(i.id, enabledPacks),
+    ),
+    ...pluginItems,
+  ];
 
   const itemMap = new Map(visibleItems.map((i) => [i.id, i]));
 
@@ -170,7 +195,7 @@ export function SidebarRail({
 
   const overflowItems = visibleItems.filter((i) => !pinned.includes(i.id));
 
-  const pin = useCallback((id: SidebarViewId) => {
+  const pin = useCallback((id: SidebarView) => {
     setPinned((prev) => {
       const next = prev.includes(id) ? prev : [...prev, id];
       savePinned(next);
@@ -178,7 +203,7 @@ export function SidebarRail({
     });
   }, []);
 
-  const unpin = useCallback((id: SidebarViewId) => {
+  const unpin = useCallback((id: SidebarView) => {
     setPinned((prev) => {
       const next = prev.filter((x) => x !== id);
       savePinned(next);

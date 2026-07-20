@@ -16,6 +16,12 @@
  */
 
 import type React from "react";
+import type { PackId } from "@/lib/packs";
+
+/** The icon object shape Hugeicons components accept. */
+type HugeiconsIconType = Parameters<
+  typeof import("@hugeicons/react").HugeiconsIcon
+>[0]["icon"];
 
 // ── Disposable ────────────────────────────────────────────────────────────────
 
@@ -57,12 +63,37 @@ export type StatusBarItem = {
 
 export type PanelLocation = "bottom" | "sidebar";
 
+/**
+ * Rail groups a sidebar panel can be filed under. Mirrors the built-in
+ * grouping in `SidebarRail`; a contribution with no group lands in
+ * "Advanced", which is where an unclassified extra panel belongs.
+ */
+export type PanelGroup = "Navigation" | "Code" | "AI" | "Dev Tools" | "Advanced";
+
 export type PanelContribution = {
   id: string;
   title: string;
   location: PanelLocation;
   /** Return the React node to render inside the panel. */
   render: () => React.ReactNode;
+
+  // ── Sidebar presentation (expansion packs V2) ────────────────────────────
+  // Ignored for `location: "bottom"`. All optional so an existing
+  // contribution keeps working — the rail falls back to a generic icon and
+  // the Advanced group.
+
+  /** Hugeicons icon for the rail button. Falls back to a generic panel icon. */
+  icon?: HugeiconsIconType;
+  /** Rail group. Defaults to "Advanced". */
+  group?: PanelGroup;
+  /**
+   * Expansion pack that owns this panel. `undefined` means core — always
+   * available. A panel naming a pack disappears from the rail when that pack
+   * is off, exactly like a built-in view (see `src/lib/packs.ts`).
+   */
+  pack?: PackId;
+  /** Sort order within the group; lower first. Defaults to 0. */
+  order?: number;
 };
 
 // ── Contribution: Command ─────────────────────────────────────────────────────

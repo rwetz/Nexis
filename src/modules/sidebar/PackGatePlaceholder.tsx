@@ -5,15 +5,21 @@
 // ╚══════════════════════════════════════╝
 
 import { Button } from "@/components/ui/button";
-import { PACK_IDS, PACKS, packForView } from "@/lib/packs";
+import { PACK_IDS, PACKS, packForView, type PackId } from "@/lib/packs";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setEnabledPacks } from "@/modules/settings/store";
 import { LayersIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { SidebarViewId } from "./types";
+import { isSidebarViewId, type SidebarView } from "./types";
 
 type Props = {
-  view: SidebarViewId;
+  view: SidebarView;
+  /**
+   * Owning pack, when the caller already knows it. Registry-contributed
+   * panels declare their pack on the contribution, so it cannot be looked up
+   * from the view id the way a built-in's can.
+   */
+  pack?: PackId;
   /** Escape hatch back to a core view (the file explorer). */
   onShowExplorer: () => void;
 };
@@ -25,9 +31,9 @@ type Props = {
  * panel is open, or by a decoupled `nexis:open-sidebar-view` request (deep
  * link, plugin, status pill) targeting a gated view.
  */
-export function PackGatePlaceholder({ view, onShowExplorer }: Props) {
+export function PackGatePlaceholder({ view, pack: packProp, onShowExplorer }: Props) {
   const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
-  const pack = packForView(view);
+  const pack = packProp ?? (isSidebarViewId(view) ? packForView(view) : null);
   if (!pack) return null; // core views are never gated
   const def = PACKS[pack];
 

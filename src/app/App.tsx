@@ -84,7 +84,12 @@ import {
   type ShortcutHandlers,
   type ShortcutId,
 } from "@/modules/shortcuts";
-import { PackGatePlaceholder, SidebarRail } from "@/modules/sidebar";
+import {
+  isPluginPanelViewId,
+  PackGatePlaceholder,
+  PluginPanelSlot,
+  SidebarRail,
+} from "@/modules/sidebar";
 import { ActivityPanel, useBackgroundProcesses } from "@/modules/processes";
 import { ProblemsPanel } from "@/modules/problems/ProblemsPanel";
 import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
@@ -1760,7 +1765,16 @@ export default function App() {
                 <div className="flex h-full min-h-0 flex-col border-r border-border/60 bg-card">
                   <div className="min-h-0 flex-1">
                     <ErrorBoundary>
-                    {!viewEnabled(sidebarView, enabledPacks) ? (
+                    {isPluginPanelViewId(sidebarView) ? (
+                      // Registry-contributed panel (expansion packs V2). The
+                      // slot owns its own gated/missing states, since a
+                      // contribution's pack lives on the contribution rather
+                      // than in the built-in view→pack map.
+                      <PluginPanelSlot
+                        view={sidebarView}
+                        onShowExplorer={() => persistSidebarView("explorer")}
+                      />
+                    ) : !viewEnabled(sidebarView, enabledPacks) ? (
                       // The active view's pack is disabled (settings toggle,
                       // preset, or a decoupled open request for a gated
                       // view): offer to enable the pack in place instead of
