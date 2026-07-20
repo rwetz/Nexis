@@ -23,6 +23,7 @@ pub mod recording;
 pub mod secrets;
 pub mod shell;
 pub mod snapshots;
+pub mod sysmon;
 pub mod winstate;
 pub mod workspace;
 

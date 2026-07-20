@@ -26,6 +26,61 @@ export type DirEntry = {
   mtime: number;
 };
 
+/** Sort keys for the system-monitor process table. Sorting happens in Rust so
+ *  that truncation keeps the rows the user asked to see (see `sysmon.rs`). */
+export type SysmonSort = "cpu" | "memory" | "pid" | "name";
+
+/** Signals the system-monitor panel may send. A closed set by design — see
+ *  the `KillSignal` enum in `sysmon.rs`. */
+export type SysmonSignal = "term" | "kill" | "int" | "hup";
+
+export type SysProcessRow = {
+  pid: number;
+  parent: number | null;
+  name: string;
+  cmd: string;
+  /** Percent of ONE core, `top`-style — can exceed 100 on a threaded process. */
+  cpu: number;
+  memory: number;
+  run_time: number;
+};
+
+export type SysDiskRow = {
+  name: string;
+  mount_point: string;
+  total: number;
+  available: number;
+  read_per_sec: number;
+  written_per_sec: number;
+};
+
+export type SysNetRow = {
+  interface: string;
+  rx_per_sec: number;
+  tx_per_sec: number;
+  rx_total: number;
+  tx_total: number;
+};
+
+export type SysSample = {
+  cpu_total: number;
+  cpu_per_core: number[];
+  mem_total: number;
+  mem_used: number;
+  mem_available: number;
+  swap_total: number;
+  swap_used: number;
+  load_avg: [number, number, number];
+  uptime: number;
+  disks: SysDiskRow[];
+  networks: SysNetRow[];
+  processes: SysProcessRow[];
+  /** True process count before truncation to the row cap. */
+  process_count: number;
+  /** Zero on the first sample, whose rates are all meaningless. */
+  elapsed_ms: number;
+};
+
 /** A pre-edit snapshot (see `git/operations.rs` checkpoint section). */
 export type GitCheckpoint = {
   refName: string;
@@ -289,6 +344,15 @@ export const native = {
    */
   fsWatchStart: (path: string) => invoke<boolean>("fs_watch_start", { path }),
   fsWatchStop: () => invoke<void>("fs_watch_stop"),
+  /** One poll of the system-resource analyzer (see `modules/sysmon`). */
+  sysmonSample: (sort?: SysmonSort, includeProcesses?: boolean) =>
+    invoke<SysSample>("sysmon_sample", {
+      sort: sort ?? null,
+      includeProcesses: includeProcesses ?? null,
+    }),
+  /** Returns false when the pid is already gone — a normal poll-interval race. */
+  sysmonKill: (pid: number, signal?: SysmonSignal) =>
+    invoke<boolean>("sysmon_kill", { pid, signal: signal ?? null }),
   shellBgList: () =>
     invoke<
       {

@@ -67,8 +67,16 @@ export const PACKS: Record<PackId, PackDef> = {
     id: "dev-tools",
     label: "Dev Tools",
     description:
-      "Process activity, port monitor, REPL, database client, workspace profiles, and SSH.",
-    views: ["processes", "ports", "repl", "database", "profiles", "ssh"],
+      "Process activity, system resource monitor, port monitor, REPL, database client, workspace profiles, and SSH.",
+    views: [
+      "processes",
+      "system-monitor",
+      "ports",
+      "repl",
+      "database",
+      "profiles",
+      "ssh",
+    ],
   },
   "ml-lab": {
     id: "ml-lab",

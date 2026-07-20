@@ -19,8 +19,8 @@ pub mod bench_internals {
 }
 
 use modules::{
-    ai_audit, autosave, crash, dap, diagnostics, fs, git, http_share, lsp, ml, net, pty, python,
-    recording, secrets, shell, snapshots, winstate, workspace,
+    ai_audit, autosave, crash, dap, diagnostics, fs, fswatch, git, http_share, lsp, ml, net, pty,
+    python, recording, secrets, shell, snapshots, sysmon, winstate, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -291,6 +291,8 @@ pub fn run() {
             snapshots::session_snapshot_gc,
             fswatch::fs_watch_start,
             fswatch::fs_watch_stop,
+            sysmon::sysmon_sample,
+            sysmon::sysmon_kill,
             http_share::http_share_start,
             http_share::http_share_update,
             http_share::http_share_stop,

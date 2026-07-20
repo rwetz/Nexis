@@ -178,6 +178,13 @@ const MlPanelLazy = lazy(() =>
 const DatabasePanelLazy = lazy(() =>
   import("@/modules/database/DatabasePanel").then((m) => ({ default: m.DatabasePanel })),
 );
+// Lazy: the resource analyzer is only mounted when its rail item is selected,
+// which also stops it polling the Rust sampler on every launch.
+const SystemMonitorPanelLazy = lazy(() =>
+  import("@/modules/sysmon/SystemMonitorPanel").then((m) => ({
+    default: m.SystemMonitorPanel,
+  })),
+);
 const DebuggerPanelLazy = lazy(() =>
   import("@/modules/debugger/DebuggerPanel").then((m) => ({ default: m.DebuggerPanel })),
 );
@@ -1250,6 +1257,7 @@ export default function App() {
     { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
     { id: "sidebar.sc",          label: "Show source control",      category: "View",    action: () => persistSidebarView("source-control") },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
+    { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
   ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
@@ -1778,6 +1786,8 @@ export default function App() {
                       />
                     ) : sidebarView === "processes" ? (
                       <ActivityPanel />
+                    ) : sidebarView === "system-monitor" ? (
+                      <Suspense fallback={null}><SystemMonitorPanelLazy /></Suspense>
                     ) : sidebarView === "ports" ? (
                       <PortsPanel onOpenPreview={openPreviewTab} />
                     ) : sidebarView === "repl" ? (

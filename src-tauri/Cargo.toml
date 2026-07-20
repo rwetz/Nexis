@@ -59,6 +59,17 @@ sha2 = "0.10"
 # networking work (e.g. a WebSocket server would want `net`/`io`).
 tokio = { version = "1", default-features = false, features = ["rt"] }
 tempfile = "3"
+# Sampling backend for the system-resource analyzer (modules/sysmon.rs).
+# Feature-minimal on purpose: the default set pulls `component` (thermal
+# sensors), `user` (passwd/SAM lookups), and `multithread` (rayon) — none of
+# which the panel reads, and rayon in particular is a large unit against the
+# <10 MB release budget. Do NOT switch this to default features; re-measure
+# the binary if you ever need to add one back.
+sysinfo = { version = "0.39", default-features = false, features = [
+	"system",
+	"disk",
+	"network",
+] }
 # Native filesystem watching for the explorer (modules/fswatch.rs), replacing
 # a 3 s poll. default-features off drops `crossbeam-channel` (the std mpsc
 # channel is enough for one debounce thread) and the serde support we never

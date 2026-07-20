@@ -9,6 +9,7 @@ export const SIDEBAR_VIEW_IDS = [
   "explorer",
   "source-control",
   "processes",
+  "system-monitor",
   "ports",
   "profiles",
   "repl",
