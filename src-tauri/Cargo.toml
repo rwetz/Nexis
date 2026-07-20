@@ -59,6 +59,13 @@ sha2 = "0.10"
 # networking work (e.g. a WebSocket server would want `net`/`io`).
 tokio = { version = "1", default-features = false, features = ["rt"] }
 tempfile = "3"
+# Native filesystem watching for the explorer (modules/fswatch.rs), replacing
+# a 3 s poll. default-features off drops `crossbeam-channel` (the std mpsc
+# channel is enough for one debounce thread) and the serde support we never
+# serialize through; `macos_fsevent` is the platform backend and is a no-op on
+# other targets. Re-measure the Windows binary before adding a feature — the
+# release budget is 10 MB and headroom is thin.
+notify = { version = "8", default-features = false, features = ["macos_fsevent"] }
 
 [dev-dependencies]
 # Benchmarks only — never compiled into shipping builds (dev-dependency +

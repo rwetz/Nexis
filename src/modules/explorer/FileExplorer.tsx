@@ -4,6 +4,8 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { listen } from "@tauri-apps/api/event";
+import { native } from "@/modules/ai/lib/native";
 import { AnimatedFolder } from "@/components/ui/AnimatedFolder";
 import { Button } from "@/components/ui/button";
 import {
@@ -456,43 +458,84 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
       },
     });
 
-    // Live sync: poll for file changes every 3 seconds when the window is focused.
+    // Live sync. A native watcher is the primary mechanism; the 3 s poll
+    // remains as a fallback because establishing a recursive watch genuinely
+    // fails on large trees (Linux's inotify watch limit) — treating the
+    // watcher as guaranteed would present as "the file tree silently stopped
+    // updating" on exactly the biggest projects.
     const treeRefreshRef = useRef(tree.refresh);
     treeRefreshRef.current = tree.refresh;
     useEffect(() => {
       if (!rootPath) return;
       const INTERVAL_MS = 3000;
       let intervalId: ReturnType<typeof setInterval> | null = null;
+      let unlisten: (() => void) | null = null;
+      let cancelled = false;
 
-      const start = () => {
-        if (intervalId !== null) return;
-        intervalId = setInterval(() => {
-          if (document.visibilityState === "visible") {
-            treeRefreshRef.current(rootPath);
-          }
-        }, INTERVAL_MS);
+      const refresh = () => {
+        // Same visibility gate the poll always had: a hidden window has no
+        // tree to update, and refreshing it just burns work.
+        if (document.visibilityState === "visible") {
+          treeRefreshRef.current(rootPath);
+        }
       };
-      const stop = () => {
+
+      const startPolling = () => {
+        if (intervalId !== null) return;
+        intervalId = setInterval(refresh, INTERVAL_MS);
+      };
+      const stopPolling = () => {
         if (intervalId !== null) {
           clearInterval(intervalId);
           intervalId = null;
         }
       };
 
-      if (document.hasFocus()) start();
-      window.addEventListener("focus", start);
-      window.addEventListener("blur", stop);
       const onVisChange = () => {
-        if (document.visibilityState === "visible") start();
-        else stop();
+        if (document.visibilityState === "visible") startPolling();
+        else stopPolling();
       };
-      document.addEventListener("visibilitychange", onVisChange);
+
+      const usePolling = () => {
+        if (document.hasFocus()) startPolling();
+        window.addEventListener("focus", startPolling);
+        window.addEventListener("blur", stopPolling);
+        document.addEventListener("visibilitychange", onVisChange);
+      };
+
+      void (async () => {
+        try {
+          const watching = await native.fsWatchStart(rootPath);
+          if (cancelled) {
+            // The root changed while we were starting; the watch we just
+            // established is for a stale path.
+            if (watching) void native.fsWatchStop().catch(() => {});
+            return;
+          }
+          if (!watching) {
+            usePolling();
+            return;
+          }
+          unlisten = await listen("nexis://fs-changed", refresh);
+          if (cancelled) {
+            unlisten();
+            unlisten = null;
+          }
+        } catch {
+          // Backend unavailable or the command failed outright — the poll is
+          // what keeps the explorer correct either way.
+          if (!cancelled) usePolling();
+        }
+      })();
 
       return () => {
-        stop();
-        window.removeEventListener("focus", start);
-        window.removeEventListener("blur", stop);
+        cancelled = true;
+        stopPolling();
+        window.removeEventListener("focus", startPolling);
+        window.removeEventListener("blur", stopPolling);
         document.removeEventListener("visibilitychange", onVisChange);
+        unlisten?.();
+        void native.fsWatchStop().catch(() => {});
       };
     }, [rootPath]);
 

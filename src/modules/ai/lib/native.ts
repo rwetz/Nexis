@@ -281,6 +281,14 @@ export const native = {
       exit_code: number | null;
     }>("shell_bg_logs", { handle, sinceOffset: sinceOffset ?? null }),
   shellBgKill: (handle: number) => invoke<void>("shell_bg_kill", { handle }),
+  /**
+   * Start watching a directory for the explorer. Resolves `false` when the
+   * watch could NOT be established (watch-descriptor exhaustion is the common
+   * case on large trees) — callers must fall back to polling rather than
+   * assuming success.
+   */
+  fsWatchStart: (path: string) => invoke<boolean>("fs_watch_start", { path }),
+  fsWatchStop: () => invoke<void>("fs_watch_stop"),
   shellBgList: () =>
     invoke<
       {

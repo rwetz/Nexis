@@ -10,6 +10,7 @@ pub mod crash;
 pub mod dap;
 pub mod diagnostics;
 pub mod fs;
+pub mod fswatch;
 pub mod git;
 pub mod http_share;
 pub mod lsp;

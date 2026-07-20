@@ -289,6 +289,8 @@ pub fn run() {
             snapshots::session_snapshot_load,
             snapshots::session_snapshot_delete,
             snapshots::session_snapshot_gc,
+            fswatch::fs_watch_start,
+            fswatch::fs_watch_stop,
             http_share::http_share_start,
             http_share::http_share_update,
             http_share::http_share_stop,
