@@ -48,17 +48,22 @@ export default defineConfig({
         "src/modules/terminal/lib/keymap.ts",
         "src/modules/terminal/lib/osc-handlers.ts",
         "src/modules/terminal/lib/pty-bridge.ts",
+        // First component under coverage. Loadable because the jsdom harness in
+        // src/test/ stubs the Tauri IPC transport rather than each API module,
+        // so the sections' real imports resolve — the note above about
+        // Tauri-heavy modules no longer applies to components tested that way.
+        "src/settings/SettingsDialog.tsx",
       ],
       // Minimum-coverage gate (IDEAS D4): floors sit a few points below the
-      // current numbers (lines/statements ~84%, branches ~87%, functions ~74%)
+      // current numbers (lines/statements ~86%, branches ~88%, functions ~75%)
       // so ordinary churn doesn't flake the build, but a real regression that
       // drops coverage fails `pnpm test:coverage` — which CI now runs.
       // Ratchet these up as coverage improves; never lower them to make CI pass.
       thresholds: {
-        lines: 82,
-        branches: 85,
-        functions: 71,
-        statements: 82,
+        lines: 84,
+        branches: 86,
+        functions: 73,
+        statements: 84,
       },
     },
   },
