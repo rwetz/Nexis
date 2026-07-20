@@ -505,7 +505,7 @@ function SessionRow({
 function EmptyState({ onPick }: { onPick: (text: string) => void }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8 py-10 text-center">
-      <img src="/nexis-mark.svg" alt="Nexis" className="size-14 opacity-90" />
+      <img src="/nexis-logo.png" alt="Nexis" className="size-14 opacity-90" />
       <div className="space-y-1.5">
         <p className="text-[14px] font-semibold tracking-tight">
           Ask Nexis anything
