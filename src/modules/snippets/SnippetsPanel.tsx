@@ -91,8 +91,9 @@ export function SnippetsPanel() {
       {editing ? (
         <div className="flex flex-col gap-2 overflow-y-auto p-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-muted-foreground">Name</label>
+            <label htmlFor="snippet-name" className="text-[10px] text-muted-foreground">Name</label>
             <input
+              id="snippet-name"
               ref={nameRef}
               value={editing.name}
               onChange={(e) => setEditing({ ...editing, name: e.target.value })}
@@ -102,8 +103,9 @@ export function SnippetsPanel() {
           </div>
           <div className="flex gap-2">
             <div className="flex flex-1 flex-col gap-1">
-              <label className="text-[10px] text-muted-foreground">Prefix (trigger)</label>
+              <label htmlFor="snippet-prefix" className="text-[10px] text-muted-foreground">Prefix (trigger)</label>
               <input
+                id="snippet-prefix"
                 value={editing.prefix}
                 onChange={(e) => setEditing({ ...editing, prefix: e.target.value })}
                 placeholder="cl"
@@ -111,8 +113,9 @@ export function SnippetsPanel() {
               />
             </div>
             <div className="flex flex-1 flex-col gap-1">
-              <label className="text-[10px] text-muted-foreground">Language</label>
+              <label htmlFor="snippet-language" className="text-[10px] text-muted-foreground">Language</label>
               <select
+                id="snippet-language"
                 value={editing.language}
                 onChange={(e) => setEditing({ ...editing, language: e.target.value })}
                 className="rounded border border-border/60 bg-muted/40 px-2 py-1 text-[12px] text-foreground outline-none focus:border-primary/60"
@@ -124,10 +127,11 @@ export function SnippetsPanel() {
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-muted-foreground">
+            <label htmlFor="snippet-body" className="text-[10px] text-muted-foreground">
               Body <span className="text-muted-foreground/60">(use $1, $2… for tab stops, $0 for final cursor)</span>
             </label>
             <textarea
+              id="snippet-body"
               value={editing.body}
               onChange={(e) => setEditing({ ...editing, body: e.target.value })}
               placeholder={"console.log($1);"}
@@ -136,8 +140,9 @@ export function SnippetsPanel() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-muted-foreground">Description (optional)</label>
+            <label htmlFor="snippet-description" className="text-[10px] text-muted-foreground">Description (optional)</label>
             <input
+              id="snippet-description"
               value={editing.description}
               onChange={(e) => setEditing({ ...editing, description: e.target.value })}
               placeholder="Short description"
@@ -236,6 +241,7 @@ function SnippetRow({
         <button
           type="button"
           onClick={() => onEdit(snippet)}
+          aria-label={`Edit snippet ${snippet.name}`}
           className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
           <HugeiconsIcon icon={Edit02Icon} size={12} strokeWidth={1.75} />
@@ -243,6 +249,7 @@ function SnippetRow({
         <button
           type="button"
           onClick={() => onRemove(snippet.id)}
+          aria-label={`Delete snippet ${snippet.name}`}
           className="rounded p-0.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
         >
           <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={1.75} />

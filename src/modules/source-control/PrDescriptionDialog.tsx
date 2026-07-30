@@ -141,10 +141,11 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
             <div className="flex flex-col gap-3">
               {title && (
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <label htmlFor="pr-title" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Title
                   </label>
                   <input
+                    id="pr-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="rounded border border-border/60 bg-muted/30 px-2.5 py-1.5 text-[13px] font-medium text-foreground outline-none focus:border-primary/60"
@@ -153,10 +154,11 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
               )}
               {body && (
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <label htmlFor="pr-body" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Body
                   </label>
                   <textarea
+                    id="pr-body"
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
                     rows={12}

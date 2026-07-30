@@ -190,6 +190,7 @@ export function SystemMonitorPanel() {
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
+            aria-label="Filter processes by name or command"
             placeholder="Filter by name or command…"
             className="mb-1.5 w-full rounded border border-border/50 bg-background px-1.5 py-1 text-[10.5px] outline-none placeholder:text-muted-foreground/50 focus:border-primary/50"
           />

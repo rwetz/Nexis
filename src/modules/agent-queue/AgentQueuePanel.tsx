@@ -258,6 +258,7 @@ export function AgentQueuePanel() {
             <input
               value={label}
               onChange={(e) => setLabel(e.target.value)}
+              aria-label="Task label (optional)"
               placeholder="Task label (optional)"
               className="w-full rounded border border-border/60 bg-muted/30 px-2 py-1 text-xs text-foreground outline-none focus:border-primary/60"
             />
@@ -265,6 +266,7 @@ export function AgentQueuePanel() {
               ref={textareaRef}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
+              aria-label="Prompt for the AI agent"
               placeholder="Prompt for the AI agent…"
               rows={4}
               autoFocus

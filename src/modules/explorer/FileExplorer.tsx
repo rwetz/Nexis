@@ -688,6 +688,10 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
     return (
       <div
         ref={containerRef}
+        // The file tree is a single composite widget: one tab stop, arrow keys
+        // move between rows (handleKeyDown), which is exactly the `tree` role.
+        role="tree"
+        aria-label="File explorer"
         className="flex h-full flex-col outline-none"
         tabIndex={0}
         onKeyDown={handleKeyDown}

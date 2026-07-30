@@ -61,7 +61,11 @@ export function DatabasePanel() {
       ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {connections.length > 0 && (
-            <div className="shrink-0 border-b border-border/30 bg-muted/20">
+            <div
+              role="listbox"
+              aria-label="Database connections"
+              className="shrink-0 border-b border-border/30 bg-muted/20"
+            >
               {connections.map((c) => (
                 <ConnectionItem
                   key={c.id}
@@ -95,6 +99,17 @@ function ConnectionItem({ conn, isActive, onSelect, onRemove }: {
 }) {
   return (
     <div
+      // `option`, not `button`: the row already contains a Remove button, and
+      // nesting a control inside a button strips the inner one's semantics.
+      role="option"
+      aria-selected={isActive}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       className={cn(
         "group flex cursor-pointer items-center gap-2 border-b border-border/20 px-3 py-1.5 last:border-none",
         isActive ? "bg-primary/[0.06]" : "hover:bg-muted/30",
@@ -114,6 +129,7 @@ function ConnectionItem({ conn, isActive, onSelect, onRemove }: {
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onRemove(); }}
+        aria-label="Remove connection"
         className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
       >
         <HugeiconsIcon icon={Delete02Icon} size={11} strokeWidth={1.75} />
@@ -139,15 +155,21 @@ function AddConnectionForm({ onAdd, onCancel }: {
   return (
     <div className="border-b border-border/40 bg-muted/20 p-3 flex flex-col gap-2">
       <input
+        // This form is only rendered after the user clicks "Connect" to add a
+        // connection; landing on its first field is the expected result of
+        // that action, not focus being stolen from elsewhere.
+        // react-doctor-disable-next-line react-doctor/no-autofocus
         autoFocus
         value={name}
         onChange={(e) => setName(e.target.value)}
+        aria-label="Connection name"
         placeholder="Connection name"
         className="rounded border border-border/60 bg-muted/30 px-2 py-1 text-[12px] text-foreground outline-none focus:border-primary/60"
       />
       <select
         value={type}
         onChange={(e) => setType(e.target.value as DbType)}
+        aria-label="Database type"
         className="rounded border border-border/60 bg-muted/30 px-2 py-1 text-[12px] text-foreground outline-none"
       >
         {DB_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
@@ -229,6 +251,7 @@ function QueryEditor({ connection }: { connection: DbConnection }) {
           ref={textareaRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          aria-label="SQL query"
           rows={4}
           className="w-full resize-none bg-transparent p-3 font-mono text-[12px] text-foreground outline-none"
           onKeyDown={(e) => {

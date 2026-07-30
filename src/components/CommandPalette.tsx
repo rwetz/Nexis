@@ -46,6 +46,10 @@ export function CommandPalette({ commands, onClose }: Props) {
 
   return (
     <div
+      // Click-outside catcher. `presentation` (not aria-hidden — this element
+      // wraps the palette, so hiding it would hide the dialog too) drops only
+      // this element's semantics; Escape is handled in handleKeyDown below.
+      role="presentation"
       className="pointer-events-none absolute inset-0 z-50 flex items-start justify-center pt-12"
       onClick={onClose}
     >

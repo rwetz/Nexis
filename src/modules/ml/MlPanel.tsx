@@ -276,6 +276,7 @@ export function MlPanel({ workspaceRoot }: Props) {
                   <select
                     value={selectedProject ?? ""}
                     onChange={(e) => selectProject(e.target.value)}
+                    aria-label="Select project"
                     disabled={busy}
                     className="h-6 min-w-0 flex-1 truncate rounded border border-border bg-background px-1.5 text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                   >
@@ -966,6 +967,7 @@ function CreateCard({
                 if (e.key === "Enter" && name.trim())
                   onCreate(template, name, autoTrain);
               }}
+              aria-label="New project name"
               spellCheck={false}
               className="h-6 min-w-0 flex-1 rounded border border-border bg-background px-1.5 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
             />
@@ -1471,6 +1473,7 @@ function TextgenPlayground({
         onChange={(e) => setPrompt(e.target.value)}
         rows={2}
         spellCheck={false}
+        aria-label="Prompt text"
         placeholder="Start of the text…"
         className="w-full resize-none rounded border border-border bg-background px-1.5 py-1 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
       />
@@ -1485,6 +1488,7 @@ function TextgenPlayground({
           step={0.1}
           value={temperature}
           onChange={(e) => setTemperature(Number(e.target.value))}
+          aria-label="Temperature (wildness)"
           className="min-w-0 flex-1 accent-primary"
         />
         <span className="w-6 font-mono text-[10px] tabular-nums text-muted-foreground">
@@ -2047,6 +2051,7 @@ function RunRow({
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
+            aria-label="Note for this run"
             placeholder="Note for this run…"
             rows={2}
             spellCheck={false}
@@ -2055,6 +2060,7 @@ function RunRow({
           <input
             value={tags}
             onChange={(e) => setTags(e.target.value)}
+            aria-label="Tags, comma separated"
             placeholder="tags, comma, separated"
             spellCheck={false}
             className="h-6 rounded border border-border bg-background px-1.5 text-[10.5px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"

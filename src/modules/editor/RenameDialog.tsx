@@ -160,6 +160,9 @@ export function RenameDialog({
 
   return (
     <div
+      // Click-outside catcher; Escape closes from the input below.
+      // `presentation` rather than aria-hidden — this wraps the dialog.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
@@ -190,8 +193,9 @@ export function RenameDialog({
 
         <div className="p-4 flex flex-col gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wider">New name</label>
+            <label htmlFor="rename-new-name" className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wider">New name</label>
             <input
+              id="rename-new-name"
               ref={inputRef}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}

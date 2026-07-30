@@ -82,6 +82,10 @@ export function WorkspaceSwitcher({ currentPath, onSelect, onClose }: Props) {
 
   return (
     <div
+      // Click-outside catcher. `presentation` (not aria-hidden — that would
+      // hide the dialog it wraps) drops the element's own semantics without
+      // touching its descendants; Escape is the keyboard equivalent.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -101,6 +105,7 @@ export function WorkspaceSwitcher({ currentPath, onSelect, onClose }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
+            aria-label="Switch workspace"
             placeholder="Switch workspace…"
             className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
           />

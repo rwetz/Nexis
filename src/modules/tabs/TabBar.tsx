@@ -289,9 +289,22 @@ export function TabBar({
                       />
                     ) : null}
                   </span>
+                  {/* A <span role="button"> rather than a real <button>: the
+                      enclosing TabsTrigger is itself a <button>, and nesting
+                      one inside another is invalid HTML that browsers recover
+                      from unpredictably. */}
                   <span
+                    // react-doctor-disable-next-line react-doctor/prefer-tag-over-role
                     role="button"
+                    tabIndex={0}
                     aria-label="Close tab"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onClose(t.id);
+                      }
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       onClose(t.id);

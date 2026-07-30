@@ -372,6 +372,8 @@ function AgentEditorDialog({
                     <button
                       key={id}
                       type="button"
+                      aria-label={`Use the ${id} icon`}
+                      aria-pressed={active}
                       onClick={() => setDraft({ ...draft, icon: id })}
                       className={cn(
                         "flex size-7 items-center justify-center rounded-md border transition-colors",

@@ -162,6 +162,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
                     if (e.key === "Enter") void handlePush();
                     if (e.key === "Escape") setShowPushInput(false);
                   }}
+                  aria-label="Stash message (optional)"
                   placeholder="Stash message (optional)"
                   className="h-6 min-w-0 flex-1 rounded border border-border/60 bg-background px-2 text-[11px] outline-none focus:border-primary/60"
                 />
@@ -252,6 +253,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
                               <button
                                 type="button"
                                 onClick={() => void handlePop(entry)}
+                                aria-label="Pop stash"
                                 className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                               >
                                 <HugeiconsIcon
@@ -270,6 +272,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
                               <button
                                 type="button"
                                 onClick={() => void handleApply(entry)}
+                                aria-label="Apply stash"
                                 className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                               >
                                 <HugeiconsIcon
@@ -288,6 +291,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
                               <button
                                 type="button"
                                 onClick={() => void handleDrop(entry)}
+                                aria-label="Drop stash"
                                 className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                               >
                                 <HugeiconsIcon

@@ -67,8 +67,9 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       data-slot="breadcrumb-page"
-      role="link"
-      aria-disabled="true"
+      // No `role="link"`: this crumb is the current page and is deliberately
+      // not navigable. `aria-current="page"` already conveys that, and
+      // announcing a disabled link is worse than announcing plain text.
       aria-current="page"
       className={cn("font-normal text-foreground", className)}
       {...props}

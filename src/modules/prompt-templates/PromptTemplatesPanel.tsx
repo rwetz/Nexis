@@ -195,6 +195,7 @@ export function PromptTemplatesPanel() {
             ref={nameRef}
             value={editing.name}
             onChange={(e) => setEditing((prev) => prev && { ...prev, name: e.target.value })}
+            aria-label="Template name"
             placeholder="Template name"
             className="w-full rounded border border-border/60 bg-background/60 px-2.5 py-1.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/60"
           />
@@ -204,6 +205,7 @@ export function PromptTemplatesPanel() {
             onChange={(e) =>
               setEditing((prev) => prev && { ...prev, prompt: e.target.value })
             }
+            aria-label="Prompt text"
             placeholder="Prompt text…"
             rows={5}
             className="w-full rounded border border-border/60 bg-background/60 px-2.5 py-1.5 text-xs text-foreground outline-none resize-none placeholder:text-muted-foreground/50 focus:border-primary/60"

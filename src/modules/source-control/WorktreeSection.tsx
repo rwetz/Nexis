@@ -199,12 +199,14 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
                 ref={pathRef}
                 value={addPath}
                 onChange={(e) => setAddPath(e.target.value)}
+                aria-label="Path for new worktree"
                 placeholder="Path for new worktree"
                 className="w-full rounded border border-border/60 bg-background/60 px-2 py-1 text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
               />
               <input
                 value={addBranch}
                 onChange={(e) => setAddBranch(e.target.value)}
+                aria-label="Branch name"
                 placeholder="Branch name"
                 className="w-full rounded border border-border/60 bg-background/60 px-2 py-1 text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
               />
@@ -229,6 +231,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
                 </button>
                 <button
                   type="button"
+                  aria-label="Cancel adding worktree"
                   onClick={() => setAdding(false)}
                   className="flex items-center justify-center gap-1 rounded border border-border/50 px-2 py-1 text-[10.5px] text-muted-foreground hover:bg-muted/40"
                 >

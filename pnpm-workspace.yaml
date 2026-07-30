@@ -1,3 +1,18 @@
+# Supply-chain hardening. A compromised release is typically caught and
+# unpublished within hours, so refusing to resolve anything published in the
+# last 24 h means the common attack window closes before we would ever install
+# it. Raise this if you want a wider margin; lower it only if a genuinely
+# urgent security patch is being blocked (and prefer pinning that one version).
+minimumReleaseAge: 1440
+# `trustPolicy: no-downgrade` is deliberately NOT set. Enabling it fails
+# `pnpm install` outright on the current lockfile: six transitive entries
+# (@wdio/logger, @wdio/repl, chokidar@4.0.3, semver@6.3.1, undici-types@6.21.0,
+# vite@5.4.21) are reported as high-risk trust downgrades because they predate
+# npm provenance attestations, not because anything was taken over. Turning it
+# on therefore means regenerating the lockfile and accepting whatever versions
+# fall out — a dependency change, not a config change. Revisit when those
+# transitives have moved to provenance-attested releases.
+
 allowBuilds:
   edgedriver: false
   esbuild: true

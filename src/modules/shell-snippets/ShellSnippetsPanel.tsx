@@ -200,6 +200,7 @@ export function ShellSnippetsPanel() {
           ref={searchRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          aria-label="Filter snippets"
           placeholder="Filter snippets…"
           className="w-full rounded border border-border/50 bg-muted/20 px-2.5 py-1 text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
         />
@@ -213,13 +214,19 @@ export function ShellSnippetsPanel() {
           </p>
           {filling.placeholders.map((key) => (
             <div key={key} className="flex items-center gap-2">
-              <label className="w-20 shrink-0 truncate text-[10.5px] text-muted-foreground">{"{" + key + "}"}</label>
+              <label htmlFor={`snippet-fill-${key}`} className="w-20 shrink-0 truncate text-[10.5px] text-muted-foreground">{"{" + key + "}"}</label>
               <input
+                id={`snippet-fill-${key}`}
                 value={filling.values[key] ?? ""}
                 onChange={(e) =>
                   setFilling((f) => f ? { ...f, values: { ...f.values, [key]: e.target.value } } : null)
                 }
                 onKeyDown={(e) => { if (e.key === "Enter") commitFill(); if (e.key === "Escape") setFilling(null); }}
+                aria-label={`Value for ${key}`}
+                // The fill dialog exists solely to collect these values and is
+                // opened by an explicit user action, so focusing its first
+                // field is the point of opening it.
+                // react-doctor-disable-next-line react-doctor/no-autofocus
                 autoFocus
                 className="flex-1 rounded border border-border/60 bg-background/60 px-2 py-1 text-[11px] text-foreground outline-none focus:border-primary/60"
               />
@@ -237,6 +244,7 @@ export function ShellSnippetsPanel() {
             <button
               type="button"
               onClick={() => setFilling(null)}
+              aria-label="Cancel"
               className="flex items-center justify-center rounded border border-border/50 px-2 py-1 text-[10.5px] text-muted-foreground hover:bg-muted/40"
             >
               <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
@@ -255,18 +263,21 @@ export function ShellSnippetsPanel() {
             ref={nameRef}
             value={editing.name}
             onChange={(e) => setEditing((p) => p && { ...p, name: e.target.value })}
+            aria-label="Snippet name"
             placeholder="Name"
             className="w-full rounded border border-border/60 bg-background/60 px-2 py-1 text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
           />
           <input
             value={editing.command}
             onChange={(e) => setEditing((p) => p && { ...p, command: e.target.value })}
+            aria-label="Shell command (use {VAR} for placeholders)"
             placeholder="Shell command (use {VAR} for placeholders)"
             className="w-full rounded border border-border/60 bg-background/60 px-2 py-1 font-mono text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
           />
           <input
             value={editing.description}
             onChange={(e) => setEditing((p) => p && { ...p, description: e.target.value })}
+            aria-label="Snippet description (optional)"
             placeholder="Description (optional)"
             className="w-full rounded border border-border/60 bg-background/60 px-2 py-1 text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
           />
@@ -283,6 +294,7 @@ export function ShellSnippetsPanel() {
             <button
               type="button"
               onClick={() => setEditing(null)}
+              aria-label="Cancel editing"
               className="flex items-center justify-center rounded border border-border/50 px-2 py-1.5 text-[10.5px] text-muted-foreground hover:bg-muted/40"
             >
               <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />

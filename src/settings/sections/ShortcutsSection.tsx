@@ -247,12 +247,14 @@ function ShortcutRow({
           <Recorder onRecord={onRecord} onCancel={onStopRecording} />
         ) : (
           <>
-            <div
+            <button
+              type="button"
               onClick={onStartRecording}
+              aria-label="Record a new shortcut"
               className="flex min-w-[100px] cursor-pointer items-center justify-end gap-1"
             >
               {renderKeyBadges()}
-            </div>
+            </button>
 
             <div className="flex items-center gap-1">
               {isModified && (

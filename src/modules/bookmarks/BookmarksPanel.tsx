@@ -161,6 +161,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                         onChange={(e) => setEditValue(e.target.value)}
                         onKeyDown={(e) => handleEditKey(e, bm.id)}
                         onBlur={() => commitEdit(bm.id)}
+                        aria-label="Bookmark label"
                         className="flex-1 rounded border border-primary/60 bg-background/60 px-1.5 py-0.5 text-xs text-foreground outline-none"
                       />
                     ) : (
@@ -183,6 +184,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                         <button
                           type="button"
                           onClick={() => commitEdit(bm.id)}
+                          aria-label="Save bookmark label"
                           className="flex h-5 w-5 items-center justify-center rounded text-green-500 hover:bg-green-500/10"
                         >
                           <HugeiconsIcon icon={Tick01Icon} size={10} strokeWidth={2} />

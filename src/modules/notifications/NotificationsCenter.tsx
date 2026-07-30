@@ -145,6 +145,7 @@ export function NotificationsCenter() {
                   <button
                     type="button"
                     onClick={() => remove(n.id)}
+                    aria-label="Dismiss notification"
                     className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-all hover:bg-muted group-hover:opacity-100"
                   >
                     <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />

@@ -184,6 +184,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
                             <TooltipTrigger asChild>
                               <button
                                 type="button"
+                                aria-label="Init submodule"
                                 onClick={() => {
                                   setBusyUpdate(entry.path);
                                   setError(null);
@@ -219,6 +220,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
                             <TooltipTrigger asChild>
                               <button
                                 type="button"
+                                aria-label="Update submodule"
                                 onClick={() => {
                                   setBusyUpdate(entry.path);
                                   setError(null);

@@ -175,6 +175,7 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
         <textarea
           value={text}
           onChange={handleChange}
+          aria-label="Workspace notes"
           placeholder={`# Workspace notes\n\nWrite anything here — saved to .nexis/NOTES.md\n\nSupports Markdown.`}
           spellCheck={false}
           className={cn(

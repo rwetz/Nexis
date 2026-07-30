@@ -250,6 +250,18 @@ function VariableRow({
           "flex items-start gap-1 py-0.5 px-1.5 font-mono",
           hasChildren && "cursor-pointer hover:bg-muted/20",
         )}
+        // Only a control when it can actually expand; a leaf row stays inert
+        // rather than becoming an empty tab stop.
+        role={hasChildren ? "button" : undefined}
+        tabIndex={hasChildren ? 0 : undefined}
+        aria-expanded={hasChildren ? open : undefined}
+        onKeyDown={(e) => {
+          if (!hasChildren) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggle();
+          }
+        }}
         onClick={toggle}
       >
         {hasChildren && (
@@ -411,6 +423,7 @@ function ConsolePanel() {
               setInput(history[idx] ?? "");
             }
           }}
+          aria-label="Evaluate expression"
           placeholder="Evaluate expression…"
           spellCheck={false}
           className="flex-1 bg-transparent font-mono text-[10.5px] text-foreground outline-none placeholder:text-muted-foreground/40"

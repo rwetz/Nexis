@@ -109,8 +109,13 @@ export const AnimatedFolder: React.FC<AnimatedFolderProps> = ({
   };
 
   return (
-    <div style={scaleStyle} className={className}>
+    // Purely decorative empty-state illustration. Clicking only plays the
+    // open/close animation — it carries no information and performs no app
+    // action — so the whole graphic stays out of the accessibility tree
+    // rather than becoming a tab stop that does nothing for a screen reader.
+    <div aria-hidden="true" style={scaleStyle} className={className}>
       <div
+        role="presentation"
         className={`group relative transition-all duration-200 ease-in cursor-pointer ${
           !open ? 'hover:-translate-y-2' : ''
         }`}

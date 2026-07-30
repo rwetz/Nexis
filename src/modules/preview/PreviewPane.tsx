@@ -115,6 +115,18 @@ export const PreviewPane = forwardRef<PreviewPaneHandle, Props>(
                 // `allow-top-navigation*` — without it the iframe cannot
                 // navigate the parent Tauri webview to an attacker origin,
                 // which would otherwise expose `window.__TAURI__` IPC.
+                //
+                // react-doctor flags `allow-scripts` + `allow-same-origin` as
+                // self-defeating, because content that is same-origin *with the
+                // embedder* can reach `frameElement`, strip this attribute and
+                // reload. That escape needs the framed page to share an origin
+                // with the app shell: here the shell is the Tauri webview and
+                // the frame is a user-supplied dev-server URL, so `frameElement`
+                // access throws and the escape doesn't apply. Dropping
+                // `allow-same-origin` would give the preview an opaque origin
+                // and break cookies/localStorage for essentially every real app
+                // being previewed, which is the entire point of the pane.
+                // react-doctor-disable-next-line react-doctor/iframe-missing-sandbox
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
                 referrerPolicy="no-referrer"
                 allow="clipboard-read; clipboard-write; fullscreen"

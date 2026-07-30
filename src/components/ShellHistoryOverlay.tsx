@@ -143,13 +143,23 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
 
   return (
     <div
+      // Click-outside catcher. `presentation` (not aria-hidden — that would
+      // hide the dialog it wraps) drops the element's own semantics without
+      // touching its descendants; Escape is the keyboard equivalent.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-start justify-center pt-24"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      {/* Backdrop — decorative dimming layer. Click-to-dismiss is a mouse
+          convenience only; keyboard users close with Escape (handled above),
+          so this is hidden from assistive tech rather than made a tab stop. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-black/40"
+        onClick={onClose}
+      />
 
       <div className="relative z-10 flex w-[600px] max-w-[90vw] flex-col overflow-hidden rounded-xl border border-border/60 bg-background shadow-2xl">
         {/* Search input */}
@@ -170,6 +180,7 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
           <input
             ref={inputRef}
             type="text"
+            aria-label="Search shell history"
             placeholder="Search history…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

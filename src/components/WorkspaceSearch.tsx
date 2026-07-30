@@ -157,6 +157,7 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
+              aria-label="Find in project"
               placeholder="Find in project…"
               className="flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
             />
@@ -189,6 +190,7 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
             <button
               type="button"
               onClick={onClose}
+              aria-label="Close search"
               className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
@@ -205,6 +207,7 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
               value={replace}
               onChange={(e) => setReplace(e.target.value)}
               onKeyDown={handleKeyDown}
+              aria-label="Replace with"
               placeholder="Replace with…"
               className="flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
             />

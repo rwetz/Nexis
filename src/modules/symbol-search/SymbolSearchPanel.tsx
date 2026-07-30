@@ -221,13 +221,19 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search symbols"
             placeholder='fn:name · class:Foo · hook:useBar · import:react'
             className="w-full rounded-md border border-border/60 bg-muted/30 py-1.5 pl-7 pr-7 text-xs text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/60"
+            // A search panel the user has just opened in order to type a query;
+            // requiring a further Tab to reach the only input would make the
+            // panel slower for keyboard users, not safer.
+            // react-doctor-disable-next-line react-doctor/no-autofocus
             autoFocus
           />
           {query && (
             <button
               type="button"
+              aria-label="Clear search"
               onClick={() => setQuery("")}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >

@@ -78,6 +78,7 @@ export function FormattersSection() {
                     type="text"
                     value={cfg.command}
                     onChange={(e) => setCommand(lang, e.target.value)}
+                    aria-label={`${FORMATTER_LANGUAGE_LABELS[lang]} formatter command`}
                     spellCheck={false}
                     className="h-7 flex-1 min-w-0 rounded border border-border bg-background px-2 font-mono text-[11px] outline-none focus:border-foreground/40"
                   />

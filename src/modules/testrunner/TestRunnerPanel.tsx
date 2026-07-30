@@ -205,6 +205,7 @@ export function TestRunnerPanel({ workspaceRoot }: Props) {
           <input
             value={customCommand}
             onChange={(e) => setCustomCommand(e.target.value)}
+            aria-label="Test command"
             placeholder="Test command (e.g. pnpm vitest run)"
             className="flex-1 rounded border border-border/60 bg-muted/30 px-2 py-1 font-mono text-[11.5px] text-foreground outline-none focus:border-primary/60"
             onKeyDown={(e) => { if (e.key === "Enter" && !isRunning) void runTests(); }}

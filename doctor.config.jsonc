@@ -1,0 +1,22 @@
+{
+  "$schema": "https://www.react.doctor/schema/config.json",
+  "ignore": {
+    // `test/` is the editor's syntax-highlighting fixture corpus (test.c,
+    // test.nix, a Dockerfile, test/web/test.jsx, …) — sample files that exist
+    // to exercise the highlighter, not application code. Real tests live in
+    // src/**/*.test.ts and e2e/, and are still scanned.
+    "files": ["test/**"],
+    "overrides": [
+      {
+        // `minimumReleaseAge` IS set. `trustPolicy: no-downgrade` deliberately
+        // is not — it fails `pnpm install` on six pre-provenance transitive
+        // entries, so adopting it is a dependency change rather than a config
+        // one. Full reasoning is in pnpm-workspace.yaml next to the setting.
+        // Suppression is per-file and per-rule; there is no finer granularity
+        // that would keep warning about `minimumReleaseAge` alone.
+        "files": ["pnpm-workspace.yaml"],
+        "rules": ["react-doctor/require-pnpm-hardening"]
+      }
+    ]
+  }
+}

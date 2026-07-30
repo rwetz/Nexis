@@ -355,6 +355,7 @@ function SessionPicker() {
                 e.stopPropagation();
               }
             }}
+            aria-label="Search chat history"
             placeholder="Search history…"
             className="min-w-0 flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground/55"
           />

@@ -432,6 +432,7 @@ function OverflowRow({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
+            aria-label={isPinned ? "Unpin from rail" : "Pin to rail"}
             className={cn(
               "flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors",
               isPinned

@@ -181,6 +181,7 @@ export function RefactorPanel() {
           ref={textareaRef}
           value={code}
           onChange={(e) => setCode(e.target.value)}
+          aria-label="Code to refactor"
           placeholder="Paste code here, or use Alt+Shift+X to capture the active editor selection…"
           className={cn(
             "min-h-0 flex-1 resize-none rounded-md border border-border/60",

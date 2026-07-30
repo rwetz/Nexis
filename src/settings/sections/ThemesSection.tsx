@@ -537,10 +537,21 @@ function ThemeGroup({
               </div>
               {onEdit && onRemove ? (
                 <span className="ml-1 flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
+                  {/* Spans, not buttons: the enclosing theme card is itself a
+                      <button>, and nesting buttons is invalid HTML. */}
                   <span
+                    // react-doctor-disable-next-line react-doctor/prefer-tag-over-role
                     role="button"
+                    tabIndex={0}
                     aria-label={`Edit ${t.name}`}
                     className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onEdit(t.id);
+                      }
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       onEdit(t.id);
@@ -549,9 +560,18 @@ function ThemeGroup({
                     <HugeiconsIcon icon={Edit02Icon} size={12} strokeWidth={1.75} />
                   </span>
                   <span
+                    // react-doctor-disable-next-line react-doctor/prefer-tag-over-role
                     role="button"
+                    tabIndex={0}
                     aria-label={`Remove ${t.name}`}
                     className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onRemove(t.id);
+                      }
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       onRemove(t.id);

@@ -332,6 +332,7 @@ export function AiInputBar({ compact }: { compact?: boolean } = {}) {
                     c.submit();
                   }
                 }}
+                aria-label="Message Nexis"
                 placeholder="Ask Nexis anything   -   # for snippets and commands, @ for files"
                 rows={1}
                 className={cn(

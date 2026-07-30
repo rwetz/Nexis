@@ -111,6 +111,7 @@ export function AiCommandBar({ cwd, onInsert, onClose }: Props) {
           ref={inputRef}
           value={intent}
           onChange={(e) => setIntent(e.target.value)}
+          aria-label="Describe what you want to run"
           placeholder="Describe what you want to run…"
           spellCheck={false}
           className="min-w-0 flex-1 bg-transparent text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/60"

@@ -215,6 +215,11 @@ export function Minimap({ view, className }: Props) {
   return (
     <div
       ref={containerRef}
+      // A supplementary drag-to-scroll surface rendered to canvas. It duplicates
+      // the scrollbar and the editor's own keyboard navigation, and the canvas
+      // exposes nothing to a screen reader, so the whole thing stays out of the
+      // a11y tree instead of becoming an unusable tab stop.
+      aria-hidden="true"
       className={cn(
         "relative w-[52px] shrink-0 cursor-pointer select-none overflow-hidden",
         "border-l border-border/30 bg-muted/10",

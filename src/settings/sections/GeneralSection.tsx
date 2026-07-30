@@ -335,6 +335,7 @@ export function GeneralSection() {
           <input
             type="text"
             value={defaultShellPath}
+            aria-label="Default shell"
             placeholder="Auto-detect"
             onChange={(e) => void setDefaultShellPath(e.target.value)}
             className="h-8 w-48 rounded-md border border-border bg-background px-2.5 text-[12px] outline-none focus:border-foreground/40"
@@ -347,6 +348,7 @@ export function GeneralSection() {
           <input
             type="text"
             value={terminalFontFamily}
+            aria-label="Font family"
             placeholder="Auto-detect"
             onChange={(e) => void setTerminalFontFamily(e.target.value)}
             className="h-8 w-48 rounded-md border border-border bg-background px-2.5 text-[12px] outline-none focus:border-foreground/40"

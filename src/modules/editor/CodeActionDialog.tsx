@@ -175,6 +175,10 @@ export function CodeActionDialog({
 
   return (
     <div
+      // Click-outside catcher; the list below owns keyboard handling and
+      // Escape closes. `presentation` rather than aria-hidden — this wraps
+      // the dialog.
+      role="presentation"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -191,6 +195,10 @@ export function CodeActionDialog({
 
         <div
           ref={listRef}
+          // Arrow-key-navigated list of refactorings — one tab stop, selection
+          // moves within it.
+          role="listbox"
+          aria-label="Available refactorings"
           tabIndex={-1}
           onKeyDown={onKeyDown}
           className="max-h-[300px] overflow-y-auto p-2 outline-none"

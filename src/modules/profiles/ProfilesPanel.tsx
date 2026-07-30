@@ -176,6 +176,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
               <Label className="text-[10px]">Env vars (KEY=VALUE, one per line)</Label>
               <textarea
                 className="h-16 w-full resize-none rounded border border-border/60 bg-muted/30 px-2 py-1 font-mono text-[11px] text-foreground outline-none focus:border-primary/60"
+                aria-label="Env vars (KEY=VALUE, one per line)"
                 placeholder={"NODE_ENV=development\nPORT=3000"}
                 value={form.envVarsRaw}
                 onChange={(e) => setForm((f) => ({ ...f, envVarsRaw: e.target.value }))}

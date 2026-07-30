@@ -238,6 +238,7 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKey}
+            aria-label="Filter recent files"
             placeholder="Filter files…"
             spellCheck={false}
             className={cn(
@@ -257,7 +258,14 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
           {query ? "No matching files" : "No recent files"}
         </div>
       ) : (
-        <div className="nexis-scrollbar flex-1 overflow-y-auto">
+        <div
+          // Listbox, not a set of buttons: arrow-key navigation lives on the
+          // filter input above, so the rows are selectable options rather
+          // than individual tab stops.
+          role="listbox"
+          aria-label="Recent files"
+          className="nexis-scrollbar flex-1 overflow-y-auto"
+        >
           {results.map((f, idx) => {
             const name = basename(f.path);
             const dir = dirpart(f.path);
@@ -265,6 +273,11 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
             return (
               <div
                 key={f.path}
+                role="option"
+                aria-selected={isActive}
+                // -1, not 0: the filter input keeps focus and drives selection
+                // with the arrow keys, so rows are reachable but not tab stops.
+                tabIndex={-1}
                 className={cn(
                   "group flex cursor-pointer items-center gap-2 px-3 py-1.5",
                   isActive ? "bg-muted/70" : "hover:bg-muted/50",
