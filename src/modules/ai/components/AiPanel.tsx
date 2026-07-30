@@ -412,34 +412,38 @@ function SessionRow({
   onDelete: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
+    // Container, not a button: it holds the Delete control, and a button
+    // nested in a button is invalid HTML whose inner control screen readers
+    // cannot reach. Selecting is its own button filling the row.
+    <div
       className={cn(
-        "group flex w-full items-center gap-2 px-2 py-1.5 text-left transition-colors",
+        "group flex w-full items-center gap-2 px-2 py-1.5 transition-colors",
         active ? "bg-accent/50" : "hover:bg-accent/35",
       )}
     >
-      <div className="min-w-0 flex-1">
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-current={active || undefined}
+        className="min-w-0 flex-1 text-left"
+      >
         <div className="truncate text-[11.5px] font-medium leading-snug text-foreground/90">
           {session.title || "New chat"}
         </div>
         <div className="text-[10px] tabular-nums text-muted-foreground/60">
           {compactSessionDate(session.updatedAt)}
         </div>
-      </div>
+      </button>
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
+        onClick={onDelete}
+        aria-label={`Delete session ${session.title || "New chat"}`}
         title="Delete session"
-        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
       >
         <HugeiconsIcon icon={Delete02Icon} size={11} strokeWidth={1.75} />
       </button>
-    </button>
+    </div>
   );
 }
 

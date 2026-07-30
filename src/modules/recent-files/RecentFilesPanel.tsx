@@ -258,53 +258,51 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
           {query ? "No matching files" : "No recent files"}
         </div>
       ) : (
-        <div
-          // Listbox, not a set of buttons: arrow-key navigation lives on the
-          // filter input above, so the rows are selectable options rather
-          // than individual tab stops.
-          role="listbox"
-          aria-label="Recent files"
-          className="nexis-scrollbar flex-1 overflow-y-auto"
-        >
+        <div className="nexis-scrollbar flex-1 overflow-y-auto">
           {results.map((f, idx) => {
             const name = basename(f.path);
             const dir = dirpart(f.path);
             const isActive = idx === activeIdx;
             return (
+              // Plain row: it carries a Remove control, so the row itself must
+              // not be a control (nor an ARIA `option`, whose children are
+              // presentational) or Remove becomes unreachable. Opening is its
+              // own button filling the row; arrow-key navigation still runs
+              // through the filter input above.
               <div
                 key={f.path}
-                role="option"
-                aria-selected={isActive}
-                // -1, not 0: the filter input keeps focus and drives selection
-                // with the arrow keys, so rows are reachable but not tab stops.
-                tabIndex={-1}
                 className={cn(
-                  "group flex cursor-pointer items-center gap-2 px-3 py-1.5",
+                  "group flex items-center gap-2 px-3 py-1.5",
                   isActive ? "bg-muted/70" : "hover:bg-muted/50",
                 )}
-                onClick={() => onOpenFile(f.path)}
                 onMouseEnter={() => setActiveIdx(idx)}
               >
-                <HugeiconsIcon
-                  icon={File01Icon}
-                  size={13}
-                  strokeWidth={1.75}
-                  className="shrink-0 text-muted-foreground/60"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium text-foreground">
-                    <Highlighted text={name} ranges={f.nameMatch.ranges} />
-                  </div>
-                  {dir && (
-                    <div className="truncate text-[10.5px] text-muted-foreground/60">
-                      {f.dirMatch ? (
-                        <Highlighted text={dir} ranges={f.dirMatch.ranges} />
-                      ) : (
-                        dir
-                      )}
+                <button
+                  type="button"
+                  onClick={() => onOpenFile(f.path)}
+                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
+                >
+                  <HugeiconsIcon
+                    icon={File01Icon}
+                    size={13}
+                    strokeWidth={1.75}
+                    className="shrink-0 text-muted-foreground/60"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium text-foreground">
+                      <Highlighted text={name} ranges={f.nameMatch.ranges} />
                     </div>
-                  )}
-                </div>
+                    {dir && (
+                      <div className="truncate text-[10.5px] text-muted-foreground/60">
+                        {f.dirMatch ? (
+                          <Highlighted text={dir} ranges={f.dirMatch.ranges} />
+                        ) : (
+                          dir
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </button>
                 <span className={cn(
                   "shrink-0 text-[10px] text-muted-foreground/50",
                   isActive ? "hidden" : "group-hover:hidden",
@@ -313,12 +311,10 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
                 </span>
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    remove(f.path);
-                  }}
+                  onClick={() => remove(f.path)}
+                  aria-label={`Remove ${name} from recent files`}
                   className={cn(
-                    "shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                    "shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:flex",
                     isActive ? "flex" : "hidden group-hover:flex",
                   )}
                   title="Remove from recent"

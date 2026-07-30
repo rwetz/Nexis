@@ -496,92 +496,75 @@ function ThemeGroup({
             ? `by ${t.author}`
             : (t.description ?? null);
           return (
-            <button
+            // The card is a plain container, not a button: it holds Edit and
+            // Remove, and a control nested inside a button loses its own
+            // semantics (and is invalid HTML). The select action is its own
+            // button filling the row instead.
+            <div
               key={t.id}
-              type="button"
-              onClick={() => onSelect(t.id)}
-              title={t.description}
               className={cn(
-                "group flex items-center gap-3 rounded-lg border p-2.5 text-left transition-all",
+                "group flex items-center gap-3 rounded-lg border p-2.5 transition-all",
                 selected
                   ? "border-foreground/60 ring-1 ring-foreground/20"
                   : "border-border/60 hover:border-border",
               )}
             >
-              <div
-                className="flex h-10 w-14 shrink-0 items-center justify-center gap-1 rounded-md border border-border/40"
-                style={{ background: swatchBg }}
+              <button
+                type="button"
+                onClick={() => onSelect(t.id)}
+                title={t.description}
+                aria-pressed={selected}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
               >
-                <span
-                  className="h-5 w-2 rounded-sm"
-                  style={{ background: swatchAccent }}
-                />
-                <span
-                  className="h-5 w-2 rounded-sm"
-                  style={{ background: swatchFg, opacity: 0.7 }}
-                />
-                <span
-                  className="h-5 w-2 rounded-sm"
-                  style={{ background: swatchMuted }}
-                />
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-[12.5px] font-medium">
-                  {t.name}
-                </span>
-                {subtitle ? (
-                  <span className="truncate text-[11px] text-muted-foreground">
-                    {subtitle}
-                  </span>
-                ) : null}
-              </div>
-              {onEdit && onRemove ? (
-                <span className="ml-1 flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
-                  {/* Spans, not buttons: the enclosing theme card is itself a
-                      <button>, and nesting buttons is invalid HTML. */}
+                <div
+                  className="flex h-10 w-14 shrink-0 items-center justify-center gap-1 rounded-md border border-border/40"
+                  style={{ background: swatchBg }}
+                >
                   <span
-                    // react-doctor-disable-next-line react-doctor/prefer-tag-over-role
-                    role="button"
-                    tabIndex={0}
+                    className="h-5 w-2 rounded-sm"
+                    style={{ background: swatchAccent }}
+                  />
+                  <span
+                    className="h-5 w-2 rounded-sm"
+                    style={{ background: swatchFg, opacity: 0.7 }}
+                  />
+                  <span
+                    className="h-5 w-2 rounded-sm"
+                    style={{ background: swatchMuted }}
+                  />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-[12.5px] font-medium">
+                    {t.name}
+                  </span>
+                  {subtitle ? (
+                    <span className="truncate text-[11px] text-muted-foreground">
+                      {subtitle}
+                    </span>
+                  ) : null}
+                </div>
+              </button>
+              {onEdit && onRemove ? (
+                <span className="ml-1 flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+                  <button
+                    type="button"
                     aria-label={`Edit ${t.name}`}
                     className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onEdit(t.id);
-                      }
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(t.id);
-                    }}
+                    onClick={() => onEdit(t.id)}
                   >
                     <HugeiconsIcon icon={Edit02Icon} size={12} strokeWidth={1.75} />
-                  </span>
-                  <span
-                    // react-doctor-disable-next-line react-doctor/prefer-tag-over-role
-                    role="button"
-                    tabIndex={0}
+                  </button>
+                  <button
+                    type="button"
                     aria-label={`Remove ${t.name}`}
                     className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-destructive"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onRemove(t.id);
-                      }
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemove(t.id);
-                    }}
+                    onClick={() => onRemove(t.id)}
                   >
                     ×
-                  </span>
+                  </button>
                 </span>
               ) : null}
-            </button>
+            </div>
           );
         })}
       </div>

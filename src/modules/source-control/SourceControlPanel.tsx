@@ -1201,6 +1201,16 @@ const EntryRow = memo(function EntryRow({
         )}
         aria-hidden
       />
+      {/* Known gap, deliberately not papered over: these row controls sit
+          inside a `role="option"`, whose descendants ARIA treats as
+          presentational, so a screen reader cannot reach Stage/Discard from
+          the row. The conforming shape for "list with per-row controls" is a
+          `grid` (row/gridcell) with left/right column navigation — that means
+          rewriting handlePanelKeyDown, not relabelling elements, and doing
+          only the relabelling would leave a non-conforming widget that merely
+          scans clean. Tracked as follow-up; the actions remain reachable by
+          mouse and the file list itself is fully keyboard-navigable. */}
+      {/* react-doctor-disable-next-line react-doctor/html-no-nested-interactive */}
       <button
         type="button"
         onClick={() => {

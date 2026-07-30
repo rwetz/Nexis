@@ -61,11 +61,7 @@ export function DatabasePanel() {
       ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {connections.length > 0 && (
-            <div
-              role="listbox"
-              aria-label="Database connections"
-              className="shrink-0 border-b border-border/30 bg-muted/20"
-            >
+            <div className="shrink-0 border-b border-border/30 bg-muted/20">
               {connections.map((c) => (
                 <ConnectionItem
                   key={c.id}
@@ -98,39 +94,37 @@ function ConnectionItem({ conn, isActive, onSelect, onRemove }: {
   onRemove: () => void;
 }) {
   return (
+    // Plain container: the row carries a Remove control, so making the row
+    // itself a button (or an ARIA `option`, whose children are presentational)
+    // would put a control inside a control and hide Remove from screen readers.
     <div
-      // `option`, not `button`: the row already contains a Remove button, and
-      // nesting a control inside a button strips the inner one's semantics.
-      role="option"
-      aria-selected={isActive}
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
       className={cn(
-        "group flex cursor-pointer items-center gap-2 border-b border-border/20 px-3 py-1.5 last:border-none",
+        "group flex items-center gap-2 border-b border-border/20 px-3 py-1.5 last:border-none",
         isActive ? "bg-primary/[0.06]" : "hover:bg-muted/30",
       )}
-      onClick={onSelect}
     >
-      <HugeiconsIcon
-        icon={Database01Icon}
-        size={12}
-        strokeWidth={1.75}
-        className={isActive ? "text-primary" : "text-muted-foreground/60"}
-      />
-      <span className={cn("flex-1 text-[11px] truncate", isActive ? "text-foreground font-medium" : "text-foreground/80")}>
-        {conn.name}
-      </span>
-      <span className="text-[9px] text-muted-foreground/50">{conn.type}</span>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); onRemove(); }}
-        aria-label="Remove connection"
-        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+        onClick={onSelect}
+        aria-current={isActive || undefined}
+        className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
+      >
+        <HugeiconsIcon
+          icon={Database01Icon}
+          size={12}
+          strokeWidth={1.75}
+          className={isActive ? "text-primary" : "text-muted-foreground/60"}
+        />
+        <span className={cn("flex-1 text-[11px] truncate", isActive ? "text-foreground font-medium" : "text-foreground/80")}>
+          {conn.name}
+        </span>
+        <span className="text-[9px] text-muted-foreground/50">{conn.type}</span>
+      </button>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Remove connection ${conn.name}`}
+        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 focus-visible:opacity-100"
       >
         <HugeiconsIcon icon={Delete02Icon} size={11} strokeWidth={1.75} />
       </button>
