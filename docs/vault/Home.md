@@ -39,6 +39,10 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[terminal-tab-open]] — tab UI → `workspace_authorize` → `pty_open` → first bytes on screen
 - [[prefs-propagation]] — Settings window change → `writePref` → event → main window re-render
 
+## Runbooks (`runbooks/`)
+
+- [[react-doctor]] — running the React hygiene audit, its config, and the fix recipes for impure updaters and render-phase ref writes
+
 ## Other sections
 
 - `decisions/` — lightweight ADRs: why something is the way it is, alternatives rejected (empty so far — use `templates/decision.md`)
