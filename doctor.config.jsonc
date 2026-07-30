@@ -16,6 +16,40 @@
         // that would keep warning about `minimumReleaseAge` alone.
         "files": ["pnpm-workspace.yaml"],
         "rules": ["react-doctor/require-pnpm-hardening"]
+      },
+      {
+        // Vendored shadcn/ui and ai-elements primitives. These are a component
+        // library kept whole on purpose: they arrive via `npx shadcn add`, are
+        // meant to be reached for when a UI needs them, and deleting the ones
+        // not currently imported would mean re-adding them — and losing any
+        // local edits — the next time one is used. Dead-code analysis has
+        // nothing useful to say about a library's unused surface.
+        //
+        // Scoped to these directories only. Dead-code analysis still runs over
+        // the rest of src/, which is where it earns its keep.
+        "files": [
+          "src/components/ui/**",
+          "src/components/ai-elements/**",
+          "src/lib/use-mobile.ts"
+        ],
+        "rules": ["deslop/unused-file", "deslop/unused-export"]
+      },
+      {
+        // Five of the seven dependency findings are resolution blind spots
+        // rather than unused packages. Each was checked before being silenced:
+        //   @fontsource-variable/inter — loaded by url() from
+        //     src/styles/fonts.css; deslop only follows JS imports.
+        //   @iconify-json/vscode-icons — read by path out of node_modules by
+        //     scripts/generate-vscode-folder-icons.mjs:24.
+        //   @wdio/local-runner, @wdio/mocha-framework, @wdio/spec-reporter —
+        //     resolved by name at runtime from the `framework: "mocha"` and
+        //     `reporters: ["spec"]` strings in e2e/wdio.conf.ts, never
+        //     imported. Removing them breaks `pnpm test:e2e`.
+        // The two that were genuinely unused — @tauri-apps/plugin-log and
+        // @tauri-apps/plugin-window-state, whose Rust crates are what this app
+        // actually uses — were removed rather than suppressed.
+        "files": ["package.json"],
+        "rules": ["deslop/unused-dependency", "deslop/unused-dev-dependency"]
       }
     ]
   }
