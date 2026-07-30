@@ -465,6 +465,11 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
     // updating" on exactly the biggest projects.
     const treeRefreshRef = useRef(tree.refresh);
     treeRefreshRef.current = tree.refresh;
+    // The returned cleanup tears down every allocation (interval, focus/blur/
+    // visibilitychange listeners, the fs watch and its unlisten). The rule
+    // can't follow the `listen` await inside the async IIFE; the `cancelled`
+    // flag covers the unmount-before-resolve case.
+    // react-doctor-disable-next-line react-doctor/effect-needs-cleanup
     useEffect(() => {
       if (!rootPath) return;
       const INTERVAL_MS = 3000;

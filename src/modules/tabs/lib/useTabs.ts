@@ -251,24 +251,24 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     if (active?.kind === "editor" && leafIds(active.paneTree).length > 1) {
       const focused = findLeaf(active.paneTree, active.activeLeafId);
       if (focused && focused.path !== path && !focused.dirty) {
-        setTabs((curr) =>
-          curr.map((t) => {
-            if (t.id !== active.id || t.kind !== "editor") return t;
-            const paneTree = updateLeaf(t.paneTree, t.activeLeafId, {
-              path,
-              dirty: false,
-              preview: false,
-            });
-            return { ...t, paneTree, title: basename(path) };
-          }),
-        );
+        const nextTabs = tabsRef.current.map((t) => {
+          if (t.id !== active.id || t.kind !== "editor") return t;
+          const paneTree = updateLeaf(t.paneTree, t.activeLeafId, {
+            path,
+            dirty: false,
+            preview: false,
+          });
+          return { ...t, paneTree, title: basename(path) };
+        });
+        tabsRef.current = nextTabs;
+        setTabs(nextTabs);
         setActiveId(active.id);
         return active.id;
       }
     }
 
     let targetId: number | null = null;
-    setTabs((curr) => {
+    const nextTabs = ((curr: Tab[]): Tab[] => {
       // Locate an existing editor tab + leaf showing this path. With splitting,
       // a path may live in any pane of any editor tab.
       const findMatch = (requirePersistent: boolean) => {
@@ -348,7 +348,9 @@ export function useTabs(initial?: Partial<TerminalTab>) {
       const next = [...curr];
       next[previewIdx] = tab;
       return next;
-    });
+    })(tabsRef.current);
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
     if (targetId !== null) setActiveId(targetId);
     return targetId as number | null;
   }, []);
@@ -381,35 +383,33 @@ export function useTabs(initial?: Partial<TerminalTab>) {
       approvalId: string;
       isNewFile: boolean;
     }) => {
-      let targetId: number | null = null;
-      setTabs((curr) => {
-        const existing = curr.find(
-          (t) => t.kind === "ai-diff" && t.approvalId === input.approvalId,
-        );
-        if (existing) {
-          targetId = existing.id;
-          return curr;
-        }
-        const id = nextIdRef.current++;
-        targetId = id;
-        const title = `${basename(input.path)} (AI diff)`;
-        return [
-          ...curr,
-          {
-            id,
-            kind: "ai-diff",
-            title,
-            path: input.path,
-            originalContent: input.originalContent,
-            proposedContent: input.proposedContent,
-            approvalId: input.approvalId,
-            status: "pending",
-            isNewFile: input.isNewFile,
-          },
-        ];
-      });
-      if (targetId !== null) setActiveId(targetId);
-      return targetId as number | null;
+      const curr = tabsRef.current;
+      const existing = curr.find(
+        (t) => t.kind === "ai-diff" && t.approvalId === input.approvalId,
+      );
+      if (existing) {
+        setActiveId(existing.id);
+        return existing.id;
+      }
+      const id = nextIdRef.current++;
+      const nextTabs: Tab[] = [
+        ...curr,
+        {
+          id,
+          kind: "ai-diff",
+          title: `${basename(input.path)} (AI diff)`,
+          path: input.path,
+          originalContent: input.originalContent,
+          proposedContent: input.proposedContent,
+          approvalId: input.approvalId,
+          status: "pending",
+          isNewFile: input.isNewFile,
+        },
+      ];
+      tabsRef.current = nextTabs;
+      setTabs(nextTabs);
+      setActiveId(id);
+      return id;
     },
     [],
   );
@@ -428,25 +428,30 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   );
 
   const closeAiDiffTab = useCallback((approvalId: string) => {
-    setTabs((curr) => {
-      const target = curr.find(
-        (t) => t.kind === "ai-diff" && t.approvalId === approvalId,
+    const curr = tabsRef.current;
+    const target = curr.find(
+      (t) => t.kind === "ai-diff" && t.approvalId === approvalId,
+    );
+    if (!target) return;
+    // Last remaining tab: closing it would leave an empty window, so mark the
+    // diff resolved in place instead.
+    if (curr.length <= 1) {
+      const nextTabs = curr.map((t) =>
+        t.kind === "ai-diff" && t.approvalId === approvalId
+          ? { ...t, status: "approved" as AiDiffStatus }
+          : t,
       );
-      if (!target || curr.length <= 1) {
-        if (!target) return curr;
-        return curr.map((t) =>
-          t.kind === "ai-diff" && t.approvalId === approvalId
-            ? { ...t, status: "approved" as AiDiffStatus }
-            : t,
-        );
-      }
-      const idx = curr.findIndex((t) => t.id === target.id);
-      const next = curr.filter((t) => t.id !== target.id);
-      setActiveId((active) =>
-        target.id === active ? next[Math.max(0, idx - 1)].id : active,
-      );
-      return next;
-    });
+      tabsRef.current = nextTabs;
+      setTabs(nextTabs);
+      return;
+    }
+    const idx = curr.findIndex((t) => t.id === target.id);
+    const nextTabs = curr.filter((t) => t.id !== target.id);
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+    setActiveId((active) =>
+      target.id === active ? nextTabs[Math.max(0, idx - 1)].id : active,
+    );
   }, []);
 
   const newPreviewTab = useCallback((url: string) => {
@@ -460,53 +465,57 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   }, []);
 
   const newMarkdownTab = useCallback((path: string) => {
-    let targetId: number | null = null;
-    setTabs((curr) => {
-      const existing = curr.find(
-        (t) => t.kind === "markdown" && t.path === path,
-      );
-      if (existing) {
-        targetId = existing.id;
-        return curr;
-      }
-      const id = nextIdRef.current++;
-      targetId = id;
-      return [...curr, { id, kind: "markdown", title: basename(path), path }];
-    });
-    if (targetId !== null) setActiveId(targetId);
-    return targetId;
+    const curr = tabsRef.current;
+    const existing = curr.find((t) => t.kind === "markdown" && t.path === path);
+    if (existing) {
+      setActiveId(existing.id);
+      return existing.id;
+    }
+    const id = nextIdRef.current++;
+    const nextTabs: Tab[] = [
+      ...curr,
+      { id, kind: "markdown", title: basename(path), path },
+    ];
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+    setActiveId(id);
+    return id;
   }, []);
 
   const newNotebookTab = useCallback((path: string) => {
-    let targetId: number | null = null;
-    setTabs((curr) => {
-      const existing = curr.find((t) => t.kind === "notebook" && t.path === path);
-      if (existing) {
-        targetId = existing.id;
-        return curr;
-      }
-      const id = nextIdRef.current++;
-      targetId = id;
-      return [...curr, { id, kind: "notebook", title: basename(path), path }];
-    });
-    if (targetId !== null) setActiveId(targetId);
-    return targetId;
+    const curr = tabsRef.current;
+    const existing = curr.find((t) => t.kind === "notebook" && t.path === path);
+    if (existing) {
+      setActiveId(existing.id);
+      return existing.id;
+    }
+    const id = nextIdRef.current++;
+    const nextTabs: Tab[] = [
+      ...curr,
+      { id, kind: "notebook", title: basename(path), path },
+    ];
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+    setActiveId(id);
+    return id;
   }, []);
 
   const newImageTab = useCallback((path: string) => {
-    let targetId: number | null = null;
-    setTabs((curr) => {
-      const existing = curr.find((t) => t.kind === "image" && t.path === path);
-      if (existing) {
-        targetId = existing.id;
-        return curr;
-      }
-      const id = nextIdRef.current++;
-      targetId = id;
-      return [...curr, { id, kind: "image", title: basename(path), path }];
-    });
-    if (targetId !== null) setActiveId(targetId);
-    return targetId;
+    const curr = tabsRef.current;
+    const existing = curr.find((t) => t.kind === "image" && t.path === path);
+    if (existing) {
+      setActiveId(existing.id);
+      return existing.id;
+    }
+    const id = nextIdRef.current++;
+    const nextTabs: Tab[] = [
+      ...curr,
+      { id, kind: "image", title: basename(path), path },
+    ];
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+    setActiveId(id);
+    return id;
   }, []);
 
   const openGitDiffTab = useCallback(
@@ -656,24 +665,23 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   );
 
   const closeTab = useCallback((id: number) => {
-    let toDispose: number[] = [];
-    let snapToDelete: string | null = null;
-    setTabs((curr) => {
-      const idx = curr.findIndex((t) => t.id === id);
-      if (idx === -1) return curr;
-      const target = curr[idx];
-      if (target && target.kind === "terminal") {
-        toDispose = leafIds(target.paneTree);
-        snapToDelete = target.snapshotId ?? null;
-      }
-      const next = curr.filter((t) => t.id !== id);
-      if (next.length > 0) {
-        setActiveId((active) =>
-          id === active ? next[Math.max(0, idx - 1)].id : active,
-        );
-      }
-      return next;
-    });
+    const curr = tabsRef.current;
+    const idx = curr.findIndex((t) => t.id === id);
+    if (idx === -1) return;
+    const target = curr[idx];
+    const toDispose =
+      target?.kind === "terminal" ? leafIds(target.paneTree) : [];
+    const snapToDelete =
+      target?.kind === "terminal" ? (target.snapshotId ?? null) : null;
+
+    const nextTabs = curr.filter((t) => t.id !== id);
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+    if (nextTabs.length > 0) {
+      setActiveId((active) =>
+        id === active ? nextTabs[Math.max(0, idx - 1)].id : active,
+      );
+    }
     for (const lid of toDispose) disposeSession(lid);
     if (snapToDelete) void deleteSessionSnapshot(snapToDelete).catch(() => {});
   }, []);
@@ -843,77 +851,81 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   );
 
   const closePaneByLeaf = useCallback((leafId: number): void => {
-    let didRemove = false;
-    let snapToDelete: string | null = null;
-    setTabs((curr) => {
-      const tab = curr.find(
-        (t) => t.kind === "terminal" && hasLeaf(t.paneTree, leafId),
+    const curr = tabsRef.current;
+    const tab = curr.find(
+      (t) => t.kind === "terminal" && hasLeaf(t.paneTree, leafId),
+    );
+    if (!tab || tab.kind !== "terminal") return;
+    const newTree = removeLeaf(tab.paneTree, leafId);
+
+    // Last pane in the tab: the tab goes with it — unless it's the only tab,
+    // which would leave an empty window.
+    if (newTree === null) {
+      if (curr.length <= 1) return;
+      const idx = curr.findIndex((x) => x.id === tab.id);
+      const nextTabs = curr.filter((x) => x.id !== tab.id);
+      tabsRef.current = nextTabs;
+      setTabs(nextTabs);
+      setActiveId((active) =>
+        active === tab.id ? nextTabs[Math.max(0, idx - 1)].id : active,
       );
-      if (!tab || tab.kind !== "terminal") return curr;
-      const newTree = removeLeaf(tab.paneTree, leafId);
-      if (newTree === null) {
-        if (curr.length <= 1) return curr;
-        const idx = curr.findIndex((x) => x.id === tab.id);
-        const next = curr.filter((x) => x.id !== tab.id);
-        setActiveId((active) =>
-          active === tab.id ? next[Math.max(0, idx - 1)].id : active,
-        );
-        didRemove = true;
-        snapToDelete = tab.snapshotId ?? null;
-        return next;
-      }
-      const remaining = leafIds(newTree);
-      let newActive = tab.activeLeafId;
-      if (tab.activeLeafId === leafId) {
-        const sib = siblingLeafOf(tab.paneTree, leafId);
-        newActive = sib && remaining.includes(sib) ? sib : remaining[0];
-      }
-      didRemove = true;
-      return curr.map((x) =>
-        x.id === tab.id && x.kind === "terminal"
-          ? { ...x, paneTree: newTree, activeLeafId: newActive }
-          : x,
-      );
-    });
-    if (didRemove) disposeSession(leafId);
-    if (snapToDelete) void deleteSessionSnapshot(snapToDelete).catch(() => {});
+      disposeSession(leafId);
+      const snap = tab.snapshotId ?? null;
+      if (snap) void deleteSessionSnapshot(snap).catch(() => {});
+      return;
+    }
+
+    const remaining = leafIds(newTree);
+    let newActive = tab.activeLeafId;
+    if (tab.activeLeafId === leafId) {
+      const sib = siblingLeafOf(tab.paneTree, leafId);
+      newActive = sib && remaining.includes(sib) ? sib : remaining[0];
+    }
+    const nextTabs = curr.map((x) =>
+      x.id === tab.id && x.kind === "terminal"
+        ? { ...x, paneTree: newTree, activeLeafId: newActive }
+        : x,
+    );
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+    disposeSession(leafId);
   }, []);
 
   const closeActivePane = useCallback((tabId: number): boolean => {
-    let closedTab = false;
-    let removedLeaf: number | null = null;
-    let snapToDelete: string | null = null;
-    setTabs((curr) => {
-      const t = curr.find((x) => x.id === tabId);
-      if (!t || t.kind !== "terminal") return curr;
-      const target = t.activeLeafId;
-      const newTree = removeLeaf(t.paneTree, target);
-      if (newTree === null) {
-        if (curr.length <= 1) return curr;
-        const idx = curr.findIndex((x) => x.id === tabId);
-        const next = curr.filter((x) => x.id !== tabId);
-        setActiveId((active) =>
-          active === tabId ? next[Math.max(0, idx - 1)].id : active,
-        );
-        closedTab = true;
-        removedLeaf = target;
-        snapToDelete = t.snapshotId ?? null;
-        return next;
-      }
-      const remaining = leafIds(newTree);
-      const sib = siblingLeafOf(t.paneTree, target);
-      const newActive =
-        sib && remaining.includes(sib) ? sib : remaining[0];
-      removedLeaf = target;
-      return curr.map((x) =>
-        x.id === tabId && x.kind === "terminal"
-          ? { ...x, paneTree: newTree, activeLeafId: newActive }
-          : x,
+    const curr = tabsRef.current;
+    const t = curr.find((x) => x.id === tabId);
+    if (!t || t.kind !== "terminal") return false;
+    const target = t.activeLeafId;
+    const newTree = removeLeaf(t.paneTree, target);
+
+    // Last pane: the whole tab closes, unless it's the only one left.
+    if (newTree === null) {
+      if (curr.length <= 1) return false;
+      const idx = curr.findIndex((x) => x.id === tabId);
+      const nextTabs = curr.filter((x) => x.id !== tabId);
+      tabsRef.current = nextTabs;
+      setTabs(nextTabs);
+      setActiveId((active) =>
+        active === tabId ? nextTabs[Math.max(0, idx - 1)].id : active,
       );
-    });
-    if (removedLeaf !== null) disposeSession(removedLeaf);
-    if (snapToDelete) void deleteSessionSnapshot(snapToDelete).catch(() => {});
-    return closedTab;
+      disposeSession(target);
+      const snap = t.snapshotId ?? null;
+      if (snap) void deleteSessionSnapshot(snap).catch(() => {});
+      return true;
+    }
+
+    const remaining = leafIds(newTree);
+    const sib = siblingLeafOf(t.paneTree, target);
+    const newActive = sib && remaining.includes(sib) ? sib : remaining[0];
+    const nextTabs = curr.map((x) =>
+      x.id === tabId && x.kind === "terminal"
+        ? { ...x, paneTree: newTree, activeLeafId: newActive }
+        : x,
+    );
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+    disposeSession(target);
+    return false;
   }, []);
 
   // ─── Editor pane actions (mirror the terminal ones; full split parity) ───
@@ -1029,38 +1041,44 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   /** Close one file pane; collapse single-child splits; close the tab when its
    *  last pane goes. */
   const closeEditorPaneByLeaf = useCallback((leafId: number): void => {
-    setTabs((curr) => {
-      const tab = curr.find(
-        (t) => t.kind === "editor" && hasLeaf(t.paneTree, leafId),
+    const curr = tabsRef.current;
+    const tab = curr.find(
+      (t) => t.kind === "editor" && hasLeaf(t.paneTree, leafId),
+    );
+    if (!tab || tab.kind !== "editor") return;
+    const newTree = removeLeaf(tab.paneTree, leafId);
+
+    // Last pane in the tab: the tab closes too, unless it's the only tab.
+    if (newTree === null) {
+      if (curr.length <= 1) return;
+      const idx = curr.findIndex((x) => x.id === tab.id);
+      const nextTabs = curr.filter((x) => x.id !== tab.id);
+      tabsRef.current = nextTabs;
+      setTabs(nextTabs);
+      setActiveId((active) =>
+        active === tab.id ? nextTabs[Math.max(0, idx - 1)].id : active,
       );
-      if (!tab || tab.kind !== "editor") return curr;
-      const newTree = removeLeaf(tab.paneTree, leafId);
-      if (newTree === null) {
-        if (curr.length <= 1) return curr;
-        const idx = curr.findIndex((x) => x.id === tab.id);
-        const next = curr.filter((x) => x.id !== tab.id);
-        setActiveId((active) =>
-          active === tab.id ? next[Math.max(0, idx - 1)].id : active,
-        );
-        return next;
-      }
-      const remaining = leafIds(newTree);
-      let newActive = tab.activeLeafId;
-      if (tab.activeLeafId === leafId) {
-        const sib = siblingLeafOf(tab.paneTree, leafId);
-        newActive = sib && remaining.includes(sib) ? sib : remaining[0];
-      }
-      return curr.map((x) =>
-        x.id === tab.id
-          ? {
-              ...x,
-              paneTree: newTree,
-              activeLeafId: newActive,
-              title: editorTitleFor(newTree, newActive, x.title),
-            }
-          : x,
-      );
-    });
+      return;
+    }
+
+    const remaining = leafIds(newTree);
+    let newActive = tab.activeLeafId;
+    if (tab.activeLeafId === leafId) {
+      const sib = siblingLeafOf(tab.paneTree, leafId);
+      newActive = sib && remaining.includes(sib) ? sib : remaining[0];
+    }
+    const nextTabs = curr.map((x) =>
+      x.id === tab.id
+        ? {
+            ...x,
+            paneTree: newTree,
+            activeLeafId: newActive,
+            title: editorTitleFor(newTree, newActive, x.title),
+          }
+        : x,
+    );
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
   }, []);
 
   const moveEditorPaneInTab = useCallback(
@@ -1087,26 +1105,25 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   const resetWorkspace = useCallback((cwd?: string) => {
     const tabId = nextIdRef.current++;
     const leafId = nextIdRef.current++;
-    let toDispose: number[] = [];
-    let snapsToDelete: string[] = [];
-    setTabs((curr) => {
-      toDispose = curr.flatMap((t) =>
-        t.kind === "terminal" ? leafIds(t.paneTree) : [],
-      );
-      snapsToDelete = curr.flatMap((t) =>
-        t.kind === "terminal" && t.snapshotId ? [t.snapshotId] : [],
-      );
-      return [
-        {
-          id: tabId,
-          kind: "terminal",
-          title: "shell",
-          cwd,
-          paneTree: { kind: "leaf", id: leafId, cwd },
-          activeLeafId: leafId,
-        },
-      ];
-    });
+    const curr = tabsRef.current;
+    const toDispose = curr.flatMap((t) =>
+      t.kind === "terminal" ? leafIds(t.paneTree) : [],
+    );
+    const snapsToDelete = curr.flatMap((t) =>
+      t.kind === "terminal" && t.snapshotId ? [t.snapshotId] : [],
+    );
+    const nextTabs: Tab[] = [
+      {
+        id: tabId,
+        kind: "terminal",
+        title: "shell",
+        cwd,
+        paneTree: { kind: "leaf", id: leafId, cwd },
+        activeLeafId: leafId,
+      },
+    ];
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
     setActiveId(tabId);
     for (const lid of toDispose) disposeSession(lid);
     for (const snap of snapsToDelete)

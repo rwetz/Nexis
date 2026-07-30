@@ -56,7 +56,6 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
   const openAiPanel = useChatStore((s) => s.openPanel);
 
   const conflicts = changedFiles.filter(isConflict);
-  if (conflicts.length === 0) return null;
 
   const resolveWithAi = useCallback(
     async (f: GitChangedFile) => {
@@ -91,6 +90,8 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
     },
     [repoRoot, openAiPanel],
   );
+
+  if (conflicts.length === 0) return null;
 
   return (
     <div className="border-t border-border/50">

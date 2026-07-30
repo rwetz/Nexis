@@ -121,6 +121,11 @@ export function useSystemMonitor({
     });
   }, []);
 
+  // The cleanup clears the pending timeout and sets `cancelled`, which also
+  // stops the self-rescheduling `tick` from arming a new one after an in-flight
+  // sample resolves. The rule only looks for a direct clearTimeout of a
+  // top-level timer id, not one reassigned inside an async loop.
+  // react-doctor-disable-next-line react-doctor/effect-needs-cleanup
   useEffect(() => {
     if (paused) return;
     let cancelled = false;

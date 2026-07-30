@@ -603,6 +603,11 @@ export default function App() {
     }
   }, [tabs]);
 
+  // The cleanup below does own the subscription; `listen` returns a Promise, so
+  // the unlisten is chained off it rather than called directly, which the rule's
+  // static check can't follow. A fast unmount still detaches: the .then fires
+  // once the listener is registered and immediately tears it down.
+  // react-doctor-disable-next-line react-doctor/effect-needs-cleanup
   useEffect(() => {
     type FileWrittenPayload = { path: string; source?: string };
     const unlistenPromise = getCurrentWebviewWindow().listen<FileWrittenPayload>(

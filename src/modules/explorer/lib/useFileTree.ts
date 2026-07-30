@@ -56,8 +56,24 @@ export function useFileTree(rootPath: string | null, options?: Options) {
     showHiddenRef.current = showHidden;
   }, [showHidden]);
 
+  // Post-commit mirror of `nodes`, for event handlers that need to check a
+  // path's load state without re-subscribing to the whole tree. Handlers only
+  // run from user events (never mid-render), so a commit-lagged read is fine —
+  // and `inFlightRef` below covers the one case where the lag would matter.
+  const nodesRef = useRef(nodes);
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  // Paths with a `fs_read_dir` already in flight. Two handlers firing before
+  // React commits (a fast double-click on a folder) would both read the stale
+  // mirror and fetch the same directory twice; this collapses them.
+  const inFlightRef = useRef<Set<string>>(new Set());
+
   const fetchChildren = useCallback(
     async (path: string, opts?: { background?: boolean }) => {
+      if (inFlightRef.current.has(path)) return;
+      inFlightRef.current.add(path);
       // A background refresh (the live-sync poll) keeps the already-loaded
       // rows on screen while it re-lists — flipping to "loading" would clear
       // the entries and flash the list empty every poll. Only show the
@@ -78,6 +94,8 @@ export function useFileTree(rootPath: string | null, options?: Options) {
           ...s,
           [path]: { status: "error", message: String(e) },
         }));
+      } finally {
+        inFlightRef.current.delete(path);
       }
     },
     [],
@@ -134,12 +152,8 @@ export function useFileTree(rootPath: string | null, options?: Options) {
         else next.add(path);
         return next;
       });
-      setNodes((curr) => {
-        if (!curr[path] || curr[path].status === "error") {
-          void fetchChildren(path);
-        }
-        return curr;
-      });
+      const state = nodesRef.current[path];
+      if (!state || state.status === "error") void fetchChildren(path);
     },
     [fetchChildren],
   );
@@ -152,10 +166,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
         next.add(path);
         return next;
       });
-      setNodes((curr) => {
-        if (!curr[path]) void fetchChildren(path);
-        return curr;
-      });
+      if (!nodesRef.current[path]) void fetchChildren(path);
     },
     [fetchChildren],
   );
@@ -197,10 +208,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
           return next;
         });
       }
-      setNodes((curr) => {
-        if (!curr[parentPath]) void fetchChildren(parentPath);
-        return curr;
-      });
+      if (!nodesRef.current[parentPath]) void fetchChildren(parentPath);
     },
     [rootPath, fetchChildren],
   );

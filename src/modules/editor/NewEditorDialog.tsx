@@ -47,14 +47,17 @@ export function NewEditorDialog({
     setName("untitled.txt");
     setError(null);
     // Pre-select the basename so the user can quickly retype the filename
-    // while keeping the extension handy.
-    setTimeout(() => {
+    // while keeping the extension handy. Deferred a tick so the input exists;
+    // cleared on unmount/close so a dialog dismissed within the same tick
+    // doesn't steal focus back after it's gone.
+    const timer = setTimeout(() => {
       const el = inputRef.current;
       if (!el) return;
       el.focus();
       const dot = el.value.lastIndexOf(".");
       el.setSelectionRange(0, dot > 0 ? dot : el.value.length);
     }, 0);
+    return () => clearTimeout(timer);
   }, [open]);
 
   const submit = async () => {

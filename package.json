@@ -14,7 +14,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "wdio run e2e/wdio.conf.ts",
     "icons:folders": "node scripts/generate-vscode-folder-icons.mjs",
-    "tool:new": "node scripts/new-ai-tool.mjs"
+    "tool:new": "node scripts/new-ai-tool.mjs",
+    "doctor": "react-doctor"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.71",
@@ -119,6 +120,7 @@
     "@wdio/types": "^9.0.0",
     "edgedriver": "^6.3.0",
     "jsdom": "^29.1.1",
+    "react-doctor": "^0.9.2",
     "shadcn": "^4.3.1",
     "tailwindcss": "^4.2.3",
     "tsx": "^4.19.4",
