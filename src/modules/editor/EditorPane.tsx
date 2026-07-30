@@ -138,9 +138,13 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const { doc, onChange, save, reload, reloadForce, applyRecovery, discardRecovery } =
       useDocument({ path, onDirtyChange });
     const reloadRef = useRef(reload);
-    reloadRef.current = reload;
+    useEffect(() => {
+      reloadRef.current = reload;
+    }, [reload]);
     const reloadForceRef = useRef(reloadForce);
-    reloadForceRef.current = reloadForce;
+    useEffect(() => {
+      reloadForceRef.current = reloadForce;
+    }, [reloadForce]);
     const cmRef = useRef<ReactCodeMirrorRef>(null);
     const editorThemeId = usePreferencesStore((s) => s.editorTheme);
     const vimMode = usePreferencesStore((s) => s.vimMode);
@@ -189,30 +193,43 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     // Stabilize save + onSaved via refs so the extensions array never changes
     // identity — a new identity makes @uiw/react-codemirror reconfigure the
     // whole state, wiping the language compartment.
+    // All mirrored after commit: every reader is a CodeMirror extension —
+    // keymap handler, completion source, LSP callback — which only runs from
+    // user interaction or async work, never during render.
     const saveRef = useRef(save);
-    saveRef.current = save;
+    useEffect(() => {
+      saveRef.current = save;
+    }, [save]);
     const onSavedRef = useRef(onSaved);
-    onSavedRef.current = onSaved;
+    useEffect(() => {
+      onSavedRef.current = onSaved;
+    }, [onSaved]);
     const onCloseRef = useRef(onClose);
-    onCloseRef.current = onClose;
+    useEffect(() => {
+      onCloseRef.current = onClose;
+    }, [onClose]);
 
     const pathRef = useRef(path);
-    pathRef.current = path;
+    useEffect(() => {
+      pathRef.current = path;
+    }, [path]);
 
     const [renameTarget, setRenameTarget] = useState<{
       symbol: string;
       line: number;
       character: number;
     } | null>(null);
+    // Created once: the only thing these close over is a setState, which React
+    // guarantees is stable, so there is nothing to refresh per render.
     const openRenameRef = useRef<
       | ((target: { symbol: string; line: number; character: number }) => void)
       | null
-    >(null);
-    openRenameRef.current = (target) => setRenameTarget(target);
+    >((target) => setRenameTarget(target));
 
     const [codeActionRange, setCodeActionRange] = useState<LspRange | null>(null);
-    const openCodeActionRef = useRef<((range: LspRange) => void) | null>(null);
-    openCodeActionRef.current = (range) => setCodeActionRange(range);
+    const openCodeActionRef = useRef<((range: LspRange) => void) | null>(
+      (range) => setCodeActionRange(range),
+    );
 
     const [editorView, setEditorView] = useState<EditorView | undefined>(undefined);
 
@@ -221,7 +238,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     // it per keystroke; the array itself must never change identity).
     const [toolingDisabled, setToolingDisabled] = useState(false);
     const toolingDisabledRef = useRef(false);
-    toolingDisabledRef.current = toolingDisabled;
+    useEffect(() => {
+      toolingDisabledRef.current = toolingDisabled;
+    }, [toolingDisabled]);
     const docReady = doc.status === "ready";
     const docSize = doc.status === "ready" ? doc.size : 0;
     useEffect(() => {

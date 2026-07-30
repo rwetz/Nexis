@@ -198,10 +198,16 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
     const [dragSource, setDragSource] = useState<string | null>(null);
     const [dropTargetRow, setDropTargetRow] = useState<string | null>(null);
 
+    // Mirrored after commit — read by drag/drop and hover-expand timers, which
+    // fire between commits and so always see the last painted tree.
     const treeRef = useRef(tree);
-    treeRef.current = tree;
+    useEffect(() => {
+      treeRef.current = tree;
+    }, [tree]);
     const rootPathRef = useRef(rootPath);
-    rootPathRef.current = rootPath;
+    useEffect(() => {
+      rootPathRef.current = rootPath;
+    }, [rootPath]);
 
     const clearHoverExpand = useCallback(() => {
       if (hoverExpandRef.current) {
@@ -464,7 +470,9 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
     // watcher as guaranteed would present as "the file tree silently stopped
     // updating" on exactly the biggest projects.
     const treeRefreshRef = useRef(tree.refresh);
-    treeRefreshRef.current = tree.refresh;
+    useEffect(() => {
+      treeRefreshRef.current = tree.refresh;
+    }, [tree.refresh]);
     // The returned cleanup tears down every allocation (interval, focus/blur/
     // visibilitychange listeners, the fs watch and its unlisten). The rule
     // can't follow the `listen` await inside the async IIFE; the `cancelled`

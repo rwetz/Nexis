@@ -55,8 +55,14 @@ export const DotFieldBackground = memo(function DotFieldBackground({
   const sizeRef = useRef({ w: 0, h: 0 });
   const glowOpacityRef = useRef(0);
   const engagementRef = useRef(0);
+  // Latest props for the render loop below, which is set up once and must not
+  // restart when a prop changes. Written after commit rather than during
+  // render: React can discard a render, and the loop only reads this on the
+  // next frame anyway.
   const propsRef = useRef({ dotRadius, dotSpacing, cursorRadius, cursorForce, bulgeOnly, bulgeStrength, maxGlowOpacity, sparkle, waveAmplitude, gradientFrom, gradientTo });
-  propsRef.current = { dotRadius, dotSpacing, cursorRadius, cursorForce, bulgeOnly, bulgeStrength, maxGlowOpacity, sparkle, waveAmplitude, gradientFrom, gradientTo };
+  useEffect(() => {
+    propsRef.current = { dotRadius, dotSpacing, cursorRadius, cursorForce, bulgeOnly, bulgeStrength, maxGlowOpacity, sparkle, waveAmplitude, gradientFrom, gradientTo };
+  }, [dotRadius, dotSpacing, cursorRadius, cursorForce, bulgeOnly, bulgeStrength, maxGlowOpacity, sparkle, waveAmplitude, gradientFrom, gradientTo]);
   const rebuildRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {

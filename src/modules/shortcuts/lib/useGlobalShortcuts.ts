@@ -24,8 +24,16 @@ export function useGlobalShortcuts(
   handlers: ShortcutHandlers,
   options?: UseGlobalShortcutsOptions,
 ) {
+  // Latest handlers for the document-level key listener, which is registered
+  // once. Written after commit so a discarded render can't install handlers
+  // belonging to UI that never appeared.
+  // No dep array on purpose: callers pass `handlers`/`options` as inline
+  // object literals, so they are new every render and mirroring after every
+  // commit is exactly the intent.
   const latest = useRef({ handlers, options });
-  latest.current = { handlers, options };
+  useEffect(() => {
+    latest.current = { handlers, options };
+  });
 
   // Access the shortcuts from the store
   const userShortcuts = usePreferencesStore((s) => s.shortcuts);

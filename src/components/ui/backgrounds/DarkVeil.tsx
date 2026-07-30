@@ -100,8 +100,14 @@ export const DarkVeilBackground = memo(function DarkVeilBackground({
   resolutionScale = 1,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Latest props for the render loop below, which is set up once and must not
+  // restart when a prop changes. Written after commit rather than during
+  // render: React can discard a render, and the loop only reads this on the
+  // next frame anyway.
   const propsRef = useRef({ hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale });
-  propsRef.current = { hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale };
+  useEffect(() => {
+    propsRef.current = { hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale };
+  }, [hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

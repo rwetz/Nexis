@@ -117,8 +117,14 @@ export function AuroraBackground({
   opacity = 0.5,
 }: Props) {
   const ctnRef = useRef<HTMLDivElement>(null);
+  // Latest props for the render loop below, which is set up once and must not
+  // restart when a prop changes. Written after commit rather than during
+  // render: React can discard a render, and the loop only reads this on the
+  // next frame anyway.
   const propsRef = useRef({ colorStops, amplitude, blend, speed });
-  propsRef.current = { colorStops, amplitude, blend, speed };
+  useEffect(() => {
+    propsRef.current = { colorStops, amplitude, blend, speed };
+  }, [colorStops, amplitude, blend, speed]);
 
   useEffect(() => {
     const ctn = ctnRef.current;

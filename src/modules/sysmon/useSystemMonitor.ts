@@ -88,7 +88,9 @@ export function useSystemMonitor({
   // Read through refs inside the poll loop so changing sort/inclusion doesn't
   // tear down and restart the timer (which would drop history continuity).
   const optsRef = useRef({ includeProcesses, sort });
-  optsRef.current = { includeProcesses, sort };
+  useEffect(() => {
+    optsRef.current = { includeProcesses, sort };
+  }, [includeProcesses, sort]);
 
   const sampleOnce = useCallback(async () => {
     const { includeProcesses: withProcs, sort: sortKey } = optsRef.current;

@@ -53,8 +53,12 @@ export function usePythonEnv(workspaceRoot: string | null) {
     activeEnv: null,
     loading: false,
   });
+  // Latest root for the async detect/select callbacks, mirrored after commit
+  // so a discarded render can't point them at a workspace never shown.
   const workspaceRootRef = useRef(workspaceRoot);
-  workspaceRootRef.current = workspaceRoot;
+  useEffect(() => {
+    workspaceRootRef.current = workspaceRoot;
+  }, [workspaceRoot]);
 
   const detect = useCallback(async (root: string) => {
     setState((prev) => ({ ...prev, loading: true }));

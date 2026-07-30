@@ -240,8 +240,12 @@ export default function App() {
 
   // Mirror `tabs` into a ref so callbacks scheduled with `setTimeout`
   // (e.g. cdInNewTab) read the latest pane state instead of a stale closure.
+  // Mirrored after commit, not during render: a render React discards must not
+  // leave the ref pointing at tabs that never made it to the screen.
   const tabsRef = useRef(tabs);
-  tabsRef.current = tabs;
+  useEffect(() => {
+    tabsRef.current = tabs;
+  }, [tabs]);
 
   const activeTerminalTab = useMemo(() => {
     const t = tabs.find((x) => x.id === activeId);
@@ -340,8 +344,13 @@ export default function App() {
   // Mount the (lazy) settings dialog only once it has been opened, then keep
   // it mounted so the Radix close animation still plays on later closes.
   const settingsOpen = useSettingsDialogStore((s) => s.isOpen);
+  // Latched after commit. The render that opens the dialog mounts it via the
+  // `settingsOpen ||` short-circuit at the call site, so this only has to be
+  // true by the time settings closes again.
   const settingsEverOpenedRef = useRef(false);
-  if (settingsOpen) settingsEverOpenedRef.current = true;
+  useEffect(() => {
+    if (settingsOpen) settingsEverOpenedRef.current = true;
+  }, [settingsOpen]);
   const workspaceEnv = useWorkspaceEnvStore((s) => s.env);
   const setWorkspaceEnv = useWorkspaceEnvStore((s) => s.setEnv);
   const [launchCwd, setLaunchCwd] = useState<string | null>(null);

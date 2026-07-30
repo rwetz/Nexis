@@ -700,10 +700,17 @@ export function FloatingAiPanel() {
   // Refs that always hold the latest pos/size so that mouseup handlers can
   // read the final values without being listed as effect dependencies (which
   // would tear down and re-add the mousemove/mouseup listeners on every move).
+  // Mirrored after commit rather than during render — the readers are DOM
+  // mousemove/mouseup handlers, which only run between commits, so they always
+  // see the last painted value.
   const posRef = useRef(pos);
-  posRef.current = pos;
+  useEffect(() => {
+    posRef.current = pos;
+  }, [pos]);
   const sizeRef = useRef(size);
-  sizeRef.current = size;
+  useEffect(() => {
+    sizeRef.current = size;
+  }, [size]);
 
   const onDragStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();

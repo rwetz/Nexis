@@ -49,7 +49,9 @@ export function useDocument({ path, onDirtyChange }: Options) {
   const bufferRef = useRef<string>("");
   const dirtyRef = useRef(false);
   const docRef = useRef<DocumentState>(doc);
-  docRef.current = doc;
+  useEffect(() => {
+    docRef.current = doc;
+  }, [doc]);
   // Crash-recovery autosave: debounced snapshot of the dirty buffer.
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {

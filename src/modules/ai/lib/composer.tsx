@@ -354,8 +354,15 @@ export function AiComposerProvider({ children }: ProviderProps) {
       pickedSnippets.length > 0 ||
       pickedCommands.length > 0);
 
-  // Keep submitRef pointing at the latest submit so the auto-submit timeout can call it.
-  submitRef.current = submit;
+  // Keep submitRef pointing at the latest submit so the auto-submit timeout can
+  // call it. Assigned after commit; the auto-submit effect above reads it from
+  // inside a `setTimeout(…, 0)`, which runs after every effect for that commit
+  // has flushed, so it never observes the previous render's submit.
+  // No dep array on purpose: `submit` is rebuilt every render, so mirroring it
+  // after every commit is both the intent and the cheapest correct form.
+  useEffect(() => {
+    submitRef.current = submit;
+  });
 
   const ctx: ComposerCtx = {
     textareaRef,

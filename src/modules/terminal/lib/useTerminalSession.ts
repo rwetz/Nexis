@@ -597,8 +597,15 @@ export function useTerminalSession({
   onCwd,
   onTitle,
 }: Options) {
+  // Latest callbacks for the session listeners, which are attached once per
+  // leaf. Mirrored after commit so a discarded render can't wire the session
+  // to callbacks from UI that never mounted.
+  // No dep array on purpose: callers pass these as inline arrows, so they are
+  // new every render and mirroring after every commit is exactly the intent.
   const cbRef = useRef({ onSearchReady, onExit, onCwd, onTitle });
-  cbRef.current = { onSearchReady, onExit, onCwd, onTitle };
+  useEffect(() => {
+    cbRef.current = { onSearchReady, onExit, onCwd, onTitle };
+  });
 
   useEffect(() => {
     let cancelled = false;
