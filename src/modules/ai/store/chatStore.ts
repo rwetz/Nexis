@@ -542,10 +542,6 @@ export const useChatStore = create<StoreState>((set, get) => ({
   },
 }));
 
-export function getAgentMeta(): AgentMeta {
-  return useChatStore.getState().agentMeta;
-}
-
 // Latest message arrays per session (references, not copies) — only sized
 // when the debug memory self-report asks.
 const latestHistories = new Map<string, UIMessage[]>();
@@ -570,12 +566,6 @@ export function approxHistoryBytes(): number {
 export function getActiveProviderKey(): string | null {
   const { selectedModelId, apiKeys } = useChatStore.getState();
   return apiKeys[getModel(selectedModelId).provider] ?? null;
-}
-
-export function hasKeyForModel(modelId: ModelId): boolean {
-  const { apiKeys } = useChatStore.getState();
-  const provider = getModel(modelId).provider;
-  return providerNeedsKey(provider) ? !!apiKeys[provider] : true;
 }
 
 /**

@@ -26,7 +26,6 @@ export {
 export {
   getActiveProviderKey,
   getOrCreateChat,
-  hasKeyForModel,
   sendMessage,
   stop,
   useChatStore,

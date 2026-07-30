@@ -171,13 +171,6 @@ export type CompactResult = {
   droppedCount: number;
 };
 
-export function compactModelMessages(
-  messages: ModelMessage[],
-  contextLimit: number,
-): ModelMessage[] {
-  return compactModelMessagesDetailed(messages, contextLimit).messages;
-}
-
 export function compactModelMessagesDetailed(
   messages: ModelMessage[],
   contextLimit: number,

@@ -174,6 +174,3 @@ function formatEnvBlock(live: LiveSnapshot): string | null {
 export const CONTEXT_BLOCK_RE =
   /^<terminal-context[^>]*>[\s\S]*?<\/terminal-context>\n*/;
 
-export function stripContextBlock(text: string): string {
-  return text.replace(CONTEXT_BLOCK_RE, "");
-}

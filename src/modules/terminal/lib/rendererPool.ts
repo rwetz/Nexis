@@ -214,14 +214,6 @@ export function configureRendererPool(a: SlotAdapter): void {
   adapter = a;
 }
 
-export function forEachSlot(fn: (slot: Slot) => void): void {
-  for (const s of slots) fn(s);
-}
-
-export function poolSize(): number {
-  return slots.length;
-}
-
 /**
  * Cheap snapshot of pool memory posture for the debug self-report: slot and
  * live-GL-context counts (the slot-reaping win), plus buffered scrollback

@@ -58,7 +58,3 @@ export const useTodosStore = create<TodosState>((set, get) => ({
   },
 }));
 
-export function getTodos(sessionId: string | null): Todo[] {
-  if (!sessionId) return [];
-  return useTodosStore.getState().bySession[sessionId] ?? [];
-}

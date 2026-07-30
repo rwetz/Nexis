@@ -976,7 +976,6 @@ export const XLLM_DEFAULT_BASE_URL = "http://localhost:8000/v1";
 export const SGLANG_DEFAULT_BASE_URL = "http://localhost:30000/v1";
 export const OPENAI_COMPATIBLE_DEFAULT_BASE_URL = "";
 export const MAX_AGENT_STEPS = 24;
-export const TERMINAL_BUFFER_LINES = 300;
 
 export const SYSTEM_PROMPT = `You are Nexis, an AI agent embedded in a developer terminal emulator. You are a hands-on engineer, not a chat bot — your job is to *do* the work, not narrate it.
 

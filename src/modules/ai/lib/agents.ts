@@ -122,10 +122,3 @@ export function newAgentId(): string {
   return `a-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export function findAgent(
-  agents: readonly Agent[],
-  id: string | null | undefined,
-): Agent {
-  if (!id) return BUILTIN_AGENTS[0];
-  return agents.find((a) => a.id === id) ?? BUILTIN_AGENTS[0];
-}

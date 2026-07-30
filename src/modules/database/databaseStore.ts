@@ -43,7 +43,3 @@ export const useDatabaseStore = create<State>((set) => ({
   setActive: (id) => set({ activeId: id }),
 }));
 
-export function getActive(): DbConnection | null {
-  const { connections, activeId } = useDatabaseStore.getState();
-  return connections.find((c) => c.id === activeId) ?? null;
-}

@@ -49,18 +49,6 @@ export const EDITOR_THEMES = [
 
 export type EditorThemeId = (typeof EDITOR_THEMES)[number];
 
-export const EDITOR_THEME_LABELS: Record<EditorThemeId, string> = {
-  atomone: "Atom One",
-  aura: "Aura",
-  copilot: "Copilot",
-  "github-dark": "GitHub Dark",
-  "github-light": "GitHub Light",
-  nord: "Nord",
-  "tokyo-night": "Tokyo Night",
-  "xcode-dark": "Xcode Dark",
-  "xcode-light": "Xcode Light",
-};
-
 export type FormatterLanguage =
   | "javascript"
   | "typescript"
@@ -651,10 +639,6 @@ export async function setQuickTerminalEnabled(value: boolean): Promise<void> {
   await writePref(KEY_QUICK_TERMINAL_ENABLED, value);
 }
 
-export async function setQuickTerminalHotkey(value: string): Promise<void> {
-  await writePref(KEY_QUICK_TERMINAL_HOTKEY, value);
-}
-
 export async function setQuickTerminalHeight(value: number): Promise<void> {
   await writePref(KEY_QUICK_TERMINAL_HEIGHT, clampQuickTerminalHeight(value));
 }
@@ -820,10 +804,6 @@ export async function setShortcuts(
   value: Record<ShortcutId, KeyBinding[]> | {},
 ): Promise<void> {
   await writePref(KEY_SHORTCUTS, value);
-}
-
-export async function resetShortcuts(): Promise<void> {
-  await writePref(KEY_SHORTCUTS, DEFAULT_PREFERENCES.shortcuts);
 }
 
 export async function setTerminalEnvVars(

@@ -63,6 +63,3 @@ export const useNotificationsStore = create<State>((set) => ({
     }),
 }));
 
-export function notify(type: NotificationType, title: string, message?: string) {
-  useNotificationsStore.getState().add(type, title, message);
-}

@@ -45,10 +45,6 @@ function persist(): void {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-export function getBookmarks(): readonly Bookmark[] {
-  return _bookmarks;
-}
-
 export function addBookmark(path: string, line = 0, label?: string): Bookmark {
   // Deduplicate by path+line
   const existing = _bookmarks.find((b) => b.path === path && b.line === line);
@@ -74,10 +70,6 @@ export function removeBookmark(id: string): void {
 export function updateBookmarkLabel(id: string, label: string): void {
   _bookmarks = _bookmarks.map((b) => (b.id === id ? { ...b, label } : b));
   persist();
-}
-
-export function isBookmarked(path: string, line = 0): boolean {
-  return _bookmarks.some((b) => b.path === path && b.line === line);
 }
 
 export function toggleBookmark(path: string, line = 0, label?: string): void {

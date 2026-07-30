@@ -324,20 +324,6 @@ export function probeGpu(): Promise<string | null> {
   return invoke<string | null>("ml_gpu_probe");
 }
 
-/** Replay a finished run's event log (frontend dev / demo tool). */
-export async function spawnReplay(
-  exe: string,
-  projectDir: string,
-  runPath: string,
-): Promise<number> {
-  await authorizeProjectDir(projectDir);
-  return invoke<number>("ml_spawn", {
-    exe,
-    args: ["replay", runPath, "--delay", "5"],
-    projectDir,
-  });
-}
-
 /**
  * Start an inference session (`nexis-ml serve --run <id>`) for the
  * playground. Long-lived like train; requests go in via `sendInfer`,

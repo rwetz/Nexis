@@ -9,7 +9,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { appConfigDir, join } from "@tauri-apps/api/path";
 import type { Theme } from "./types";
-import { validateTheme, type ValidationResult } from "./validateTheme";
 
 const THEME_FILE_EXT = ".nexis-theme";
 const THEME_EDIT_EVENT = "nexis://theme-edit";
@@ -17,10 +16,6 @@ const THEME_EDIT_EVENT = "nexis://theme-edit";
 export type ThemeEditRequest =
   | { action: "create" }
   | { action: "edit"; id: string };
-
-export function isThemeFilePath(path: string): boolean {
-  return path.toLowerCase().endsWith(THEME_FILE_EXT);
-}
 
 async function themesDir(): Promise<string> {
   return join(await appConfigDir(), "themes");
@@ -56,19 +51,6 @@ export async function deleteThemeFile(id: string): Promise<void> {
   } catch {
     /* file may not exist yet — nothing to clean up */
   }
-}
-
-export function parseThemeFile(text: string): ValidationResult {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch (e) {
-    return {
-      ok: false,
-      error: e instanceof Error ? e.message : "invalid JSON",
-    };
-  }
-  return validateTheme(parsed);
 }
 
 export function starterTheme(): Theme {

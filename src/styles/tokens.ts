@@ -16,55 +16,6 @@
  * (light/dark toggle) should re-invoke and rebuild their theme object.
  */
 
-type TokenName =
-  | "background"
-  | "foreground"
-  | "card"
-  | "muted"
-  | "muted-foreground"
-  | "accent"
-  | "accent-foreground"
-  | "border"
-  | "primary"
-  | "destructive"
-  | "ring";
-
-export type AppTokens = Record<TokenName, string>;
-
-const TOKENS: TokenName[] = [
-  "background",
-  "foreground",
-  "card",
-  "muted",
-  "muted-foreground",
-  "accent",
-  "accent-foreground",
-  "border",
-  "primary",
-  "destructive",
-  "ring",
-];
-
-let probe: HTMLDivElement | null = null;
-
-function resolve(varName: string): string {
-  if (!probe) {
-    probe = document.createElement("div");
-    probe.style.position = "absolute";
-    probe.style.visibility = "hidden";
-    probe.style.pointerEvents = "none";
-    document.body.appendChild(probe);
-  }
-  probe.style.color = `var(--${varName})`;
-  return getComputedStyle(probe).color;
-}
-
-export function readAppTokens(): AppTokens {
-  const out = {} as AppTokens;
-  for (const name of TOKENS) out[name] = resolve(name);
-  return out;
-}
-
 // ---------------------------------------------------------------------------
 // Terminal-specific token resolution
 // ---------------------------------------------------------------------------

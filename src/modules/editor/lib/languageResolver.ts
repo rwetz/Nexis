@@ -282,12 +282,6 @@ export async function resolveLanguage(
   return loadExtension(key, loader, extOf(base));
 }
 
-export function preloadLanguages(filenames: string[]): void {
-  for (const f of filenames) {
-    void resolveLanguage(f).catch(() => {});
-  }
-}
-
 /** Override id meaning "no syntax highlighting". */
 export const PLAIN_LANGUAGE_ID = "plain";
 

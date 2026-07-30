@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { generateText, stepCountIs } from "ai";
-import { DEFAULT_MODEL_ID, getModel, type ModelId } from "../config";
+import { getModel, type ModelId } from "../config";
 import { buildLanguageModel } from "../lib/agent";
 import type { ProviderKeys } from "../lib/keyring";
 import type { ToolContext } from "../tools/context";
@@ -80,4 +80,3 @@ export async function runSubagent({
   };
 }
 
-export const DEFAULT_SUBAGENT_MODEL: ModelId = DEFAULT_MODEL_ID;
