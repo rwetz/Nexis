@@ -134,7 +134,20 @@ export const config: Options.Testrunner = {
         );
         msedgedriverPath = await download(undefined, cacheDir);
       }
+      // Log the driver's *own* reported version, not just the path — this is
+      // the only way to confirm the pin above actually took effect rather than
+      // silently resolving to whatever was already cached in e2e/.drivers/.
+      let driverVersion = "unknown";
+      try {
+        driverVersion = execFileSync(msedgedriverPath, ["--version"], {
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"],
+        }).trim();
+      } catch (e) {
+        driverVersion = `could not query (${String(e)})`;
+      }
       console.log(`[e2e] msedgedriver: ${msedgedriverPath}`);
+      console.log(`[e2e] msedgedriver version: ${driverVersion}`);
       extraArgs.push("--native-driver", msedgedriverPath);
     }
 

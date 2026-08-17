@@ -63,6 +63,55 @@ jobs:
       - name: Install tauri-driver
         run: cargo install tauri-driver
 
+      # ── Diagnostics ──────────────────────────────────────────────────────────
+      # `session not created: DevToolsActivePort file doesn't exist` has two
+      # very different causes and the WebDriver error cannot tell them apart:
+      # either msedgedriver could not talk to the webview, or the app process
+      # died before it ever wrote the file. These steps split the two, and run
+      # before the suite so their output survives a failing run.
+      - name: Diagnose — component versions
+        run: |
+          $guid = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+          foreach ($hive in @("HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\$guid",
+                              "HKLM:\SOFTWARE\Microsoft\EdgeUpdate\Clients\$guid")) {
+            $pv = (Get-ItemProperty $hive -ErrorAction SilentlyContinue).pv
+            if ($pv) { Write-Host "WebView2 Runtime: $pv  (from $hive)"; break }
+          }
+          $edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+          if (Test-Path $edge) {
+            Write-Host "Edge browser:    $((Get-Item $edge).VersionInfo.ProductVersion)"
+          } else {
+            Write-Host "Edge browser:    not found at the standard path"
+          }
+
+      # The decisive test. msedgedriver needs the app's WebView2 to come up with
+      # remote debugging enabled; that is exactly what the missing
+      # DevToolsActivePort file reports. Launching the release binary ourselves
+      # with the same env var tauri-driver uses answers, in one step, whether
+      # the app can expose that port at all — independently of WebDriver.
+      - name: Diagnose — does the app expose a WebView2 debugging port?
+        continue-on-error: true
+        run: |
+          $exe = "src-tauri\target\release\nexis.exe"
+          if (-not (Test-Path $exe)) { Write-Host "BUILD MISSING: $exe"; exit 1 }
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=9222"
+          $p = Start-Process $exe -PassThru
+          Start-Sleep -Seconds 25
+          if ($p.HasExited) {
+            Write-Host "RESULT: app EXITED EARLY with code $($p.ExitCode) — the failure is app-side, not the driver."
+            exit 0
+          }
+          Write-Host "app is still running after 25s (pid $($p.Id))"
+          try {
+            $r = Invoke-WebRequest "http://127.0.0.1:9222/json/version" -UseBasicParsing -TimeoutSec 10
+            Write-Host "RESULT: debugging port IS listening — the app is fine, suspect tauri-driver/msedgedriver."
+            Write-Host $r.Content
+          } catch {
+            Write-Host "RESULT: app is alive but the debugging port is NOT listening — WebView2 is not honouring the remote-debugging argument."
+            Write-Host "detail: $_"
+          }
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+
       # ── E2E ──────────────────────────────────────────────────────────────────
       - name: Run E2E tests
         run: pnpm test:e2e
