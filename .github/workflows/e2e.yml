@@ -84,33 +84,70 @@ jobs:
             Write-Host "Edge browser:    not found at the standard path"
           }
 
-      # The decisive test. msedgedriver needs the app's WebView2 to come up with
-      # remote debugging enabled; that is exactly what the missing
-      # DevToolsActivePort file reports. Launching the release binary ourselves
-      # with the same env var tauri-driver uses answers, in one step, whether
-      # the app can expose that port at all — independently of WebDriver.
-      - name: Diagnose — does the app expose a WebView2 debugging port?
+      # A previous run established that the app starts and stays up, but never
+      # exposes the debugging port — so this is neither a startup crash nor a
+      # driver fault; WebView2 is not acting on the argument. Each theory for
+      # why costs a ~13 min build to test one at a time, so test them together.
+      #
+      # Chromium has, across versions, made --remote-debugging-port conditional
+      # on an explicit writable --user-data-dir, and gated the DevTools socket
+      # behind --remote-allow-origins. Either would produce exactly this
+      # symptom. The final sweep covers the remaining possibility: that
+      # debugging *is* enabled but WebView2 writes DevToolsActivePort into its
+      # own data folder rather than the one msedgedriver watches, which would
+      # make the file "missing" from the driver's point of view while working.
+      - name: Diagnose — why is the debugging port closed?
         continue-on-error: true
         run: |
           $exe = "src-tauri\target\release\nexis.exe"
           if (-not (Test-Path $exe)) { Write-Host "BUILD MISSING: $exe"; exit 1 }
-          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=9222"
-          $p = Start-Process $exe -PassThru
-          Start-Sleep -Seconds 25
-          if ($p.HasExited) {
-            Write-Host "RESULT: app EXITED EARLY with code $($p.ExitCode) — the failure is app-side, not the driver."
-            exit 0
+
+          $variants = @(
+            @{ name = "baseline (known-failing control)"; port = 9301; udd = $null },
+            @{ name = "+ explicit --user-data-dir";       port = 9302; udd = "$env:RUNNER_TEMP\wv2-udd" },
+            @{ name = "+ user-data-dir + allow-origins";  port = 9303; udd = "$env:RUNNER_TEMP\wv2-udd-ao" }
+          )
+
+          foreach ($v in $variants) {
+            Write-Host ""
+            Write-Host "=== variant: $($v.name) ==="
+            $a = "--remote-debugging-port=$($v.port)"
+            if ($v.udd) {
+              New-Item -ItemType Directory -Force -Path $v.udd | Out-Null
+              $a = "$a --user-data-dir=`"$($v.udd)`""
+            }
+            if ($v.name -match "allow-origins") { $a = "$a --remote-allow-origins=*" }
+            Write-Host "args: $a"
+            $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = $a
+
+            $p = Start-Process $exe -PassThru
+            Start-Sleep -Seconds 20
+            if ($p.HasExited) {
+              Write-Host "  app exited early (code $($p.ExitCode))"
+              continue
+            }
+            try {
+              $r = Invoke-WebRequest "http://127.0.0.1:$($v.port)/json/version" -UseBasicParsing -TimeoutSec 8
+              Write-Host "  >>> PORT OPEN — this variant works: $($r.Content)"
+            } catch {
+              Write-Host "  port closed"
+            }
+            if ($v.udd) {
+              $f = Get-ChildItem -Path $v.udd -Recurse -Filter "DevToolsActivePort" -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($f) { Write-Host "  DevToolsActivePort written: $($f.FullName) -> $((Get-Content $f.FullName -Raw).Trim())" }
+              else { Write-Host "  no DevToolsActivePort under $($v.udd)" }
+            }
+            Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 3
           }
-          Write-Host "app is still running after 25s (pid $($p.Id))"
-          try {
-            $r = Invoke-WebRequest "http://127.0.0.1:9222/json/version" -UseBasicParsing -TimeoutSec 10
-            Write-Host "RESULT: debugging port IS listening — the app is fine, suspect tauri-driver/msedgedriver."
-            Write-Host $r.Content
-          } catch {
-            Write-Host "RESULT: app is alive but the debugging port is NOT listening — WebView2 is not honouring the remote-debugging argument."
-            Write-Host "detail: $_"
+
+          Write-Host ""
+          Write-Host "=== sweep: any DevToolsActivePort the app wrote elsewhere? ==="
+          foreach ($root in @($env:LOCALAPPDATA, $env:APPDATA, $env:TEMP)) {
+            Get-ChildItem -Path $root -Recurse -Filter "DevToolsActivePort" -ErrorAction SilentlyContinue |
+              Select-Object -First 5 |
+              ForEach-Object { Write-Host "  found: $($_.FullName) -> $((Get-Content $_.FullName -Raw).Trim())" }
           }
-          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
 
       # ── E2E ──────────────────────────────────────────────────────────────────
       - name: Run E2E tests
