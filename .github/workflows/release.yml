@@ -92,7 +92,7 @@ jobs:
           echo "Found artifacts: $found"
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
         with:
           name: "Nexis ${{ github.ref_name }}"
           generate_release_notes: true
@@ -189,7 +189,7 @@ jobs:
       # No 10 MB size gate here — that budget is about the Windows exe; a Linux
       # AppImage bundles webkit2gtk and is expected to be much larger.
       - name: Create GitHub release
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
         with:
           name: "Nexis ${{ github.ref_name }}"
           files: |
