@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import type { ChildProcess } from "child_process";
-import { spawn } from "child_process";
+import { execFileSync, spawn } from "child_process";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
@@ -25,6 +25,41 @@ const appBinary = resolve(
 );
 
 let tauriDriver: ChildProcess | undefined;
+
+// Evergreen WebView2 Runtime's EdgeUpdate client id — stable, Microsoft-assigned.
+const WEBVIEW2_CLIENT_GUID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}";
+
+/// Version of the installed WebView2 *Runtime*, or undefined if not found.
+///
+/// This is deliberately not the installed Edge browser version. A Tauri app
+/// renders in the WebView2 Runtime, and msedgedriver only speaks to a webview
+/// whose build it matches; when the two drift, the driver launches the app but
+/// never gets a debugging port, and the session fails with the singularly
+/// unhelpful "session not created: DevToolsActivePort file doesn't exist".
+///
+/// That is not hypothetical: it took the nightly E2E job down for a month
+/// starting 2026-07-17, when GitHub's windows-latest image rolled from
+/// 20260628.158 to 20260714.173 and bumped Edge past the runtime.
+function webview2RuntimeVersion(): string | undefined {
+  // 32-bit view first: the runtime registers under WOW6432Node on x64 hosts.
+  const keys = [
+    `HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\${WEBVIEW2_CLIENT_GUID}`,
+    `HKLM\\SOFTWARE\\Microsoft\\EdgeUpdate\\Clients\\${WEBVIEW2_CLIENT_GUID}`,
+  ];
+  for (const key of keys) {
+    try {
+      const out = execFileSync("reg", ["query", key, "/v", "pv"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      });
+      const match = out.match(/pv\s+REG_SZ\s+([\d.]+)/i);
+      if (match) return match[1];
+    } catch {
+      // Key absent in this hive — try the next one.
+    }
+  }
+  return undefined;
+}
 
 export const config: Options.Testrunner = {
   hostname: "127.0.0.1",
@@ -81,7 +116,25 @@ export const config: Options.Testrunner = {
         download: (version?: string, cacheDir?: string) => Promise<string>;
       };
       const cacheDir = resolve(__dirname, ".drivers");
-      const msedgedriverPath = await download(undefined, cacheDir);
+
+      // Pin the driver to the WebView2 Runtime build (see above). Falling back
+      // to the package default keeps a runtime we cannot detect, or a version
+      // with no published driver, from failing the run outright — it just
+      // restores the previous (mismatch-prone) behaviour.
+      const runtimeVersion = webview2RuntimeVersion();
+      console.log(`[e2e] WebView2 Runtime version: ${runtimeVersion ?? "unknown"}`);
+
+      let msedgedriverPath: string;
+      try {
+        msedgedriverPath = await download(runtimeVersion, cacheDir);
+      } catch (e) {
+        console.warn(
+          `[e2e] no msedgedriver for WebView2 ${runtimeVersion ?? "unknown"} (${String(e)}) — ` +
+            `falling back to the version matching the installed Edge browser`,
+        );
+        msedgedriverPath = await download(undefined, cacheDir);
+      }
+      console.log(`[e2e] msedgedriver: ${msedgedriverPath}`);
       extraArgs.push("--native-driver", msedgedriverPath);
     }
 
