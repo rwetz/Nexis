@@ -314,8 +314,8 @@ importers:
         specifier: ^4.3.1
         version: 4.3.1(@types/node@25.6.0)(typescript@5.8.3)
       tailwindcss:
-        specifier: ^4.2.3
-        version: 4.2.3
+        specifier: ^4.3.3
+        version: 4.3.3
       tsx:
         specifier: ^4.19.4
         version: 4.22.3
@@ -6768,6 +6768,9 @@ packages:
 
   tailwindcss@4.2.3:
     resolution: {integrity: sha512-fA/NX5gMf0ooCLISgB0wScaWgaj6rjTN2SVAwleURjiya7ITNkV+VMmoHtKkldP6CIZoYCZyxb8zP/e2TWoEtQ==}
+
+  tailwindcss@4.3.3:
+    resolution: {integrity: sha512-gOhV3P7ufE62QDGg1zVaTgCR+EtPv92k2nIhVcVKcLmxT1sUBsQGhnZj175j+MqRt4zLF7ic+sCYjfhxMxj7YQ==}
 
   tapable@2.3.2:
     resolution: {integrity: sha512-1MOpMXuhGzGL5TTCZFItxCc0AARf1EZFQkGqMm7ERKj8+Hgr5oLvJOVFcC+lRmR8hCe2S3jC4T5D7Vg/d7/fhA==}
@@ -14468,6 +14471,8 @@ snapshots:
   tailwind-merge@3.5.0: {}
 
   tailwindcss@4.2.3: {}
+
+  tailwindcss@4.3.3: {}
 
   tapable@2.3.2: {}
 
