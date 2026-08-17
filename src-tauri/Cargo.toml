@@ -81,7 +81,7 @@ notify = { version = "8", default-features = false, features = ["macos_fsevent"]
 [dev-dependencies]
 # Benchmarks only — never compiled into shipping builds (dev-dependency +
 # the bench target requires the non-default `bench-internals` feature).
-criterion = "0.5"
+criterion = "0.8"
 
 [features]
 # Exposes hot-path internals to benches/ (see lib.rs::bench_internals).
