@@ -153,9 +153,11 @@ import {
 import { saveCustomTheme } from "@/modules/theme/customThemes";
 import { UpdaterDialog } from "@/modules/updater";
 import {
+  currentWorkspaceEnv,
   getWslHome,
   LOCAL_WORKSPACE,
   useWorkspaceEnvStore,
+  workspaceEnvForPath,
   type WorkspaceEnv,
 } from "@/modules/workspace";
 import { homeDir } from "@tauri-apps/api/path";
@@ -453,11 +455,20 @@ export default function App() {
       previewRefs.current.clear();
       setActiveSearchAddon(null);
       setActiveEditorHandle(null);
+      // Keep the workspace env in step with the path. Every git/fs IPC call
+      // stamps `currentWorkspaceEnv()` onto its payload, so switching to a WSL
+      // path while the env still said "local" made the backend run Windows
+      // git.exe against a \\wsl.localhost\… UNC path — which reads the Windows
+      // .gitconfig, not the distro's, and fails commit with "author identity
+      // unknown". switchWorkspaceEnv (above) set this; this path never did.
+      // Read the store rather than closing over `workspaceEnv` — that would put
+      // a per-render value in the dep array of a callback the whole app holds.
+      setWorkspaceEnv(workspaceEnvForPath(path, currentWorkspaceEnv()));
       setLaunchCwd(path);
       pushRecentWorkspace(path);
       resetWorkspace(path);
     },
-    [resetWorkspace],
+    [resetWorkspace, setWorkspaceEnv],
   );
 
   const miniOpen = useChatStore((s) => s.mini.open);
