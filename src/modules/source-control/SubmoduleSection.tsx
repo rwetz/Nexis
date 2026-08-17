@@ -66,16 +66,26 @@ export function SubmoduleSection({ repoRoot }: Props) {
     try {
       const entries = await native.gitSubmoduleStatus(repoRoot);
       setSubmodules(entries);
-    } catch {
-      // Repo with no submodules returns empty — silently ignore errors.
+    } catch (e) {
+      // `submodule_status` already maps a missing .gitmodules to an empty list
+      // (it returns Ok(vec![]) on a non-zero exit), so nothing that reaches
+      // here is the ordinary "no submodules" case — it is a real failure.
+      setSubmodules([]);
+      setError(typeof e === "string" ? e : "Failed to load submodules");
     } finally {
       setLoading(false);
     }
   }, [repoRoot]);
 
+  // Load on mount rather than on expand. The guard below hides the whole
+  // section when the repo has no submodules, so that decision needs the list
+  // *before* the user can interact with anything — and gating the fetch on
+  // `expanded` deadlocked it: the section rendered null, so the toggle that
+  // sets `expanded` never existed, so the list never loaded, so it kept
+  // rendering null. The section was unreachable in every repo.
   useEffect(() => {
-    if (expanded) void load();
-  }, [expanded, load]);
+    void load();
+  }, [load]);
 
   if (!loading && submodules.length === 0 && !expanded) return null;
 

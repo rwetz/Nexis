@@ -226,6 +226,19 @@ const leftItems = statusBarItems.filter((i) => i.side === "left");
 
 ---
 
+### 16. Literal `\x00` in a git `--format` argument → git never spawns
+**Symptom:** A git-backed list is permanently empty with no error (the stash list read "No stashes yet" forever), or an operation fails with `failed to spawn git: nul byte found in provided data` (branch switching).
+
+**Root cause:** Git's NUL-separated output formats were written with a Rust escape instead of a git escape — `"--format=%gd\x00%gs\x00%at"`. That embeds a real NUL *in the process argument*, and process arguments are NUL-terminated C strings, so `Command::spawn` rejects it with `InvalidInput` ("nul byte found in provided data") on **every** platform. Git is never executed at all. This is not WSL- or Windows-specific.
+
+Two things kept it invisible. `stash_list` gated its error check on `exit_code != Some(0) && !output.stdout.is_empty()` — a failed spawn has empty stdout, so the error was skipped and an empty list returned; and `StashSection.tsx` wrapped the call in a bare `catch {}` commented "just no stash list — ignore". Branch listing had no such padding, which is why it surfaced a raw error instead.
+
+**Fix in place:** Use git's own escape, which differs by format family — `%x00` in a pretty format (`git log`, `git stash list`), `%00` in a ref format (`git for-each-ref`, `git branch --format`). Both are verified against real git. `stash_list` now calls `ensure_success` unconditionally, and the frontend surfaces load failures.
+
+**Future danger:** Never put `\x00` (or `\u{0}`) inside a string that becomes a CLI argument — only inside *parsing* code, where the NUL legitimately appears in git's output. Enforced by `pitfall_16_no_literal_nul_in_git_cli_args` in `src-tauri/tests/pitfall_invariants.rs`, which flags any production line containing both a `"--` flag literal and a literal NUL escape.
+
+---
+
 ## Pre-push checklist
 First, **update `CHANGELOG.md`**: every user-facing change in this push must have an entry under `[Unreleased]` (see "CHANGELOG is the record" above) — this is not optional.
 

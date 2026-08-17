@@ -10,6 +10,7 @@ export {
   getWslHome,
   LOCAL_WORKSPACE,
   useWorkspaceEnvStore,
+  workspaceEnvForPath,
   workspaceScopeKey,
   type WorkspaceEnv,
   type WslDistro,

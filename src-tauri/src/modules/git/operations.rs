@@ -954,7 +954,13 @@ pub fn branch_list(
             "for-each-ref",
             "refs/heads",
             "--sort=-committerdate",
-            "--format=%(refname:short)\x00%(HEAD)",
+            // `%00` is for-each-ref's escape for a NUL byte in the OUTPUT. A
+            // literal "\x00" here would be an interior nul in the argument
+            // itself, which `Command::spawn` rejects with "nul byte found in
+            // provided data" before git ever runs — breaking branch listing and,
+            // through it, `checkout_branch` below. (Note the pretty-format used
+            // by `git log`/`stash list` spells the same escape `%x00`.)
+            "--format=%(refname:short)%00%(HEAD)",
         ],
         DEFAULT_TIMEOUT_SECS,
     )?;
@@ -1038,16 +1044,25 @@ pub fn stash_list(
 ) -> Result<Vec<GitStashEntry>> {
     let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
     ensure_git_available(&repo_root.workspace)?;
-    // %gd = stash ref (stash@{0}), %gs = stash description, %at = unix timestamp
+    // %gd = stash ref (stash@{0}), %gs = stash description, %at = unix timestamp.
+    //
+    // The separator must be git's `%x00` format escape, NOT a literal "\x00" in
+    // this string. A literal NUL is an interior nul byte in a process argument,
+    // which `Command::spawn` rejects outright with InvalidInput ("nul byte found
+    // in provided data") on every platform — so the git process never launched
+    // and the stash list came back permanently empty. `%x00` keeps the argument
+    // NUL-free and makes *git* emit the NUL separators the parser below splits on.
     let output = run_git(
         &repo_root.workspace,
         Some(&repo_root.git_path),
-        ["stash", "list", "--format=%gd\x00%gs\x00%at"],
+        ["stash", "list", "--format=%gd%x00%gs%x00%at"],
         DEFAULT_TIMEOUT_SECS,
     )?;
-    if output.exit_code != Some(0) && !output.stdout.is_empty() {
-        ensure_success(&output, "git stash list failed")?;
-    }
+    // Any non-zero exit is a real failure. This deliberately does not also
+    // require non-empty stdout: a failing git almost always writes nothing to
+    // stdout, so gating on that swallowed every genuine error as "no stashes".
+    // A repo with no stashes exits 0 with empty output and still parses to [].
+    ensure_success(&output, "git stash list failed")?;
     let text = String::from_utf8_lossy(&output.stdout);
     let mut entries = Vec::new();
     for line in text.lines() {
