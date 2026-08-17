@@ -52,8 +52,13 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
     try {
       const entries = await native.gitStashList(repoRoot);
       setStashes(entries);
-    } catch {
-      // Not a stash error, just no stash list — ignore
+      setError(null);
+    } catch (e) {
+      // A repo with no stashes is not an error — it returns [] with exit 0.
+      // Anything that actually throws here is a real failure, and swallowing it
+      // is what let a permanently-broken stash list read as "No stashes yet".
+      setStashes([]);
+      setError(typeof e === "string" ? e : "Failed to load stashes");
     } finally {
       setLoading(false);
     }

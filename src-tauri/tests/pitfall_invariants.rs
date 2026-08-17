@@ -348,3 +348,43 @@ fn pitfall_8_no_lock_unwrap_in_shared_thread_modules() {
         }
     }
 }
+
+/// CLAUDE.md pitfall #16 — a NUL separator inside a git `--format`/`--pretty`
+/// argument must be git's own escape (`%x00` for pretty formats, `%00` for
+/// for-each-ref), never a literal `\x00` in the Rust string.
+///
+/// A literal NUL is an interior nul byte in a process argument, which
+/// `Command::spawn` rejects with InvalidInput ("nul byte found in provided
+/// data") on every platform — so git never launches at all. Both known
+/// occurrences shipped: `stash list` returned a permanently empty stash list,
+/// and `for-each-ref` broke branch listing and switching.
+#[test]
+fn pitfall_16_no_literal_nul_in_git_cli_args() {
+    let mut files = Vec::new();
+    rust_files(&src_dir(), &mut files);
+    let mut offenders = Vec::new();
+    for file in &files {
+        let text = fs::read_to_string(file).unwrap_or_else(|e| panic!("{}: {e}", file.display()));
+        for (i, line) in production_code(&text).lines().enumerate() {
+            if line.trim_start().starts_with("//") {
+                continue; // the explanatory comments next to the fixes
+            }
+            // `"--` marks a CLI flag string literal; the escapes below are a
+            // literal NUL. Output *parsing* (`splitn(2, '\x00')`) has no `"--`
+            // on the line, so it is not matched.
+            let has_flag_literal = line.contains("\"--");
+            let has_literal_nul = line.contains("\\x00") || line.contains("\\u{0}");
+            if has_flag_literal && has_literal_nul {
+                offenders.push(format!("  {}:{}: {}", file.display(), i + 1, line.trim()));
+            }
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "literal NUL inside a git CLI argument — Command::spawn rejects interior nul \
+         bytes, so git never runs and the feature silently returns nothing \
+         (CLAUDE.md pitfall #16). Use git's escape instead: `%x00` in a \
+         --format/--pretty log format, `%00` in a for-each-ref format:\n{}",
+        offenders.join("\n")
+    );
+}
