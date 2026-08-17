@@ -50,7 +50,7 @@ futures-util = "0.3"
 # Engine-install integrity: SHA-256 of downloaded/local nexis-ml binaries
 # against the compiled-in pin (ml.rs ENGINE_PIN). Already in the tree
 # transitively, so this adds no new code to the binary.
-sha2 = "0.10"
+sha2 = "0.11"
 # tokio is intentionally pulled with ONLY the `rt` feature (IDEAS C2). The async
 # runtime is deliberately minimal: `net`/`io`/`time`/`full` drag in mio, a
 # socket stack, and timer machinery that materially grow the binary against the
