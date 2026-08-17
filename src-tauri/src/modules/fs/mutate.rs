@@ -65,16 +65,70 @@ pub async fn fs_rename(
         if to_p.exists() {
             return Err(format!("already exists: {}", to_p.display()));
         }
-        std::fs::rename(&from_p, &to_p).map_err(|e| {
-            log::debug!(
-                "fs_rename({} -> {}) failed: {e}",
-                from_p.display(),
-                to_p.display()
-            );
-            e.to_string()
-        })
+        rename_path(&workspace, &from, &to, &from_p, &to_p)
     })
     .await
+}
+
+/// Rename backend. Split out of `fs_rename` so the WSL fallback below has a
+/// single place to retry through.
+fn rename_local(from_p: &std::path::Path, to_p: &std::path::Path) -> Result<(), String> {
+    std::fs::rename(from_p, to_p).map_err(|e| {
+        log::debug!(
+            "fs_rename({} -> {}) failed: {e}",
+            from_p.display(),
+            to_p.display()
+        );
+        e.to_string()
+    })
+}
+
+/// `std::fs::rename` is `MoveFileExW` on Windows, and the WSL 9P redirector
+/// behind `\\wsl.localhost\<distro>\...` rejects it with ERROR_NOT_SAME_DEVICE
+/// (os error 17 — *not* the Linux `EEXIST` the number looks like) even when
+/// both paths sit in one directory. Retrying through `wsl.exe` keeps the
+/// operation on the Linux side of the share, where it is an ordinary atomic
+/// `rename(2)`.
+///
+/// The local attempt comes first so a WSL workspace rooted under `/mnt/<drive>`
+/// — which `wsl_path_to_host` maps to a native Windows path — still takes the
+/// fast in-process path, and so a stopped distro can't break a rename that
+/// would otherwise have succeeded.
+#[cfg(windows)]
+fn rename_path(
+    workspace: &WorkspaceEnv,
+    from: &str,
+    to: &str,
+    from_p: &std::path::Path,
+    to_p: &std::path::Path,
+) -> Result<(), String> {
+    let local_err = match rename_local(from_p, to_p) {
+        Ok(()) => return Ok(()),
+        Err(e) => e,
+    };
+    let WorkspaceEnv::Wsl { distro } = workspace else {
+        return Err(local_err);
+    };
+    // `from`/`to` are the caller's Linux paths, which is what `mv` needs. The
+    // caller already rejected an existing target, so a plain `mv` is enough —
+    // `-T` would be more precise but is not in busybox `mv` (Alpine distros).
+    crate::modules::workspace::wsl_exec_capture(distro, "mv", &["--", from, to])
+        .map(|_| ())
+        .map_err(|e| {
+            log::debug!("fs_rename via wsl.exe ({from} -> {to}) failed: {e}");
+            e
+        })
+}
+
+#[cfg(not(windows))]
+fn rename_path(
+    _workspace: &WorkspaceEnv,
+    _from: &str,
+    _to: &str,
+    from_p: &std::path::Path,
+    to_p: &std::path::Path,
+) -> Result<(), String> {
+    rename_local(from_p, to_p)
 }
 
 /// Deletes a file or directory (recursively for dirs). Callers are
