@@ -239,6 +239,21 @@ Two things kept it invisible. `stash_list` gated its error check on `exit_code !
 
 ---
 
+### 17. `std::fs::rename` on a WSL 9P share → "os error 17"
+**Symptom:** Inside a WSL workspace (`\\wsl.localhost\<distro>\…`), renaming a file fails and saving a file fails, both with `The system cannot move the file to a different disk. (os error 17)`.
+
+**Root cause:** `std::fs::rename` is `MoveFileExW` on Windows, and the WSL 9P redirector rejects it with `ERROR_NOT_SAME_DEVICE` **even when source and destination are in the same directory**. The number is a trap: 17 is `EEXIST` on Linux, so the failure reads like a spurious "already exists".
+
+This has bitten twice, on both sides of the same primitive:
+- `fs_rename` (`fs/mutate.rs`) — the explorer's rename and drag-to-move.
+- `fs_write_file` (`fs/file.rs`) — the atomic write's tempfile→target commit, which is a rename. Broke every editor save, AI file write, theme file, ML note/config, and the workspace notes panel.
+
+**Fix in place:** Both retry the rename through `wsl_exec_capture(distro, "mv", …)`, which runs it inside the distro as an ordinary atomic `rename(2)`. In both, the **in-process attempt runs first** — a workspace rooted under `/mnt/<drive>` maps to a native Windows path where the fast path works, and a stopped distro must not break an operation that would have succeeded. The fallback only engages for `WorkspaceEnv::Wsl`.
+
+**Future danger:** Any new code that renames a path **inside the user's workspace** needs the same fallback — and that includes writes, because an atomic write ends in a rename. Two rules for the write case: the Linux path passed to `mv` must be derived from the *caller's* Linux path (the resolved `\\wsl.localhost\…` host path is meaningless inside the distro), and it must be rejected unless it is POSIX-absolute, so a mislabelled workspace can't hand `mv` a drive path. Renames confined to app-data (`autosave.rs`, `snapshots.rs`, `secrets.rs`, `diagnostics.rs`, `shell_init.rs`) are unaffected — those paths are always local.
+
+---
+
 ## Pre-push checklist
 First, **update `CHANGELOG.md`**: every user-facing change in this push must have an entry under `[Unreleased]` (see "CHANGELOG is the record" above) — this is not optional.
 
