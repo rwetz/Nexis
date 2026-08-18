@@ -4,6 +4,8 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.24.0] — 2026-08-18
+
 ### Changed
 - **A visual-identity pass over icons and motion — the two surfaces that still read as inherited.** The ROADMAP's standing "visual differentiation from terax" item listed *motion and transition timings* as still-inherited; this closes that, and takes the icon surface with it. The diagnosis is worth recording because it is not what it looks like: the resemblance was never the icon *library*, it was that neither project had made a decision. The surface held **160 icon imports expressing 136 distinct ideas** — three separate "refresh" glyphs, three "checkmark", four "edit", four "terminal", two each for delete/copy/globe/database/layers/clock — drawn at **13 different pixel sizes (9–28)** with **12 different stroke weights (1.25–2.5)**. Motion was the same problem from the other side: two `cubic-bezier()` values existed in the entire codebase, one of them Material Design's stock curve, and everything else took whatever Tailwind and tw-animate-css default to. A UI assembled from defaults looks like every other UI assembled from the same defaults.
   - **Every icon now goes through one semantic choke point.** `src/components/icon.tsx` maps app vocabulary (`"close"`, `"refresh"`, `"git-branch"`) onto glyphs; call sites write `<Icon name="close" />` and never name a vendor. That is what collapses the 24 duplicate concepts — there is one `"refresh"`, and it is one glyph — and it makes the vendor swappable in one file instead of 104. Sizes come from a 5-step scale (`xs` 12 / `sm` 14 / `md` 16 / `lg` 20 / `xl` 24) and active state is expressed as `active` rather than a hand-picked stroke.
