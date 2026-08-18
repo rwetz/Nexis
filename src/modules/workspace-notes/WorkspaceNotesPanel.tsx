@@ -13,15 +13,9 @@
  *
  * Auto-saves on every keystroke (debounced 800 ms).
  */
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { native } from "@/modules/ai/lib/native";
-import {
-  Edit02Icon,
-  FileEditIcon,
-  RefreshIcon,
-  Tick01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   useCallback,
@@ -120,7 +114,7 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
   const statusIcon = saveStatus === "saving"
     ? <span className="text-[9.5px] text-muted-foreground/50">Saving…</span>
     : saveStatus === "saved"
-    ? <HugeiconsIcon icon={Tick01Icon} size={11} strokeWidth={2} className="text-green-500" />
+    ? <Icon name="check" size="xs" className="text-green-500" />
     : saveStatus === "error"
     ? <span className="text-[9.5px] text-red-500">Save failed</span>
     : null;
@@ -129,12 +123,7 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
-        <HugeiconsIcon
-          icon={FileEditIcon}
-          size={13}
-          strokeWidth={1.75}
-          className="text-muted-foreground"
-        />
+        <Icon name="file-edit" className="text-muted-foreground" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Notes
         </span>
@@ -149,11 +138,7 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
               preview && "bg-primary/10 text-primary",
             )}
           >
-            <HugeiconsIcon
-              icon={preview ? Edit02Icon : RefreshIcon}
-              size={12}
-              strokeWidth={1.75}
-            />
+            <Icon name={preview ? "edit" : "refresh"} />
           </button>
         </div>
       </div>

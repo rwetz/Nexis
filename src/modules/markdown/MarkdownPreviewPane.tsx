@@ -4,15 +4,10 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon, type IconName } from "@/components/icon";
 import { MarkdownCode } from "@/components/ai-elements/markdown-code";
 import { cn } from "@/lib/utils";
 import { currentWorkspaceEnv } from "@/modules/workspace";
-import {
-  LayoutLeftIcon,
-  SidebarRight01Icon,
-  SourceCodeIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { Streamdown } from "streamdown";
@@ -112,19 +107,19 @@ export function MarkdownPreviewPane({ path, visible }: Props) {
         </span>
         <div className="flex items-center gap-0.5">
           <ModeButton
-            icon={SidebarRight01Icon}
+            icon={"sidebar-right"}
             label="Preview"
             active={mode === "preview"}
             onClick={() => setMode("preview")}
           />
           <ModeButton
-            icon={LayoutLeftIcon}
+            icon={"layout-left"}
             label="Split"
             active={mode === "split"}
             onClick={() => setMode("split")}
           />
           <ModeButton
-            icon={SourceCodeIcon}
+            icon={"source"}
             label="Raw"
             active={mode === "raw"}
             onClick={() => setMode("raw")}
@@ -214,7 +209,7 @@ function ModeButton({
   active,
   onClick,
 }: {
-  icon: Parameters<typeof HugeiconsIcon>[0]["icon"];
+  icon: IconName;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -233,7 +228,7 @@ function ModeButton({
           : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
       )}
     >
-      <HugeiconsIcon icon={icon} size={13} strokeWidth={active ? 2 : 1.75} />
+      <Icon name={icon} />
     </button>
   );
 }

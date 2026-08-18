@@ -6,16 +6,10 @@
 
 "use client";
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/modules/ai/store/chatStore";
-import {
-  ArrowRight01Icon,
-  CheckmarkCircle01Icon,
-  CopyIcon,
-  TerminalIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { createContext, memo, useContext, useEffect, useRef, useState } from "react";
 
 import { Shimmer } from "./shimmer";
@@ -82,7 +76,7 @@ export function ChatCodeBlock({ code, lang }: ChatCodeBlockProps) {
 function GeneratingPlaceholder({ label }: { label: string }) {
   return (
     <div className="not-prose my-2 flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-      <span className="inline-block size-1.5 animate-pulse rounded-full bg-muted-foreground/60" />
+      <span className="inline-block size-1.5 nexis-blink rounded-full bg-muted-foreground/60" />
       <Shimmer duration={1.2}>
         {label === "text" ? "Generating code…" : `Generating ${label}…`}
       </Shimmer>
@@ -238,11 +232,7 @@ function RunInTerminalButton({ command }: { command: string }) {
       aria-label="Run in active terminal"
       title="Run in active terminal"
     >
-      <HugeiconsIcon
-        icon={sent ? TerminalIcon : ArrowRight01Icon}
-        size={11}
-        strokeWidth={1.75}
-      />
+      <Icon name={sent ? "terminal" : "chevron-right"} size="xs" />
       <span>{sent ? "Sent" : "Run"}</span>
     </Button>
   );
@@ -280,10 +270,9 @@ function CopyButton({ text }: { text: string }) {
         key={copied ? "check" : "copy"}
         className="animate-in fade-in zoom-in-50 duration-150 flex items-center justify-center"
       >
-        <HugeiconsIcon
-          icon={copied ? CheckmarkCircle01Icon : CopyIcon}
-          size={11}
-          strokeWidth={1.75}
+        <Icon
+          name={copied ? "success" : "copy"}
+          size="xs"
           className={copied ? "text-emerald-500" : undefined}
         />
       </span>

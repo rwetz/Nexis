@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Icon, type IconName } from "@/components/icon";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -59,12 +60,6 @@ import {
   setZoomLevel,
 } from "@/modules/settings/store";
 import { useTheme } from "@/modules/theme";
-import {
-  ComputerIcon,
-  Moon02Icon,
-  Sun03Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { invoke } from "@tauri-apps/api/core";
@@ -78,11 +73,11 @@ import { SettingRow } from "../components/SettingRow";
 const APPEARANCE: {
   id: ThemePref;
   label: string;
-  icon: typeof ComputerIcon;
+  icon: IconName;
 }[] = [
-  { id: "system", label: "System", icon: ComputerIcon },
-  { id: "light", label: "Light", icon: Sun03Icon },
-  { id: "dark", label: "Dark", icon: Moon02Icon },
+  { id: "system", label: "System", icon: "computer" },
+  { id: "light", label: "Light", icon: "theme-light" },
+  { id: "dark", label: "Dark", icon: "theme-dark" },
 ];
 
 const LETTER_SPACINGS = [-4, -3, -2, -1, 0, 1, 2, 3, 4] as const;
@@ -214,7 +209,7 @@ export function GeneralSection() {
                   : "border-border/60 hover:border-border",
               )}
             >
-              <HugeiconsIcon icon={o.icon} size={18} strokeWidth={1.5} />
+              <Icon name={o.icon} size="lg" />
               <span className="text-[11.5px]">{o.label}</span>
             </button>
           ))}

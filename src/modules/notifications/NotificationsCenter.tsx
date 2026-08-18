@@ -4,15 +4,8 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import {
-  Cancel01Icon,
-  CheckmarkCircle01Icon,
-  InformationCircleIcon,
-  Notification01Icon,
-  AlertCircleIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Popover,
   PopoverContent,
@@ -23,10 +16,10 @@ import { type NotificationType, useNotificationsStore } from "./notificationsSto
 
 function typeIcon(type: NotificationType) {
   switch (type) {
-    case "success": return CheckmarkCircle01Icon;
-    case "warning": return AlertCircleIcon;
-    case "error":   return AlertCircleIcon;
-    default:        return InformationCircleIcon;
+    case "success": return "success";
+    case "warning": return "alert-circle";
+    case "error":   return "alert-circle";
+    default:        return "info";
   }
 }
 
@@ -80,7 +73,7 @@ export function NotificationsCenter() {
             open && "bg-muted text-foreground",
           )}
         >
-          <HugeiconsIcon icon={Notification01Icon} size={13} strokeWidth={1.75} />
+          <Icon name="notification" />
           {unread > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-primary-foreground tabular-nums">
               {unread > 99 ? "99" : unread}
@@ -111,7 +104,11 @@ export function NotificationsCenter() {
           <div className="max-h-72 overflow-y-auto">
             {items.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-1.5 py-8 text-center">
-                <HugeiconsIcon icon={Notification01Icon} size={20} strokeWidth={1.25} className="text-muted-foreground/40" />
+                <Icon
+                  name="notification"
+                  size="lg"
+                  className="text-muted-foreground/40"
+                />
                 <p className="text-[11.5px] text-muted-foreground">No notifications</p>
               </div>
             ) : (
@@ -123,10 +120,9 @@ export function NotificationsCenter() {
                     !n.read && "bg-primary/[0.03]",
                   )}
                 >
-                  <HugeiconsIcon
-                    icon={typeIcon(n.type)}
-                    size={14}
-                    strokeWidth={1.75}
+                  <Icon
+                    name={typeIcon(n.type)}
+                    size="md"
                     className={cn("mt-0.5 shrink-0", typeColor(n.type))}
                   />
                   <div className="min-w-0 flex-1">
@@ -148,7 +144,7 @@ export function NotificationsCenter() {
                     aria-label="Dismiss notification"
                     className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-all hover:bg-muted group-hover:opacity-100"
                   >
-                    <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+                    <Icon name="close" size="xs" />
                   </button>
                 </div>
               ))

@@ -4,15 +4,11 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setTerminalEnvVars } from "@/modules/settings/store";
-import {
-  Add01Icon,
-  Delete02Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
 import { SectionHeader } from "../components/SectionHeader";
 
@@ -96,7 +92,7 @@ export function EnvironmentSection() {
               className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
               aria-label={`Remove ${key}`}
             >
-              <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.75} />
+              <Icon name="delete" size="md" />
             </button>
           </div>
         ))}
@@ -138,7 +134,7 @@ export function EnvironmentSection() {
             className="h-8 shrink-0"
             onClick={() => void handleAdd()}
           >
-            <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={1.75} />
+            <Icon name="add" />
             Add
           </Button>
         </div>

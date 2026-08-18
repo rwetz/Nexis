@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -18,15 +19,8 @@ import {
   type GitCommitFileChange,
   type GitLogEntry,
 } from "@/modules/ai/lib/native";
-import { fileIconUrl } from "@/modules/explorer/lib/iconResolver";
+import { FileTypeIcon } from "@/modules/explorer/lib/FileTypeIcon";
 import { sendMessage } from "@/modules/ai/store/chatStore";
-import {
-  AiChat02Icon,
-  Copy01Icon,
-  File02Icon,
-  LinkSquare02Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
@@ -767,12 +761,7 @@ const CommitRow = memo(function CommitRow({
             className="inline-flex items-center gap-1 text-muted-foreground/75"
             title={`${commit.filesChanged} ${commit.filesChanged === 1 ? "file" : "files"} changed`}
           >
-            <HugeiconsIcon
-              icon={File02Icon}
-              size={10.5}
-              strokeWidth={1.7}
-              className="opacity-70"
-            />
+            <Icon name="file" size={10.5} className="opacity-70" />
             <span className="font-medium">{commit.filesChanged}</span>
           </span>
         ) : null}
@@ -873,7 +862,7 @@ function CommitDetail({
               setCopied(true);
             }}
           >
-            <HugeiconsIcon icon={Copy01Icon} size={11} strokeWidth={1.9} />
+            <Icon name="copy" size="xs" />
             {copied ? "Copied" : "Copy SHA"}
           </Button>
           {webUrl ? (
@@ -883,11 +872,7 @@ function CommitDetail({
               className="h-6 cursor-pointer gap-1.5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
               onClick={() => void openUrl(webUrl).catch(console.error)}
             >
-              <HugeiconsIcon
-                icon={LinkSquare02Icon}
-                size={11}
-                strokeWidth={1.9}
-              />
+              <Icon name="link-external" size="xs" />
               {hostLabel(remoteWeb!)}
             </Button>
           ) : null}
@@ -920,7 +905,7 @@ function CommitDetail({
               })();
             }}
           >
-            <HugeiconsIcon icon={AiChat02Icon} size={11} strokeWidth={1.9} />
+            <Icon name="ai-chat" size="xs" />
             {explaining ? "Loading…" : "Explain"}
           </Button>
         </div>
@@ -1015,18 +1000,13 @@ const FileRow = memo(function FileRow({
 }) {
   const fileName = basename(file.path);
   const dir = dirname(file.path);
-  const iconUrl = fileIconUrl(fileName);
   return (
     <button
       type="button"
       onClick={onOpen}
       className="group flex h-7 w-full cursor-pointer items-center gap-2 rounded-md px-1.5 text-left transition-colors hover:bg-accent/40"
     >
-      {iconUrl ? (
-        <img src={iconUrl} alt="" className="size-3.5 shrink-0" />
-      ) : (
-        <span className="size-3.5 shrink-0" />
-      )}
+      <FileTypeIcon name={fileName} className="size-3.5 shrink-0" />
       <div className="flex min-w-0 flex-1 items-baseline gap-1.5 leading-none">
         <span className="truncate text-[11.5px] font-medium leading-tight">
           {fileName}

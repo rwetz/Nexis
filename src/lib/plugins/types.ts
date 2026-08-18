@@ -19,10 +19,7 @@ import type React from "react";
 import type { PackId } from "@/lib/packs";
 import type { ToolContribution } from "@/modules/ai/tools/plugin-tools";
 
-/** The icon object shape Hugeicons components accept. */
-type HugeiconsIconType = Parameters<
-  typeof import("@hugeicons/react").HugeiconsIcon
->[0]["icon"];
+import type { IconName } from "@/components/icon";
 
 // ── Disposable ────────────────────────────────────────────────────────────────
 
@@ -83,8 +80,15 @@ export type PanelContribution = {
   // contribution keeps working — the rail falls back to a generic icon and
   // the Advanced group.
 
-  /** Hugeicons icon for the rail button. Falls back to a generic panel icon. */
-  icon?: HugeiconsIconType;
+  /**
+   * Semantic icon name for the rail button — see `src/components/icon.tsx`.
+   * Falls back to a generic panel icon when omitted or unrecognised.
+   *
+   * This is a *name*, not an icon object, so a plugin never has to depend on
+   * whichever icon package Nexis ships this release; changing that package is
+   * an edit to the registry, not a break in this contract.
+   */
+  icon?: IconName;
   /** Rail group. Defaults to "Advanced". */
   group?: PanelGroup;
   /**

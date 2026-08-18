@@ -11,20 +11,11 @@
  * All operations run through the existing shell_run_command IPC so no new
  * Rust code is required.
  */
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Add01Icon,
-  Cancel01Icon,
-  ArrowDown01Icon,
-  ArrowRight01Icon,
-  Copy01Icon,
-  Key01Icon,
-  Tick01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { IS_WINDOWS } from "@/lib/platform";
 import { useCallback, useEffect, useState } from "react";
 
@@ -156,10 +147,8 @@ export function SshKeyManager() {
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center gap-1.5 px-3 py-2 text-left hover:bg-muted/20"
       >
-        <HugeiconsIcon
-          icon={expanded ? ArrowDown01Icon : ArrowRight01Icon}
-          size={12}
-          strokeWidth={2}
+        <Icon
+          name={expanded ? "chevron-down" : "chevron-right"}
           className="shrink-0 text-muted-foreground"
         />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -190,12 +179,7 @@ export function SshKeyManager() {
                   key={k.filename}
                   className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/20"
                 >
-                  <HugeiconsIcon
-                    icon={Key01Icon}
-                    size={12}
-                    strokeWidth={1.75}
-                    className="shrink-0 text-muted-foreground/60"
-                  />
+                  <Icon name="key" className="shrink-0 text-muted-foreground/60" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium">{k.label}</p>
                     {k.comment && k.comment !== k.label && (
@@ -213,10 +197,9 @@ export function SshKeyManager() {
                       copiedKey === k.filename && "text-green-500",
                     )}
                   >
-                    <HugeiconsIcon
-                      icon={copiedKey === k.filename ? Tick01Icon : Copy01Icon}
-                      size={11}
-                      strokeWidth={2}
+                    <Icon
+                      name={copiedKey === k.filename ? "check" : "copy"}
+                      size="xs"
                     />
                   </button>
                 </li>
@@ -265,7 +248,7 @@ export function SshKeyManager() {
                   onClick={() => { setShowGenForm(false); setGenError(null); }}
                   disabled={generating}
                 >
-                  <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} className="mr-1" />
+                  <Icon name="close" size="xs" className="mr-1" />
                   Cancel
                 </Button>
                 <Button
@@ -284,7 +267,7 @@ export function SshKeyManager() {
               onClick={() => setShowGenForm(true)}
               className="mx-3 mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
             >
-              <HugeiconsIcon icon={Add01Icon} size={11} strokeWidth={2} />
+              <Icon name="add" size="xs" />
               Generate new key
             </button>
           )}

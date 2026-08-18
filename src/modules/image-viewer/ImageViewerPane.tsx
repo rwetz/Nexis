@@ -4,14 +4,8 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon, type IconName } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import {
-  ZoomInAreaIcon,
-  ZoomOutAreaIcon,
-  ArrowExpandIcon,
-  Image01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -139,12 +133,7 @@ export function ImageViewerPane({ path, visible }: Props) {
       {/* Toolbar */}
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-card/60 px-3 py-1">
         <div className="flex min-w-0 items-center gap-2">
-          <HugeiconsIcon
-            icon={Image01Icon}
-            size={12}
-            strokeWidth={1.75}
-            className="shrink-0 text-muted-foreground/60"
-          />
+          <Icon name="image" className="shrink-0 text-muted-foreground/60" />
           <span className="truncate font-mono text-[10.5px] text-muted-foreground/70">
             {filename}
           </span>
@@ -157,7 +146,7 @@ export function ImageViewerPane({ path, visible }: Props) {
 
         {/* Zoom controls */}
         <div className="flex items-center gap-0.5">
-          <ToolbarBtn icon={ZoomOutAreaIcon} label="Zoom out" onClick={zoomOut} />
+          <ToolbarBtn icon={"zoom-out"} label="Zoom out" onClick={zoomOut} />
           <button
             type="button"
             onClick={toggleFit}
@@ -173,9 +162,9 @@ export function ImageViewerPane({ path, visible }: Props) {
           >
             {fitMode === "fit" ? "Fit" : fmtZoom(zoom)}
           </button>
-          <ToolbarBtn icon={ZoomInAreaIcon} label="Zoom in" onClick={zoomIn} />
+          <ToolbarBtn icon={"zoom-in"} label="Zoom in" onClick={zoomIn} />
           <ToolbarBtn
-            icon={ArrowExpandIcon}
+            icon={"expand"}
             label="Fit to window"
             active={fitMode === "fit"}
             onClick={toggleFit}
@@ -242,7 +231,7 @@ function ToolbarBtn({
   active,
   onClick,
 }: {
-  icon: Parameters<typeof HugeiconsIcon>[0]["icon"];
+  icon: IconName;
   label: string;
   active?: boolean;
   onClick: () => void;
@@ -261,7 +250,7 @@ function ToolbarBtn({
           : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
       )}
     >
-      <HugeiconsIcon icon={icon} size={13} strokeWidth={active ? 2 : 1.75} />
+      <Icon name={icon} />
     </button>
   );
 }

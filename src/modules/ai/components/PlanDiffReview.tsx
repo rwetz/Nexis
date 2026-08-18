@@ -4,18 +4,10 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
-import {
-  ArrowDown01Icon,
-  Cancel01Icon,
-  FileEditIcon,
-  FilePlusIcon,
-  FolderAddIcon,
-  Tick02Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
 import { usePlanStore, type QueuedEdit } from "../store/planStore";
 
@@ -76,7 +68,7 @@ export function PlanDiffReview() {
             onClick={() => clear()}
             disabled={busy}
           >
-            <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
+            <Icon name="close" />
             Discard all
           </Button>
           <Button
@@ -86,7 +78,7 @@ export function PlanDiffReview() {
             onClick={onApply}
             disabled={busy}
           >
-            <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} />
+            <Icon name="check" />
             Apply {queue.length}
           </Button>
         </div>
@@ -113,11 +105,11 @@ function PlanRow({
   const stats = isDir
     ? null
     : diffStats(item.originalContent, item.proposedContent);
-  const Icon = isDir
-    ? FolderAddIcon
+  const iconName = isDir
+    ? "folder-add"
     : isNew
-      ? FilePlusIcon
-      : FileEditIcon;
+      ? "file-add"
+      : "file-edit";
 
   return (
     <li className="group/row overflow-hidden rounded-md border border-border/50 bg-card">
@@ -133,14 +125,9 @@ function PlanRow({
           )}
           aria-label="Toggle diff"
         >
-          <HugeiconsIcon icon={ArrowDown01Icon} size={11} strokeWidth={1.75} />
+          <Icon name="chevron-down" size="xs" />
         </button>
-        <HugeiconsIcon
-          icon={Icon}
-          size={13}
-          strokeWidth={1.75}
-          className="mt-0.5 shrink-0 text-muted-foreground"
-        />
+        <Icon name={iconName} className="mt-0.5 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5 font-mono text-[11.5px]">
             <span className="truncate text-foreground">
@@ -179,7 +166,7 @@ function PlanRow({
           onClick={onReject}
           aria-label="Reject"
         >
-          <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={1.75} />
+          <Icon name="close" size="xs" />
         </Button>
       </div>
       {open && !isDir ? (

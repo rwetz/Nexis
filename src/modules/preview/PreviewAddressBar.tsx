@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,12 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  ArrowReloadHorizontalIcon,
-  Globe02Icon,
-  LinkSquare02Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   forwardRef,
@@ -126,11 +121,7 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
           title="Reload"
           className="size-7 shrink-0 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
         >
-          <HugeiconsIcon
-            icon={ArrowReloadHorizontalIcon}
-            size={14}
-            strokeWidth={1.75}
-          />
+          <Icon name="refresh" size="md" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -141,11 +132,7 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
               title="Common dev-server ports"
               className="h-7 shrink-0 gap-1 rounded-md px-1.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
             >
-              <HugeiconsIcon
-                icon={Globe02Icon}
-                size={13}
-                strokeWidth={1.75}
-              />
+              <Icon name="globe" />
               <span className="hidden sm:inline">Ports</span>
             </Button>
           </DropdownMenuTrigger>
@@ -201,11 +188,7 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
           className="size-7 shrink-0 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
           disabled={!url}
         >
-          <HugeiconsIcon
-            icon={LinkSquare02Icon}
-            size={14}
-            strokeWidth={1.75}
-          />
+          <Icon name="link-external" size="md" />
         </Button>
       </div>
       {notice ? (

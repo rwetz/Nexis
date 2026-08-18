@@ -12,13 +12,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import {
-  ArrowDown01Icon,
-  PythonIcon,
-  Refresh01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import type { PythonEnv } from "./usePythonEnv";
 
 type Props = {
@@ -65,12 +60,7 @@ export function PythonEnvPill({
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
           )}
         >
-          <HugeiconsIcon
-            icon={PythonIcon}
-            size={11}
-            strokeWidth={1.75}
-            className="shrink-0"
-          />
+          <Icon name="brand-python" size="xs" className="shrink-0" />
           {loading ? (
             <span className="opacity-60">Python…</span>
           ) : activeEnv ? (
@@ -86,12 +76,7 @@ export function PythonEnvPill({
           ) : (
             <span className="opacity-60">No env</span>
           )}
-          <HugeiconsIcon
-            icon={ArrowDown01Icon}
-            size={9}
-            strokeWidth={2}
-            className="shrink-0 opacity-50"
-          />
+          <Icon name="chevron-down" size="xs" className="shrink-0 opacity-50" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -139,7 +124,7 @@ export function PythonEnvPill({
           onSelect={onRefresh}
           className="flex items-center gap-2 text-[11.5px] text-muted-foreground"
         >
-          <HugeiconsIcon icon={Refresh01Icon} size={11} strokeWidth={1.9} />
+          <Icon name="refresh" size="xs" />
           Refresh
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -4,19 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon, type IconName } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  Cancel01Icon,
-  Edit02Icon,
-  FileEditIcon,
-  FilePlusIcon,
-  FolderAddIcon,
-  TerminalIcon,
-  Tick02Icon,
-  ToolsIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import type { ToolUIPart } from "ai";
 import { memo } from "react";
 
@@ -26,32 +16,27 @@ type Props = {
   onRespond: (approved: boolean) => void;
 };
 
-const TOOL_META: Record<string, { label: string; icon: typeof FilePlusIcon }> =
+const TOOL_META: Record<string, { label: string; icon: IconName }> =
   {
-    write_file: { label: "Write file", icon: FilePlusIcon },
-    edit: { label: "Edit file", icon: FileEditIcon },
-    multi_edit: { label: "Edit file (batch)", icon: Edit02Icon },
-    create_directory: { label: "Create directory", icon: FolderAddIcon },
-    bash_run: { label: "Run shell command", icon: TerminalIcon },
-    bash_background: { label: "Spawn background process", icon: TerminalIcon },
+    write_file: { label: "Write file", icon: "file-add" },
+    edit: { label: "Edit file", icon: "file-edit" },
+    multi_edit: { label: "Edit file (batch)", icon: "edit" },
+    create_directory: { label: "Create directory", icon: "folder-add" },
+    bash_run: { label: "Run shell command", icon: "terminal" },
+    bash_background: { label: "Spawn background process", icon: "terminal" },
   };
 
 function AiToolApprovalImpl({ part, toolName, onRespond }: Props) {
   const meta = TOOL_META[toolName];
   const label = meta?.label ?? toolName;
-  const Icon = meta?.icon ?? ToolsIcon;
+  const iconName = meta?.icon ?? "tools";
   const input = part.input as Record<string, unknown>;
 
   return (
     <div className="rounded-lg border border-border bg-card shadow-sm">
       <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
-        <span className="size-1.5 shrink-0 rounded-full bg-amber-500 animate-pulse" />
-        <HugeiconsIcon
-          icon={Icon}
-          size={13}
-          strokeWidth={1.75}
-          className="shrink-0 text-muted-foreground"
-        />
+        <span className="size-1.5 shrink-0 rounded-full bg-amber-500 nexis-blink" />
+        <Icon name={iconName} className="shrink-0 text-muted-foreground" />
         <span className="text-[12px] font-medium text-foreground">
           {label}
         </span>
@@ -71,7 +56,7 @@ function AiToolApprovalImpl({ part, toolName, onRespond }: Props) {
           onClick={() => onRespond(false)}
           className="h-7 gap-1.5 text-[11px]"
         >
-          <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
+          <Icon name="close" />
           Deny
         </Button>
         <Button
@@ -80,7 +65,7 @@ function AiToolApprovalImpl({ part, toolName, onRespond }: Props) {
           onClick={() => onRespond(true)}
           className="h-7 gap-1.5 text-[11px]"
         >
-          <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={2} />
+          <Icon name="check" />
           Approve
         </Button>
       </div>

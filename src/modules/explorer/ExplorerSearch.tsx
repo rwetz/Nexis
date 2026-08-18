@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -13,12 +14,6 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import {
-  Cancel01Icon,
-  Folder01Icon,
-  Search01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { currentWorkspaceEnv } from "@/modules/workspace";
 import {
@@ -29,7 +24,7 @@ import {
   useState,
 } from "react";
 import { usePreferencesStore } from "@/modules/settings/preferences";
-import { fileIconUrl } from "./lib/iconResolver";
+import { FileTypeIcon } from "./lib/FileTypeIcon";
 import { copyToClipboard, revealInFinder } from "./lib/contextActions";
 import { COMPACT_CONTENT, COMPACT_ITEM } from "./lib/menuItemClass";
 import { cn } from "@/lib/utils";
@@ -176,10 +171,8 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
     <div className="flex flex-col">
       {open ? (
         <div className="animate-in fade-in slide-in-from-top-[15px] duration-200 relative shrink-0 px-2 py-1.5">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            size={13}
-            strokeWidth={2}
+          <Icon
+            name="search"
             className="absolute top-1/2 left-4 -translate-y-1/2 text-muted-foreground"
           />
           <Input
@@ -220,7 +213,7 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
               className="absolute top-1/2 right-3.5 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Clear search"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} />
+              <Icon name="close" size="xs" />
             </button>
           ) : null}
         </div>
@@ -239,7 +232,6 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
               </div>
             ) : (
               results.map((hit, index) => {
-                const url = hit.is_dir ? null : fileIconUrl(hit.name);
                 const isSelected = index === selectedIndex;
                 return (
                   <ContextMenu key={hit.path}>
@@ -259,13 +251,14 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
                         )}
                         title={hit.path}
                       >
-                        {url ? (
-                          <img src={url} alt="" className="size-3.5 shrink-0" />
+                        {!hit.is_dir ? (
+                          <FileTypeIcon
+                            name={hit.name}
+                            className="size-3.5 shrink-0"
+                          />
                         ) : (
-                          <HugeiconsIcon
-                            icon={Folder01Icon}
-                            size={13}
-                            strokeWidth={1.75}
+                          <Icon
+                            name="folder"
                             className="shrink-0 text-muted-foreground"
                           />
                         )}

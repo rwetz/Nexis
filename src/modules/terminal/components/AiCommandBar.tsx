@@ -125,7 +125,7 @@ export function AiCommandBar({ cwd, onInsert, onClose }: Props) {
 
       {phase.kind === "loading" && (
         <div className="border-t border-border/60 px-3 py-2 text-[11px] text-muted-foreground">
-          <span className="inline-block animate-pulse">Thinking…</span>
+          <span className="inline-block nexis-blink">Thinking…</span>
         </div>
       )}
 

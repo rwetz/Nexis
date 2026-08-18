@@ -4,16 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import {
-  PlayIcon,
-  PauseIcon,
-  StopIcon,
-  StepOverIcon,
-  StepIntoIcon,
-  StepOutIcon,
-  Refresh01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { useDebugStore } from "./debugSession";
 
@@ -34,13 +25,13 @@ export function DebugToolbar({ onRestart }: Props) {
       {/* Continue / Pause */}
       {isStopped ? (
         <ToolbarBtn
-          icon={PlayIcon}
+          icon={"play"}
           title="Continue (F5)"
           onClick={() => void store.continue()}
         />
       ) : (
         <ToolbarBtn
-          icon={PauseIcon}
+          icon={"pause"}
           title="Pause (F6)"
           disabled={!isRunning}
           onClick={() => void store.pause()}
@@ -49,7 +40,7 @@ export function DebugToolbar({ onRestart }: Props) {
 
       {/* Step Over */}
       <ToolbarBtn
-        icon={StepOverIcon}
+        icon={"debug-step-over"}
         title="Step Over (F10)"
         disabled={!isStopped}
         onClick={() => void store.next()}
@@ -57,7 +48,7 @@ export function DebugToolbar({ onRestart }: Props) {
 
       {/* Step Into */}
       <ToolbarBtn
-        icon={StepIntoIcon}
+        icon={"debug-step-into"}
         title="Step Into (F11)"
         disabled={!isStopped}
         onClick={() => void store.stepIn()}
@@ -65,7 +56,7 @@ export function DebugToolbar({ onRestart }: Props) {
 
       {/* Step Out */}
       <ToolbarBtn
-        icon={StepOutIcon}
+        icon={"debug-step-out"}
         title="Step Out (Shift+F11)"
         disabled={!isStopped}
         onClick={() => void store.stepOut()}
@@ -74,7 +65,7 @@ export function DebugToolbar({ onRestart }: Props) {
       {/* Restart */}
       {onRestart && (
         <ToolbarBtn
-          icon={Refresh01Icon}
+          icon={"refresh"}
           title="Restart"
           disabled={!isActive}
           onClick={onRestart}
@@ -83,7 +74,7 @@ export function DebugToolbar({ onRestart }: Props) {
 
       {/* Stop */}
       <ToolbarBtn
-        icon={StopIcon}
+        icon={"stop"}
         title="Stop (Shift+F5)"
         disabled={!isActive}
         onClick={() => void store.stop()}
@@ -134,7 +125,7 @@ function ToolbarBtn({
         className,
       )}
     >
-      <HugeiconsIcon icon={icon} size={13} strokeWidth={1.75} />
+      <Icon name={icon} />
     </button>
   );
 }

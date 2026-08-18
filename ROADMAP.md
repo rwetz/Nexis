@@ -62,8 +62,10 @@ and stop. Don't batch them.
   make deliberate choices instead of default-inherited ones. Track what's been re-done so this doesn't
   get re-litigated; the credit in the README stays regardless — differentiation is about identity, not
   about hiding the lineage.
-  *Re-done so far:* the theme set and the icon/mark. *Still inherited:* layout and spacing
-  scale, panel/rail component idioms, motion and transition timings.
+  *Re-done so far:* the theme set and the icon/mark; the icon surface (semantic choke point, Phosphor,
+  house size scale, real provider brand marks) and the motion system (house easing/duration tokens wired
+  into Tailwind's defaults, stepped spinner, caret-cadence status blink) and the file-tree retint onto the
+  active theme's ANSI palette. *Still inherited:* layout and spacing scale, panel/rail component idioms.
 
 ---
 

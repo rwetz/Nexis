@@ -7,10 +7,11 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { fileIconUrl, folderIconUrl, preloadIcons } from "./iconResolver";
+import { fileIconArt, folderIconArt, preloadIcons } from "./iconResolver";
 
-function decoded(url: string): string {
-  return decodeURIComponent(url.replace(/^data:image\/svg\+xml;utf8,/, ""));
+/** Stable identity for an art object, for equality assertions. */
+function id(art: ReturnType<typeof fileIconArt>): string {
+  return art ? `${art.width}x${art.height}:${art.body}` : "";
 }
 
 // The resolver loads its icon sets via fetch() of Vite `?url` asset imports.
@@ -30,69 +31,106 @@ beforeAll(async () => {
   await preloadIcons();
 });
 
-describe("folderIconUrl — catppuccin primary", () => {
+describe("folderIconArt — catppuccin primary", () => {
   it("maps a known folder name and changes art when expanded", () => {
-    const closed = folderIconUrl("src", false);
-    const open = folderIconUrl("src", true);
-    expect(closed).toMatch(/^data:image\/svg\+xml/);
-    expect(open).toMatch(/^data:image\/svg\+xml/);
-    expect(closed).not.toBe(open);
+    const closed = folderIconArt("src", false);
+    const open = folderIconArt("src", true);
+    expect(closed?.body).toBeTruthy();
+    expect(open?.body).toBeTruthy();
+    expect(id(closed)).not.toBe(id(open));
   });
 
   it("keeps the deliberate mobile→android approximation", () => {
-    expect(folderIconUrl("mobile", false)).toBe(folderIconUrl("android", false));
+    expect(id(folderIconArt("mobile", false))).toBe(
+      id(folderIconArt("android", false)),
+    );
   });
 
   it("falls back to the default folder icon for unknown names", () => {
-    const unknown = folderIconUrl("zzz-no-such-ecosystem", false);
-    expect(unknown).toBe(folderIconUrl("", false));
+    const unknown = folderIconArt("zzz-no-such-ecosystem", false);
+    expect(id(unknown)).toBe(id(folderIconArt("", false)));
   });
 });
 
-describe("folderIconUrl — vscode-icons fallback", () => {
+describe("folderIconArt — vscode-icons fallback", () => {
   it("serves ecosystems catppuccin lacks from the 32x32 vscode set", () => {
-    const kotlin = folderIconUrl("kotlin", false);
-    expect(kotlin).toMatch(/^data:image\/svg\+xml/);
-    expect(decoded(kotlin)).toContain('viewBox="0 0 32 32"');
+    const kotlin = folderIconArt("kotlin", false);
+    expect(kotlin?.body).toBeTruthy();
+    expect(kotlin?.width).toBe(32);
+    expect(kotlin?.height).toBe(32);
     // Not the default folder.
-    expect(kotlin).not.toBe(folderIconUrl("zzz-no-such-ecosystem", false));
+    expect(id(kotlin)).not.toBe(id(folderIconArt("zzz-no-such-ecosystem", false)));
   });
 
   it("aliases dotnet and .nuget onto the NuGet art, jvm onto Maven", () => {
-    const dotnet = folderIconUrl("dotnet", false);
-    expect(dotnet).toBe(folderIconUrl(".nuget", false));
-    expect(decoded(dotnet)).toContain('viewBox="0 0 32 32"');
+    const dotnet = folderIconArt("dotnet", false);
+    expect(id(dotnet)).toBe(id(folderIconArt(".nuget", false)));
+    expect(dotnet?.width).toBe(32);
 
-    const jvm = folderIconUrl("jvm", false);
-    expect(decoded(jvm)).toContain('viewBox="0 0 32 32"');
-    expect(jvm).not.toBe(dotnet);
+    const jvm = folderIconArt("jvm", false);
+    expect(jvm?.width).toBe(32);
+    expect(id(jvm)).not.toBe(id(dotnet));
   });
 
   it("reuses closed art for the expanded state (no -opened variants shipped)", () => {
-    expect(folderIconUrl("kotlin", true)).toBe(folderIconUrl("kotlin", false));
+    expect(id(folderIconArt("kotlin", true))).toBe(
+      id(folderIconArt("kotlin", false)),
+    );
   });
 
   it("strips leading dots before matching the vscode set", () => {
-    expect(folderIconUrl(".expo", false)).toBe(folderIconUrl("expo", false));
+    expect(id(folderIconArt(".expo", false))).toBe(
+      id(folderIconArt("expo", false)),
+    );
   });
 });
 
-describe("fileIconUrl", () => {
+describe("theme retint", () => {
+  it("rewrites every catppuccin hex to a theme variable", () => {
+    // A sample wide enough to hit most of the 19-colour palette.
+    const bodies = [
+      "main.rs",
+      "app.tsx",
+      "styles.css",
+      "readme.md",
+      "data.json",
+      "Dockerfile",
+      "script.py",
+      "index.html",
+    ]
+      .map((n) => fileIconArt(n)?.body ?? "")
+      .join("");
+    expect(bodies).toBeTruthy();
+    expect(bodies).toContain("var(--terminal-ansi-");
+    // No baked-in Catppuccin colour may survive — that is the whole point:
+    // a hex here is a colour no Nexis theme can reach.
+    expect(bodies).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+  });
+
+  it("leaves the vscode-icons brand art alone", () => {
+    // Recolouring a NuGet or Maven logo to fit a theme just makes it wrong.
+    const kotlin = folderIconArt("kotlin", false);
+    expect(kotlin?.body).toBeTruthy();
+    expect(kotlin?.body).not.toContain("var(--terminal-ansi-");
+  });
+});
+
+describe("fileIconArt", () => {
   it("resolves known extensions and falls back to the generic file icon", () => {
-    const rust = fileIconUrl("main.rs");
-    const generic = fileIconUrl("blob.zzz9");
-    expect(rust).toMatch(/^data:image\/svg\+xml/);
-    expect(generic).toMatch(/^data:image\/svg\+xml/);
-    expect(rust).not.toBe(generic);
+    const rust = fileIconArt("main.rs");
+    const generic = fileIconArt("blob.zzz9");
+    expect(rust?.body).toBeTruthy();
+    expect(generic?.body).toBeTruthy();
+    expect(id(rust)).not.toBe(id(generic));
   });
 
   it("walks compound extensions down to the last segment", () => {
     // "backup.rs" has no dedicated icon → the walk falls through to "rs".
-    expect(fileIconUrl("data.backup.rs")).toBe(fileIconUrl("main.rs"));
+    expect(id(fileIconArt("data.backup.rs"))).toBe(id(fileIconArt("main.rs")));
   });
 
   it("prefers a dedicated compound-extension icon over the plain one", () => {
     // catppuccin ships a distinct *.test.ts glyph — it must win over "ts".
-    expect(fileIconUrl("foo.test.ts")).not.toBe(fileIconUrl("bar.ts"));
+    expect(id(fileIconArt("foo.test.ts"))).not.toBe(id(fileIconArt("bar.ts")));
   });
 });

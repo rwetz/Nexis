@@ -11,17 +11,10 @@
  * to the AI panel as a pre-filled review prompt.  No new Rust commands are
  * needed — we reuse the existing `git_diff` IPC.
  */
+import { Icon } from "@/components/icon";
 import { invoke } from "@tauri-apps/api/core";
 import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
 import { cn } from "@/lib/utils";
-import {
-  AiChat02Icon,
-  Alert02Icon,
-  CheckmarkCircle01Icon,
-  Refresh01Icon,
-} from "@hugeicons/core-free-icons";
-import { CodeSquareIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type GitDiffResult = { diffText: string; truncated: boolean };
@@ -106,12 +99,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
-        <HugeiconsIcon
-          icon={CodeSquareIcon}
-          size={13}
-          strokeWidth={1.75}
-          className="text-muted-foreground"
-        />
+        <Icon name="code-box" className="text-muted-foreground" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Code Review
         </span>
@@ -127,7 +115,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
             onClick={() => void loadDiff()}
             className="ml-auto flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <HugeiconsIcon icon={Refresh01Icon} size={11} strokeWidth={2} />
+            <Icon name="refresh" size="xs" />
           </button>
         )}
       </div>
@@ -158,12 +146,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
           <EmptyState message="No workspace open" />
         ) : loadState === "error" ? (
           <div className="p-4 text-center">
-            <HugeiconsIcon
-              icon={Alert02Icon}
-              size={20}
-              strokeWidth={1.5}
-              className="mx-auto mb-2 text-destructive"
-            />
+            <Icon name="alert" size="lg" className="mx-auto mb-2 text-destructive" />
             <p className="text-xs text-destructive">
               {error ?? "Failed to load diff"}
             </p>
@@ -179,12 +162,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
           <EmptyState message="Loading diff…" />
         ) : !hasChanges ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-            <HugeiconsIcon
-              icon={CheckmarkCircle01Icon}
-              size={24}
-              strokeWidth={1.5}
-              className="text-green-500/60"
-            />
+            <Icon name="success" size="xl" className="text-green-500/60" />
             <p className="text-xs text-muted-foreground">
               No {scope === "staged" ? "staged" : ""} changes to review
             </p>
@@ -229,11 +207,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
                   "disabled:cursor-wait disabled:opacity-60",
                 )}
               >
-                <HugeiconsIcon
-                  icon={AiChat02Icon}
-                  size={13}
-                  strokeWidth={1.75}
-                />
+                <Icon name="ai-chat" />
                 {sending ? "Sending to AI…" : "Review with AI"}
               </button>
             </div>

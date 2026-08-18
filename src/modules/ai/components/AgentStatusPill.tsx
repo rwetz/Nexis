@@ -4,13 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import {
-  AlertCircleIcon,
-  ShieldUserIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useChatStore, type AgentMeta } from "../store/chatStore";
 
 type Props = {
@@ -52,7 +48,7 @@ function describe(meta: AgentMeta): {
       tone:
         "border-yellow-500/40 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-500/15",
       icon: (
-        <HugeiconsIcon icon={ShieldUserIcon} size={12} strokeWidth={1.75} />
+        <Icon name="security" />
       ),
       label:
         meta.approvalsPending > 1
@@ -65,7 +61,7 @@ function describe(meta: AgentMeta): {
       tone:
         "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/15",
       icon: (
-        <HugeiconsIcon icon={AlertCircleIcon} size={12} strokeWidth={1.75} />
+        <Icon name="alert-circle" />
       ),
       label: meta.error ?? "Error",
     };

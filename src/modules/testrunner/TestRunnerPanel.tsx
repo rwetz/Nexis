@@ -4,16 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { native } from "@/modules/ai/lib/native";
 import { cn } from "@/lib/utils";
-import {
-  Cancel01Icon,
-  CheckmarkCircle01Icon,
-  Alert02Icon,
-  PlayIcon,
-  Time01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FRAMEWORKS, type TestFramework, type TestResult, type TestStatus } from "./testFramework";
 
@@ -32,11 +25,11 @@ function detectFramework(fileNames: string[]): TestFramework | null {
 
 function statusIcon(status: TestStatus) {
   switch (status) {
-    case "passed": return CheckmarkCircle01Icon;
-    case "failed": return Alert02Icon;
-    case "error": return Alert02Icon;
-    case "running": return Time01Icon;
-    default: return PlayIcon;
+    case "passed": return "success";
+    case "failed": return "alert";
+    case "error": return "alert";
+    case "running": return "clock";
+    default: return "play";
   }
 }
 
@@ -216,7 +209,7 @@ export function TestRunnerPanel({ workspaceRoot }: Props) {
               onClick={() => void stopTests()}
               className="flex shrink-0 items-center gap-1.5 rounded bg-red-500/10 px-2.5 py-1 text-[11.5px] font-medium text-red-500 transition-colors hover:bg-red-500/20"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={1.75} />
+              <Icon name="close" />
               Stop
             </button>
           ) : (
@@ -226,7 +219,7 @@ export function TestRunnerPanel({ workspaceRoot }: Props) {
               disabled={!customCommand.trim() && !framework}
               className="flex shrink-0 items-center gap-1.5 rounded bg-primary/90 px-2.5 py-1 text-[11.5px] font-medium text-primary-foreground transition-colors hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <HugeiconsIcon icon={PlayIcon} size={12} strokeWidth={1.75} />
+              <Icon name="play" />
               Run
             </button>
           )}
@@ -234,7 +227,7 @@ export function TestRunnerPanel({ workspaceRoot }: Props) {
 
         {result && (
           <div className={cn("flex items-center gap-1.5 text-[11px]", statusColor(result.status))}>
-            <HugeiconsIcon icon={statusIcon(result.status)} size={12} strokeWidth={1.75} />
+            <Icon name={statusIcon(result.status)} />
             <span>{summary}</span>
           </div>
         )}

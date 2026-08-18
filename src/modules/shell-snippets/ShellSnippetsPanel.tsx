@@ -14,16 +14,8 @@
  * This is separate from the editor code snippets library; these are
  * terminal shell commands.
  */
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import {
-  Add01Icon,
-  Cancel01Icon,
-  Delete01Icon,
-  Edit02Icon,
-  TerminalIcon,
-  Tick01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -180,7 +172,7 @@ export function ShellSnippetsPanel() {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
-        <HugeiconsIcon icon={TerminalIcon} size={13} strokeWidth={1.75} className="text-muted-foreground" />
+        <Icon name="terminal" className="text-muted-foreground" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Shell Snippets
         </span>
@@ -190,7 +182,7 @@ export function ShellSnippetsPanel() {
           onClick={() => startEdit()}
           className="ml-auto flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
         >
-          <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} />
+          <Icon name="add" />
         </button>
       </div>
 
@@ -238,7 +230,7 @@ export function ShellSnippetsPanel() {
               onClick={commitFill}
               className="flex flex-1 items-center justify-center gap-1 rounded bg-primary/90 py-1 text-[10.5px] font-medium text-primary-foreground hover:bg-primary"
             >
-              <HugeiconsIcon icon={TerminalIcon} size={11} strokeWidth={2} />
+              <Icon name="terminal" size="xs" />
               Run
             </button>
             <button
@@ -247,7 +239,7 @@ export function ShellSnippetsPanel() {
               aria-label="Cancel"
               className="flex items-center justify-center rounded border border-border/50 px-2 py-1 text-[10.5px] text-muted-foreground hover:bg-muted/40"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+              <Icon name="close" size="xs" />
             </button>
           </div>
         </div>
@@ -288,7 +280,7 @@ export function ShellSnippetsPanel() {
               disabled={!editing.name.trim() || !editing.command.trim()}
               className="flex flex-1 items-center justify-center gap-1 rounded bg-primary/90 py-1.5 text-[10.5px] font-medium text-primary-foreground hover:bg-primary disabled:opacity-40"
             >
-              <HugeiconsIcon icon={Tick01Icon} size={11} strokeWidth={2} />
+              <Icon name="check" size="xs" />
               Save
             </button>
             <button
@@ -297,7 +289,7 @@ export function ShellSnippetsPanel() {
               aria-label="Cancel editing"
               className="flex items-center justify-center rounded border border-border/50 px-2 py-1.5 text-[10.5px] text-muted-foreground hover:bg-muted/40"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+              <Icon name="close" size="xs" />
             </button>
           </div>
         </div>
@@ -328,11 +320,7 @@ export function ShellSnippetsPanel() {
                       : "text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-30",
                   )}
                 >
-                  <HugeiconsIcon
-                    icon={fired === s.id ? Tick01Icon : TerminalIcon}
-                    size={11}
-                    strokeWidth={2}
-                  />
+                  <Icon name={fired === s.id ? "check" : "terminal"} size="xs" />
                 </button>
 
                 {/* Content */}
@@ -358,7 +346,7 @@ export function ShellSnippetsPanel() {
                     onClick={() => startEdit(s)}
                     className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                   >
-                    <HugeiconsIcon icon={Edit02Icon} size={11} strokeWidth={1.75} />
+                    <Icon name="edit" size="xs" />
                   </button>
                   <button
                     type="button"
@@ -366,7 +354,7 @@ export function ShellSnippetsPanel() {
                     onClick={() => del(s.id)}
                     className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
                   >
-                    <HugeiconsIcon icon={Delete01Icon} size={11} strokeWidth={1.75} />
+                    <Icon name="delete" size="xs" />
                   </button>
                 </div>
               </div>

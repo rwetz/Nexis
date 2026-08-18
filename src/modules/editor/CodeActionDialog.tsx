@@ -14,6 +14,7 @@
  * `codeAction/resolve`, or executed server-side via `workspace/executeCommand`
  * (the server then pushes a `workspace/applyEdit` that the LSP client handles).
  */
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { lspClient } from "@/modules/lsp/client";
 import { languageIdForPath } from "@/modules/lsp/languages";
@@ -22,8 +23,6 @@ import {
   workspaceEditHasChanges,
 } from "@/modules/lsp/applyEdit";
 import type { LspCodeAction, LspRange } from "@/modules/lsp/protocol";
-import { Alert02Icon, CheckmarkCircle01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
@@ -250,17 +249,13 @@ export function CodeActionDialog({
           <div className="px-4 pb-1">
             {done && (
               <div className="flex items-center gap-1.5 text-[11px] text-green-500">
-                <HugeiconsIcon
-                  icon={CheckmarkCircle01Icon}
-                  size={12}
-                  strokeWidth={1.75}
-                />
+                <Icon name="success" />
                 Applied “{done}”
               </div>
             )}
             {error && (
               <div className="flex items-center gap-1.5 text-[11px] text-destructive">
-                <HugeiconsIcon icon={Alert02Icon} size={12} strokeWidth={1.75} />
+                <Icon name="alert" />
                 {error}
               </div>
             )}

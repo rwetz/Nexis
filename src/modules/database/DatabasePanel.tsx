@@ -4,14 +4,8 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import {
-  Add01Icon,
-  Database01Icon,
-  Delete02Icon,
-  PlayIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listTables, runQuery, type QueryResult } from "./databaseRunner";
 import { useDatabaseStore, type DbConnection, type DbType } from "./databaseStore";
@@ -38,7 +32,7 @@ export function DatabasePanel() {
           onClick={() => setShowAdd((v) => !v)}
           className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <HugeiconsIcon icon={Add01Icon} size={12} strokeWidth={1.75} />
+          <Icon name="add" />
           Connect
         </button>
       </div>
@@ -53,7 +47,7 @@ export function DatabasePanel() {
       {connections.length === 0 && !showAdd ? (
         <div className="flex h-full items-center justify-center">
           <div className="flex flex-col items-center gap-2 text-center">
-            <HugeiconsIcon icon={Database01Icon} size={28} strokeWidth={1.25} className="text-muted-foreground/30" />
+            <Icon name="database" size="xl" className="text-muted-foreground/30" />
             <p className="text-[11px] text-muted-foreground/60">No connections</p>
             <p className="text-[10px] text-muted-foreground/40">Click Connect to add one</p>
           </div>
@@ -109,10 +103,8 @@ function ConnectionItem({ conn, isActive, onSelect, onRemove }: {
         aria-current={isActive || undefined}
         className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
       >
-        <HugeiconsIcon
-          icon={Database01Icon}
-          size={12}
-          strokeWidth={1.75}
+        <Icon
+          name="database"
           className={isActive ? "text-primary" : "text-muted-foreground/60"}
         />
         <span className={cn("flex-1 text-[11px] truncate", isActive ? "text-foreground font-medium" : "text-foreground/80")}>
@@ -126,7 +118,7 @@ function ConnectionItem({ conn, isActive, onSelect, onRemove }: {
         aria-label={`Remove connection ${conn.name}`}
         className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 focus-visible:opacity-100"
       >
-        <HugeiconsIcon icon={Delete02Icon} size={11} strokeWidth={1.75} />
+        <Icon name="delete" size="xs" />
       </button>
     </div>
   );
@@ -262,7 +254,7 @@ function QueryEditor({ connection }: { connection: DbConnection }) {
           title="Run (Ctrl+Enter)"
           className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-primary/90 px-2 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
         >
-          <HugeiconsIcon icon={PlayIcon} size={11} strokeWidth={1.75} />
+          <Icon name="play" size="xs" />
           {running ? "Running…" : "Run"}
         </button>
       </div>

@@ -4,16 +4,8 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import {
-  Add01Icon,
-  Cancel01Icon,
-  CheckmarkCircle01Icon,
-  Delete02Icon,
-  Edit02Icon,
-  FileCodeIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef, useState } from "react";
 import { LANGUAGE_OPTIONS, type CodeSnippet } from "./codeSnippets";
 import { newCodeSnippetId, useCodeSnippetsStore } from "./codeSnippetsStore";
@@ -83,7 +75,7 @@ export function SnippetsPanel() {
           onClick={startNew}
           className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <HugeiconsIcon icon={Add01Icon} size={12} strokeWidth={1.75} />
+          <Icon name="add" />
           New
         </button>
       </div>
@@ -156,7 +148,7 @@ export function SnippetsPanel() {
               disabled={!editing.name.trim() || !editing.prefix.trim() || !editing.body.trim()}
               className="flex flex-1 items-center justify-center gap-1.5 rounded bg-primary/90 px-3 py-1.5 text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} strokeWidth={1.75} />
+              <Icon name="success" />
               Save
             </button>
             <button
@@ -164,7 +156,7 @@ export function SnippetsPanel() {
               onClick={cancel}
               className="flex items-center gap-1.5 rounded border border-border/60 px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={1.75} />
+              <Icon name="close" />
               Cancel
             </button>
           </div>
@@ -174,7 +166,7 @@ export function SnippetsPanel() {
           {snippets.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <div className="flex flex-col items-center gap-2 text-center">
-                <HugeiconsIcon icon={FileCodeIcon} size={28} strokeWidth={1.25} className="text-muted-foreground/30" />
+                <Icon name="file-code" size="xl" className="text-muted-foreground/30" />
                 <p className="text-[11px] text-muted-foreground/60">No snippets yet</p>
               </div>
             </div>
@@ -244,7 +236,7 @@ function SnippetRow({
           aria-label={`Edit snippet ${snippet.name}`}
           className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
         >
-          <HugeiconsIcon icon={Edit02Icon} size={12} strokeWidth={1.75} />
+          <Icon name="edit" />
         </button>
         <button
           type="button"
@@ -252,7 +244,7 @@ function SnippetRow({
           aria-label={`Delete snippet ${snippet.name}`}
           className="rounded p-0.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
         >
-          <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={1.75} />
+          <Icon name="delete" />
         </button>
       </div>
     </div>

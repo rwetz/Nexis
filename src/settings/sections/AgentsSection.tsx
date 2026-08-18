@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -44,14 +45,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Add01Icon,
-  CheckmarkCircle02Icon,
-  Delete02Icon,
-  Edit02Icon,
-  SparklesIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef, useState } from "react";
 import { SectionHeader } from "../components/SectionHeader";
 
@@ -113,7 +106,7 @@ export function AgentsSection() {
               })
             }
           >
-            <HugeiconsIcon icon={Add01Icon} size={12} strokeWidth={1.75} />
+            <Icon name="add" />
             New agent
           </Button>
         </div>
@@ -157,7 +150,7 @@ export function AgentsSection() {
               })
             }
           >
-            <HugeiconsIcon icon={Add01Icon} size={12} strokeWidth={1.75} />
+            <Icon name="add" />
             New snippet
           </Button>
         </div>
@@ -194,11 +187,7 @@ export function AgentsSection() {
                   onClick={() => setEditingSnippet(s)}
                   title="Edit"
                 >
-                  <HugeiconsIcon
-                    icon={Edit02Icon}
-                    size={12}
-                    strokeWidth={1.75}
-                  />
+                  <Icon name="edit" />
                 </Button>
                 <Button
                   size="icon"
@@ -207,11 +196,7 @@ export function AgentsSection() {
                   onClick={() => removeSnippet(s.id)}
                   title="Delete"
                 >
-                  <HugeiconsIcon
-                    icon={Delete02Icon}
-                    size={12}
-                    strokeWidth={1.75}
-                  />
+                  <Icon name="delete" />
                 </Button>
               </li>
             ))}
@@ -256,7 +241,7 @@ function AgentCard({
   onEdit: (() => void) | null;
   onDelete: (() => void) | null;
 }) {
-  const Icon = AGENT_ICONS[agent.icon] ?? SparklesIcon;
+  const iconName = AGENT_ICONS[agent.icon] ?? "sparkle";
   return (
     <div
       className={cn(
@@ -268,7 +253,7 @@ function AgentCard({
     >
       <div className="flex items-start gap-2">
         <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted/40">
-          <HugeiconsIcon icon={Icon} size={14} strokeWidth={1.5} />
+          <Icon name={iconName} size="md" />
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="flex items-center gap-1.5 text-[12.5px] font-medium">
@@ -293,11 +278,7 @@ function AgentCard({
         >
           {active ? (
             <>
-              <HugeiconsIcon
-                icon={CheckmarkCircle02Icon}
-                size={10}
-                strokeWidth={2}
-              />
+              <Icon name="success" size="xs" />
               Active
             </>
           ) : (
@@ -313,7 +294,7 @@ function AgentCard({
               onClick={onEdit}
               title="Edit"
             >
-              <HugeiconsIcon icon={Edit02Icon} size={11} strokeWidth={1.75} />
+              <Icon name="edit" size="xs" />
             </Button>
           ) : null}
           {onDelete ? (
@@ -324,7 +305,7 @@ function AgentCard({
               onClick={onDelete}
               title="Delete"
             >
-              <HugeiconsIcon icon={Delete02Icon} size={11} strokeWidth={1.75} />
+              <Icon name="delete" size="xs" />
             </Button>
           ) : null}
         </div>
@@ -366,7 +347,7 @@ function AgentEditorDialog({
               <Label>Icon</Label>
               <div className="flex flex-wrap gap-1">
                 {ICON_OPTIONS.map((id) => {
-                  const Icon = AGENT_ICONS[id] ?? SparklesIcon;
+                  const iconName = AGENT_ICONS[id] ?? "sparkle";
                   const active = draft.icon === id;
                   return (
                     <button
@@ -382,7 +363,7 @@ function AgentEditorDialog({
                           : "border-border/60 hover:bg-accent/40",
                       )}
                     >
-                      <HugeiconsIcon icon={Icon} size={13} strokeWidth={1.75} />
+                      <Icon name={iconName} />
                     </button>
                   );
                 })}

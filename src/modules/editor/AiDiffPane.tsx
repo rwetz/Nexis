@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { usePreferencesStore } from "@/modules/settings/preferences";
@@ -11,8 +12,6 @@ import type { AiDiffStatus } from "@/modules/tabs";
 import { presentableDiff, unifiedMergeView } from "@codemirror/merge";
 import { EditorState, type Extension } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildSharedExtensions, languageCompartment } from "./lib/extensions";
@@ -184,7 +183,7 @@ export function AiDiffPane({
               onClick={onAccept}
               className="h-7 gap-1.5"
             >
-              <HugeiconsIcon icon={Tick02Icon} size={13} strokeWidth={2} />
+              <Icon name="check" />
               Accept
             </Button>
             <Button
@@ -193,7 +192,7 @@ export function AiDiffPane({
               onClick={onReject}
               className="h-7 gap-1.5"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={13} strokeWidth={2} />
+              <Icon name="close" />
               Reject
             </Button>
           </div>

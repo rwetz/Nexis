@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,11 +18,6 @@ import type { ModelId } from "@/modules/ai/config";
 import { native } from "@/modules/ai/lib/native";
 import { useChatStore } from "@/modules/ai/store/chatStore";
 import { usePreferencesStore } from "@/modules/settings/preferences";
-import {
-  AiContentGenerator02Icon,
-  Copy01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
 
 type Props = {
@@ -128,7 +124,7 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
           )}
           {generating && (
             <div className="flex items-center gap-2 py-8 text-[12.5px] text-muted-foreground">
-              <div className="size-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <div className="size-3 nexis-spin rounded-full border-2 border-primary border-t-transparent" />
               Generating…
             </div>
           )}
@@ -179,7 +175,7 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
               onClick={() => void generate()}
               className="gap-1.5"
             >
-              <HugeiconsIcon icon={AiContentGenerator02Icon} size={13} strokeWidth={1.75} />
+              <Icon name="ai-generate" />
               {generating ? "Generating…" : title || body ? "Regenerate" : "Generate"}
             </Button>
             {(title || body) && (
@@ -189,7 +185,7 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
                 onClick={() => void copyAll()}
                 className="gap-1.5"
               >
-                <HugeiconsIcon icon={Copy01Icon} size={13} strokeWidth={1.75} />
+                <Icon name="copy" />
                 {copied ? "Copied!" : "Copy All"}
               </Button>
             )}

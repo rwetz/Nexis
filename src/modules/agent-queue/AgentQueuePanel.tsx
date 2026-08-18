@@ -11,18 +11,8 @@
  * useAgentQueueStore.  Each task shows its status (queued / running / done /
  * failed) and can be retried or removed.
  */
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import {
-  Add01Icon,
-  Cancel01Icon,
-  CheckmarkCircle01Icon,
-  Alert02Icon,
-  Refresh01Icon,
-  Time01Icon,
-  PlayIcon,
-} from "@hugeicons/core-free-icons";
-import { Queue01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useRef, useState } from "react";
 import {
   useAgentQueueStore,
@@ -33,15 +23,15 @@ import {
 function statusIcon(status: QueueTaskStatus) {
   switch (status) {
     case "queued":
-      return Time01Icon;
+      return "clock";
     case "running":
-      return PlayIcon;
+      return "play";
     case "done":
-      return CheckmarkCircle01Icon;
+      return "success";
     case "failed":
-      return Alert02Icon;
+      return "alert";
     case "cancelled":
-      return Cancel01Icon;
+      return "close";
   }
 }
 
@@ -102,12 +92,7 @@ export function AgentQueuePanel() {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
-        <HugeiconsIcon
-          icon={Queue01Icon}
-          size={13}
-          strokeWidth={1.75}
-          className="text-muted-foreground"
-        />
+        <Icon name="queue" className="text-muted-foreground" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Agent Queue
         </span>
@@ -129,7 +114,7 @@ export function AgentQueuePanel() {
               !(queuedCount > 0 || runningCount > 0) && "ml-auto",
             )}
           >
-            <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+            <Icon name="close" size="xs" />
           </button>
         )}
       </div>
@@ -138,12 +123,7 @@ export function AgentQueuePanel() {
       <div className="min-h-0 flex-1 overflow-y-auto">
         {tasks.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-8 text-center">
-            <HugeiconsIcon
-              icon={Queue01Icon}
-              size={24}
-              strokeWidth={1.5}
-              className="text-muted-foreground/30"
-            />
+            <Icon name="queue" size="xl" className="text-muted-foreground/30" />
             <p className="text-xs text-muted-foreground">
               No tasks queued yet.
             </p>
@@ -163,14 +143,10 @@ export function AgentQueuePanel() {
                   className={cn(
                     "mt-0.5 shrink-0",
                     statusColor(task.status),
-                    task.status === "running" && "animate-pulse",
+                    task.status === "running" && "nexis-blink",
                   )}
                 >
-                  <HugeiconsIcon
-                    icon={statusIcon(task.status)}
-                    size={12}
-                    strokeWidth={1.75}
-                  />
+                  <Icon name={statusIcon(task.status)} />
                 </div>
 
                 {/* Content */}
@@ -210,11 +186,7 @@ export function AgentQueuePanel() {
                       onClick={() => retryTask(task.id)}
                       className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
-                      <HugeiconsIcon
-                        icon={Refresh01Icon}
-                        size={10}
-                        strokeWidth={2}
-                      />
+                      <Icon name="refresh" size="xs" />
                     </button>
                   )}
                   {task.status === "running" ? (
@@ -224,11 +196,7 @@ export function AgentQueuePanel() {
                       onClick={() => cancelTask(task.id)}
                       className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     >
-                      <HugeiconsIcon
-                        icon={Cancel01Icon}
-                        size={10}
-                        strokeWidth={2}
-                      />
+                      <Icon name="close" size="xs" />
                     </button>
                   ) : (
                     <button
@@ -237,11 +205,7 @@ export function AgentQueuePanel() {
                       onClick={() => removeTask(task.id)}
                       className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     >
-                      <HugeiconsIcon
-                        icon={Cancel01Icon}
-                        size={10}
-                        strokeWidth={2}
-                      />
+                      <Icon name="close" size="xs" />
                     </button>
                   )}
                 </div>
@@ -313,7 +277,7 @@ export function AgentQueuePanel() {
             onClick={() => setShowForm(true)}
             className="flex w-full items-center justify-center gap-1.5 rounded border border-border/50 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
           >
-            <HugeiconsIcon icon={Add01Icon} size={11} strokeWidth={2} />
+            <Icon name="add" size="xs" />
             Add task
           </button>
         )}

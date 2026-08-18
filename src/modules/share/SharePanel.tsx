@@ -15,19 +15,9 @@
  * when this panel closes; the status bar shows a persistent "Sharing on"
  * pill until it's stopped here (or the app exits).
  */
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { useChatStore, getChat } from "@/modules/ai/store/chatStore";
-import {
-  Activity01Icon,
-  Cancel01Icon,
-  Copy01Icon,
-  Globe02Icon,
-  Refresh01Icon,
-  Tick01Icon,
-  ComputerTerminal01Icon,
-  AiChat02Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useState } from "react";
 import {
   useShareStore,
@@ -149,13 +139,13 @@ export function SharePanel() {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
-        <HugeiconsIcon icon={Globe02Icon} size={13} strokeWidth={1.75} className="text-muted-foreground" />
+        <Icon name="globe" className="text-muted-foreground" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Share
         </span>
         {isRunning && (
           <span className="ml-auto flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[9px] font-bold text-red-500">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
+            <span className="h-1.5 w-1.5 nexis-blink rounded-full bg-red-500" />
             {runningLive && runningTarget === "terminal" ? "Live" : "Sharing"}
           </span>
         )}
@@ -182,11 +172,7 @@ export function SharePanel() {
                   isRunning && "cursor-default opacity-70",
                 )}
               >
-                <HugeiconsIcon
-                  icon={t === "conversation" ? AiChat02Icon : ComputerTerminal01Icon}
-                  size={11}
-                  strokeWidth={1.75}
-                />
+                <Icon name={t === "conversation" ? "ai-chat" : "terminal"} size="xs" />
                 {t === "conversation" ? "AI Conversation" : "Terminal"}
               </button>
             ))}
@@ -206,7 +192,7 @@ export function SharePanel() {
                   : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
               )}
             >
-              <HugeiconsIcon icon={Activity01Icon} size={11} strokeWidth={1.75} />
+              <Icon name="activity" size="xs" />
               Live streaming
             </button>
             <span className="text-[9.5px] text-muted-foreground/50">
@@ -260,7 +246,7 @@ export function SharePanel() {
               "disabled:cursor-wait disabled:opacity-60",
             )}
           >
-            <HugeiconsIcon icon={Globe02Icon} size={13} strokeWidth={1.75} />
+            <Icon name="globe" />
             {status === "starting" ? "Starting…" : "Start Sharing"}
           </button>
         ) : (
@@ -282,10 +268,9 @@ export function SharePanel() {
                   onClick={() => void handleCopy()}
                   className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
-                  <HugeiconsIcon
-                    icon={copied ? Tick01Icon : Copy01Icon}
-                    size={11}
-                    strokeWidth={2}
+                  <Icon
+                    name={copied ? "check" : "copy"}
+                    size="xs"
                     className={copied ? "text-green-500" : ""}
                   />
                 </button>
@@ -310,7 +295,7 @@ export function SharePanel() {
                   title="Push current content to the server"
                   className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border/50 py-1 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
                 >
-                  <HugeiconsIcon icon={Refresh01Icon} size={10} strokeWidth={2} />
+                  <Icon name="refresh" size="xs" />
                   Refresh content
                 </button>
               )}
@@ -319,7 +304,7 @@ export function SharePanel() {
                 onClick={() => void stopShare()}
                 className="flex flex-1 items-center justify-center gap-1.5 rounded border border-red-500/30 py-1 text-[10.5px] text-red-500/80 transition-colors hover:bg-red-500/10 hover:text-red-500"
               >
-                <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+                <Icon name="close" size="xs" />
                 Stop sharing
               </button>
             </div>

@@ -4,14 +4,13 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { KEY_SEP } from "@/lib/platform";
 import type { EditorPaneHandle } from "@/modules/editor";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { getBindingTokens, SHORTCUTS } from "@/modules/shortcuts/shortcuts";
-import { Cancel01Icon, Search01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import type { SearchAddon } from "@xterm/addon-search";
 import {
   forwardRef,
@@ -148,10 +147,8 @@ export const SearchInline = forwardRef<SearchInlineHandle, Props>(
               key="input"
               className="animate-in fade-in duration-150 absolute inset-0"
             >
-              <HugeiconsIcon
-                icon={Search01Icon}
-                size={13}
-                strokeWidth={1.75}
+              <Icon
+                name="search"
                 className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-muted-foreground"
               />
               <Input
@@ -193,11 +190,7 @@ export const SearchInline = forwardRef<SearchInlineHandle, Props>(
                   className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                   aria-label="Clear search"
                 >
-                  <HugeiconsIcon
-                    icon={Cancel01Icon}
-                    size={11}
-                    strokeWidth={2}
-                  />
+                  <Icon name="close" size="xs" />
                 </button>
               )}
             </div>
@@ -213,11 +206,7 @@ export const SearchInline = forwardRef<SearchInlineHandle, Props>(
                 onClick={focus}
                 title={tooltipTitle}
               >
-                <HugeiconsIcon
-                  icon={Search01Icon}
-                  size={15}
-                  strokeWidth={1.75}
-                />
+                <Icon name="search" size="md" />
               </Button>
             </div>
           )}

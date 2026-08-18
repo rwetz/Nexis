@@ -24,7 +24,7 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 ## Known bug pitfalls
 
-**These invariants are enforced by the build, not just this document.** Two tripwire suites scan the source tree and fail with a message naming the pitfall: `src-tauri/tests/pitfall_invariants.rs` (ConPTY lifecycle lock, `-Command` launch, `authorize_spawn_cwd`, `Command::new` confinement, PTY lock-poison handling, heavy-command async audit, `pty_write` sync/enqueue-only input ordering) and `src/lib/pitfall-guards.test.ts` (`pty_open` confinement, `pty_write` confinement, `writePref` routing, composer `disabled`, reasoning pruning, Zustand selector references, CodeMirror zoom exemption). `src-tauri/clippy.toml` additionally bans raw `std::process::Command::new` via `disallowed-methods`. **If one of these fails, fix the code — never weaken or delete the tripwire.** They exist because every guarded invariant has been broken at least once by a refactor that looked harmless.
+**These invariants are enforced by the build, not just this document.** Two tripwire suites scan the source tree and fail with a message naming the pitfall: `src-tauri/tests/pitfall_invariants.rs` (ConPTY lifecycle lock, `-Command` launch, `authorize_spawn_cwd`, `Command::new` confinement, PTY lock-poison handling, heavy-command async audit, `pty_write` sync/enqueue-only input ordering) and `src/lib/pitfall-guards.test.ts` (`pty_open` confinement, `pty_write` confinement, `writePref` routing, composer `disabled`, reasoning pruning, Zustand selector references, CodeMirror zoom exemption, icon-vendor confinement, file-tree retint). `src-tauri/clippy.toml` additionally bans raw `std::process::Command::new` via `disallowed-methods`. **If one of these fails, fix the code — never weaken or delete the tripwire.** They exist because every guarded invariant has been broken at least once by a refactor that looked harmless.
 
 ### 1. ConPTY lifecycle race (Windows — CRITICAL)
 **Symptom:** New terminal opens blank — cursor visible but shell never prints output.
@@ -251,6 +251,26 @@ This has bitten twice, on both sides of the same primitive:
 **Fix in place:** Both retry the rename through `wsl_exec_capture(distro, "mv", …)`, which runs it inside the distro as an ordinary atomic `rename(2)`. In both, the **in-process attempt runs first** — a workspace rooted under `/mnt/<drive>` maps to a native Windows path where the fast path works, and a stopped distro must not break an operation that would have succeeded. The fallback only engages for `WorkspaceEnv::Wsl`.
 
 **Future danger:** Any new code that renames a path **inside the user's workspace** needs the same fallback — and that includes writes, because an atomic write ends in a rename. Two rules for the write case: the Linux path passed to `mv` must be derived from the *caller's* Linux path (the resolved `\\wsl.localhost\…` host path is meaningless inside the distro), and it must be rejected unless it is POSIX-absolute, so a mislabelled workspace can't hand `mv` a drive path. Renames confined to app-data (`autosave.rs`, `snapshots.rs`, `secrets.rs`, `diagnostics.rs`, `shell_init.rs`) are unaffected — those paths are always local.
+
+---
+
+### 18. Icon and motion drift — the "assembled, not designed" failure
+
+**Symptom:** Nothing breaks. The UI just stops looking like one product: the same idea renders as a different glyph in three panels, icons sit at subtly different sizes in adjacent rows, and the whole app reads as a default-configured shadcn/Radix template rather than as Nexis.
+
+**Root cause:** Nothing stopped a call site from reaching directly for a vendor. Every component imported icons straight from the icon package and picked its own size and stroke inline, so the surface drifted a little with each PR until it held **160 icon imports expressing 136 distinct ideas** — three different "refresh" glyphs, three "checkmark", four "edit", four "terminal", two each for delete/copy/globe/database/layers/clock — spread across **13 pixel sizes (9–28) and 12 stroke weights (1.25–2.5)**. Motion had the same shape of problem from the other direction: there were exactly two `cubic-bezier()` values in the codebase (one of them Material Design's stock curve) and everything else inherited Tailwind/tw-animate-css defaults, which is why the motion was indistinguishable from any other app built on the same primitives.
+
+The icon vendor had also leaked into the **plugin API**: `PanelContribution.icon` was typed as a vendor icon object, so a plugin could not contribute a sidebar panel without depending on the exact icon package Nexis happened to ship.
+
+A related defect came from the other direction. The catppuccin file-tree icons carry the Catppuccin Macchiato palette **baked into the art**, so the six original Nexis themes could not reach it: opening Aurelian (warm gold over deep umber) still showed a lilac-and-macchiato-blue file tree.
+
+**Fix in place:**
+- `src/components/icon.tsx` is the only module allowed to import the icon vendor. Call sites name icons semantically (`<Icon name="close" />`), pick from a 5-step size scale (`xs`/`sm`/`md`/`lg`/`xl`), and express active state with `active` (which selects Phosphor's `fill` weight) rather than by hand-picking a stroke.
+- `PanelContribution.icon` is now an `IconName` string, so the plugin contract no longer names a vendor.
+- Motion tokens live in `:root` in `globals.css` (`--ease-enter`/`--ease-exit`, `--dur-tap`/`--dur-panel`/`--dur-window`, `--blink-cadence`, `--tick-cadence`). Tailwind's `--default-transition-duration`/`--default-transition-timing-function` are pointed at them in `@theme`, so every bare `transition-*` utility inherits the house curve. `.nexis-spin` (stepped) and `.nexis-blink` (caret cadence) replace `animate-spin`/`animate-pulse` on indeterminate and live-status indicators.
+- `iconResolver.ts` maps catppuccin's 19 hexes onto the active theme's ANSI palette and returns inline-able art, which `<FileTypeIcon>` renders into the document.
+
+**Future danger:** Do not import the icon vendor outside `icon.tsx`, and do not add a second semantic name for an idea that already has one — that is exactly how 136 ideas became 160 imports. Do not reach for a raw pixel size when a scale step fits, and do not introduce a new `cubic-bezier()`/duration literal when a motion token fits; add a token instead. For the file tree specifically, **do not go back to `data:` URLs** — the retint emits `var(--terminal-ansi-*)`, and a `data:` URL is an isolated document that the page's custom properties do not cascade into, so the art would silently render un-themed. The vscode-icons fallback art is deliberately *not* retinted: those entries are brand marks, and a recoloured logo is a wrong logo. Enforced by the two `pitfall 18` guards in `src/lib/pitfall-guards.test.ts`.
 
 ---
 

@@ -78,7 +78,74 @@ const DEFAULT_FILE = "file";
 const DEFAULT_FOLDER = "folder";
 const DEFAULT_FOLDER_OPEN = "folder-open";
 
-const dataUrlCache = new Map<string, string>();
+/**
+ * Catppuccin Macchiato → the active theme's own palette.
+ *
+ * The whole 659-icon set is drawn from exactly 19 hex values, so retinting it
+ * is a lookup rather than art work. This exists because the icons were shipping
+ * Catppuccin's palette into all six original Nexis themes: open Aurelian (warm
+ * gold over umber) and the file tree was still lilac and macchiato blue,
+ * because the art had colours baked in that no theme could reach.
+ *
+ * Each accent maps to the *same hue role* in the target palette — blue stays
+ * blue, red stays red — so a language is still identifiable at a glance; only
+ * the specific shade becomes the theme's. Every Nexis theme ships a full
+ * 16-colour ANSI palette (see `applyTheme.ts`), which is what makes the target
+ * side of this map guaranteed to exist.
+ *
+ * These substitute to `var(...)` rather than resolved colours, which is why the
+ * art has to be inlined into the document instead of served as a `data:` URL —
+ * a data URL is an isolated document and the page's custom properties do not
+ * cascade into it. Inlining also means a theme switch recolours the tree with
+ * no cache to invalidate and no re-render to force.
+ */
+const CAT_TO_THEME: Record<string, string> = {
+  "#cad3f5": "--terminal-foreground", // text
+  "#8aadf4": "--terminal-ansi-blue", // blue
+  "#eed49f": "--terminal-ansi-yellow", // yellow
+  "#a6da95": "--terminal-ansi-green", // green
+  "#8087a2": "--terminal-ansi-bright-black", // overlay1
+  "#f5a97f": "--terminal-ansi-bright-yellow", // peach
+  "#ed8796": "--terminal-ansi-red", // red
+  "#c6a0f6": "--terminal-ansi-magenta", // mauve
+  "#91d7e3": "--terminal-ansi-bright-cyan", // sky
+  "#7dc4e4": "--terminal-ansi-cyan", // sapphire
+  "#f5bde6": "--terminal-ansi-bright-magenta", // pink
+  "#8bd5ca": "--terminal-ansi-bright-green", // teal
+  "#ee99a0": "--terminal-ansi-bright-red", // maroon
+  "#b7bdf8": "--terminal-ansi-bright-blue", // lavender
+  "#f4dbd6": "--terminal-ansi-bright-white", // rosewater
+  "#f0c6c6": "--terminal-ansi-bright-red", // flamingo
+  "#fff": "--terminal-ansi-bright-white",
+  "#3700ff": "--terminal-ansi-blue",
+  "#df8e1d": "--terminal-ansi-yellow",
+};
+
+const CAT_HEX_RE = new RegExp(
+  `(?:${Object.keys(CAT_TO_THEME)
+    .sort((a, b) => b.length - a.length) // longest first: #fff must not eat #f5a97f
+    .join("|")})(?![0-9a-fA-F])`, // and must not eat the head of a longer hex
+  "gi",
+);
+
+/**
+ * Retint a catppuccin icon body onto the active theme.
+ *
+ * The vscode-icons fallback set is deliberately *not* passed through here — its
+ * entries are brand marks (NuGet, Maven, Flutter), and a brand mark recoloured
+ * to fit a theme is just a wrong logo.
+ */
+function retint(body: string): string {
+  return body.replace(
+    CAT_HEX_RE,
+    (m) => `var(${CAT_TO_THEME[m.toLowerCase()]})`,
+  );
+}
+
+/** Inline-able icon art: an SVG inner body plus the viewBox it is drawn for. */
+export type IconArt = { body: string; width: number; height: number };
+
+const artCache = new Map<string, IconArt | null>();
 
 // Catppuccin's manifest emits names like `folder_src`/`typescript-react`, but
 // the iconify export normalizes everything to hyphenated slugs.
@@ -99,43 +166,39 @@ function catBody(iconName: string): string | null {
   return null;
 }
 
-function svgDataUrl(body: string, width: number, height: number): string {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">${body}</svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
-
-function buildDataUrl(iconName: string): string | null {
+function buildArt(iconName: string): IconArt | null {
   const key = `cat:${iconName}`;
-  const cached = dataUrlCache.get(key);
-  if (cached !== undefined) return cached || null;
+  const cached = artCache.get(key);
+  if (cached !== undefined) return cached;
   // Don't cache a miss while the JSON is still loading — `cat` is null until
-  // the async import resolves, and caching "" here would poison the lookup so
+  // the async import resolves, and caching null here would poison the lookup so
   // the icon never appears even after load (the broken-box bug).
   if (!cat) return null;
   const body = catBody(iconName);
   if (!body) {
-    dataUrlCache.set(key, "");
+    artCache.set(key, null);
     return null;
   }
-  const url = svgDataUrl(body, CAT_W, CAT_H);
-  dataUrlCache.set(key, url);
-  return url;
+  const art: IconArt = { body: retint(body), width: CAT_W, height: CAT_H };
+  artCache.set(key, art);
+  return art;
 }
 
-function buildVscDataUrl(iconName: string): string | null {
+function buildVscArt(iconName: string): IconArt | null {
   const key = `vsc:${iconName}`;
-  const cached = dataUrlCache.get(key);
-  if (cached !== undefined) return cached || null;
-  // Same as buildDataUrl: don't poison the cache while the set is loading.
+  const cached = artCache.get(key);
+  if (cached !== undefined) return cached;
+  // Same as buildArt: don't poison the cache while the set is loading.
   if (!vsc) return null;
   const body = vsc.icons[iconName]?.body;
   if (!body) {
-    dataUrlCache.set(key, "");
+    artCache.set(key, null);
     return null;
   }
-  const url = svgDataUrl(body, VSC_W, VSC_H);
-  dataUrlCache.set(key, url);
-  return url;
+  // Brand art keeps its own colours — see `retint`.
+  const art: IconArt = { body, width: VSC_W, height: VSC_H };
+  artCache.set(key, art);
+  return art;
 }
 
 /**
@@ -153,12 +216,12 @@ const VSC_FOLDER_ALIASES: Record<string, string> = {
 };
 
 /** vscode-icons fallback for a folder name; null when the set has no match. */
-function vscFolderUrl(name: string): string | null {
+function vscFolderArt(name: string): IconArt | null {
   if (!vsc) return null;
   const aliased = VSC_FOLDER_ALIASES[name];
   const slug = aliased ?? name.replace(/^\.+/, "");
   if (!slug) return null;
-  return buildVscDataUrl(`folder-type-${slug}`);
+  return buildVscArt(`folder-type-${slug}`);
 }
 
 function extOf(name: string): string {
@@ -168,28 +231,28 @@ function extOf(name: string): string {
   return lower.slice(dot + 1);
 }
 
-export function fileIconUrl(name: string): string {
+export function fileIconArt(name: string): IconArt | null {
   const lower = name.toLowerCase();
 
   const byName = catFileNames[lower];
   if (byName) {
-    const url = buildDataUrl(byName);
-    if (url) return url;
+    const art = buildArt(byName);
+    if (art) return art;
   }
 
   let ext = extOf(lower);
   while (ext) {
     const iconName = catFileExtensions[ext];
     if (iconName) {
-      const url = buildDataUrl(iconName);
-      if (url) return url;
+      const art = buildArt(iconName);
+      if (art) return art;
     }
     const langId = EXT_TO_LANGUAGE_ID[ext];
     if (langId) {
       const iconByLang = catLanguageIds[langId];
       if (iconByLang) {
-        const url = buildDataUrl(iconByLang);
-        if (url) return url;
+        const art = buildArt(iconByLang);
+        if (art) return art;
       }
     }
     const nextDot = ext.indexOf(".");
@@ -197,26 +260,26 @@ export function fileIconUrl(name: string): string {
     ext = ext.slice(nextDot + 1);
   }
 
-  return buildDataUrl(DEFAULT_FILE) ?? "";
+  return buildArt(DEFAULT_FILE);
 }
 
-export function folderIconUrl(name: string, expanded: boolean): string {
+export function folderIconArt(name: string, expanded: boolean): IconArt | null {
   const lower = name.toLowerCase();
 
   const mapped = catFolderNames[lower];
   if (mapped) {
     const slug = toIconifySlug(mapped);
     const target = expanded ? `${slug}-open` : slug;
-    const url = buildDataUrl(target);
-    if (url) return url;
+    const art = buildArt(target);
+    if (art) return art;
   }
 
   // Fall through to vscode-icons for ecosystems catppuccin doesn't cover.
   // The pruned set carries no "-opened" variants — same art either state.
-  const vscUrl = vscFolderUrl(lower);
-  if (vscUrl) return vscUrl;
+  const vscArt = vscFolderArt(lower);
+  if (vscArt) return vscArt;
 
-  return buildDataUrl(expanded ? DEFAULT_FOLDER_OPEN : DEFAULT_FOLDER) ?? "";
+  return buildArt(expanded ? DEFAULT_FOLDER_OPEN : DEFAULT_FOLDER);
 }
 
 // Exported for callers that want to know icons are ready before first render.

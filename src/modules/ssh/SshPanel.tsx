@@ -4,12 +4,11 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Add01Icon, Delete01Icon, PencilEdit01Icon, TerminalIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useState } from "react";
 import { buildSshCommand, newSshId, type SshConnection, useSshStore } from "./sshStore";
 import { SshKeyManager } from "./SshKeyManager";
@@ -95,7 +94,7 @@ export function SshPanel({ onConnect }: Props) {
           SSH Connections
         </span>
         <Button size="icon" variant="ghost" className="h-6 w-6" onClick={startNew} title="Add connection">
-          <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} />
+          <Icon name="add" />
         </Button>
       </div>
 
@@ -172,7 +171,7 @@ export function SshPanel({ onConnect }: Props) {
       <div className="flex-1 overflow-y-auto flex flex-col">
         {connections.length === 0 && !isEditing ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
-            <HugeiconsIcon icon={TerminalIcon} size={24} strokeWidth={1.5} className="text-muted-foreground/40" />
+            <Icon name="terminal" size="xl" className="text-muted-foreground/40" />
             <p className="text-xs text-muted-foreground">No SSH connections saved.</p>
             <Button size="sm" variant="outline" className="h-6 text-xs" onClick={startNew}>
               Add connection
@@ -187,12 +186,7 @@ export function SshPanel({ onConnect }: Props) {
                   key={conn.id}
                   className="group flex items-center gap-2 px-3 py-2 hover:bg-muted/30"
                 >
-                  <HugeiconsIcon
-                    icon={TerminalIcon}
-                    size={13}
-                    strokeWidth={1.75}
-                    className="shrink-0 text-muted-foreground/60"
-                  />
+                  <Icon name="terminal" className="shrink-0 text-muted-foreground/60" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium">{conn.label}</p>
                     <p className="truncate text-[10px] text-muted-foreground font-mono">{cmd}</p>
@@ -207,7 +201,7 @@ export function SshPanel({ onConnect }: Props) {
                       title="Edit"
                       onClick={() => startEdit(conn)}
                     >
-                      <HugeiconsIcon icon={PencilEdit01Icon} size={11} strokeWidth={2} />
+                      <Icon name="edit" size="xs" />
                     </Button>
                     <Button
                       size="icon"
@@ -216,7 +210,7 @@ export function SshPanel({ onConnect }: Props) {
                       title="Delete"
                       onClick={() => remove(conn.id)}
                     >
-                      <HugeiconsIcon icon={Delete01Icon} size={11} strokeWidth={2} />
+                      <Icon name="delete" size="xs" />
                     </Button>
                   </div>
                   <Button

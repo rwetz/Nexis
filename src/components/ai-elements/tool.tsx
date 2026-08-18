@@ -11,27 +11,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Icon, type IconName } from "@/components/icon";
 import { formatBytes } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import {
-  ArrowRight01Icon,
-  CheckListIcon,
-  Edit02Icon,
-  EyeIcon,
-  File01Icon,
-  FileEditIcon,
-  FilePlusIcon,
-  Folder01Icon,
-  FolderAddIcon,
-  FolderOpenIcon,
-  GlobalSearchIcon,
-  RobotIcon,
-  SparklesIcon,
-  TerminalIcon,
-  ToolsIcon,
-} from "@hugeicons/core-free-icons";
 import { useChatStore } from "@/modules/ai/store/chatStore";
-import { HugeiconsIcon } from "@hugeicons/react";
 import type { DynamicToolUIPart, ToolUIPart } from "ai";
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement, memo, useState } from "react";
@@ -39,24 +22,24 @@ import { isValidElement, memo, useState } from "react";
 
 export type ToolPart = ToolUIPart | DynamicToolUIPart;
 
-const TOOL_META: Record<string, { label: string; icon: typeof File01Icon }> = {
-  read_file: { label: "Read", icon: File01Icon },
-  list_directory: { label: "List", icon: FolderOpenIcon },
-  write_file: { label: "Write", icon: FilePlusIcon },
-  create_directory: { label: "Create dir", icon: FolderAddIcon },
-  edit: { label: "Edit", icon: FileEditIcon },
-  multi_edit: { label: "Edit", icon: Edit02Icon },
-  bash_run: { label: "Run", icon: TerminalIcon },
-  bash_background: { label: "Spawn", icon: TerminalIcon },
-  bash_logs: { label: "Logs", icon: TerminalIcon },
-  bash_list: { label: "Jobs", icon: TerminalIcon },
-  bash_kill: { label: "Kill", icon: TerminalIcon },
-  grep: { label: "Search", icon: GlobalSearchIcon },
-  glob: { label: "Glob", icon: Folder01Icon },
-  suggest_command: { label: "Suggest", icon: SparklesIcon },
-  open_preview: { label: "Preview", icon: EyeIcon },
-  run_subagent: { label: "Subagent", icon: RobotIcon },
-  todo_write: { label: "Todos", icon: CheckListIcon },
+const TOOL_META: Record<string, { label: string; icon: IconName }> = {
+  read_file: { label: "Read", icon: "file" },
+  list_directory: { label: "List", icon: "folder-open" },
+  write_file: { label: "Write", icon: "file-add" },
+  create_directory: { label: "Create dir", icon: "folder-add" },
+  edit: { label: "Edit", icon: "file-edit" },
+  multi_edit: { label: "Edit", icon: "edit" },
+  bash_run: { label: "Run", icon: "terminal" },
+  bash_background: { label: "Spawn", icon: "terminal" },
+  bash_logs: { label: "Logs", icon: "terminal" },
+  bash_list: { label: "Jobs", icon: "terminal" },
+  bash_kill: { label: "Kill", icon: "terminal" },
+  grep: { label: "Search", icon: "search-global" },
+  glob: { label: "Glob", icon: "folder" },
+  suggest_command: { label: "Suggest", icon: "sparkle" },
+  open_preview: { label: "Preview", icon: "visible" },
+  run_subagent: { label: "Subagent", icon: "agent" },
+  todo_write: { label: "Todos", icon: "checklist" },
 };
 
 const STATUS_DOT: Record<ToolPart["state"], string> = {
@@ -152,7 +135,7 @@ const ToolImpl = ({
   ...props
 }: ToolProps) => {
   const meta = TOOL_META[toolName];
-  const Icon = meta?.icon ?? ToolsIcon;
+  const iconName = meta?.icon ?? "tools";
   const label = meta?.label ?? toolName;
   const summary = deriveSummary(toolName, input);
   const isError = state === "output-error";
@@ -184,12 +167,7 @@ const ToolImpl = ({
           className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[state])}
           aria-label={STATUS_LABEL[state]}
         />
-        <HugeiconsIcon
-          icon={Icon}
-          size={13}
-          strokeWidth={1.75}
-          className="shrink-0 text-muted-foreground"
-        />
+        <Icon name={iconName} className="shrink-0 text-muted-foreground" />
         <span className="shrink-0 font-medium text-foreground">{label}</span>
         {summary ? (
           <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground">
@@ -411,10 +389,9 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
             key={`d-${e.name}`}
             className="flex items-center gap-1.5 truncate"
           >
-            <HugeiconsIcon
-              icon={FolderOpenIcon}
-              size={11}
-              strokeWidth={1.75}
+            <Icon
+              name="folder-open"
+              size="xs"
               className="shrink-0 text-muted-foreground"
             />
             <span className="truncate text-foreground">{e.name}/</span>
@@ -425,12 +402,7 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
             key={`f-${e.name}`}
             className="flex items-center gap-1.5 truncate"
           >
-            <HugeiconsIcon
-              icon={File01Icon}
-              size={11}
-              strokeWidth={1.75}
-              className="shrink-0 text-muted-foreground"
-            />
+            <Icon name="file" size="xs" className="shrink-0 text-muted-foreground" />
             <span className="truncate text-muted-foreground">{e.name}</span>
           </div>
         ))}
@@ -573,7 +545,7 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
     return (
       <div className="space-y-0.5 font-mono text-[11px]">
         <div className="flex items-center gap-1.5">
-          <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="size-1.5 rounded-full bg-emerald-500 nexis-blink" />
           {handle ? <span className="text-foreground">{handle}</span> : null}
           <span className="text-muted-foreground">running</span>
         </div>
@@ -738,11 +710,7 @@ function SuggestCommandCard({
           )}
           aria-label="Insert into active terminal"
         >
-          <HugeiconsIcon
-            icon={inserted ? TerminalIcon : ArrowRight01Icon}
-            size={12}
-            strokeWidth={1.75}
-          />
+          <Icon name={inserted ? "terminal" : "chevron-right"} />
           <span>{inserted ? "Inserted" : "Insert"}</span>
         </button>
       </div>

@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon, type IconName } from "@/components/icon";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,28 +16,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
-import {
-  AbsoluteIcon,
-  ArrowDown01Icon,
-  CodeIcon,
-  PaintBrush04Icon,
-  PencilEdit02Icon,
-  Settings01Icon,
-  ShieldUserIcon,
-  SparklesIcon,
-  Tick02Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import type { AgentIconId } from "../lib/agents";
 import { useAgentsStore } from "../store/agentsStore";
 
-const ICONS: Record<AgentIconId, typeof CodeIcon> = {
-  coder: CodeIcon,
-  architect: AbsoluteIcon,
-  reviewer: PencilEdit02Icon,
-  security: ShieldUserIcon,
-  designer: PaintBrush04Icon,
-  spark: SparklesIcon,
+const ICONS: Record<AgentIconId, IconName> = {
+  coder: "code",
+  architect: "architect",
+  reviewer: "edit",
+  security: "security",
+  designer: "brush",
+  spark: "sparkle",
 };
 
 export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
@@ -53,7 +42,7 @@ export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
   const active = list.find((a) => a.id === activeId) ?? list[0];
   const builtIn = list.filter((a) => a.builtIn);
   const custom = list.filter((a) => !a.builtIn);
-  const ActiveIcon = ICONS[active.icon] ?? SparklesIcon;
+  const activeIconName = ICONS[active.icon] ?? "sparkle";
 
   return (
     <DropdownMenu>
@@ -68,14 +57,9 @@ export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
           )}
           title={`Agent: ${active.name}`}
         >
-          <HugeiconsIcon icon={ActiveIcon} size={11} strokeWidth={1.75} />
+          <Icon name={activeIconName} size="xs" />
           <span className="max-w-[7rem] truncate">{active.name}</span>
-          <HugeiconsIcon
-            icon={ArrowDown01Icon}
-            size={10}
-            strokeWidth={2}
-            className="opacity-70"
-          />
+          <Icon name="chevron-down" size="xs" className="opacity-70" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-60">
@@ -83,7 +67,7 @@ export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
           Built-in
         </div>
         {builtIn.map((a) => {
-          const Icon = ICONS[a.icon] ?? SparklesIcon;
+          const iconName = ICONS[a.icon] ?? "sparkle";
           return (
             <DropdownMenuItem
               key={a.id}
@@ -93,16 +77,9 @@ export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
                 a.id === activeId && "bg-accent/40",
               )}
             >
-              <HugeiconsIcon
-                icon={Icon}
-                size={13}
-                strokeWidth={1.75}
-                className={cn(
-                  "mt-0.5",
-                  a.id === activeId
-                    ? "text-foreground"
-                    : "text-muted-foreground",
-                )}
+              <Icon
+                name={iconName}
+                className={cn( "mt-0.5", a.id === activeId ? "text-foreground" : "text-muted-foreground", )}
               />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span>{a.name}</span>
@@ -111,12 +88,7 @@ export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
                 </span>
               </span>
               {a.id === activeId ? (
-                <HugeiconsIcon
-                  icon={Tick02Icon}
-                  size={12}
-                  strokeWidth={2}
-                  className="mt-0.5 shrink-0 text-foreground"
-                />
+                <Icon name="check" className="mt-0.5 shrink-0 text-foreground" />
               ) : null}
             </DropdownMenuItem>
           );
@@ -128,7 +100,7 @@ export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
               Custom
             </div>
             {custom.map((a) => {
-              const Icon = ICONS[a.icon] ?? SparklesIcon;
+              const iconName = ICONS[a.icon] ?? "sparkle";
               return (
                 <DropdownMenuItem
                   key={a.id}
@@ -138,12 +110,7 @@ export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
                     a.id === activeId && "bg-accent/40",
                   )}
                 >
-                  <HugeiconsIcon
-                    icon={Icon}
-                    size={13}
-                    strokeWidth={1.75}
-                    className="mt-0.5 text-muted-foreground"
-                  />
+                  <Icon name={iconName} className="mt-0.5 text-muted-foreground" />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate">{a.name}</span>
                     {a.description ? (
@@ -153,12 +120,7 @@ export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
                     ) : null}
                   </span>
                   {a.id === activeId ? (
-                    <HugeiconsIcon
-                      icon={Tick02Icon}
-                      size={12}
-                      strokeWidth={2}
-                      className="mt-0.5 shrink-0 text-foreground"
-                    />
+                    <Icon name="check" className="mt-0.5 shrink-0 text-foreground" />
                   ) : null}
                 </DropdownMenuItem>
               );
@@ -170,7 +132,7 @@ export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
           onSelect={() => void openSettingsWindow("agents")}
           className="gap-2 text-[12px] text-muted-foreground"
         >
-          <HugeiconsIcon icon={Settings01Icon} size={12} strokeWidth={1.75} />
+          <Icon name="settings" />
           Manage agents…
         </DropdownMenuItem>
       </DropdownMenuContent>

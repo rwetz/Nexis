@@ -11,17 +11,9 @@
  * Clicking a template sends its prompt to the AI panel instantly.
  * Users can create / edit / delete templates. Ctrl+Enter to save.
  */
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { sendMessage } from "@/modules/ai/store/chatStore";
-import {
-  Add01Icon,
-  Cancel01Icon,
-  Delete01Icon,
-  Edit02Icon,
-  FlashIcon,
-  Tick01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -163,12 +155,7 @@ export function PromptTemplatesPanel() {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
-        <HugeiconsIcon
-          icon={FlashIcon}
-          size={13}
-          strokeWidth={1.75}
-          className="text-muted-foreground"
-        />
+        <Icon name="flash" className="text-muted-foreground" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Prompt Templates
         </span>
@@ -178,7 +165,7 @@ export function PromptTemplatesPanel() {
           onClick={startNew}
           className="ml-auto flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
         >
-          <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} />
+          <Icon name="add" />
         </button>
       </div>
 
@@ -217,7 +204,7 @@ export function PromptTemplatesPanel() {
               disabled={!editing.name.trim() || !editing.prompt.trim()}
               className="flex flex-1 items-center justify-center gap-1.5 rounded bg-primary/90 py-1.5 text-[10.5px] font-medium text-primary-foreground hover:bg-primary disabled:opacity-40"
             >
-              <HugeiconsIcon icon={Tick01Icon} size={11} strokeWidth={2} />
+              <Icon name="check" size="xs" />
               Save
               <span className="opacity-50">(Ctrl+↵)</span>
             </button>
@@ -226,7 +213,7 @@ export function PromptTemplatesPanel() {
               onClick={cancelEdit}
               className="flex items-center justify-center gap-1 rounded border border-border/50 px-2.5 py-1.5 text-[10.5px] text-muted-foreground hover:bg-muted/40 hover:text-foreground"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+              <Icon name="close" size="xs" />
               Cancel
             </button>
           </div>
@@ -262,11 +249,7 @@ export function PromptTemplatesPanel() {
                       : "text-muted-foreground hover:bg-primary/10 hover:text-primary",
                   )}
                 >
-                  <HugeiconsIcon
-                    icon={fired === t.id ? Tick01Icon : FlashIcon}
-                    size={12}
-                    strokeWidth={2}
-                  />
+                  <Icon name={fired === t.id ? "check" : "flash"} />
                 </button>
 
                 {/* Content */}
@@ -287,7 +270,7 @@ export function PromptTemplatesPanel() {
                     onClick={() => startEdit(t)}
                     className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                   >
-                    <HugeiconsIcon icon={Edit02Icon} size={11} strokeWidth={1.75} />
+                    <Icon name="edit" size="xs" />
                   </button>
                   <button
                     type="button"
@@ -295,7 +278,7 @@ export function PromptTemplatesPanel() {
                     onClick={() => deleteTemplate(t.id)}
                     className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
                   >
-                    <HugeiconsIcon icon={Delete01Icon} size={11} strokeWidth={1.75} />
+                    <Icon name="delete" size="xs" />
                   </button>
                 </div>
               </div>
@@ -307,7 +290,7 @@ export function PromptTemplatesPanel() {
       {/* Footer hint */}
       <div className="shrink-0 border-t border-border/30 px-3 py-2">
         <p className="text-[9.5px] text-muted-foreground/40">
-          Click <HugeiconsIcon icon={FlashIcon} size={9} strokeWidth={2} className="inline" /> to send a template directly to the AI panel.
+          Click <Icon name="flash" size="xs" className="inline" /> to send a template directly to the AI panel.
         </p>
       </div>
     </div>

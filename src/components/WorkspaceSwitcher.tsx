@@ -4,13 +4,12 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import {
   useRecentWorkspaces,
   workspaceBasename,
 } from "@/modules/workspace/useRecentWorkspaces";
-import { FolderOpenIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Props = {
@@ -93,10 +92,9 @@ export function WorkspaceSwitcher({ currentPath, onSelect, onClose }: Props) {
     >
       <div className="flex w-[520px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-border/60 bg-popover shadow-2xl">
         <div className="flex items-center gap-2 border-b border-border/40 px-3 py-2.5">
-          <HugeiconsIcon
-            icon={FolderOpenIcon}
-            size={14}
-            strokeWidth={1.75}
+          <Icon
+            name="folder-open"
+            size="md"
             className="shrink-0 text-muted-foreground"
           />
           <input
@@ -133,14 +131,10 @@ export function WorkspaceSwitcher({ currentPath, onSelect, onClose }: Props) {
                       : "hover:bg-accent/50",
                   )}
                 >
-                  <HugeiconsIcon
-                    icon={FolderOpenIcon}
-                    size={14}
-                    strokeWidth={1.75}
-                    className={cn(
-                      "shrink-0",
-                      isCurrent ? "text-primary" : "text-muted-foreground",
-                    )}
+                  <Icon
+                    name="folder-open"
+                    size="md"
+                    className={cn( "shrink-0", isCurrent ? "text-primary" : "text-muted-foreground", )}
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">

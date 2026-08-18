@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Fragment } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -13,12 +14,6 @@ import {
 } from "@/components/ui/resizable";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setWordWrap } from "@/modules/settings/store";
-import {
-  Cancel01Icon,
-  PlayIcon,
-  TextAlignLeftIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Select,
   SelectContent,
@@ -132,7 +127,7 @@ export function EditorPaneTreeView({
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <HugeiconsIcon icon={TextAlignLeftIcon} size={12} strokeWidth={1.75} />
+              <Icon name="text" />
             </button>
             {rc && onRunFile && (
               <button
@@ -141,7 +136,7 @@ export function EditorPaneTreeView({
                 onClick={() => onRunFile(node.path, rc.cwd, rc.command)}
                 className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
-                <HugeiconsIcon icon={PlayIcon} size={12} strokeWidth={1.75} className="text-green-500" />
+                <Icon name="play" className="text-green-500" />
                 <span className="font-mono">{rc.command.trim()}</span>
               </button>
             )}
@@ -157,7 +152,7 @@ export function EditorPaneTreeView({
                 }}
                 className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-red-400"
               >
-                <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} />
+                <Icon name="close" size="xs" />
               </button>
             )}
           </div>

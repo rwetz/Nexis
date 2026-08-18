@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { listen } from "@tauri-apps/api/event";
 import { native } from "@/modules/ai/lib/native";
 import { AnimatedFolder } from "@/components/ui/AnimatedFolder";
@@ -15,13 +16,6 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import {
-  FileAddIcon,
-  FolderAddIcon,
-  Refresh01Icon,
-  Search01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { cn } from "@/lib/utils";
 import { getFolderColor, useTheme } from "@/modules/theme";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -39,7 +33,8 @@ import { EntryRow, PendingRow, StatusRow } from "./TreeRow";
 import { InlineInput } from "./InlineInput";
 import { canMoveInto, type ExplorerDrag, moveTargetDir } from "./lib/dnd";
 import { copyToClipboard, revealInFinder } from "./lib/contextActions";
-import { fileIconUrl, folderIconUrl, preloadIcons } from "./lib/iconResolver";
+import { preloadIcons } from "./lib/iconResolver";
+import { FileTypeIcon } from "./lib/FileTypeIcon";
 import { COMPACT_CONTENT, COMPACT_ITEM } from "./lib/menuItemClass";
 import { useFileTree } from "./lib/useFileTree";
 import { useGlobalShortcuts } from "@/modules/shortcuts";
@@ -707,12 +702,10 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
             className="flex flex-1 items-center truncate text-xs font-medium text-foreground/80"
             title={rootPath}
           >
-            <img
-              src={folderIconUrl(basename(rootPath), false)}
-              alt=""
-              height={15}
-              width={15}
-              className="mx-1.5"
+            <FileTypeIcon
+              name={basename(rootPath)}
+              kind="dir"
+              className="mx-1.5 size-[15px] shrink-0"
             />
             {basename(rootPath)}
           </span>
@@ -726,7 +719,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
               title="Search files"
               aria-label="Search files"
             >
-              <HugeiconsIcon icon={Search01Icon} size={13} strokeWidth={2} />
+              <Icon name="search" />
             </Button>
 
             <Button
@@ -736,7 +729,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
               onClick={() => tree.beginCreate(rootPath, "file")}
               title="New file"
             >
-              <HugeiconsIcon icon={FileAddIcon} size={13} strokeWidth={2} />
+              <Icon name="file-add" />
             </Button>
             <Button
               variant="ghost"
@@ -745,7 +738,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
               onClick={() => tree.beginCreate(rootPath, "dir")}
               title="New folder"
             >
-              <HugeiconsIcon icon={FolderAddIcon} size={13} strokeWidth={2} />
+              <Icon name="folder-add" />
             </Button>
             <Button
               variant="ghost"
@@ -754,12 +747,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
               onClick={handleRefresh}
               title="Refresh"
             >
-              <HugeiconsIcon
-                icon={Refresh01Icon}
-                size={12}
-                strokeWidth={2}
-                className={cn(isRefreshing && "animate-spin")}
-              />
+              <Icon name="refresh" className={cn(isRefreshing && "nexis-spin")} />
             </Button>
           </div>
         </div>
@@ -793,13 +781,9 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
                     style={{ paddingLeft: 6 }}
                   >
                     <span className="size-3.5 shrink-0" />
-                    <img
-                      src={
-                        pendingAtRoot.kind === "dir"
-                          ? folderIconUrl("", false)
-                          : fileIconUrl("untitled")
-                      }
-                      alt=""
+                    <FileTypeIcon
+                      name={pendingAtRoot.kind === "dir" ? "" : "untitled"}
+                      kind={pendingAtRoot.kind === "dir" ? "dir" : "file"}
                       className="size-4 shrink-0 opacity-70"
                     />
                     <InlineInput

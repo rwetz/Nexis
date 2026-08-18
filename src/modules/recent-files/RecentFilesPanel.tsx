@@ -4,10 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { basename, displayDirname as dirpart } from "@/lib/path";
 import { cn } from "@/lib/utils";
-import { Cancel01Icon, File01Icon, Delete02Icon, Search01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRecentFiles } from "./useRecentFiles";
 
@@ -217,7 +216,7 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
             className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             title="Clear all"
           >
-            <HugeiconsIcon icon={Delete02Icon} size={11} strokeWidth={1.75} />
+            <Icon name="delete" size="xs" />
             Clear
           </button>
         )}
@@ -226,10 +225,9 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
       {/* Search box */}
       {files.length > 0 && (
         <div className="relative shrink-0 border-b border-border/40 px-2 py-1.5">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            size={11}
-            strokeWidth={1.75}
+          <Icon
+            name="search"
+            size="xs"
             className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50"
           />
           <input
@@ -282,12 +280,7 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
                   onClick={() => onOpenFile(f.path)}
                   className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
                 >
-                  <HugeiconsIcon
-                    icon={File01Icon}
-                    size={13}
-                    strokeWidth={1.75}
-                    className="shrink-0 text-muted-foreground/60"
-                  />
+                  <Icon name="file" className="shrink-0 text-muted-foreground/60" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium text-foreground">
                       <Highlighted text={name} ranges={f.nameMatch.ranges} />
@@ -319,7 +312,7 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
                   )}
                   title="Remove from recent"
                 >
-                  <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} />
+                  <Icon name="close" size="xs" />
                 </button>
               </div>
             );

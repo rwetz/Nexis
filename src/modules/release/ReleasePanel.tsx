@@ -4,17 +4,10 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { native } from "@/modules/ai/lib/native";
 import { cn } from "@/lib/utils";
-import {
-  CheckmarkCircle01Icon,
-  Copy01Icon,
-  GitBranchIcon,
-  SourceCodeIcon,
-  Tag01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type BumpKind = "patch" | "minor" | "major";
@@ -162,7 +155,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
           disabled={loading}
           title="Refresh"
         >
-          <HugeiconsIcon icon={SourceCodeIcon} size={13} strokeWidth={2} />
+          <Icon name="source" />
         </Button>
       </div>
 
@@ -170,13 +163,13 @@ export function ReleasePanel({ workspaceRoot }: Props) {
         <div className="space-y-1">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Current version</p>
           <div className="flex items-center gap-2">
-            <HugeiconsIcon icon={Tag01Icon} size={13} strokeWidth={1.75} className="text-muted-foreground/60" />
+            <Icon name="tag" className="text-muted-foreground/60" />
             <span className="font-mono text-sm font-semibold text-foreground">
               {loading ? "…" : (currentVersion ?? "unknown")}
             </span>
             {lastTag && (
               <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <HugeiconsIcon icon={GitBranchIcon} size={11} strokeWidth={1.75} />
+                <Icon name="git-branch" size="xs" />
                 last tag: {lastTag}
               </span>
             )}
@@ -211,7 +204,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
           </p>
           {copied && (
             <p className="flex items-center gap-1 text-[10px] text-green-500">
-              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={11} strokeWidth={2} />
+              <Icon name="success" size="xs" />
               Copied to clipboard
             </p>
           )}
@@ -230,7 +223,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
                 title="Copy changelog"
                 onClick={() => currentVersion && copyChangelog(currentVersion)}
               >
-                <HugeiconsIcon icon={Copy01Icon} size={11} strokeWidth={2} />
+                <Icon name="copy" size="xs" />
               </Button>
             </div>
             <ul className="space-y-0.5">
@@ -267,7 +260,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
           </div>
           {tagStatus === "done" && (
             <p className="flex items-center gap-1 text-[10px] text-green-500">
-              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={11} strokeWidth={2} />
+              <Icon name="success" size="xs" />
               Tag created successfully
             </p>
           )}

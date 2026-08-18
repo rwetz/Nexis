@@ -1,11 +1,10 @@
+import { Icon } from "@/components/icon";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { Alert02Icon, Globe02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   forwardRef,
   useEffect,
@@ -83,12 +82,7 @@ export const PreviewPane = forwardRef<PreviewPaneHandle, Props>(
         />
         {showXfoHint ? (
           <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border/60 bg-amber-500/8 px-3 text-[11px] text-amber-600 dark:text-amber-400">
-            <HugeiconsIcon
-              icon={Alert02Icon}
-              size={12}
-              strokeWidth={1.75}
-              className="shrink-0"
-            />
+            <Icon name="alert" className="shrink-0" />
             <span className="truncate">
               Many public sites refuse to embed (X-Frame-Options). If the page
               is blank, open it externally.
@@ -152,7 +146,7 @@ function SuspendedState({ onReload }: { onReload: () => void }) {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center">
       <div className="flex size-10 items-center justify-center rounded-2xl border border-border/60 bg-card text-muted-foreground">
-        <HugeiconsIcon icon={Globe02Icon} size={18} strokeWidth={1.5} />
+        <Icon name="globe" size="lg" />
       </div>
       <div className="space-y-1">
         <p className="text-[12.5px] font-medium text-foreground">
@@ -177,7 +171,7 @@ function EmptyState() {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-6 text-center">
       <div className="flex size-12 items-center justify-center rounded-2xl border border-border/60 bg-card text-muted-foreground">
-        <HugeiconsIcon icon={Globe02Icon} size={20} strokeWidth={1.5} />
+        <Icon name="globe" size="lg" />
       </div>
       <div className="space-y-1.5">
         <p className="text-sm font-medium text-foreground">

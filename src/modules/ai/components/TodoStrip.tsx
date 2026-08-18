@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
@@ -14,8 +15,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { CheckmarkSquare02Icon, SquareIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect } from "react";
 import type { Todo } from "../lib/todos";
 import { useTodosStore } from "../store/todoStore";
@@ -72,12 +71,7 @@ function TodoRow({ todo }: { todo: Todo }) {
         {isInProgress ? (
           <Spinner className="size-3" />
         ) : (
-          <HugeiconsIcon
-            icon={
-              todo.status === "completed" ? CheckmarkSquare02Icon : SquareIcon
-            }
-            strokeWidth={1.75}
-          />
+          <Icon name={todo.status === "completed" ? "check-box" : "square"} size="sm" />
         )}
       </span>
       <span

@@ -19,6 +19,7 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
+import { Icon } from "@/components/icon";
 import { Tool } from "@/components/ai-elements/tool";
 import {
   Collapsible,
@@ -27,14 +28,6 @@ import {
 } from "@/components/ui/collapsible";
 import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  ArrowRight01Icon,
-  CodeIcon,
-  File01Icon,
-  HashtagIcon,
-  TerminalIcon,
-} from "@hugeicons/core-free-icons";
 import { SLASH_COMMANDS, NEXIS_CMD_RE } from "../lib/slashCommands";
 import { Spinner } from "@/components/ui/spinner";
 import { useChatStore, sendMessage } from "../store/chatStore";
@@ -106,12 +99,7 @@ function CommandSnippet({ name }: { name: string }) {
   }
   return (
     <div className="inline-flex max-w-full items-center gap-2 rounded-md border border-border/50 bg-muted/40 px-2 py-1">
-      <HugeiconsIcon
-        icon={meta.icon}
-        size={12}
-        strokeWidth={1.75}
-        className="shrink-0 text-foreground"
-      />
+      <Icon name={meta.icon} className="shrink-0 text-foreground" />
       <span className="font-mono text-[11px] text-foreground">
         {meta.invocation}
       </span>
@@ -193,17 +181,13 @@ const ContextChips = memo(function ContextChips({
 function chipIcon(c: ContextChip) {
   if (c.kind === "selection") {
     return (
-      <HugeiconsIcon
-        icon={c.source === "editor" ? CodeIcon : TerminalIcon}
-        size={10}
-        strokeWidth={1.75}
-      />
+      <Icon name={c.source === "editor" ? "code" : "terminal"} size="xs" />
     );
   }
   if (c.kind === "file") {
-    return <HugeiconsIcon icon={File01Icon} size={10} strokeWidth={1.75} />;
+    return <Icon name="file" size="xs" />;
   }
-  return <HugeiconsIcon icon={HashtagIcon} size={10} strokeWidth={1.75} />;
+  return <Icon name="hash" size="xs" />;
 }
 
 function chipLabel(c: ContextChip): string {
@@ -537,21 +521,12 @@ const ReadGroup = memo(function ReadGroup({ parts }: { parts: AnyPart[] }) {
           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         )}
       >
-        <HugeiconsIcon
-          icon={ArrowRight01Icon}
-          size={11}
-          strokeWidth={2}
-          className={cn(
-            "shrink-0 text-muted-foreground transition-transform",
-            "group-data-[state=open]/read:rotate-90",
-          )}
+        <Icon
+          name="chevron-right"
+          size="xs"
+          className={cn( "shrink-0 text-muted-foreground transition-transform", "group-data-[state=open]/read:rotate-90", )}
         />
-        <HugeiconsIcon
-          icon={File01Icon}
-          size={13}
-          strokeWidth={1.75}
-          className="shrink-0 text-muted-foreground"
-        />
+        <Icon name="file" className="shrink-0 text-muted-foreground" />
         <span className="shrink-0 font-medium text-foreground">Read</span>
         <span className="shrink-0 text-[11px] text-muted-foreground">
           {count} file{count === 1 ? "" : "s"}
@@ -569,12 +544,7 @@ const ReadGroup = memo(function ReadGroup({ parts }: { parts: AnyPart[] }) {
               key={path}
               className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground"
             >
-              <HugeiconsIcon
-                icon={File01Icon}
-                size={10}
-                strokeWidth={1.75}
-                className="shrink-0 opacity-60"
-              />
+              <Icon name="file" size="xs" className="shrink-0 opacity-60" />
               <span className="truncate text-foreground">
                 {basename(path)}
               </span>
@@ -613,12 +583,7 @@ const ReadRow = memo(function ReadRow({ part }: { part: AnyPart }) {
             : "border border-muted-foreground/40 bg-transparent",
         )}
       />
-      <HugeiconsIcon
-        icon={File01Icon}
-        size={13}
-        strokeWidth={1.75}
-        className="shrink-0 text-muted-foreground"
-      />
+      <Icon name="file" className="shrink-0 text-muted-foreground" />
       <span className="shrink-0 font-medium text-foreground">Read</span>
       <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground">
         {path ?? ""}

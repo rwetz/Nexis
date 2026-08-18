@@ -4,20 +4,10 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import {
-  ArrowDown01Icon,
-  ArrowUpRight01Icon,
-  Cancel01Icon,
-  Delete02Icon,
-  Add01Icon,
-  EyeIcon,
-  Search01Icon,
-  MessageMultiple01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import {
   useEffect,
@@ -311,19 +301,9 @@ function SessionPicker() {
           )}
           title="Chat history"
         >
-          <HugeiconsIcon
-            icon={MessageMultiple01Icon}
-            size={11}
-            strokeWidth={1.75}
-            className="shrink-0 opacity-70"
-          />
+          <Icon name="messages" size="xs" className="shrink-0 opacity-70" />
           <span className="truncate">{active.title || "New chat"}</span>
-          <HugeiconsIcon
-            icon={ArrowDown01Icon}
-            size={10}
-            strokeWidth={2}
-            className="shrink-0 opacity-70"
-          />
+          <Icon name="chevron-down" size="xs" className="shrink-0 opacity-70" />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -334,12 +314,7 @@ function SessionPicker() {
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="flex items-center gap-1.5 border-b border-border/40 px-2 py-1.5">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            size={11}
-            strokeWidth={1.75}
-            className="shrink-0 text-muted-foreground/60"
-          />
+          <Icon name="search" size="xs" className="shrink-0 text-muted-foreground/60" />
           <input
             ref={searchRef}
             type="text"
@@ -370,7 +345,7 @@ function SessionPicker() {
             }}
             className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            <HugeiconsIcon icon={Add01Icon} size={11} strokeWidth={1.75} />
+            <Icon name="add" size="xs" />
             New session
           </button>
         </div>
@@ -441,7 +416,7 @@ function SessionRow({
         title="Delete session"
         className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
       >
-        <HugeiconsIcon icon={Delete02Icon} size={11} strokeWidth={1.75} />
+        <Icon name="delete" size="xs" />
       </button>
     </div>
   );
@@ -571,7 +546,7 @@ const PanelHeader = memo(function PanelHeader({
             aria-label="Toggle context inspector"
             title="Context inspector"
           >
-            <HugeiconsIcon icon={EyeIcon} size={11} strokeWidth={1.75} />
+            <Icon name="visible" size="xs" />
           </Button>
         )}
         <SessionPicker />
@@ -589,11 +564,7 @@ const PanelHeader = memo(function PanelHeader({
             aria-label="Float panel"
             title="Float panel"
           >
-            <HugeiconsIcon
-              icon={ArrowUpRight01Icon}
-              size={11}
-              strokeWidth={1.75}
-            />
+            <Icon name="external" size="xs" />
           </Button>
         )}
 
@@ -610,11 +581,7 @@ const PanelHeader = memo(function PanelHeader({
             aria-label="Dock panel"
             title="Dock to bottom"
           >
-            <HugeiconsIcon
-              icon={ArrowDown01Icon}
-              size={11}
-              strokeWidth={1.75}
-            />
+            <Icon name="chevron-down" size="xs" />
           </Button>
         )}
 
@@ -630,7 +597,7 @@ const PanelHeader = memo(function PanelHeader({
           aria-label="Close"
           title="Close (Esc)"
         >
-          <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={1.75} />
+          <Icon name="close" size="xs" />
         </Button>
       </div>
     </div>

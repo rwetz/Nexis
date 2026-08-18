@@ -4,16 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { native } from "@/modules/ai/lib/native";
-import {
-  AlphaSquareIcon,
-  CodeIcon,
-  FirstBracketIcon,
-  FunctionIcon,
-  SquareIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useState } from "react";
 
 type SymbolKind = "function" | "class" | "interface" | "type" | "variable" | "enum" | "method";
@@ -26,12 +19,12 @@ type Symbol = {
 
 function kindIcon(kind: SymbolKind) {
   switch (kind) {
-    case "function": return FunctionIcon;
-    case "class": return FirstBracketIcon;
-    case "interface": return CodeIcon;
-    case "type": return AlphaSquareIcon;
-    case "enum": return SquareIcon;
-    default: return SquareIcon;
+    case "function": return "symbol-function";
+    case "class": return "symbol-class";
+    case "interface": return "code";
+    case "type": return "symbol-type";
+    case "enum": return "square";
+    default: return "square";
   }
 }
 
@@ -136,10 +129,8 @@ export function SymbolOutlinePanel({ filePath }: Props) {
               key={i}
               className="flex items-center gap-2 border-b border-border/20 px-3 py-1.5 hover:bg-muted/30 last:border-none"
             >
-              <HugeiconsIcon
-                icon={kindIcon(s.kind)}
-                size={12}
-                strokeWidth={1.75}
+              <Icon
+                name={kindIcon(s.kind)}
                 className={cn("shrink-0", kindColor(s.kind))}
               />
               <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-foreground">

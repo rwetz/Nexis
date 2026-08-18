@@ -4,10 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { fmtShortcut, MOD_KEY } from "@/lib/platform";
-import { BubbleChatIcon, BubbleChatSparkIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect } from "react";
 
 export type SelectionAskAiProps = {
@@ -46,7 +45,7 @@ export function SelectionAskAi({ x, y, onAsk, onExplain, onDismiss }: SelectionA
         }}
         className="flex h-7 items-center gap-1.5 rounded-md border border-border/60 bg-card/95 px-2 text-xs shadow-lg backdrop-blur-md hover:border-border hover:bg-accent"
       >
-        <HugeiconsIcon icon={BubbleChatIcon} size={11} strokeWidth={1.75} className="opacity-70" />
+        <Icon name="chat" size="xs" className="opacity-70" />
         <span>Ask Nexis</span>
         <KbdGroup>
           <Kbd className="h-4 min-w-4 px-1 text-[10px]">{fmtShortcut(MOD_KEY, "L")}</Kbd>
@@ -61,7 +60,7 @@ export function SelectionAskAi({ x, y, onAsk, onExplain, onDismiss }: SelectionA
         title="Explain this selection with AI"
         className="flex h-7 items-center gap-1.5 rounded-md border border-border/60 bg-card/95 px-2 text-xs shadow-lg backdrop-blur-md hover:border-border hover:bg-accent"
       >
-        <HugeiconsIcon icon={BubbleChatSparkIcon} size={11} strokeWidth={1.75} className="opacity-70" />
+        <Icon name="chat-ai" size="xs" className="opacity-70" />
         <span>Explain</span>
       </button>
     </div>

@@ -11,9 +11,8 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { memo, useState } from "react";
 import { InlineInput } from "./InlineInput";
 import {
@@ -22,7 +21,7 @@ import {
   revealInFinder,
 } from "./lib/contextActions";
 import type { ExplorerDrag } from "./lib/dnd";
-import { fileIconUrl, folderIconUrl } from "./lib/iconResolver";
+import { FileTypeIcon } from "./lib/FileTypeIcon";
 import { COMPACT_CONTENT, COMPACT_ITEM } from "./lib/menuItemClass";
 import type { useFileTree } from "./lib/useFileTree";
 
@@ -86,7 +85,6 @@ function EntryRowImpl(props: EntryRowProps) {
   } = props;
 
   const [isConfirming, setIsConfirming] = useState(false);
-  const iconUrl = isDir ? folderIconUrl(name, isExpanded) : fileIconUrl(name);
   const createTarget = isDir ? path : path.slice(0, path.lastIndexOf("/")) || rootPath;
   const paddingLeft = 6 + depth * 12;
 
@@ -116,11 +114,12 @@ function EntryRowImpl(props: EntryRowProps) {
             style={{ paddingLeft }}
           >
             <span className="size-3.5 shrink-0" />
-            {iconUrl ? (
-              <img src={iconUrl} alt="" className="size-4 shrink-0" />
-            ) : (
-              <span className="size-4 shrink-0" />
-            )}
+            <FileTypeIcon
+              name={name}
+              kind={isDir ? "dir" : "file"}
+              expanded={isExpanded}
+              className="size-4 shrink-0"
+            />
             <InlineInput
               initial={name}
               onCommit={tree.commitRename}
@@ -145,22 +144,18 @@ function EntryRowImpl(props: EntryRowProps) {
           >
             <span className="flex size-3.5 shrink-0 items-center justify-center text-muted-foreground">
               {isDir ? (
-                <HugeiconsIcon
-                  icon={ArrowRight01Icon}
-                  size={12}
-                  strokeWidth={2.25}
-                  className={cn(
-                    "transition-transform",
-                    isExpanded && "rotate-90",
-                  )}
+                <Icon
+                  name="chevron-right"
+                  className={cn( "transition-transform", isExpanded && "rotate-90", )}
                 />
               ) : null}
             </span>
-            {iconUrl ? (
-              <img src={iconUrl} alt="" className="size-4 shrink-0" />
-            ) : (
-              <span className="size-4 shrink-0" />
-            )}
+            <FileTypeIcon
+              name={name}
+              kind={isDir ? "dir" : "file"}
+              expanded={isExpanded}
+              className="size-4 shrink-0"
+            />
             <span className="min-w-0 flex-1 truncate">{name}</span>
           </button>
         )}
@@ -288,9 +283,9 @@ export function PendingRow({ depth, kind, onCommit, onCancel }: PendingRowProps)
       style={{ paddingLeft: 6 + depth * 12 }}
     >
       <span className="size-3.5 shrink-0" />
-      <img
-        src={kind === "dir" ? folderIconUrl("", false) : fileIconUrl("untitled")}
-        alt=""
+      <FileTypeIcon
+        name={kind === "dir" ? "" : "untitled"}
+        kind={kind === "dir" ? "dir" : "file"}
         className="size-4 shrink-0 opacity-70"
       />
       <InlineInput

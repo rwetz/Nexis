@@ -56,7 +56,7 @@ export function SharingPill() {
           }}
           className="flex shrink-0 items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10.5px] font-medium text-red-600 transition-colors hover:bg-red-500/25 dark:text-red-400"
         >
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
+          <span className="h-1.5 w-1.5 nexis-blink rounded-full bg-red-500" />
           <span>Sharing on</span>
         </button>
       </TooltipTrigger>

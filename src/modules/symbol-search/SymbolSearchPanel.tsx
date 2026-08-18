@@ -13,15 +13,9 @@
  *
  * Falls back to plain regex when no structural prefix is detected.
  */
+import { Icon } from "@/components/icon";
 import { native } from "@/modules/ai/lib/native";
 import { cn } from "@/lib/utils";
-import {
-  Cancel01Icon,
-  Search01Icon,
-  FileCodeIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { CodeSquareIcon } from "@hugeicons/core-free-icons";
 import type { GrepHit } from "@/modules/ai/lib/native";
 import { basename, displayDirname as dirname } from "@/lib/path";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -192,12 +186,7 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
-        <HugeiconsIcon
-          icon={CodeSquareIcon}
-          size={13}
-          strokeWidth={1.75}
-          className="text-muted-foreground"
-        />
+        <Icon name="code-box" className="text-muted-foreground" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Symbol Search
         </span>
@@ -211,10 +200,8 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
       {/* Input */}
       <div className="shrink-0 border-b border-border/30 px-3 py-2">
         <div className="relative">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            size={12}
-            strokeWidth={1.75}
+          <Icon
+            name="search"
             className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground"
           />
           <input
@@ -237,7 +224,7 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
               onClick={() => setQuery("")}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+              <Icon name="close" size="xs" />
             </button>
           )}
         </div>
@@ -279,10 +266,9 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
               <div key={rel} className="mb-1">
                 {/* File header */}
                 <div className="sticky top-0 flex items-center gap-1.5 bg-card/90 px-2.5 py-1 backdrop-blur">
-                  <HugeiconsIcon
-                    icon={FileCodeIcon}
-                    size={11}
-                    strokeWidth={1.75}
+                  <Icon
+                    name="file-code"
+                    size="xs"
                     className="shrink-0 text-muted-foreground/60"
                   />
                   <span className="truncate text-[10.5px] font-semibold">

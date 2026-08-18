@@ -4,17 +4,11 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { native, type GitCheckpoint } from "@/modules/ai/lib/native";
-import {
-  ArrowDown01Icon,
-  Delete02Icon,
-  MagicWand01Icon,
-  RefreshIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useState } from "react";
 
 type Props = {
@@ -95,21 +89,12 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
         onClick={() => setExpanded((p) => !p)}
         className="flex h-7 w-full items-center gap-2 px-3 text-left text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
       >
-        <HugeiconsIcon
-          icon={ArrowDown01Icon}
-          size={10}
-          strokeWidth={2}
-          className={cn(
-            "shrink-0 transition-transform",
-            expanded ? "rotate-0" : "-rotate-90",
-          )}
+        <Icon
+          name="chevron-down"
+          size="xs"
+          className={cn( "shrink-0 transition-transform", expanded ? "rotate-0" : "-rotate-90", )}
         />
-        <HugeiconsIcon
-          icon={MagicWand01Icon}
-          size={12}
-          strokeWidth={1.75}
-          className="shrink-0"
-        />
+        <Icon name="magic" className="shrink-0" />
         <span>AI checkpoints</span>
         {checkpoints.length > 0 && (
           <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-[9.5px] tabular-nums text-muted-foreground/85">
@@ -132,11 +117,10 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
               onClick={() => void load()}
               disabled={loading}
             >
-              <HugeiconsIcon
-                icon={RefreshIcon}
-                size={10}
-                strokeWidth={1.75}
-                className={loading ? "animate-spin" : ""}
+              <Icon
+                name="refresh"
+                size="xs"
+                className={loading ? "nexis-spin" : ""}
               />
             </Button>
           </div>
@@ -186,7 +170,7 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
                     title="Delete this checkpoint"
                     className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                   >
-                    <HugeiconsIcon icon={Delete02Icon} size={10} strokeWidth={1.75} />
+                    <Icon name="delete" size="xs" />
                   </button>
                 </div>
               ))}

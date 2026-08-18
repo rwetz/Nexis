@@ -4,18 +4,11 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon, type IconName } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverAnchor } from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import {
-  Cancel01Icon,
-  CodeIcon,
-  HashtagIcon,
-  Key01Icon,
-  TerminalIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useComposer, type FileAttachment } from "../lib/composer";
 import { useWorkspaceFiles } from "../hooks/useWorkspaceFiles";
@@ -369,7 +362,7 @@ export function AiInputBar({ compact }: { compact?: boolean } = {}) {
             className="animate-in fade-in slide-in-from-bottom-0.5 duration-150 flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground"
           >
             {c.voice.recording ? (
-              <span className="size-1.5 animate-pulse rounded-full bg-destructive" />
+              <span className="size-1.5 nexis-blink rounded-full bg-destructive" />
             ) : (
               <Spinner className="size-3" />
             )}
@@ -393,7 +386,7 @@ function ChipsRow({
   onRemoveFile: (id: string) => void;
   snippets: Snippet[];
   onRemoveSnippet: (id: string) => void;
-  commands: { name: string; label: string; icon: typeof HashtagIcon }[];
+  commands: { name: string; label: string; icon: IconName }[];
   onRemoveCommand: (name: string) => void;
 }) {
   if (files.length === 0 && snippets.length === 0 && commands.length === 0)
@@ -406,12 +399,7 @@ function ChipsRow({
             className="animate-in fade-in zoom-in-90 duration-150 group flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-[11px]"
             title={cmd.label}
           >
-            <HugeiconsIcon
-              icon={cmd.icon}
-              size={11}
-              strokeWidth={1.75}
-              className="text-muted-foreground"
-            />
+            <Icon name={cmd.icon} size="xs" className="text-muted-foreground" />
             <span className="font-medium">#{cmd.name}</span>
             <button
               type="button"
@@ -419,7 +407,7 @@ function ChipsRow({
               className="ml-0.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
               aria-label="Remove command"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+              <Icon name="close" size="xs" />
             </button>
           </div>
         ))}
@@ -429,12 +417,7 @@ function ChipsRow({
             className="animate-in fade-in zoom-in-90 duration-150 group flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary"
             title={s.description || s.name}
           >
-            <HugeiconsIcon
-              icon={HashtagIcon}
-              size={11}
-              strokeWidth={2}
-              className="opacity-80"
-            />
+            <Icon name="hash" size="xs" className="opacity-80" />
             <span className="font-medium">{s.handle}</span>
             <button
               type="button"
@@ -442,7 +425,7 @@ function ChipsRow({
               className="ml-0.5 opacity-0 transition-opacity group-hover:opacity-100"
               aria-label="Remove snippet"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+              <Icon name="close" size="xs" />
             </button>
           </div>
         ))}
@@ -454,10 +437,9 @@ function ChipsRow({
             {f.kind === "image" && f.url ? (
               <img src={f.url} alt="" className="size-4 rounded object-cover" />
             ) : f.kind === "selection" ? (
-              <HugeiconsIcon
-                icon={f.source === "editor" ? CodeIcon : TerminalIcon}
-                size={11}
-                strokeWidth={1.75}
+              <Icon
+                name={f.source === "editor" ? "code" : "terminal"}
+                size="xs"
                 className="text-muted-foreground"
               />
             ) : (
@@ -479,7 +461,7 @@ function ChipsRow({
               className="ml-0.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
               aria-label="Remove"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+              <Icon name="close" size="xs" />
             </button>
           </div>
         ))}
@@ -516,7 +498,7 @@ export function AiInputBarConnect({ onAdd }: { onAdd: () => void }) {
           OS keychain.
         </span>
         <Button size="xs" onClick={onAdd}>
-          <HugeiconsIcon icon={Key01Icon} />
+          <Icon name="key" size="sm" />
           Connect provider
         </Button>
       </div>

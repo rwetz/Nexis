@@ -6,6 +6,7 @@
 
 "use client";
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
 import {
@@ -15,8 +16,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import type { UIMessage } from "ai";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import {
@@ -283,7 +282,7 @@ export const MessageBranchPrevious = ({
       variant="ghost"
       {...props}
     >
-      {children ?? <HugeiconsIcon icon={ArrowLeft01Icon} size={14} />}
+      {children ?? <Icon name="chevron-left" size="md" />}
     </Button>
   );
 };
@@ -306,7 +305,7 @@ export const MessageBranchNext = ({
       variant="ghost"
       {...props}
     >
-      {children ?? <HugeiconsIcon icon={ArrowRight01Icon} size={14} />}
+      {children ?? <Icon name="chevron-right" size="md" />}
     </Button>
   );
 };

@@ -4,10 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { useUpdater } from "@/modules/updater";
-import { GithubIcon, Globe02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { getName, getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { arch, platform } from "@tauri-apps/plugin-os";
@@ -108,7 +107,7 @@ export function AboutSection() {
             onClick={() => void openUrl(REPO_URL)}
             className="inline-flex items-center gap-1.5 rounded-md text-[12px] underline-offset-2 hover:text-foreground hover:underline"
           >
-            <HugeiconsIcon icon={GithubIcon} size={12} strokeWidth={1.75} />
+            <Icon name="brand-github" />
             rwetz00/nexis
           </button>
         </dd>
@@ -119,7 +118,7 @@ export function AboutSection() {
             onClick={() => void openUrl(WEBSITE)}
             className="inline-flex items-center gap-1.5 rounded-md text-[12px] underline-offset-2 hover:text-foreground hover:underline"
           >
-            <HugeiconsIcon icon={Globe02Icon} size={12} strokeWidth={1.75} />
+            <Icon name="globe" />
             nexis.app
           </button>
         </dd>
@@ -140,7 +139,7 @@ export function AboutSection() {
             onClick={() => void openUrl(REPO_URL)}
             className="gap-1.5"
           >
-            <HugeiconsIcon icon={GithubIcon} size={12} strokeWidth={1.75} />
+            <Icon name="brand-github" />
             View on GitHub
           </Button>
           <Button

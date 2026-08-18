@@ -14,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Spinner } from "@/components/ui/spinner";
@@ -26,22 +27,7 @@ import {
 } from "@/components/ui/tooltip";
 import { IS_MAC } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { fileIconUrl } from "@/modules/explorer/lib/iconResolver";
-import {
-  AiContentGenerator02Icon,
-  Alert02Icon,
-  ArrowDown01Icon,
-  ArrowRight01Icon,
-  ArrowUp01Icon,
-  CheckmarkCircle01Icon,
-  Download01Icon,
-  FolderCloudIcon,
-  FolderGitTwoIcon,
-  GitBranchIcon,
-  Refresh01Icon,
-  RemoveSquareIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { FileTypeIcon } from "@/modules/explorer/lib/FileTypeIcon";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   memo,
@@ -478,12 +464,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
               />
             ) : (
               <div className="inline-flex min-w-0 items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-[11.5px] font-medium leading-none text-foreground transition-colors hover:bg-foreground/10">
-                <HugeiconsIcon
-                  icon={FolderGitTwoIcon}
-                  size={12}
-                  strokeWidth={1.9}
-                  className="shrink-0 text-muted-foreground"
-                />
+                <Icon name="folder-git" className="shrink-0 text-muted-foreground" />
                 <span className="max-w-[140px] truncate">{repoLabel}</span>
               </div>
             )}
@@ -491,21 +472,13 @@ export const SourceControlPanel = memo(function SourceControlPanel({
               <div className="flex shrink-0 items-center gap-0.5 text-[10px] font-semibold tabular-nums leading-none text-muted-foreground">
                 {scm.status.ahead > 0 ? (
                   <span className="inline-flex items-center gap-0.5 rounded-md border border-border/60 px-1 py-0.5">
-                    <HugeiconsIcon
-                      icon={ArrowUp01Icon}
-                      size={9}
-                      strokeWidth={2.2}
-                    />
+                    <Icon name="chevron-up" size="xs" />
                     {scm.status.ahead}
                   </span>
                 ) : null}
                 {scm.status.behind > 0 ? (
                   <span className="inline-flex items-center gap-0.5 rounded-md border border-border/60 px-1 py-0.5">
-                    <HugeiconsIcon
-                      icon={ArrowDown01Icon}
-                      size={9}
-                      strokeWidth={2.2}
-                    />
+                    <Icon name="chevron-down" size="xs" />
                     {scm.status.behind}
                   </span>
                 ) : null}
@@ -527,11 +500,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
               {fetchBusy ? (
                 <Spinner className="size-3" />
               ) : (
-                <HugeiconsIcon
-                  icon={FolderCloudIcon}
-                  size={14}
-                  strokeWidth={1.85}
-                />
+                <Icon name="folder-remote" size="md" />
               )}
             </IconActionButton>
             <IconActionButton
@@ -553,11 +522,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
               {pullBusy ? (
                 <Spinner className="size-3" />
               ) : (
-                <HugeiconsIcon
-                  icon={Download01Icon}
-                  size={14}
-                  strokeWidth={1.9}
-                />
+                <Icon name="download" size="md" />
               )}
             </IconActionButton>
             <IconActionButton
@@ -569,11 +534,10 @@ export const SourceControlPanel = memo(function SourceControlPanel({
               {isRefreshing ? (
                 <Spinner className="size-3.5" />
               ) : (
-                <HugeiconsIcon
-                  icon={Refresh01Icon}
-                  size={14}
-                  strokeWidth={1.9}
-                  className={cn(refreshAnimating && "animate-spin")}
+                <Icon
+                  name="refresh"
+                  size="md"
+                  className={cn(refreshAnimating && "nexis-spin")}
                 />
               )}
             </IconActionButton>
@@ -586,17 +550,10 @@ export const SourceControlPanel = memo(function SourceControlPanel({
             onClick={() => onOpenGitGraph()}
             className="group flex shrink-0 cursor-pointer items-center gap-2 border-b border-border/40 px-3 py-2 text-left text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
           >
-            <HugeiconsIcon
-              icon={GitBranchIcon}
-              size={13}
-              strokeWidth={1.85}
-              className="shrink-0"
-            />
+            <Icon name="git-branch" className="shrink-0" />
             <span className="flex-1 text-[12px] font-medium">Commit Graph</span>
-            <HugeiconsIcon
-              icon={ArrowRight01Icon}
-              size={12}
-              strokeWidth={2}
+            <Icon
+              name="chevron-right"
               className="shrink-0 opacity-50 transition-transform group-hover:translate-x-0.5"
             />
           </button>
@@ -608,12 +565,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
 
         {scm.panelState === "no-repo" ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-            <HugeiconsIcon
-              icon={FolderGitTwoIcon}
-              size={28}
-              strokeWidth={1.25}
-              className="text-muted-foreground/30"
-            />
+            <Icon name="folder-git" size="xl" className="text-muted-foreground/30" />
             <div className="space-y-1">
               <div className="text-[12px] font-medium text-foreground/70">No repository</div>
               <div className="max-w-56 text-[11px] leading-relaxed text-muted-foreground/60">
@@ -683,11 +635,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                         {scm.actionBusy === "generate-message" ? (
                           <Spinner className="size-3" />
                         ) : (
-                          <HugeiconsIcon
-                            icon={AiContentGenerator02Icon}
-                            size={14}
-                            strokeWidth={1.75}
-                          />
+                          <Icon name="ai-generate" size="md" />
                         )}
                       </button>
                     </TooltipTrigger>
@@ -778,7 +726,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                   onClick={() => setPrDialogOpen(true)}
                   className="flex w-full items-center justify-center gap-1.5 rounded border border-border/50 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
                 >
-                  <HugeiconsIcon icon={AiContentGenerator02Icon} size={12} strokeWidth={1.75} />
+                  <Icon name="ai-generate" />
                   Generate PR Description
                 </button>
               )}
@@ -1000,12 +948,7 @@ function BranchSwitcher({
           title="Switch branch"
           className="inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-[11.5px] font-medium leading-none text-foreground transition-colors hover:bg-foreground/10"
         >
-          <HugeiconsIcon
-            icon={GitBranchIcon}
-            size={12}
-            strokeWidth={1.9}
-            className="shrink-0 text-muted-foreground"
-          />
+          <Icon name="git-branch" className="shrink-0 text-muted-foreground" />
           <span className="max-w-[140px] truncate">{label}</span>
         </button>
       </DropdownMenuTrigger>
@@ -1062,11 +1005,7 @@ function CleanTreeHint({ repoLabel }: { repoLabel: string }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1.5 px-4 text-center">
       <div className="flex size-8 items-center justify-center rounded-full border border-border/55 text-muted-foreground">
-        <HugeiconsIcon
-          icon={CheckmarkCircle01Icon}
-          size={16}
-          strokeWidth={1.6}
-        />
+        <Icon name="success" size="md" />
       </div>
       <div className="text-[12px] font-medium text-foreground">
         Working tree clean
@@ -1106,12 +1045,7 @@ const RowRenderer = memo(function RowRenderer(props: RowRendererProps) {
 function DivergedBanner() {
   return (
     <div className="mx-2 mt-1 flex h-7 items-center gap-1.5 rounded-md border border-border/60 bg-foreground/[0.04] px-2 text-[10.5px] leading-none text-muted-foreground">
-      <HugeiconsIcon
-        icon={Alert02Icon}
-        size={11}
-        strokeWidth={1.9}
-        className="shrink-0"
-      />
+      <Icon name="alert" size="xs" className="shrink-0" />
       <span className="min-w-0 flex-1 truncate">
         <span className="font-medium text-foreground/85">
           Diverged from upstream
@@ -1165,7 +1099,6 @@ const EntryRow = memo(function EntryRow({
   const entry = row.entry;
   const isSelected = selectedPath === entry.path;
   const fileName = basename(entry.path);
-  const iconUrl = fileIconUrl(fileName);
   const pathLabel = entryPathLabel(entry);
   const showDiscard = entry.unstaged;
   const isStageBusy =
@@ -1219,11 +1152,7 @@ const EntryRow = memo(function EntryRow({
         }}
         className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
       >
-        {iconUrl ? (
-          <img src={iconUrl} alt="" className="size-4 shrink-0" />
-        ) : (
-          <span className="size-4 shrink-0" />
-        )}
+        <FileTypeIcon name={fileName} className="size-4 shrink-0" />
         <div className="flex min-w-0 flex-1 items-baseline gap-1.5 leading-none">
           <span
             className={cn(
@@ -1255,11 +1184,7 @@ const EntryRow = memo(function EntryRow({
             {isDiscardBusy ? (
               <Spinner className="size-3" />
             ) : (
-              <HugeiconsIcon
-                icon={RemoveSquareIcon}
-                size={11}
-                strokeWidth={1.9}
-              />
+              <Icon name="remove-box" size="xs" />
             )}
           </IconActionButton>
         </div>

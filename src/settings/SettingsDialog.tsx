@@ -11,22 +11,9 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Icon, type IconName } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  AiScanIcon,
-  Cancel01Icon,
-  CodeIcon,
-  InformationCircleIcon,
-  KeyboardIcon,
-  LayersIcon,
-  PaintBoardIcon,
-  Search01Icon,
-  Settings01Icon,
-  UserMultiple02Icon,
-  VariableIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import {
   JSX,
@@ -52,7 +39,7 @@ import { ThemesSection } from "./sections/ThemesSection";
 type TabDef = {
   id: SettingsTab;
   label: string;
-  icon: typeof Settings01Icon;
+  icon: IconName;
   component: () => JSX.Element;
   /**
    * Search terms that route to this section. These are the setting titles the
@@ -72,7 +59,7 @@ const TAB_GROUPS: TabGroup[] = [
       {
         id: "general",
         label: "General",
-        icon: Settings01Icon,
+        icon: "settings",
         component: GeneralSection,
         keywords:
           "vim mode word wrap hidden files webgl renderer inline suggestions default shell font family size weight letter spacing scrollback cursor style blink clipboard osc 52 confirm busy terminal explain failed commands launch at login restore window position tabs quick terminal height focus loss",
@@ -80,14 +67,14 @@ const TAB_GROUPS: TabGroup[] = [
       {
         id: "features",
         label: "Features",
-        icon: LayersIcon,
+        icon: "layers",
         component: FeaturesSection,
         keywords: "presets toggles experimental enable disable",
       },
       {
         id: "themes",
         label: "Themes",
-        icon: PaintBoardIcon,
+        icon: "theme",
         component: ThemesSection,
         keywords:
           "theme colors palette appearance dark light community themes your themes halcyon meridian cinder aurelian thicket vermillion",
@@ -95,7 +82,7 @@ const TAB_GROUPS: TabGroup[] = [
       {
         id: "shortcuts",
         label: "Shortcuts",
-        icon: KeyboardIcon,
+        icon: "keyboard",
         component: ShortcutsSection,
         keywords: "keybindings keyboard hotkey chord bind reset to default",
       },
@@ -107,7 +94,7 @@ const TAB_GROUPS: TabGroup[] = [
       {
         id: "models",
         label: "Models",
-        icon: AiScanIcon,
+        icon: "ai-scan",
         component: ModelsSection,
         keywords:
           "chat model autocomplete provider base url model id context api key token anthropic claude openai cerebras",
@@ -115,7 +102,7 @@ const TAB_GROUPS: TabGroup[] = [
       {
         id: "agents",
         label: "Agents",
-        icon: UserMultiple02Icon,
+        icon: "users",
         component: AgentsSection,
         keywords: "agent subagent custom prompt tools",
       },
@@ -127,14 +114,14 @@ const TAB_GROUPS: TabGroup[] = [
       {
         id: "environment",
         label: "Environment",
-        icon: VariableIcon,
+        icon: "variable",
         component: EnvironmentSection,
         keywords: "environment variables env path export",
       },
       {
         id: "formatters",
         label: "Formatters",
-        icon: CodeIcon,
+        icon: "code",
         component: FormattersSection,
         keywords:
           "format on save formatter prettier rustfmt biome lint reset to default",
@@ -147,7 +134,7 @@ const TAB_GROUPS: TabGroup[] = [
       {
         id: "about",
         label: "About",
-        icon: InformationCircleIcon,
+        icon: "info",
         component: AboutSection,
         keywords: "version update license source code github website build",
       },
@@ -271,10 +258,8 @@ export function SettingsDialog() {
                 bottom borders read as one line across the dialog. */}
             <div className="flex h-12 shrink-0 items-center border-b border-border/60 px-3">
               <div className="relative w-full">
-                <HugeiconsIcon
-                  icon={Search01Icon}
-                  size={13}
-                  strokeWidth={1.75}
+                <Icon
+                  name="search"
                   className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground"
                 />
                 <Input
@@ -319,12 +304,7 @@ export function SettingsDialog() {
                             : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
                         ].join(" ")}
                       >
-                        <HugeiconsIcon
-                          icon={t.icon}
-                          size={13}
-                          strokeWidth={1.75}
-                          className="shrink-0"
-                        />
+                        <Icon name={t.icon} className="shrink-0" />
                         <span className="truncate">{t.label}</span>
                       </button>
                     );
@@ -345,7 +325,7 @@ export function SettingsDialog() {
             <header className="flex h-12 shrink-0 items-center justify-end border-b border-border/60 px-3">
               <DialogClose asChild>
                 <Button variant="ghost" size="icon-sm" className="shrink-0">
-                  <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
+                  <Icon name="close" size="sm" />
                   <span className="sr-only">Close</span>
                 </Button>
               </DialogClose>

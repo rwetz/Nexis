@@ -4,49 +4,42 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon, type IconName } from "@/components/icon";
 import type { ProviderId } from "@/modules/ai/config";
-import {
-  AppleIcon,
-  BrainIcon,
-  ChatGptIcon,
-  ClaudeIcon,
-  ComputerIcon,
-  FlashIcon,
-  GoogleGeminiIcon,
-  Grok02Icon,
-  CpuIcon,
-  DeepseekIcon,
-  GlobeIcon,
-  MistralIcon,
-  PlugIcon,
-  ServerStack01Icon,
-  ServerStack02Icon,
-  Layers01Icon,
-  RocketIcon,
-  SparklesIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { PROVIDER_MARKS } from "./providerMarks";
 
-const ICON_BY_PROVIDER = {
-  openai: ChatGptIcon,
-  anthropic: ClaudeIcon,
-  google: GoogleGeminiIcon,
-  xai: Grok02Icon,
-  cerebras: CpuIcon,
-  groq: FlashIcon,
-  deepseek: DeepseekIcon,
-  mistral: MistralIcon,
-  openrouter: GlobeIcon,
-  zai: SparklesIcon,
-  "openai-compatible": PlugIcon,
-  lmstudio: ComputerIcon,
-  mlx: AppleIcon,
-  ollama: ServerStack01Icon,
-  vllm: RocketIcon,
-  xllm: ServerStack02Icon,
-  sglang: Layers01Icon,
-  huggingface: BrainIcon,
-} as const satisfies Record<ProviderId, typeof ChatGptIcon>;
+/**
+ * Fallback glyph for providers with no brand mark in {@link PROVIDER_MARKS}.
+ *
+ * Three of these are real logos that Phosphor happens to ship (OpenAI, X for
+ * xAI, Apple for MLX). The rest are deliberate generics chosen to say something
+ * true about the provider — Cerebras builds silicon, Groq sells inference
+ * speed, `openai-compatible` is by definition a socket — rather than pretending
+ * to be a logo we don't have.
+ *
+ * The map stays exhaustive over `ProviderId` even for providers that *do* have
+ * a mark, so adding a provider fails the build until it is handled here.
+ */
+const FALLBACK_GLYPH = {
+  openai: "brand-openai",
+  xai: "brand-xai",
+  mlx: "brand-apple",
+  cerebras: "cpu",
+  groq: "flash",
+  zai: "sparkle",
+  "openai-compatible": "plugin",
+  xllm: "server-alt",
+  sglang: "layers",
+  anthropic: "sparkle",
+  google: "sparkle",
+  deepseek: "brain",
+  mistral: "flash",
+  openrouter: "globe",
+  lmstudio: "computer",
+  ollama: "server",
+  vllm: "rocket",
+  huggingface: "brain",
+} as const satisfies Record<ProviderId, IconName>;
 
 type Props = {
   provider: ProviderId;
@@ -55,12 +48,23 @@ type Props = {
 };
 
 export function ProviderIcon({ provider, size = 14, className }: Props) {
+  const mark = PROVIDER_MARKS[provider];
+  if (mark) {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        width={size}
+        height={size}
+        fill="currentColor"
+        aria-hidden
+        focusable="false"
+        className={className}
+      >
+        <path d={mark} />
+      </svg>
+    );
+  }
   return (
-    <HugeiconsIcon
-      icon={ICON_BY_PROVIDER[provider]}
-      size={size}
-      strokeWidth={1.75}
-      className={className}
-    />
+    <Icon name={FALLBACK_GLYPH[provider]} size={size} className={className} />
   );
 }

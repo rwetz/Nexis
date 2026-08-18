@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,14 +52,6 @@ import {
   setOpenaiCompatibleContextLimit,
   setOpenaiCompatibleModelId,
 } from "@/modules/settings/store";
-import {
-  Add01Icon,
-  ArrowDown01Icon,
-  ArrowUpRight01Icon,
-  Cancel01Icon,
-  CheckmarkCircle02Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useMemo, useState } from "react";
@@ -311,7 +304,7 @@ export function ModelsSection() {
         {visibleProviders.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border/55 bg-card/30 px-4 py-10 text-center">
             <div className="mx-auto mb-2 flex size-8 items-center justify-center rounded-full border border-border/50 text-muted-foreground/50">
-              <HugeiconsIcon icon={Add01Icon} size={15} strokeWidth={1.75} />
+              <Icon name="add" size="md" />
             </div>
             <p className="text-[12px] font-medium text-foreground/70">
               No providers connected yet
@@ -413,7 +406,7 @@ function AddProviderMenu({
           disabled={disabled}
           className="h-7 gap-1.5 px-2.5 text-[11px]"
         >
-          <HugeiconsIcon icon={Add01Icon} size={12} strokeWidth={2} />
+          <Icon name="add" />
           Add provider
         </Button>
       </DropdownMenuTrigger>
@@ -520,12 +513,7 @@ function DefaultModelPicker({
             <span className="truncate">{m.label}</span>
             <span className="text-muted-foreground">· {m.hint}</span>
           </span>
-          <HugeiconsIcon
-            icon={ArrowDown01Icon}
-            size={11}
-            strokeWidth={2}
-            className="opacity-70"
-          />
+          <Icon name="chevron-down" size="xs" className="opacity-70" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -644,12 +632,7 @@ function AutocompleteRow({
                     · {currentModel.hint}
                   </span>
                 </span>
-                <HugeiconsIcon
-                  icon={ArrowDown01Icon}
-                  size={11}
-                  strokeWidth={2}
-                  className="opacity-70"
-                />
+                <Icon name="chevron-down" size="xs" className="opacity-70" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -761,7 +744,7 @@ function LocalProviderCard({
             variant="outline"
             className="ml-1 h-4 gap-1 border-border/60 bg-muted/40 px-1.5 text-[10px] font-normal text-muted-foreground"
           >
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} size={9} strokeWidth={2} />
+            <Icon name="success" size="xs" />
             Connected
           </Badge>
         ) : null}
@@ -771,7 +754,7 @@ function LocalProviderCard({
           className="ml-auto inline-flex items-center gap-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground"
         >
           Docs
-          <HugeiconsIcon icon={ArrowUpRight01Icon} size={11} strokeWidth={1.75} />
+          <Icon name="external" size="xs" />
         </button>
         <Button
           size="icon"
@@ -780,7 +763,7 @@ function LocalProviderCard({
           title="Remove provider"
           className="size-7 text-muted-foreground hover:text-destructive"
         >
-          <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={1.75} />
+          <Icon name="close" />
         </Button>
       </div>
 
@@ -862,7 +845,7 @@ function LocalProviderCard({
                   title="Remove key"
                   className="size-7 text-muted-foreground hover:text-destructive"
                 >
-                  <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={1.75} />
+                  <Icon name="close" />
                 </Button>
               </div>
             ) : (
@@ -936,7 +919,7 @@ function StatusLine({
   if (status === "ok") {
     return (
       <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground">
-        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={11} strokeWidth={2} />
+        <Icon name="success" size="xs" />
         Reachable — server responded.
       </span>
     );

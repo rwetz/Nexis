@@ -4,12 +4,11 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { PACK_IDS, PACKS, packForView, type PackId } from "@/lib/packs";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setEnabledPacks } from "@/modules/settings/store";
-import { LayersIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { isSidebarViewId, type SidebarView } from "./types";
 
 type Props = {
@@ -47,12 +46,7 @@ export function PackGatePlaceholder({ view, pack: packProp, onShowExplorer }: Pr
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-      <HugeiconsIcon
-        icon={LayersIcon}
-        size={22}
-        strokeWidth={1.5}
-        className="text-muted-foreground/60"
-      />
+      <Icon name="layers" size="lg" className="text-muted-foreground/60" />
       <div className="flex flex-col gap-1">
         <p className="text-[12.5px] font-medium text-foreground">
           This panel is part of the {def.label} pack

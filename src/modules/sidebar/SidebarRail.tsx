@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon, type IconName } from "@/components/icon";
 import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -16,39 +17,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Bug01Icon,
-  Clock01Icon,
-  Database01Icon,
-  FileCodeIcon,
-  FolderGitTwoIcon,
-  FolderTreeIcon,
-  LayersIcon,
-  ListViewIcon,
-  MoreHorizontalIcon,
-  PinIcon,
-  CpuIcon,
-  Router01Icon,
-  RocketIcon,
-  TaskAdd01Icon,
-  TerminalIcon,
-  ComputerTerminal01Icon,
-  TestTube01Icon,
-  Time01Icon,
-  Wrench01Icon,
-  Cancel01Icon,
-} from "@hugeicons/core-free-icons";
-import {
-  AiBrain01Icon,
-  BookmarkAdd01Icon,
-  CodeSquareIcon,
-  FlashIcon,
-  Globe02Icon,
-  MagicWand01Icon,
-  Note01Icon,
-  SearchCodeIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { viewEnabled } from "@/lib/packs";
 import { usePluginRegistry } from "@/lib/plugins/registry";
 import { usePreferencesStore } from "@/modules/settings/preferences";
@@ -108,7 +76,7 @@ const RAIL_GROUPS: RailGroup[] = ["Navigation", "Code", "AI", "Dev Tools", "Adva
 type RailItemDef = {
   id: SidebarView;
   label: string;
-  icon: Parameters<typeof HugeiconsIcon>[0]["icon"];
+  icon: IconName;
   group: RailGroup;
   badge?: number;
 };
@@ -132,31 +100,31 @@ export function SidebarRail({
   const [popoverOpen, setPopoverOpen] = useState(false);
 
   const builtinItems: RailItemDef[] = [
-    { id: "explorer",        label: "Files",            icon: FolderTreeIcon,    group: "Navigation" },
-    { id: "recent-files",   label: "Recent Files",     icon: Clock01Icon,       group: "Navigation" },
-    { id: "outline",        label: "Outline",          icon: ListViewIcon,      group: "Navigation" },
-    { id: "bookmarks",      label: "Bookmarks",        icon: BookmarkAdd01Icon, group: "Navigation" },
-    { id: "source-control", label: "Source Control",   icon: FolderGitTwoIcon,  group: "Code", badge: changedCount },
-    { id: "build",          label: "Build",            icon: Wrench01Icon,      group: "Code" },
-    { id: "tests",          label: "Tests",            icon: TestTube01Icon,    group: "Code" },
-    { id: "debugger",       label: "Debugger",         icon: Bug01Icon,         group: "Code" },
-    { id: "symbol-search",  label: "Symbol Search",    icon: SearchCodeIcon,    group: "Code" },
-    { id: "code-review",    label: "Code Review",      icon: CodeSquareIcon,    group: "Code" },
-    { id: "refactor",       label: "AI Refactor",      icon: MagicWand01Icon,   group: "AI" },
-    { id: "prompt-templates", label: "Prompt Templates", icon: FlashIcon,       group: "AI" },
-    { id: "processes",      label: "Activity",         icon: TaskAdd01Icon,     group: "Dev Tools", badge: runningProcessCount },
-    { id: "system-monitor", label: "System Monitor",   icon: CpuIcon,           group: "Dev Tools" },
-    { id: "ports",          label: "Ports",            icon: Router01Icon,      group: "Dev Tools" },
-    { id: "repl",           label: "REPL",             icon: ComputerTerminal01Icon, group: "Dev Tools" },
-    { id: "database",       label: "Database",         icon: Database01Icon,    group: "Dev Tools" },
-    { id: "ml",             label: "ML Lab",           icon: AiBrain01Icon,     group: "Dev Tools" },
-    { id: "profiles",       label: "Profiles",         icon: LayersIcon,        group: "Dev Tools" },
-    { id: "ssh",            label: "SSH",              icon: TerminalIcon,      group: "Dev Tools" },
-    { id: "share",          label: "Share",            icon: Globe02Icon,       group: "Advanced" },
-    { id: "notes",          label: "Workspace Notes",  icon: Note01Icon,        group: "Advanced" },
-    { id: "shell-snippets", label: "Shell Snippets",   icon: ComputerTerminal01Icon, group: "Advanced" },
-    { id: "snippets",       label: "Snippets",         icon: FileCodeIcon,      group: "Advanced" },
-    { id: "release",        label: "Release",          icon: RocketIcon,        group: "Advanced" },
+    { id: "explorer",        label: "Files",            icon: "explorer",    group: "Navigation" },
+    { id: "recent-files",   label: "Recent Files",     icon: "clock",       group: "Navigation" },
+    { id: "outline",        label: "Outline",          icon: "outline",      group: "Navigation" },
+    { id: "bookmarks",      label: "Bookmarks",        icon: "bookmark-add", group: "Navigation" },
+    { id: "source-control", label: "Source Control",   icon: "folder-git",  group: "Code", badge: changedCount },
+    { id: "build",          label: "Build",            icon: "wrench",      group: "Code" },
+    { id: "tests",          label: "Tests",            icon: "test",    group: "Code" },
+    { id: "debugger",       label: "Debugger",         icon: "debug",         group: "Code" },
+    { id: "symbol-search",  label: "Symbol Search",    icon: "search-code",    group: "Code" },
+    { id: "code-review",    label: "Code Review",      icon: "code-box",    group: "Code" },
+    { id: "refactor",       label: "AI Refactor",      icon: "magic",   group: "AI" },
+    { id: "prompt-templates", label: "Prompt Templates", icon: "flash",       group: "AI" },
+    { id: "processes",      label: "Activity",         icon: "tasks",     group: "Dev Tools", badge: runningProcessCount },
+    { id: "system-monitor", label: "System Monitor",   icon: "cpu",           group: "Dev Tools" },
+    { id: "ports",          label: "Ports",            icon: "network",      group: "Dev Tools" },
+    { id: "repl",           label: "REPL",             icon: "terminal", group: "Dev Tools" },
+    { id: "database",       label: "Database",         icon: "database",    group: "Dev Tools" },
+    { id: "ml",             label: "ML Lab",           icon: "brain",     group: "Dev Tools" },
+    { id: "profiles",       label: "Profiles",         icon: "layers",        group: "Dev Tools" },
+    { id: "ssh",            label: "SSH",              icon: "terminal",      group: "Dev Tools" },
+    { id: "share",          label: "Share",            icon: "globe",       group: "Advanced" },
+    { id: "notes",          label: "Workspace Notes",  icon: "note",        group: "Advanced" },
+    { id: "shell-snippets", label: "Shell Snippets",   icon: "terminal", group: "Advanced" },
+    { id: "snippets",       label: "Snippets",         icon: "file-code",      group: "Advanced" },
+    { id: "release",        label: "Release",          icon: "rocket",        group: "Advanced" },
   ];
 
   // Views whose expansion pack is off disappear from the rail and the
@@ -176,7 +144,7 @@ export function SidebarRail({
   ).map((p) => ({
     id: pluginPanelViewId(p.id),
     label: p.title,
-    icon: p.icon ?? LayersIcon,
+    icon: p.icon ?? "layers",
     group: p.group ?? "Advanced",
   }));
 
@@ -244,7 +212,7 @@ export function SidebarRail({
                       : "text-muted-foreground hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]",
                   )}
                 >
-                  <HugeiconsIcon icon={MoreHorizontalIcon} size={14} strokeWidth={1.75} />
+                  <Icon name="more" size="md" />
                   {/* Dot indicator if active view is in overflow */}
                   {overflowItems.some((i) => i.id === activeView) && (
                     <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
@@ -308,7 +276,7 @@ export function SidebarRail({
                   "focus-visible:ring-2 focus-visible:ring-primary/40",
                 )}
               >
-                <HugeiconsIcon icon={Time01Icon} size={14} strokeWidth={1.75} />
+                <Icon name="clock" size="md" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="top" className="text-xs">Commit history</TooltipContent>
@@ -347,14 +315,10 @@ function RailButton({
               : "text-muted-foreground hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]",
           )}
         >
-          <HugeiconsIcon
-            icon={item.icon}
-            size={14}
-            strokeWidth={isActive ? 2 : 1.75}
-            className={cn(
-              "shrink-0 transition-[stroke-width,color] duration-150",
-              isActive && "text-primary",
-            )}
+          <Icon
+            name={item.icon}
+            size="md"
+            className={cn( "shrink-0 transition-[stroke-width,color] duration-150", isActive && "text-primary", )}
           />
           {badge ? (
             <span className={cn(
@@ -405,14 +369,9 @@ function OverflowRow({
         onClick={onSelect}
         className="flex min-w-0 flex-1 items-center gap-2 text-left"
       >
-        <HugeiconsIcon
-          icon={item.icon}
-          size={13}
-          strokeWidth={isActive ? 2 : 1.75}
-          className={cn(
-            "shrink-0",
-            isActive ? "text-primary" : "text-muted-foreground",
-          )}
+        <Icon
+          name={item.icon}
+          className={cn( "shrink-0", isActive ? "text-primary" : "text-muted-foreground", )}
         />
         <span className={cn(
           "truncate text-[11px] font-medium",
@@ -440,11 +399,7 @@ function OverflowRow({
                 : "text-muted-foreground/40 hover:text-primary opacity-0 group-hover:opacity-100",
             )}
           >
-            <HugeiconsIcon
-              icon={isPinned ? Cancel01Icon : PinIcon}
-              size={11}
-              strokeWidth={1.75}
-            />
+            <Icon name={isPinned ? "close" : "pin"} size="xs" />
           </button>
         </TooltipTrigger>
         <TooltipContent side="right" className="text-xs">

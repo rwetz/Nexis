@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -31,8 +32,6 @@ import {
 import { validateTheme } from "@/modules/theme/validateTheme";
 import { DEFAULT_THEME_ID } from "@/modules/theme/types";
 import type { Theme } from "@/modules/theme/types";
-import { Edit02Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useRef, useState } from "react";
 import { SectionHeader } from "../components/SectionHeader";
@@ -217,7 +216,7 @@ export function ThemesSection() {
               className="h-7 gap-1.5 px-2 text-[11px]"
               onClick={onCreateTheme}
             >
-              <HugeiconsIcon icon={PlusSignIcon} size={11} strokeWidth={2} />
+              <Icon name="add" size="xs" />
               Create
             </Button>
             <Button
@@ -552,7 +551,7 @@ function ThemeGroup({
                     className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                     onClick={() => onEdit(t.id)}
                   >
-                    <HugeiconsIcon icon={Edit02Icon} size={12} strokeWidth={1.75} />
+                    <Icon name="edit" />
                   </button>
                   <button
                     type="button"

@@ -9,11 +9,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Icon } from "@/components/icon";
 import { installHint } from "@/lib/externalTools";
 import { useMissingTools, visibleMissingTools } from "@/lib/missingTools";
 import { cn } from "@/lib/utils";
-import { Alert01Icon, Cancel01Icon, Copy01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
 
 /**
@@ -60,7 +59,7 @@ export function MissingToolsPill() {
             "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
-          <HugeiconsIcon icon={Alert01Icon} size={11} strokeWidth={1.75} />
+          <Icon name="alert" size="xs" />
           <span>
             {tools.length} tool{tools.length > 1 ? "s" : ""} missing
           </span>
@@ -94,7 +93,7 @@ export function MissingToolsPill() {
                     title="Hide for this session"
                     className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100"
                   >
-                    <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+                    <Icon name="close" size="xs" />
                   </button>
                 </div>
 
@@ -105,10 +104,9 @@ export function MissingToolsPill() {
                     title="Copy install command"
                     className="mt-1.5 flex w-full items-center gap-1.5 rounded bg-muted/60 px-1.5 py-1 text-left font-mono text-[10px] text-foreground transition-colors hover:bg-muted"
                   >
-                    <HugeiconsIcon
-                      icon={Copy01Icon}
-                      size={10}
-                      strokeWidth={1.75}
+                    <Icon
+                      name="copy"
+                      size="xs"
                       className="shrink-0 text-muted-foreground"
                     />
                     <span className="truncate">

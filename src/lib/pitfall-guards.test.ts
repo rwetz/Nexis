@@ -241,4 +241,54 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
         "the 128 MB default is per-terminal and this pool holds POOL_MAX_SIZE of them",
     ).toBe(true);
   });
+
+  it("pitfall 18: the icon vendor is imported only by the Icon choke point", () => {
+    // `src/components/icon.tsx` maps semantic names ("close", "refresh") onto
+    // whichever icon package Nexis ships. Two things depend on that being the
+    // ONLY module that names the vendor: swapping the package stays a one-file
+    // change, and one concept keeps rendering as one glyph.
+    //
+    // The direct-import era is what this prevents. It accumulated three
+    // different "refresh" icons, three "checkmark", four "edit", four
+    // "terminal", and 13 pixel sizes across 12 stroke weights — 160 imports
+    // expressing 136 ideas — because nothing stopped a new call site from
+    // reaching for its own. It also leaked the vendor into the plugin API:
+    // `PanelContribution.icon` was typed as a vendor icon object, so a plugin
+    // could not contribute a panel without depending on the same package.
+    //
+    // If this fails: import { Icon } from "@/components/icon" and use a
+    // semantic name. If the glyph you need has no name yet, add it to REGISTRY.
+    const offenders = sourceFiles().filter(
+      ([rel, src]) =>
+        rel !== "components/icon.tsx" &&
+        /from\s*["']@phosphor-icons\/react["']/.test(src),
+    );
+    expect(
+      offenders.map(([rel]) => rel),
+      "only src/components/icon.tsx may import the icon vendor directly — " +
+        "everything else names an icon semantically via <Icon name=...>",
+    ).toEqual([]);
+  });
+
+  it("pitfall 18: file-tree art is retinted to the theme, not to a vendor palette", () => {
+    // The catppuccin file icons ship the Catppuccin Macchiato palette baked
+    // into the art, which no Nexis theme can reach — open Aurelian (warm gold
+    // over umber) and the tree stayed lilac. iconResolver maps those 19 hexes
+    // onto the active theme's own ANSI palette instead.
+    //
+    // The substitution emits `var(--terminal-ansi-*)`, which only resolves if
+    // the art is INLINED into the document: a `data:` URL is an isolated
+    // document that the page's custom properties do not cascade into. Going
+    // back to <img src="data:…"> silently un-themes the whole file tree.
+    const resolver = readSrc("modules/explorer/lib/iconResolver.ts");
+    expect(
+      /--terminal-ansi-/.test(resolver),
+      "iconResolver must map catppuccin's palette onto the theme's ANSI colours",
+    ).toBe(true);
+    expect(
+      /data:image\/svg/.test(resolver),
+      "iconResolver must NOT build data: URLs — theme variables do not " +
+        "cascade into them; render the art inline via <FileTypeIcon> instead",
+    ).toBe(false);
+  });
 });

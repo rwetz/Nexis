@@ -9,6 +9,14 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+    /* Every bare `transition-*` utility inherits the house curve from here, so
+     * the motion system reaches the hundreds of call sites that never named a
+     * duration — not just the handful that did. Tailwind's own defaults are
+     * 150ms/`ease-in-out`, which is the generic feel this replaces. Call sites
+     * that pass an explicit `duration-*`/`ease-*` still win. */
+    --default-transition-duration: var(--dur-tap);
+    --default-transition-timing-function: var(--ease-enter);
+
     --font-heading: var(--font-sans);
     --font-sans: 'Inter Variable', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
@@ -147,6 +155,43 @@
 
 :root {
   --app-zoom: 1;
+
+  /* ── Motion system ────────────────────────────────────────────────────────
+   * Nexis's motion is derived from the thing it is: a terminal. Transitions are
+   * short and decisive, pending states blink at a caret's cadence rather than
+   * breathing, and indeterminate progress *ticks* in discrete steps instead of
+   * sweeping smoothly — because a character cell cannot sweep.
+   *
+   * These tokens exist because the alternative is what was here before: two
+   * ad-hoc `cubic-bezier()` values (one of them Material Design's stock curve),
+   * six unrelated `duration-*` utilities, and otherwise whatever Tailwind and
+   * tw-animate-css default to. That is not a motion design; it is the absence
+   * of one, and it is indistinguishable from every other shadcn/Radix app.
+   *
+   * Use these instead of raw values. If a new duration is genuinely needed, add
+   * a token rather than a one-off.
+   */
+
+  /* Leaving is faster than arriving and accelerates away; arriving decelerates
+   * hard into place. The asymmetry is what makes the UI feel responsive rather
+   * than floaty — an element gets out of the way immediately and settles
+   * precisely. Neither curve overshoots: nothing in a tool should bounce. */
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-enter: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Scaled by how far the thing actually travels. */
+  --dur-tap: 90ms; /* toggles, chevrons, hovers — in-place state changes */
+  --dur-panel: 140ms; /* collapsibles, popovers, tooltips */
+  --dur-window: 200ms; /* dialogs, sheets, anything screen-scale */
+
+  /* A DEC VT100 blinked its cursor at roughly this period. Pending and
+   * live-status indicators use it so they read as "a terminal is waiting"
+   * rather than as a generic pulsing dot. */
+  --blink-cadence: 1060ms;
+
+  /* Indeterminate progress advances in four discrete quarter-turns. */
+  --tick-cadence: 640ms;
+  --tick-steps: 4;
 
   /* Terminal palette defaults — overridden per-theme by applyTheme() */
   --terminal-background: var(--background);
@@ -304,6 +349,78 @@ html *::-webkit-scrollbar {
   }
 }
 
+/* tw-animate-css ships a 150ms linear default for every entrance and exit.
+ * Pull those onto the house curves so overlays share the app's motion instead
+ * of the library's. Individual call sites can still override with a
+ * `duration-*` utility; this only moves the baseline. */
+.animate-in {
+  animation-duration: var(--dur-panel);
+  animation-timing-function: var(--ease-enter);
+}
+.animate-out {
+  animation-duration: var(--dur-tap);
+  animation-timing-function: var(--ease-exit);
+}
+
+/* ── Stepped spinner ────────────────────────────────────────────────────────
+ * Indeterminate progress ticks through four quarter-turns rather than sweeping.
+ * A terminal spinner has always been a character cycling in its cell — it can
+ * only ever be discrete — and `steps()` is how that reads in a GUI. This is
+ * also the single most-seen animation in the app, which is exactly why it
+ * should not be Tailwind's stock `animate-spin`.
+ *
+ * `.nexis-spin` replaces `animate-spin` on the Spinner component and on the
+ * refresh affordances that spin while a fetch is in flight. */
+@keyframes nexis-tick-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.nexis-spin {
+  animation: nexis-tick-spin var(--tick-cadence)
+    steps(var(--tick-steps), end) infinite;
+  transform-origin: 50% 50%;
+}
+
+/* ── Caret blink ────────────────────────────────────────────────────────────
+ * Live/pending status indicators. Tailwind's `animate-pulse` is a sine-eased
+ * opacity breathe — soft, organic, and the same one every shadcn app uses. A
+ * caret does not breathe: it is on, then it is off, with barely any transit
+ * between. The stops below are a near-square wave (~6% of the cycle spent in
+ * transition) — crisp enough to read as a cursor, soft enough that a dozen
+ * simultaneous indicators don't strobe. */
+@keyframes nexis-caret-blink {
+  0%,
+  44% {
+    opacity: 1;
+  }
+  50%,
+  94% {
+    opacity: 0.24;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.nexis-blink {
+  animation: nexis-caret-blink var(--blink-cadence) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Both indicators still have to signal "busy" without moving. The spinner
+   * holds a static glyph; the blink settles at a dimmed-but-visible opacity so
+   * a live indicator is still distinguishable from an idle one. */
+  .nexis-spin {
+    animation: none;
+  }
+  .nexis-blink {
+    animation: none;
+    opacity: 0.62;
+  }
+}
+
 /* AI streaming-label shimmer (CSS port of the former motion variant in
  * ai-elements/shimmer.tsx — sweeps background-position across bg-clip-text). */
 @keyframes nexis-shimmer {
@@ -351,10 +468,10 @@ html *::-webkit-scrollbar {
   overflow: hidden;
 }
 .nexis-collapsible-content[data-state="open"] {
-  animation: nexis-collapsible-down 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  animation: nexis-collapsible-down var(--dur-panel) var(--ease-enter);
 }
 .nexis-collapsible-content[data-state="closed"] {
-  animation: nexis-collapsible-up 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  animation: nexis-collapsible-up var(--dur-tap) var(--ease-exit);
 }
 
 /* ── Breakpoint gutter ─────────────────────────────────────────────────────── */

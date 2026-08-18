@@ -93,7 +93,7 @@ export function MlStatusPill() {
       )}
       title="A model is training — open ML Lab"
     >
-      <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-emerald-500" />
+      <span className="size-1.5 shrink-0 nexis-blink rounded-full bg-emerald-500" />
       <span className="max-w-56 truncate">{label}</span>
     </button>
   );

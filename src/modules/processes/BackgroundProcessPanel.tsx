@@ -4,13 +4,8 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import {
-  Cancel01Icon,
-  ComputerTerminalIcon,
-  RefreshIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useBackgroundProcesses } from "./useBackgroundProcesses";
 
 function relativeTime(ms: number): string {
@@ -39,24 +34,14 @@ export function BackgroundProcessPanel() {
           title="Refresh"
           className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
         >
-          <HugeiconsIcon
-            icon={RefreshIcon}
-            size={12}
-            strokeWidth={1.75}
-            className={loading ? "animate-spin" : ""}
-          />
+          <Icon name="refresh" className={loading ? "nexis-spin" : ""} />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {processes.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-1.5 text-center">
-            <HugeiconsIcon
-              icon={ComputerTerminalIcon}
-              size={22}
-              strokeWidth={1.25}
-              className="text-muted-foreground/40"
-            />
+            <Icon name="terminal" size="lg" className="text-muted-foreground/40" />
             <p className="text-[11px] text-muted-foreground">
               No background processes
             </p>
@@ -121,7 +106,7 @@ function ProcessRow({
           />
         ) : (
           <span
-            className="h-2 w-2 animate-pulse rounded-full bg-primary/70"
+            className="h-2 w-2 nexis-blink rounded-full bg-primary/70"
             title="Running"
           />
         )}
@@ -145,7 +130,7 @@ function ProcessRow({
           title="Kill process"
           className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
         >
-          <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
+          <Icon name="close" />
         </button>
       )}
     </div>

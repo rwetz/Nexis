@@ -12,6 +12,7 @@ import {
   ContextContentHeader,
   ContextTrigger,
 } from "@/components/ai-elements/context";
+import { Icon, type IconName } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,16 +24,6 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { useChat, type UIMessage } from "@ai-sdk/react";
-import {
-  Add01Icon,
-  AlertCircleIcon,
-  ArrowDown01Icon,
-  Cancel01Icon,
-  Delete02Icon,
-  FilterIcon,
-  TerminalIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useMemo } from "react";
 import { estimateCost, getModel, getModelContextLimit } from "../config";
 import type { SessionMeta } from "../lib/sessions";
@@ -47,23 +38,23 @@ import { PlanDiffReview } from "./PlanDiffReview";
 import { TodoStrip } from "./TodoStrip";
 import { useComposer } from "../lib/composer";
 
-const SUGGESTIONS = [
+const SUGGESTIONS: { label: string; hint: string; icon: IconName; text: string }[] = [
   {
     label: "Explain the last error",
     hint: "Read the terminal buffer",
-    icon: AlertCircleIcon,
+    icon: "alert-circle",
     text: "Explain the last error in the terminal.",
   },
   {
     label: "Generate a command",
     hint: "Tell me what you want to do",
-    icon: TerminalIcon,
+    icon: "terminal",
     text: "Give me a command to ",
   },
   {
     label: "Summarize buffer",
     hint: "Recap recent activity",
-    icon: FilterIcon,
+    icon: "filter",
     text: "Summarize what just happened in the terminal.",
   },
 ];
@@ -271,7 +262,7 @@ function Header({
           aria-label="Close"
           title="Close (Esc)"
         >
-          <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={1.75} />
+          <Icon name="close" size="xs" />
         </Button>
       </div>
     </div>
@@ -425,12 +416,7 @@ function SessionPicker() {
           title="Switch session"
         >
           <span className="truncate">{active.title || "New chat"}</span>
-          <HugeiconsIcon
-            icon={ArrowDown01Icon}
-            size={10}
-            strokeWidth={2}
-            className="opacity-70"
-          />
+          <Icon name="chevron-down" size="xs" className="opacity-70" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-56">
@@ -438,7 +424,7 @@ function SessionPicker() {
           onSelect={() => newSession()}
           className="gap-2 text-xs"
         >
-          <HugeiconsIcon icon={Add01Icon} size={12} strokeWidth={1.75} />
+          <Icon name="add" />
           New session
         </DropdownMenuItem>
         {sorted.length > 0 ? <DropdownMenuSeparator /> : null}
@@ -496,7 +482,7 @@ function SessionRow({
         title="Delete session"
         className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
       >
-        <HugeiconsIcon icon={Delete02Icon} size={11} strokeWidth={1.75} />
+        <Icon name="delete" size="xs" />
       </button>
     </DropdownMenuItem>
   );
@@ -526,7 +512,7 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
             )}
           >
             <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted/70 text-muted-foreground transition-colors group-hover:bg-foreground/5 group-hover:text-foreground">
-              <HugeiconsIcon icon={s.icon} size={13} strokeWidth={1.75} />
+              <Icon name={s.icon} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[12px] font-medium text-foreground">

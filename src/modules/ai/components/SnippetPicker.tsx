@@ -4,9 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { HugeiconsIcon } from "@hugeicons/react";
 import type { SlashCommandMeta } from "../lib/slashCommands";
 import type { Snippet } from "../lib/snippets";
 
@@ -69,12 +69,7 @@ export function SnippetPickerContent({
                             : "hover:bg-accent/60",
                         )}
                       >
-                        <HugeiconsIcon
-                          icon={c.icon}
-                          size={13}
-                          strokeWidth={1.75}
-                          className="text-muted-foreground"
-                        />
+                        <Icon name={c.icon} className="text-muted-foreground" />
                         <span className="flex min-w-0 flex-1 flex-col">
                           <span className="flex items-center gap-1.5">
                             <span className="font-mono text-muted-foreground">

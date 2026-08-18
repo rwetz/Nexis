@@ -22,10 +22,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Icon } from "@/components/icon";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Refresh01Icon } from "@hugeicons/core-free-icons";
 import {
   useMlStore,
   getSeriesMap,
@@ -222,7 +221,7 @@ export function MlPanel({ workspaceRoot }: Props) {
           }}
           className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
         >
-          <HugeiconsIcon icon={Refresh01Icon} size={11} strokeWidth={1.75} />
+          <Icon name="refresh" size="xs" />
         </button>
       </div>
 
@@ -600,7 +599,7 @@ function SetupCard({
       {installing ? (
         <>
           <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
-            <span className="size-1.5 animate-pulse rounded-full bg-sky-500" />
+            <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
             Installing — this downloads PyTorch ({sizeNote}), give it a few
             minutes…
           </p>
@@ -609,7 +608,7 @@ function SetupCard({
       ) : downloadingEngine ? (
         <>
           <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
-            <span className="size-1.5 animate-pulse rounded-full bg-sky-500" />
+            <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
             Downloading and verifying the standalone engine
             {pinMb ? ` (~${pinMb} MB)` : ""}…
           </p>
@@ -781,7 +780,7 @@ function GpuUpsell({
       {installing ? (
         <>
           <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
-            <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+            <span className="size-1.5 nexis-blink rounded-full bg-emerald-500" />
             Installing the GPU build (~3 GB) — keep this window open…
           </p>
           <LogView logs={logs} />
@@ -954,7 +953,7 @@ function CreateCard({
 
       {creating ? (
         <p className="flex items-center gap-1.5 text-[11px] text-foreground/90">
-          <span className="size-1.5 animate-pulse rounded-full bg-sky-500" />
+          <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
           Creating project…
         </p>
       ) : (
@@ -1414,7 +1413,7 @@ function Playground({
         </>
       ) : serve.status === "starting" ? (
         <p className="flex items-center gap-1.5 text-[11px] text-foreground/90">
-          <span className="size-1.5 animate-pulse rounded-full bg-sky-500" />
+          <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
           Loading the model…
         </p>
       ) : serve.status === "error" ? (
@@ -1668,7 +1667,7 @@ function ProgressBlock({
     <div className="mb-2 rounded-md border border-border/60 bg-muted/20 p-2.5">
       <div className="mb-1.5 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-[11px] font-semibold">
-          <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+          <span className="size-1.5 nexis-blink rounded-full bg-emerald-500" />
           Training
           {run.device ? (
             <span

@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,15 +22,6 @@ import {
 } from "@/modules/shortcuts/shortcuts";
 import type { Tab } from "@/modules/tabs";
 import { TabBar } from "@/modules/tabs";
-import {
-  GridViewIcon,
-  KeyboardIcon,
-  LayoutTwoColumnIcon,
-  LayoutTwoRowIcon,
-  Settings01Icon,
-  SidebarLeftIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   SearchInline,
@@ -125,7 +117,7 @@ export function Header({
       onClick={onOpenShortcuts}
       title={shortcutLabel}
     >
-      <HugeiconsIcon icon={KeyboardIcon} size={16} strokeWidth={1.75} />
+      <Icon name="keyboard" size="md" />
     </Button>
   );
 
@@ -137,7 +129,7 @@ export function Header({
       onClick={onOpenSettings}
       title="Settings"
     >
-      <HugeiconsIcon icon={Settings01Icon} size={15} strokeWidth={1.75} />
+      <Icon name="settings" size="md" />
     </Button>
   );
 
@@ -157,7 +149,7 @@ export function Header({
           size="icon-sm"
           className="shrink-0 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
         >
-          <HugeiconsIcon icon={SidebarLeftIcon} size={18} strokeWidth={1.75} />
+          <Icon name="sidebar-left" size="lg" />
         </Button>
 
         <DropdownMenu>
@@ -169,16 +161,12 @@ export function Header({
               title="Split terminal"
               disabled={!canSplit}
             >
-              <HugeiconsIcon icon={GridViewIcon} size={16} strokeWidth={1.75} />
+              <Icon name="grid" size="md" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-44">
             <DropdownMenuItem onSelect={() => onSplit("row")}>
-              <HugeiconsIcon
-                icon={LayoutTwoColumnIcon}
-                size={14}
-                strokeWidth={1.75}
-              />
+              <Icon name="split-vertical" size="md" />
               <span className="flex-1">Split right</span>
               {splitRightTokens && (
                 <span className="text-xs text-muted-foreground">
@@ -187,11 +175,7 @@ export function Header({
               )}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onSplit("col")}>
-              <HugeiconsIcon
-                icon={LayoutTwoRowIcon}
-                size={14}
-                strokeWidth={1.75}
-              />
+              <Icon name="split-horizontal" size="md" />
               <span className="flex-1">Split down</span>
               {splitDownTokens && (
                 <span className="text-xs text-muted-foreground">

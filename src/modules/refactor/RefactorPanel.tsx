@@ -14,14 +14,9 @@
  * Alt+Shift+X captures the active editor/terminal selection and opens this
  * panel (wired in App.tsx / shortcuts.ts).
  */
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
-import {
-  AiChat02Icon,
-  Cancel01Icon,
-} from "@hugeicons/core-free-icons";
-import { CodeSquareIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // ── Global entry-point (like sendToRepl) ─────────────────────────────────────
@@ -121,12 +116,7 @@ export function RefactorPanel() {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
-        <HugeiconsIcon
-          icon={CodeSquareIcon}
-          size={13}
-          strokeWidth={1.75}
-          className="text-muted-foreground"
-        />
+        <Icon name="code-box" className="text-muted-foreground" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Refactor
         </span>
@@ -171,7 +161,7 @@ export function RefactorPanel() {
               onClick={() => setCode("")}
               className="flex items-center gap-0.5 text-[9.5px] text-muted-foreground hover:text-foreground"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={9} strokeWidth={2} />
+              <Icon name="close" size="xs" />
               Clear
             </button>
           )}
@@ -206,7 +196,7 @@ export function RefactorPanel() {
             "disabled:cursor-not-allowed disabled:opacity-50",
           )}
         >
-          <HugeiconsIcon icon={AiChat02Icon} size={13} strokeWidth={1.75} />
+          <Icon name="ai-chat" />
           {sending ? "Sending to AI…" : `${op.label} with AI`}
         </button>
         <p className="mt-1.5 text-center text-[9.5px] text-muted-foreground/50">

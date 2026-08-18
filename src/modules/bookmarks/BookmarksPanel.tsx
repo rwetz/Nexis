@@ -11,16 +11,8 @@
  * current cursor position.  Bookmarks are grouped by file and stored in
  * localStorage — they persist across restarts.
  */
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import {
-  BookmarkAdd01Icon,
-  BookmarkRemove01Icon,
-  Delete01Icon,
-  Edit02Icon,
-  FileCodeIcon,
-  Tick01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useRef, useState } from "react";
 import { basename, displayDirname as dirname } from "@/lib/path";
 import {
@@ -85,12 +77,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
-        <HugeiconsIcon
-          icon={BookmarkAdd01Icon}
-          size={13}
-          strokeWidth={1.75}
-          className="text-muted-foreground"
-        />
+        <Icon name="bookmark-add" className="text-muted-foreground" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           Bookmarks
         </span>
@@ -103,12 +90,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
       <div className="min-h-0 flex-1 overflow-y-auto">
         {bookmarks.length === 0 ? (
           <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-            <HugeiconsIcon
-              icon={BookmarkAdd01Icon}
-              size={24}
-              strokeWidth={1.5}
-              className="text-muted-foreground/30"
-            />
+            <Icon name="bookmark-add" size="xl" className="text-muted-foreground/30" />
             <p className="text-[11px] leading-relaxed text-muted-foreground/60">
               No bookmarks yet.
               <br />
@@ -123,10 +105,9 @@ export function BookmarksPanel({ onNavigate }: Props) {
               <div key={filePath} className="mb-0.5">
                 {/* File header */}
                 <div className="sticky top-0 flex items-center gap-1.5 bg-card/90 px-2.5 py-1.5 backdrop-blur">
-                  <HugeiconsIcon
-                    icon={FileCodeIcon}
-                    size={11}
-                    strokeWidth={1.75}
+                  <Icon
+                    name="file-code"
+                    size="xs"
                     className="shrink-0 text-muted-foreground/60"
                   />
                   <span className="truncate text-[10.5px] font-semibold">
@@ -187,7 +168,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                           aria-label="Save bookmark label"
                           className="flex h-5 w-5 items-center justify-center rounded text-green-500 hover:bg-green-500/10"
                         >
-                          <HugeiconsIcon icon={Tick01Icon} size={10} strokeWidth={2} />
+                          <Icon name="check" size="xs" />
                         </button>
                       ) : (
                         <button
@@ -196,7 +177,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                           onClick={() => startEdit(bm)}
                           className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                         >
-                          <HugeiconsIcon icon={Edit02Icon} size={10} strokeWidth={1.75} />
+                          <Icon name="edit" size="xs" />
                         </button>
                       )}
                       <button
@@ -205,7 +186,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                         onClick={() => removeBookmark(bm.id)}
                         className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
                       >
-                        <HugeiconsIcon icon={BookmarkRemove01Icon} size={10} strokeWidth={1.75} />
+                        <Icon name="bookmark-remove" size="xs" />
                       </button>
                     </div>
                   </div>
@@ -222,7 +203,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                 }}
                 className="flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-red-500"
               >
-                <HugeiconsIcon icon={Delete01Icon} size={10} strokeWidth={1.75} />
+                <Icon name="delete" size="xs" />
                 Clear all
               </button>
             </div>

@@ -4,14 +4,13 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Fragment } from "react";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { Cancel01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import type { SearchAddon } from "@xterm/addon-search";
 import { TerminalPane, type TerminalPaneHandle } from "./TerminalPane";
 import type { TerminalPaneNode } from "./lib/panes";
@@ -85,7 +84,7 @@ export function PaneTreeView({
             }}
             className="absolute right-9 top-2 z-40 flex h-5 w-5 items-center justify-center rounded-full border border-border/60 bg-card/80 text-muted-foreground opacity-0 shadow-sm transition-opacity duration-150 hover:border-red-400/60 hover:bg-muted hover:text-red-400 group-hover/pane:opacity-100"
           >
-            <HugeiconsIcon icon={Cancel01Icon} size={11} strokeWidth={2} />
+            <Icon name="close" size="xs" />
           </button>
         )}
         {/* Focus ring — overlay drawn ON TOP of the terminal so it shows on

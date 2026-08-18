@@ -12,20 +12,11 @@
  * vars (via the preferences store), and optionally injects the startup command
  * into the active terminal.
  */
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import {
-  Add01Icon,
-  Cancel01Icon,
-  Delete01Icon,
-  CheckmarkCircle01Icon,
-  FolderOpenIcon,
-  PencilEdit01Icon,
-  Settings01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
 import { useProfilesStore, type WorkspaceProfile } from "./useProfilesStore";
 import { workspaceBasename } from "@/modules/workspace/useRecentWorkspaces";
@@ -143,7 +134,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
           Workspace Profiles
         </span>
         <Button size="icon" variant="ghost" className="h-6 w-6" onClick={startNew} title="New profile">
-          <HugeiconsIcon icon={Add01Icon} size={13} strokeWidth={2} />
+          <Icon name="add" />
         </Button>
       </div>
 
@@ -194,7 +185,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
           </div>
           <div className="flex justify-end gap-1.5 pt-1">
             <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={cancelEdit}>
-              <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} className="mr-1" />
+              <Icon name="close" size="xs" className="mr-1" />
               Cancel
             </Button>
             <Button
@@ -213,12 +204,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
       <div className="flex-1 overflow-y-auto">
         {profiles.length === 0 && !isEditing ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
-            <HugeiconsIcon
-              icon={Settings01Icon}
-              size={24}
-              strokeWidth={1.5}
-              className="text-muted-foreground/30"
-            />
+            <Icon name="settings" size="xl" className="text-muted-foreground/30" />
             <p className="text-xs text-muted-foreground">No profiles yet.</p>
             <p className="text-[10px] text-muted-foreground/60">
               Save a named configuration to quickly switch contexts.
@@ -241,14 +227,9 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
                     isActive && "bg-primary/5",
                   )}
                 >
-                  <HugeiconsIcon
-                    icon={FolderOpenIcon}
-                    size={13}
-                    strokeWidth={1.75}
-                    className={cn(
-                      "mt-0.5 shrink-0",
-                      isActive ? "text-primary/70" : "text-muted-foreground/60",
-                    )}
+                  <Icon
+                    name="folder-open"
+                    className={cn( "mt-0.5 shrink-0", isActive ? "text-primary/70" : "text-muted-foreground/60", )}
                   />
                   <div className="min-w-0 flex-1">
                     <p className={cn("truncate text-xs font-medium", isActive && "text-primary")}>
@@ -281,7 +262,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
                         title="Edit"
                         onClick={() => startEdit(p)}
                       >
-                        <HugeiconsIcon icon={PencilEdit01Icon} size={10} strokeWidth={2} />
+                        <Icon name="edit" size="xs" />
                       </Button>
                       <Button
                         size="icon"
@@ -290,12 +271,12 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
                         title="Delete"
                         onClick={() => remove(p.id)}
                       >
-                        <HugeiconsIcon icon={Delete01Icon} size={10} strokeWidth={2} />
+                        <Icon name="delete" size="xs" />
                       </Button>
                     </div>
                     {activated ? (
                       <div className="flex items-center gap-1 text-[10px] text-green-500">
-                        <HugeiconsIcon icon={CheckmarkCircle01Icon} size={10} strokeWidth={2} />
+                        <Icon name="success" size="xs" />
                         Activated
                       </div>
                     ) : (

@@ -1,16 +1,7 @@
+import { Icon } from "@/components/icon";
 import { native } from "@/modules/ai/lib/native";
 import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
 import { cn } from "@/lib/utils";
-import {
-  Cancel01Icon,
-  CheckmarkCircle01Icon,
-  Alert02Icon,
-  AiChat02Icon,
-  PlayIcon,
-  Time01Icon,
-  Wrench01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BUILD_TOOLS, type BuildTool, type BuildResult, type BuildStatus } from "./buildSystem";
 
@@ -29,11 +20,11 @@ function detectBuildTool(fileNames: string[]): BuildTool | null {
 
 function statusIcon(status: BuildStatus) {
   switch (status) {
-    case "success": return CheckmarkCircle01Icon;
-    case "failed": return Alert02Icon;
-    case "error": return Alert02Icon;
-    case "running": return Time01Icon;
-    default: return Wrench01Icon;
+    case "success": return "success";
+    case "failed": return "alert";
+    case "error": return "alert";
+    case "running": return "clock";
+    default: return "wrench";
   }
 }
 
@@ -204,7 +195,7 @@ export function BuildPanel({ workspaceRoot }: Props) {
               onClick={() => void stopBuild()}
               className="flex shrink-0 items-center gap-1.5 rounded bg-red-500/10 px-2.5 py-1 text-[11.5px] font-medium text-red-500 transition-colors hover:bg-red-500/20"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={1.75} />
+              <Icon name="close" />
               Stop
             </button>
           ) : (
@@ -214,7 +205,7 @@ export function BuildPanel({ workspaceRoot }: Props) {
               disabled={!customCommand.trim() && !tool}
               className="flex shrink-0 items-center gap-1.5 rounded bg-primary/90 px-2.5 py-1 text-[11.5px] font-medium text-primary-foreground transition-colors hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <HugeiconsIcon icon={PlayIcon} size={12} strokeWidth={1.75} />
+              <Icon name="play" />
               Build
             </button>
           )}
@@ -223,7 +214,7 @@ export function BuildPanel({ workspaceRoot }: Props) {
         {result && (
           <div className="flex items-center gap-2">
             <div className={cn("flex flex-1 items-center gap-1.5 text-[11px]", statusColor(result.status))}>
-              <HugeiconsIcon icon={statusIcon(result.status)} size={12} strokeWidth={1.75} />
+              <Icon name={statusIcon(result.status)} />
               <span>{summary}</span>
             </div>
             {(result.status === "failed" || result.status === "error") && result.output && (
@@ -232,7 +223,7 @@ export function BuildPanel({ workspaceRoot }: Props) {
                 onClick={() => void fixWithAi()}
                 className="flex shrink-0 items-center gap-1 rounded border border-primary/30 bg-primary/8 px-2 py-0.5 text-[10.5px] font-medium text-primary/80 transition-colors hover:bg-primary/15 hover:text-primary"
               >
-                <HugeiconsIcon icon={AiChat02Icon} size={11} strokeWidth={1.75} />
+                <Icon name="ai-chat" size="xs" />
                 Fix with AI
               </button>
             )}

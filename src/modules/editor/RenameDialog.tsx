@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { native, type GrepHit } from "@/modules/ai/lib/native";
 import { cn } from "@/lib/utils";
 import { lspClient } from "@/modules/lsp/client";
@@ -13,8 +14,6 @@ import {
   notifyFilesRewritten,
   workspaceEditHasChanges,
 } from "@/modules/lsp/applyEdit";
-import { Alert02Icon, CheckmarkCircle01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
@@ -239,14 +238,14 @@ export function RenameDialog({
 
           {done && (
             <div className="flex items-center gap-1.5 text-[11px] text-green-500">
-              <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} strokeWidth={1.75} />
+              <Icon name="success" />
               Renamed successfully
             </div>
           )}
 
           {error && !loading && (
             <div className="flex items-center gap-1.5 text-[11px] text-destructive">
-              <HugeiconsIcon icon={Alert02Icon} size={12} strokeWidth={1.75} />
+              <Icon name="alert" />
               {error}
             </div>
           )}

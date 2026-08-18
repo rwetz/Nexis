@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { CheckListIcon, SparklesIcon } from "@hugeicons/core-free-icons";
+import type { IconName } from "@/components/icon";
 import { usePlanStore } from "../store/planStore";
 
 /**
@@ -33,7 +33,7 @@ export type SlashCommandMeta = {
   name: string;
   invocation: string;
   label: string;
-  icon: typeof SparklesIcon;
+  icon: IconName;
 };
 
 export const SLASH_COMMANDS: Record<string, SlashCommandMeta> = {
@@ -41,13 +41,13 @@ export const SLASH_COMMANDS: Record<string, SlashCommandMeta> = {
     name: "init",
     invocation: "/init",
     label: "Initialize workspace",
-    icon: SparklesIcon,
+    icon: "sparkle",
   },
   plan: {
     name: "plan",
     invocation: "/plan",
     label: "Plan mode",
-    icon: CheckListIcon,
+    icon: "checklist",
   },
 };
 

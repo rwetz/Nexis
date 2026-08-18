@@ -15,13 +15,8 @@
  * sendToRepl(text) is exported so App.tsx can wire up "Send selection"
  * from the editor.
  */
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import {
-  Cancel01Icon,
-  PlayIcon,
-  ComputerTerminal01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   respawnSession,
@@ -127,7 +122,7 @@ export function ReplPanel() {
               title="Stop REPL"
               className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-red-400 hover:bg-red-500/10"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+              <Icon name="close" size="xs" />
               Stop
             </button>
           ) : (
@@ -137,7 +132,7 @@ export function ReplPanel() {
               title={`Start ${selected.label} REPL`}
               className="flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/20"
             >
-              <HugeiconsIcon icon={PlayIcon} size={10} strokeWidth={2} />
+              <Icon name="play" size="xs" />
               Start
             </button>
           )}
@@ -193,12 +188,7 @@ export function ReplPanel() {
       {/* Idle placeholder */}
       {sessionState === "idle" && (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-          <HugeiconsIcon
-            icon={ComputerTerminal01Icon}
-            size={24}
-            strokeWidth={1.5}
-            className="text-muted-foreground/30"
-          />
+          <Icon name="terminal" size="xl" className="text-muted-foreground/30" />
           <p className="text-xs text-muted-foreground">
             Select a REPL and press <span className="font-semibold">Start</span>.
           </p>

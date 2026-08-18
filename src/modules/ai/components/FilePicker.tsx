@@ -7,7 +7,7 @@
 import { PopoverContent } from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import { fileIconUrl } from "@/modules/explorer/lib/iconResolver";
+import { FileTypeIcon } from "@/modules/explorer/lib/FileTypeIcon";
 import { useEffect, useRef } from "react";
 
 type Props = {
@@ -85,11 +85,7 @@ export function FilePickerContent({
                     idx === activeIndex ? "bg-accent" : "hover:bg-accent/60",
                   )}
                 >
-                  <img
-                    src={fileIconUrl(name)}
-                    alt=""
-                    className="size-4 shrink-0"
-                  />
+                  <FileTypeIcon name={name} className="size-4 shrink-0" />
                   <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
                     <span className="truncate font-medium">{name}</span>
                     {dir && (

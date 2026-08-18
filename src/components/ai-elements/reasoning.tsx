@@ -11,9 +11,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import type { ComponentProps, ReactNode } from "react";
 import {
@@ -185,14 +184,10 @@ export const ReasoningTrigger = memo(
         {children ?? (
           <>
             {getThinkingMessage(isStreaming, duration)}
-            <HugeiconsIcon
-              icon={ArrowDown01Icon}
-              size={11}
-              strokeWidth={1.75}
-              className={cn(
-                "transition-transform",
-                isOpen ? "rotate-180" : "rotate-0",
-              )}
+            <Icon
+              name="chevron-down"
+              size="xs"
+              className={cn( "transition-transform", isOpen ? "rotate-180" : "rotate-0", )}
             />
           </>
         )}

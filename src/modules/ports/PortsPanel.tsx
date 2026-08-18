@@ -9,15 +9,10 @@
  * a one-click "Open in Preview" button.  Runs `ss` / `lsof` / `netstat`
  * depending on the platform via the existing shell_run_command IPC.
  */
+import { Icon } from "@/components/icon";
 import { IS_WINDOWS } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  Globe02Icon,
-  LinkSquare01Icon,
-  RefreshIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type ListeningPort = {
@@ -157,24 +152,14 @@ export function PortsPanel({ onOpenPreview }: Props) {
           title="Refresh"
           className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
         >
-          <HugeiconsIcon
-            icon={RefreshIcon}
-            size={12}
-            strokeWidth={1.75}
-            className={cn(loading && "animate-spin")}
-          />
+          <Icon name="refresh" className={cn(loading && "nexis-spin")} />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {ports.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
-            <HugeiconsIcon
-              icon={Globe02Icon}
-              size={24}
-              strokeWidth={1.5}
-              className="text-muted-foreground/30"
-            />
+            <Icon name="globe" size="xl" className="text-muted-foreground/30" />
             <p className="text-xs text-muted-foreground">
               No listening ports detected.
             </p>
@@ -225,12 +210,7 @@ function PortRow({
   return (
     <div className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/20">
       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary/10">
-        <HugeiconsIcon
-          icon={Globe02Icon}
-          size={11}
-          strokeWidth={1.75}
-          className="text-primary/70"
-        />
+        <Icon name="globe" size="xs" className="text-primary/70" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium tabular-nums">:{port.port}</p>
@@ -247,7 +227,7 @@ function PortRow({
           onClick={() => onOpenPreview(url)}
           className="flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
         >
-          <HugeiconsIcon icon={LinkSquare01Icon} size={10} strokeWidth={2} />
+          <Icon name="link-external" size="xs" />
           Open
         </button>
       )}

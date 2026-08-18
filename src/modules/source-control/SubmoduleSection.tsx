@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -13,13 +14,6 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { native, type GitSubmoduleEntry } from "@/modules/ai/lib/native";
-import {
-  ArrowDown01Icon,
-  GitBranchIcon,
-  GitPullRequestIcon,
-  Loading03Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useState } from "react";
 
 type Props = {
@@ -96,21 +90,12 @@ export function SubmoduleSection({ repoRoot }: Props) {
         onClick={() => setExpanded((p) => !p)}
         className="flex h-7 w-full items-center gap-2 px-3 text-left text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
       >
-        <HugeiconsIcon
-          icon={ArrowDown01Icon}
-          size={10}
-          strokeWidth={2}
-          className={cn(
-            "shrink-0 transition-transform",
-            expanded ? "rotate-0" : "-rotate-90",
-          )}
+        <Icon
+          name="chevron-down"
+          size="xs"
+          className={cn( "shrink-0 transition-transform", expanded ? "rotate-0" : "-rotate-90", )}
         />
-        <HugeiconsIcon
-          icon={GitBranchIcon}
-          size={12}
-          strokeWidth={1.75}
-          className="shrink-0"
-        />
+        <Icon name="git-branch" className="shrink-0" />
         <span>Submodules</span>
         {submodules.length > 0 && (
           <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-[9.5px] tabular-nums text-muted-foreground/85">
@@ -157,10 +142,9 @@ export function SubmoduleSection({ repoRoot }: Props) {
                     key={entry.path}
                     className="group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] hover:bg-accent/30"
                   >
-                    <HugeiconsIcon
-                      icon={GitBranchIcon}
-                      size={11}
-                      strokeWidth={1.75}
+                    <Icon
+                      name="git-branch"
+                      size="xs"
                       className="shrink-0 text-muted-foreground/60"
                     />
                     <div className="min-w-0 flex-1">
@@ -214,11 +198,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
                                 }}
                                 className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                               >
-                                <HugeiconsIcon
-                                  icon={GitPullRequestIcon}
-                                  size={11}
-                                  strokeWidth={1.9}
-                                />
+                                <Icon name="git-pr" size="xs" />
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-[10.5px]">
@@ -252,11 +232,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
                                 }}
                                 className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
                               >
-                                <HugeiconsIcon
-                                  icon={Loading03Icon}
-                                  size={11}
-                                  strokeWidth={1.9}
-                                />
+                                <Icon name="loading" size="xs" />
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-[10.5px]">

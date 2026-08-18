@@ -4,19 +4,17 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { Loading03Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 
-function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
+function Spinner({ className, ...props }: Omit<React.ComponentProps<"svg">, "name">) {
   return (
-    <HugeiconsIcon
-      icon={Loading03Icon}
-      // @ts-ignore
-      strokeWidth={2}
+    <Icon
+      name="loading"
+      size="sm"
       role="status"
       aria-label="Loading"
-      className={cn("size-4 animate-spin", className)}
+      className={cn("size-4 nexis-spin", className)}
       {...props}
     />
   );

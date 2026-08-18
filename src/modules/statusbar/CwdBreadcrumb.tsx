@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Badge } from "@/components/ui/badge";
 import {
   Breadcrumb,
@@ -19,13 +20,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  ArrowDown01Icon,
-  Folder01Icon,
-  Home03Icon,
-  MoreHorizontalIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { currentWorkspaceEnv } from "@/modules/workspace";
@@ -150,11 +144,7 @@ function BreadcrumbSegment({
               className="gap-1 text-muted-foreground hover:text-foreground"
             >
               {isHome ? (
-                <HugeiconsIcon
-                  icon={Home03Icon}
-                  className="size-3"
-                  strokeWidth={1.75}
-                />
+                <Icon name="home" size="sm" className="size-3" />
               ) : null}
               {isHome ? "Home" : label}
             </Badge>
@@ -200,21 +190,13 @@ function CurrentSegmentDropdown({
         <BreadcrumbPage className="flex cursor-pointer items-center gap-1 rounded-sm px-1 py-0.5 text-foreground hover:bg-accent">
           {label === "~" ? (
             <>
-              <HugeiconsIcon
-                icon={Home03Icon}
-                className="size-3"
-                strokeWidth={1.75}
-              />
+              <Icon name="home" size="sm" className="size-3" />
               Home
             </>
           ) : (
             label
           )}
-          <HugeiconsIcon
-            icon={ArrowDown01Icon}
-            className="size-3 opacity-70"
-            strokeWidth={2}
-          />
+          <Icon name="chevron-down" size="sm" className="size-3 opacity-70" />
         </BreadcrumbPage>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
@@ -234,10 +216,10 @@ function CurrentSegmentDropdown({
                 onCd(path.endsWith("/") ? `${path}${name}` : `${path}/${name}`)
               }
             >
-              <HugeiconsIcon
-                icon={Folder01Icon}
+              <Icon
+                name="folder"
+                size="sm"
                 className="size-3.5 text-muted-foreground"
-                strokeWidth={1.75}
               />
               {name}
             </DropdownMenuItem>
@@ -265,11 +247,7 @@ function CollapsedSegments({
               title="Show hidden folders"
               className="flex items-center rounded-sm px-1 text-muted-foreground hover:bg-accent hover:text-foreground"
             >
-              <HugeiconsIcon
-                icon={MoreHorizontalIcon}
-                className="size-3"
-                strokeWidth={1.75}
-              />
+              <Icon name="more" size="sm" className="size-3" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-44">
@@ -278,10 +256,10 @@ function CollapsedSegments({
                 key={s.fullPath}
                 onSelect={() => onCd(s.fullPath)}
               >
-                <HugeiconsIcon
-                  icon={s.isHome ? Home03Icon : Folder01Icon}
+                <Icon
+                  name={s.isHome ? "home" : "folder"}
+                  size="sm"
                   className="size-3.5 text-muted-foreground"
-                  strokeWidth={1.75}
                 />
                 <span className="truncate">{s.isHome ? "Home" : s.label}</span>
               </DropdownMenuItem>

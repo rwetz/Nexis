@@ -4,14 +4,13 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { getModel, getModelContextLimit } from "../config";
 import { useChatStore } from "../store/chatStore";
 import type { UIMessage } from "@ai-sdk/react";
 import { useMemo, useState } from "react";
-import { ArrowDown01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 
 const APPROVAL_TOOLS = [
   "bash_run",
@@ -87,10 +86,9 @@ function Section({
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center gap-1.5 px-3 py-1.5 text-[10.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
-        <HugeiconsIcon
-          icon={open ? ArrowDown01Icon : ArrowRight01Icon}
-          size={9}
-          strokeWidth={2}
+        <Icon
+          name={open ? "chevron-down" : "chevron-right"}
+          size="xs"
           className="shrink-0"
         />
         {title}

@@ -11,17 +11,9 @@
  * (pointing to an existing or new branch) and remove linked ones.
  * Uses the `git_worktree_*` Tauri commands added in v1.10.0.
  */
+import { Icon } from "@/components/icon";
 import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
-import {
-  Add01Icon,
-  Cancel01Icon,
-  Delete01Icon,
-  FolderTreeIcon,
-  Refresh01Icon,
-  Tick01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -119,12 +111,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted/20"
       >
-        <HugeiconsIcon
-          icon={FolderTreeIcon}
-          size={11}
-          strokeWidth={1.75}
-          className="shrink-0 text-muted-foreground/70"
-        />
+        <Icon name="explorer" size="xs" className="shrink-0 text-muted-foreground/70" />
         <span className="flex-1 text-[11px] font-medium text-muted-foreground">Worktrees</span>
         {worktrees.length > 0 && (
           <span className="text-[10px] text-muted-foreground/50">{worktrees.length}</span>
@@ -185,7 +172,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
                     onClick={() => void handleRemove(wt.path)}
                     className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-red-500/10 hover:text-red-500 group-hover:opacity-100"
                   >
-                    <HugeiconsIcon icon={Delete01Icon} size={10} strokeWidth={1.75} />
+                    <Icon name="delete" size="xs" />
                   </button>
                 )}
               </div>
@@ -226,7 +213,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
                   disabled={addBusy || !addPath.trim() || !addBranch.trim()}
                   className="flex flex-1 items-center justify-center gap-1 rounded bg-primary/90 py-1 text-[10.5px] font-medium text-primary-foreground hover:bg-primary disabled:opacity-40"
                 >
-                  <HugeiconsIcon icon={Tick01Icon} size={10} strokeWidth={2} />
+                  <Icon name="check" size="xs" />
                   {addBusy ? "Adding…" : "Add"}
                 </button>
                 <button
@@ -235,7 +222,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
                   onClick={() => setAdding(false)}
                   className="flex items-center justify-center gap-1 rounded border border-border/50 px-2 py-1 text-[10.5px] text-muted-foreground hover:bg-muted/40"
                 >
-                  <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+                  <Icon name="close" size="xs" />
                 </button>
               </div>
             </div>
@@ -246,7 +233,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
                 onClick={startAdding}
                 className="flex items-center gap-1 text-[10.5px] text-muted-foreground/60 hover:text-foreground"
               >
-                <HugeiconsIcon icon={Add01Icon} size={10} strokeWidth={2} />
+                <Icon name="add" size="xs" />
                 Add worktree
               </button>
               <button
@@ -255,7 +242,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
                 title="Refresh"
                 className="ml-auto flex h-5 w-5 items-center justify-center rounded text-muted-foreground/40 hover:bg-muted/40 hover:text-muted-foreground"
               >
-                <HugeiconsIcon icon={Refresh01Icon} size={10} strokeWidth={2} />
+                <Icon name="refresh" size="xs" />
               </button>
             </div>
           )}

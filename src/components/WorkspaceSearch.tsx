@@ -4,16 +4,10 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { native, type GrepHit } from "@/modules/ai/lib/native";
-import {
-  Cancel01Icon,
-  CheckmarkCircle01Icon,
-  ReplaceIcon,
-  Search01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type FileGroup = {
@@ -146,12 +140,7 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
         {/* Search inputs */}
         <div className="flex shrink-0 flex-col gap-2 border-b border-border/50 p-3">
           <div className="flex items-center gap-2">
-            <HugeiconsIcon
-              icon={Search01Icon}
-              size={14}
-              strokeWidth={1.75}
-              className="shrink-0 text-muted-foreground"
-            />
+            <Icon name="search" size="md" className="shrink-0 text-muted-foreground" />
             <input
               ref={inputRef}
               value={query}
@@ -193,16 +182,11 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
               aria-label="Close search"
               className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={12} strokeWidth={2} />
+              <Icon name="close" />
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <HugeiconsIcon
-              icon={ReplaceIcon}
-              size={14}
-              strokeWidth={1.75}
-              className="shrink-0 text-muted-foreground"
-            />
+            <Icon name="replace" size="md" className="shrink-0 text-muted-foreground" />
             <input
               value={replace}
               onChange={(e) => setReplace(e.target.value)}
@@ -242,7 +226,7 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
             )}
             {replacedFiles > 0 && (
               <span className="ml-auto flex items-center gap-1 text-[11px] text-green-600 dark:text-green-400">
-                <HugeiconsIcon icon={CheckmarkCircle01Icon} size={12} strokeWidth={1.75} />
+                <Icon name="success" />
                 Replaced in {replacedFiles} file{replacedFiles !== 1 ? "s" : ""}
               </span>
             )}

@@ -4,11 +4,10 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon, type IconName } from "@/components/icon";
 import { Command } from "cmdk";
 import type { PackId } from "@/lib/packs";
 import { cn } from "@/lib/utils";
-import { Search01Icon, Settings01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef, useState } from "react";
 
 export type CommandDef = {
@@ -16,7 +15,7 @@ export type CommandDef = {
   label: string;
   description?: string;
   category: string;
-  icon?: typeof Settings01Icon;
+  icon?: IconName;
   action: () => void;
   keywords?: string[];
   /** Expansion pack that owns the targeted feature (see src/lib/packs.ts).
@@ -65,12 +64,7 @@ export function CommandPalette({ commands, onClose }: Props) {
         }}
       >
         <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2.5">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            size={14}
-            strokeWidth={1.75}
-            className="shrink-0 text-muted-foreground"
-          />
+          <Icon name="search" size="md" className="shrink-0 text-muted-foreground" />
           <Command.Input
             ref={inputRef as React.Ref<HTMLInputElement>}
             value={query}
@@ -120,10 +114,9 @@ export function CommandPalette({ commands, onClose }: Props) {
                     )}
                   >
                     {cmd.icon && (
-                      <HugeiconsIcon
-                        icon={cmd.icon}
-                        size={14}
-                        strokeWidth={1.75}
+                      <Icon
+                        name={cmd.icon}
+                        size="md"
                         className="shrink-0 text-muted-foreground"
                       />
                     )}

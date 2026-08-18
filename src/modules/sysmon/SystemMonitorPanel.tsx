@@ -4,17 +4,10 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon, type IconName } from "@/components/icon";
 import { formatBytes, formatBytesPerSec, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { SysmonSignal, SysmonSort, SysProcessRow } from "@/modules/ai/lib/native";
-import {
-  Cancel01Icon,
-  CpuIcon,
-  DatabaseIcon,
-  HardDriveIcon,
-  WifiConnected01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useMemo, useState } from "react";
 import { brailleChart } from "./braille";
 import { useSystemMonitor } from "./useSystemMonitor";
@@ -57,12 +50,7 @@ export function SystemMonitorPanel() {
   if (!sample) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-1.5 text-center">
-        <HugeiconsIcon
-          icon={CpuIcon}
-          size={22}
-          strokeWidth={1.25}
-          className="text-muted-foreground/40"
-        />
+        <Icon name="cpu" size="lg" className="text-muted-foreground/40" />
         <p className="text-[11px] text-muted-foreground">
           {error ? "Resource sampling unavailable" : "Sampling…"}
         </p>
@@ -97,7 +85,7 @@ export function SystemMonitorPanel() {
       <div className="flex-1 overflow-y-auto">
         {/* CPU */}
         <Section
-          icon={CpuIcon}
+          icon={"cpu"}
           title="CPU"
           value={`${sample.cpu_total.toFixed(1)}%`}
           detail={`${coreCount} cores · up ${formatDuration(sample.uptime)}`}
@@ -108,7 +96,7 @@ export function SystemMonitorPanel() {
 
         {/* Memory */}
         <Section
-          icon={DatabaseIcon}
+          icon={"database"}
           title="Memory"
           value={`${memPct.toFixed(1)}%`}
           detail={`${formatBytes(sample.mem_used)} / ${formatBytes(sample.mem_total)}`}
@@ -127,7 +115,7 @@ export function SystemMonitorPanel() {
 
         {/* Network */}
         <Section
-          icon={WifiConnected01Icon}
+          icon={"network-connected"}
           title="Network"
           value={`↓ ${formatBytesPerSec(netRx)}`}
           detail={`↑ ${formatBytesPerSec(netTx)}`}
@@ -141,7 +129,7 @@ export function SystemMonitorPanel() {
 
         {/* Disk */}
         <Section
-          icon={HardDriveIcon}
+          icon={"disk"}
           title="Disk"
           value={`R ${formatBytesPerSec(diskRead)}`}
           detail={`W ${formatBytesPerSec(diskWrite)}`}
@@ -232,7 +220,7 @@ function Section({
   detail,
   children,
 }: {
-  icon: Parameters<typeof HugeiconsIcon>[0]["icon"];
+  icon: IconName;
   title: string;
   value: string;
   detail?: string;
@@ -242,7 +230,7 @@ function Section({
     <div className="border-b border-border/30 px-3 py-2">
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-          <HugeiconsIcon icon={icon} size={11} strokeWidth={1.75} />
+          <Icon name={icon} size="xs" />
           {title}
         </span>
         <span className="flex items-baseline gap-1.5">
@@ -387,7 +375,7 @@ function ProcessRow({
         title={`Terminate ${p.name} (${p.pid}) — shift-click to force kill`}
         className="w-4 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
       >
-        <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2} />
+        <Icon name="close" size="xs" />
       </button>
     </div>
   );
