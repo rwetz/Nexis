@@ -2,7 +2,7 @@
 
 > **Status: done (2026-07-30).** All 46 errors cleared — the repo now reports
 > **0 error-severity findings in every category**, not just Bugs. Shipped in
-> commits `b0d8961` (batches 1–3) and `059b7b1` (batch 4); see the `[Unreleased]`
+> commits `b0d8961` (batches 1–3) and `059b7b1` (batch 4); see the `[1.24.0]`
 > CHANGELOG entry for the record and [[react-doctor]] in the vault
 > (`docs/vault/runbooks/react-doctor.md`) for the reusable recipes.
 >

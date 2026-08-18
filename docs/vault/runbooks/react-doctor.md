@@ -13,7 +13,7 @@ description: Running the React Doctor audit, and the four fix recipes establishe
 
 CI runs it via `.github/workflows/react-doctor.yml`, currently **advisory** (`blocking` is commented out — it comments on PRs and posts a score, but never fails the check). A pre-commit hook also scans staged files and prints findings without blocking the commit.
 
-As of 2026-07-30 the repo is at **0 error-severity findings across every category**; ~435 warnings remain and are not gated. See the `[Unreleased]` CHANGELOG entry for what was cleared.
+As of 2026-07-30 the repo is at **0 error-severity findings across every category**; ~435 warnings remain and are not gated. See the `[1.24.0]` CHANGELOG entry for what was cleared.
 
 ## Config
 

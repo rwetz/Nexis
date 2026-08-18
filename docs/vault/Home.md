@@ -43,6 +43,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 ## Runbooks (`runbooks/`)
 
 - [[react-doctor]] — running the React hygiene audit, its config, and the fix recipes for impure updaters and render-phase ref writes
+- [[release]] — cutting a tagged release: the four version files that move together, the CHANGELOG rename, and what the tag push triggers
 
 ## Other sections
 
