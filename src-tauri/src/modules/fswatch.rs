@@ -361,10 +361,31 @@ mod tests {
         let deadline = std::time::Instant::now() + Duration::from_secs(2);
         while std::time::Instant::now() < deadline {
             match rx.recv_timeout(Duration::from_millis(200)) {
-                Ok(ev) => assert!(
-                    !event_is_relevant(&ev),
-                    "a node_modules write must not wake the explorer: {ev:?}"
-                ),
+                // Judge only the events that describe the `node_modules` write
+                // itself. The backend also reports changes this test did not
+                // cause, and those are legitimately relevant: macOS FSEvents
+                // replays the creation of the tempdir root (it happened just
+                // before the watch began), so asserting on every delivered
+                // event failed on macOS while passing on inotify.
+                //
+                // Matching on the component rather than a `starts_with` on the
+                // path is deliberate — FSEvents reports the resolved
+                // `/private/var/...` form of a `/var/...` tempdir, so a prefix
+                // test would silently match nothing and leave the test with no
+                // teeth on the one platform that regressed.
+                Ok(ev) => {
+                    let describes_the_write = ev.as_ref().is_ok_and(|e| {
+                        e.paths
+                            .iter()
+                            .any(|p| p.components().any(|c| c.as_os_str() == "node_modules"))
+                    });
+                    if describes_the_write {
+                        assert!(
+                            !event_is_relevant(&ev),
+                            "a node_modules write must not wake the explorer: {ev:?}"
+                        );
+                    }
+                }
                 Err(RecvTimeoutError::Timeout) => continue,
                 Err(RecvTimeoutError::Disconnected) => break,
             }

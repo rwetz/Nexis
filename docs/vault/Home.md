@@ -34,6 +34,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[window-chrome]] — borderless chrome: decorations config, drag region, window controls, Linux edge resize
 - [[system-monitor]] — btop-style resource analyzer: sysinfo sampling, braille charts, process table
 - [[icon-and-motion-system]] — the semantic icon choke point, the house size scale, file-tree retint, motion tokens
+- [[e2e-harness]] — how the Windows E2E suite gets a session: the compiled-in debugging port, the config overlay, and why tauri-driver is Linux-only
 
 ## Flows (`flows/`)
 

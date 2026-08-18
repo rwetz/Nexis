@@ -291,4 +291,51 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
         "cascade into them; render the art inline via <FileTypeIcon> instead",
     ).toBe(false);
   });
+  it("E2E config overlay stays in sync with the shipping window config", () => {
+    // src-tauri/tauri.e2e.conf.json exists only to compile
+    // --remote-debugging-port into the E2E build (wry sets
+    // AdditionalBrowserArguments unconditionally, so the env var tauri-driver
+    // uses never reaches the browser process).
+    //
+    // Tauri merges configs with RFC 7386, under which an ARRAY IS REPLACED
+    // WHOLESALE — so the overlay has to restate every window field, and any
+    // field added to the base config here is silently dropped from the build
+    // the E2E suite actually exercises. That makes the suite pass against a
+    // window shape no user ever runs.
+    const repoRoot = path.join(SRC_ROOT, "..");
+    const read = (rel: string) =>
+      JSON.parse(fs.readFileSync(path.join(repoRoot, rel), "utf8"));
+
+    const base = read("src-tauri/tauri.conf.json").app.windows[0];
+    const overlay = read("src-tauri/tauri.e2e.conf.json").app.windows[0];
+
+    const { additionalBrowserArgs, ...overlayRest } = overlay;
+
+    expect(
+      overlayRest,
+      "tauri.e2e.conf.json must restate the shipping window config verbatim — " +
+        "Tauri replaces the whole windows array rather than merging into it, " +
+        "so a field only in tauri.conf.json is missing from the E2E build",
+    ).toEqual(base);
+
+    expect(
+      additionalBrowserArgs,
+      "the overlay must keep wry's default --disable-features args: setting " +
+        "additionalBrowserArgs REPLACES them rather than appending",
+    ).toContain("--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection");
+    expect(
+      additionalBrowserArgs,
+      "the overlay exists to open the DevTools port; without this the E2E " +
+        "session dies with 'DevToolsActivePort file doesn't exist'",
+    ).toContain("--remote-debugging-port=");
+
+    // The port is duplicated in the wdio harness, which attaches to it.
+    const port = /--remote-debugging-port=(\d+)/.exec(additionalBrowserArgs)?.[1];
+    const wdio = fs.readFileSync(path.join(repoRoot, "e2e/wdio.conf.ts"), "utf8");
+    expect(
+      new RegExp(`DEBUG_PORT\\s*=\\s*${port}\\b`).test(wdio),
+      `e2e/wdio.conf.ts DEBUG_PORT must match the overlay's port (${port}) — ` +
+        "the driver attaches to a port the app never opened otherwise",
+    ).toBe(true);
+  });
 });

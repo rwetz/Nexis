@@ -3,10 +3,10 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "strict": true,
     "resolveJsonModule": true,
-    "types": ["@wdio/globals/types", "node"],
+    "types": ["@wdio/globals/types", "node", "@wdio/mocha-framework"],
     "skipLibCheck": true
   },
   "include": ["./**/*.ts"]

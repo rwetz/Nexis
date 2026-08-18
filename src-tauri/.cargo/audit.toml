@@ -1,0 +1,35 @@
+# cargo-audit configuration.
+#
+# Advisory exceptions live here rather than in deny.toml because the two tools
+# read different config: `cargo deny` takes `[advisories] ignore` from
+# deny.toml, `cargo audit` takes it from this file. Both run in audit.yml.
+#
+# The bar for adding an entry is the same one deny.toml states: prefer a real
+# dependency bump over suppressing a vulnerability. An entry here must name the
+# advisory, why a bump is not available, and why the vulnerable code cannot
+# reach us — and it must be removed the moment upstream moves.
+
+[advisories]
+ignore = [
+    # RUSTSEC-2026-0235 — rkyv 0.7.46, out-of-bounds read when validating an
+    # archive containing Rc/Arc. Solution given is "upgrade to >=0.8.17".
+    #
+    # We cannot: rkyv reaches the lockfile only as an *optional, disabled*
+    # feature of rust_decimal, four levels down — nexis -> tauri-plugin-log ->
+    # byte-unit -> rust_decimal -> rkyv. rust_decimal 1.x pins the 0.7 line for
+    # that feature, so there is no bump to take (verified: 1.42.0 -> 1.42.1
+    # still resolves rkyv 0.7.46).
+    #
+    # It is also never compiled. `cargo tree -e normal --target all` does not
+    # contain rkyv at all — cargo records optional dependencies in Cargo.lock
+    # whether or not their feature is enabled, and cargo-audit reads the
+    # lockfile rather than the resolved feature graph, which is why it alone
+    # reports this. `cargo deny check`, which resolves features, passes clean.
+    #
+    # Nexis never archives or deserializes rkyv data in any case; the advisory
+    # is about validating untrusted archives.
+    #
+    # Re-check when tauri-plugin-log or byte-unit moves: if rust_decimal ever
+    # drops out of the tree, or its 2.x line lands with rkyv 0.8, delete this.
+    "RUSTSEC-2026-0235",
+]
