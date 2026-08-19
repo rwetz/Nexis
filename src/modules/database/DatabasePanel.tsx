@@ -16,6 +16,14 @@ const DB_TYPES: { id: DbType; label: string }[] = [
   { id: "mysql", label: "MySQL" },
 ];
 
+
+/** Connection-string examples per driver. Constant, so it is built once. */
+const placeholder: Record<DbType, string> = {
+  sqlite: "/path/to/database.db",
+  postgresql: "postgresql://user:pass@localhost/dbname",
+  mysql: "mysql://user:pass@localhost/dbname",
+};
+
 export function DatabasePanel() {
   const { connections, activeId, add, remove, setActive } = useDatabaseStore();
   const active = connections.find((c) => c.id === activeId) ?? null;
@@ -132,12 +140,6 @@ function AddConnectionForm({ onAdd, onCancel }: {
   const [type, setType] = useState<DbType>("sqlite");
   const [connStr, setConnStr] = useState("");
 
-  const placeholder: Record<DbType, string> = {
-    sqlite: "/path/to/database.db",
-    postgresql: "postgresql://user:pass@localhost/dbname",
-    mysql: "mysql://user:pass@localhost/dbname",
-  };
-
   return (
     <div className="border-b border-border/40 bg-muted/20 p-3 flex flex-col gap-2">
       <input
@@ -203,7 +205,7 @@ function QueryEditor({ connection }: { connection: DbConnection }) {
       mysql: "SHOW TABLES;",
     };
     setQuery(defaultQueries[connection.type]);
-  }, [connection.id, connection.type]);
+  }, [connection]);
 
   const run = useCallback(async () => {
     if (!query.trim()) return;

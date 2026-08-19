@@ -20,37 +20,17 @@ export type FileIcons = Record<string, FileIconEntry>;
 
 export const fileIcons = rawFileIcons as FileIcons;
 
-const { languageIds, fileExtensions, fileNames } = Object.entries(
-  fileIcons,
-).reduce<{
-  languageIds: Record<string, string>;
-  fileExtensions: Record<string, string>;
-  fileNames: Record<string, string>;
-}>(
-  ({ languageIds, fileExtensions, fileNames }, [name, icon]) => ({
-    languageIds: {
-      ...languageIds,
-      ...icon.languageIds?.reduce<Record<string, string>>(
-        (a, c) => ({ ...a, [c]: name }),
-        {},
-      ),
-    },
-    fileExtensions: {
-      ...fileExtensions,
-      ...icon.fileExtensions?.reduce<Record<string, string>>(
-        (a, c) => ({ ...a, [c]: name }),
-        {},
-      ),
-    },
-    fileNames: {
-      ...fileNames,
-      ...icon.fileNames?.reduce<Record<string, string>>(
-        (a, c) => ({ ...a, [c]: name }),
-        {},
-      ),
-    },
-  }),
-  { languageIds: {}, fileExtensions: {}, fileNames: {} },
-);
+// Built with a plain loop rather than a spreading `reduce`: every spread of
+// the accumulator copied the whole growing map, which is O(n^2) over roughly a
+// thousand icon entries and runs at module load, before the first frame.
+const languageIds: Record<string, string> = {};
+const fileExtensions: Record<string, string> = {};
+const fileNames: Record<string, string> = {};
+
+for (const [name, icon] of Object.entries(fileIcons)) {
+  for (const id of icon.languageIds ?? []) languageIds[id] = name;
+  for (const ext of icon.fileExtensions ?? []) fileExtensions[ext] = name;
+  for (const file of icon.fileNames ?? []) fileNames[file] = name;
+}
 
 export { fileExtensions, fileNames, languageIds };

@@ -20,7 +20,7 @@ pub mod bench_internals {
 
 use modules::{
     ai_audit, autosave, crash, dap, diagnostics, fs, fswatch, git, http_share, lsp, ml, net, pty,
-    python, recording, secrets, shell, snapshots, sysmon, winstate, workspace,
+    python, recording, secrets, shell, snapshots, sysmon, tools, winstate, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -293,6 +293,7 @@ pub fn run() {
             fswatch::fs_watch_stop,
             sysmon::sysmon_sample,
             sysmon::sysmon_kill,
+            tools::tool_probe,
             http_share::http_share_start,
             http_share::http_share_update,
             http_share::http_share_stop,

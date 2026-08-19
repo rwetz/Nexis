@@ -123,6 +123,9 @@ export function TabBar({
       // Compute where to insert: find the first non-dragged tab whose midpoint
       // is past the cursor — insert before it.  Default: append at the end.
       const withoutDragged = order.filter((t) => t.id !== s.fromId);
+      // Built once before the scan: this runs on every pointer move during a
+      // drag, so the position lookup should not rescan the tab list.
+      const indexById = new Map(withoutDragged.map((t, i) => [t.id, i]));
       let insertIdx = withoutDragged.length;
 
       for (const el of triggerEls) {
@@ -130,7 +133,7 @@ export function TabBar({
         if (tabId === s.fromId) continue; // skip the tab being dragged
         const { left, width } = el.getBoundingClientRect();
         if (e.clientX < left + width / 2) {
-          insertIdx = withoutDragged.findIndex((t) => t.id === tabId);
+          insertIdx = indexById.get(tabId) ?? withoutDragged.length;
           break;
         }
       }

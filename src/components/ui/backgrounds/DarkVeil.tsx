@@ -172,7 +172,11 @@ export const DarkVeilBackground = memo(function DarkVeilBackground({
       ro.disconnect();
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
-  }, []); // uniforms updated via propsRef — no need to remount
+    // Deliberately empty: the WebGL context, program and resize observer are
+    // built once, and every prop the shader reads is pushed through
+    // `propsRef` inside the render loop above. Listing the uniforms here would
+    // tear down and rebuild the canvas on each slider drag.
+  }, []);
 
   return (
     <div

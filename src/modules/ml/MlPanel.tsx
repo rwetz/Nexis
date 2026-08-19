@@ -126,6 +126,20 @@ type Props = {
 
 const BUSY_STATES = ["starting", "running", "cancelling"];
 
+
+/** One labelled figure in the run-details grid. Reads nothing from the panel,
+ *  so it is built once rather than per render. */
+const cell = (label: ReactNode, value: ReactNode, key: string) => (
+  <div key={key} className="flex min-w-0 flex-col">
+    <span className="truncate text-[9.5px] uppercase tracking-wide text-muted-foreground/60">
+      {label}
+    </span>
+    <span className="truncate font-mono text-[10.5px] tabular-nums text-foreground/90">
+      {value}
+    </span>
+  </div>
+);
+
 export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
   const engineStatus = useMlStore((s) => s.engineStatus);
   const engineVersion = useMlStore((s) => s.engineVersion);
@@ -1272,17 +1286,6 @@ function RunDetails() {
   const duration = runDuration(facts);
   const metricNames = Object.keys(facts.metrics).sort();
 
-  const cell = (label: ReactNode, value: ReactNode, key: string) => (
-    <div key={key} className="flex min-w-0 flex-col">
-      <span className="truncate text-[9.5px] uppercase tracking-wide text-muted-foreground/60">
-        {label}
-      </span>
-      <span className="truncate font-mono text-[10.5px] tabular-nums text-foreground/90">
-        {value}
-      </span>
-    </div>
-  );
-
   return (
     <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
       <div className="mb-1 flex items-center justify-between">
@@ -2118,7 +2121,7 @@ function RunRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [note, setNote] = useState(run.note ?? "");
-  const [tags, setTags] = useState((run.tags ?? []).join(", "));
+  const [tags, setTags] = useState(() => (run.tags ?? []).join(", "));
 
   useEffect(() => {
     if (editing) {

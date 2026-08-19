@@ -24,6 +24,7 @@ pub mod secrets;
 pub mod shell;
 pub mod snapshots;
 pub mod sysmon;
+pub mod tools;
 pub mod winstate;
 pub mod workspace;
 

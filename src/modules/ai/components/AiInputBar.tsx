@@ -68,6 +68,14 @@ function detectFileTrigger(
   return null;
 }
 
+
+/** Accepting a file drag needs nothing from the component, so it does not get
+ *  rebuilt with one. */
+const handleDragOver = (e: React.DragEvent) => {
+  if (!e.dataTransfer.types.includes("Files")) return;
+  e.preventDefault();
+};
+
 export function AiInputBar({ compact }: { compact?: boolean } = {}) {
   const c = useComposer();
   const snippets = useSnippetsStore((s) => s.snippets);
@@ -221,11 +229,6 @@ export function AiInputBar({ compact }: { compact?: boolean } = {}) {
     e.preventDefault();
     dragCounterRef.current += 1;
     setIsDragOver(true);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    if (!e.dataTransfer.types.includes("Files")) return;
-    e.preventDefault();
   };
 
   const handleDragLeave = (_e: React.DragEvent) => {

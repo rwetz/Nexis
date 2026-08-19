@@ -186,6 +186,9 @@ function ScopeSection({
   variables: Map<number, DapVariable[]>;
   onExpand: (ref: number) => Promise<void>;
 }) {
+  // Seeded from the prop once, which is correct here: the parent keys each
+  // ScopeSection on `scope.variablesReference`, so a different scope is a
+  // different component instance rather than a prop change to this one.
   const [open, setOpen] = useState(!scope.expensive);
   const vars = variables.get(scope.variablesReference);
 
@@ -366,8 +369,11 @@ function ConsolePanel() {
   const output = useDebugStore((s) => s.output);
   const evaluate = useDebugStore((s) => s.evaluate);
   const [input, setInput] = useState("");
-  const [history, setHistory] = useState<string[]>([]);
-  const [histIdx, setHistIdx] = useState(-1);
+  // Refs, not state: the recall buffer and cursor are only ever read inside
+  // the keydown handler — nothing renders them — so keeping them in state
+  // re-rendered the whole console on every submitted expression for nothing.
+  const historyRef = useRef<string[]>([]);
+  const histIdxRef = useRef(-1);
   const bottomRef = useRef<HTMLDivElement>(null);
   const addOutput = useDebugStore((s) => s.addOutput);
 
@@ -379,8 +385,8 @@ function ConsolePanel() {
     const expr = input.trim();
     if (!expr) return;
     addOutput("console", `> ${expr}\n`);
-    setHistory((h) => [expr, ...h.slice(0, 99)]);
-    setHistIdx(-1);
+    historyRef.current = [expr, ...historyRef.current.slice(0, 99)];
+    histIdxRef.current = -1;
     setInput("");
     const result = await evaluate(expr);
     addOutput("console", `${result}\n`);
@@ -414,13 +420,15 @@ function ConsolePanel() {
               e.preventDefault();
               void submit();
             } else if (e.key === "ArrowUp") {
-              const idx = Math.min(histIdx + 1, history.length - 1);
-              setHistIdx(idx);
-              setInput(history[idx] ?? "");
+              const hist = historyRef.current;
+              const idx = Math.min(histIdxRef.current + 1, hist.length - 1);
+              histIdxRef.current = idx;
+              setInput(hist[idx] ?? "");
             } else if (e.key === "ArrowDown") {
-              const idx = Math.max(histIdx - 1, -1);
-              setHistIdx(idx);
-              setInput(history[idx] ?? "");
+              const hist = historyRef.current;
+              const idx = Math.max(histIdxRef.current - 1, -1);
+              histIdxRef.current = idx;
+              setInput(hist[idx] ?? "");
             }
           }}
           aria-label="Evaluate expression"

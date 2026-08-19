@@ -85,6 +85,19 @@ const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.0;
 const ZOOM_STEP = 0.05;
 
+
+/** Autostart is an OS-level registration plus a preference; neither half comes
+ *  from component state. */
+const onToggleAutostart = async (next: boolean) => {
+  try {
+    if (next) await enable();
+    else await disable();
+    await setAutostart(next);
+  } catch (e) {
+    window.alert(`Could not ${next ? "enable" : "disable"} autostart: ${e}`);
+  }
+};
+
 export function GeneralSection() {
   const { mode, setMode } = useTheme();
 
@@ -176,16 +189,6 @@ export function GeneralSection() {
       alive = false;
     };
   }, []);
-
-  const onToggleAutostart = async (next: boolean) => {
-    try {
-      if (next) await enable();
-      else await disable();
-      await setAutostart(next);
-    } catch (e) {
-      window.alert(`Could not ${next ? "enable" : "disable"} autostart: ${e}`);
-    }
-  };
 
   return (
     <div className="flex flex-col gap-6">

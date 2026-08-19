@@ -15,8 +15,9 @@ type Props = {
 };
 
 function detectFramework(fileNames: string[]): TestFramework | null {
+  const present = new Set(fileNames);
   for (const fw of FRAMEWORKS) {
-    if (fw.detectFiles.some((f) => fileNames.includes(f))) {
+    if (fw.detectFiles.some((f) => present.has(f))) {
       return fw;
     }
   }

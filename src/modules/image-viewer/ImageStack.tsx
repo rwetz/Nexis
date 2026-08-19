@@ -29,7 +29,12 @@ export function ImageStack({ tabs, activeId }: Props) {
             )}
             aria-hidden={!visible}
           >
-            <ImageViewerPane path={t.path} visible={visible} />
+            {/* Keyed on the path, not just the tab id: re-pointing a tab at
+                a different image must start the viewer from scratch (zoom,
+                fit mode, measured dimensions, load error). A remount is that
+                reset, without an effect that clears each piece of state one
+                render late. */}
+            <ImageViewerPane key={t.path} path={t.path} visible={visible} />
           </div>
         );
       })}

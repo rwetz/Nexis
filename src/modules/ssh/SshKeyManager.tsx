@@ -51,29 +51,32 @@ async function listKeys(os: string): Promise<SshKey[]> {
     .map((l) => l.trim())
     .filter((l) => l.endsWith(".pub") || l.includes(".pub"));
 
-  const keys: SshKey[] = [];
-  for (const filename of filenames) {
-    const base = filename.split(/[/\\]/).pop() ?? filename;
-    const catCmd =
-      os === "windows"
-        ? `type "${sshDir}\\${base}"`
-        : `cat "${sshDir}/${base}"`;
-    try {
-      const catOut = await runCmd(catCmd);
-      const content = catOut.stdout.trim();
-      const parts = content.split(/\s+/);
-      const comment = parts.length >= 3 ? parts.slice(2).join(" ") : "";
-      keys.push({
-        filename: base,
-        label: base.replace(/\.pub$/, ""),
-        publicKey: content,
-        comment,
-      });
-    } catch {
-      // Skip unreadable key
-    }
-  }
-  return keys;
+  // One shell round trip per key, run together rather than end to end — they
+  // are independent reads, and Promise.all keeps the listing order.
+  const read = await Promise.all(
+    filenames.map(async (filename): Promise<SshKey | null> => {
+      const base = filename.split(/[/\\]/).pop() ?? filename;
+      const catCmd =
+        os === "windows"
+          ? `type "${sshDir}\\${base}"`
+          : `cat "${sshDir}/${base}"`;
+      try {
+        const catOut = await runCmd(catCmd);
+        const content = catOut.stdout.trim();
+        const parts = content.split(/\s+/);
+        const comment = parts.length >= 3 ? parts.slice(2).join(" ") : "";
+        return {
+          filename: base,
+          label: base.replace(/\.pub$/, ""),
+          publicKey: content,
+          comment,
+        };
+      } catch {
+        return null; // Skip unreadable key
+      }
+    }),
+  );
+  return read.filter((k): k is SshKey => k !== null);
 }
 
 export function SshKeyManager() {

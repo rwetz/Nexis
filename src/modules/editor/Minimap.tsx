@@ -114,6 +114,11 @@ export function Minimap({ view, className }: Props) {
       ctx.fillRect(2, y, w, stripHeight);
     }
     ctx.globalAlpha = 1;
+    // `zoomLevel` is a dependency even though the body never names it: the
+    // backing-store scale comes from `canvasBackingScale()`, which reads the
+    // `--app-zoom` custom property, and no CSS pixel size changes when app
+    // zoom does — so nothing else would ever trigger the redraw. Removing it
+    // makes the strip render soft at any zoom above 1.
   }, [view, zoomLevel]);
 
   const scheduleDraw = useCallback(() => {

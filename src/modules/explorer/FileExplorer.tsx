@@ -404,11 +404,12 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
       return out;
     }, [rows]);
 
-    useEffect(() => {
-      if (selectedPath && !entryIndexByPath.has(selectedPath)) {
-        setSelectedPath(null);
-      }
-    }, [entryIndexByPath, selectedPath]);
+    // A selection that is no longer in the tree (the file was deleted, or a
+    // parent folder collapsed) is dropped during render, not in an effect: an
+    // effect paints one frame with a highlight on a row that is not there.
+    if (selectedPath && !entryIndexByPath.has(selectedPath)) {
+      setSelectedPath(null);
+    }
 
     const virtualizer = useVirtualizer({
       count: rows.length,

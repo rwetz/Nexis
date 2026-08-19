@@ -50,14 +50,6 @@ export function ImageViewerPane({ path, visible }: Props) {
   const filename = path.split(/[\\/]/).pop() ?? path;
   const ext = (filename.split(".").pop() ?? "").toUpperCase();
 
-  // Reset state whenever the path changes
-  useEffect(() => {
-    setZoom(1);
-    setFitMode("fit");
-    setDims(null);
-    setLoadErr(false);
-  }, [path]);
-
   // Compute fit zoom so image fills the container without cropping
   const computeFitZoom = useCallback((): number => {
     const container = containerRef.current;

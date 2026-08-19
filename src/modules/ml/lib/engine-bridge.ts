@@ -88,13 +88,22 @@ export function buildCandidates(
   workspaceRoot?: string | null,
 ): string[] {
   const out: string[] = [];
+  // A Set carries the membership test; `out` keeps the order, which is the
+  // probe order and therefore meaningful.
+  const seen = new Set<string>();
   for (const env of envs) {
     const exe = siblingExe(env.python_path);
-    if (exe && !out.includes(exe)) out.push(exe);
+    if (exe && !seen.has(exe)) {
+      seen.add(exe);
+      out.push(exe);
+    }
   }
   if (workspaceRoot) {
     for (const exe of ancestorVenvCandidates(workspaceRoot)) {
-      if (!out.includes(exe)) out.push(exe);
+      if (!seen.has(exe)) {
+        seen.add(exe);
+        out.push(exe);
+      }
     }
   }
   out.push("nexis-ml");

@@ -124,9 +124,9 @@ export function SymbolOutlinePanel({ filePath }: Props) {
             <p className="text-[11px] text-muted-foreground/60">No symbols found</p>
           </div>
         ) : (
-          symbols.map((s, i) => (
+          symbols.map((s) => (
             <div
-              key={i}
+              key={`${s.line}:${s.kind}:${s.name}`}
               className="flex items-center gap-2 border-b border-border/20 px-3 py-1.5 hover:bg-muted/30 last:border-none"
             >
               <Icon

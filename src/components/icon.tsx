@@ -330,9 +330,6 @@ const REGISTRY = {
 
 export type IconName = keyof typeof REGISTRY;
 
-/** Every registered name, for tests and for the icon gallery in settings. */
-export const ICON_NAMES = Object.keys(REGISTRY) as IconName[];
-
 export type IconProps = Omit<
   React.SVGProps<SVGSVGElement>,
   "ref" | "name" | "weight"

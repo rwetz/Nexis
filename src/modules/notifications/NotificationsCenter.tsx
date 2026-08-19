@@ -142,7 +142,7 @@ export function NotificationsCenter() {
                     type="button"
                     onClick={() => remove(n.id)}
                     aria-label="Dismiss notification"
-                    className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-all hover:bg-muted group-hover:opacity-100"
+                    className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-[opacity,color,background-color] hover:bg-muted group-hover:opacity-100"
                   >
                     <Icon name="close" size="xs" />
                   </button>

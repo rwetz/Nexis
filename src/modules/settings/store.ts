@@ -977,17 +977,19 @@ export async function onPreferencesChange(
   };
   // Same-process writes still fire onChange immediately; cross-window writes
   // arrive via the Tauri event emitted by writePref().
-  const unsubLocal = await store.onChange<unknown>((key, value) => {
-    const mapped = map[key];
-    if (mapped) cb(mapped, value);
-  });
-  const unsubEvent = await listen<{ key: string; value: unknown }>(
-    PREFS_CHANGED_EVENT,
-    (e) => {
+  // Registered together: neither subscription reads the other's result, and
+  // awaiting them in sequence left a window where a preference change was
+  // observed by only one of the two paths.
+  const [unsubLocal, unsubEvent] = await Promise.all([
+    store.onChange<unknown>((key, value) => {
+      const mapped = map[key];
+      if (mapped) cb(mapped, value);
+    }),
+    listen<{ key: string; value: unknown }>(PREFS_CHANGED_EVENT, (e) => {
       const mapped = map[e.payload.key];
       if (mapped) cb(mapped, e.payload.value);
-    },
-  );
+    }),
+  ]);
   return () => {
     unsubLocal();
     unsubEvent();

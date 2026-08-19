@@ -171,6 +171,3 @@ function formatEnvBlock(live: LiveSnapshot): string | null {
   return `<env>\n${lines.join("\n")}\n</env>`;
 }
 
-export const CONTEXT_BLOCK_RE =
-  /^<terminal-context[^>]*>[\s\S]*?<\/terminal-context>\n*/;
-

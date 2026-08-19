@@ -61,6 +61,19 @@ fn workspace_cache_key(workspace: &WorkspaceEnv) -> String {
     }
 }
 
+/// Drop every cached availability answer, so the next `ensure_git_available`
+/// re-probes instead of replaying a result from up to `AVAILABILITY_TTL` ago.
+///
+/// Called by the missing-tools refresh (`modules::tools`): the user pressing
+/// it means they just changed the environment, and a stale "not installed"
+/// would put the notice back the moment the Source Control panel reloads.
+pub(crate) fn invalidate_availability_cache() {
+    availability_cell()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clear();
+}
+
 pub fn ensure_git_available(workspace: &WorkspaceEnv) -> Result<()> {
     let cache_key = workspace_cache_key(workspace);
     let cached = {

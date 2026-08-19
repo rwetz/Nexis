@@ -162,9 +162,9 @@ const ContextChips = memo(function ContextChips({
 }) {
   return (
     <div className="mb-1 flex flex-wrap gap-1">
-      {chips.map((c, i) => (
+      {chips.map((c) => (
         <span
-          key={i}
+          key={`${c.kind}:${chipLabel(c)}`}
           className="inline-flex items-center gap-1 rounded-md border border-border/50 bg-card/60 px-1.5 py-0.5 text-[10.5px] text-muted-foreground"
         >
           {chipIcon(c)}

@@ -18,6 +18,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { currentWorkspaceEnv } from "@/modules/workspace";
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -82,20 +83,36 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
 
   const active = query.trim().length > 0;
 
-  useEffect(() => {
-    onActiveChange?.(active);
-  }, [active, onActiveChange]);
+  // The parent is told during the same event that changed the query, not from
+  // an effect afterwards. Pushing live state up in an effect costs an extra
+  // render of the whole tree on every keystroke, and the parent spends one
+  // frame disagreeing with this component about whether search is active.
+  const changeQuery = useCallback(
+    (next: string) => {
+      setQuery(next);
+      onActiveChange?.(next.trim().length > 0);
+    },
+    [onActiveChange],
+  );
 
-  useEffect(() => {
-    if (open) {
-      inputRef.current?.focus();
-    } else {
+  // Closing clears the panel. Done during render rather than in an effect so
+  // the collapsed panel never paints one frame still holding the old query and
+  // its results.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (!open) {
       setQuery("");
       setResults([]);
       setSelectedIndex(0);
       setSearching(false);
       setTruncated(false);
     }
+  }
+
+  // Focus is a DOM effect, so it stays one.
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
   }, [open]);
 
   useEffect(() => {
@@ -178,7 +195,7 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
           <Input
             ref={inputRef}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => changeQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Escape") {
                 e.preventDefault();
@@ -209,7 +226,7 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
           {query ? (
             <button
               type="button"
-              onClick={() => setQuery("")}
+              onClick={() => changeQuery("")}
               className="absolute top-1/2 right-3.5 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
               aria-label="Clear search"
             >

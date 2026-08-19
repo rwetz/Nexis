@@ -427,7 +427,7 @@ function ProcessRow({
         // than being the default.
         onClick={(e) => void onKill(p.pid, e.shiftKey ? "kill" : "term")}
         title={`Terminate ${p.name} (${p.pid}) — shift-click to force kill`}
-        className="w-4 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+        className="w-4 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-[opacity,color,background-color] hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
       >
         <Icon name="close" size="xs" />
       </button>
