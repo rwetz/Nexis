@@ -31,6 +31,7 @@ pub enum GitError {
     NoUpstream,
     AuthRequired(String),
     HostKeyUnverified,
+    IdentityUnknown,
     TimedOut(&'static str),
     EmptyCommitMessage,
     CommandFailed {
@@ -87,6 +88,20 @@ impl Display for GitError {
             GitError::HostKeyUnverified => write!(
                 f,
                 "host key verification failed. Run the command once in the terminal to trust the host."
+            ),
+            // Git prints a 12-line block for this, of which only the two
+            // commands matter. It is reworded rather than passed through
+            // because the panel shows one error at a time and the original
+            // buries the remedy in the middle.
+            GitError::IdentityUnknown => write!(
+                f,
+                "git has no author identity configured, so it cannot record a commit. \
+                 Set one in the terminal:\n\n  \
+                 git config --global user.name \"Your Name\"\n  \
+                 git config --global user.email \"you@example.com\"\n\n\
+                 Run it in the environment the repository lives in — a WSL workspace \
+                 reads the distro's ~/.gitconfig, not the one on Windows. \
+                 Omit --global to set the identity for this repository only."
             ),
             GitError::TimedOut(op) => write!(f, "{op} timed out"),
             GitError::EmptyCommitMessage => write!(f, "commit message cannot be empty"),

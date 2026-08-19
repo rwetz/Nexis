@@ -18,6 +18,16 @@ updates:
       tauri:
         patterns:
           - "@tauri-apps/*"
+      # React and its types must move together: react and react-dom validate
+      # that they are the *exact* same version at runtime and throw
+      # "Incompatible React versions" otherwise. Ungrouped, dependabot opened
+      # a react-without-react-dom PR (#17) that could never have gone green.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
       # AI SDK providers together.
       ai-sdk:
         patterns:

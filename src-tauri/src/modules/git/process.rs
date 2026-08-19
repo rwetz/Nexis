@@ -366,6 +366,9 @@ pub fn ensure_success(output: &GitOutput, context: &'static str) -> Result<()> {
     if let Some(err) = classify_auth_error(&stderr) {
         return Err(err);
     }
+    if is_identity_error(&stderr) {
+        return Err(GitError::IdentityUnknown);
+    }
     let detail = if !stderr.is_empty() {
         stderr
     } else if !stdout.is_empty() {
@@ -392,6 +395,31 @@ fn classify_auth_error(stderr: &str) -> Option<GitError> {
         return Some(GitError::HostKeyUnverified);
     }
     None
+}
+
+/// Does this stderr mean "git has no author identity"?
+///
+/// This is classified here, next to the auth errors, because `ensure_success`
+/// is the one funnel every git command passes through — `commit` is only the
+/// most common way to hit it, and `stash`, `merge`, `revert` and
+/// `cherry-pick` all write a commit object and fail identically.
+///
+/// Left unclassified it arrives as a `CommandFailed` carrying git's whole
+/// 12-line block, which the panel renders on a single truncated line: the
+/// user gets "Author identity unknown…" and the two commands that would fix
+/// it are clipped off the end.
+///
+/// The markers are matched rather than the exact phrasing because git emits
+/// several variants of the same condition — nothing configured and
+/// auto-detection failing, auto-detection disabled by
+/// `user.useConfigOnly`, or a name/email configured as an empty string.
+fn is_identity_error(stderr: &str) -> bool {
+    let lower = stderr.to_ascii_lowercase();
+    lower.contains("please tell me who you are")
+        || lower.contains("unable to auto-detect email address")
+        || lower.contains("empty ident name")
+        || lower.contains("no name was given and auto-detection is disabled")
+        || lower.contains("no email was given and auto-detection is disabled")
 }
 
 fn decode_text(bytes: Vec<u8>) -> TextSource {
@@ -434,8 +462,8 @@ mod tests {
     #[cfg(windows)]
     use super::build_git_command;
     use super::{
-        decode_text, parse_git_version, prune_expired_availability_entries, version_meets_minimum,
-        Availability, AvailabilityCache, AVAILABILITY_TTL,
+        decode_text, is_identity_error, parse_git_version, prune_expired_availability_entries,
+        version_meets_minimum, Availability, AvailabilityCache, AVAILABILITY_TTL,
     };
     use crate::modules::git::types::TextSource;
     #[cfg(windows)]
@@ -444,6 +472,66 @@ mod tests {
     #[cfg(windows)]
     use std::ffi::OsString;
     use std::time::{Duration, Instant};
+
+    // Verbatim from git 2.51, `git commit` with nothing configured. The
+    // remedy is in the middle of the block, which is why the panel's
+    // single-line truncation loses it and why this is classified instead.
+    const IDENTITY_UNSET: &str = "Author identity unknown\n\n\
+*** Please tell me who you are.\n\n\
+Run\n\n  \
+git config --global user.email \"you@example.com\"\n  \
+git config --global user.name \"Your Name\"\n\n\
+to set your account's default identity.\n\
+Omit --global to set the identity only in this repository.\n\n\
+fatal: unable to auto-detect email address (got 'ryan@DESKTOP.(none)')";
+
+    #[test]
+    fn identity_error_recognised_in_its_variants() {
+        assert!(is_identity_error(IDENTITY_UNSET));
+        // user.useConfigOnly=true, so git refuses to guess rather than
+        // guessing badly. Different wording, same condition.
+        assert!(is_identity_error(
+            "fatal: no email was given and auto-detection is disabled"
+        ));
+        assert!(is_identity_error(
+            "fatal: no name was given and auto-detection is disabled"
+        ));
+        // Configured, but to an empty string.
+        assert!(is_identity_error(
+            "fatal: empty ident name (for <ryan@example.com>) not allowed"
+        ));
+        // Case is not load-bearing: the match lowercases first.
+        assert!(is_identity_error("*** PLEASE TELL ME WHO YOU ARE."));
+    }
+
+    #[test]
+    fn ordinary_git_failures_are_not_identity_errors() {
+        assert!(!is_identity_error("nothing to commit, working tree clean"));
+        assert!(!is_identity_error(
+            "fatal: not a git repository (or any of the parent directories): .git"
+        ));
+        assert!(!is_identity_error(
+            "error: pathspec 'nope' did not match any file(s) known to git"
+        ));
+        // An auth failure is classified by classify_auth_error before this
+        // runs; it must not also read as an identity problem.
+        assert!(!is_identity_error(
+            "fatal: Authentication failed for 'https://github.com/rwetz/Nexis.git/'"
+        ));
+        assert!(!is_identity_error(""));
+    }
+
+    #[test]
+    fn identity_error_message_names_both_commands_and_the_wsl_trap() {
+        // The whole point of the typed error is that the user can act on it
+        // without going and finding git's own output.
+        let rendered = crate::modules::git::errors::GitError::IdentityUnknown.to_string();
+        assert!(rendered.contains("git config --global user.name"));
+        assert!(rendered.contains("git config --global user.email"));
+        // Issue #47 was reported from a WSL workspace, where setting the
+        // identity on the Windows side changes nothing.
+        assert!(rendered.contains("WSL"));
+    }
 
     #[test]
     fn extracts_simple_version() {
