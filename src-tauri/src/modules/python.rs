@@ -132,16 +132,15 @@ fn wsl_linux_python(found: &Path, host_venv: &Path, linux_venv: &str) -> Option<
 /// onto the wrong machine.
 #[cfg(windows)]
 fn wsl_system_python(distro: &str) -> Option<PythonEnv> {
-    let path = crate::modules::workspace::wsl_exec_capture(
-        distro,
-        "sh",
-        &["-c", "command -v python3 || command -v python"],
-    )
-    .ok()?;
-    let path = crate::modules::workspace::normalize_wsl_value(path, "");
-    if path.is_empty() {
-        return None;
-    }
+    // Sentinel-wrapped: on a cold distro this call can boot the VM, and the
+    // relayed systemd/printk output would otherwise be read as the answer.
+    // See `parse_wsl_probe` in workspace.rs.
+    let script = format!(
+        "py=\"$(command -v python3 || command -v python)\"\n{}",
+        crate::modules::workspace::wsl_probe_script("\"$py\"")
+    );
+    let out = crate::modules::workspace::wsl_exec_capture(distro, "sh", &["-c", &script]).ok()?;
+    let path = crate::modules::workspace::parse_wsl_probe_path(&out)?;
     let version = crate::modules::workspace::wsl_exec_capture(distro, &path, &["--version"])
         .ok()
         .map(|v| v.trim().to_string())

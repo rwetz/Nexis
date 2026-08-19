@@ -24,7 +24,7 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 ## Known bug pitfalls
 
-**These invariants are enforced by the build, not just this document.** Two tripwire suites scan the source tree and fail with a message naming the pitfall: `src-tauri/tests/pitfall_invariants.rs` (ConPTY lifecycle lock, `-Command` launch, `authorize_spawn_cwd`, `Command::new` confinement, PTY lock-poison handling, heavy-command async audit, `pty_write` sync/enqueue-only input ordering, no emoji) and `src/lib/pitfall-guards.test.ts` (`pty_open` confinement, `pty_write` confinement, `writePref` routing, composer `disabled`, reasoning pruning, Zustand selector references, CodeMirror zoom exemption, icon-vendor confinement, file-tree retint, no emoji). `src-tauri/clippy.toml` additionally bans raw `std::process::Command::new` via `disallowed-methods`. **If one of these fails, fix the code — never weaken or delete the tripwire.** They exist because every guarded invariant has been broken at least once by a refactor that looked harmless.
+**These invariants are enforced by the build, not just this document.** Two tripwire suites scan the source tree and fail with a message naming the pitfall: `src-tauri/tests/pitfall_invariants.rs` (ConPTY lifecycle lock, `-Command` launch, `authorize_spawn_cwd`, `Command::new` confinement, PTY lock-poison handling, heavy-command async audit, `pty_write` sync/enqueue-only input ordering, WSL probe sentinels, no emoji) and `src/lib/pitfall-guards.test.ts` (`pty_open` confinement, `pty_write` confinement, `writePref` routing, composer `disabled`, reasoning pruning, Zustand selector references, CodeMirror zoom exemption, icon-vendor confinement, file-tree retint, terminal session-effect deps, no emoji). `src-tauri/clippy.toml` additionally bans raw `std::process::Command::new` via `disallowed-methods`. **If one of these fails, fix the code — never weaken or delete the tripwire.** They exist because every guarded invariant has been broken at least once by a refactor that looked harmless.
 
 ### 1. ConPTY lifecycle race (Windows — CRITICAL)
 **Symptom:** New terminal opens blank — cursor visible but shell never prints output.
@@ -298,6 +298,37 @@ A related defect came from the other direction. The catppuccin file-tree icons c
 **Fix in place:** `ml_detect` / `ml_env` / `ml_spawn` / `ml_install` / `py_detect_envs` all take `workspace` and build their child through `ml::env_command`, which runs `wsl.exe -d <distro> [--cd <linux dir>] --exec <program>` for a WSL workspace. `ml_spawn` authorizes the *host* view of the project dir (that is what the registry can check) but hands the child its *Linux* path. `detectCache` is keyed by `currentWorkspaceScopeKey()`, and `MlStore.engineScope` records which environment answered — a mismatch discards the lot rather than reusing it.
 
 **Future danger:** Any new backend command that spawns a process, reads a path, or reports a capability **on behalf of the workspace** needs the `workspace: Option<WorkspaceEnv>` parameter and must route through `resolve_path` or `env_command`. Two rules that are easy to get backwards: a path handed to `wsl.exe` must be the caller's Linux path (never the resolved `\\wsl.localhost\…` form), and anything host-scoped by nature — the managed engine download, the app-data dir, the pinned release — must be *hidden* in a WSL workspace rather than silently offered. On the frontend, any cache of an environment-dependent answer must include the workspace scope in its key.
+
+---
+
+### 21. A WSL probe read positionally gets the distro's boot log instead
+
+**Symptom:** Switching a workspace into WSL leaves a terminal with a cursor and no prompt. Intermittent, and biased toward the *second* switch: `Windows -> WSL` works, `-> Windows` idles the VM out, and `-> WSL` again finds it cold.
+
+**Root cause:** `switchWorkspace` asks the distro for `$HOME` before it does anything else, so on a cold distro **the probe is the `wsl.exe` call that boots the VM**. With systemd enabled, `wsl.exe` relays the whole boot to the probe's stdout — roughly 95 `[  OK  ]` lines plus kernel printk. The reader took the last non-empty line, and that is wrong in both directions:
+
+- `printf %s` emits no trailing newline, so an unterminated console line swallows the value.
+- printk keeps arriving **after** boot hands off. In a real capture (Ubuntu 26.04, systemd 259.5, `debug` on the kernel command line): `hv_balloon` at t=4.19s, `misc dxg` at 4.65s and 5.07s, and a WSL `CheckConnection` error at 7.36s — all after `graphical.target`.
+
+The bad value then became the new terminal tab's cwd, `authorize_spawn_cwd` rejected it as "cwd not accessible", and the JS `.catch()` logged it to a console nobody had open. So a probe-parsing bug rendered as pitfall #1's blank terminal. `wsl_login_shell` failed the same way from the other side: a garbage answer became `--exec <kernel log line>`, which exits instantly.
+
+**Fix in place:** Probes emit their answer wrapped in sentinels via `workspace::wsl_probe_script` and read it back with `parse_wsl_probe` / `parse_wsl_probe_path`, which boot output cannot forge. `parse_wsl_probe_path` additionally requires POSIX-absolute — every probe asks for a path, and nothing in a boot log starts with `/`. `switchWorkspace` refuses a non-Linux home rather than resetting the workspace onto it, `--cd` applies the same rule, and `wsl --list --verbose` rows require a numeric VERSION column (locale-safe; WSL translates the state words, not the number). A rejected `pty_open` is now printed into the terminal instead of only `console.error`.
+
+**Future danger:** Any new `wsl.exe` probe must go through `wsl_probe_script` + `parse_wsl_probe*`. Never read an answer positionally — not "the last line", not "the first line", not "trim the output" — because you cannot predict what else is on that stream. The parser is deliberately **not** `#[cfg(windows)]`, so its tests run on every platform; keep it that way. Enforced by `pitfall_21_wsl_probes_parse_by_sentinel` in `src-tauri/tests/pitfall_invariants.rs`, which reads balanced call expressions rather than lines (rustfmt reflows these calls as soon as an argument grows).
+
+---
+
+### 22. `initialCwd` in the terminal session effect's dep array
+
+**Symptom:** The terminal flickers on every `cd`, loses its selection, and can come back without a prompt. Scrollback beyond the snapshot cap is silently truncated.
+
+**Root cause:** `PaneTreeView` passes `initialCwd={node.cwd}`, and the pane-tree leaf's `cwd` is rewritten by `setLeafCwd` on **every OSC 7** — i.e. on every directory change. That value sat in the dependency array of the `useTerminalSession` effect that binds the leaf to a renderer slot, so a `cd` ran the full teardown and rebuild: serialize the buffer, `releaseSlot`, `term.clear()` + `term.reset()`, replay the snapshot, and hide the host for two animation frames. `ensureSession` only reads the value when it *creates* the session, so the dependency bought nothing at all.
+
+The prompt is lost when the serialize lands between the OSC 7 and the prompt bytes — zsh and bash emit the cwd from `precmd`, *before* the prompt is drawn.
+
+This stayed hidden in WSL until shell integration actually installed into the distro (pitfall #17's third occurrence). Before that, a WSL terminal emitted no OSC 7 at all, so the leaf's `cwd` never moved and the effect never re-ran — which is why the regression surfaced as a WSL-switching bug rather than a general one.
+
+**Future danger:** The name is the tell: a prop called `initial*` describes creation, so it does not belong in a dep array. Mirror it into a ref (declared *before* the effect, so cleanup-then-setup ordering leaves the ref current). More generally, nothing that tracks live terminal state — cwd, title, exit code — may be a dependency of the slot-binding effect. Enforced by the two `pitfall 22` guards in `src/lib/pitfall-guards.test.ts`, which also assert that a rejected `pty_open` still reaches the pane.
 
 ---
 

@@ -191,6 +191,52 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
     ).toBe(true);
   });
 
+  it("pitfall 22: the terminal session effect does not depend on initialCwd", () => {
+    const src = readSrc("modules/terminal/lib/useTerminalSession.ts");
+    // The pane-tree leaf's `cwd` is rewritten by setLeafCwd on every OSC 7, so
+    // depending on it re-ran the session effect on every `cd` — detaching the
+    // leaf from its renderer slot, resetting the xterm buffer, replaying a
+    // snapshot, and blanking the pane for two frames. ensureSession only reads
+    // the value when it creates the session, so the dep bought nothing.
+    const deps = /\}, \[leafId, container[^\]]*\]\);/.exec(src);
+    expect(
+      deps,
+      "could not find the useTerminalSession attach effect's dep array — if it " +
+        "was restructured, update this guard rather than deleting it",
+    ).not.toBeNull();
+    expect(
+      deps?.[0].includes("initialCwd"),
+      "the terminal attach effect must not depend on initialCwd: it changes on " +
+        "every directory change, and re-running the effect tears the leaf off " +
+        "its renderer slot and resets the buffer (CLAUDE.md pitfall #22)",
+    ).toBe(false);
+
+    // The other half: the value still has to reach ensureSession.
+    expect(
+      /ensureSession\(leafId, initialCwdRef\.current\)/.test(src),
+      "ensureSession must still receive the initial cwd, via the ref mirror",
+    ).toBe(true);
+  });
+
+  it("pitfall 22: a failed pty_open is shown in the terminal, not just logged", () => {
+    const src = readSrc("modules/terminal/lib/useTerminalSession.ts");
+    // Every openPty rejection used to render identically to a working shell
+    // that printed nothing: a cursor and no prompt. That is what let a
+    // corrupted WSL home probe go undiagnosed.
+    expect(
+      /function reportSpawnFailure\(/.test(src),
+      "useTerminalSession must keep reportSpawnFailure — a rejected pty_open " +
+        "has to be visible in the pane, not only in console.error",
+    ).toBe(true);
+    const catches = src.match(/\.catch\(\(e\) => \{[^}]*ptyOpening = false[^}]*\}/gs) ?? [];
+    for (const block of catches) {
+      expect(
+        block.includes("reportSpawnFailure"),
+        "every openPty failure path must call reportSpawnFailure",
+      ).toBe(true);
+    }
+  });
+
   it("secret redaction: outbound surfaces route through redactSensitive", () => {
     // The LAN share stream and saved recordings leave the machine (viewers,
     // bug-report attachments). Key-shaped strings captured from terminal

@@ -442,3 +442,88 @@ fn pitfall_19_no_emoji_in_rust_source() {
          no emoji font. Offenders: {offenders:?}"
     );
 }
+
+/// Every `name(...)` call expression in `source`, each spanning from the opening
+/// paren to its balanced close — so a check is not defeated by rustfmt deciding
+/// to reflow the arguments. Skips the declaration site (`fn name(`).
+fn call_exprs<'a>(source: &'a str, name: &str) -> Vec<&'a str> {
+    let mut out = Vec::new();
+    let mut from = 0;
+    while let Some(rel) = source[from..].find(name) {
+        let start = from + rel;
+        from = start + name.len();
+        if source[..start].ends_with("fn ") {
+            continue;
+        }
+        let mut depth = 0usize;
+        let mut end = None;
+        for (i, c) in source[start..].char_indices() {
+            match c {
+                '(' => depth += 1,
+                ')' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        end = Some(start + i + 1);
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+        if let Some(end) = end {
+            out.push(&source[start..end]);
+        }
+    }
+    out
+}
+
+/// CLAUDE.md pitfall #21 — a WSL probe must read its answer from the sentinels,
+/// never from the shape of the output.
+///
+/// On a cold distro, the probe is the `wsl.exe` call that boots the VM, and
+/// with systemd enabled `wsl.exe` relays the whole boot log to its stdout.
+/// Reading "the last non-empty line" therefore returns a kernel message about
+/// as often as the answer — and `wsl_home`'s answer becomes the terminal's cwd,
+/// so a bad read renders as a blank terminal (pitfall #1's shape).
+#[test]
+fn pitfall_21_wsl_probes_parse_by_sentinel() {
+    let mut files = Vec::new();
+    rust_files(&src_dir(), &mut files);
+
+    for file in &files {
+        let text = fs::read_to_string(file).unwrap_or_else(|e| panic!("{}: {e}", file.display()));
+        let prod = production_code(&text);
+
+        assert!(
+            !prod.contains("normalize_wsl_value"),
+            "{}: `normalize_wsl_value` is the positional (last-non-empty-line) probe reader that \
+             pitfall #21 removed. Emit the value with `workspace::wsl_probe_script` and read it \
+             back with `parse_wsl_probe` / `parse_wsl_probe_path`.",
+            file.display()
+        );
+
+        // Every `sh -c` probe has to carry the sentinels into the script.
+        // Scanned as a balanced call expression, not per line: rustfmt reflows
+        // these across several lines as soon as the argument grows.
+        for call in call_exprs(prod, "run_wsl_sh(") {
+            assert!(
+                call.contains("wsl_probe_script("),
+                "{}: this `run_wsl_sh` call does not build its script with `wsl_probe_script`, \
+                 so its answer cannot be told apart from a relayed WSL boot log \
+                 (CLAUDE.md pitfall #21). Call was: {call}",
+                file.display()
+            );
+        }
+
+        // And a file that emits the sentinels must also parse them back — the
+        // half that was missing is what made the bad value look plausible.
+        if prod.contains("wsl_probe_script(") {
+            assert!(
+                prod.contains("parse_wsl_probe"),
+                "{}: builds a sentinel-wrapped WSL probe but never reads it back with \
+                 `parse_wsl_probe` / `parse_wsl_probe_path` (CLAUDE.md pitfall #21).",
+                file.display()
+            );
+        }
+    }
+}

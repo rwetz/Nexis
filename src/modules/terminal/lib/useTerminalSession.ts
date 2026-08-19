@@ -305,6 +305,29 @@ function deliverPtyBytes(leafId: number, bytes: Uint8Array): void {
   }
 }
 
+/**
+ * Show a failed shell spawn *in the terminal* rather than only in the devtools
+ * console.
+ *
+ * `pty_open` rejects for reasons the user can act on — a cwd that no longer
+ * exists, a cwd the workspace registry will not authorize, a distro that will
+ * not start — and every one of them used to render identically: a terminal
+ * with a cursor and nothing else, with the reason reachable only from
+ * `console.error`. That is the pitfall-#1 blank-terminal shape, and it is
+ * exactly why a corrupted WSL home probe went undiagnosed.
+ */
+function reportSpawnFailure(leafId: number, error: unknown): void {
+  console.error("[nexis] openPty failed:", error);
+  const detail = String(error).replace(/\r?\n/g, "\r\n");
+  deliverPtyBytes(
+    leafId,
+    new TextEncoder().encode(
+      `\r\n\x1b[31mnexis: could not start a shell here\x1b[39m\r\n` +
+        `\x1b[2m${detail}\x1b[22m\r\n`,
+    ),
+  );
+}
+
 async function openPtyForSession(
   leafId: number,
   s: Session,
@@ -505,7 +528,7 @@ function attachSession(
       })
       .catch((e) => {
         s.ptyOpening = false;
-        console.error("[nexis] openPty failed:", e);
+        if (!s.disposed) reportSpawnFailure(leafId, e);
       });
   }
 }
@@ -549,7 +572,7 @@ export async function respawnSession(
     pty = await openPtyForSession(leafId, s, cwd ?? s.initialCwd);
   } catch (e) {
     s.ptyOpening = false;
-    console.error("[nexis] respawn openPty failed:", e);
+    if (!s.disposed) reportSpawnFailure(leafId, e);
     return;
   }
   s.ptyOpening = false;
@@ -607,9 +630,26 @@ export function useTerminalSession({
     cbRef.current = { onSearchReady, onExit, onCwd, onTitle };
   });
 
+  // `initialCwd` is the pane-tree leaf's `cwd`, and that field is rewritten by
+  // `setLeafCwd` on every OSC 7 — i.e. on every `cd`. Keeping it in the effect
+  // below's dep array made a directory change tear the leaf off its renderer
+  // slot and rebind it: serialize the buffer, `term.clear()` + `term.reset()`,
+  // replay the snapshot, and hide the host for two frames. `ensureSession`
+  // only reads the value when it *creates* the session, so the dep bought
+  // nothing and cost a full reset. Mirrored into a ref instead, declared
+  // before the effect so the ref is current by the time the effect reads it.
+  //
+  // This stayed invisible in WSL until shell integration actually installed
+  // into the distro (pitfall #17's third occurrence): before that a WSL
+  // terminal emitted no OSC 7 at all, so `node.cwd` never moved.
+  const initialCwdRef = useRef(initialCwd);
+  useEffect(() => {
+    initialCwdRef.current = initialCwd;
+  });
+
   useEffect(() => {
     let cancelled = false;
-    const s = ensureSession(leafId, initialCwd);
+    const s = ensureSession(leafId, initialCwdRef.current);
     s.ready.then(() => {
       if (cancelled || s.disposed) return;
       const node = container.current;
@@ -626,7 +666,7 @@ export function useTerminalSession({
       cancelled = true;
       detachSession(leafId);
     };
-  }, [leafId, container, initialCwd]);
+  }, [leafId, container]);
 
   const fontSize = usePreferencesStore((p) => p.terminalFontSize);
   const zoomLevel = usePreferencesStore((p) => p.zoomLevel);
