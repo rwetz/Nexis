@@ -276,6 +276,12 @@ type MlStore = {
   engineKind: EngineKind | null;
   /** Python to install the engine into, when one was detected. */
   installPython: string | null;
+  /** Whether that interpreter is an isolated env or the machine-wide one, and
+   *  what version it reports. Both are shown before a ~3 GB install commits:
+   *  a system interpreter changes every project on the machine, and PyTorch
+   *  publishes no wheels at all for a CPython that is too new. */
+  installPythonKind: "venv" | "conda" | "system" | null;
+  installPythonVersion: string | null;
   installing: boolean;
   installSid: number | null;
   installRoot: string | null;
@@ -451,6 +457,8 @@ export const useMlStore = create<MlStore>((set, get) => ({
   engineKind: null,
   createError: null,
   installPython: null,
+  installPythonKind: null,
+  installPythonVersion: null,
   installing: false,
   installSid: null,
   installRoot: null,
@@ -498,6 +506,8 @@ export const useMlStore = create<MlStore>((set, get) => ({
       set({
         engineScope: scope,
         engineCandidates: [],
+        installPythonKind: null,
+        installPythonVersion: null,
         engineExe: null,
         engineVersion: null,
         engineKind: null,
@@ -529,7 +539,11 @@ export const useMlStore = create<MlStore>((set, get) => ({
     // isolated env over the system interpreter).
     const installTarget =
       envs.find((e) => e.kind === "venv" || e.kind === "conda") ?? envs[0];
-    set({ installPython: installTarget?.python_path ?? null });
+    set({
+      installPython: installTarget?.python_path ?? null,
+      installPythonKind: installTarget?.kind ?? null,
+      installPythonVersion: installTarget?.version ?? null,
+    });
     try {
       // Candidates: Python envs + ancestor venvs + PATH, then the managed
       // standalone engine (the "no Python" fallback) last.

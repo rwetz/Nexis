@@ -63,12 +63,17 @@ export function NetworkGraph({
   projectDir,
   variant = "panel",
   onOpenAsTab,
+  onCollapse,
 }: {
   projectDir: string;
   variant?: NetworkGraphVariant;
   /** Shows the "open as tab" affordance when provided (panel variant only —
    *  the tab is already the detached view). */
   onOpenAsTab?: () => void;
+  /** Shows the "back to the panel" affordance (tab variant only). Expanding
+   *  is discoverable from an icon, so collapsing has to be too — hunting for
+   *  the tab's close button is not the same gesture. */
+  onCollapse?: () => void;
 }) {
   const weightsArtifact = useMlStore((s) => s.weightsArtifact);
   const cmArtifact = useMlStore((s) => s.cmArtifact);
@@ -182,6 +187,17 @@ export function NetworkGraph({
               className="rounded p-0.5 text-muted-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
             >
               <Icon name="expand" size="xs" />
+            </button>
+          ) : null}
+          {onCollapse && isTab ? (
+            <button
+              type="button"
+              onClick={onCollapse}
+              aria-label="Collapse back into the ML Lab panel"
+              title="Collapse back into the ML Lab panel"
+              className="rounded p-0.5 text-muted-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+            >
+              <Icon name="collapse" size="xs" />
             </button>
           ) : null}
         </span>

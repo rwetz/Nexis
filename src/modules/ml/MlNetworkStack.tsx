@@ -19,9 +19,13 @@ import { NetworkGraph } from "./NetworkGraph";
 export function MlNetworkStack({
   tabs,
   activeId,
+  onCollapse,
 }: {
   tabs: Tab[];
   activeId: number | null;
+  /** Close this tab — the diagram stays in the ML Lab panel, so collapsing
+   *  is just closing the detached copy. */
+  onCollapse?: (tabId: number) => void;
 }) {
   const tab = tabs.find(
     (t): t is Extract<Tab, { kind: "ml-network" }> =>
@@ -37,6 +41,7 @@ export function MlNetworkStack({
         key={tab.projectDir}
         projectDir={tab.projectDir}
         variant="tab"
+        onCollapse={onCollapse ? () => onCollapse(tab.id) : undefined}
       />
     </div>
   );

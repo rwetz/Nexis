@@ -1747,7 +1747,11 @@ export default function App() {
         aria-hidden={!isMlNetworkTab}
       >
         <Suspense fallback={null}>
-          <MlNetworkStackLazy tabs={tabs} activeId={activeId} />
+          <MlNetworkStackLazy
+            tabs={tabs}
+            activeId={activeId}
+            onCollapse={closeTab}
+          />
         </Suspense>
       </div>
     </div>

@@ -63,6 +63,7 @@ import {
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { readConfusionMatrix, type ConfusionMatrix } from "./lib/artifacts";
 import { readTrainToml, writeTrainToml } from "./lib/config";
+import { torchSupportWarning } from "./lib/pythonSupport";
 import { tomlGet, tomlSet } from "./lib/toml-edit";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setMlAutoOpenOnTrain } from "@/modules/settings/store";
@@ -119,6 +120,8 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
   const engineKind = useMlStore((s) => s.engineKind);
   const engineError = useMlStore((s) => s.engineError);
   const installPython = useMlStore((s) => s.installPython);
+  const installPythonKind = useMlStore((s) => s.installPythonKind);
+  const installPythonVersion = useMlStore((s) => s.installPythonVersion);
   const installing = useMlStore((s) => s.installing);
   const downloadingEngine = useMlStore((s) => s.downloadingEngine);
   const enginePin = useMlStore((s) => s.enginePin);
@@ -251,6 +254,8 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
         ) : engineStatus === "missing" ? (
           <SetupCard
             installPython={installPython}
+            installPythonKind={installPythonKind}
+            installPythonVersion={installPythonVersion}
             installing={installing}
             downloadingEngine={downloadingEngine}
             pin={enginePin}
@@ -611,6 +616,8 @@ function DeviceLabel({ device }: { device: string }) {
 
 function SetupCard({
   installPython,
+  installPythonKind,
+  installPythonVersion,
   installing,
   downloadingEngine,
   pin,
@@ -625,6 +632,8 @@ function SetupCard({
   onRetry,
 }: {
   installPython: string | null;
+  installPythonKind: "venv" | "conda" | "system" | null;
+  installPythonVersion: string | null;
   installing: boolean;
   downloadingEngine: boolean;
   pin: EnginePin | null;
@@ -650,6 +659,7 @@ function SetupCard({
   const gpu = hostGpu != null;
   const sizeNote = gpu && useGpu ? "~3 GB" : "~200 MB";
   const pinMb = pin ? Math.max(1, Math.round(pin.sizeBytes / (1024 * 1024))) : null;
+  const torchWarning = torchSupportWarning(installPythonVersion);
   const pinAsset = pin?.url.split("/").pop() ?? "the release binary";
   return (
     <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
@@ -713,10 +723,40 @@ function SetupCard({
           >
             Install engine
           </button>
+          {/* Both facts about the target belong here rather than in a log
+              after the fact: a system interpreter is shared by everything on
+              the machine, and a too-new one wastes the entire download before
+              pip admits there is no wheel. */}
           <p className="text-[10px] leading-snug text-muted-foreground/70">
-            Installs into <span className="font-mono">{installPython}</span>{" "}
+            Installs into <span className="font-mono">{installPython}</span>
+            {installPythonVersion ? ` — ${installPythonVersion}` : ""}
+            {installPythonKind === "system"
+              ? ", your machine-wide Python"
+              : installPythonKind === "conda"
+                ? ", a conda environment"
+                : installPythonKind === "venv"
+                  ? ", a project virtualenv"
+                  : ""}{" "}
             (one {sizeNote} download, local only).
           </p>
+          {installPythonKind === "system" ? (
+            <p className="mt-1 flex items-start gap-1.5 text-[10px] leading-snug text-muted-foreground/70">
+              <Icon name="info" size="xs" className="mt-px shrink-0" />
+              <span>
+                No virtualenv was found in this folder or the ones above it, so
+                this installs into the Python shared by every project on the
+                machine. Create a <span className="font-mono">.venv</span> here
+                first to keep it contained — or use the standalone engine
+                below, which needs no Python at all.
+              </span>
+            </p>
+          ) : null}
+          {torchWarning ? (
+            <p className="mt-1 flex items-start gap-1.5 text-[10px] leading-snug text-amber-500">
+              <Icon name="alert" size="xs" className="mt-px shrink-0" />
+              <span>{torchWarning}</span>
+            </p>
+          ) : null}
         </>
       ) : (
         <ManualSetupSteps />
@@ -733,11 +773,16 @@ function SetupCard({
               <summary className="cursor-pointer select-none text-[10px] text-muted-foreground/70 hover:text-muted-foreground">
                 Where Nexis looked ({candidates.length})
               </summary>
-              <ul className="mt-1 flex max-h-32 flex-col gap-px overflow-y-auto">
+              {/* `leading-none` is inherited here from the card's tight type
+                  scale, which made 9.5px monospace rows overlap into an
+                  unreadable smear. Line height has to be set explicitly
+                  alongside an arbitrary font size — Tailwind's `text-[…]`
+                  sets size only. */}
+              <ul className="mt-1 flex max-h-32 flex-col gap-0.5 overflow-y-auto">
                 {candidates.map((c) => (
                   <li
                     key={c}
-                    className="truncate font-mono text-[9.5px] text-muted-foreground/60"
+                    className="truncate font-mono text-[9.5px] leading-[1.6] text-muted-foreground/60"
                     title={c}
                   >
                     {c}
