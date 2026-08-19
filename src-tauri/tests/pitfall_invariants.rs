@@ -388,3 +388,57 @@ fn pitfall_16_no_literal_nul_in_git_cli_args() {
         offenders.join("\n")
     );
 }
+
+/// CLAUDE.md pitfall #19 — no emoji in the product.
+///
+/// Emoji render from the OS emoji font: wrong colour, wrong weight, a
+/// different glyph on every platform, and entirely outside the icon system
+/// (pitfall #18) that exists so one idea has exactly one mark. Rust reaches
+/// the user through log lines, error strings and shell-integration scripts,
+/// all of which land in a terminal that has no emoji font at all on many
+/// Linux setups — where they render as tofu.
+///
+/// Scoped to `Emoji_Presentation`-style ranges, the characters that render as
+/// colour emoji by default. Typographic marks stay allowed: the box-drawing
+/// file headers, arrows, and the checkmark are text and inherit the font.
+/// The frontend half of this guard lives in `src/lib/pitfall-guards.test.ts`.
+#[test]
+fn pitfall_19_no_emoji_in_rust_source() {
+    // Ranges whose members default to emoji presentation, plus U+FE0F, the
+    // selector that forces emoji presentation onto a text glyph.
+    fn is_emoji(c: char) -> bool {
+        matches!(c as u32,
+            // Pictographs, symbols, faces, transport, and the regional
+            // indicators that compose flags — all default to emoji.
+            0x1F000..=0x1FAFF
+            | 0x2614..=0x2615 | 0x2648..=0x2653 | 0x267F | 0x2693 | 0x26A1
+            | 0x26AA..=0x26AB | 0x26BD..=0x26BE | 0x26C4..=0x26C5 | 0x26CE
+            | 0x26D4 | 0x26EA | 0x26F2..=0x26F3 | 0x26F5 | 0x26FA | 0x26FD
+            | 0x2705 | 0x270A..=0x270B | 0x2728 | 0x274C | 0x274E
+            | 0x2753..=0x2755 | 0x2757 | 0x2795..=0x2797 | 0x27B0 | 0x27BF
+            | 0xFE0F)
+    }
+
+    let mut files = Vec::new();
+    rust_files(&src_dir(), &mut files);
+    let mut offenders = Vec::new();
+    for path in files {
+        let text = read_src(
+            path.strip_prefix(src_dir())
+                .unwrap_or(&path)
+                .to_string_lossy()
+                .as_ref(),
+        );
+        for (i, line) in text.lines().enumerate() {
+            if line.chars().any(is_emoji) {
+                offenders.push(format!("{}:{}", path.display(), i + 1));
+            }
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "CLAUDE.md pitfall #19: emoji are banned in Nexis source — they ignore \
+         the theme, differ per platform, and render as tofu in terminals with \
+         no emoji font. Offenders: {offenders:?}"
+    );
+}

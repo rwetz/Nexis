@@ -24,7 +24,7 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 
 ## Known bug pitfalls
 
-**These invariants are enforced by the build, not just this document.** Two tripwire suites scan the source tree and fail with a message naming the pitfall: `src-tauri/tests/pitfall_invariants.rs` (ConPTY lifecycle lock, `-Command` launch, `authorize_spawn_cwd`, `Command::new` confinement, PTY lock-poison handling, heavy-command async audit, `pty_write` sync/enqueue-only input ordering) and `src/lib/pitfall-guards.test.ts` (`pty_open` confinement, `pty_write` confinement, `writePref` routing, composer `disabled`, reasoning pruning, Zustand selector references, CodeMirror zoom exemption, icon-vendor confinement, file-tree retint). `src-tauri/clippy.toml` additionally bans raw `std::process::Command::new` via `disallowed-methods`. **If one of these fails, fix the code — never weaken or delete the tripwire.** They exist because every guarded invariant has been broken at least once by a refactor that looked harmless.
+**These invariants are enforced by the build, not just this document.** Two tripwire suites scan the source tree and fail with a message naming the pitfall: `src-tauri/tests/pitfall_invariants.rs` (ConPTY lifecycle lock, `-Command` launch, `authorize_spawn_cwd`, `Command::new` confinement, PTY lock-poison handling, heavy-command async audit, `pty_write` sync/enqueue-only input ordering, no emoji) and `src/lib/pitfall-guards.test.ts` (`pty_open` confinement, `pty_write` confinement, `writePref` routing, composer `disabled`, reasoning pruning, Zustand selector references, CodeMirror zoom exemption, icon-vendor confinement, file-tree retint, no emoji). `src-tauri/clippy.toml` additionally bans raw `std::process::Command::new` via `disallowed-methods`. **If one of these fails, fix the code — never weaken or delete the tripwire.** They exist because every guarded invariant has been broken at least once by a refactor that looked harmless.
 
 ### 1. ConPTY lifecycle race (Windows — CRITICAL)
 **Symptom:** New terminal opens blank — cursor visible but shell never prints output.
@@ -244,13 +244,14 @@ Two things kept it invisible. `stash_list` gated its error check on `exit_code !
 
 **Root cause:** `std::fs::rename` is `MoveFileExW` on Windows, and the WSL 9P redirector rejects it with `ERROR_NOT_SAME_DEVICE` **even when source and destination are in the same directory**. The number is a trap: 17 is `EEXIST` on Linux, so the failure reads like a spurious "already exists".
 
-This has bitten twice, on both sides of the same primitive:
+This has bitten three times, on every side of the same primitive:
 - `fs_rename` (`fs/mutate.rs`) — the explorer's rename and drag-to-move.
 - `fs_write_file` (`fs/file.rs`) — the atomic write's tempfile→target commit, which is a rename. Broke every editor save, AI file write, theme file, ML note/config, and the workspace notes panel.
+- `shell_init.rs` — the WSL **shell-integration install**, written to `\\wsl.localhost\<distro>\home\<user>\.cache\nexis\shell-integration\…`. **This is the case this document previously exempted as "always local", and that exemption was wrong.** Every install failed, so `build_wsl` fell through to `WslShellIntegration::None` and a WSL terminal emitted no OSC 7 / OSC 133 at all: cwd tracking never fired, and the file tree stayed pinned to the folder the session opened with — listing that entire folder no matter where the shell `cd`'d.
 
-**Fix in place:** Both retry the rename through `wsl_exec_capture(distro, "mv", …)`, which runs it inside the distro as an ordinary atomic `rename(2)`. In both, the **in-process attempt runs first** — a workspace rooted under `/mnt/<drive>` maps to a native Windows path where the fast path works, and a stopped distro must not break an operation that would have succeeded. The fallback only engages for `WorkspaceEnv::Wsl`.
+**Fix in place:** All three retry the rename through `wsl_exec_capture(distro, "mv", …)`, which runs it inside the distro as an ordinary atomic `rename(2)`. In all three, the **in-process attempt runs first** — a workspace rooted under `/mnt/<drive>` maps to a native Windows path where the fast path works, and a stopped distro must not break an operation that would have succeeded. The fallback only engages for `WorkspaceEnv::Wsl` (`shell_init` is inherently WSL-only at that call site — see `windows::write_wsl_script`).
 
-**Future danger:** Any new code that renames a path **inside the user's workspace** needs the same fallback — and that includes writes, because an atomic write ends in a rename. Two rules for the write case: the Linux path passed to `mv` must be derived from the *caller's* Linux path (the resolved `\\wsl.localhost\…` host path is meaningless inside the distro), and it must be rejected unless it is POSIX-absolute, so a mislabelled workspace can't hand `mv` a drive path. Renames confined to app-data (`autosave.rs`, `snapshots.rs`, `secrets.rs`, `diagnostics.rs`, `shell_init.rs`) are unaffected — those paths are always local.
+**Future danger:** Any new code that renames a path **inside the user's workspace or inside a distro** needs the same fallback — and that includes writes, because an atomic write ends in a rename. Two rules for the write case: the Linux path passed to `mv` must be derived from the *caller's* Linux path (the resolved `\\wsl.localhost\…` host path is meaningless inside the distro), and it must be rejected unless it is POSIX-absolute, so a mislabelled workspace can't hand `mv` a drive path. Only renames confined to **host** app-data (`autosave.rs`, `snapshots.rs`, `secrets.rs`, `diagnostics.rs`, and `shell_init.rs`'s PowerShell profile) are genuinely unaffected. Before adding a rename, ask where the *target* lives, not where the code lives.
 
 ---
 
@@ -271,6 +272,32 @@ A related defect came from the other direction. The catppuccin file-tree icons c
 - `iconResolver.ts` maps catppuccin's 19 hexes onto the active theme's ANSI palette and returns inline-able art, which `<FileTypeIcon>` renders into the document.
 
 **Future danger:** Do not import the icon vendor outside `icon.tsx`, and do not add a second semantic name for an idea that already has one — that is exactly how 136 ideas became 160 imports. Do not reach for a raw pixel size when a scale step fits, and do not introduce a new `cubic-bezier()`/duration literal when a motion token fits; add a token instead. For the file tree specifically, **do not go back to `data:` URLs** — the retint emits `var(--terminal-ansi-*)`, and a `data:` URL is an isolated document that the page's custom properties do not cascade into, so the art would silently render un-themed. The vscode-icons fallback art is deliberately *not* retinted: those entries are brand marks, and a recoloured logo is a wrong logo. Enforced by the two `pitfall 18` guards in `src/lib/pitfall-guards.test.ts`.
+
+---
+
+### 19. Emoji — never, anywhere
+
+**Rule: Nexis contains no emoji. Not in the UI, not in source, not in log or error strings, not in commit messages, not in the CHANGELOG. There is no exception and no "just this once".**
+
+**Why it is a defect, not a taste preference:** an emoji is rendered by the OS emoji font, so it is the one glyph in the product that ignores the theme entirely — wrong colour, wrong weight, wrong optical size, a different drawing on Windows/macOS/Linux, and plain tofu in a terminal on a Linux box with no emoji font installed. It also routes around `src/components/icon.tsx`, the single choke point that exists precisely so one idea has exactly one mark at one of five sizes (pitfall #18). The ML Lab shipped `⚡ GPU` in three places, `★`/`☆`, `✎` and `✕`; every one of those ideas already had an `<Icon name="…">`.
+
+**What to do instead:** use `<Icon name="…" size="…" />`. If the idea has no name yet, add one to `icon.tsx` — do not add a second name for an idea that already has one.
+
+**What is *not* banned:** typographic marks that are text and inherit the font — arrows (`→ ↑ ↵`), modifier keys (`⇧`), the box-drawing file headers, `·`, `✓`, `✦`. The line is Unicode's own `Emoji_Presentation` property (plus `U+FE0F`, which forces emoji presentation onto a text glyph); anything on that side renders in colour and is out.
+
+**Enforced by** `pitfall 19` in `src/lib/pitfall-guards.test.ts` and `pitfall_19_no_emoji_in_rust_source` in `src-tauri/tests/pitfall_invariants.rs`. Pre-existing design docs under `docs/` are not retro-scrubbed, but nothing new goes in.
+
+---
+
+### 20. Workspace-env-blind backend commands answer for the wrong machine
+
+**Symptom:** In a WSL workspace, a feature reports facts that are true of Windows. The ML Lab was the clearest case: after switching Windows → WSL it kept showing the host engine as "ready" — its version, its torch build, its CUDA state — for a distro with no engine installed at all, and only failed at train time.
+
+**Root cause:** Every `fs_*` and `git_*` command takes a `workspace: WorkspaceEnv` and routes through `resolve_path` / `wsl.exe`. The ML and Python commands did not. `ml_detect` probed `<candidate> --version` on the host, `ml_env` asked the host engine what it could do, `ml_spawn` ran the host binary against a Linux project dir, `ml_install` pip-installed onto the host, and `py_detect_envs` searched the host's PATH and conda registry. Compounding it, the frontend memoized detection by candidate list only, and the ML store kept its engine facts across an env switch — so even a corrected probe would have been shadowed by the previous environment's cached answer.
+
+**Fix in place:** `ml_detect` / `ml_env` / `ml_spawn` / `ml_install` / `py_detect_envs` all take `workspace` and build their child through `ml::env_command`, which runs `wsl.exe -d <distro> [--cd <linux dir>] --exec <program>` for a WSL workspace. `ml_spawn` authorizes the *host* view of the project dir (that is what the registry can check) but hands the child its *Linux* path. `detectCache` is keyed by `currentWorkspaceScopeKey()`, and `MlStore.engineScope` records which environment answered — a mismatch discards the lot rather than reusing it.
+
+**Future danger:** Any new backend command that spawns a process, reads a path, or reports a capability **on behalf of the workspace** needs the `workspace: Option<WorkspaceEnv>` parameter and must route through `resolve_path` or `env_command`. Two rules that are easy to get backwards: a path handed to `wsl.exe` must be the caller's Linux path (never the resolved `\\wsl.localhost\…` form), and anything host-scoped by nature — the managed engine download, the app-data dir, the pinned release — must be *hidden* in a WSL workspace rather than silently offered. On the frontend, any cache of an environment-dependent answer must include the workspace scope in its key.
 
 ---
 

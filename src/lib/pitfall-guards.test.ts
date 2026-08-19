@@ -338,4 +338,33 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
         "the driver attaches to a port the app never opened otherwise",
     ).toBe(true);
   });
+
+  // Pitfall #19: no emoji in the product. Emoji render from the OS emoji
+  // font, not the theme — wrong colour, wrong weight, wrong size, a different
+  // glyph on every platform, and entirely outside the semantic icon layer
+  // that exists so one idea has exactly one mark (pitfall #18). Every idea an
+  // emoji stood in for already has an `<Icon name="...">`.
+  //
+  // The boundary is Unicode's own: `Emoji_Presentation` is the property for
+  // "renders as colour emoji by default", plus U+FE0F, the selector that
+  // forces emoji presentation onto a text glyph. Typographic marks stay
+  // allowed — arrows (→ ↑ ↵), modifier keys (⇧), box drawing, the checkmark,
+  // the warning sign — because those are text: they inherit the font and the
+  // theme's colour, and they are load-bearing in the file headers and the
+  // keyboard hints.
+  it("pitfall 19: no emoji anywhere in the frontend source", () => {
+    const EMOJI = /[\p{Emoji_Presentation}\uFE0F]/u;
+    const offenders: string[] = [];
+    for (const [rel, text] of sourceFiles()) {
+      text.split("\n").forEach((line, i) => {
+        if (EMOJI.test(line)) offenders.push(`${rel}:${i + 1}: ${line.trim()}`);
+      });
+    }
+    expect(
+      offenders,
+      "emoji are banned in Nexis source — they ignore the theme, differ per " +
+        "platform, and bypass the semantic icon layer. Use <Icon name=\"...\"> " +
+        "(src/components/icon.tsx); add a name there if the idea has none.",
+    ).toEqual([]);
+  });
 });

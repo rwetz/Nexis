@@ -20,7 +20,10 @@
  */
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import {
+  currentWorkspaceEnv,
+  currentWorkspaceScopeKey,
+} from "@/modules/workspace";
 
 export type EngineDetectResult = { exe: string; version: string };
 
@@ -73,6 +76,12 @@ export function ancestorVenvCandidates(workspaceRoot: string): string[] {
  * Candidate executables, most specific first: every detected Python
  * env's scripts dir, then `.venv`s up the directory tree, then bare
  * `nexis-ml` from PATH.
+ *
+ * `envs` must come from the *same* environment the probe will run in.
+ * `py_detect_envs` only ever scans the host, so a WSL workspace passes an
+ * empty list and relies on the ancestor-venv walk plus PATH — offering the
+ * host's `C:\…\Scripts\nexis-ml.exe` to a distro is how the panel used to
+ * report a Windows engine as the WSL workspace's engine.
  */
 export function buildCandidates(
   envs: PythonEnvLike[],
@@ -92,15 +101,21 @@ export function buildCandidates(
   return out;
 }
 
+/**
+ * Keyed by candidate list **and** workspace scope: the same path probed on
+ * the Windows host and inside a distro are different binaries with different
+ * answers, and a shared entry would hand one environment the other's engine.
+ */
 const detectCache = new Map<string, Promise<EngineDetectResult>>();
 
 export function detectEngine(
   candidates: string[],
 ): Promise<EngineDetectResult> {
-  const key = candidates.join("|");
+  const workspace = currentWorkspaceEnv();
+  const key = `${currentWorkspaceScopeKey()}\u0000${candidates.join("|")}`;
   let p = detectCache.get(key);
   if (!p) {
-    p = invoke<EngineDetectResult>("ml_detect", { candidates }).catch(
+    p = invoke<EngineDetectResult>("ml_detect", { candidates, workspace }).catch(
       (err) => {
         // Pitfall #10: never leave a rejected promise in the cache.
         detectCache.delete(key);
@@ -124,6 +139,10 @@ export function resetEngineDetection(): void {
  * are authoritative. Returns null if the path can't be resolved.
  */
 export function managedEngineCandidate(): Promise<string | null> {
+  // The managed engine is a host binary in the host's app-data dir. It is
+  // not reachable — and on Windows not even executable — from inside a
+  // distro, so it must never enter a WSL workspace's candidate list.
+  if (currentWorkspaceEnv().kind !== "local") return Promise.resolve(null);
   return invoke<string>("ml_managed_engine_path").catch(() => null);
 }
 
@@ -207,6 +226,7 @@ export async function spawnTrain(
     exe,
     args: ["train", "."],
     projectDir,
+    workspace: currentWorkspaceEnv(),
   });
 }
 
@@ -229,6 +249,7 @@ export async function spawnNew(
     exe,
     args: ["new", template, name],
     projectDir: workspaceRoot,
+    workspace: currentWorkspaceEnv(),
   });
 }
 
@@ -243,7 +264,11 @@ export function spawnInstall(
   python: string,
   flavor: InstallFlavor,
 ): Promise<number> {
-  return invoke<number>("ml_install", { python, flavor });
+  return invoke<number>("ml_install", {
+    python,
+    flavor,
+    workspace: currentWorkspaceEnv(),
+  });
 }
 
 export type MlEnvInfo = {
@@ -272,7 +297,10 @@ export type MlEnvInfo = {
  * without blocking UI. The Rust engine answers instantly.
  */
 export async function probeEnv(exe: string): Promise<MlEnvInfo> {
-  const raw = await invoke<string>("ml_env", { exe });
+  const raw = await invoke<string>("ml_env", {
+    exe,
+    workspace: currentWorkspaceEnv(),
+  });
   const parsed = JSON.parse(raw) as Record<string, unknown>;
   return {
     python: typeof parsed.python === "string" ? parsed.python : null,
@@ -340,6 +368,7 @@ export async function spawnServe(
     exe,
     args: ["serve", "--run", runId, "--checkpoint", checkpoint],
     projectDir,
+    workspace: currentWorkspaceEnv(),
   });
 }
 
@@ -363,6 +392,7 @@ export async function spawnExport(
     exe,
     args: ["export", "--run", runId],
     projectDir,
+    workspace: currentWorkspaceEnv(),
   });
 }
 
@@ -379,6 +409,7 @@ export async function spawnExportOnnx(
     exe,
     args: ["export", "--onnx", "."],
     projectDir,
+    workspace: currentWorkspaceEnv(),
   });
 }
 

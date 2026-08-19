@@ -182,6 +182,14 @@ const SettingsDialogLazy = lazy(() =>
 const MlPanelLazy = lazy(() =>
   import("@/modules/ml/MlPanel").then((m) => ({ default: m.MlPanel })),
 );
+// Lazy for the same reason as the panel: the network tab pulls in the whole
+// ML graph/artifact reading stack, which nobody who never opens it should pay
+// the parse cost for.
+const MlNetworkStackLazy = lazy(() =>
+  import("@/modules/ml/MlNetworkStack").then((m) => ({
+    default: m.MlNetworkStack,
+  })),
+);
 const DatabasePanelLazy = lazy(() =>
   import("@/modules/database/DatabasePanel").then((m) => ({ default: m.DatabasePanel })),
 );
@@ -218,6 +226,7 @@ export default function App() {
     openGitDiffTab,
     openCommitHistoryTab,
     openCommitFileDiffTab,
+    openMlNetworkTab,
     closeTab,
     updateTab,
     selectByIndex,
@@ -602,6 +611,7 @@ export default function App() {
   const isGitDiffTab =
     activeTab?.kind === "git-diff" || activeTab?.kind === "git-commit-file";
   const isGitHistoryTab = activeTab?.kind === "git-history";
+  const isMlNetworkTab = activeTab?.kind === "ml-network";
 
   // When an AI diff is approved (write_file applied to disk), reload any
   // open editor tabs for that path so the user sees the new content. We
@@ -1729,6 +1739,17 @@ export default function App() {
           onSearchHandle={setGitHistoryHandle}
         />
       </div>
+      <div
+        className={cn(
+          "absolute inset-0 px-3 pt-2 pb-2",
+          !isMlNetworkTab && "invisible pointer-events-none",
+        )}
+        aria-hidden={!isMlNetworkTab}
+      >
+        <Suspense fallback={null}>
+          <MlNetworkStackLazy tabs={tabs} activeId={activeId} />
+        </Suspense>
+      </div>
     </div>
   );
 
@@ -1905,7 +1926,12 @@ export default function App() {
                     ) : sidebarView === "release" ? (
                       <ReleasePanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "ml" ? (
-                      <Suspense fallback={null}><MlPanelLazy workspaceRoot={explorerRoot} /></Suspense>
+                      <Suspense fallback={null}>
+                          <MlPanelLazy
+                            workspaceRoot={explorerRoot}
+                            onOpenNetworkTab={openMlNetworkTab}
+                          />
+                        </Suspense>
                     ) : (
                       <SourceControlPanel
                         open

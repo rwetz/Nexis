@@ -40,6 +40,7 @@ import {
   type GitCommitFileDiffTab,
   type GitDiffTab,
   type GitHistoryTab,
+  type MlNetworkTab,
   type Tab,
   type TabPatch,
   type TerminalTab,
@@ -607,6 +608,40 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     [],
   );
 
+  /**
+   * Detach the ML Lab's network diagram into its own tab. Deduped by project
+   * dir: the diagram is a live view of that project, so a second request is
+   * "show me the one I already have", not "make another".
+   */
+  const openMlNetworkTab = useCallback(
+    (input: { projectDir: string; title?: string }) => {
+      const curr = tabsRef.current;
+      const title = input.title ?? `Network · ${basename(input.projectDir)}`;
+      const existing = curr.find(
+        (t) => t.kind === "ml-network" && t.projectDir === input.projectDir,
+      );
+      if (existing) {
+        setActiveId(existing.id);
+        return existing.id;
+      }
+      const id = nextIdRef.current++;
+      const nextTabs = [
+        ...curr,
+        {
+          id,
+          kind: "ml-network",
+          title,
+          projectDir: input.projectDir,
+        } satisfies MlNetworkTab,
+      ];
+      tabsRef.current = nextTabs;
+      setTabs(nextTabs);
+      setActiveId(id);
+      return id;
+    },
+    [],
+  );
+
   const openCommitFileDiffTab = useCallback(
     (input: {
       repoRoot: string;
@@ -1146,6 +1181,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     openGitDiffTab,
     openCommitHistoryTab,
     openCommitFileDiffTab,
+    openMlNetworkTab,
     setAiDiffStatus,
     closeAiDiffTab,
     closeTab,

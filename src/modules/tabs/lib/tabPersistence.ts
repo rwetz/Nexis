@@ -119,7 +119,8 @@ export function serializeTabState(tabs: Tab[], activeId: number): PersistedTabSt
         activePath: editorActivePath(t),
       });
     }
-    // Skip: ai-diff, git-diff, git-history, git-commit-file, markdown, notebook, image
+    // Skip: ai-diff, git-diff, git-history, git-commit-file, markdown,
+    // notebook, image, ml-network
   }
   const activeTab = tabs.find((t) => t.id === activeId);
   let activeIndex = 0;

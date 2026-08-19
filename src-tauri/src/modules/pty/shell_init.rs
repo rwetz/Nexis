@@ -34,22 +34,47 @@ fn integration_root() -> Result<PathBuf, String> {
     Ok(root)
 }
 
+/// Suffix of the staging file an atomic script write commits from. Shared so
+/// the WSL fallback can derive the staging file's *Linux* name from the
+/// target's without parsing a host path.
+const TMP_SUFFIX: &str = ".__nexis_tmp__";
+
 /// Skips the write when content is unchanged (pitfall #6: the cache only
 /// refreshes when the embedded script actually differs) and replaces the file
 /// atomically so a parallel shell startup never sources a half-written file.
-fn write_if_changed(path: &Path, content: &str) -> Result<(), String> {
+///
+/// `commit` performs the final rename. It is a parameter because a script
+/// written *into a WSL distro* cannot commit with `fs::rename` — see
+/// `windows::write_wsl_script` and pitfall #17.
+fn write_if_changed_with(
+    path: &Path,
+    content: &str,
+    commit: impl FnOnce(&Path, &Path) -> Result<(), String>,
+) -> Result<(), String> {
     if let Ok(existing) = fs::read_to_string(path) {
         if existing == content {
             return Ok(());
         }
     }
     let mut tmp: OsString = path.as_os_str().to_owned();
-    tmp.push(".__nexis_tmp__");
+    tmp.push(TMP_SUFFIX);
     let tmp = PathBuf::from(tmp);
     fs::write(&tmp, content).map_err(|e| format!("write {}: {e}", tmp.display()))?;
-    fs::rename(&tmp, path).map_err(|e| {
-        let _ = fs::remove_file(&tmp);
-        format!("rename {} -> {}: {e}", tmp.display(), path.display())
+    match commit(&tmp, path) {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            let _ = fs::remove_file(&tmp);
+            Err(e)
+        }
+    }
+}
+
+/// `write_if_changed_with` committing through an ordinary in-process rename —
+/// correct for every path that is genuinely local (app cache, PS profile).
+fn write_if_changed(path: &Path, content: &str) -> Result<(), String> {
+    write_if_changed_with(path, content, |tmp, dest| {
+        fs::rename(tmp, dest)
+            .map_err(|e| format!("rename {} -> {}: {e}", tmp.display(), dest.display()))
     })
 }
 
@@ -287,9 +312,9 @@ mod unix {
 #[cfg(windows)]
 mod windows {
     use std::fs;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
-    use crate::modules::workspace::WorkspaceEnv;
+    use crate::modules::workspace::{self, WorkspaceEnv};
     use portable_pty::CommandBuilder;
 
     use super::{integration_root, write_if_changed};
@@ -516,6 +541,55 @@ mod windows {
         Ok(crate::modules::workspace::normalize_wsl_value(out, ""))
     }
 
+    /// Write a shell-integration script that lives *inside* a WSL distro.
+    ///
+    /// Pitfall #17, third occurrence — and the one CLAUDE.md explicitly (and
+    /// wrongly) exempted: the atomic write ends in `fs::rename`, which the WSL
+    /// 9P redirector behind `\\wsl.localhost\<distro>\…` rejects with
+    /// ERROR_NOT_SAME_DEVICE (os error 17, *not* the Linux `EEXIST` the number
+    /// looks like) even though staging file and target share one directory.
+    /// Every WSL integration install failed on that rename, so `build_wsl` fell
+    /// through to `WslShellIntegration::None`: no OSC 7, no OSC 133, and so no
+    /// cwd tracking at all — the file tree stayed pinned to whatever root the
+    /// session opened with, listing that whole folder no matter where the shell
+    /// `cd`'d.
+    ///
+    /// Ordering mirrors the `fs_rename` / `fs_write_file` fallbacks: the
+    /// in-process rename runs first, because a home directory reached through
+    /// `/mnt/<drive>` maps to a native Windows path where it works, and a
+    /// stopped distro must not break a write that would have succeeded.
+    fn write_wsl_script(
+        distro: &str,
+        linux_path: &str,
+        unc_path: &Path,
+        content: &str,
+    ) -> Result<(), String> {
+        super::write_if_changed_with(unc_path, content, |tmp, dest| {
+            let direct = match fs::rename(tmp, dest) {
+                Ok(()) => return Ok(()),
+                Err(e) => e,
+            };
+            // The staging file sits next to the target, so its Linux path is
+            // the target's plus the same suffix. Derive it from the *caller's*
+            // Linux path — the UNC string means nothing inside the distro —
+            // and refuse anything that is not POSIX-absolute so a mislabelled
+            // path can never hand `mv` a drive path.
+            if !linux_path.starts_with('/') {
+                return Err(format!(
+                    "rename {} -> {}: {direct}",
+                    tmp.display(),
+                    dest.display()
+                ));
+            }
+            let staged_linux = format!("{linux_path}{}", super::TMP_SUFFIX);
+            workspace::wsl_exec_capture(distro, "mv", &["--", &staged_linux, linux_path])
+                .map(|_| ())
+                .map_err(|e| {
+                    format!("install {linux_path} in {distro}: {e} (direct rename: {direct})")
+                })
+        })
+    }
+
     fn prepare_wsl_integration_dir(distro: &str, shell: &str) -> Result<(String, PathBuf), String> {
         let home = crate::modules::workspace::wsl_home_blocking(distro.to_string())?;
         let linux_dir = format!(
@@ -533,22 +607,19 @@ mod windows {
 
     fn prepare_wsl_zdotdir(distro: &str) -> Result<String, String> {
         let (linux_dir, unc_dir) = prepare_wsl_integration_dir(distro, "zsh")?;
-        write_if_changed(
-            &unc_dir.join(".zshenv"),
-            &normalize_script(super::ZSHENV_SCRIPT),
-        )?;
-        write_if_changed(
-            &unc_dir.join(".zprofile"),
-            &normalize_script(super::ZPROFILE_SCRIPT),
-        )?;
-        write_if_changed(
-            &unc_dir.join(".zshrc"),
-            &normalize_script(super::ZSHRC_SCRIPT),
-        )?;
-        write_if_changed(
-            &unc_dir.join(".zlogin"),
-            &normalize_script(super::ZLOGIN_SCRIPT),
-        )?;
+        for (name, script) in [
+            (".zshenv", super::ZSHENV_SCRIPT),
+            (".zprofile", super::ZPROFILE_SCRIPT),
+            (".zshrc", super::ZSHRC_SCRIPT),
+            (".zlogin", super::ZLOGIN_SCRIPT),
+        ] {
+            write_wsl_script(
+                distro,
+                &format!("{linux_dir}/{name}"),
+                &unc_dir.join(name),
+                &normalize_script(script),
+            )?;
+        }
         Ok(linux_dir)
     }
 
@@ -557,7 +628,7 @@ mod windows {
         let linux_rc = format!("{linux_dir}/bashrc");
         let unc_file = crate::modules::workspace::wsl_path_to_unc(distro, &linux_rc);
         let content = normalize_script(super::BASHRC_SCRIPT);
-        write_if_changed(&unc_file, &content)?;
+        write_wsl_script(distro, &linux_rc, &unc_file, &content)?;
         Ok(linux_rc)
     }
 
@@ -566,9 +637,10 @@ mod windows {
         let linux_dir = format!("{}/.config/fish/conf.d", home.trim_end_matches('/'));
         let unc_dir = crate::modules::workspace::wsl_path_to_unc(distro, &linux_dir);
         fs::create_dir_all(&unc_dir).map_err(|e| format!("create {}: {e}", unc_dir.display()))?;
+        let linux_file = format!("{linux_dir}/nexis.fish");
         let unc_file = unc_dir.join("nexis.fish");
         let content = normalize_script(super::FISH_INIT_SCRIPT);
-        write_if_changed(&unc_file, &content)?;
+        write_wsl_script(distro, &linux_file, &unc_file, &content)?;
         Ok(())
     }
 

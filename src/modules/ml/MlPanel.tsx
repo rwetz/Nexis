@@ -66,6 +66,10 @@ import { readTrainToml, writeTrainToml } from "./lib/config";
 import { tomlGet, tomlSet } from "./lib/toml-edit";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setMlAutoOpenOnTrain } from "@/modules/settings/store";
+import {
+  useWorkspaceEnvStore,
+  workspaceScopeKey,
+} from "@/modules/workspace";
 
 /** Project templates offered in the create card. */
 const TEMPLATE_OPTIONS: {
@@ -102,11 +106,14 @@ const TEMPLATE_OPTIONS: {
 
 type Props = {
   workspaceRoot: string | null;
+  /** Detach the network diagram into its own tab. Optional so the panel
+   *  still renders standalone (tests, storybook-style usage). */
+  onOpenNetworkTab?: (input: { projectDir: string }) => void;
 };
 
 const BUSY_STATES = ["starting", "running", "cancelling"];
 
-export function MlPanel({ workspaceRoot }: Props) {
+export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
   const engineStatus = useMlStore((s) => s.engineStatus);
   const engineVersion = useMlStore((s) => s.engineVersion);
   const engineKind = useMlStore((s) => s.engineKind);
@@ -138,6 +145,7 @@ export function MlPanel({ workspaceRoot }: Props) {
   const downloadStandaloneEngine = useMlStore((s) => s.downloadStandaloneEngine);
   const installLocalCopy = useMlStore((s) => s.installLocalCopy);
   const uninstallManagedEngine = useMlStore((s) => s.uninstallManagedEngine);
+  const uninstallingEngine = useMlStore((s) => s.uninstallingEngine);
   const refreshProjects = useMlStore((s) => s.refreshProjects);
   const selectProject = useMlStore((s) => s.selectProject);
   const createProject = useMlStore((s) => s.createProject);
@@ -156,12 +164,20 @@ export function MlPanel({ workspaceRoot }: Props) {
   const pendingOnnx = useMlStore((s) => s.pendingOnnx);
   const autoOpenOnTrain = usePreferencesStore((s) => s.mlAutoOpenOnTrain);
 
+  const workspaceEnv = useWorkspaceEnvStore((s) => s.env);
+  const workspaceScope = workspaceScopeKey(workspaceEnv);
+  const wslDistro = workspaceEnv.kind === "wsl" ? workspaceEnv.distro : null;
+
   const [showCreate, setShowCreate] = useState(false);
 
+  // `workspaceScope` is a dependency in its own right: switching Windows↔WSL
+  // can leave the root string untouched (or change it long before the engine
+  // facts are re-derived), and every engine answer belongs to exactly one
+  // environment. Re-detect on either.
   useEffect(() => {
     void detect(workspaceRoot);
     if (workspaceRoot) void refreshProjects(workspaceRoot);
-  }, [workspaceRoot, detect, refreshProjects]);
+  }, [workspaceRoot, workspaceScope, detect, refreshProjects]);
 
   const busy = activeRun != null && BUSY_STATES.includes(activeRun.status);
   const finished =
@@ -206,7 +222,8 @@ export function MlPanel({ workspaceRoot }: Props) {
                 (envInfo?.backend === "wgpu" ? "GPU via wgpu" : "CUDA available")
               }
             >
-              ⚡ GPU
+              <Icon name="flash" size="xs" />
+              GPU
             </span>
           ) : null}
         </div>
@@ -236,6 +253,7 @@ export function MlPanel({ workspaceRoot }: Props) {
             installing={installing}
             downloadingEngine={downloadingEngine}
             pin={enginePin}
+            wslDistro={wslDistro}
             hostGpu={hostGpu}
             logs={logs}
             error={engineError}
@@ -381,7 +399,15 @@ export function MlPanel({ workspaceRoot }: Props) {
             {/* The model itself — architecture graph (weights overlay once
                 the engine emits a `weights` artifact; ML_SUITE.md contract) */}
             {selectedProject && !pendingCreate && projects.length > 0 ? (
-              <NetworkGraph key={`net-${selectedProject}`} projectDir={selectedProject} />
+              <NetworkGraph
+                key={`net-${selectedProject}`}
+                projectDir={selectedProject}
+                onOpenAsTab={
+                  onOpenNetworkTab
+                    ? () => onOpenNetworkTab({ projectDir: selectedProject })
+                    : undefined
+                }
+              />
             ) : null}
 
             {comparing ? (
@@ -535,19 +561,47 @@ export function MlPanel({ workspaceRoot }: Props) {
                 </span>
                 <button
                   type="button"
-                  disabled={busy || downloadingEngine}
+                  disabled={
+                    busy || downloadingEngine || installing || uninstallingEngine
+                  }
                   onClick={() => void uninstallManagedEngine(workspaceRoot)}
                   title="Deletes the downloaded engine binary and frees the disk space. Engines installed in a venv or on PATH are unaffected; you can re-download any time."
                   className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] transition-colors hover:border-destructive/50 hover:text-destructive disabled:opacity-50"
                 >
-                  Remove
+                  {uninstallingEngine ? "Removing…" : "Remove"}
                 </button>
               </div>
+            ) : null}
+            {/* Engine errors used to be rendered only by SetupCard, which is
+                gone once an engine is detected — so a failed uninstall (or any
+                other post-setup engine failure) was swallowed and the click
+                looked like it had done nothing at all. */}
+            {engineError ? (
+              <p className="mt-1.5 flex items-start gap-1.5 text-[10.5px] leading-snug text-red-400">
+                <Icon name="alert-circle" size="xs" className="mt-px shrink-0" />
+                <span>{engineError}</span>
+              </p>
             ) : null}
           </>
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * "GPU" / "CPU" for a run or serve session's reported device. The GPU case
+ * carries a lightning icon rather than the emoji it used to: icons come from
+ * the one `<Icon>` choke point (pitfall #18) and inherit the theme's colour
+ * and the house size scale, which an emoji glyph cannot.
+ */
+function DeviceLabel({ device }: { device: string }) {
+  if (!device.startsWith("cuda")) return <>CPU</>;
+  return (
+    <span className="flex items-center gap-0.5">
+      <Icon name="flash" size="xs" />
+      GPU
+    </span>
   );
 }
 
@@ -558,6 +612,7 @@ function SetupCard({
   installing,
   downloadingEngine,
   pin,
+  wslDistro,
   hostGpu,
   logs,
   error,
@@ -570,6 +625,9 @@ function SetupCard({
   installing: boolean;
   downloadingEngine: boolean;
   pin: EnginePin | null;
+  /** Distro name when this is a WSL workspace — the engine then has to live
+   *  inside the distro, and the host-side download does not apply. */
+  wslDistro: string | null;
   hostGpu: string | null;
   logs: string[];
   error: string | null;
@@ -596,6 +654,17 @@ function SetupCard({
         <span className="font-mono">nexis-ml</span>. Everything runs on your
         machine — no cloud, no accounts.
       </p>
+      {wslDistro ? (
+        <p className="mb-2 flex items-start gap-1.5 rounded border border-border/50 bg-background/50 p-1.5 text-[10.5px] leading-snug text-muted-foreground">
+          <Icon name="server" size="xs" className="mt-px shrink-0" />
+          <span>
+            This workspace is <span className="font-mono">{wslDistro}</span>, so
+            the engine has to live inside the distro — a Windows install is a
+            different machine as far as your project is concerned. Nexis
+            installs and runs it through <span className="font-mono">wsl.exe</span>.
+          </span>
+        </p>
+      ) : null}
       {installing ? (
         <>
           <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
@@ -650,7 +719,10 @@ function SetupCard({
       {error && !installing && !downloadingEngine ? (
         <p className="mt-1.5 text-[10.5px] leading-snug text-red-400">{error}</p>
       ) : null}
-      {!installing && !downloadingEngine ? (
+      {/* The standalone download installs a *host* binary into the host's
+          app-data dir. Inside a distro it is neither reachable nor runnable,
+          so a WSL workspace is not offered it at all. */}
+      {!installing && !downloadingEngine && !wslDistro ? (
         <div className="mt-2 border-t border-border/40 pt-2">
           {confirmingDownload && pin ? (
             <div className="rounded-md border border-border/60 bg-background/60 p-2">
@@ -896,9 +968,9 @@ function CreateCard({
             type="button"
             onClick={onDismiss}
             aria-label="Close"
-            className="text-[11px] leading-none text-muted-foreground hover:text-foreground"
+            className="leading-none text-muted-foreground hover:text-foreground"
           >
-            ✕
+            <Icon name="close" size="sm" />
           </button>
         ) : null}
       </div>
@@ -1382,7 +1454,7 @@ function Playground({
               )}
               title={`device: ${serve.device}`}
             >
-              {serve.device.startsWith("cuda") ? "⚡ GPU" : "CPU"}
+              <DeviceLabel device={serve.device} />
             </span>
           ) : null}
         </span>
@@ -1679,7 +1751,7 @@ function ProgressBlock({
               )}
               title={`device: ${run.device}`}
             >
-              {run.device.startsWith("cuda") ? "⚡ GPU" : "CPU"}
+              <DeviceLabel device={run.device} />
             </span>
           ) : null}
           {run.paused ? (
@@ -1781,7 +1853,7 @@ function ResultCard({
     }
   }
   if (summary?.lastEpoch) chips.push(`${summary.lastEpoch} passes`);
-  if (summary?.device?.startsWith("cuda")) chips.push("trained on GPU ⚡");
+  if (summary?.device?.startsWith("cuda")) chips.push("trained on GPU");
 
   return (
     <div className={cn("mb-2 rounded-md border p-2.5", tone)}>
@@ -2004,22 +2076,22 @@ function RunRow({
           aria-label={run.pinned ? "Unpin run" : "Pin as baseline"}
           title={run.pinned ? "Unpin" : "Pin as baseline"}
           className={cn(
-            "shrink-0 px-1 text-[11px] leading-none",
+            "shrink-0 px-1 leading-none",
             run.pinned
               ? "text-amber-500"
               : "text-muted-foreground/40 hover:text-foreground",
           )}
         >
-          {run.pinned ? "★" : "☆"}
+          <Icon name="pin" size="xs" active={run.pinned} />
         </button>
         <button
           type="button"
           onClick={() => setEditing((v) => !v)}
           aria-label="Notes and tags"
           title="Notes & tags"
-          className="mr-1 shrink-0 px-0.5 text-[10px] leading-none text-muted-foreground/50 hover:text-foreground"
+          className="mr-1 shrink-0 px-0.5 leading-none text-muted-foreground/50 hover:text-foreground"
         >
-          ✎
+          <Icon name="edit" size="xs" />
         </button>
       </div>
 

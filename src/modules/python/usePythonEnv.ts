@@ -6,6 +6,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { currentWorkspaceEnv } from "@/modules/workspace";
 
 export type PythonEnv = {
   name: string;
@@ -65,6 +66,7 @@ export function usePythonEnv(workspaceRoot: string | null) {
     try {
       const envs = await invoke<PythonEnv[]>("py_detect_envs", {
         workspaceRoot: root,
+        workspace: currentWorkspaceEnv(),
       });
       const savedPath = readActiveEnvPath(root);
       const active =

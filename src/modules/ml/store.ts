@@ -16,7 +16,10 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { basename } from "@/lib/path";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import {
+  currentWorkspaceEnv,
+  currentWorkspaceScopeKey,
+} from "@/modules/workspace";
 import type { PythonEnv } from "@/modules/python/usePythonEnv";
 import {
   buildCandidates,
@@ -255,6 +258,10 @@ const MAX_COMPARE = COMPARE_COLORS.length;
 
 type MlStore = {
   engineStatus: EngineStatus;
+  /** Workspace scope (`local` / `wsl:<distro>`) the engine facts below were
+   *  answered by. A mismatch means they belong to a different machine and
+   *  must be discarded, not reused — see `detect`. */
+  engineScope: string | null;
   engineExe: string | null;
   engineVersion: string | null;
   engineError: string | null;
@@ -274,6 +281,9 @@ type MlStore = {
   installFlavor: InstallFlavor | null;
   /** Downloading the standalone Rust engine (no-Python path). */
   downloadingEngine: boolean;
+  /** Deleting the managed engine binary. Separate from `downloadingEngine`
+   *  so the Remove button can show progress instead of appearing inert. */
+  uninstallingEngine: boolean;
   /** The compiled-in engine release pin (version/url/size/sha256), for the
    *  consent dialog. null = not fetched yet or no prebuilt for platform. */
   enginePin: EnginePin | null;
@@ -429,6 +439,7 @@ function pushLog(logs: string[], line: string): string[] {
 
 export const useMlStore = create<MlStore>((set, get) => ({
   engineStatus: "idle",
+  engineScope: null,
   engineExe: null,
   engineVersion: null,
   engineError: null,
@@ -441,6 +452,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
   installQueue: [],
   installFlavor: null,
   downloadingEngine: false,
+  uninstallingEngine: false,
   enginePin: null,
   managedEngine: null,
   envInfo: null,
@@ -470,7 +482,25 @@ export const useMlStore = create<MlStore>((set, get) => ({
   pendingOnnx: null,
 
   async detect(workspaceRoot) {
-    if (get().engineStatus === "detecting") return;
+    const scope = currentWorkspaceScopeKey();
+    if (get().engineStatus === "detecting" && get().engineScope === scope) return;
+    // Everything the panel knows about the engine is answered *by* an
+    // environment: which binary, which torch build, which GPU, whether the
+    // managed download applies. Switching Windows↔WSL therefore invalidates
+    // all of it. Without this the panel kept the host's answers and reported
+    // a ready Windows engine for a distro that has none.
+    if (get().engineScope !== scope) {
+      set({
+        engineScope: scope,
+        engineExe: null,
+        engineVersion: null,
+        engineKind: null,
+        engineError: null,
+        envInfo: null,
+        installPython: null,
+        managedEngine: null,
+      });
+    }
     set({ engineStatus: "detecting", engineError: null });
     // Pin + managed-engine footprint for the setup card (cheap, local).
     void get().refreshEngineMeta();
@@ -481,7 +511,10 @@ export const useMlStore = create<MlStore>((set, get) => ({
     let envs: PythonEnv[] = [];
     if (workspaceRoot) {
       try {
-        envs = await invoke<PythonEnv[]>("py_detect_envs", { workspaceRoot });
+        envs = await invoke<PythonEnv[]>("py_detect_envs", {
+          workspaceRoot,
+          workspace: currentWorkspaceEnv(),
+        });
       } catch {
         // no python detection → still try PATH
       }
@@ -626,7 +659,19 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   async uninstallManagedEngine(workspaceRoot) {
-    if (get().downloadingEngine || get().installing) return;
+    // The old guard returned silently while an install was running, on a
+    // button that stayed enabled — a click that did nothing, showed nothing,
+    // and logged nothing. Anything that stops the removal now says so.
+    const { downloadingEngine, installing, uninstallingEngine } = get();
+    if (uninstallingEngine) return;
+    if (downloadingEngine || installing) {
+      set({
+        engineError:
+          "Can't remove the engine while an install or download is running — wait for it to finish.",
+      });
+      return;
+    }
+    set({ uninstallingEngine: true, engineError: null });
     try {
       const freed = await uninstallEngine();
       const mb = (freed / (1024 * 1024)).toFixed(0);
@@ -634,8 +679,13 @@ export const useMlStore = create<MlStore>((set, get) => ({
         logs: pushLog(s.logs, `managed engine removed (freed ${mb} MB)`),
       }));
     } catch (err) {
-      set({ engineError: `Engine uninstall failed: ${String(err)}` });
+      set((s) => ({
+        engineError: `Engine uninstall failed: ${String(err)}`,
+        logs: pushLog(s.logs, `engine uninstall failed: ${String(err)}`),
+      }));
       return;
+    } finally {
+      set({ uninstallingEngine: false });
     }
     await get().refreshEngineMeta();
     // The engine may still exist in a venv/PATH — let detection decide.
@@ -643,6 +693,14 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   async refreshEngineMeta() {
+    // The pinned download and the managed binary are host-side facts. In a
+    // WSL workspace they describe the wrong machine, so the setup card must
+    // not offer the download and the settings row must not offer to remove
+    // something the distro never had.
+    if (currentWorkspaceEnv().kind !== "local") {
+      set({ enginePin: null, managedEngine: null });
+      return;
+    }
     const [pin, managed] = await Promise.all([
       engineInstallPin(),
       managedEngineStatus(),
