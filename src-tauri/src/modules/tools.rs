@@ -23,7 +23,7 @@
 //! name resolves to an executable is the question the spawn itself will ask.
 
 use crate::modules::workspace::WorkspaceEnv;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Which of `binaries` resolve to something runnable right now.
 ///
@@ -66,39 +66,63 @@ fn resolves(workspace: &WorkspaceEnv, binary: &str) -> bool {
     }
 }
 
-/// A `which`, in-process: no subprocess, so it cannot hang or flash a console.
 fn resolves_on_host(binary: &str) -> bool {
+    resolve_on_host(binary).is_some()
+}
+
+/// A `which`, in-process: no subprocess, so it cannot hang or flash a console.
+///
+/// Returns the concrete path rather than a bool because callers need both
+/// answers from the same walk. `tool_probe` only wants "is it there", but a
+/// spawn site needs the resolved path itself: `std::process::Command` on
+/// Windows appends **only** `.exe` to a bare name — it does not consult
+/// PATHEXT — so handing it `vscode-css-language-server` fails even though the
+/// probe found `vscode-css-language-server.cmd` one directory over. Resolving
+/// here and spawning the result is what keeps the two sides agreeing.
+pub fn resolve_on_host(binary: &str) -> Option<PathBuf> {
+    if binary.is_empty() {
+        return None;
+    }
     let path = Path::new(binary);
     // A name carrying a separator is a path, not a PATH lookup — that is what
     // the OS does when it spawns it, so match that here.
     if path.components().count() > 1 {
-        return is_executable_file(path);
+        return is_executable_file(path).then(|| path.to_path_buf());
     }
-    let Some(path_var) = std::env::var_os("PATH") else {
-        return false;
-    };
+    let path_var = std::env::var_os("PATH")?;
+    let suffixes = executable_suffixes();
+    // Suffixes inner, directories outer: the first PATH entry holding *any*
+    // spawnable spelling wins, which is the order Windows itself searches.
     std::env::split_paths(&path_var)
         .filter(|dir| !dir.as_os_str().is_empty())
-        .any(|dir| {
-            executable_suffixes()
-                .iter()
-                .any(|suffix| is_executable_file(&dir.join(format!("{binary}{suffix}"))))
+        .find_map(|dir| {
+            suffixes.iter().find_map(|suffix| {
+                let candidate = dir.join(format!("{binary}{suffix}"));
+                is_executable_file(&candidate).then_some(candidate)
+            })
         })
 }
 
 /// Suffixes to try for a bare name. On Windows the npm-installed servers here
 /// land as `.cmd` shims rather than `.exe`, so PATHEXT is not optional.
+///
+/// The extensionless spelling goes **last** on Windows, and that ordering is
+/// load-bearing. npm's shim writer emits three files per bin — `foo`, `foo.cmd`
+/// and `foo.ps1` — where the extensionless `foo` is a *bash* script for
+/// MSYS/Git Bash. `CreateProcessW` cannot run it, so preferring it would
+/// resolve to a path that is guaranteed not to spawn. Trying PATHEXT first
+/// picks the `.cmd`, which `Command` routes through `cmd.exe` for us.
 fn executable_suffixes() -> Vec<String> {
     #[cfg(windows)]
     {
-        let mut out = vec![String::new()];
         let raw = std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string());
-        out.extend(
-            raw.split(';')
-                .map(str::trim)
-                .filter(|e| e.starts_with('.'))
-                .map(str::to_string),
-        );
+        let mut out: Vec<String> = raw
+            .split(';')
+            .map(str::trim)
+            .filter(|e| e.starts_with('.'))
+            .map(str::to_string)
+            .collect();
+        out.push(String::new());
         out
     }
     #[cfg(not(windows))]
@@ -163,6 +187,52 @@ mod tests {
         // Contains a separator, so it must be treated as a path and fail
         // rather than matching a same-named binary somewhere on PATH.
         assert!(!resolves_on_host("no/such/dir/sh"));
+    }
+
+    #[test]
+    fn resolution_returns_a_spawnable_path_not_the_bare_name() {
+        // The whole point of `resolve_on_host` over a bool: what comes back
+        // must be something `Command` can spawn as-is. On Windows that means
+        // a PATHEXT spelling, never the bare name a `Command::new` would fail
+        // to find.
+        let probe = if cfg!(windows) { "cmd" } else { "sh" };
+        let resolved = resolve_on_host(probe).expect("probe binary on PATH");
+        assert!(resolved.is_absolute(), "{resolved:?} is not absolute");
+        assert!(
+            is_executable_file(&resolved),
+            "{resolved:?} is not runnable"
+        );
+        #[cfg(windows)]
+        assert!(
+            resolved.extension().is_some(),
+            "{resolved:?} has no extension; CreateProcessW cannot run it"
+        );
+    }
+
+    #[test]
+    fn windows_tries_pathext_before_the_extensionless_name() {
+        // npm writes `foo` (a bash script), `foo.cmd` and `foo.ps1` into the
+        // same directory. Resolving to the extensionless bash script would be
+        // a path that never spawns, so PATHEXT must come first.
+        let suffixes = executable_suffixes();
+        assert_eq!(
+            suffixes.last().map(String::as_str),
+            Some(""),
+            "the extensionless spelling must be the last resort"
+        );
+        #[cfg(windows)]
+        assert!(
+            suffixes.len() > 1 && !suffixes[0].is_empty(),
+            "PATHEXT entries must precede the bare name: {suffixes:?}"
+        );
+    }
+
+    #[test]
+    fn an_empty_name_resolves_to_nothing() {
+        // `Path::new("").components().count()` is 0, so this must be rejected
+        // up front rather than falling through to a PATH walk that joins the
+        // suffix onto every directory and matches the directory itself.
+        assert!(resolve_on_host("").is_none());
     }
 
     #[test]

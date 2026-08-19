@@ -44,7 +44,17 @@ impl LspSession {
         initialization_options: Option<Value>,
         app: AppHandle,
     ) -> Result<Self, String> {
-        let mut cmd = proc::command(server_cmd);
+        // Resolve before spawning. `Command` on Windows only ever appends
+        // `.exe` to a bare name, but every npm-installed server here lands as
+        // a `.cmd` shim — so `vscode-css-language-server` fails to spawn even
+        // though `tool_probe` (which does walk PATHEXT) reports it present.
+        // That split made the missing-tools pill lie in both directions: it
+        // cleared on refresh, then came straight back on the next open.
+        // Falling back to the bare name keeps the failure path unchanged when
+        // resolution finds nothing, so the error still comes from the spawn.
+        let program = crate::modules::tools::resolve_on_host(server_cmd)
+            .unwrap_or_else(|| std::path::PathBuf::from(server_cmd));
+        let mut cmd = proc::command(&program);
         cmd.args(server_args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())

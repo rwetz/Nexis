@@ -4,6 +4,12 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Fixed
+- **npm-installed language servers were found by the probe and then failed to spawn on Windows.** Installing `vscode-langservers-extracted` gave Nexis a working CSS/HTML/JSON server that it still refused to start, and the missing-tools notice told the story backwards: pressing refresh cleared the entry, then opening a `.css` file put it straight back. The two sides were asking different questions. `tool_probe` walks `PATHEXT` deliberately — 1.25.0 added that precisely because these servers land as `.cmd` shims — but the spawn in `lsp/session.rs` handed the bare name to `std::process::Command`, and Rust's Windows program resolution appends **only** `.exe`; it never consults `PATHEXT`. So `vscode-css-language-server` resolved for the probe and did not exist for the spawn.
+  - `tool_probe`'s PATH walk now returns the resolved path instead of a bool (`tools::resolve_on_host`), and both the LSP client and the DAP client spawn that path rather than the bare name. One walk answers both questions, so the two cannot drift apart again. When resolution finds nothing the bare name is still passed through, leaving the failure path — and its error message — exactly as it was.
+  - **PATHEXT spellings are now tried before the extensionless one**, and that ordering is the fix, not a detail. npm's shim writer emits three files per bin: `foo.cmd`, `foo.ps1`, and an extensionless `foo` that is a *bash* script for MSYS/Git Bash. Preferring the bare spelling — which the old suffix list did — would have resolved to a path `CreateProcessW` cannot execute, turning a lookup miss into a spawn failure. Trying PATHEXT first selects the `.cmd`, which `Command` routes through `cmd.exe` with its own hardened quoting.
+  - The DAP client is covered for the same reason rather than pre-emptively: the adapter command is free text in the debugger panel, so anyone naming an npm-installed adapter (`js-debug-adapter`) hits the identical gap.
+
 ## [1.25.0] — 2026-08-19
 
 ### Added

@@ -42,7 +42,13 @@ impl DapSession {
         session_id: u32,
         app: AppHandle,
     ) -> Result<Self, String> {
-        let mut cmd = proc::command(adapter_cmd);
+        // Same PATHEXT resolution the LSP client does, and for the same
+        // reason: the adapter command is free text in the debugger panel, so
+        // a user who types an npm-installed adapter (`js-debug-adapter`) hits
+        // the `.cmd`-shim gap that `Command` alone cannot bridge on Windows.
+        let program = crate::modules::tools::resolve_on_host(adapter_cmd)
+            .unwrap_or_else(|| std::path::PathBuf::from(adapter_cmd));
+        let mut cmd = proc::command(&program);
         cmd.args(adapter_args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
