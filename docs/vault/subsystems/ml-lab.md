@@ -7,6 +7,8 @@ description: ML Lab — the external nexis-ml engine, its detection/spawn bridge
 
 Trains models locally through an **external** tool called `nexis-ml`, which Nexis does not ship: it is detected (venv / PATH / a managed download) and driven over a line-oriented NDJSON protocol. Rust owns the process and batches its output into Tauri events; the frontend owns the store, the charts, and the run browser.
 
+**The standalone (Rust) engine is the default.** It is a single pinned binary from GitHub releases with no Python involved, and it is the only thing the setup card installs. The Python engine is documented, not automated — `PythonEngineSteps` hands over the commands, because choosing an interpreter and committing to a ~3 GB PyTorch download are not decisions Nexis should make silently. `upgradeToGpu` is the one pip path still driven in-app, and it acts on an environment the user already built.
+
 Two engines answer to the same name and have different feature sets — the Python one (torch, every template, HTML report) and the standalone Rust one (config-only, wgpu, ONNX export). `engineKindFromEnv` tells them apart by the `backend` field only the Rust engine reports; treat `null` as "don't block" and let the engine raise its own error. The product spec lives in `docs/ML_SUITE.md` and `docs/ML_LAB_GUIDE.md` — this note is only the code map.
 
 ## Key files
@@ -22,7 +24,8 @@ Two engines answer to the same name and have different feature sets — the Pyth
 ## Invariants / gotchas
 
 - **Every engine command is workspace-scoped.** `ml_detect` / `ml_env` / `ml_spawn` / `ml_install` / `py_detect_envs` take `workspace` and build their child through `ml.rs:env_command`, which routes a WSL workspace through `wsl.exe`. `ml_spawn` authorizes the *host* view of the project dir but hands the child the *Linux* path. See CLAUDE.md pitfall #20 before adding a command here.
-- **Anything host-scoped is hidden, not silently offered, in a WSL workspace** — the pinned download, the managed binary, its uninstall row. A Windows `.exe` in the host's app-data dir is unreachable from inside a distro.
+- **Anything host-scoped is hidden, not silently offered, in a WSL workspace** — the pinned download, the managed binary, its uninstall row. A Windows `.exe` in the host's app-data dir is unreachable from inside a distro. Hiding alone left WSL with no path at all, so `WslEngineSteps` gives the commands instead.
+- **`lib/pythonSupport.ts` only ever warns.** Its torch version bounds are a heuristic that goes stale in one direction (a new CPython gains wheels later), so a stale bound must never block an environment that already works.
 - **Caches of engine facts must carry the workspace scope.** `detectCache` keys on `currentWorkspaceScopeKey()`; `MlStore.engineScope` records who answered and discards everything on a mismatch.
 - **Metric buffers are NOT in the store** (pitfall #14) — they live in a module-level Map in `lib/series.ts`; components subscribe to the primitive `seriesTick` and read through `getSeriesMap()`.
 - **`workspace_authorize` runs before every `ml_spawn`** (pitfall #1C), same as `pty-bridge` does for `pty_open`.

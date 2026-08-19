@@ -276,11 +276,9 @@ type MlStore = {
   engineKind: EngineKind | null;
   /** Python to install the engine into, when one was detected. */
   installPython: string | null;
-  /** Whether that interpreter is an isolated env or the machine-wide one, and
-   *  what version it reports. Both are shown before a ~3 GB install commits:
-   *  a system interpreter changes every project on the machine, and PyTorch
-   *  publishes no wheels at all for a CPython that is too new. */
-  installPythonKind: "venv" | "conda" | "system" | null;
+  /** Version that interpreter reports, used to warn in the manual Python
+   *  steps: PyTorch publishes no wheels at all for a CPython that is too new,
+   *  and pip only says so after resolving. */
   installPythonVersion: string | null;
   installing: boolean;
   installSid: number | null;
@@ -353,8 +351,9 @@ type MlStore = {
 
   detect: (workspaceRoot: string | null) => Promise<void>;
   redetect: (workspaceRoot: string | null) => Promise<void>;
-  installEngine: (workspaceRoot: string | null, useGpu: boolean) => Promise<void>;
-  /** Swap the engine's CPU torch for the CUDA build. */
+  /** Swap the engine's CPU torch for the CUDA build. The only pip path Nexis
+   *  still drives itself: it acts on an environment the user already built
+   *  and chose, rather than picking one for them (see PythonEngineSteps). */
   upgradeToGpu: (workspaceRoot: string | null) => Promise<void>;
   /** Download the standalone Rust engine (no Python needed). The caller
    *  must have shown the consent dialog first (EngineConsentDialog). */
@@ -457,7 +456,6 @@ export const useMlStore = create<MlStore>((set, get) => ({
   engineKind: null,
   createError: null,
   installPython: null,
-  installPythonKind: null,
   installPythonVersion: null,
   installing: false,
   installSid: null,
@@ -506,7 +504,6 @@ export const useMlStore = create<MlStore>((set, get) => ({
       set({
         engineScope: scope,
         engineCandidates: [],
-        installPythonKind: null,
         installPythonVersion: null,
         engineExe: null,
         engineVersion: null,
@@ -541,7 +538,6 @@ export const useMlStore = create<MlStore>((set, get) => ({
       envs.find((e) => e.kind === "venv" || e.kind === "conda") ?? envs[0];
     set({
       installPython: installTarget?.python_path ?? null,
-      installPythonKind: installTarget?.kind ?? null,
       installPythonVersion: installTarget?.version ?? null,
     });
     try {
@@ -587,21 +583,6 @@ export const useMlStore = create<MlStore>((set, get) => ({
     resetEngineDetection();
     set({ engineStatus: "idle" });
     await get().detect(workspaceRoot);
-  },
-
-  async installEngine(workspaceRoot, useGpu) {
-    const { installPython, installing } = get();
-    if (!installPython || installing) return;
-    // GPU installs grab the CUDA torch build first, then the engine —
-    // pip then sees torch as already satisfied.
-    const queue: InstallFlavor[] = useGpu ? ["cuda-torch", "default"] : ["default"];
-    set({
-      installing: true,
-      installQueue: queue,
-      installRoot: workspaceRoot,
-      engineError: null,
-    });
-    await get()._startNextInstall();
   },
 
   async upgradeToGpu(workspaceRoot) {
