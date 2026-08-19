@@ -65,7 +65,7 @@ and stop. Don't batch them.
   *Re-done so far:* the theme set and the icon/mark; the icon surface (semantic choke point, Phosphor,
   house size scale, real provider brand marks) and the motion system (house easing/duration tokens wired
   into Tailwind's defaults, stepped spinner, caret-cadence status blink) and the file-tree retint onto the
-  active theme's ANSI palette. *Still inherited:* layout and spacing scale, panel/rail component idioms.
+  active theme's ANSI palette; and the emoji purge (v1.25.0) — an emoji is the one glyph that ignores the theme entirely, so removing them is identity work, not tidying, and a tripwire on both sides of the stack keeps them out. *Still inherited:* layout and spacing scale, panel/rail component idioms.
 
 ---
 
