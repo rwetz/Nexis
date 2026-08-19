@@ -385,6 +385,40 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
     ).toBe(true);
   });
 
+  it("every E2E spec clears startup modals before it interacts", () => {
+    // The E2E job builds on a clean runner, so every run is a first run and
+    // PackOnboardingDialog opens as soon as preferences hydrate. Its Radix
+    // overlay is `fixed inset-0` with `pointer-events: auto`, so it receives
+    // every click meant for app chrome and WebDriver reports "element click
+    // intercepted" — never anything naming the dialog. That took the nightly
+    // job down: the terminal spec could not reach the "New tab" button, so
+    // the failure surfaced as a missing `.xterm` 15 s later.
+    //
+    // Any new spec inherits the same first-run profile, so this is a property
+    // of the suite rather than of one file.
+    const repoRoot = path.join(SRC_ROOT, "..");
+    const specDir = path.join(repoRoot, "e2e/specs");
+    const specs = fs
+      .readdirSync(specDir)
+      .filter((f) => f.endsWith(".test.ts"));
+
+    expect(
+      specs.length,
+      "no E2E specs found — this guard is reading the wrong directory",
+    ).toBeGreaterThan(0);
+
+    for (const spec of specs) {
+      const src = fs.readFileSync(path.join(specDir, spec), "utf8");
+      expect(
+        /dismissStartupDialogs\s*\(/.test(src),
+        `e2e/specs/${spec} must await dismissStartupDialogs() in its before() ` +
+          "hook — a first-run modal's overlay intercepts every click on app " +
+          "chrome, and the resulting failure names the overlay rather than " +
+          "the dialog. Helper lives in e2e/support/dialogs.ts",
+      ).toBe(true);
+    }
+  });
+
   // Pitfall #19: no emoji in the product. Emoji render from the OS emoji
   // font, not the theme — wrong colour, wrong weight, wrong size, a different
   // glyph on every platform, and entirely outside the semantic icon layer

@@ -30,6 +30,24 @@ Both, plus port agreement between the overlay and `DEBUG_PORT` in `wdio.conf.ts`
 
 **Shipping builds never use the overlay** — `release.yml` builds plain, so no released artifact exposes a debugging port. Keep it that way.
 
+## Every run is a first run
+
+The job builds a release bundle on a clean runner, so the profile is always fresh and **`PackOnboardingDialog` opens on every single run**. Its Radix overlay is `fixed inset-0` at `z-50` with `pointer-events: auto`, so it receives every click meant for app chrome. WebDriver reports that as `element click intercepted … Other element would receive the click: <div data-slot="dialog-overlay">` — the overlay is named, the dialog never is.
+
+The failure then surfaces far from its cause. With the terminal spec unable to open the new-tab dropdown, no terminal tab existed, and the run's reported error was `element (".xterm") still not existing after 15000ms` — 15 seconds downstream, pointing at the PTY layer instead of at a modal.
+
+Both specs now await `dismissStartupDialogs()` from `e2e/support/dialogs.ts` in their `before()` hook. Three things about it are deliberate:
+
+- **It targets any blocking modal, not the onboarding dialog by name.** `UpdaterDialog` opens itself the same way whenever a published release is newer than the built version — on a nightly job that is release timing, not something the suite controls.
+- **It waits for the viewport to stay clear, rather than returning on the first clear poll.** `App` renders its chrome before it hydrates preferences (`initPrefs()` runs in a `useEffect`), so `[data-tauri-drag-region]` exists while `hydrated` is still false and the dialog has not mounted yet. A single clear poll would leave a window in which the dialog appears *after* the check and covers the control the spec is about to click.
+- **Escape is the fallback, not the primary.** The close button is the affordance a user has, but `AlertDialogContent` renders none and a stacked dialog's button can itself be covered. On an alert dialog Escape maps to cancel, which is the non-destructive choice.
+
+Dismissal persists (`packsOnboarded`), so only the first spec in a run pays for it.
+
+A tripwire in `src/lib/pitfall-guards.test.ts` fails if any spec in `e2e/specs/` does not call `dismissStartupDialogs()` — every new spec inherits the same first-run profile.
+
+**When adding a spec that clicks anything, call it.** And note that `isEnabled()`/`isExisting()` are DOM queries that pass straight through an overlay; only `isClickable()` hit-tests the point. That is exactly how the smoke spec passed while the UI was entirely unclickable, and why it now asserts `isClickable()` on the new-tab button.
+
 ## Known-stale corners
 
 - `e2e/specs/terminal.test.ts` has 3 pre-existing type errors (WDIO's `ChainablePromiseArray.length` resolving as `Promise<number>`). Runtime is unaffected. Nothing typechecks `e2e/` in CI — `pnpm exec tsc --noEmit` uses the root tsconfig, which does not include it; check it by hand with `-p e2e/tsconfig.json`.
