@@ -1,0 +1,49 @@
+---
+type: subsystem
+description: ML Lab — the external nexis-ml engine, its detection/spawn bridge, the training store, and the panel's charts and network diagram.
+---
+
+# ML Lab
+
+Trains models locally through an **external** tool called `nexis-ml`, which Nexis does not ship: it is detected (venv / PATH / a managed download) and driven over a line-oriented NDJSON protocol. Rust owns the process and batches its output into Tauri events; the frontend owns the store, the charts, and the run browser.
+
+**The standalone (Rust) engine is the default.** It is a single pinned binary from GitHub releases with no Python involved, and it is the only thing the setup card installs. The Python engine is documented, not automated — `PythonEngineSteps` hands over the commands, because choosing an interpreter and committing to a ~3 GB PyTorch download are not decisions Nexis should make silently. `upgradeToGpu` is the one pip path still driven in-app, and it acts on an environment the user already built.
+
+Two engines answer to the same name and have different feature sets — the Python one (torch, every template, HTML report) and the standalone Rust one (config-only, wgpu, ONNX export). `engineKindFromEnv` tells them apart by the `backend` field only the Rust engine reports; treat `null` as "don't block" and let the engine raise its own error. The product spec lives in `docs/ML_SUITE.md` and `docs/ML_LAB_GUIDE.md` — this note is only the code map.
+
+## Key files
+
+- `src-tauri/src/modules/ml.rs` — every `ml_*` command: detect, env probe, spawn + reader/flusher threads, pip install, the pinned managed-engine download
+- `src-tauri/src/modules/python.rs:py_detect_envs` — interpreter discovery, shared with the status-bar Python picker
+- `src/modules/ml/lib/engine-bridge.ts` — the IPC seam; candidate building, the detection memo, event subscription
+- `src/modules/ml/store.ts` — engine state, the live run, historical runs, compare, serve/playground
+- `src/modules/ml/MlPanel.tsx` — the whole panel (large; setup card, run browser, hyperparams, playground)
+- `src/modules/ml/NetworkGraph.tsx` — the architecture drawing, canvas; also the `ml-network` tab body via `MlNetworkStack.tsx`
+- `src/modules/ml/lib/protocol.ts` / `series.ts` / `artifacts.ts` — event parsing, metric buffers, on-disk artifacts
+
+## Invariants / gotchas
+
+- **Every engine command is workspace-scoped.** `ml_detect` / `ml_env` / `ml_spawn` / `ml_install` / `py_detect_envs` take `workspace` and build their child through `ml.rs:env_command`, which routes a WSL workspace through `wsl.exe`. `ml_spawn` authorizes the *host* view of the project dir but hands the child the *Linux* path. See CLAUDE.md pitfall #20 before adding a command here.
+- **Anything host-scoped is hidden, not silently offered, in a WSL workspace** — the pinned download, the managed binary, its uninstall row. A Windows `.exe` in the host's app-data dir is unreachable from inside a distro. Hiding alone left WSL with no path at all, so `WslEngineSteps` gives the commands instead.
+- **`lib/pythonSupport.ts` only ever warns.** Its torch version bounds are a heuristic that goes stale in one direction (a new CPython gains wheels later), so a stale bound must never block an environment that already works.
+- **Caches of engine facts must carry the workspace scope.** `detectCache` keys on `currentWorkspaceScopeKey()`; `MlStore.engineScope` records who answered and discards everything on a mismatch.
+- **Metric buffers are NOT in the store** (pitfall #14) — they live in a module-level Map in `lib/series.ts`; components subscribe to the primitive `seriesTick` and read through `getSeriesMap()`.
+- **`workspace_authorize` runs before every `ml_spawn`** (pitfall #1C), same as `pty-bridge` does for `pty_open`.
+- **The detection promise is memoized and its `.catch()` deletes the entry** (pitfall #10) — a rejected promise left in a Map is indistinguishable from a resolved one.
+- **The candidate list is speculative, so an absent candidate is not an error.** `ml.rs:Probe` is three-valued: `Missing` is silent, `Failed` is a diagnosis. Reporting the last candidate's ENOENT instead made every "no engine" state show the managed engine's path and `os error 3`. Absolute host paths are ruled out with `exists()` rather than a spawn — the panel re-detects on every open.
+- **`installSid` is recorded only after `spawnInstall` resolves.** An exit inside that window matches nothing, and nothing else clears `installing` — which disables the setup card's buttons. `_applyExit`/`_applyStderr` treat an unmatched event during an in-flight install as that install's.
+- **`ALLOWED_SUBCOMMANDS` and `is_nexis_ml_exe` are the security boundary.** `ml_spawn` must never become a generic process launcher; the exe stem must be exactly `nexis-ml` and the subcommand must be on the allowlist.
+- **Canvas drawings size through `src/lib/canvas.ts:canvasBackingScale`** (`dpr × --app-zoom`) and take `zoomLevel` as a redraw dependency — a `ResizeObserver` never fires for a zoom change. Same family as pitfall #15.
+
+## Debugging entry points
+
+- Engine "ready" but training fails on the project dir → workspace-scope mismatch; check `engineScope` and which env `env_command` built for
+- Panel shows a Windows engine in a WSL workspace → a new command missing its `workspace` parameter (pitfall #20)
+- A button in the panel appears inert → check for a store guard that returns early while the button stays enabled; also check whether `installing` is stuck true, which disables the setup card wholesale
+- "Engine not found" naming a specific path → almost always just an absent candidate; open the setup card's "Where Nexis looked" list before believing the path is the problem
+- Charts frozen but the run is live → `seriesTick` not bumping, or the component subscribed to the buffer instead of the tick
+- Network diagram blank → `parseTomlNet` returned null; the project's `train.toml` has no recognizable `[net]`
+
+## Related
+
+[[rust-modules]] · [[frontend-modules]] · [[ipc-surface]] · [[zustand-stores]] · [[icon-and-motion-system]]

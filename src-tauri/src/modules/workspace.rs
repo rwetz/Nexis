@@ -392,22 +392,74 @@ pub(crate) fn wsl_exec_capture(
 fn run_wsl_sh(distro: &str, script: &str) -> Result<String, String> {
     // Probe helpers must avoid login-shell startup files. User `.profile`
     // output on stdout would corrupt the parsed value (`$HOME`, login shell).
+    // That is only half the exposure: on a cold distro this call is what boots
+    // the VM, so the whole systemd boot log lands here too. `script` must
+    // therefore emit its answer via `wsl_probe_script` and the caller must read
+    // it back with `parse_wsl_probe*` — never positionally.
     wsl_exec_capture(distro, "sh", &["-c", script])
 }
 
-#[cfg(windows)]
-pub(crate) fn normalize_wsl_value(output: String, fallback: &str) -> String {
-    let value = output
-        .lines()
-        .rev()
-        .map(str::trim)
-        .find(|line| !line.is_empty())
-        .unwrap_or("");
+/// Opening sentinel wrapped around a WSL probe's answer. See `parse_wsl_probe`.
+pub(crate) const WSL_PROBE_OPEN: &str = "<<NEXIS_V:";
+/// Closing sentinel wrapped around a WSL probe's answer.
+pub(crate) const WSL_PROBE_CLOSE: &str = ":NEXIS_V>>";
+
+/// Wrap a shell word (already quoted by the caller, e.g. `"$HOME"`) in the
+/// `printf` that emits its value between the probe sentinels.
+///
+/// Every `wsl.exe` probe must go through this. Reading the value positionally
+/// — "the last non-empty line" — is what broke: see `parse_wsl_probe`.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub(crate) fn wsl_probe_script(shell_word: &str) -> String {
+    format!("printf '{WSL_PROBE_OPEN}%s{WSL_PROBE_CLOSE}' {shell_word}")
+}
+
+/// Extract a probe's answer from `wsl.exe` output that may also carry an
+/// entire distro boot log.
+///
+/// The probes are the first thing Nexis runs when a workspace switches to WSL,
+/// so on a cold distro *they* are the invocation that starts the VM — and with
+/// systemd enabled, `wsl.exe` relays the whole boot to their stdout: ~95
+/// `[  OK  ]` lines plus kernel printk. The previous reader took the last
+/// non-empty line, which is wrong in both directions. `printf %s` emits no
+/// trailing newline, so an unterminated console line swallows the value; and
+/// printk keeps arriving *after* boot hands off (a real capture has
+/// `hv_balloon` at t=4.19s, `misc dxg` at 4.65s and 5.07s, and a WSL
+/// `CheckConnection` error at 7.36s, all after `graphical.target`), so the
+/// last line is just as likely to be a kernel message.
+///
+/// A garbage answer here is not a cosmetic problem: `wsl_home` feeds the
+/// workspace switch, so a kernel log line became the new terminal tab's cwd,
+/// `pty_open` rejected it as "cwd not accessible", and the user got a terminal
+/// with a cursor and no prompt (pitfall #1, blank-terminal shape).
+///
+/// Sentinels fix it because boot output cannot forge them. The span is taken
+/// from the *first* opening marker to the *last* closing one, so a value that
+/// happens to contain a marker-like substring is returned whole rather than
+/// truncated.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub(crate) fn parse_wsl_probe(output: &str) -> Option<String> {
+    let start = output.find(WSL_PROBE_OPEN)? + WSL_PROBE_OPEN.len();
+    let rest = &output[start..];
+    let end = rest.rfind(WSL_PROBE_CLOSE)?;
+    let value = rest[..end].trim();
     if value.is_empty() {
-        fallback.to_string()
+        None
     } else {
-        value.to_string()
+        Some(value.to_string())
     }
+}
+
+/// `parse_wsl_probe` for answers that must name a path inside the distro.
+///
+/// Every probe Nexis runs asks for one (`$HOME`, the login shell, `$ZDOTDIR`,
+/// `command -v python3`), so requiring POSIX-absolute costs nothing and is a
+/// second, independent guard: no kernel log line or systemd status line starts
+/// with `/`. A multi-line answer is refused too — the probes emit one value,
+/// and anything else means the output was spliced.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub(crate) fn parse_wsl_probe_path(output: &str) -> Option<String> {
+    parse_wsl_probe(output).filter(|v| v.starts_with('/') && !v.contains('\n'))
 }
 
 #[cfg(windows)]
@@ -423,6 +475,15 @@ fn list_distros_blocking() -> Result<Vec<WslDistro>, String> {
         let line = line.trim_start_matches('*').trim();
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() < 3 {
+            continue;
+        }
+        // The VERSION column is a bare integer. Requiring it filters out
+        // console noise that `--list` can pick up (a `[  OK  ] Started
+        // cron.service - Regular background program processing daemon.` line
+        // splits into more than three fields and would otherwise register as a
+        // distro). Checking VERSION rather than STATE keeps this locale-safe:
+        // WSL translates the state words, it does not translate the number.
+        if parts[parts.len() - 1].parse::<u32>().is_err() {
             continue;
         }
         let state_idx = parts.len() - 2;
@@ -488,13 +549,8 @@ pub fn wsl_home_blocking(distro: String) -> Result<String, String> {
     }
     #[cfg(windows)]
     {
-        let out = run_wsl_sh(&distro, "printf %s \"$HOME\"")?;
-        let home = normalize_wsl_value(out, "");
-        if home.is_empty() {
-            Err(format!("could not resolve WSL home for {distro}"))
-        } else {
-            Ok(home)
-        }
+        let out = run_wsl_sh(&distro, &wsl_probe_script("\"$HOME\""))?;
+        parse_wsl_probe_path(&out).ok_or_else(|| format!("could not resolve WSL home for {distro}"))
     }
 }
 
@@ -518,10 +574,21 @@ fi
 if [ -z "$shell" ]; then
   shell=/bin/sh
 fi
-printf %s "$shell""#;
+"#;
 
-    let out = run_wsl_sh(&distro, SCRIPT)?;
-    Ok(normalize_wsl_value(out, "/bin/sh"))
+    let out = run_wsl_sh(
+        &distro,
+        &format!("{SCRIPT}\n{}", wsl_probe_script("\"$shell\"")),
+    )?;
+    // `/bin/sh` rather than an error: a distro whose passwd entry we cannot
+    // read still deserves a working terminal, and `sh` always exists. What we
+    // must never do is hand the spawn a value we failed to parse — that used
+    // to become `--exec <kernel log line>`, which exits instantly and renders
+    // as a blank terminal.
+    Ok(parse_wsl_probe_path(&out).unwrap_or_else(|| {
+        log::warn!("WSL login-shell probe for {distro} returned no usable value; using /bin/sh");
+        "/bin/sh".to_string()
+    }))
 }
 
 #[cfg(all(test, windows))]
@@ -611,19 +678,6 @@ mod tests {
     fn wsl_drvfs_rejects_non_drive_mounts() {
         assert_eq!(wsl_drvfs_to_windows("/mnt/wsl"), None);
         assert_eq!(wsl_drvfs_to_windows("/home/vinicios"), None);
-    }
-
-    #[test]
-    fn normalize_wsl_value_uses_last_nonempty_line() {
-        assert_eq!(
-            normalize_wsl_value("banner\n  /bin/zsh \n".into(), "/bin/sh"),
-            "/bin/zsh"
-        );
-    }
-
-    #[test]
-    fn normalize_wsl_value_falls_back_when_empty() {
-        assert_eq!(normalize_wsl_value(" \n".into(), "/bin/sh"), "/bin/sh");
     }
 }
 
@@ -848,5 +902,118 @@ mod registry_authorization_tests {
             let want = component_descendant_or_equal(Path::new(&target), Path::new(&root));
             assert_eq!(got, want, "root={root} target={target}");
         }
+    }
+}
+
+#[cfg(test)]
+mod probe_tests {
+    use super::*;
+
+    /// Verbatim tail of a real cold-start capture (Ubuntu 26.04, systemd 259.5,
+    /// `debug` on the kernel command line). The load-bearing detail is the
+    /// ordering: kernel printk and WSL's own userspace logging keep arriving
+    /// *after* `graphical.target`, which is the point the probe's `printf`
+    /// runs. Reading the last non-empty line returns the t=7.36s error line.
+    const BOOT_TAIL: &str = "\
+[  OK  ] Reached target multi-user.target - Multi-User System.
+[  OK  ] Reached target graphical.target - Graphical Interface.
+[    4.189662] hv_balloon: Cold memory discard hypercall failed with status 1a00000005
+[    4.656259] misc dxg: dxgk: dxgkio_is_feature_enabled: Ioctl failed: -22
+CheckConnection: v4 succeeded
+[    7.367566] WSL (194) ERROR: CheckConnection: getaddrinfo() failed: -5
+";
+
+    fn wrap(value: &str) -> String {
+        format!("{WSL_PROBE_OPEN}{value}{WSL_PROBE_CLOSE}")
+    }
+
+    #[test]
+    fn reads_a_clean_answer() {
+        assert_eq!(
+            parse_wsl_probe(&wrap("/home/ryan")).as_deref(),
+            Some("/home/ryan")
+        );
+    }
+
+    #[test]
+    fn reads_an_answer_buried_in_a_boot_log() {
+        let out = format!("{BOOT_TAIL}{}", wrap("/home/ryan"));
+        assert_eq!(parse_wsl_probe_path(&out).as_deref(), Some("/home/ryan"));
+    }
+
+    /// The regression this whole change exists for. printk that lands after the
+    /// probe's `printf` used to become the answer, and `wsl_home`'s answer is
+    /// what the workspace switch resets the terminal's cwd to.
+    #[test]
+    fn printk_after_the_answer_does_not_become_the_answer() {
+        let out = format!("{BOOT_TAIL}{}{BOOT_TAIL}", wrap("/home/ryan"));
+        assert_eq!(parse_wsl_probe_path(&out).as_deref(), Some("/home/ryan"));
+    }
+
+    /// `printf %s` emits no trailing newline, so the answer can be spliced onto
+    /// an unterminated console line on either side.
+    #[test]
+    fn answer_glued_to_surrounding_console_lines() {
+        let out = format!(
+            "[    4.656259] misc dxg: dxgk: dxgkio_is_feature_enabled: Ioctl failed: -22{}[    7.367566] WSL (194) ERROR",
+            wrap("/usr/bin/zsh")
+        );
+        assert_eq!(parse_wsl_probe_path(&out).as_deref(), Some("/usr/bin/zsh"));
+    }
+
+    #[test]
+    fn a_boot_log_with_no_answer_in_it_parses_to_nothing() {
+        assert_eq!(parse_wsl_probe(BOOT_TAIL), None);
+        assert_eq!(parse_wsl_probe_path(BOOT_TAIL), None);
+    }
+
+    #[test]
+    fn an_empty_answer_parses_to_nothing() {
+        assert_eq!(parse_wsl_probe(&wrap("")), None);
+        assert_eq!(parse_wsl_probe(&wrap("   \n  ")), None);
+    }
+
+    /// Second, independent guard: every probe asks for a path, and nothing in a
+    /// boot log starts with `/`.
+    #[test]
+    fn a_non_absolute_answer_is_refused_as_a_path() {
+        assert_eq!(
+            parse_wsl_probe(&wrap("[    7.367566] WSL (194) ERROR")).as_deref(),
+            Some("[    7.367566] WSL (194) ERROR")
+        );
+        assert_eq!(
+            parse_wsl_probe_path(&wrap("[    7.367566] WSL (194) ERROR")),
+            None
+        );
+        assert_eq!(parse_wsl_probe_path(&wrap("C:\\Users\\Ryan")), None);
+    }
+
+    #[test]
+    fn a_multiline_answer_is_refused_as_a_path() {
+        assert_eq!(parse_wsl_probe_path(&wrap("/home/ryan\n/etc")), None);
+    }
+
+    /// First-open to last-close, so a value carrying a marker-like substring
+    /// comes back whole rather than truncated.
+    #[test]
+    fn an_answer_containing_a_marker_is_not_truncated() {
+        let value = format!("/home/{WSL_PROBE_CLOSE}dir");
+        assert_eq!(
+            parse_wsl_probe_path(&wrap(&value)).as_deref(),
+            Some(value.as_str())
+        );
+    }
+
+    #[test]
+    fn script_builder_and_parser_agree() {
+        let script = wsl_probe_script("\"$HOME\"");
+        assert!(script.starts_with("printf '"));
+        assert!(script.contains(WSL_PROBE_OPEN));
+        assert!(script.contains(WSL_PROBE_CLOSE));
+        assert!(script.ends_with(" \"$HOME\""));
+        // No quote in the sentinels: the script wraps them in single quotes.
+        assert!(!WSL_PROBE_OPEN.contains('\'') && !WSL_PROBE_CLOSE.contains('\''));
+        // No `%` either, or printf would read it as a conversion.
+        assert!(!WSL_PROBE_OPEN.contains('%') && !WSL_PROBE_CLOSE.contains('%'));
     }
 }

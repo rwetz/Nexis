@@ -160,6 +160,22 @@ export type GitCommitFileDiffTab = {
   originalPath: string | null;
 };
 
+/**
+ * The ML Lab's network diagram, detached from the sidebar panel. The panel
+ * renders the same `<NetworkGraph>` at ~220px; a model with a few hundred
+ * inputs needs more room than a rail can give it, so it gets a tab.
+ *
+ * Carries only the project dir — architecture, feature names, class labels
+ * and learned weights are all read from the project and the ML store, so the
+ * tab stays in step with training without any state of its own.
+ */
+export type MlNetworkTab = {
+  id: number;
+  kind: "ml-network";
+  title: string;
+  projectDir: string;
+};
+
 export type Tab =
   | TerminalTab
   | EditorTab
@@ -170,7 +186,8 @@ export type Tab =
   | AiDiffTab
   | GitDiffTab
   | GitHistoryTab
-  | GitCommitFileDiffTab;
+  | GitCommitFileDiffTab
+  | MlNetworkTab;
 
 export type TabPatch = Partial<{
   title: string;

@@ -300,6 +300,11 @@ export function useSourceControl(
         lastRefreshAtRef.current = Date.now();
       }
     },
+    // `workspaceKey` is a dependency even though the body never names it: the
+    // native calls below stamp the *current* workspace env onto every request,
+    // so switching Windows <-> WSL changes what this function does without
+    // changing anything it closes over. Rebuilding it on a switch is what
+    // makes every consumer re-read against the new machine.
     [contextPath, workspaceKey],
   );
 

@@ -40,6 +40,7 @@ import {
   type GitCommitFileDiffTab,
   type GitDiffTab,
   type GitHistoryTab,
+  type MlNetworkTab,
   type Tab,
   type TabPatch,
   type TerminalTab,
@@ -52,6 +53,17 @@ import {
   saveTabState,
   shouldRestoreTabs,
 } from "./tabPersistence";
+
+
+/** The tab title a file pane should show. Depends only on the pane tree. */
+const editorTitleFor = (
+  tree: EditorTab["paneTree"],
+  leafId: number,
+  fallback: string,
+) => {
+  const leaf = findLeaf(tree, leafId);
+  return leaf ? basename(leaf.path) : fallback;
+};
 
 export function useTabs(initial?: Partial<TerminalTab>) {
   const [tabs, setTabs] = useState<Tab[]>(() => {
@@ -96,7 +108,10 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     return 1;
   });
 
-  const nextIdRef = useRef((() => {
+  // Seeded through a lazy `useState`: this reads and re-parses the saved tab
+  // state, and as a plain `useRef(...)` argument it ran on every render of the
+  // hook that owns every tab, only for React to keep the first value.
+  const [initialNextId] = useState(() => {
     // Count how many IDs were consumed during init.
     if (isFreshWindow()) return 1; // no tabs created yet
     if (!initial?.cwd && shouldRestoreTabs()) {
@@ -104,7 +119,8 @@ export function useTabs(initial?: Partial<TerminalTab>) {
       if (saved) return buildTabsFromSaved(saved, 1).nextId;
     }
     return 1; // no tabs created — welcome screen
-  })());
+  });
+  const nextIdRef = useRef(initialNextId);
 
   const tabsRef = useRef(tabs);
   useEffect(() => {
@@ -607,6 +623,40 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     [],
   );
 
+  /**
+   * Detach the ML Lab's network diagram into its own tab. Deduped by project
+   * dir: the diagram is a live view of that project, so a second request is
+   * "show me the one I already have", not "make another".
+   */
+  const openMlNetworkTab = useCallback(
+    (input: { projectDir: string; title?: string }) => {
+      const curr = tabsRef.current;
+      const title = input.title ?? `Network · ${basename(input.projectDir)}`;
+      const existing = curr.find(
+        (t) => t.kind === "ml-network" && t.projectDir === input.projectDir,
+      );
+      if (existing) {
+        setActiveId(existing.id);
+        return existing.id;
+      }
+      const id = nextIdRef.current++;
+      const nextTabs = [
+        ...curr,
+        {
+          id,
+          kind: "ml-network",
+          title,
+          projectDir: input.projectDir,
+        } satisfies MlNetworkTab,
+      ];
+      tabsRef.current = nextTabs;
+      setTabs(nextTabs);
+      setActiveId(id);
+      return id;
+    },
+    [],
+  );
+
   const openCommitFileDiffTab = useCallback(
     (input: {
       repoRoot: string;
@@ -811,14 +861,18 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   /** Split the active leaf of `tabId` along `dir`. Returns the new leaf id. */
   const splitActivePane = useCallback(
     (tabId: number, dir: SplitDir): number | null => {
-      let newLeafId: number | null = null;
+      // Ids are minted, and the pane cap checked, *outside* the updater.
+      // React may invoke a state updater more than once for one update, and a
+      // counter bumped inside one is consumed twice per split; the returned
+      // leaf id also stopped depending on the updater running synchronously.
+      const tab = tabsRef.current.find((t) => t.id === tabId);
+      if (!tab || tab.kind !== "terminal") return null;
+      if (leafIds(tab.paneTree).length >= MAX_PANES_PER_TAB) return null;
+      const splitId = nextIdRef.current++;
+      const leafId = nextIdRef.current++;
       setTabs((curr) =>
         curr.map((t) => {
           if (t.id !== tabId || t.kind !== "terminal") return t;
-          if (leafIds(t.paneTree).length >= MAX_PANES_PER_TAB) return t;
-          const splitId = nextIdRef.current++;
-          const leafId = nextIdRef.current++;
-          newLeafId = leafId;
           const paneTree = splitLeaf(
             t.paneTree,
             t.activeLeafId,
@@ -830,7 +884,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
           return { ...t, paneTree, activeLeafId: leafId };
         }),
       );
-      return newLeafId;
+      return leafId;
     },
     [],
   );
@@ -932,11 +986,6 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   // Editor panes have no PTY session, so there's nothing to dispose — the
   // per-leaf editor handles in App are pruned off the pane tree by effect.
 
-  const editorTitleFor = (tree: EditorTab["paneTree"], leafId: number, fallback: string) => {
-    const leaf = findLeaf(tree, leafId);
-    return leaf ? basename(leaf.path) : fallback;
-  };
-
   /** Update a file pane's dirty flag (keyed by leaf id — each EditorPane reports
    *  its own leaf). A pane auto-promotes out of preview once it becomes dirty. */
   const setEditorLeafDirty = useCallback(
@@ -1015,16 +1064,17 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   /** Split the active file pane of `tabId`; the new pane opens the same file. */
   const splitActiveEditorPane = useCallback(
     (tabId: number, dir: SplitDir): number | null => {
-      let newLeafId: number | null = null;
+      // Same reasoning as splitActivePane: no id minting inside the updater.
+      const tab = tabsRef.current.find((t) => t.id === tabId);
+      if (!tab || tab.kind !== "editor") return null;
+      if (leafIds(tab.paneTree).length >= MAX_PANES_PER_TAB) return null;
+      const active = findLeaf(tab.paneTree, tab.activeLeafId);
+      if (!active) return null;
+      const splitId = nextIdRef.current++;
+      const leafId = nextIdRef.current++;
       setTabs((curr) =>
         curr.map((t) => {
           if (t.id !== tabId || t.kind !== "editor") return t;
-          if (leafIds(t.paneTree).length >= MAX_PANES_PER_TAB) return t;
-          const active = findLeaf(t.paneTree, t.activeLeafId);
-          if (!active) return t;
-          const splitId = nextIdRef.current++;
-          const leafId = nextIdRef.current++;
-          newLeafId = leafId;
           const paneTree = splitLeaf(t.paneTree, t.activeLeafId, splitId, leafId, dir, {
             path: active.path,
             dirty: false,
@@ -1033,7 +1083,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
           return { ...t, paneTree, activeLeafId: leafId };
         }),
       );
-      return newLeafId;
+      return leafId;
     },
     [],
   );
@@ -1098,7 +1148,13 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   const reorderTabs = useCallback((newOrder: number[]) => {
     setTabs((curr) => {
       const map = new Map(curr.map((t) => [t.id, t]));
-      return newOrder.map((id) => map.get(id)!).filter(Boolean);
+      // flatMap rather than map+filter: one pass, and it drops the non-null
+      // assertion — an id in `newOrder` that no longer has a tab is simply
+      // skipped instead of being asserted into the list and filtered back out.
+      return newOrder.flatMap((id) => {
+        const tab = map.get(id);
+        return tab ? [tab] : [];
+      });
     });
   }, []);
 
@@ -1146,6 +1202,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     openGitDiffTab,
     openCommitHistoryTab,
     openCommitFileDiffTab,
+    openMlNetworkTab,
     setAiDiffStatus,
     closeAiDiffTab,
     closeTab,

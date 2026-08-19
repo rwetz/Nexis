@@ -123,6 +123,9 @@ export function TabBar({
       // Compute where to insert: find the first non-dragged tab whose midpoint
       // is past the cursor — insert before it.  Default: append at the end.
       const withoutDragged = order.filter((t) => t.id !== s.fromId);
+      // Built once before the scan: this runs on every pointer move during a
+      // drag, so the position lookup should not rescan the tab list.
+      const indexById = new Map(withoutDragged.map((t, i) => [t.id, i]));
       let insertIdx = withoutDragged.length;
 
       for (const el of triggerEls) {
@@ -130,7 +133,7 @@ export function TabBar({
         if (tabId === s.fromId) continue; // skip the tab being dragged
         const { left, width } = el.getBoundingClientRect();
         if (e.clientX < left + width / 2) {
-          insertIdx = withoutDragged.findIndex((t) => t.id === tabId);
+          insertIdx = indexById.get(tabId) ?? withoutDragged.length;
           break;
         }
       }
@@ -402,6 +405,11 @@ export function TabIcon({ tab }: { tab: Tab }) {
       <Icon name="clock" size="md" className="shrink-0" />
     );
   }
+  if (tab.kind === "ml-network") {
+    return (
+      <Icon name="network" size="md" className="shrink-0" />
+    );
+  }
   return (
     <Icon name="terminal" size="md" className="shrink-0" />
   );
@@ -417,6 +425,7 @@ export function labelFor(t: Tab): string {
   if (t.kind === "git-diff") return t.title;
   if (t.kind === "git-history") return t.title;
   if (t.kind === "git-commit-file") return t.title;
+  if (t.kind === "ml-network") return t.title;
   // t is TerminalTab from here — prefer OSC 0/2 title when set by the shell.
   if (t.oscTitle) return t.oscTitle;
   if (!t.cwd) return t.title;

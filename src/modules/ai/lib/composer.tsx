@@ -36,9 +36,6 @@ type MessagePart =
   | { type: "file"; mediaType: string; url: string; filename?: string };
 
 export const MAX_TEXT_INLINE = 200_000;
-export const ACCEPTED_FILES =
-  "image/*,.txt,.md,.json,.yaml,.yml,.toml,.sh,.zsh,.bash,.py,.js,.jsx,.ts,.tsx,.rs,.go,.java,.c,.cpp,.h,.hpp,.html,.css,.csv,.log,.env,.config,.conf,.ini,Dockerfile,.dockerfile";
-
 type Voice = ReturnType<typeof useWhisperRecording>;
 
 type ComposerCtx = {
@@ -178,11 +175,11 @@ export function AiComposerProvider({ children }: ProviderProps) {
 
   const addFiles = async (list: FileList | null) => {
     if (!list) return;
-    const next: FileAttachment[] = [];
-    for (const f of Array.from(list)) {
-      const att = await readAttachment(f);
-      if (att) next.push(att);
-    }
+    // Read in parallel: each attachment is an independent FileReader pass, and
+    // dropping ten files used to wait out ten of them end to end. Promise.all
+    // preserves order, so the attachments still land as dropped.
+    const read = await Promise.all(Array.from(list).map(readAttachment));
+    const next = read.filter((a): a is FileAttachment => a !== null);
     if (next.length) setFiles((prev) => [...prev, ...next]);
   };
 

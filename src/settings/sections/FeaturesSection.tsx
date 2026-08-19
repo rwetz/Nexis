@@ -34,11 +34,12 @@ export function FeaturesSection() {
     void setEnabledPacks(PACK_IDS.filter((p) => next.includes(p)));
   };
 
+  const enabledSet = new Set(enabledPacks);
   const matchesPreset = (id: keyof typeof PACK_PRESETS) => {
     const preset = PACK_PRESETS[id];
     return (
       preset.length === enabledPacks.length &&
-      preset.every((p) => enabledPacks.includes(p))
+      preset.every((p) => enabledSet.has(p))
     );
   };
 

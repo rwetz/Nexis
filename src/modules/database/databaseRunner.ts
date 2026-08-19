@@ -83,5 +83,5 @@ export async function listTables(conn: DbConnection): Promise<string[]> {
   const query = queries[conn.type];
   const result = await runQuery(conn, query);
   if (result.kind !== "rows") return [];
-  return result.rows.map((r) => r[0] ?? "").filter(Boolean);
+  return result.rows.flatMap((r) => (r[0] ? [r[0]] : []));
 }

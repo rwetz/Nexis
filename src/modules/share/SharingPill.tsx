@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 /**
- * SharingPill — persistent "🔴 Sharing on" status-bar indicator.
+ * SharingPill — persistent "Sharing on" status-bar indicator.
  *
  * Renders only while the LAN share server is running. Because share state is
  * global (not panel-local), this stays visible no matter which sidebar view

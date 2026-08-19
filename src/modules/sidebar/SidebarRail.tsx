@@ -156,28 +156,39 @@ export function SidebarRail({
   ];
 
   const itemMap = new Map(visibleItems.map((i) => [i.id, i]));
+  // Membership is asked once per rail item and once per overflow row; a Set
+  // answers each in constant time instead of rescanning `pinned`.
+  const pinnedSet = new Set(pinned);
 
   const pinnedItems = pinned
     .map((id) => itemMap.get(id))
     .filter((x): x is RailItemDef => x != null);
 
-  const overflowItems = visibleItems.filter((i) => !pinned.includes(i.id));
+  const overflowItems = visibleItems.filter((i) => !pinnedSet.has(i.id));
 
-  const pin = useCallback((id: SidebarView) => {
-    setPinned((prev) => {
-      const next = prev.includes(id) ? prev : [...prev, id];
+  // The localStorage write stays outside the state updater: React may invoke
+  // an updater more than once for a single update, and a writer that runs
+  // twice is a writer that can run at the wrong time. `pinned` is current at
+  // event-handler time, so computing the next list from it is equivalent.
+  const pin = useCallback(
+    (id: SidebarView) => {
+      if (pinned.includes(id)) return;
+      const next = [...pinned, id];
       savePinned(next);
-      return next;
-    });
-  }, []);
+      setPinned(next);
+    },
+    [pinned],
+  );
 
-  const unpin = useCallback((id: SidebarView) => {
-    setPinned((prev) => {
-      const next = prev.filter((x) => x !== id);
+  const unpin = useCallback(
+    (id: SidebarView) => {
+      if (!pinned.includes(id)) return;
+      const next = pinned.filter((x) => x !== id);
       savePinned(next);
-      return next;
-    });
-  }, []);
+      setPinned(next);
+    },
+    [pinned],
+  );
 
   return (
     <div
@@ -240,7 +251,7 @@ export function SidebarRail({
                   </p>
                   <div className="flex flex-col gap-0.5">
                     {items.map((item) => {
-                      const isPinned = pinned.includes(item.id);
+                      const isPinned = pinnedSet.has(item.id);
                       return (
                         <OverflowRow
                           key={item.id}

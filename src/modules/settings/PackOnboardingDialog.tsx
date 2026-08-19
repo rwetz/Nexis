@@ -44,15 +44,17 @@ const PRESETS: {
   },
 ];
 
+
+/** Applying a preset touches only module-level setters. */
+const choose = (id: keyof typeof PACK_PRESETS) => {
+  void setEnabledPacks([...PACK_PRESETS[id]]);
+  void setPacksOnboarded(true);
+};
+
 export function PackOnboardingDialog() {
   const hydrated = usePreferencesStore((s) => s.hydrated);
   const packsOnboarded = usePreferencesStore((s) => s.packsOnboarded);
   const open = hydrated && !packsOnboarded;
-
-  const choose = (id: keyof typeof PACK_PRESETS) => {
-    void setEnabledPacks([...PACK_PRESETS[id]]);
-    void setPacksOnboarded(true);
-  };
 
   return (
     <Dialog

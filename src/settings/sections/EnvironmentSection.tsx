@@ -14,6 +14,12 @@ import { SectionHeader } from "../components/SectionHeader";
 
 type Entry = { key: string; value: string };
 
+
+/** Persisting the map needs nothing from the component. */
+const save = async (updated: Record<string, string>) => {
+  await setTerminalEnvVars(updated);
+};
+
 export function EnvironmentSection() {
   const saved = usePreferencesStore((s) => s.terminalEnvVars);
 
@@ -25,10 +31,6 @@ export function EnvironmentSection() {
     key,
     value,
   }));
-
-  const save = async (updated: Record<string, string>) => {
-    await setTerminalEnvVars(updated);
-  };
 
   const handleAdd = async () => {
     const k = newKey.trim();

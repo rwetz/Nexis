@@ -128,7 +128,7 @@ function ProcessRow({
           type="button"
           onClick={onKill}
           title="Kill process"
-          className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+          className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-[opacity,color,background-color] hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
         >
           <Icon name="close" />
         </button>

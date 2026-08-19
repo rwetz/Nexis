@@ -16,7 +16,10 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { basename } from "@/lib/path";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import {
+  currentWorkspaceEnv,
+  currentWorkspaceScopeKey,
+} from "@/modules/workspace";
 import type { PythonEnv } from "@/modules/python/usePythonEnv";
 import {
   buildCandidates,
@@ -255,9 +258,17 @@ const MAX_COMPARE = COMPARE_COLORS.length;
 
 type MlStore = {
   engineStatus: EngineStatus;
+  /** Workspace scope (`local` / `wsl:<distro>`) the engine facts below were
+   *  answered by. A mismatch means they belong to a different machine and
+   *  must be discarded, not reused — see `detect`. */
+  engineScope: string | null;
   engineExe: string | null;
   engineVersion: string | null;
   engineError: string | null;
+  /** Paths the last detection probed, in order. Shown in the setup card so
+   *  "no engine found" is an actionable statement rather than an opaque one —
+   *  the common cause is an engine installed somewhere the scan never looks. */
+  engineCandidates: string[];
   /** Which engine is active. Gates Python-only features (textgen / `blank`
    *  templates, HTML report; the Playground is capability-gated via
    *  `envInfo.serve` since Rust engine v0.8) — null until the env probe
@@ -265,6 +276,10 @@ type MlStore = {
   engineKind: EngineKind | null;
   /** Python to install the engine into, when one was detected. */
   installPython: string | null;
+  /** Version that interpreter reports, used to warn in the manual Python
+   *  steps: PyTorch publishes no wheels at all for a CPython that is too new,
+   *  and pip only says so after resolving. */
+  installPythonVersion: string | null;
   installing: boolean;
   installSid: number | null;
   installRoot: string | null;
@@ -274,6 +289,9 @@ type MlStore = {
   installFlavor: InstallFlavor | null;
   /** Downloading the standalone Rust engine (no-Python path). */
   downloadingEngine: boolean;
+  /** Deleting the managed engine binary. Separate from `downloadingEngine`
+   *  so the Remove button can show progress instead of appearing inert. */
+  uninstallingEngine: boolean;
   /** The compiled-in engine release pin (version/url/size/sha256), for the
    *  consent dialog. null = not fetched yet or no prebuilt for platform. */
   enginePin: EnginePin | null;
@@ -333,8 +351,9 @@ type MlStore = {
 
   detect: (workspaceRoot: string | null) => Promise<void>;
   redetect: (workspaceRoot: string | null) => Promise<void>;
-  installEngine: (workspaceRoot: string | null, useGpu: boolean) => Promise<void>;
-  /** Swap the engine's CPU torch for the CUDA build. */
+  /** Swap the engine's CPU torch for the CUDA build. The only pip path Nexis
+   *  still drives itself: it acts on an environment the user already built
+   *  and chose, rather than picking one for them (see PythonEngineSteps). */
   upgradeToGpu: (workspaceRoot: string | null) => Promise<void>;
   /** Download the standalone Rust engine (no Python needed). The caller
    *  must have shown the consent dialog first (EngineConsentDialog). */
@@ -429,18 +448,22 @@ function pushLog(logs: string[], line: string): string[] {
 
 export const useMlStore = create<MlStore>((set, get) => ({
   engineStatus: "idle",
+  engineScope: null,
+  engineCandidates: [],
   engineExe: null,
   engineVersion: null,
   engineError: null,
   engineKind: null,
   createError: null,
   installPython: null,
+  installPythonVersion: null,
   installing: false,
   installSid: null,
   installRoot: null,
   installQueue: [],
   installFlavor: null,
   downloadingEngine: false,
+  uninstallingEngine: false,
   enginePin: null,
   managedEngine: null,
   envInfo: null,
@@ -470,7 +493,27 @@ export const useMlStore = create<MlStore>((set, get) => ({
   pendingOnnx: null,
 
   async detect(workspaceRoot) {
-    if (get().engineStatus === "detecting") return;
+    const scope = currentWorkspaceScopeKey();
+    if (get().engineStatus === "detecting" && get().engineScope === scope) return;
+    // Everything the panel knows about the engine is answered *by* an
+    // environment: which binary, which torch build, which GPU, whether the
+    // managed download applies. Switching Windows↔WSL therefore invalidates
+    // all of it. Without this the panel kept the host's answers and reported
+    // a ready Windows engine for a distro that has none.
+    if (get().engineScope !== scope) {
+      set({
+        engineScope: scope,
+        engineCandidates: [],
+        installPythonVersion: null,
+        engineExe: null,
+        engineVersion: null,
+        engineKind: null,
+        engineError: null,
+        envInfo: null,
+        installPython: null,
+        managedEngine: null,
+      });
+    }
     set({ engineStatus: "detecting", engineError: null });
     // Pin + managed-engine footprint for the setup card (cheap, local).
     void get().refreshEngineMeta();
@@ -481,7 +524,10 @@ export const useMlStore = create<MlStore>((set, get) => ({
     let envs: PythonEnv[] = [];
     if (workspaceRoot) {
       try {
-        envs = await invoke<PythonEnv[]>("py_detect_envs", { workspaceRoot });
+        envs = await invoke<PythonEnv[]>("py_detect_envs", {
+          workspaceRoot,
+          workspace: currentWorkspaceEnv(),
+        });
       } catch {
         // no python detection → still try PATH
       }
@@ -490,13 +536,17 @@ export const useMlStore = create<MlStore>((set, get) => ({
     // isolated env over the system interpreter).
     const installTarget =
       envs.find((e) => e.kind === "venv" || e.kind === "conda") ?? envs[0];
-    set({ installPython: installTarget?.python_path ?? null });
+    set({
+      installPython: installTarget?.python_path ?? null,
+      installPythonVersion: installTarget?.version ?? null,
+    });
     try {
       // Candidates: Python envs + ancestor venvs + PATH, then the managed
       // standalone engine (the "no Python" fallback) last.
       const candidates = buildCandidates(envs, workspaceRoot);
       const managed = await managedEngineCandidate();
       if (managed) candidates.push(managed);
+      set({ engineCandidates: candidates });
       const found = await detectEngine(candidates);
       set({
         engineStatus: "ready",
@@ -533,21 +583,6 @@ export const useMlStore = create<MlStore>((set, get) => ({
     resetEngineDetection();
     set({ engineStatus: "idle" });
     await get().detect(workspaceRoot);
-  },
-
-  async installEngine(workspaceRoot, useGpu) {
-    const { installPython, installing } = get();
-    if (!installPython || installing) return;
-    // GPU installs grab the CUDA torch build first, then the engine —
-    // pip then sees torch as already satisfied.
-    const queue: InstallFlavor[] = useGpu ? ["cuda-torch", "default"] : ["default"];
-    set({
-      installing: true,
-      installQueue: queue,
-      installRoot: workspaceRoot,
-      engineError: null,
-    });
-    await get()._startNextInstall();
   },
 
   async upgradeToGpu(workspaceRoot) {
@@ -626,7 +661,19 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   async uninstallManagedEngine(workspaceRoot) {
-    if (get().downloadingEngine || get().installing) return;
+    // The old guard returned silently while an install was running, on a
+    // button that stayed enabled — a click that did nothing, showed nothing,
+    // and logged nothing. Anything that stops the removal now says so.
+    const { downloadingEngine, installing, uninstallingEngine } = get();
+    if (uninstallingEngine) return;
+    if (downloadingEngine || installing) {
+      set({
+        engineError:
+          "Can't remove the engine while an install or download is running — wait for it to finish.",
+      });
+      return;
+    }
+    set({ uninstallingEngine: true, engineError: null });
     try {
       const freed = await uninstallEngine();
       const mb = (freed / (1024 * 1024)).toFixed(0);
@@ -634,8 +681,13 @@ export const useMlStore = create<MlStore>((set, get) => ({
         logs: pushLog(s.logs, `managed engine removed (freed ${mb} MB)`),
       }));
     } catch (err) {
-      set({ engineError: `Engine uninstall failed: ${String(err)}` });
+      set((s) => ({
+        engineError: `Engine uninstall failed: ${String(err)}`,
+        logs: pushLog(s.logs, `engine uninstall failed: ${String(err)}`),
+      }));
       return;
+    } finally {
+      set({ uninstallingEngine: false });
     }
     await get().refreshEngineMeta();
     // The engine may still exist in a venv/PATH — let detection decide.
@@ -643,6 +695,14 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   async refreshEngineMeta() {
+    // The pinned download and the managed binary are host-side facts. In a
+    // WSL workspace they describe the wrong machine, so the setup card must
+    // not offer the download and the settings row must not offer to remove
+    // something the distro never had.
+    if (currentWorkspaceEnv().kind !== "local") {
+      set({ enginePin: null, managedEngine: null });
+      return;
+    }
     const [pin, managed] = await Promise.all([
       engineInstallPin(),
       managedEngineStatus(),
@@ -1309,7 +1369,11 @@ export const useMlStore = create<MlStore>((set, get) => ({
       payload.sid === pendingCreate?.sid ||
       payload.sid === serve?.sid ||
       payload.sid === pendingExport?.sid ||
-      payload.sid === pendingOnnx?.sid;
+      payload.sid === pendingOnnx?.sid ||
+      // Same window as the exit handler below: until `spawnInstall` resolves,
+      // `installSid` is null and pip's own output — the only thing that says
+      // *why* an install failed — was being dropped from the setup card's log.
+      (installSid === null && get().installing);
     if (!known) return;
     set((s) => ({ logs: pushLog(s.logs, payload.line) }));
   },
@@ -1372,8 +1436,21 @@ export const useMlStore = create<MlStore>((set, get) => ({
       return;
     }
 
-    // pip install step finished → next step, or re-probe for the engine
-    if (payload.sid === installSid) {
+    // pip install step finished → next step, or re-probe for the engine.
+    //
+    // The `installSid === null && installing` arm closes a race that could
+    // wedge the setup card permanently: `_startNextInstall` only records the
+    // sid *after* `await spawnInstall(...)` resolves, so an install that dies
+    // inside that window emitted an ml:exit matching nothing. Nothing else
+    // clears `installing`, and the card disables both "Install engine" and
+    // "Check again" while it is true — so a failed install left the panel
+    // with no way back short of restarting the app. An unmatched exit while
+    // an install is in flight can only be that install's.
+    const unclaimedInstallExit =
+      installSid === null &&
+      get().installing &&
+      payload.sid !== pendingCreate?.sid;
+    if (payload.sid === installSid || unclaimedInstallExit) {
       const ok = payload.code === 0;
       const root = get().installRoot;
       if (ok && get().installQueue.length > 0) {

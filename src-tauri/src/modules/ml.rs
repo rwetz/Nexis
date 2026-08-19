@@ -34,7 +34,7 @@ use shared_child::SharedChild;
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::modules::proc;
-use crate::modules::workspace::WorkspaceRegistry;
+use crate::modules::workspace::{resolve_path, WorkspaceEnv, WorkspaceRegistry};
 
 /// Flush a batch to the frontend at most this often (~30 Hz).
 const FLUSH_INTERVAL: Duration = Duration::from_millis(33);
@@ -120,9 +120,142 @@ fn is_nexis_ml_exe(exe: &str) -> bool {
     exe_stem_lower(exe) == "nexis-ml"
 }
 
+/// Build the command that runs the engine for a given workspace.
+///
+/// A WSL workspace's engine lives *inside the distro*: a Linux binary the
+/// host cannot exec, at a Linux path the host cannot resolve. So every use of
+/// the engine — version probe, capability probe, training, pip install — has
+/// to go through `wsl.exe`, exactly like the terminal does for a WSL shell.
+///
+/// Without this the whole ML Lab silently answered for the wrong machine.
+/// Detection probed the *Windows* engine while the workspace was a distro, so
+/// the panel reported "ready" (with the host's version, torch build and CUDA
+/// state) for a distro that had no engine installed at all, and then failed
+/// at train time on a project dir the host cannot canonicalize.
+///
+/// `cwd` is interpreted in the target environment: a host path for Local, a
+/// Linux path for Wsl. Callers pass the user's own path string, never a
+/// resolved `\\wsl.localhost\…` one — that means nothing inside the distro.
+fn env_command(
+    workspace: &WorkspaceEnv,
+    program: &str,
+    cwd: Option<&str>,
+) -> Result<std::process::Command, String> {
+    match workspace {
+        WorkspaceEnv::Local => {
+            let mut cmd = proc::command(program);
+            if let Some(dir) = cwd {
+                cmd.current_dir(dir);
+            }
+            Ok(cmd)
+        }
+        #[cfg(windows)]
+        WorkspaceEnv::Wsl { distro } => {
+            crate::modules::workspace::validate_wsl_distro_name(distro)?;
+            let mut cmd = proc::command("wsl.exe");
+            cmd.arg("-d").arg(distro);
+            if let Some(dir) = cwd {
+                if !dir.starts_with('/') {
+                    return Err(format!("WSL working directory is not absolute: {dir}"));
+                }
+                cmd.arg("--cd").arg(dir);
+            }
+            cmd.arg("--exec").arg(program);
+            Ok(cmd)
+        }
+        // A non-Windows host has no WSL; the frontend never sends this, and
+        // silently running the host binary instead would be the exact
+        // wrong-machine bug this function exists to prevent.
+        #[cfg(not(windows))]
+        WorkspaceEnv::Wsl { distro } => Err(format!("WSL workspace ({distro}) needs Windows")),
+    }
+}
+
+/// `<exe> --version` in the workspace's environment, parsed. Used by
+/// detection, which is the only probe that must follow the workspace — the
+/// post-download verification below always checks a host binary.
+///
+/// Why a probe outcome is three-valued rather than `Result`: the candidate
+/// list is *speculative*. It names every venv layout in the workspace and its
+/// six ancestors, so all but at most one entry is expected to be absent, and
+/// treating "this path does not exist" as an error meant `ml_detect` reported
+/// the last candidate's ENOENT as the diagnosis. Users saw the managed
+/// engine's path and `os error 3` — which reads like Nexis looking in a
+/// broken place — when the truth was simply that no engine is installed.
+enum Probe {
+    /// Nothing at this path. Expected for nearly every candidate; never
+    /// interesting enough to show anyone.
+    Missing,
+    /// Something is there and it did not work. This is worth reporting: a
+    /// half-extracted download, a wrong-arch binary, a broken venv shim.
+    Failed(String),
+}
+
+/// True when a probe failure means "there is nothing here", as opposed to
+/// "there is something here and it is broken".
+fn stderr_says_missing(stderr: &str) -> bool {
+    let s = stderr.to_ascii_lowercase();
+    s.contains("no such file")
+        || s.contains("command not found")
+        || s.contains("not found")
+        || s.contains("cannot find")
+}
+
+fn engine_version_in(workspace: &WorkspaceEnv, exe: &str) -> Result<String, Probe> {
+    // An absolute host path can be ruled out with a stat instead of a process
+    // spawn. That matters: the panel re-detects on every open, and the list is
+    // ~25 speculative paths, so this is the difference between 25 stats and 25
+    // process creations every time the ML Lab is shown.
+    if !workspace.is_wsl() && looks_absolute(exe) && !std::path::Path::new(exe).exists() {
+        return Err(Probe::Missing);
+    }
+    let mut cmd = env_command(workspace, exe, None).map_err(Probe::Failed)?;
+    cmd.arg("--version")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let out = match cmd.output() {
+        Ok(out) => out,
+        // A bare name that is not on PATH, or a path that vanished between
+        // the stat above and here.
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(Probe::Missing),
+        Err(e) => return Err(Probe::Failed(e.to_string())),
+    };
+    if !out.status.success() {
+        // Under WSL the child is `wsl.exe`, which exists no matter what, so
+        // the io-error signal above never fires — the distro's own "No such
+        // file or directory" on stderr is the only way to tell an absent
+        // engine from a broken one.
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        if stderr_says_missing(&stderr) {
+            return Err(Probe::Missing);
+        }
+        let detail = stderr.trim();
+        return Err(Probe::Failed(if detail.is_empty() {
+            format!("exit {:?}", out.status.code())
+        } else {
+            detail.to_string()
+        }));
+    }
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    parse_version(&stdout).ok_or(Probe::Failed("empty --version output".into()))
+}
+
+/// Absolute in either convention — a POSIX `/…` or a Windows `C:\…`. Used
+/// only to decide whether a cheap `exists()` check is meaningful; a bare
+/// `nexis-ml` has to be resolved by PATH, which only a spawn can do.
+fn looks_absolute(path: &str) -> bool {
+    path.starts_with('/')
+        || path.starts_with('\\')
+        || path
+            .as_bytes()
+            .get(1)
+            .is_some_and(|&c| c == b':' && path.len() > 2)
+}
+
 /// Run `<exe> --version` and return the parsed version (the last
-/// whitespace-separated token, e.g. "0.5.0" from "nexis-ml 0.5.0"). Shared by
-/// candidate detection and post-download verification.
+/// whitespace-separated token, e.g. "0.5.0" from "nexis-ml 0.5.0"). Host-only:
+/// the managed engine this verifies is always a host binary.
 fn engine_version(exe: &std::path::Path) -> Result<String, String> {
     let mut cmd = proc::command(exe);
     cmd.arg("--version")
@@ -145,28 +278,49 @@ fn parse_version(stdout: &str) -> Option<String> {
 }
 
 /// Try `<exe> --version` for each candidate path; first success wins.
+/// Probes run in the workspace's environment (see `env_command`), so a WSL
+/// workspace is answered by the distro's engine or by nothing.
 #[tauri::command]
-pub async fn ml_detect(candidates: Vec<String>) -> Result<MlDetectResult, String> {
+pub async fn ml_detect(
+    candidates: Vec<String>,
+    workspace: Option<WorkspaceEnv>,
+) -> Result<MlDetectResult, String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
     // Each probe spawns the candidate binary — a Python-based engine imports
     // torch on startup (seconds per candidate). Never on the main thread.
     crate::modules::heavy(move || {
-        let mut last_err = String::from("no candidates given");
+        // Absent candidates are the normal case and say nothing; only a
+        // candidate that *exists and does not work* is a diagnosis. Reporting
+        // the last candidate's error made every "no engine installed" state
+        // surface the managed engine's path plus `os error 3`, which reads
+        // like a broken install rather than an empty one.
+        let mut checked = 0usize;
+        let mut failures: Vec<String> = Vec::new();
         for exe in &candidates {
             if !is_nexis_ml_exe(exe) {
-                last_err = format!("not a nexis-ml binary: {exe}");
+                failures.push(format!("{exe}: not a nexis-ml binary"));
                 continue;
             }
-            match engine_version(std::path::Path::new(exe)) {
+            checked += 1;
+            match engine_version_in(&workspace, exe) {
                 Ok(version) => {
                     return Ok(MlDetectResult {
                         exe: exe.clone(),
                         version,
                     })
                 }
-                Err(e) => last_err = format!("{exe}: {e}"),
+                Err(Probe::Missing) => {}
+                Err(Probe::Failed(e)) => failures.push(format!("{exe}: {e}")),
             }
         }
-        Err(last_err)
+        Err(if failures.is_empty() {
+            format!("No engine installed here (checked {checked} locations).")
+        } else {
+            format!(
+                "No usable engine (checked {checked} locations). {}",
+                failures.join("; ")
+            )
+        })
     })
     .await
 }
@@ -308,6 +462,12 @@ fn install_verified_bytes(app: &AppHandle, bytes: &[u8]) -> Result<MlDetectResul
         std::fs::create_dir_all(parent).map_err(|e| format!("create engine dir: {e}"))?;
     }
     let tmp = exe.with_extension("download");
+    // An interrupted install leaves this behind — the staging file is only
+    // consumed by the rename below. It is invisible to `ml_engine_status`
+    // (which stats the final path), so nothing would ever clear it, and on
+    // Windows a leftover handle on it makes the next write fail. Removing it
+    // first makes a retry after a failed download actually retry.
+    let _ = std::fs::remove_file(&tmp);
     std::fs::write(&tmp, bytes).map_err(|e| format!("write engine: {e}"))?;
     #[cfg(unix)]
     {
@@ -318,7 +478,10 @@ fn install_verified_bytes(app: &AppHandle, bytes: &[u8]) -> Result<MlDetectResul
         perms.set_mode(0o755);
         std::fs::set_permissions(&tmp, perms).map_err(|e| e.to_string())?;
     }
-    std::fs::rename(&tmp, &exe).map_err(|e| format!("install engine: {e}"))?;
+    std::fs::rename(&tmp, &exe).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp);
+        format!("install engine: {e}")
+    })?;
 
     match engine_version(&exe) {
         Ok(version) if version == ENGINE_VERSION => Ok(MlDetectResult {
@@ -412,27 +575,34 @@ pub fn ml_engine_status(app: AppHandle) -> Result<ManagedEngineStatus, String> {
 pub fn ml_uninstall(app: AppHandle) -> Result<u64, String> {
     let exe = managed_engine_exe(&app)?;
     let size = std::fs::metadata(&exe).map(|m| m.len()).unwrap_or(0);
+    // Sweep an interrupted download's staging file too. It is the one thing
+    // in the engine dir that no other code path ever removes, and leaving it
+    // means "Remove" reports space freed while the disk keeps holding ~35 MB.
+    let tmp = exe.with_extension("download");
+    let tmp_size = std::fs::metadata(&tmp).map(|m| m.len()).unwrap_or(0);
+    let _ = std::fs::remove_file(&tmp);
     match std::fs::remove_file(&exe) {
         Ok(()) => {}
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(0),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(tmp_size),
         Err(e) => return Err(format!("remove engine: {e}")),
     }
     if let Some(parent) = exe.parent() {
         let _ = std::fs::remove_dir(parent); // only succeeds if empty — fine
     }
-    Ok(size)
+    Ok(size + tmp_size)
 }
 
 /// Run `nexis-ml env` and return its JSON capability report (torch
 /// version, CUDA availability, GPU name). Blocking — importing torch
 /// takes a few seconds — so the frontend calls it fire-and-forget.
 #[tauri::command]
-pub async fn ml_env(exe: String) -> Result<String, String> {
+pub async fn ml_env(exe: String, workspace: Option<WorkspaceEnv>) -> Result<String, String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
     crate::modules::heavy(move || {
         if !is_nexis_ml_exe(&exe) {
             return Err(format!("not a nexis-ml binary: {exe}"));
         }
-        let mut cmd = proc::command(&exe);
+        let mut cmd = env_command(&workspace, &exe, None)?;
         cmd.arg("env")
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
@@ -490,7 +660,9 @@ pub fn ml_spawn(
     exe: String,
     args: Vec<String>,
     project_dir: String,
+    workspace: Option<WorkspaceEnv>,
 ) -> Result<u32, String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
     if !is_nexis_ml_exe(&exe) {
         return Err(format!("not a nexis-ml binary: {exe}"));
     }
@@ -509,8 +681,11 @@ pub fn ml_spawn(
     if trimmed.is_empty() {
         return Err("ml_spawn: empty project dir".into());
     }
+    // Authorize the *host* view of the dir — under WSL that is the
+    // `\\wsl.localhost\<distro>\…` share, which is what the fs commands
+    // canonicalize against and the only form the registry can check.
     let resolved = registry
-        .authorize(trimmed)
+        .authorize(resolve_path(trimmed, &workspace))
         .map_err(|e| format!("project dir not accessible: {e}"))?;
     if !resolved.is_dir() {
         return Err(format!(
@@ -519,10 +694,17 @@ pub fn ml_spawn(
         ));
     }
 
-    let mut cmd = proc::command(&exe);
+    // ...but the child's working directory has to be expressed in *its* own
+    // environment: `wsl.exe --cd` takes the Linux path the caller gave us,
+    // never the host share path, which means nothing inside the distro.
+    let child_cwd = if workspace.is_wsl() {
+        trimmed.to_string()
+    } else {
+        resolved.to_string_lossy().into_owned()
+    };
+    let mut cmd = env_command(&workspace, &exe, Some(&child_cwd))?;
     cmd.arg("--nexis-protocol")
         .args(&args)
-        .current_dir(&resolved)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -743,13 +925,17 @@ pub fn ml_install(
     state: State<'_, MlState>,
     python: String,
     flavor: String,
+    workspace: Option<WorkspaceEnv>,
 ) -> Result<u32, String> {
+    let workspace = WorkspaceEnv::from_option(workspace);
     if !is_python_exe(&python) {
         return Err(format!("not a python binary: {python}"));
     }
     let args =
         install_flavor_args(&flavor).ok_or_else(|| format!("unknown install flavor: {flavor}"))?;
-    let mut cmd = proc::command(&python);
+    // Installs follow the workspace for the same reason detection does: a pip
+    // install run on the host puts the engine somewhere the distro can't see.
+    let mut cmd = env_command(&workspace, &python, None)?;
     cmd.args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -902,6 +1088,37 @@ mod tests {
         assert!(verify_pinned_bytes(b"abc", &asset).is_ok());
         let err = verify_pinned_bytes(b"abd", &asset).unwrap_err();
         assert!(err.contains("integrity check failed"));
+    }
+
+    #[test]
+    fn looks_absolute_covers_both_conventions() {
+        assert!(looks_absolute("/home/me/.venv/bin/nexis-ml"));
+        assert!(looks_absolute(r"C:\proj\.venv\Scripts\nexis-ml.exe"));
+        assert!(looks_absolute(r"\\wsl.localhost\Ubuntu\home\me\nexis-ml"));
+        // A bare name has to be resolved by PATH, which only a spawn can do —
+        // it must not be dismissed by the cheap `exists()` pre-check.
+        assert!(!looks_absolute("nexis-ml"));
+        assert!(!looks_absolute("nexis-ml.exe"));
+        assert!(!looks_absolute("./nexis-ml"));
+        assert!(!looks_absolute(""));
+        assert!(!looks_absolute("C:"));
+    }
+
+    #[test]
+    fn stderr_says_missing_separates_absent_from_broken() {
+        // Absent: the overwhelmingly common case for a speculative candidate,
+        // and never worth showing anyone.
+        assert!(stderr_says_missing(
+            "/usr/bin/env: 'nexis-ml': No such file or directory"
+        ));
+        assert!(stderr_says_missing("bash: nexis-ml: command not found"));
+        assert!(stderr_says_missing(
+            "The system cannot find the path specified."
+        ));
+        // Present but broken: this is the diagnosis worth surfacing.
+        assert!(!stderr_says_missing("error while loading shared libraries"));
+        assert!(!stderr_says_missing("Segmentation fault"));
+        assert!(!stderr_says_missing(""));
     }
 
     #[test]

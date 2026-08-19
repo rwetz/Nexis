@@ -78,6 +78,19 @@ function animBgPreview(id: AnimatedBgId, primary: string): string {
   return `linear-gradient(to bottom, #0a0a1a 0%, ${primary} 50%, #0a0a1a 100%)`;
 }
 
+
+/** Both hand off to the theme-editor window and hide this one; neither reads
+ *  component state. */
+const onCreateTheme = () => {
+  void emitThemeEdit({ action: "create" });
+  void getCurrentWindow().hide();
+};
+
+const onEditTheme = (id: string) => {
+  void emitThemeEdit({ action: "edit", id });
+  void getCurrentWindow().hide();
+};
+
 export function ThemesSection() {
   const { themeId, setThemeId, resolvedMode, customThemes } = useTheme();
   const nexisThemes = listNexisThemes();
@@ -87,16 +100,6 @@ export function ThemesSection() {
   const [bgError, setBgError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const bgInputRef = useRef<HTMLInputElement | null>(null);
-
-  const onCreateTheme = () => {
-    void emitThemeEdit({ action: "create" });
-    void getCurrentWindow().hide();
-  };
-
-  const onEditTheme = (id: string) => {
-    void emitThemeEdit({ action: "edit", id });
-    void getCurrentWindow().hide();
-  };
 
   const backgroundKind = usePreferencesStore((s) => s.backgroundKind);
   const backgroundImageId = usePreferencesStore((s) => s.backgroundImageId);

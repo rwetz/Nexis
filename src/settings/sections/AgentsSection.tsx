@@ -325,8 +325,15 @@ function AgentEditorDialog({
   onClose: () => void;
   onSave: (a: Agent) => void;
 }) {
+  // Adjusted during render rather than in an effect: an effect renders the
+  // dialog once with the previous agent's fields before correcting them, which
+  // is a visible flash of the wrong agent when switching between two.
   const [draft, setDraft] = useState<Agent | null>(agent);
-  useEffect(() => setDraft(agent), [agent]);
+  const [shownAgent, setShownAgent] = useState(agent);
+  if (agent !== shownAgent) {
+    setShownAgent(agent);
+    setDraft(agent);
+  }
   if (!draft) return null;
 
   const isNew = !existing.some((a) => a.id === draft.id);
@@ -430,8 +437,14 @@ function SnippetEditorDialog({
   onClose: () => void;
   onSave: (s: Snippet) => void;
 }) {
+  // Same as the agent editor above: adjusting during render avoids a frame
+  // showing the previously edited snippet.
   const [draft, setDraft] = useState<Snippet | null>(snippet);
-  useEffect(() => setDraft(snippet), [snippet]);
+  const [shownSnippet, setShownSnippet] = useState(snippet);
+  if (snippet !== shownSnippet) {
+    setShownSnippet(snippet);
+    setDraft(snippet);
+  }
   if (!draft) return null;
 
   const handleErr = !draft.handle

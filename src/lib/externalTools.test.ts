@@ -5,6 +5,10 @@
 // ╚══════════════════════════════════════╝
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const invoke = vi.hoisted(() => vi.fn());
+vi.mock("@tauri-apps/api/core", () => ({ invoke }));
+
 import {
   EXTERNAL_TOOLS,
   currentPlatform,
@@ -18,6 +22,7 @@ import {
   reportMissingTool,
   useMissingTools,
   visibleMissingTools,
+  type ProbeWorkspace,
 } from "./missingTools";
 
 const PLATFORMS: Platform[] = ["linux", "macos", "windows"];
@@ -52,6 +57,9 @@ describe("the degradation matrix", () => {
       expect(tool.binary.trim().length, `${id}: needs a binary`).toBeGreaterThan(0);
       // "what stops working" is the part that makes the notice actionable.
       expect(tool.enables.trim().length, `${id}: needs an 'enables'`).toBeGreaterThan(10);
+      // Which machine the refresh must re-probe on. Getting this wrong
+      // answers for a machine the tool never runs on (pitfall #20).
+      expect(["host", "workspace"], `${id}: needs a runsIn`).toContain(tool.runsIn);
     }
   });
 
@@ -168,5 +176,109 @@ describe("noteGitErrorIfMissing", () => {
     noteGitErrorIfMissing("fatal: not a git repository");
     noteGitErrorIfMissing("error: pathspec 'nope' did not match any file(s)");
     expect(useMissingTools.getState().missing).toEqual([]);
+  });
+});
+
+
+describe("refreshing the missing-tools list", () => {
+  const LOCAL: ProbeWorkspace = { kind: "local" };
+
+  beforeEach(() => {
+    useMissingTools.setState({ missing: [], dismissed: [], refreshing: false });
+    invoke.mockReset();
+  });
+
+  it("retires a tool that now resolves and keeps the ones that do not", async () => {
+    // The bug this exists for: the user runs the install command, and nothing
+    // ever re-checks, so the notice stays up claiming a tool is missing.
+    reportMissingTool("gopls");
+    reportMissingTool("rust-analyzer");
+    invoke.mockResolvedValue(["gopls"]);
+
+    const result = await useMissingTools.getState().refresh(LOCAL);
+
+    expect(result).toEqual({ cleared: ["gopls"], error: null });
+    expect(useMissingTools.getState().missing).toEqual(["rust-analyzer"]);
+  });
+
+  it("probes each tool in the environment it is actually spawned in", async () => {
+    // Language servers spawn host-side whatever the workspace is; git follows
+    // the workspace into WSL. One round trip per side, not per tool.
+    reportMissingTool("git");
+    reportMissingTool("gopls");
+    invoke.mockResolvedValue([]);
+    const wsl: ProbeWorkspace = { kind: "wsl", distro: "Ubuntu" };
+
+    await useMissingTools.getState().refresh(wsl);
+
+    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(invoke).toHaveBeenCalledWith("tool_probe", {
+      binaries: ["gopls"],
+      workspace: { kind: "local" },
+    });
+    expect(invoke).toHaveBeenCalledWith("tool_probe", {
+      binaries: ["git"],
+      workspace: wsl,
+    });
+  });
+
+  it("does not probe an environment with nothing to check", async () => {
+    reportMissingTool("gopls");
+    invoke.mockResolvedValue([]);
+
+    await useMissingTools.getState().refresh(LOCAL);
+
+    expect(invoke).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips dismissed tools", async () => {
+    // Dismissed means the user does not want to hear about it; re-probing it
+    // would put it back.
+    reportMissingTool("gopls");
+    useMissingTools.getState().dismiss("gopls");
+    reportMissingTool("clangd");
+    invoke.mockResolvedValue([]);
+
+    await useMissingTools.getState().refresh(LOCAL);
+
+    expect(invoke).toHaveBeenCalledWith("tool_probe", {
+      binaries: ["clangd"],
+      workspace: LOCAL,
+    });
+  });
+
+  it("reports an IPC failure instead of claiming the tool is still missing", async () => {
+    reportMissingTool("gopls");
+    invoke.mockRejectedValue("ipc exploded");
+
+    const result = await useMissingTools.getState().refresh(LOCAL);
+
+    expect(result.cleared).toEqual([]);
+    expect(result.error).toContain("ipc exploded");
+    expect(useMissingTools.getState().missing).toEqual(["gopls"]);
+  });
+
+  it("ignores a second press while one check is in flight", async () => {
+    reportMissingTool("gopls");
+    invoke.mockResolvedValue([]);
+    const state = useMissingTools.getState();
+
+    const [first, second] = await Promise.all([
+      state.refresh(LOCAL),
+      state.refresh(LOCAL),
+    ]);
+
+    expect(invoke).toHaveBeenCalledTimes(1);
+    expect(first).toEqual({ cleared: [], error: null });
+    expect(second).toEqual({ cleared: [], error: null });
+  });
+
+  it("lowers the in-flight flag even when the probe throws", async () => {
+    reportMissingTool("gopls");
+    invoke.mockRejectedValue("boom");
+
+    await useMissingTools.getState().refresh(LOCAL);
+
+    expect(useMissingTools.getState().refreshing).toBe(false);
   });
 });

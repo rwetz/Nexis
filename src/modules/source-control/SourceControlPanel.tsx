@@ -1259,6 +1259,12 @@ function CommitFeedback({
     }
     setVisibleFeedback(feedback);
     setIsVisible(true);
+    // Only a success auto-hides. An error is something the user has to act
+    // on, and several of them (a missing git identity, a rejected push)
+    // carry the exact command that fixes them — a 3.6 s window to read and
+    // retype that is not a window at all. Errors stay until the next action
+    // replaces them or the user dismisses them.
+    if (feedback.tone === "error") return;
     const hideTimer = window.setTimeout(() => setIsVisible(false), 3600);
     const clearTimer = window.setTimeout(() => {
       setVisibleFeedback((current) =>
@@ -1279,27 +1285,48 @@ function CommitFeedback({
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-3 top-[calc(100%-0.25rem)] z-20 flex min-w-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] leading-snug shadow-lg shadow-black/15 backdrop-blur transition-all duration-200",
+        "absolute inset-x-3 top-[calc(100%-0.25rem)] z-20 flex min-w-0 gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] leading-snug shadow-lg shadow-black/15 backdrop-blur transition-all duration-200",
         isVisible ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0",
+        // A success is a passing notice and must not eat clicks on the
+        // controls underneath it. An error is readable text with a dismiss
+        // button, so it needs them.
         isError
-          ? "border-destructive/30 bg-card/95 text-destructive"
-          : "border-border/70 bg-card/95 text-muted-foreground",
+          ? "items-start border-destructive/30 bg-card/95 text-destructive"
+          : "pointer-events-none items-center border-border/70 bg-card/95 text-muted-foreground",
       )}
     >
       <span
         className={cn(
           "size-1.5 shrink-0 rounded-full",
-          isError ? "bg-destructive" : "bg-foreground/70",
+          isError ? "mt-[0.3rem] bg-destructive" : "bg-foreground/70",
         )}
       />
       <span
         className={cn(
-          "min-w-0 flex-1 truncate",
-          isError ? "text-destructive" : "text-muted-foreground",
+          "min-w-0 flex-1",
+          // Errors wrap and stay selectable: git's remedy for a missing
+          // identity is two command lines, and `truncate` clipped them off
+          // the end where nobody could read or copy them (issue #47).
+          isError
+            ? "max-h-40 overflow-y-auto whitespace-pre-wrap text-destructive select-text"
+            : "truncate text-muted-foreground",
         )}
       >
         {visibleFeedback.message}
       </span>
+      {isError && (
+        <button
+          type="button"
+          aria-label="Dismiss error"
+          onClick={() => {
+            setIsVisible(false);
+            setVisibleFeedback(null);
+          }}
+          className="-mt-0.5 -mr-1 shrink-0 rounded p-0.5 text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Icon name="close" size="xs" />
+        </button>
+      )}
     </div>
   );
 }

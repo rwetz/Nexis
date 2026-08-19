@@ -4,12 +4,12 @@
 # ║  2026                                ║
 # ╚══════════════════════════════════════╝
 
-# terax-shell-integration (zprofile)
+# nexis-shell-integration (zprofile)
 #
 # See zshenv.zsh for the rationale on the trailing `:`.
 {
-  _terax_user_zdotdir="${TERAX_USER_ZDOTDIR:-$HOME}"
-  [ -f "$_terax_user_zdotdir/.zprofile" ] && source "$_terax_user_zdotdir/.zprofile"
-  unset _terax_user_zdotdir
+  _nexis_user_zdotdir="${NEXIS_USER_ZDOTDIR:-$HOME}"
+  [ -f "$_nexis_user_zdotdir/.zprofile" ] && source "$_nexis_user_zdotdir/.zprofile"
+  unset _nexis_user_zdotdir
 }
 :

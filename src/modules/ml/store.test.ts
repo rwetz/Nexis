@@ -10,6 +10,7 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn(async () => () => {}) }));
 vi.mock("@/modules/workspace", () => ({
   currentWorkspaceEnv: () => ({ kind: "local" }),
+  currentWorkspaceScopeKey: () => "local",
 }));
 vi.mock("@tauri-apps/plugin-opener", () => ({
   revealItemInDir: vi.fn(async () => {}),
@@ -178,5 +179,69 @@ describe("project discovery (store)", () => {
     await useMlStore.getState().refreshProjects("ws");
     expect(useMlStore.getState().projects).toEqual([]);
     expect(useMlStore.getState().selectedProject).toBeNull();
+  });
+});
+
+describe("install lifecycle (store)", () => {
+  beforeEach(() => {
+    useMlStore.setState({
+      installing: false,
+      installSid: null,
+      installFlavor: null,
+      installQueue: [],
+      installRoot: null,
+      pendingCreate: null,
+      engineError: null,
+      logs: [],
+    });
+  });
+
+  // The setup card disables both "Install engine" and "Check again" while
+  // `installing` is true, and nothing else clears it — so an install whose
+  // exit went unmatched left the panel with no way back short of a restart.
+  // `installSid` is only recorded after `await spawnInstall(...)` resolves,
+  // which is exactly the window a fast failure lands in.
+  it("clears `installing` when an install exits before its sid is recorded", () => {
+    useMlStore.setState({ installing: true, installSid: null, installFlavor: "git" });
+
+    useMlStore.getState()._applyExit({ sid: 7, code: 1 });
+
+    const s = useMlStore.getState();
+    expect(s.installing).toBe(false);
+    expect(s.installSid).toBeNull();
+    expect(s.engineError).toMatch(/install failed/i);
+  });
+
+  it("keeps pip output in the log during that same window", () => {
+    useMlStore.setState({ installing: true, installSid: null });
+
+    useMlStore.getState()._applyStderr({ sid: 7, line: "ERROR: no matching distribution" });
+
+    expect(useMlStore.getState().logs).toContain(
+      "ERROR: no matching distribution",
+    );
+  });
+
+  // The fallback must not swallow a different one-shot's exit: the scaffold
+  // branch is checked *after* the install branch.
+  it("does not claim a project scaffold's exit as the install's", () => {
+    useMlStore.setState({
+      installing: true,
+      installSid: null,
+      pendingCreate: { sid: 7, workspaceRoot: "/w", dir: "/w/m", autoTrain: false },
+    });
+
+    useMlStore.getState()._applyExit({ sid: 7, code: 0 });
+
+    expect(useMlStore.getState().installing).toBe(true);
+    expect(useMlStore.getState().pendingCreate).toBeNull();
+  });
+
+  it("still matches the normal case once the sid is known", () => {
+    useMlStore.setState({ installing: true, installSid: 4, installFlavor: "git" });
+
+    useMlStore.getState()._applyExit({ sid: 4, code: 1 });
+
+    expect(useMlStore.getState().installing).toBe(false);
   });
 });

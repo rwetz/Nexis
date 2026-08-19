@@ -55,7 +55,13 @@ function readSidebarView(): SidebarView {
  */
 export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null>) {
   const sidebarRef = useRef<PanelImperativeHandle | null>(null);
-  const sidebarWidthRef = useRef(readSidebarWidth());
+  // Seeded through a lazy `useState` rather than `useRef(readSidebarWidth())`:
+  // a `useRef` argument is evaluated on every render and discarded after the
+  // first, so the plain form re-read localStorage on each one. `useState` has
+  // the lazy-initialiser form `useRef` lacks, and the ref then takes an
+  // already-computed value.
+  const [initialSidebarWidth] = useState(readSidebarWidth);
+  const sidebarWidthRef = useRef(initialSidebarWidth);
   const sidebarWidthWriteTimerRef = useRef(0);
   const [sidebarView, setSidebarViewState] = useState<SidebarView>(readSidebarView);
   const explorerReturnFocusRef = useRef<HTMLElement | null>(null);

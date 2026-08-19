@@ -27,9 +27,10 @@ export function mruPrune(mru: number[], aliveIds: number[]): number[] {
  */
 export function buildSwitchOrder(mru: number[], aliveIds: number[]): number[] {
   const seen = new Set<number>();
+  const alive = new Set(aliveIds);
   const order: number[] = [];
   for (const id of mru) {
-    if (aliveIds.includes(id) && !seen.has(id)) {
+    if (alive.has(id) && !seen.has(id)) {
       order.push(id);
       seen.add(id);
     }

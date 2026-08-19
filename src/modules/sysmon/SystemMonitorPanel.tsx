@@ -8,9 +8,12 @@ import { Icon, type IconName } from "@/components/icon";
 import { formatBytes, formatBytesPerSec, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { SysmonSignal, SysmonSort, SysProcessRow } from "@/modules/ai/lib/native";
+import { setSysmonIntervalMs } from "@/modules/settings/store";
+import { usePreferencesStore } from "@/modules/settings/preferences";
 import { useMemo, useState } from "react";
 import { brailleChart } from "./braille";
-import { useSystemMonitor } from "./useSystemMonitor";
+import { SYSMON_INTERVALS, type SysmonIntervalMs } from "./interval";
+import { HISTORY_LENGTH, useSystemMonitor } from "./useSystemMonitor";
 
 /** Chart geometry. Width is in braille characters — each holds 2 samples. */
 const CHART_COLS = 32;
@@ -31,7 +34,8 @@ const rollingMax = (series: readonly number[]): number =>
 export function SystemMonitorPanel() {
   const [sort, setSort] = useState<SysmonSort>("cpu");
   const [filter, setFilter] = useState("");
-  const { sample, history, error, kill } = useSystemMonitor({ sort });
+  const intervalMs = usePreferencesStore((s) => s.sysmonIntervalMs);
+  const { sample, history, error, kill } = useSystemMonitor({ sort, intervalMs });
 
   const coreCount = sample?.cpu_per_core.length ?? 0;
 
@@ -74,12 +78,15 @@ export function SystemMonitorPanel() {
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           System
         </span>
-        <span
-          className="font-mono text-[10px] text-muted-foreground/70"
-          title="Load average over 1, 5, and 15 minutes"
-        >
-          {sample.load_avg.map((n) => n.toFixed(2)).join("  ")}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className="font-mono text-[10px] text-muted-foreground/70"
+            title="Load average over 1, 5, and 15 minutes"
+          >
+            {sample.load_avg.map((n) => n.toFixed(2)).join("  ")}
+          </span>
+          <RateSwitcher active={intervalMs} />
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -211,6 +218,53 @@ export function SystemMonitorPanel() {
       </div>
     </div>
   );
+}
+
+/**
+ * Poll-rate switcher. Charts hold a fixed number of samples, so a faster
+ * rate buys detail at the cost of window length: at 100 ms the 128-sample
+ * history spans ~13 seconds, at 1 s it spans ~2 minutes. The fast steps also
+ * cost real CPU — each sample re-walks the whole process table.
+ */
+function RateSwitcher({ active }: { active: number }) {
+  return (
+    <div
+      role="group"
+      aria-label="Sampling interval"
+      className="flex items-center overflow-hidden rounded border border-border/50"
+    >
+      {SYSMON_INTERVALS.map((ms) => (
+        <button
+          key={ms}
+          type="button"
+          aria-pressed={ms === active}
+          onClick={() => void setSysmonIntervalMs(ms)}
+          title={`Sample every ${ms} ms — ${HISTORY_LENGTH} samples of history is ${formatSpan(ms)}`}
+          className={cn(
+            "px-1 py-px font-mono text-[9.5px] leading-tight transition-colors",
+            ms === active
+              ? "bg-primary/15 text-foreground"
+              : "text-muted-foreground/60 hover:text-foreground",
+          )}
+        >
+          {rateLabel(ms)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** "100" / "1s" — the trailing "ms" is dropped so four steps fit the rail. */
+function rateLabel(ms: SysmonIntervalMs): string {
+  return ms >= 1000 ? `${ms / 1000}s` : String(ms);
+}
+
+/** How much wall-clock the fixed-length history covers at this rate. */
+function formatSpan(ms: number): string {
+  const seconds = (HISTORY_LENGTH * ms) / 1000;
+  return seconds >= 60
+    ? `~${Math.round(seconds / 60)} min of history`
+    : `~${Math.round(seconds)} s of history`;
 }
 
 function Section({
@@ -373,7 +427,7 @@ function ProcessRow({
         // than being the default.
         onClick={(e) => void onKill(p.pid, e.shiftKey ? "kill" : "term")}
         title={`Terminate ${p.name} (${p.pid}) — shift-click to force kill`}
-        className="w-4 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+        className="w-4 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-[opacity,color,background-color] hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
       >
         <Icon name="close" size="xs" />
       </button>

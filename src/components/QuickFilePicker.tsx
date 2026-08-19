@@ -7,7 +7,7 @@
 import { basename, displayDirname as dirname } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type SearchHit = {
   path: string;
@@ -30,7 +30,6 @@ type Props = {
 export function QuickFilePicker({ root, onSelect, onClose }: Props) {
   const [query, setQuery] = useState("");
   const [allFiles, setAllFiles] = useState<string[]>([]);
-  const [hits, setHits] = useState<SearchHit[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -58,24 +57,23 @@ export function QuickFilePicker({ root, onSelect, onClose }: Props) {
       .catch(() => setLoading(false));
   }, [root]);
 
-  // Filter files when query changes.
-  useEffect(() => {
+  // Derived during render, not mirrored into state by an effect: the list is
+  // a pure function of the query and the loaded file set, and computing it in
+  // an effect meant every keystroke painted the previous query's results
+  // first, then corrected them on the next frame.
+  const hits = useMemo<SearchHit[]>(() => {
     const q = query.trim().toLowerCase();
     if (!q) {
-      const top = allFiles.slice(0, 50).map((rel) => ({
+      return allFiles.slice(0, 50).map((rel) => ({
         path: root ? `${root}/${rel}` : rel,
         rel,
         name: basename(rel),
         is_dir: false,
       }));
-      setHits(top);
-      setActiveIdx(0);
-      return;
     }
 
-    if (!root) return;
+    if (!root) return [];
 
-    // Quick local filter for speed; fall back to backend for large repos.
     const localHits = allFiles
       .filter((rel) => rel.toLowerCase().includes(q))
       .slice(0, 100)
@@ -93,9 +91,17 @@ export function QuickFilePicker({ root, onSelect, onClose }: Props) {
       return (bn ? 1 : 0) - (an ? 1 : 0) || a.rel.length - b.rel.length;
     });
 
-    setHits(localHits.slice(0, 50));
-    setActiveIdx(0);
+    return localHits.slice(0, 50);
   }, [query, allFiles, root]);
+
+  // The highlight belongs to the current result list, so it resets whenever
+  // that list is rebuilt. Adjusted during render rather than in an effect, so
+  // there is no frame where the highlight points into the previous results.
+  const [hitsForActive, setHitsForActive] = useState(hits);
+  if (hits !== hitsForActive) {
+    setHitsForActive(hits);
+    setActiveIdx(0);
+  }
 
   // Scroll active item into view.
   useEffect(() => {

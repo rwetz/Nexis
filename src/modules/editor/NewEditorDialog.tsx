@@ -41,10 +41,20 @@ export function NewEditorDialog({
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Reopening starts from a clean field. Done during render rather than in an
+  // effect, so the dialog never paints one frame carrying the previous
+  // attempt's name and error before clearing them.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setName("untitled.txt");
+      setError(null);
+    }
+  }
+
   useEffect(() => {
     if (!open) return;
-    setName("untitled.txt");
-    setError(null);
     // Pre-select the basename so the user can quickly retype the filename
     // while keeping the extension handy. Deferred a tick so the input exists;
     // cleared on unmount/close so a dialog dismissed within the same tick

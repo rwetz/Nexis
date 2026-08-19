@@ -41,6 +41,16 @@ const mixWithWhite = (hex: string, ratio: number): string => {
   return '#' + ((1 << 24) + (nr << 16) + (ng << 8) + nb).toString(16).slice(1).toUpperCase();
 };
 
+
+/** Where each fanned-out paper lands when the folder is open. Fixed art
+ *  direction, so it belongs to the module rather than to a render. */
+const getOpenTransform = (index: number) => {
+  if (index === 0) return 'translate(-120%, -70%) rotate(-15deg)';
+  if (index === 1) return 'translate(10%, -70%) rotate(15deg)';
+  if (index === 2) return 'translate(-50%, -100%) rotate(5deg)';
+  return '';
+};
+
 export const AnimatedFolder: React.FC<AnimatedFolderProps> = ({
   color = '#5227FF',
   size = 1,
@@ -53,7 +63,7 @@ export const AnimatedFolder: React.FC<AnimatedFolderProps> = ({
 
   const [open, setOpen] = useState(false);
   const [paperOffsets, setPaperOffsets] = useState<{ x: number; y: number }[]>(
-    Array.from({ length: maxItems }, () => ({ x: 0, y: 0 }))
+    () => Array.from({ length: maxItems }, () => ({ x: 0, y: 0 }))
   );
 
   const folderBackColor = darkenColor(color, 0.08);
@@ -100,13 +110,6 @@ export const AnimatedFolder: React.FC<AnimatedFolderProps> = ({
   } as React.CSSProperties;
 
   const scaleStyle = { transform: `scale(${size})` };
-
-  const getOpenTransform = (index: number) => {
-    if (index === 0) return 'translate(-120%, -70%) rotate(-15deg)';
-    if (index === 1) return 'translate(10%, -70%) rotate(15deg)';
-    if (index === 2) return 'translate(-50%, -100%) rotate(5deg)';
-    return '';
-  };
 
   return (
     // Purely decorative empty-state illustration. Clicking only plays the

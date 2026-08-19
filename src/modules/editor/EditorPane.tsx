@@ -153,7 +153,11 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     const apiKeyRef = useRef<string | null>(null);
 
     // LSP — one stable Compartment per editor pane instance
-    const lspCompartmentRef = useRef(createLspCompartment());
+    // Seeded through a lazy `useState`: `useRef(createLspCompartment())`
+    // allocates a Compartment on every render only for React to discard all
+    // but the first, and `useRef` has no lazy-initialiser form.
+    const [initialLspCompartment] = useState(createLspCompartment);
+    const lspCompartmentRef = useRef(initialLspCompartment);
     const lspHandleRef = useRef<LspHandle | null>(null);
 
     useEffect(() => {
@@ -355,7 +359,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     }, [path]);
 
     // Breakpoints — sync store → gutter when path changes or store updates
-    const toggleBreakpoint = useBreakpointStore((s) => s.toggleBreakpoint);
     // Select the stable store array — `breakpointsForPath()` returns a fresh
     // array on every call, which (in the effect deps) re-ran the sync on every
     // render. Derive the per-path lines in a memo keyed on the raw array.
@@ -415,7 +418,14 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         breakpointField,
         currentLineField,
         breakpointGutter(
-          (togglePath, line) => toggleBreakpoint(togglePath, line),
+          // Read from the store at click time rather than closing over a
+          // selected action. This extension array is built once on purpose —
+          // rebuilding it remounts the editor — so anything it captures is
+          // pinned to the first render; going through `getState()` keeps the
+          // array free of render-scoped values, as the snippet and preference
+          // readers below already do.
+          (togglePath, line) =>
+            useBreakpointStore.getState().toggleBreakpoint(togglePath, line),
           () => pathRef.current,
         ),
         languageCompartment.of([]),

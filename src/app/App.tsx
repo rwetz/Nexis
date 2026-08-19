@@ -182,6 +182,14 @@ const SettingsDialogLazy = lazy(() =>
 const MlPanelLazy = lazy(() =>
   import("@/modules/ml/MlPanel").then((m) => ({ default: m.MlPanel })),
 );
+// Lazy for the same reason as the panel: the network tab pulls in the whole
+// ML graph/artifact reading stack, which nobody who never opens it should pay
+// the parse cost for.
+const MlNetworkStackLazy = lazy(() =>
+  import("@/modules/ml/MlNetworkStack").then((m) => ({
+    default: m.MlNetworkStack,
+  })),
+);
 const DatabasePanelLazy = lazy(() =>
   import("@/modules/database/DatabasePanel").then((m) => ({ default: m.DatabasePanel })),
 );
@@ -218,6 +226,7 @@ export default function App() {
     openGitDiffTab,
     openCommitHistoryTab,
     openCommitFileDiffTab,
+    openMlNetworkTab,
     closeTab,
     updateTab,
     selectByIndex,
@@ -393,6 +402,20 @@ export default function App() {
       try {
         if (env.kind === "wsl") {
           nextHome = await getWslHome(env.distro);
+          // The whole switch is rebuilt around this value — it becomes the new
+          // terminal tab's cwd, and `pty_open` rejects a cwd it cannot resolve
+          // by leaving a terminal with a cursor and no prompt. The backend
+          // already refuses a probe answer it cannot parse; refuse anything
+          // that isn't a Linux path here too, and say so, rather than resetting
+          // the workspace onto it.
+          if (!nextHome.startsWith("/")) {
+            window.alert(
+              `Could not read the home directory of WSL: ${env.distro}.\n\n` +
+                `The distro answered with ${JSON.stringify(nextHome)}, which is not a Linux path. ` +
+                `If the distro was starting up, try again once it is running.`,
+            );
+            return;
+          }
         } else {
           nextHome = (await homeDir()).replace(/\\/g, "/");
         }
@@ -602,6 +625,7 @@ export default function App() {
   const isGitDiffTab =
     activeTab?.kind === "git-diff" || activeTab?.kind === "git-commit-file";
   const isGitHistoryTab = activeTab?.kind === "git-history";
+  const isMlNetworkTab = activeTab?.kind === "ml-network";
 
   // When an AI diff is approved (write_file applied to disk), reload any
   // open editor tabs for that path so the user sees the new content. We
@@ -863,10 +887,14 @@ export default function App() {
       if (isInsideAi(e.target)) return;
       setAskPopup(null);
     };
+    // Owned by the effect so unmounting cannot leave a pending timer that
+    // wakes up and sets state on a component that is gone.
+    let settle: ReturnType<typeof setTimeout> | undefined;
     const onUp = (e: MouseEvent) => {
       if (isInsideAi(e.target)) return;
       // Defer one tick so xterm/CodeMirror finalize the selection.
-      setTimeout(() => {
+      clearTimeout(settle);
+      settle = setTimeout(() => {
         const text = captureActiveSelection();
         if (text && text.trim().length > 0) {
           setAskPopup({ x: e.clientX, y: e.clientY });
@@ -879,6 +907,7 @@ export default function App() {
     document.addEventListener("mousedown", onDown);
     document.addEventListener("mouseup", onUp);
     return () => {
+      clearTimeout(settle);
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("mouseup", onUp);
     };
@@ -937,12 +966,17 @@ export default function App() {
   // Handle LSP go-to-definition cross-file navigation.
   // EditorPane dispatches "nexis:open-file" when definition is in another file.
   useEffect(() => {
+    // The pane needs a beat to mount before it can honour a goto; the timer is
+    // owned here so an unmount (or a second navigation) cancels it rather than
+    // firing into a pane that no longer exists.
+    let goto: ReturnType<typeof setTimeout> | undefined;
     const handler = (e: Event) => {
       const ev = e as CustomEvent<{ path: string; line?: number }>;
       const { path: targetPath, line } = ev.detail;
       openFileTab(targetPath, true);
       if (line != null) {
-        setTimeout(() => {
+        clearTimeout(goto);
+        goto = setTimeout(() => {
           window.dispatchEvent(
             new CustomEvent("nexis:goto-location", {
               detail: { path: targetPath, line, character: 0 },
@@ -952,7 +986,10 @@ export default function App() {
       }
     };
     window.addEventListener("nexis:open-file", handler);
-    return () => window.removeEventListener("nexis:open-file", handler);
+    return () => {
+      clearTimeout(goto);
+      window.removeEventListener("nexis:open-file", handler);
+    };
   }, [openFileTab]);
 
   const openNewTab = useCallback(() => {
@@ -1412,6 +1449,22 @@ export default function App() {
       zoomIn,
       zoomOut,
       zoomReset,
+      // `tabs` and `captureActiveSelection` were the ones that mattered:
+      // `bookmark.toggle` looks the active tab up in `tabs`, and the repl and
+      // refactor handlers read the live selection. Held to the render that
+      // built them, both went stale as soon as a tab was opened or closed —
+      // "toggle bookmark" then found nothing on a tab opened since. The rest
+      // are stable identities, listed so the set is honest.
+      tabs,
+      captureActiveSelection,
+      persistSidebarView,
+      setNewEditorOpen,
+      setQuickFilePickerOpen,
+      setWorkspaceSearchOpen,
+      setCommandPaletteOpen,
+      setWorkspaceSwitcherOpen,
+      setShortcutsOpen,
+      setZenMode,
     ],
   );
 
@@ -1438,7 +1491,7 @@ export default function App() {
       }
       return false;
     },
-    [activeTab],
+    [activeTab, captureActiveSelection],
   );
 
   useGlobalShortcuts(shortcutHandlers, { isDisabled: shortcutsDisabled });
@@ -1729,6 +1782,21 @@ export default function App() {
           onSearchHandle={setGitHistoryHandle}
         />
       </div>
+      <div
+        className={cn(
+          "absolute inset-0 px-3 pt-2 pb-2",
+          !isMlNetworkTab && "invisible pointer-events-none",
+        )}
+        aria-hidden={!isMlNetworkTab}
+      >
+        <Suspense fallback={null}>
+          <MlNetworkStackLazy
+            tabs={tabs}
+            activeId={activeId}
+            onCollapse={closeTab}
+          />
+        </Suspense>
+      </div>
     </div>
   );
 
@@ -1905,7 +1973,12 @@ export default function App() {
                     ) : sidebarView === "release" ? (
                       <ReleasePanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "ml" ? (
-                      <Suspense fallback={null}><MlPanelLazy workspaceRoot={explorerRoot} /></Suspense>
+                      <Suspense fallback={null}>
+                          <MlPanelLazy
+                            workspaceRoot={explorerRoot}
+                            onOpenNetworkTab={openMlNetworkTab}
+                          />
+                        </Suspense>
                     ) : (
                       <SourceControlPanel
                         open

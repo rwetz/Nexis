@@ -46,6 +46,21 @@ const useContextValue = () => {
   return context;
 };
 
+
+// Hoisted: `new Intl.NumberFormat(...)` compiles a locale-aware formatter, and
+// building one per render (ten of them, across components that re-render on
+// every token update) throws that work away each time. The options are fixed,
+// so the instances can be too.
+const PERCENT = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 1,
+  style: "percent",
+});
+const COMPACT = new Intl.NumberFormat("en-US", { notation: "compact" });
+const CURRENCY = new Intl.NumberFormat("en-US", {
+  currency: "USD",
+  style: "currency",
+});
+
 export type ContextProps = ComponentProps<typeof HoverCard> & ContextSchema;
 
 export const Context = ({
@@ -113,10 +128,7 @@ export type ContextTriggerProps = ComponentProps<typeof Button>;
 export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
   const { usedTokens, maxTokens } = useContextValue();
   const usedPercent = usedTokens / maxTokens;
-  const renderedPercent = new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 1,
-    style: "percent",
-  }).format(usedPercent);
+  const renderedPercent = PERCENT.format(usedPercent);
 
   return (
     <HoverCardTrigger asChild>
@@ -153,16 +165,9 @@ export const ContextContentHeader = ({
 }: ContextContentHeaderProps) => {
   const { usedTokens, maxTokens } = useContextValue();
   const usedPercent = usedTokens / maxTokens;
-  const displayPct = new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 1,
-    style: "percent",
-  }).format(usedPercent);
-  const used = new Intl.NumberFormat("en-US", {
-    notation: "compact",
-  }).format(usedTokens);
-  const total = new Intl.NumberFormat("en-US", {
-    notation: "compact",
-  }).format(maxTokens);
+  const displayPct = PERCENT.format(usedPercent);
+  const used = COMPACT.format(usedTokens);
+  const total = COMPACT.format(maxTokens);
 
   return (
     <div className={cn("w-full space-y-2 p-3", className)} {...props}>
@@ -212,10 +217,7 @@ export const ContextContentFooter = ({
         },
       }).costUSD?.totalUSD
     : undefined;
-  const totalCost = new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(costUSD ?? 0);
+  const totalCost = CURRENCY.format(costUSD ?? 0);
 
   return (
     <div
@@ -245,9 +247,7 @@ const TokensWithCost = ({
   <span>
     {tokens === undefined
       ? "—"
-      : new Intl.NumberFormat("en-US", {
-          notation: "compact",
-        }).format(tokens)}
+      : COMPACT.format(tokens)}
     {costText ? (
       <span className="ml-2 text-muted-foreground">• {costText}</span>
     ) : null}
@@ -278,10 +278,7 @@ export const ContextInputUsage = ({
         usage: { input: inputTokens, output: 0 },
       }).costUSD?.totalUSD
     : undefined;
-  const inputCostText = new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(inputCost ?? 0);
+  const inputCostText = CURRENCY.format(inputCost ?? 0);
 
   return (
     <div
@@ -318,10 +315,7 @@ export const ContextOutputUsage = ({
         usage: { input: 0, output: outputTokens },
       }).costUSD?.totalUSD
     : undefined;
-  const outputCostText = new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(outputCost ?? 0);
+  const outputCostText = CURRENCY.format(outputCost ?? 0);
 
   return (
     <div
@@ -358,10 +352,7 @@ export const ContextReasoningUsage = ({
         usage: { reasoningTokens },
       }).costUSD?.totalUSD
     : undefined;
-  const reasoningCostText = new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(reasoningCost ?? 0);
+  const reasoningCostText = CURRENCY.format(reasoningCost ?? 0);
 
   return (
     <div
@@ -398,10 +389,7 @@ export const ContextCacheUsage = ({
         usage: { cacheReads: cacheTokens, input: 0, output: 0 },
       }).costUSD?.totalUSD
     : undefined;
-  const cacheCostText = new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(cacheCost ?? 0);
+  const cacheCostText = CURRENCY.format(cacheCost ?? 0);
 
   return (
     <div

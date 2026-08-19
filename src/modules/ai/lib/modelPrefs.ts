@@ -5,20 +5,9 @@
 // ╚══════════════════════════════════════╝
 
 import { usePreferencesStore } from "@/modules/settings/preferences";
-import {
-  setFavoriteModelIds,
-  setRecentModelIds,
-} from "@/modules/settings/store";
+import { setRecentModelIds } from "@/modules/settings/store";
 
 const RECENTS_MAX = 5;
-
-export async function toggleFavoriteModel(id: string): Promise<void> {
-  const current = usePreferencesStore.getState().favoriteModelIds;
-  const next = current.includes(id)
-    ? current.filter((x) => x !== id)
-    : [...current, id];
-  await setFavoriteModelIds(next);
-}
 
 export async function pushRecentModel(id: string): Promise<void> {
   const current = usePreferencesStore.getState().recentModelIds;

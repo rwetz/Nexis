@@ -191,6 +191,52 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
     ).toBe(true);
   });
 
+  it("pitfall 22: the terminal session effect does not depend on initialCwd", () => {
+    const src = readSrc("modules/terminal/lib/useTerminalSession.ts");
+    // The pane-tree leaf's `cwd` is rewritten by setLeafCwd on every OSC 7, so
+    // depending on it re-ran the session effect on every `cd` — detaching the
+    // leaf from its renderer slot, resetting the xterm buffer, replaying a
+    // snapshot, and blanking the pane for two frames. ensureSession only reads
+    // the value when it creates the session, so the dep bought nothing.
+    const deps = /\}, \[leafId, container[^\]]*\]\);/.exec(src);
+    expect(
+      deps,
+      "could not find the useTerminalSession attach effect's dep array — if it " +
+        "was restructured, update this guard rather than deleting it",
+    ).not.toBeNull();
+    expect(
+      deps?.[0].includes("initialCwd"),
+      "the terminal attach effect must not depend on initialCwd: it changes on " +
+        "every directory change, and re-running the effect tears the leaf off " +
+        "its renderer slot and resets the buffer (CLAUDE.md pitfall #22)",
+    ).toBe(false);
+
+    // The other half: the value still has to reach ensureSession.
+    expect(
+      /ensureSession\(leafId, initialCwdRef\.current\)/.test(src),
+      "ensureSession must still receive the initial cwd, via the ref mirror",
+    ).toBe(true);
+  });
+
+  it("pitfall 22: a failed pty_open is shown in the terminal, not just logged", () => {
+    const src = readSrc("modules/terminal/lib/useTerminalSession.ts");
+    // Every openPty rejection used to render identically to a working shell
+    // that printed nothing: a cursor and no prompt. That is what let a
+    // corrupted WSL home probe go undiagnosed.
+    expect(
+      /function reportSpawnFailure\(/.test(src),
+      "useTerminalSession must keep reportSpawnFailure — a rejected pty_open " +
+        "has to be visible in the pane, not only in console.error",
+    ).toBe(true);
+    const catches = src.match(/\.catch\(\(e\) => \{[^}]*ptyOpening = false[^}]*\}/gs) ?? [];
+    for (const block of catches) {
+      expect(
+        block.includes("reportSpawnFailure"),
+        "every openPty failure path must call reportSpawnFailure",
+      ).toBe(true);
+    }
+  });
+
   it("secret redaction: outbound surfaces route through redactSensitive", () => {
     // The LAN share stream and saved recordings leave the machine (viewers,
     // bug-report attachments). Key-shaped strings captured from terminal
@@ -337,5 +383,68 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
       `e2e/wdio.conf.ts DEBUG_PORT must match the overlay's port (${port}) — ` +
         "the driver attaches to a port the app never opened otherwise",
     ).toBe(true);
+  });
+
+  it("every E2E spec clears startup modals before it interacts", () => {
+    // The E2E job builds on a clean runner, so every run is a first run and
+    // PackOnboardingDialog opens as soon as preferences hydrate. Its Radix
+    // overlay is `fixed inset-0` with `pointer-events: auto`, so it receives
+    // every click meant for app chrome and WebDriver reports "element click
+    // intercepted" — never anything naming the dialog. That took the nightly
+    // job down: the terminal spec could not reach the "New tab" button, so
+    // the failure surfaced as a missing `.xterm` 15 s later.
+    //
+    // Any new spec inherits the same first-run profile, so this is a property
+    // of the suite rather than of one file.
+    const repoRoot = path.join(SRC_ROOT, "..");
+    const specDir = path.join(repoRoot, "e2e/specs");
+    const specs = fs
+      .readdirSync(specDir)
+      .filter((f) => f.endsWith(".test.ts"));
+
+    expect(
+      specs.length,
+      "no E2E specs found — this guard is reading the wrong directory",
+    ).toBeGreaterThan(0);
+
+    for (const spec of specs) {
+      const src = fs.readFileSync(path.join(specDir, spec), "utf8");
+      expect(
+        /dismissStartupDialogs\s*\(/.test(src),
+        `e2e/specs/${spec} must await dismissStartupDialogs() in its before() ` +
+          "hook — a first-run modal's overlay intercepts every click on app " +
+          "chrome, and the resulting failure names the overlay rather than " +
+          "the dialog. Helper lives in e2e/support/dialogs.ts",
+      ).toBe(true);
+    }
+  });
+
+  // Pitfall #19: no emoji in the product. Emoji render from the OS emoji
+  // font, not the theme — wrong colour, wrong weight, wrong size, a different
+  // glyph on every platform, and entirely outside the semantic icon layer
+  // that exists so one idea has exactly one mark (pitfall #18). Every idea an
+  // emoji stood in for already has an `<Icon name="...">`.
+  //
+  // The boundary is Unicode's own: `Emoji_Presentation` is the property for
+  // "renders as colour emoji by default", plus U+FE0F, the selector that
+  // forces emoji presentation onto a text glyph. Typographic marks stay
+  // allowed — arrows (→ ↑ ↵), modifier keys (⇧), box drawing, the checkmark,
+  // the warning sign — because those are text: they inherit the font and the
+  // theme's colour, and they are load-bearing in the file headers and the
+  // keyboard hints.
+  it("pitfall 19: no emoji anywhere in the frontend source", () => {
+    const EMOJI = /[\p{Emoji_Presentation}\uFE0F]/u;
+    const offenders: string[] = [];
+    for (const [rel, text] of sourceFiles()) {
+      text.split("\n").forEach((line, i) => {
+        if (EMOJI.test(line)) offenders.push(`${rel}:${i + 1}: ${line.trim()}`);
+      });
+    }
+    expect(
+      offenders,
+      "emoji are banned in Nexis source — they ignore the theme, differ per " +
+        "platform, and bypass the semantic icon layer. Use <Icon name=\"...\"> " +
+        "(src/components/icon.tsx); add a name there if the idea has none.",
+    ).toEqual([]);
   });
 });

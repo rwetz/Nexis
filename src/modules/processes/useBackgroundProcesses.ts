@@ -21,20 +21,35 @@ export function useBackgroundProcesses(pollMs = 2000) {
   const [loading, setLoading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Set false on unmount so a poll still in flight cannot resolve into a
+  // component that is gone, and so a slow reply from a previous interval
+  // cannot overwrite a newer one.
+  const aliveRef = useRef(true);
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
+
   const refresh = async () => {
     try {
       const list = await native.shellBgList();
-      setProcesses(list);
+      if (aliveRef.current) setProcesses(list);
     } catch {
       // backend not ready or no processes yet
     }
   };
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
-    void refresh().finally(() => setLoading(false));
+    void refresh().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
     timerRef.current = setInterval(() => void refresh(), pollMs);
     return () => {
+      cancelled = true;
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [pollMs]);

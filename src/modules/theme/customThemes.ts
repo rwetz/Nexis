@@ -37,10 +37,14 @@ export async function deleteCustomTheme(id: string): Promise<void> {
 }
 
 export async function onCustomThemesChange(cb: () => void): Promise<UnlistenFn> {
-  const unsubLocal = await store.onChange((key) => {
-    if (key === KEY) cb();
-  });
-  const unsubEvent = await listen(CHANGED_EVENT, () => cb());
+  // Independent subscriptions — registered together rather than one after the
+  // other, so there is no window where only one of them is live.
+  const [unsubLocal, unsubEvent] = await Promise.all([
+    store.onChange((key) => {
+      if (key === KEY) cb();
+    }),
+    listen(CHANGED_EVENT, () => cb()),
+  ]);
   return () => {
     unsubLocal();
     unsubEvent();

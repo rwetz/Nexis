@@ -52,6 +52,7 @@ import {
   ArrowUUpLeftIcon,
   ArrowUpRightIcon,
   ArrowsClockwiseIcon,
+  ArrowsInIcon,
   ArrowsLeftRightIcon,
   ArrowsOutIcon,
   BellIcon,
@@ -225,6 +226,7 @@ const REGISTRY = {
   "close": XIcon,
   "code": CodeIcon,
   "code-box": CodeBlockIcon,
+  "collapse": ArrowsInIcon,
   "computer": DesktopIcon,
   "container": ShippingContainerIcon,
   "copy": CopyIcon,
@@ -327,9 +329,6 @@ const REGISTRY = {
 } as const satisfies Record<string, PhosphorIcon>;
 
 export type IconName = keyof typeof REGISTRY;
-
-/** Every registered name, for tests and for the icon gallery in settings. */
-export const ICON_NAMES = Object.keys(REGISTRY) as IconName[];
 
 export type IconProps = Omit<
   React.SVGProps<SVGSVGElement>,

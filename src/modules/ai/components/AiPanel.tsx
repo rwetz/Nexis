@@ -694,6 +694,14 @@ export function FloatingAiPanel() {
     };
   }, []); // posRef is a stable ref — no deps needed
 
+  // PanelHeader is memo()'d; an inline arrow and an inline object would hand it
+  // new props on every render and defeat that entirely.
+  const toggleInspector = useCallback(() => setInspectorOpen((o) => !o), []);
+  const dragHandleProps = useMemo(
+    () => ({ onMouseDown: onDragStart }),
+    [onDragStart],
+  );
+
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!dragRef.current) return;
@@ -796,10 +804,8 @@ export function FloatingAiPanel() {
         onClose={closePanel}
         onDock={dockPanel}
         inspectorOpen={inspectorOpen}
-        onToggleInspector={() => setInspectorOpen((o) => !o)}
-        dragHandleProps={{
-          onMouseDown: onDragStart,
-        }}
+        onToggleInspector={toggleInspector}
+        dragHandleProps={dragHandleProps}
       />
       {inspectorOpen && <AiContextInspector messages={messages} />}
       <div className="flex min-h-0 flex-1 flex-col">

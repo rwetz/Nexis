@@ -41,6 +41,15 @@ export type ExternalTool = {
   install: Partial<Record<Platform, string>>;
   /** Where to read more, when an install command isn't the whole story. */
   docsUrl?: string;
+  /**
+   * Which machine Nexis actually spawns this tool on, which is not always the
+   * one the workspace lives on. The LSP client spawns servers host-side
+   * regardless of workspace; git follows the workspace into WSL. Re-checking a
+   * tool in the wrong environment answers for a machine it will never run on
+   * (CLAUDE.md pitfall #20) — telling a WSL user their host `rust-analyzer`
+   * is fine when the one that matters is the host one, or worse, the reverse.
+   */
+  runsIn: "host" | "workspace";
 };
 
 /**
@@ -56,6 +65,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "typescript-language-server",
     name: "TypeScript Language Server",
     category: "language-server",
+    runsIn: "host",
     enables: "Completions, diagnostics, and go-to-definition in TS/JS files",
     install: {
       linux: "npm i -g typescript typescript-language-server",
@@ -68,6 +78,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "pyright-langserver",
     name: "Pyright",
     category: "language-server",
+    runsIn: "host",
     enables: "Type checking and completions in Python files",
     install: {
       linux: "npm i -g pyright",
@@ -80,6 +91,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "pylsp",
     name: "Python LSP Server",
     category: "language-server",
+    runsIn: "host",
     enables: "Completions and diagnostics in Python files",
     install: {
       linux: "pipx install 'python-lsp-server[all]'",
@@ -92,6 +104,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "rust-analyzer",
     name: "rust-analyzer",
     category: "language-server",
+    runsIn: "host",
     enables: "Completions, diagnostics, and inlay hints in Rust files",
     install: {
       linux: "rustup component add rust-analyzer",
@@ -104,6 +117,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "gopls",
     name: "gopls",
     category: "language-server",
+    runsIn: "host",
     enables: "Completions and diagnostics in Go files",
     install: {
       linux: "go install golang.org/x/tools/gopls@latest",
@@ -116,6 +130,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "vscode-css-language-server",
     name: "CSS Language Server",
     category: "language-server",
+    runsIn: "host",
     enables: "Completions and diagnostics in CSS/SCSS/Less files",
     install: {
       linux: "npm i -g vscode-langservers-extracted",
@@ -128,6 +143,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "vscode-html-language-server",
     name: "HTML Language Server",
     category: "language-server",
+    runsIn: "host",
     enables: "Completions in HTML files",
     install: {
       linux: "npm i -g vscode-langservers-extracted",
@@ -140,6 +156,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "vscode-json-language-server",
     name: "JSON Language Server",
     category: "language-server",
+    runsIn: "host",
     enables: "Schema validation and completions in JSON files",
     install: {
       linux: "npm i -g vscode-langservers-extracted",
@@ -153,6 +170,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "lua-language-server",
     name: "Lua Language Server",
     category: "language-server",
+    runsIn: "host",
     enables: "Completions and diagnostics in Lua files",
     install: {
       linux: "sudo apt install lua-language-server   # or download a release",
@@ -166,6 +184,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "clangd",
     name: "clangd",
     category: "language-server",
+    runsIn: "host",
     enables: "Completions and diagnostics in C/C++ files",
     install: {
       linux: "sudo apt install clangd",
@@ -178,6 +197,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "csharp-ls",
     name: "csharp-ls",
     category: "language-server",
+    runsIn: "host",
     enables: "Completions and diagnostics in C# files",
     install: {
       linux: "dotnet tool install --global csharp-ls",
@@ -192,6 +212,7 @@ export const EXTERNAL_TOOLS: Record<string, ExternalTool> = {
     binary: "git",
     name: "Git",
     category: "vcs",
+    runsIn: "workspace",
     enables:
       "The Source Control panel, diffs, blame, and branch switching. Without it Nexis works, but every git surface stays empty",
     install: {

@@ -34,22 +34,47 @@ fn integration_root() -> Result<PathBuf, String> {
     Ok(root)
 }
 
+/// Suffix of the staging file an atomic script write commits from. Shared so
+/// the WSL fallback can derive the staging file's *Linux* name from the
+/// target's without parsing a host path.
+const TMP_SUFFIX: &str = ".__nexis_tmp__";
+
 /// Skips the write when content is unchanged (pitfall #6: the cache only
 /// refreshes when the embedded script actually differs) and replaces the file
 /// atomically so a parallel shell startup never sources a half-written file.
-fn write_if_changed(path: &Path, content: &str) -> Result<(), String> {
+///
+/// `commit` performs the final rename. It is a parameter because a script
+/// written *into a WSL distro* cannot commit with `fs::rename` — see
+/// `windows::write_wsl_script` and pitfall #17.
+fn write_if_changed_with(
+    path: &Path,
+    content: &str,
+    commit: impl FnOnce(&Path, &Path) -> Result<(), String>,
+) -> Result<(), String> {
     if let Ok(existing) = fs::read_to_string(path) {
         if existing == content {
             return Ok(());
         }
     }
     let mut tmp: OsString = path.as_os_str().to_owned();
-    tmp.push(".__nexis_tmp__");
+    tmp.push(TMP_SUFFIX);
     let tmp = PathBuf::from(tmp);
     fs::write(&tmp, content).map_err(|e| format!("write {}: {e}", tmp.display()))?;
-    fs::rename(&tmp, path).map_err(|e| {
-        let _ = fs::remove_file(&tmp);
-        format!("rename {} -> {}: {e}", tmp.display(), path.display())
+    match commit(&tmp, path) {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            let _ = fs::remove_file(&tmp);
+            Err(e)
+        }
+    }
+}
+
+/// `write_if_changed_with` committing through an ordinary in-process rename —
+/// correct for every path that is genuinely local (app cache, PS profile).
+fn write_if_changed(path: &Path, content: &str) -> Result<(), String> {
+    write_if_changed_with(path, content, |tmp, dest| {
+        fs::rename(tmp, dest)
+            .map_err(|e| format!("rename {} -> {}: {e}", tmp.display(), dest.display()))
     })
 }
 
@@ -71,9 +96,17 @@ pub fn build_command(
     }
     #[cfg(windows)]
     {
-        let mut cmd = windows::build(cwd, workspace, shell_override)?;
-        for (k, v) in extra_env {
-            cmd.env(k, v);
+        // A WSL session's child is `wsl.exe`, and Windows environment variables
+        // do not cross into the distro (that needs `WSLENV`, or an explicit
+        // assignment on the Linux side). Setting them here would have looked
+        // right and done nothing, so the WSL builder takes `extra_env` and
+        // splices it into the `--exec env NAME=VALUE …` prefix instead.
+        let is_wsl = workspace.is_wsl();
+        let mut cmd = windows::build(cwd, workspace, shell_override, &extra_env)?;
+        if !is_wsl {
+            for (k, v) in extra_env {
+                cmd.env(k, v);
+            }
         }
         Ok(cmd)
     }
@@ -286,10 +319,11 @@ mod unix {
 
 #[cfg(windows)]
 mod windows {
+    use std::collections::HashMap;
     use std::fs;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
-    use crate::modules::workspace::WorkspaceEnv;
+    use crate::modules::workspace::{self, WorkspaceEnv};
     use portable_pty::CommandBuilder;
 
     use super::{integration_root, write_if_changed};
@@ -337,11 +371,12 @@ mod windows {
         cwd: Option<String>,
         workspace: WorkspaceEnv,
         shell_override: Option<String>,
+        extra_env: &HashMap<String, String>,
     ) -> Result<CommandBuilder, String> {
         if let WorkspaceEnv::Wsl { distro } = workspace {
             // WSL sessions use the distro's login shell; the host-side default
             // shell preference does not apply inside the distro.
-            return build_wsl(cwd, distro);
+            return build_wsl(cwd, distro, extra_env);
         }
         let shell_path = shell_override
             .map(std::path::PathBuf::from)
@@ -384,7 +419,59 @@ mod windows {
         Ok(cmd)
     }
 
-    fn build_wsl(cwd: Option<String>, distro: String) -> Result<CommandBuilder, String> {
+    /// Environment assignments to splice into the distro-side `env` prefix.
+    ///
+    /// `TERM`/`COLORTERM`/`NEXIS_TERMINAL` are set on `wsl.exe` too, but that
+    /// only configures `wsl.exe` itself — nothing set on the Windows side
+    /// reaches the Linux shell. Without this, WSL terminals ran with whatever
+    /// `TERM` WSL picked and *no* `COLORTERM` at all, so truecolor detection
+    /// failed inside the distro, and the user's own terminal environment
+    /// variables (Settings -> General) silently did nothing there.
+    ///
+    /// `LANG` is deliberately not forwarded: `ensure_utf8_locale` derives it
+    /// from the *host* environment, and a distro with a correctly configured
+    /// locale should keep it.
+    fn wsl_env_assignments(extra_env: &HashMap<String, String>) -> Vec<String> {
+        let mut out = vec![
+            "TERM=xterm-256color".to_string(),
+            "COLORTERM=truecolor".to_string(),
+            "NEXIS_TERMINAL=1".to_string(),
+        ];
+        // Sorted so the argv is deterministic across runs (HashMap order is
+        // not) — it shows up in logs and in the launch-spec tests.
+        let mut keys: Vec<&String> = extra_env.keys().collect();
+        keys.sort();
+        for key in keys {
+            if !is_env_name(key) {
+                log::warn!("skipping terminal env var with unusable name: {key}");
+                continue;
+            }
+            let value = &extra_env[key];
+            // A NUL cannot survive being passed as a process argument on any
+            // platform (pitfall #16) — `spawn` would reject the whole command
+            // and the terminal would come up blank.
+            if value.contains('\0') {
+                log::warn!("skipping terminal env var {key}: value contains a NUL byte");
+                continue;
+            }
+            out.push(format!("{key}={value}"));
+        }
+        out
+    }
+
+    /// A name `env NAME=VALUE` will actually set. Anything with an `=` in it
+    /// would be parsed as part of the previous assignment's value.
+    fn is_env_name(name: &str) -> bool {
+        !name.is_empty()
+            && !name.starts_with(|c: char| c.is_ascii_digit())
+            && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+    }
+
+    fn build_wsl(
+        cwd: Option<String>,
+        distro: String,
+        extra_env: &HashMap<String, String>,
+    ) -> Result<CommandBuilder, String> {
         crate::modules::workspace::validate_wsl_distro_name(&distro)?;
         let shell_path = crate::modules::workspace::wsl_login_shell(distro.clone())?;
         let shell_kind = ShellKind::from_path(&shell_path);
@@ -392,8 +479,7 @@ mod windows {
             ShellKind::Zsh => match prepare_wsl_zdotdir(&distro) {
                 Ok(zdotdir) => {
                     let user_zdotdir = match probe_wsl_zdotdir(&distro, &shell_path) {
-                        Ok(path) if !path.is_empty() && path != zdotdir => Some(path),
-                        Ok(_) => None,
+                        Ok(path) => path.filter(|p| *p != zdotdir),
                         Err(e) => {
                             log::warn!("WSL zsh ZDOTDIR probe failed for {distro}: {e}");
                             None
@@ -437,6 +523,7 @@ mod windows {
             &shell_path,
             shell_kind,
             integration,
+            wsl_env_assignments(extra_env),
         );
         let mut cmd = CommandBuilder::new("wsl.exe");
         for arg in &spec.args {
@@ -450,20 +537,44 @@ mod windows {
         Ok(cmd)
     }
 
+    /// A `--cd` value `wsl.exe` will actually honour.
+    ///
+    /// The cwd arrives from the frontend, which stamps it from whatever the
+    /// workspace last tracked. A value that is not POSIX-absolute means the
+    /// two sides disagree about which machine we are on, and handing it to
+    /// `--cd` starts the shell somewhere arbitrary (or fails outright). `~` is
+    /// the safe answer — same rule the pitfall-#17 `mv` fallback applies before
+    /// handing a path to the Linux side.
+    fn wsl_launch_cwd(cwd: Option<&str>) -> String {
+        match cwd.map(str::trim).filter(|s| !s.is_empty()) {
+            Some(c) if c.starts_with('/') => c.to_string(),
+            Some(c) => {
+                log::warn!("WSL cwd {c:?} is not a Linux path; starting in the home directory");
+                "~".to_string()
+            }
+            None => "~".to_string(),
+        }
+    }
+
     fn build_wsl_launch_spec(
         cwd: Option<&str>,
         distro: &str,
         shell_path: &str,
         shell_kind: ShellKind,
         integration: WslShellIntegration,
+        mut env_assignments: Vec<String>,
     ) -> WslLaunchSpec {
         let mut args = vec![
             "-d".to_string(),
             distro.to_string(),
             "--cd".to_string(),
-            cwd.filter(|s| !s.is_empty()).unwrap_or("~").to_string(),
+            wsl_launch_cwd(cwd),
             "--exec".to_string(),
         ];
+        // Integration variables go last so they win over anything the user
+        // configured under the same name — ZDOTDIR in particular is how the
+        // integration gets loaded at all.
+        let mut shell_args: Vec<String> = Vec::new();
         match (shell_kind, integration) {
             (
                 ShellKind::Zsh,
@@ -472,48 +583,104 @@ mod windows {
                     user_zdotdir,
                 },
             ) => {
-                args.push("env".to_string());
                 if let Some(user_zdotdir) = user_zdotdir {
-                    args.push(format!("NEXIS_USER_ZDOTDIR={user_zdotdir}"));
+                    env_assignments.push(format!("NEXIS_USER_ZDOTDIR={user_zdotdir}"));
                 }
-                args.push(format!("ZDOTDIR={zdotdir}"));
-                args.push(shell_path.to_string());
-                args.push("-l".to_string());
+                env_assignments.push(format!("ZDOTDIR={zdotdir}"));
+                shell_args.push(shell_path.to_string());
+                shell_args.push("-l".to_string());
             }
             (ShellKind::Bash, WslShellIntegration::Bash { rcfile }) => {
-                args.push(shell_path.to_string());
-                args.push("--rcfile".to_string());
-                args.push(rcfile);
-                args.push("-i".to_string());
+                shell_args.push(shell_path.to_string());
+                shell_args.push("--rcfile".to_string());
+                shell_args.push(rcfile);
+                shell_args.push("-i".to_string());
             }
             (ShellKind::Fish, WslShellIntegration::Fish) => {
-                args.push(shell_path.to_string());
-                args.push("-i".to_string());
+                shell_args.push(shell_path.to_string());
+                shell_args.push("-i".to_string());
             }
             (ShellKind::Zsh, WslShellIntegration::None) => {
-                args.push(shell_path.to_string());
-                args.push("-l".to_string());
+                shell_args.push(shell_path.to_string());
+                shell_args.push("-l".to_string());
             }
             (ShellKind::Bash, WslShellIntegration::None)
             | (ShellKind::Fish, WslShellIntegration::None) => {
-                args.push(shell_path.to_string());
-                args.push("-i".to_string());
+                shell_args.push(shell_path.to_string());
+                shell_args.push("-i".to_string());
             }
-            (ShellKind::Other, _) => args.push(shell_path.to_string()),
+            (ShellKind::Other, _) => shell_args.push(shell_path.to_string()),
             _ => {
-                args.push(shell_path.to_string());
+                shell_args.push(shell_path.to_string());
             }
         }
+        if !env_assignments.is_empty() {
+            args.push("env".to_string());
+            args.append(&mut env_assignments);
+        }
+        args.append(&mut shell_args);
         WslLaunchSpec { args }
     }
 
-    fn probe_wsl_zdotdir(distro: &str, shell_path: &str) -> Result<String, String> {
-        let out = crate::modules::workspace::wsl_exec_capture(
-            distro,
-            shell_path,
-            &["-c", r#"printf %s "${ZDOTDIR:-$HOME}""#],
-        )?;
-        Ok(crate::modules::workspace::normalize_wsl_value(out, ""))
+    /// The user's own `ZDOTDIR` inside the distro, or `None` when they have
+    /// none (or the probe came back unreadable).
+    ///
+    /// Sentinel-wrapped like every other WSL probe: this one runs the user's
+    /// *zsh*, so it carries both hazards — a chatty `.zshenv` and, on a cold
+    /// distro, the relayed boot log. See `parse_wsl_probe` in workspace.rs.
+    fn probe_wsl_zdotdir(distro: &str, shell_path: &str) -> Result<Option<String>, String> {
+        let script = workspace::wsl_probe_script(r#""${ZDOTDIR:-$HOME}""#);
+        let out = workspace::wsl_exec_capture(distro, shell_path, &["-c", &script])?;
+        Ok(workspace::parse_wsl_probe_path(&out))
+    }
+
+    /// Write a shell-integration script that lives *inside* a WSL distro.
+    ///
+    /// Pitfall #17, third occurrence — and the one CLAUDE.md explicitly (and
+    /// wrongly) exempted: the atomic write ends in `fs::rename`, which the WSL
+    /// 9P redirector behind `\\wsl.localhost\<distro>\…` rejects with
+    /// ERROR_NOT_SAME_DEVICE (os error 17, *not* the Linux `EEXIST` the number
+    /// looks like) even though staging file and target share one directory.
+    /// Every WSL integration install failed on that rename, so `build_wsl` fell
+    /// through to `WslShellIntegration::None`: no OSC 7, no OSC 133, and so no
+    /// cwd tracking at all — the file tree stayed pinned to whatever root the
+    /// session opened with, listing that whole folder no matter where the shell
+    /// `cd`'d.
+    ///
+    /// Ordering mirrors the `fs_rename` / `fs_write_file` fallbacks: the
+    /// in-process rename runs first, because a home directory reached through
+    /// `/mnt/<drive>` maps to a native Windows path where it works, and a
+    /// stopped distro must not break a write that would have succeeded.
+    fn write_wsl_script(
+        distro: &str,
+        linux_path: &str,
+        unc_path: &Path,
+        content: &str,
+    ) -> Result<(), String> {
+        super::write_if_changed_with(unc_path, content, |tmp, dest| {
+            let direct = match fs::rename(tmp, dest) {
+                Ok(()) => return Ok(()),
+                Err(e) => e,
+            };
+            // The staging file sits next to the target, so its Linux path is
+            // the target's plus the same suffix. Derive it from the *caller's*
+            // Linux path — the UNC string means nothing inside the distro —
+            // and refuse anything that is not POSIX-absolute so a mislabelled
+            // path can never hand `mv` a drive path.
+            if !linux_path.starts_with('/') {
+                return Err(format!(
+                    "rename {} -> {}: {direct}",
+                    tmp.display(),
+                    dest.display()
+                ));
+            }
+            let staged_linux = format!("{linux_path}{}", super::TMP_SUFFIX);
+            workspace::wsl_exec_capture(distro, "mv", &["--", &staged_linux, linux_path])
+                .map(|_| ())
+                .map_err(|e| {
+                    format!("install {linux_path} in {distro}: {e} (direct rename: {direct})")
+                })
+        })
     }
 
     fn prepare_wsl_integration_dir(distro: &str, shell: &str) -> Result<(String, PathBuf), String> {
@@ -533,22 +700,19 @@ mod windows {
 
     fn prepare_wsl_zdotdir(distro: &str) -> Result<String, String> {
         let (linux_dir, unc_dir) = prepare_wsl_integration_dir(distro, "zsh")?;
-        write_if_changed(
-            &unc_dir.join(".zshenv"),
-            &normalize_script(super::ZSHENV_SCRIPT),
-        )?;
-        write_if_changed(
-            &unc_dir.join(".zprofile"),
-            &normalize_script(super::ZPROFILE_SCRIPT),
-        )?;
-        write_if_changed(
-            &unc_dir.join(".zshrc"),
-            &normalize_script(super::ZSHRC_SCRIPT),
-        )?;
-        write_if_changed(
-            &unc_dir.join(".zlogin"),
-            &normalize_script(super::ZLOGIN_SCRIPT),
-        )?;
+        for (name, script) in [
+            (".zshenv", super::ZSHENV_SCRIPT),
+            (".zprofile", super::ZPROFILE_SCRIPT),
+            (".zshrc", super::ZSHRC_SCRIPT),
+            (".zlogin", super::ZLOGIN_SCRIPT),
+        ] {
+            write_wsl_script(
+                distro,
+                &format!("{linux_dir}/{name}"),
+                &unc_dir.join(name),
+                &normalize_script(script),
+            )?;
+        }
         Ok(linux_dir)
     }
 
@@ -557,7 +721,7 @@ mod windows {
         let linux_rc = format!("{linux_dir}/bashrc");
         let unc_file = crate::modules::workspace::wsl_path_to_unc(distro, &linux_rc);
         let content = normalize_script(super::BASHRC_SCRIPT);
-        write_if_changed(&unc_file, &content)?;
+        write_wsl_script(distro, &linux_rc, &unc_file, &content)?;
         Ok(linux_rc)
     }
 
@@ -566,9 +730,10 @@ mod windows {
         let linux_dir = format!("{}/.config/fish/conf.d", home.trim_end_matches('/'));
         let unc_dir = crate::modules::workspace::wsl_path_to_unc(distro, &linux_dir);
         fs::create_dir_all(&unc_dir).map_err(|e| format!("create {}: {e}", unc_dir.display()))?;
+        let linux_file = format!("{linux_dir}/nexis.fish");
         let unc_file = unc_dir.join("nexis.fish");
         let content = normalize_script(super::FISH_INIT_SCRIPT);
-        write_if_changed(&unc_file, &content)?;
+        write_wsl_script(distro, &linux_file, &unc_file, &content)?;
         Ok(())
     }
 
@@ -584,6 +749,30 @@ mod windows {
     mod tests {
         use super::*;
 
+        /// The env prefix every WSL launch now carries. Nothing set on the
+        /// `wsl.exe` side reaches the Linux shell, so these have to travel as
+        /// `env NAME=VALUE` arguments.
+        const BASE_ENV: [&str; 3] = [
+            "TERM=xterm-256color",
+            "COLORTERM=truecolor",
+            "NEXIS_TERMINAL=1",
+        ];
+
+        fn no_extra_env() -> Vec<String> {
+            wsl_env_assignments(&HashMap::new())
+        }
+
+        /// `-d Ubuntu --cd <cwd> --exec env <BASE_ENV> <tail…>`
+        fn expected(cwd: &str, tail: &[&str]) -> Vec<String> {
+            let mut out: Vec<String> = ["-d", "Ubuntu", "--cd", cwd, "--exec", "env"]
+                .iter()
+                .map(|s| s.to_string())
+                .collect();
+            out.extend(BASE_ENV.iter().map(|s| s.to_string()));
+            out.extend(tail.iter().map(|s| s.to_string()));
+            out
+        }
+
         #[test]
         fn builds_wsl_zsh_launch_spec_with_env_and_login() {
             let spec = build_wsl_launch_spec(
@@ -595,20 +784,18 @@ mod windows {
                     zdotdir: "/home/vinicios/.cache/nexis/shell-integration/zsh".into(),
                     user_zdotdir: None,
                 },
+                no_extra_env(),
             );
             assert_eq!(
                 spec.args,
-                vec![
-                    "-d".to_string(),
-                    "Ubuntu".to_string(),
-                    "--cd".to_string(),
-                    "/home/vinicios/repo".to_string(),
-                    "--exec".to_string(),
-                    "env".to_string(),
-                    "ZDOTDIR=/home/vinicios/.cache/nexis/shell-integration/zsh".to_string(),
-                    "/usr/bin/zsh".to_string(),
-                    "-l".to_string(),
-                ]
+                expected(
+                    "/home/vinicios/repo",
+                    &[
+                        "ZDOTDIR=/home/vinicios/.cache/nexis/shell-integration/zsh",
+                        "/usr/bin/zsh",
+                        "-l",
+                    ]
+                )
             );
         }
 
@@ -623,21 +810,19 @@ mod windows {
                     zdotdir: "/home/vinicios/.cache/nexis/shell-integration/zsh".into(),
                     user_zdotdir: Some("/home/vinicios/.config/zsh".into()),
                 },
+                no_extra_env(),
             );
             assert_eq!(
                 spec.args,
-                vec![
-                    "-d".to_string(),
-                    "Ubuntu".to_string(),
-                    "--cd".to_string(),
-                    "/home/vinicios/repo".to_string(),
-                    "--exec".to_string(),
-                    "env".to_string(),
-                    "NEXIS_USER_ZDOTDIR=/home/vinicios/.config/zsh".to_string(),
-                    "ZDOTDIR=/home/vinicios/.cache/nexis/shell-integration/zsh".to_string(),
-                    "/usr/bin/zsh".to_string(),
-                    "-l".to_string(),
-                ]
+                expected(
+                    "/home/vinicios/repo",
+                    &[
+                        "NEXIS_USER_ZDOTDIR=/home/vinicios/.config/zsh",
+                        "ZDOTDIR=/home/vinicios/.cache/nexis/shell-integration/zsh",
+                        "/usr/bin/zsh",
+                        "-l",
+                    ]
+                )
             );
         }
 
@@ -649,18 +834,11 @@ mod windows {
                 "/usr/bin/zsh",
                 ShellKind::Zsh,
                 WslShellIntegration::None,
+                no_extra_env(),
             );
             assert_eq!(
                 spec.args,
-                vec![
-                    "-d".to_string(),
-                    "Ubuntu".to_string(),
-                    "--cd".to_string(),
-                    "/home/vinicios/repo".to_string(),
-                    "--exec".to_string(),
-                    "/usr/bin/zsh".to_string(),
-                    "-l".to_string(),
-                ]
+                expected("/home/vinicios/repo", &["/usr/bin/zsh", "-l"])
             );
         }
 
@@ -674,20 +852,19 @@ mod windows {
                 WslShellIntegration::Bash {
                     rcfile: "/home/vinicios/.cache/nexis/shell-integration/bash/bashrc".into(),
                 },
+                no_extra_env(),
             );
             assert_eq!(
                 spec.args,
-                vec![
-                    "-d".to_string(),
-                    "Ubuntu".to_string(),
-                    "--cd".to_string(),
-                    "/home/vinicios/repo".to_string(),
-                    "--exec".to_string(),
-                    "/bin/bash".to_string(),
-                    "--rcfile".to_string(),
-                    "/home/vinicios/.cache/nexis/shell-integration/bash/bashrc".to_string(),
-                    "-i".to_string(),
-                ]
+                expected(
+                    "/home/vinicios/repo",
+                    &[
+                        "/bin/bash",
+                        "--rcfile",
+                        "/home/vinicios/.cache/nexis/shell-integration/bash/bashrc",
+                        "-i",
+                    ]
+                )
             );
         }
 
@@ -699,18 +876,11 @@ mod windows {
                 "/usr/bin/fish",
                 ShellKind::Fish,
                 WslShellIntegration::Fish,
+                no_extra_env(),
             );
             assert_eq!(
                 spec.args,
-                vec![
-                    "-d".to_string(),
-                    "Ubuntu".to_string(),
-                    "--cd".to_string(),
-                    "/home/vinicios/repo".to_string(),
-                    "--exec".to_string(),
-                    "/usr/bin/fish".to_string(),
-                    "-i".to_string(),
-                ]
+                expected("/home/vinicios/repo", &["/usr/bin/fish", "-i"])
             );
         }
 
@@ -722,18 +892,75 @@ mod windows {
                 "/usr/bin/nu",
                 ShellKind::Other,
                 WslShellIntegration::None,
+                no_extra_env(),
+            );
+            assert_eq!(spec.args, expected("~", &["/usr/bin/nu"]));
+        }
+
+        // ── env passthrough ───────────────────────────────────────────────
+
+        #[test]
+        fn user_env_vars_reach_the_distro_sorted_and_before_integration_vars() {
+            let mut extra = HashMap::new();
+            extra.insert("ZED".to_string(), "z".to_string());
+            extra.insert("ALPHA".to_string(), "a".to_string());
+            let spec = build_wsl_launch_spec(
+                Some("/home/vinicios/repo"),
+                "Ubuntu",
+                "/usr/bin/zsh",
+                ShellKind::Zsh,
+                WslShellIntegration::Zsh {
+                    zdotdir: "/zd".into(),
+                    user_zdotdir: None,
+                },
+                wsl_env_assignments(&extra),
             );
             assert_eq!(
                 spec.args,
+                expected(
+                    "/home/vinicios/repo",
+                    &["ALPHA=a", "ZED=z", "ZDOTDIR=/zd", "/usr/bin/zsh", "-l"]
+                )
+            );
+        }
+
+        #[test]
+        fn env_names_that_env_cannot_set_are_skipped() {
+            let mut extra = HashMap::new();
+            extra.insert("GOOD_ONE".to_string(), "1".to_string());
+            extra.insert("BAD=NAME".to_string(), "1".to_string());
+            extra.insert("2LEADING_DIGIT".to_string(), "1".to_string());
+            extra.insert("has space".to_string(), "1".to_string());
+            extra.insert(String::new(), "1".to_string());
+            extra.insert("NUL_VALUE".to_string(), "a\0b".to_string());
+            let assignments = wsl_env_assignments(&extra);
+            assert_eq!(
+                assignments,
                 vec![
-                    "-d".to_string(),
-                    "Ubuntu".to_string(),
-                    "--cd".to_string(),
-                    "~".to_string(),
-                    "--exec".to_string(),
-                    "/usr/bin/nu".to_string(),
+                    "TERM=xterm-256color".to_string(),
+                    "COLORTERM=truecolor".to_string(),
+                    "NEXIS_TERMINAL=1".to_string(),
+                    "GOOD_ONE=1".to_string(),
                 ]
             );
+        }
+
+        // ── --cd guard ────────────────────────────────────────────────────
+
+        /// A Windows path here means the frontend and the backend disagree
+        /// about which machine the workspace is on. Starting at `~` is
+        /// recoverable; handing `wsl.exe` a drive path is not.
+        #[test]
+        fn a_non_linux_cwd_falls_back_to_home() {
+            assert_eq!(wsl_launch_cwd(Some("C:/Users/Ryan")), "~");
+            assert_eq!(
+                wsl_launch_cwd(Some(r"\\wsl.localhost\Ubuntu\home\ryan")),
+                "~"
+            );
+            assert_eq!(wsl_launch_cwd(Some("")), "~");
+            assert_eq!(wsl_launch_cwd(Some("   ")), "~");
+            assert_eq!(wsl_launch_cwd(None), "~");
+            assert_eq!(wsl_launch_cwd(Some("/home/ryan")), "/home/ryan");
         }
 
         // ── normalize_script ──────────────────────────────────────────────

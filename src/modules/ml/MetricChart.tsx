@@ -16,6 +16,8 @@
  */
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { canvasBackingScale } from "@/lib/canvas";
+import { usePreferencesStore } from "@/modules/settings/preferences";
 import { useMlStore, getSeriesMap, getCompareData } from "./store";
 import { binForRender, type Series } from "./lib/series";
 import { displayMetric } from "./lib/friendly";
@@ -37,6 +39,9 @@ export function MetricChart({
   const lastValues = useMlStore((s) => s.lastValues);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  // A dependency of the redraw: app zoom changes the effective backing scale
+  // without changing any CSS-pixel size, so ResizeObserver never fires.
+  const zoomLevel = usePreferencesStore((s) => s.zoomLevel);
   const height = hero ? 132 : 68;
 
   useEffect(() => {
@@ -47,15 +52,17 @@ export function MetricChart({
     const draw = () => {
       const width = wrap.clientWidth;
       if (width <= 0) return;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.round(width * dpr);
-      canvas.height = Math.round(height * dpr);
+      // dpr × app zoom — see canvasBackingScale (CSS zoom does not move
+      // devicePixelRatio, so dpr alone renders the chart soft when zoomed).
+      const scale = canvasBackingScale();
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
 
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
-      ctx.scale(dpr, dpr);
+      ctx.scale(scale, scale);
       ctx.clearRect(0, 0, width, height);
 
       const series = getSeriesMap().get(name);
@@ -138,7 +145,7 @@ export function MetricChart({
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [name, tick, hero, height]);
+  }, [name, tick, hero, height, zoomLevel]);
 
   const display = displayMetric(name);
   const last = lastValues[name];
@@ -200,6 +207,7 @@ export function CompareChart({
   const tick = useMlStore((s) => s.seriesTick);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const zoomLevel = usePreferencesStore((s) => s.zoomLevel);
   const height = 84;
   const runsKey = runs.map((r) => `${r.id}:${r.color}`).join("|");
 
@@ -211,14 +219,16 @@ export function CompareChart({
     const draw = () => {
       const width = wrap.clientWidth;
       if (width <= 0) return;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.round(width * dpr);
-      canvas.height = Math.round(height * dpr);
+      // dpr × app zoom — see canvasBackingScale (CSS zoom does not move
+      // devicePixelRatio, so dpr alone renders the chart soft when zoomed).
+      const scale = canvasBackingScale();
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
-      ctx.scale(dpr, dpr);
+      ctx.scale(scale, scale);
       ctx.clearRect(0, 0, width, height);
 
       const data = getCompareData();
@@ -279,7 +289,7 @@ export function CompareChart({
     const ro = new ResizeObserver(draw);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [metric, tick, runsKey, runs]);
+  }, [metric, tick, runsKey, runs, zoomLevel]);
 
   return (
     <div ref={wrapRef} className="w-full">

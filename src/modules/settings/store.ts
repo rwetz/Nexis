@@ -23,6 +23,10 @@ import {
   DEFAULT_QUICK_TERMINAL_HOTKEY,
   QUICK_TERMINAL_DEFAULT_HEIGHT,
 } from "@/modules/window/quickTerminalConfig";
+import {
+  coerceSysmonInterval,
+  SYSMON_DEFAULT_INTERVAL_MS,
+} from "@/modules/sysmon/interval";
 import type { KeyBinding, ShortcutId } from "@/modules/shortcuts/shortcuts";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { LazyStore } from "@tauri-apps/plugin-store";
@@ -178,6 +182,9 @@ export type Preferences = {
   wordWrap: boolean;
   /** Open the ML Lab panel automatically when a training run starts. */
   mlAutoOpenOnTrain: boolean;
+  /** System Monitor poll period, ms. One of SYSMON_INTERVALS — a full
+   * process refresh walks /proc, so the fast steps cost real CPU. */
+  sysmonIntervalMs: number;
   /** Expansion packs currently enabled — see src/lib/packs.ts for the
    * taxonomy. Default is all packs on so upgrades change nothing. */
   enabledPacks: PackId[];
@@ -263,6 +270,7 @@ const KEY_TERMINAL_EXPLAIN_FAILURES = "terminalExplainFailures";
 const KEY_TOOL_APPROVAL_POLICIES = "toolApprovalPolicies";
 const KEY_WORD_WRAP = "wordWrap";
 const KEY_ML_AUTO_OPEN = "mlAutoOpenOnTrain";
+const KEY_SYSMON_INTERVAL = "sysmonIntervalMs";
 const KEY_ENABLED_PACKS = "enabledPacks";
 const KEY_PACKS_ONBOARDED = "packsOnboarded";
 const KEY_DEBUG_MEMORY_REPORT = "debugMemoryReport";
@@ -355,6 +363,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   toolApprovalPolicies: {},
   wordWrap: false,
   mlAutoOpenOnTrain: false,
+  sysmonIntervalMs: SYSMON_DEFAULT_INTERVAL_MS,
   enabledPacks: [...PACK_IDS],
   packsOnboarded: false,
   debugMemoryReport: false,
@@ -539,6 +548,9 @@ export async function loadPreferences(): Promise<Preferences> {
     wordWrap: get<boolean>(KEY_WORD_WRAP) ?? DEFAULT_PREFERENCES.wordWrap,
     mlAutoOpenOnTrain:
       get<boolean>(KEY_ML_AUTO_OPEN) ?? DEFAULT_PREFERENCES.mlAutoOpenOnTrain,
+    // Snapped to the allowed steps: a hand-edited config must not be able to
+    // set a 1 ms poll and pin a core on process refreshes.
+    sysmonIntervalMs: coerceSysmonInterval(get<number>(KEY_SYSMON_INTERVAL)),
     // Unknown ids (renamed/removed packs in an older or newer config) are
     // dropped rather than kept as dead entries.
     enabledPacks: (
@@ -862,6 +874,10 @@ export async function setMlAutoOpenOnTrain(value: boolean): Promise<void> {
   await writePref(KEY_ML_AUTO_OPEN, value);
 }
 
+export async function setSysmonIntervalMs(value: number): Promise<void> {
+  await writePref(KEY_SYSMON_INTERVAL, coerceSysmonInterval(value));
+}
+
 export async function setEnabledPacks(packs: PackId[]): Promise<void> {
   await writePref(KEY_ENABLED_PACKS, packs);
 }
@@ -948,6 +964,7 @@ export async function onPreferencesChange(
     [KEY_FORMAT_ON_SAVE]: "formatOnSave",
     [KEY_WORD_WRAP]: "wordWrap",
     [KEY_ML_AUTO_OPEN]: "mlAutoOpenOnTrain",
+    [KEY_SYSMON_INTERVAL]: "sysmonIntervalMs",
     [KEY_ENABLED_PACKS]: "enabledPacks",
     [KEY_PACKS_ONBOARDED]: "packsOnboarded",
     [KEY_DEBUG_MEMORY_REPORT]: "debugMemoryReport",
@@ -960,17 +977,19 @@ export async function onPreferencesChange(
   };
   // Same-process writes still fire onChange immediately; cross-window writes
   // arrive via the Tauri event emitted by writePref().
-  const unsubLocal = await store.onChange<unknown>((key, value) => {
-    const mapped = map[key];
-    if (mapped) cb(mapped, value);
-  });
-  const unsubEvent = await listen<{ key: string; value: unknown }>(
-    PREFS_CHANGED_EVENT,
-    (e) => {
+  // Registered together: neither subscription reads the other's result, and
+  // awaiting them in sequence left a window where a preference change was
+  // observed by only one of the two paths.
+  const [unsubLocal, unsubEvent] = await Promise.all([
+    store.onChange<unknown>((key, value) => {
+      const mapped = map[key];
+      if (mapped) cb(mapped, value);
+    }),
+    listen<{ key: string; value: unknown }>(PREFS_CHANGED_EVENT, (e) => {
       const mapped = map[e.payload.key];
       if (mapped) cb(mapped, e.payload.value);
-    },
-  );
+    }),
+  ]);
   return () => {
     unsubLocal();
     unsubEvent();

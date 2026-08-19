@@ -16,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   forwardRef,
-  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -64,10 +63,13 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Keep draft in sync when the parent updates the URL externally
-    // (AI tool, detected localhost chip, etc.).
-    useEffect(() => {
+    // (AI tool, detected localhost chip, etc.). Adjusted during render rather
+    // than in an effect: an effect shows the stale URL for one frame first.
+    const [shownUrl, setShownUrl] = useState(url);
+    if (url !== shownUrl) {
+      setShownUrl(url);
       setDraft(url);
-    }, [url]);
+    }
 
     useImperativeHandle(
       ref,

@@ -11,6 +11,8 @@
 // not in the DOM. Shell output inspection is therefore not attempted here; the
 // presence of the .xterm host element is the proxy for "the shell is running."
 
+import { dismissStartupDialogs } from "../support/dialogs.js";
+
 describe("Terminal tab lifecycle", () => {
   let initialTabCount: number;
 
@@ -25,6 +27,11 @@ describe("Terminal tab lifecycle", () => {
       timeout: 60_000,
       timeoutMsg: "App did not initialize within 60 s",
     });
+
+    // Every click below goes through app chrome, and a first-run modal's
+    // overlay would receive all of them instead. Clear it before counting
+    // anything — see e2e/support/dialogs.ts.
+    await dismissStartupDialogs();
 
     // Record the number of tabs already open when the test suite starts.
     // The app may launch with a default tab, so tests are written relative to

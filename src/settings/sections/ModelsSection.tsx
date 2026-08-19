@@ -132,6 +132,13 @@ const LOCAL_META: Partial<Record<ProviderId, LocalMeta>> = {
   },
 };
 
+
+/** Autocomplete model selection routes straight to the preference setters. */
+const setModel = (id: string, providerId: ProviderId) => {
+  void setAutocompleteProvider(providerId);
+  void setAutocompleteModelId(isLocalProvider(providerId) ? "" : id);
+};
+
 export function ModelsSection() {
   const [keys, setKeys] = useState<KeysMap | null>(null);
   const [adding, setAdding] = useState<Set<ProviderId>>(new Set());
@@ -592,11 +599,6 @@ function AutocompleteRow({
       eligible[0]
     );
   }, [eligible, provider, modelId]);
-
-  const setModel = (id: string, providerId: ProviderId) => {
-    void setAutocompleteProvider(providerId);
-    void setAutocompleteModelId(isLocalProvider(providerId) ? "" : id);
-  };
 
   const grouped = useMemo(() => {
     const map = new Map<ProviderId, (typeof items)[number][]>();

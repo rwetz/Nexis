@@ -37,7 +37,9 @@ export function EditorBreadcrumb({ path, root, onNavigate }: Props) {
         const isLast = i === parts.length - 1;
         const folderPath = buildPathUpTo(i);
         return (
-          <span key={i} className="flex items-center gap-0.5">
+          // The path up to this segment, not the index: a path like a/b/a
+          // repeats segment text, and the accumulated path never does.
+          <span key={folderPath} className="flex items-center gap-0.5">
             {i > 0 && (
               <span className="shrink-0 select-none opacity-40">/</span>
             )}

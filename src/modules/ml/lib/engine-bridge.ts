@@ -20,7 +20,10 @@
  */
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import {
+  currentWorkspaceEnv,
+  currentWorkspaceScopeKey,
+} from "@/modules/workspace";
 
 export type EngineDetectResult = { exe: string; version: string };
 
@@ -73,34 +76,55 @@ export function ancestorVenvCandidates(workspaceRoot: string): string[] {
  * Candidate executables, most specific first: every detected Python
  * env's scripts dir, then `.venv`s up the directory tree, then bare
  * `nexis-ml` from PATH.
+ *
+ * `envs` must come from the *same* environment the probe will run in.
+ * `py_detect_envs` only ever scans the host, so a WSL workspace passes an
+ * empty list and relies on the ancestor-venv walk plus PATH — offering the
+ * host's `C:\…\Scripts\nexis-ml.exe` to a distro is how the panel used to
+ * report a Windows engine as the WSL workspace's engine.
  */
 export function buildCandidates(
   envs: PythonEnvLike[],
   workspaceRoot?: string | null,
 ): string[] {
   const out: string[] = [];
+  // A Set carries the membership test; `out` keeps the order, which is the
+  // probe order and therefore meaningful.
+  const seen = new Set<string>();
   for (const env of envs) {
     const exe = siblingExe(env.python_path);
-    if (exe && !out.includes(exe)) out.push(exe);
+    if (exe && !seen.has(exe)) {
+      seen.add(exe);
+      out.push(exe);
+    }
   }
   if (workspaceRoot) {
     for (const exe of ancestorVenvCandidates(workspaceRoot)) {
-      if (!out.includes(exe)) out.push(exe);
+      if (!seen.has(exe)) {
+        seen.add(exe);
+        out.push(exe);
+      }
     }
   }
   out.push("nexis-ml");
   return out;
 }
 
+/**
+ * Keyed by candidate list **and** workspace scope: the same path probed on
+ * the Windows host and inside a distro are different binaries with different
+ * answers, and a shared entry would hand one environment the other's engine.
+ */
 const detectCache = new Map<string, Promise<EngineDetectResult>>();
 
 export function detectEngine(
   candidates: string[],
 ): Promise<EngineDetectResult> {
-  const key = candidates.join("|");
+  const workspace = currentWorkspaceEnv();
+  const key = `${currentWorkspaceScopeKey()}\u0000${candidates.join("|")}`;
   let p = detectCache.get(key);
   if (!p) {
-    p = invoke<EngineDetectResult>("ml_detect", { candidates }).catch(
+    p = invoke<EngineDetectResult>("ml_detect", { candidates, workspace }).catch(
       (err) => {
         // Pitfall #10: never leave a rejected promise in the cache.
         detectCache.delete(key);
@@ -123,8 +147,20 @@ export function resetEngineDetection(): void {
  * so the platform-specific name (`nexis-ml` vs `nexis-ml.exe`) and base dir
  * are authoritative. Returns null if the path can't be resolved.
  */
-export function managedEngineCandidate(): Promise<string | null> {
-  return invoke<string>("ml_managed_engine_path").catch(() => null);
+export async function managedEngineCandidate(): Promise<string | null> {
+  // The managed engine is a host binary in the host's app-data dir. It is
+  // not reachable — and on Windows not even executable — from inside a
+  // distro, so it must never enter a WSL workspace's candidate list.
+  if (currentWorkspaceEnv().kind !== "local") return null;
+  // Only offer it as a candidate when it is actually on disk. The path
+  // resolves whether or not anything is there, so an interrupted download
+  // left detection probing a file that cannot exist — and since this entry
+  // is appended last, its ENOENT became the error the setup card displayed
+  // ("…\engine\nexis-ml.exe: os error 3"), which reads like a broken
+  // install rather than an absent one.
+  const status = await managedEngineStatus();
+  if (!status?.installed) return null;
+  return status.path;
 }
 
 /** The compiled-in engine release pin: what the consent dialog shows and
@@ -207,6 +243,7 @@ export async function spawnTrain(
     exe,
     args: ["train", "."],
     projectDir,
+    workspace: currentWorkspaceEnv(),
   });
 }
 
@@ -229,6 +266,7 @@ export async function spawnNew(
     exe,
     args: ["new", template, name],
     projectDir: workspaceRoot,
+    workspace: currentWorkspaceEnv(),
   });
 }
 
@@ -243,7 +281,11 @@ export function spawnInstall(
   python: string,
   flavor: InstallFlavor,
 ): Promise<number> {
-  return invoke<number>("ml_install", { python, flavor });
+  return invoke<number>("ml_install", {
+    python,
+    flavor,
+    workspace: currentWorkspaceEnv(),
+  });
 }
 
 export type MlEnvInfo = {
@@ -272,7 +314,10 @@ export type MlEnvInfo = {
  * without blocking UI. The Rust engine answers instantly.
  */
 export async function probeEnv(exe: string): Promise<MlEnvInfo> {
-  const raw = await invoke<string>("ml_env", { exe });
+  const raw = await invoke<string>("ml_env", {
+    exe,
+    workspace: currentWorkspaceEnv(),
+  });
   const parsed = JSON.parse(raw) as Record<string, unknown>;
   return {
     python: typeof parsed.python === "string" ? parsed.python : null,
@@ -340,6 +385,7 @@ export async function spawnServe(
     exe,
     args: ["serve", "--run", runId, "--checkpoint", checkpoint],
     projectDir,
+    workspace: currentWorkspaceEnv(),
   });
 }
 
@@ -363,6 +409,7 @@ export async function spawnExport(
     exe,
     args: ["export", "--run", runId],
     projectDir,
+    workspace: currentWorkspaceEnv(),
   });
 }
 
@@ -379,6 +426,7 @@ export async function spawnExportOnnx(
     exe,
     args: ["export", "--onnx", "."],
     projectDir,
+    workspace: currentWorkspaceEnv(),
   });
 }
 

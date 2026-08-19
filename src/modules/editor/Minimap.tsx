@@ -5,6 +5,8 @@
 // ╚══════════════════════════════════════╝
 
 import { cn } from "@/lib/utils";
+import { canvasBackingScale } from "@/lib/canvas";
+import { usePreferencesStore } from "@/modules/settings/preferences";
 import { EditorView } from "@codemirror/view";
 import type { Text } from "@codemirror/state";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -67,6 +69,9 @@ export function Minimap({ view, className }: Props) {
   const [viewport, setViewport] = useState<{ top: number; h: number } | null>(
     null,
   );
+  // A dependency of `draw`: app zoom changes the effective backing scale
+  // without changing any CSS-pixel size, so nothing else would retrigger it.
+  const zoomLevel = usePreferencesStore((s) => s.zoomLevel);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -79,14 +84,16 @@ export function Minimap({ view, className }: Props) {
     }
     const lines = linesRef.current;
     const cssH = Math.max(container.clientHeight, 1);
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(WIDTH_PX * dpr);
-    canvas.height = Math.round(cssH * dpr);
+    // dpr × app zoom — see canvasBackingScale. CSS zoom leaves
+    // devicePixelRatio alone, so dpr on its own renders the strip soft.
+    const scale = canvasBackingScale();
+    canvas.width = Math.round(WIDTH_PX * scale);
+    canvas.height = Math.round(cssH * scale);
     canvas.style.width = `${WIDTH_PX}px`;
     canvas.style.height = `${cssH}px`;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.scale(dpr, dpr);
+    ctx.scale(scale, scale);
     ctx.clearRect(0, 0, WIDTH_PX, cssH);
     // Resolve the theme's foreground through the container so the strip
     // colors follow light/dark and custom themes without any config.
@@ -107,7 +114,12 @@ export function Minimap({ view, className }: Props) {
       ctx.fillRect(2, y, w, stripHeight);
     }
     ctx.globalAlpha = 1;
-  }, [view]);
+    // `zoomLevel` is a dependency even though the body never names it: the
+    // backing-store scale comes from `canvasBackingScale()`, which reads the
+    // `--app-zoom` custom property, and no CSS pixel size changes when app
+    // zoom does — so nothing else would ever trigger the redraw. Removing it
+    // makes the strip render soft at any zoom above 1.
+  }, [view, zoomLevel]);
 
   const scheduleDraw = useCallback(() => {
     if (drawRaf.current !== null) return;

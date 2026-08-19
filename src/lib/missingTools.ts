@@ -14,22 +14,46 @@
  * Reporting on use means the notice appears exactly when it is relevant.
  */
 
+import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { toolById, type ExternalTool } from "./externalTools";
+
+/**
+ * The workspace to re-check `runsIn: "workspace"` tools in.
+ *
+ * Structurally identical to `WorkspaceEnv` in `modules/workspace/env`, but
+ * declared here rather than imported: this module is loaded by the LSP client
+ * and by git error handling, and pulling the workspace store (and through it
+ * the settings store, and through that the Tauri store plugin) into that graph
+ * to name one type is a poor trade. The caller passes the value in.
+ */
+export type ProbeWorkspace = { kind: "local" } | { kind: "wsl"; distro: string };
+
+/** What a refresh did, for the UI to report. */
+export type RefreshResult = {
+  /** Tool ids that resolved this time and have been retired from the list. */
+  cleared: string[];
+  /** IPC failure, if the check could not run at all. */
+  error: string | null;
+};
 
 type MissingToolsState = {
   /** Tool ids observed missing, insertion-ordered. */
   missing: string[];
   /** Ids the user dismissed; suppressed for the rest of the session. */
   dismissed: string[];
+  /** A re-check is in flight; the UI disables the button and spins it. */
+  refreshing: boolean;
   reportMissing: (id: string) => void;
   clearMissing: (id: string) => void;
   dismiss: (id: string) => void;
+  refresh: (workspace: ProbeWorkspace) => Promise<RefreshResult>;
 };
 
 export const useMissingTools = create<MissingToolsState>((set, get) => ({
   missing: [],
   dismissed: [],
+  refreshing: false,
 
   reportMissing(id) {
     // Unknown ids are dropped rather than shown: the UI can only render a
@@ -49,7 +73,69 @@ export const useMissingTools = create<MissingToolsState>((set, get) => ({
     if (get().dismissed.includes(id)) return;
     set((s) => ({ dismissed: [...s.dismissed, id] }));
   },
+
+  /**
+   * Re-check every listed tool and retire the ones that now resolve.
+   *
+   * The list is raised lazily, by whatever tried to use a tool and failed,
+   * which is the right trigger for showing it and a bad one for hiding it: a
+   * user who runs the install command we handed them has nothing left to
+   * trigger a recheck, so the notice outlived its cause and read as broken.
+   * This is the deliberate recheck. It never *adds* entries — a tool that is
+   * still missing has already said so, and a refresh that grew the list would
+   * punish pressing the button.
+   */
+  async refresh(workspace) {
+    if (get().refreshing) return { cleared: [], error: null };
+    set({ refreshing: true });
+    try {
+      const tools = visibleMissingTools(get().missing, get().dismissed);
+      // Two probes at most, not one per tool: `runsIn` splits the list by the
+      // machine each tool is actually spawned on, and everything on a side
+      // shares one round trip.
+      const groups: [ProbeWorkspace, ExternalTool[]][] = [
+        [{ kind: "local" }, tools.filter((t) => t.runsIn === "host")],
+        [workspace, tools.filter((t) => t.runsIn === "workspace")],
+      ];
+      const results = await Promise.all(
+        groups.map(([env, group]) => probeTools(group, env)),
+      );
+      const cleared = results.flatMap((r) => r.found);
+      const error = results.map((r) => r.error).find((e) => e !== null) ?? null;
+      if (cleared.length > 0) {
+        const retired = new Set(cleared);
+        set((s) => ({ missing: s.missing.filter((id) => !retired.has(id)) }));
+      }
+      return { cleared, error };
+    } finally {
+      set({ refreshing: false });
+    }
+  },
 }));
+
+/** One `tool_probe` round trip for the tools that share an environment. */
+async function probeTools(
+  tools: readonly ExternalTool[],
+  workspace: ProbeWorkspace,
+): Promise<{ found: string[]; error: string | null }> {
+  if (tools.length === 0) return { found: [], error: null };
+  try {
+    const found = await invoke<string[]>("tool_probe", {
+      binaries: tools.map((t) => t.binary),
+      workspace,
+    });
+    const resolved = new Set(found);
+    return {
+      found: tools.filter((t) => resolved.has(t.binary)).map((t) => t.id),
+      error: null,
+    };
+  } catch (e) {
+    // Reported rather than swallowed: silently answering "still not found"
+    // when the check never ran is the same class of lie the notice exists to
+    // end.
+    return { found: [], error: String(e) };
+  }
+}
 
 /**
  * The tools to actually show: reported missing, not dismissed, and known to
@@ -61,10 +147,14 @@ export function visibleMissingTools(
   missing: readonly string[],
   dismissed: readonly string[],
 ): ExternalTool[] {
-  return missing
-    .filter((id) => !dismissed.includes(id))
-    .map(toolById)
-    .filter((t): t is ExternalTool => t !== null);
+  const hidden = new Set(dismissed);
+  const out: ExternalTool[] = [];
+  for (const id of missing) {
+    if (hidden.has(id)) continue;
+    const tool = toolById(id);
+    if (tool) out.push(tool);
+  }
+  return out;
 }
 
 /** Convenience for non-React callers (the LSP client, formatters, git). */

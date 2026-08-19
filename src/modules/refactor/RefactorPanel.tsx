@@ -87,12 +87,16 @@ export function RefactorPanel() {
 
   // Register global setter
   useEffect(() => {
+    let focusTimer: ReturnType<typeof setTimeout> | undefined;
     _setCodeFn = (c) => {
       setCode(c);
-      setTimeout(() => textareaRef.current?.focus(), 50);
+      // The textarea only holds the new value after the commit, so focus is
+      // deferred; the timer is owned by the effect so unmounting cancels it.
+      clearTimeout(focusTimer);
+      focusTimer = setTimeout(() => textareaRef.current?.focus(), 50);
     };
     return () => {
-      if (_setCodeFn === textareaRef.current?.focus) _setCodeFn = null;
+      clearTimeout(focusTimer);
       _setCodeFn = null;
     };
   }, []);

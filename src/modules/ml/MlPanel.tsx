@@ -23,6 +23,7 @@ import {
   type ReactNode,
 } from "react";
 import { Icon } from "@/components/icon";
+import { IS_WINDOWS } from "@/lib/platform";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
 import {
@@ -63,9 +64,25 @@ import {
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { readConfusionMatrix, type ConfusionMatrix } from "./lib/artifacts";
 import { readTrainToml, writeTrainToml } from "./lib/config";
+import {
+  torchSupportWarning,
+  TORCH_MAX_MINOR,
+  TORCH_MIN_MINOR,
+} from "./lib/pythonSupport";
 import { tomlGet, tomlSet } from "./lib/toml-edit";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setMlAutoOpenOnTrain } from "@/modules/settings/store";
+import {
+  useWorkspaceEnvStore,
+  workspaceScopeKey,
+} from "@/modules/workspace";
+
+/** Release feed for the standalone (Rust) engine — the WSL steps fetch the
+ *  Linux build from here. The in-app download uses the Rust-side pin, not
+ *  this URL; this is only what a human types into curl. */
+const ENGINE_RELEASES_URL = "https://github.com/rwetz/nexis-ml-rs/releases";
+/** Source repo for the Python engine, for the pip-from-git fallback. */
+const ENGINE_PY_REPO = "https://github.com/rwetz/nexis-ml";
 
 /** Project templates offered in the create card. */
 const TEMPLATE_OPTIONS: {
@@ -102,19 +119,38 @@ const TEMPLATE_OPTIONS: {
 
 type Props = {
   workspaceRoot: string | null;
+  /** Detach the network diagram into its own tab. Optional so the panel
+   *  still renders standalone (tests, storybook-style usage). */
+  onOpenNetworkTab?: (input: { projectDir: string }) => void;
 };
 
 const BUSY_STATES = ["starting", "running", "cancelling"];
 
-export function MlPanel({ workspaceRoot }: Props) {
+
+/** One labelled figure in the run-details grid. Reads nothing from the panel,
+ *  so it is built once rather than per render. */
+const cell = (label: ReactNode, value: ReactNode, key: string) => (
+  <div key={key} className="flex min-w-0 flex-col">
+    <span className="truncate text-[9.5px] uppercase tracking-wide text-muted-foreground/60">
+      {label}
+    </span>
+    <span className="truncate font-mono text-[10.5px] tabular-nums text-foreground/90">
+      {value}
+    </span>
+  </div>
+);
+
+export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
   const engineStatus = useMlStore((s) => s.engineStatus);
   const engineVersion = useMlStore((s) => s.engineVersion);
   const engineKind = useMlStore((s) => s.engineKind);
   const engineError = useMlStore((s) => s.engineError);
   const installPython = useMlStore((s) => s.installPython);
+  const installPythonVersion = useMlStore((s) => s.installPythonVersion);
   const installing = useMlStore((s) => s.installing);
   const downloadingEngine = useMlStore((s) => s.downloadingEngine);
   const enginePin = useMlStore((s) => s.enginePin);
+  const engineCandidates = useMlStore((s) => s.engineCandidates);
   const managedEngine = useMlStore((s) => s.managedEngine);
   const envInfo = useMlStore((s) => s.envInfo);
   const hostGpu = useMlStore((s) => s.hostGpu);
@@ -133,11 +169,11 @@ export function MlPanel({ workspaceRoot }: Props) {
 
   const detect = useMlStore((s) => s.detect);
   const redetect = useMlStore((s) => s.redetect);
-  const installEngine = useMlStore((s) => s.installEngine);
   const upgradeToGpu = useMlStore((s) => s.upgradeToGpu);
   const downloadStandaloneEngine = useMlStore((s) => s.downloadStandaloneEngine);
   const installLocalCopy = useMlStore((s) => s.installLocalCopy);
   const uninstallManagedEngine = useMlStore((s) => s.uninstallManagedEngine);
+  const uninstallingEngine = useMlStore((s) => s.uninstallingEngine);
   const refreshProjects = useMlStore((s) => s.refreshProjects);
   const selectProject = useMlStore((s) => s.selectProject);
   const createProject = useMlStore((s) => s.createProject);
@@ -156,12 +192,20 @@ export function MlPanel({ workspaceRoot }: Props) {
   const pendingOnnx = useMlStore((s) => s.pendingOnnx);
   const autoOpenOnTrain = usePreferencesStore((s) => s.mlAutoOpenOnTrain);
 
+  const workspaceEnv = useWorkspaceEnvStore((s) => s.env);
+  const workspaceScope = workspaceScopeKey(workspaceEnv);
+  const wslDistro = workspaceEnv.kind === "wsl" ? workspaceEnv.distro : null;
+
   const [showCreate, setShowCreate] = useState(false);
 
+  // `workspaceScope` is a dependency in its own right: switching Windows↔WSL
+  // can leave the root string untouched (or change it long before the engine
+  // facts are re-derived), and every engine answer belongs to exactly one
+  // environment. Re-detect on either.
   useEffect(() => {
     void detect(workspaceRoot);
     if (workspaceRoot) void refreshProjects(workspaceRoot);
-  }, [workspaceRoot, detect, refreshProjects]);
+  }, [workspaceRoot, workspaceScope, detect, refreshProjects]);
 
   const busy = activeRun != null && BUSY_STATES.includes(activeRun.status);
   const finished =
@@ -206,7 +250,8 @@ export function MlPanel({ workspaceRoot }: Props) {
                 (envInfo?.backend === "wgpu" ? "GPU via wgpu" : "CUDA available")
               }
             >
-              ⚡ GPU
+              <Icon name="flash" size="xs" />
+              GPU
             </span>
           ) : null}
         </div>
@@ -232,14 +277,14 @@ export function MlPanel({ workspaceRoot }: Props) {
           </p>
         ) : engineStatus === "missing" ? (
           <SetupCard
-            installPython={installPython}
-            installing={installing}
+            installPythonVersion={installPythonVersion}
             downloadingEngine={downloadingEngine}
             pin={enginePin}
+            wslDistro={wslDistro}
+            candidates={engineCandidates}
             hostGpu={hostGpu}
             logs={logs}
             error={engineError}
-            onInstall={(useGpu) => void installEngine(workspaceRoot, useGpu)}
             onDownloadEngine={() => void downloadStandaloneEngine()}
             onInstallLocal={(path) => void installLocalCopy(path)}
             onRetry={() => void redetect(workspaceRoot)}
@@ -381,7 +426,15 @@ export function MlPanel({ workspaceRoot }: Props) {
             {/* The model itself — architecture graph (weights overlay once
                 the engine emits a `weights` artifact; ML_SUITE.md contract) */}
             {selectedProject && !pendingCreate && projects.length > 0 ? (
-              <NetworkGraph key={`net-${selectedProject}`} projectDir={selectedProject} />
+              <NetworkGraph
+                key={`net-${selectedProject}`}
+                projectDir={selectedProject}
+                onOpenAsTab={
+                  onOpenNetworkTab
+                    ? () => onOpenNetworkTab({ projectDir: selectedProject })
+                    : undefined
+                }
+              />
             ) : null}
 
             {comparing ? (
@@ -535,14 +588,26 @@ export function MlPanel({ workspaceRoot }: Props) {
                 </span>
                 <button
                   type="button"
-                  disabled={busy || downloadingEngine}
+                  disabled={
+                    busy || downloadingEngine || installing || uninstallingEngine
+                  }
                   onClick={() => void uninstallManagedEngine(workspaceRoot)}
                   title="Deletes the downloaded engine binary and frees the disk space. Engines installed in a venv or on PATH are unaffected; you can re-download any time."
                   className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] transition-colors hover:border-destructive/50 hover:text-destructive disabled:opacity-50"
                 >
-                  Remove
+                  {uninstallingEngine ? "Removing…" : "Remove"}
                 </button>
               </div>
+            ) : null}
+            {/* Engine errors used to be rendered only by SetupCard, which is
+                gone once an engine is detected — so a failed uninstall (or any
+                other post-setup engine failure) was swallowed and the click
+                looked like it had done nothing at all. */}
+            {engineError ? (
+              <p className="mt-1.5 flex items-start gap-1.5 text-[10.5px] leading-snug text-red-400">
+                <Icon name="alert-circle" size="xs" className="mt-px shrink-0" />
+                <span>{engineError}</span>
+              </p>
             ) : null}
           </>
         )}
@@ -551,41 +616,58 @@ export function MlPanel({ workspaceRoot }: Props) {
   );
 }
 
+/**
+ * "GPU" / "CPU" for a run or serve session's reported device. The GPU case
+ * carries a lightning icon rather than the emoji it used to: icons come from
+ * the one `<Icon>` choke point (pitfall #18) and inherit the theme's colour
+ * and the house size scale, which an emoji glyph cannot.
+ */
+function DeviceLabel({ device }: { device: string }) {
+  if (!device.startsWith("cuda")) return <>CPU</>;
+  return (
+    <span className="flex items-center gap-0.5">
+      <Icon name="flash" size="xs" />
+      GPU
+    </span>
+  );
+}
+
 // ── Setup (engine missing) ────────────────────────────────────────────────────
 
 function SetupCard({
-  installPython,
-  installing,
+  installPythonVersion,
   downloadingEngine,
   pin,
+  wslDistro,
+  candidates,
   hostGpu,
   logs,
   error,
-  onInstall,
   onDownloadEngine,
   onInstallLocal,
   onRetry,
 }: {
-  installPython: string | null;
-  installing: boolean;
+  /** Version of the interpreter Nexis found, if any — used only to warn in
+   *  the manual Python steps. Nexis no longer installs into it itself. */
+  installPythonVersion: string | null;
   downloadingEngine: boolean;
   pin: EnginePin | null;
+  /** Distro name when this is a WSL workspace — the engine then has to live
+   *  inside the distro, and the host-side download does not apply. */
+  wslDistro: string | null;
+  /** Paths the last detection probed, so "not found" can say where it looked. */
+  candidates: string[];
   hostGpu: string | null;
   logs: string[];
   error: string | null;
-  onInstall: (useGpu: boolean) => void;
   onDownloadEngine: () => void;
   onInstallLocal: (path: string) => void;
   onRetry: () => void;
 }) {
-  // GPU build is the better experience when a card exists; default on.
-  const [useGpu, setUseGpu] = useState(true);
   // The standalone download goes through an explicit consent step showing
   // exactly what will be fetched and the checksum it must match (V3).
   const [confirmingDownload, setConfirmingDownload] = useState(false);
   const [localPath, setLocalPath] = useState("");
-  const gpu = hostGpu != null;
-  const sizeNote = gpu && useGpu ? "~3 GB" : "~200 MB";
   const pinMb = pin ? Math.max(1, Math.round(pin.sizeBytes / (1024 * 1024))) : null;
   const pinAsset = pin?.url.split("/").pop() ?? "the release binary";
   return (
@@ -596,16 +678,18 @@ function SetupCard({
         <span className="font-mono">nexis-ml</span>. Everything runs on your
         machine — no cloud, no accounts.
       </p>
-      {installing ? (
-        <>
-          <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
-            <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
-            Installing — this downloads PyTorch ({sizeNote}), give it a few
-            minutes…
-          </p>
-          <LogView logs={logs} />
-        </>
-      ) : downloadingEngine ? (
+      {wslDistro ? (
+        <p className="mb-2 flex items-start gap-1.5 rounded border border-border/50 bg-background/50 p-1.5 text-[10.5px] leading-snug text-muted-foreground">
+          <Icon name="server" size="xs" className="mt-px shrink-0" />
+          <span>
+            This workspace is <span className="font-mono">{wslDistro}</span>, so
+            the engine has to live inside the distro — a Windows install is a
+            different machine as far as your project is concerned.
+          </span>
+        </p>
+      ) : null}
+
+      {downloadingEngine ? (
         <>
           <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
             <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
@@ -614,113 +698,78 @@ function SetupCard({
           </p>
           <LogView logs={logs} />
         </>
-      ) : installPython ? (
+      ) : wslDistro ? (
+        // The download installs a *host* binary into the host's app-data dir.
+        // Inside a distro it is neither reachable nor runnable, so a WSL
+        // workspace gets the manual route as its primary path.
+        <WslEngineSteps distro={wslDistro} />
+      ) : confirmingDownload && pin ? (
+        <div className="rounded-md border border-border/60 bg-background/60 p-2">
+          <p className="mb-1 text-[11px] font-semibold">
+            Download nexis-ml {pin.version}?
+          </p>
+          <dl className="mb-1.5 flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+            <div className="flex gap-1">
+              <dt className="shrink-0 text-muted-foreground/60">From</dt>
+              <dd className="min-w-0 truncate font-mono" title={pin.url}>
+                github.com/rwetz/nexis-ml-rs · {pinAsset}
+              </dd>
+            </div>
+            <div className="flex gap-1">
+              <dt className="shrink-0 text-muted-foreground/60">Size</dt>
+              <dd>{pinMb} MB</dd>
+            </div>
+            <div className="flex gap-1">
+              <dt className="shrink-0 text-muted-foreground/60">SHA-256</dt>
+              <dd className="min-w-0 truncate font-mono" title={pin.sha256}>
+                {pin.sha256}
+              </dd>
+            </div>
+          </dl>
+          <p className="mb-1.5 text-[10px] leading-snug text-muted-foreground/70">
+            Nexis verifies the download against this pinned checksum before it
+            can run. This is the only thing the ML Lab ever downloads.
+          </p>
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmingDownload(false);
+                onDownloadEngine();
+              }}
+              className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              Download &amp; verify
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmingDownload(false)}
+              className="rounded-md border border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
         <>
-          {gpu ? (
-            <label className="mb-1.5 flex cursor-pointer items-start gap-1.5 text-[11px] text-foreground/90">
-              <input
-                type="checkbox"
-                checked={useGpu}
-                onChange={(e) => setUseGpu(e.target.checked)}
-                className="mt-0.5 accent-emerald-500"
-              />
-              <span>
-                Train on my GPU ({hostGpu})
-                <span className="block text-[10px] text-muted-foreground/70">
-                  bigger download (~3 GB), much faster on images & text
-                </span>
-              </span>
-            </label>
-          ) : null}
           <button
             type="button"
-            onClick={() => onInstall(gpu && useGpu)}
+            onClick={() =>
+              // No pin = no prebuilt for this platform; let the store surface
+              // its "not available" error instead of consenting to nothing.
+              pin ? setConfirmingDownload(true) : onDownloadEngine()
+            }
             className="mb-1.5 w-full rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
           >
-            Install engine
+            Download engine{pinMb ? ` (~${pinMb} MB)` : ""}
           </button>
           <p className="text-[10px] leading-snug text-muted-foreground/70">
-            Installs into <span className="font-mono">{installPython}</span>{" "}
-            (one {sizeNote} download, local only).
+            One verified binary from the project&apos;s GitHub releases. No
+            Python, no PyTorch, nothing else to install. Trains tabular and
+            image models
+            {hostGpu ? ` on your ${hostGpu}` : " on your GPU"} through wgpu — no
+            CUDA toolchain — with the inference playground built in.
           </p>
-        </>
-      ) : (
-        <ManualSetupSteps />
-      )}
-      {error && !installing && !downloadingEngine ? (
-        <p className="mt-1.5 text-[10.5px] leading-snug text-red-400">{error}</p>
-      ) : null}
-      {!installing && !downloadingEngine ? (
-        <div className="mt-2 border-t border-border/40 pt-2">
-          {confirmingDownload && pin ? (
-            <div className="rounded-md border border-border/60 bg-background/60 p-2">
-              <p className="mb-1 text-[11px] font-semibold">
-                Download nexis-ml {pin.version}?
-              </p>
-              <dl className="mb-1.5 flex flex-col gap-0.5 text-[10px] text-muted-foreground">
-                <div className="flex gap-1">
-                  <dt className="shrink-0 text-muted-foreground/60">From</dt>
-                  <dd className="min-w-0 truncate font-mono" title={pin.url}>
-                    github.com/rwetz/nexis-ml-rs · {pinAsset}
-                  </dd>
-                </div>
-                <div className="flex gap-1">
-                  <dt className="shrink-0 text-muted-foreground/60">Size</dt>
-                  <dd>{pinMb} MB</dd>
-                </div>
-                <div className="flex gap-1">
-                  <dt className="shrink-0 text-muted-foreground/60">SHA-256</dt>
-                  <dd className="min-w-0 truncate font-mono" title={pin.sha256}>
-                    {pin.sha256}
-                  </dd>
-                </div>
-              </dl>
-              <p className="mb-1.5 text-[10px] leading-snug text-muted-foreground/70">
-                Nexis verifies the download against this pinned checksum before
-                it can run. This is the only thing the ML Lab ever downloads.
-              </p>
-              <div className="flex gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setConfirmingDownload(false);
-                    onDownloadEngine();
-                  }}
-                  className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                >
-                  Download & verify
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDownload(false)}
-                  className="rounded-md border border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() =>
-                  // No pin = no prebuilt for this platform; let the store
-                  // surface its "not available" error instead of consenting
-                  // to nothing.
-                  pin ? setConfirmingDownload(true) : onDownloadEngine()
-                }
-                className="w-full rounded-md border border-border/60 px-3 py-1.5 text-[11px] font-medium text-foreground/90 transition-opacity hover:opacity-90"
-              >
-                Download standalone engine — no Python
-                {pinMb ? ` (~${pinMb} MB)` : ""}
-              </button>
-              <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">
-                A single binary that trains tabular & image models on your GPU
-                (no PyTorch download), with the inference playground built in
-                (v0.8+). Text generation needs the Python engine above.
-              </p>
-            </>
-          )}
           {pin ? (
             <details className="mt-1.5">
               <summary className="cursor-pointer select-none text-[10px] text-muted-foreground/70 hover:text-muted-foreground">
@@ -745,22 +794,200 @@ function SetupCard({
                   onClick={() => onInstallLocal(localPath)}
                   className="rounded border border-border/60 px-2 py-1 text-[10px] font-medium text-foreground/90 transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
-                  Verify & install
+                  Verify &amp; install
                 </button>
               </div>
             </details>
           ) : null}
+        </>
+      )}
+
+      {error && !downloadingEngine ? (
+        <div className="mt-1.5">
+          <p className="text-[10.5px] leading-snug text-red-400">{error}</p>
+          {/* Where it looked. "No engine found" is only actionable if you can
+              see the search path — the usual cause is an engine installed in
+              an environment the scan never visits, which is invisible
+              otherwise. */}
+          {candidates.length > 0 ? (
+            <details className="mt-1">
+              <summary className="cursor-pointer select-none text-[10px] text-muted-foreground/70 hover:text-muted-foreground">
+                Where Nexis looked ({candidates.length})
+              </summary>
+              {/* `leading-none` is inherited here from the card's tight type
+                  scale, which made 9.5px monospace rows overlap into an
+                  unreadable smear. Line height has to be set explicitly
+                  alongside an arbitrary font size — Tailwind's `text-[…]`
+                  sets size only. */}
+              <ul className="mt-1 flex max-h-32 flex-col gap-0.5 overflow-y-auto">
+                {candidates.map((c) => (
+                  <li
+                    key={c}
+                    className="truncate font-mono text-[9.5px] leading-[1.6] text-muted-foreground/60"
+                    title={c}
+                  >
+                    {c}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">
+                An engine outside these paths is not found. Put it on{" "}
+                <span className="font-mono">PATH</span>, or install it into a{" "}
+                <span className="font-mono">.venv</span> in this folder or one
+                above it.
+              </p>
+            </details>
+          ) : null}
         </div>
       ) : null}
+
+      {!downloadingEngine ? (
+        <div className="mt-2 border-t border-border/40 pt-2">
+          <PythonEngineSteps
+            detectedVersion={installPythonVersion}
+            wslDistro={wslDistro}
+          />
+        </div>
+      ) : null}
+
       <button
         type="button"
         onClick={onRetry}
-        disabled={installing || downloadingEngine}
+        disabled={downloadingEngine}
         className="mt-1.5 text-[10.5px] text-primary underline-offset-2 hover:underline disabled:opacity-50"
       >
         I installed it — check again
       </button>
     </div>
+  );
+}
+
+/**
+ * Getting the standalone engine into a WSL distro.
+ *
+ * The pinned download is a host binary in the host's app-data directory, so
+ * it cannot serve a distro — but the same release publishes a Linux build,
+ * and dropping it on the distro's PATH is a three-line job. Written out
+ * rather than automated: doing it for the user would mean a second download
+ * pipeline, a second pin, and a checksum path that has to run inside the
+ * distro, none of which is worth it while this is a handful of commands.
+ */
+function WslEngineSteps({ distro }: { distro: string }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[11px] leading-snug text-muted-foreground">
+        In a <span className="font-mono">{distro}</span> terminal, put the
+        Linux build of the engine on your PATH:
+      </p>
+      <CopyLine command={`mkdir -p ~/.local/bin && curl -fL -o ~/.local/bin/nexis-ml ${ENGINE_RELEASES_URL}/latest/download/nexis-ml-linux-x64`} />
+      <CopyLine command="chmod +x ~/.local/bin/nexis-ml" />
+      <CopyLine command="nexis-ml --version" />
+      <p className="text-[10px] leading-snug text-muted-foreground/70">
+        If the last command prints a version, hit “check again” below.{" "}
+        <span className="font-mono">~/.local/bin</span> is on the default PATH
+        for most distros — if <span className="font-mono">nexis-ml</span> is
+        not found, open a fresh terminal or add it to your shell profile.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The Python engine, as documentation rather than a button.
+ *
+ * Nexis used to run `pip install nexis-ml[torch]` itself. That is deprecated:
+ * it committed to a ~3 GB download into an interpreter the user had not
+ * chosen (with no venv anywhere, that is the machine-wide Python), and the
+ * most common outcome on a current machine is pip discovering after several
+ * minutes that PyTorch has no wheels for the installed CPython. Neither the
+ * environment choice nor the version constraint is Nexis's to make silently,
+ * so both are now stated and the commands are handed over.
+ */
+function PythonEngineSteps({
+  detectedVersion,
+  wslDistro,
+}: {
+  detectedVersion: string | null;
+  wslDistro: string | null;
+}) {
+  const warning = torchSupportWarning(detectedVersion);
+  const win = !wslDistro && IS_WINDOWS;
+  return (
+    <details>
+      <summary className="cursor-pointer select-none text-[10.5px] font-medium text-muted-foreground hover:text-foreground">
+        Need text generation? Set up the Python engine
+      </summary>
+      <div className="mt-1.5 flex flex-col gap-1.5">
+        <p className="text-[10.5px] leading-snug text-muted-foreground">
+          Almost everything works on the engine above. The Python engine adds
+          three things it cannot do: <strong>text generation</strong> (the{" "}
+          <span className="font-mono">textgen</span> template), the{" "}
+          <span className="font-mono">blank</span> template — a{" "}
+          <span className="font-mono">train.py</span> you write yourself — and
+          the self-contained HTML run report. It costs a ~3 GB PyTorch download
+          and a Python you maintain.
+        </p>
+        <p className="text-[10.5px] leading-snug text-muted-foreground">
+          <strong className="text-foreground/90">
+            Use a virtualenv, not your system Python.
+          </strong>{" "}
+          PyTorch is large and version-pinned; installing it machine-wide
+          affects every other Python project you have. Nexis looks for{" "}
+          <span className="font-mono">.venv</span> in this folder and the six
+          above it, so a venv here is found automatically.
+        </p>
+        <p className="text-[10.5px] leading-snug text-muted-foreground">
+          <strong className="text-foreground/90">
+            Python 3.{TORCH_MIN_MINOR}–3.{TORCH_MAX_MINOR} only.
+          </strong>{" "}
+          PyTorch publishes no wheels for a newer CPython until months after it
+          ships, and pip only says so after resolving — so a too-new
+          interpreter downloads for minutes and ends at “No matching
+          distribution found for torch”.
+        </p>
+        {warning ? (
+          <p className="flex items-start gap-1.5 text-[10px] leading-snug text-amber-500">
+            <Icon name="alert" size="xs" className="mt-px shrink-0" />
+            <span>{warning}</span>
+          </p>
+        ) : null}
+        <p className="text-[10.5px] leading-snug text-muted-foreground">
+          In a terminal at this folder:
+        </p>
+        <CopyLine command={win ? "py -3.13 -m venv .venv" : "python3.13 -m venv .venv"} />
+        <CopyLine
+          command={
+            win
+              ? ".venv\\Scripts\\python -m pip install --upgrade nexis-ml[torch]"
+              : ".venv/bin/python -m pip install --upgrade nexis-ml[torch]"
+          }
+        />
+        <CopyLine
+          command={win ? ".venv\\Scripts\\nexis-ml --version" : ".venv/bin/nexis-ml --version"}
+        />
+        <p className="text-[10px] leading-snug text-muted-foreground/70">
+          For an NVIDIA card, install the CUDA build of torch first — otherwise
+          pip resolves the CPU one and training stays on the CPU:
+        </p>
+        <CopyLine
+          command={
+            win
+              ? ".venv\\Scripts\\python -m pip install torch --index-url https://download.pytorch.org/whl/cu130"
+              : ".venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cu130"
+          }
+        />
+        <p className="text-[10px] leading-snug text-muted-foreground/70">
+          If <span className="font-mono">nexis-ml --version</span> prints a
+          version, hit “check again” below. If pip cannot find{" "}
+          <span className="font-mono">nexis-ml</span> at all, it is not on PyPI
+          for your platform yet — install it from source with{" "}
+          <span className="font-mono">
+            pip install &quot;nexis-ml[torch] @ git+{ENGINE_PY_REPO}&quot;
+          </span>
+          .
+        </p>
+      </div>
+    </details>
   );
 }
 
@@ -800,18 +1027,6 @@ function GpuUpsell({
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-function ManualSetupSteps() {
-  return (
-    <div className="flex flex-col gap-1">
-      <p className="text-[11px] text-muted-foreground">
-        No Python found in this workspace. In the terminal:
-      </p>
-      <CopyLine command="py -m venv .venv" />
-      <CopyLine command=".venv\Scripts\pip install nexis-ml[torch]" />
     </div>
   );
 }
@@ -896,9 +1111,9 @@ function CreateCard({
             type="button"
             onClick={onDismiss}
             aria-label="Close"
-            className="text-[11px] leading-none text-muted-foreground hover:text-foreground"
+            className="leading-none text-muted-foreground hover:text-foreground"
           >
-            ✕
+            <Icon name="close" size="sm" />
           </button>
         ) : null}
       </div>
@@ -1070,17 +1285,6 @@ function RunDetails() {
 
   const duration = runDuration(facts);
   const metricNames = Object.keys(facts.metrics).sort();
-
-  const cell = (label: ReactNode, value: ReactNode, key: string) => (
-    <div key={key} className="flex min-w-0 flex-col">
-      <span className="truncate text-[9.5px] uppercase tracking-wide text-muted-foreground/60">
-        {label}
-      </span>
-      <span className="truncate font-mono text-[10.5px] tabular-nums text-foreground/90">
-        {value}
-      </span>
-    </div>
-  );
 
   return (
     <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
@@ -1382,7 +1586,7 @@ function Playground({
               )}
               title={`device: ${serve.device}`}
             >
-              {serve.device.startsWith("cuda") ? "⚡ GPU" : "CPU"}
+              <DeviceLabel device={serve.device} />
             </span>
           ) : null}
         </span>
@@ -1679,7 +1883,7 @@ function ProgressBlock({
               )}
               title={`device: ${run.device}`}
             >
-              {run.device.startsWith("cuda") ? "⚡ GPU" : "CPU"}
+              <DeviceLabel device={run.device} />
             </span>
           ) : null}
           {run.paused ? (
@@ -1781,7 +1985,7 @@ function ResultCard({
     }
   }
   if (summary?.lastEpoch) chips.push(`${summary.lastEpoch} passes`);
-  if (summary?.device?.startsWith("cuda")) chips.push("trained on GPU ⚡");
+  if (summary?.device?.startsWith("cuda")) chips.push("trained on GPU");
 
   return (
     <div className={cn("mb-2 rounded-md border p-2.5", tone)}>
@@ -1917,7 +2121,7 @@ function RunRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [note, setNote] = useState(run.note ?? "");
-  const [tags, setTags] = useState((run.tags ?? []).join(", "));
+  const [tags, setTags] = useState(() => (run.tags ?? []).join(", "));
 
   useEffect(() => {
     if (editing) {
@@ -2004,22 +2208,22 @@ function RunRow({
           aria-label={run.pinned ? "Unpin run" : "Pin as baseline"}
           title={run.pinned ? "Unpin" : "Pin as baseline"}
           className={cn(
-            "shrink-0 px-1 text-[11px] leading-none",
+            "shrink-0 px-1 leading-none",
             run.pinned
               ? "text-amber-500"
               : "text-muted-foreground/40 hover:text-foreground",
           )}
         >
-          {run.pinned ? "★" : "☆"}
+          <Icon name="pin" size="xs" active={run.pinned} />
         </button>
         <button
           type="button"
           onClick={() => setEditing((v) => !v)}
           aria-label="Notes and tags"
           title="Notes & tags"
-          className="mr-1 shrink-0 px-0.5 text-[10px] leading-none text-muted-foreground/50 hover:text-foreground"
+          className="mr-1 shrink-0 px-0.5 leading-none text-muted-foreground/50 hover:text-foreground"
         >
-          ✎
+          <Icon name="edit" size="xs" />
         </button>
       </div>
 
