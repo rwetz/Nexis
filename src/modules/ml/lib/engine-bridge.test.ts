@@ -303,14 +303,28 @@ describe("serve bridge", () => {
     });
   });
 
-  it("managedEngineCandidate returns the Rust-resolved path", async () => {
+  it("managedEngineCandidate returns the managed path once it is installed", async () => {
     invokeMock.mockImplementation(async (cmd: string) =>
-      cmd === "ml_managed_engine_path" ? "C:\\data\\engine\\nexis-ml.exe" : null,
+      cmd === "ml_engine_status"
+        ? { installed: true, path: "C:\\data\\engine\\nexis-ml.exe", sizeBytes: 34_000_000 }
+        : null,
     );
     expect(await managedEngineCandidate()).toBe("C:\\data\\engine\\nexis-ml.exe");
   });
 
-  it("managedEngineCandidate resolves null when the path can't be resolved", async () => {
+  // An interrupted download leaves the path resolvable but nothing on disk.
+  // Probing it anyway made its ENOENT the error the setup card displayed,
+  // which reads like a broken install rather than an absent one.
+  it("managedEngineCandidate stays out of the list when nothing is installed", async () => {
+    invokeMock.mockImplementation(async (cmd: string) =>
+      cmd === "ml_engine_status"
+        ? { installed: false, path: "C:\\data\\engine\\nexis-ml.exe", sizeBytes: 0 }
+        : null,
+    );
+    expect(await managedEngineCandidate()).toBeNull();
+  });
+
+  it("managedEngineCandidate resolves null when the status can't be read", async () => {
     invokeMock.mockImplementation(async () => {
       throw new Error("no data dir");
     });

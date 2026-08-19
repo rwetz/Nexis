@@ -138,12 +138,20 @@ export function resetEngineDetection(): void {
  * so the platform-specific name (`nexis-ml` vs `nexis-ml.exe`) and base dir
  * are authoritative. Returns null if the path can't be resolved.
  */
-export function managedEngineCandidate(): Promise<string | null> {
+export async function managedEngineCandidate(): Promise<string | null> {
   // The managed engine is a host binary in the host's app-data dir. It is
   // not reachable — and on Windows not even executable — from inside a
   // distro, so it must never enter a WSL workspace's candidate list.
-  if (currentWorkspaceEnv().kind !== "local") return Promise.resolve(null);
-  return invoke<string>("ml_managed_engine_path").catch(() => null);
+  if (currentWorkspaceEnv().kind !== "local") return null;
+  // Only offer it as a candidate when it is actually on disk. The path
+  // resolves whether or not anything is there, so an interrupted download
+  // left detection probing a file that cannot exist — and since this entry
+  // is appended last, its ENOENT became the error the setup card displayed
+  // ("…\engine\nexis-ml.exe: os error 3"), which reads like a broken
+  // install rather than an absent one.
+  const status = await managedEngineStatus();
+  if (!status?.installed) return null;
+  return status.path;
 }
 
 /** The compiled-in engine release pin: what the consent dialog shows and

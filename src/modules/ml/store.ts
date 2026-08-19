@@ -265,6 +265,10 @@ type MlStore = {
   engineExe: string | null;
   engineVersion: string | null;
   engineError: string | null;
+  /** Paths the last detection probed, in order. Shown in the setup card so
+   *  "no engine found" is an actionable statement rather than an opaque one —
+   *  the common cause is an engine installed somewhere the scan never looks. */
+  engineCandidates: string[];
   /** Which engine is active. Gates Python-only features (textgen / `blank`
    *  templates, HTML report; the Playground is capability-gated via
    *  `envInfo.serve` since Rust engine v0.8) — null until the env probe
@@ -440,6 +444,7 @@ function pushLog(logs: string[], line: string): string[] {
 export const useMlStore = create<MlStore>((set, get) => ({
   engineStatus: "idle",
   engineScope: null,
+  engineCandidates: [],
   engineExe: null,
   engineVersion: null,
   engineError: null,
@@ -492,6 +497,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     if (get().engineScope !== scope) {
       set({
         engineScope: scope,
+        engineCandidates: [],
         engineExe: null,
         engineVersion: null,
         engineKind: null,
@@ -530,6 +536,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
       const candidates = buildCandidates(envs, workspaceRoot);
       const managed = await managedEngineCandidate();
       if (managed) candidates.push(managed);
+      set({ engineCandidates: candidates });
       const found = await detectEngine(candidates);
       set({
         engineStatus: "ready",
@@ -1367,7 +1374,11 @@ export const useMlStore = create<MlStore>((set, get) => ({
       payload.sid === pendingCreate?.sid ||
       payload.sid === serve?.sid ||
       payload.sid === pendingExport?.sid ||
-      payload.sid === pendingOnnx?.sid;
+      payload.sid === pendingOnnx?.sid ||
+      // Same window as the exit handler below: until `spawnInstall` resolves,
+      // `installSid` is null and pip's own output — the only thing that says
+      // *why* an install failed — was being dropped from the setup card's log.
+      (installSid === null && get().installing);
     if (!known) return;
     set((s) => ({ logs: pushLog(s.logs, payload.line) }));
   },
@@ -1430,8 +1441,21 @@ export const useMlStore = create<MlStore>((set, get) => ({
       return;
     }
 
-    // pip install step finished → next step, or re-probe for the engine
-    if (payload.sid === installSid) {
+    // pip install step finished → next step, or re-probe for the engine.
+    //
+    // The `installSid === null && installing` arm closes a race that could
+    // wedge the setup card permanently: `_startNextInstall` only records the
+    // sid *after* `await spawnInstall(...)` resolves, so an install that dies
+    // inside that window emitted an ml:exit matching nothing. Nothing else
+    // clears `installing`, and the card disables both "Install engine" and
+    // "Check again" while it is true — so a failed install left the panel
+    // with no way back short of restarting the app. An unmatched exit while
+    // an install is in flight can only be that install's.
+    const unclaimedInstallExit =
+      installSid === null &&
+      get().installing &&
+      payload.sid !== pendingCreate?.sid;
+    if (payload.sid === installSid || unclaimedInstallExit) {
       const ok = payload.code === 0;
       const root = get().installRoot;
       if (ok && get().installQueue.length > 0) {

@@ -27,6 +27,8 @@ Two engines answer to the same name and have different feature sets — the Pyth
 - **Metric buffers are NOT in the store** (pitfall #14) — they live in a module-level Map in `lib/series.ts`; components subscribe to the primitive `seriesTick` and read through `getSeriesMap()`.
 - **`workspace_authorize` runs before every `ml_spawn`** (pitfall #1C), same as `pty-bridge` does for `pty_open`.
 - **The detection promise is memoized and its `.catch()` deletes the entry** (pitfall #10) — a rejected promise left in a Map is indistinguishable from a resolved one.
+- **The candidate list is speculative, so an absent candidate is not an error.** `ml.rs:Probe` is three-valued: `Missing` is silent, `Failed` is a diagnosis. Reporting the last candidate's ENOENT instead made every "no engine" state show the managed engine's path and `os error 3`. Absolute host paths are ruled out with `exists()` rather than a spawn — the panel re-detects on every open.
+- **`installSid` is recorded only after `spawnInstall` resolves.** An exit inside that window matches nothing, and nothing else clears `installing` — which disables the setup card's buttons. `_applyExit`/`_applyStderr` treat an unmatched event during an in-flight install as that install's.
 - **`ALLOWED_SUBCOMMANDS` and `is_nexis_ml_exe` are the security boundary.** `ml_spawn` must never become a generic process launcher; the exe stem must be exactly `nexis-ml` and the subcommand must be on the allowlist.
 - **Canvas drawings size through `src/lib/canvas.ts:canvasBackingScale`** (`dpr × --app-zoom`) and take `zoomLevel` as a redraw dependency — a `ResizeObserver` never fires for a zoom change. Same family as pitfall #15.
 
@@ -34,7 +36,8 @@ Two engines answer to the same name and have different feature sets — the Pyth
 
 - Engine "ready" but training fails on the project dir → workspace-scope mismatch; check `engineScope` and which env `env_command` built for
 - Panel shows a Windows engine in a WSL workspace → a new command missing its `workspace` parameter (pitfall #20)
-- A button in the panel appears inert → check for a store guard that returns early while the button stays enabled, and remember `engineError` is only rendered in the panel body since 1.25
+- A button in the panel appears inert → check for a store guard that returns early while the button stays enabled; also check whether `installing` is stuck true, which disables the setup card wholesale
+- "Engine not found" naming a specific path → almost always just an absent candidate; open the setup card's "Where Nexis looked" list before believing the path is the problem
 - Charts frozen but the run is live → `seriesTick` not bumping, or the component subscribed to the buffer instead of the tick
 - Network diagram blank → `parseTomlNet` returned null; the project's `train.toml` has no recognizable `[net]`
 

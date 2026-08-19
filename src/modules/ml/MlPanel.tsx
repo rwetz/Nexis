@@ -122,6 +122,7 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
   const installing = useMlStore((s) => s.installing);
   const downloadingEngine = useMlStore((s) => s.downloadingEngine);
   const enginePin = useMlStore((s) => s.enginePin);
+  const engineCandidates = useMlStore((s) => s.engineCandidates);
   const managedEngine = useMlStore((s) => s.managedEngine);
   const envInfo = useMlStore((s) => s.envInfo);
   const hostGpu = useMlStore((s) => s.hostGpu);
@@ -254,6 +255,7 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
             downloadingEngine={downloadingEngine}
             pin={enginePin}
             wslDistro={wslDistro}
+            candidates={engineCandidates}
             hostGpu={hostGpu}
             logs={logs}
             error={engineError}
@@ -613,6 +615,7 @@ function SetupCard({
   downloadingEngine,
   pin,
   wslDistro,
+  candidates,
   hostGpu,
   logs,
   error,
@@ -628,6 +631,8 @@ function SetupCard({
   /** Distro name when this is a WSL workspace — the engine then has to live
    *  inside the distro, and the host-side download does not apply. */
   wslDistro: string | null;
+  /** Paths the last detection probed, so "not found" can say where it looked. */
+  candidates: string[];
   hostGpu: string | null;
   logs: string[];
   error: string | null;
@@ -717,7 +722,37 @@ function SetupCard({
         <ManualSetupSteps />
       )}
       {error && !installing && !downloadingEngine ? (
-        <p className="mt-1.5 text-[10.5px] leading-snug text-red-400">{error}</p>
+        <div className="mt-1.5">
+          <p className="text-[10.5px] leading-snug text-red-400">{error}</p>
+          {/* Where it looked. "No engine found" is only actionable if you can
+              see the search path — the usual cause is an engine installed in
+              an environment the scan never visits, which is invisible
+              otherwise. */}
+          {candidates.length > 0 ? (
+            <details className="mt-1">
+              <summary className="cursor-pointer select-none text-[10px] text-muted-foreground/70 hover:text-muted-foreground">
+                Where Nexis looked ({candidates.length})
+              </summary>
+              <ul className="mt-1 flex max-h-32 flex-col gap-px overflow-y-auto">
+                {candidates.map((c) => (
+                  <li
+                    key={c}
+                    className="truncate font-mono text-[9.5px] text-muted-foreground/60"
+                    title={c}
+                  >
+                    {c}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">
+                An engine outside these paths is not found. Put it on{" "}
+                <span className="font-mono">PATH</span>, or install it into a{" "}
+                <span className="font-mono">.venv</span> in this folder or one
+                above it.
+              </p>
+            </details>
+          ) : null}
+        </div>
       ) : null}
       {/* The standalone download installs a *host* binary into the host's
           app-data dir. Inside a distro it is neither reachable nor runnable,
