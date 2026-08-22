@@ -47,7 +47,7 @@ pub struct Session {
     //   4. `master` — last; ClosePseudoConsole on Windows. By now the child
     //      is dead and conhost has nothing left to drain.
     #[cfg(windows)]
-    _job: Option<super::job::PtyJob>,
+    _job: Option<crate::modules::job::ProcessJob>,
     pub killer: Mutex<Box<dyn ChildKiller + Send + Sync>>,
     /// FIFO input queue drained by the dedicated writer thread. `pty_write`
     /// enqueues here (never blocks); the thread does the actual pipe write,
@@ -193,7 +193,7 @@ pub fn spawn(
 
     #[cfg(windows)]
     let job = match child.process_id() {
-        Some(pid) => match super::job::PtyJob::create_for(pid) {
+        Some(pid) => match crate::modules::job::ProcessJob::create_for(pid) {
             Ok(j) => Some(j),
             Err(e) => {
                 log::warn!("pty job-object setup failed for pid={pid}: {e}");

@@ -25,6 +25,16 @@ use crate::modules::proc;
 type PendingMap = Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>;
 
 pub struct LspSession {
+    /// Windows only: kills the whole process tree when the session drops.
+    ///
+    /// Load-bearing since programs are resolved before spawning. A server that
+    /// resolves to a `.cmd` shim is run as `cmd.exe /d /c "<shim> ..."`, so
+    /// `_child` is the wrapper and the server itself is a grandchild —
+    /// `kill()` would terminate the wrapper and leave the server alive holding
+    /// both pipe ends, so the reader thread never sees EOF and every restart
+    /// leaks another orphan. Declared before `_child` so the Job closes first.
+    #[cfg(windows)]
+    _job: Option<crate::modules::job::ProcessJob>,
     /// Kept alive so stdin/stdout pipes stay open.
     _child: Child,
     stdin: Arc<Mutex<Box<dyn Write + Send>>>,
@@ -64,6 +74,18 @@ impl LspSession {
             .spawn()
             .map_err(|e| format!("lsp: failed to start '{server_cmd}': {e}"))?;
 
+        // Tree-kill guard, set up before anything can fail out of this
+        // function. See the `_job` field for why `kill()` alone is not enough
+        // once a `.cmd` shim is in play.
+        #[cfg(windows)]
+        let job = match crate::modules::job::ProcessJob::create_for(child.id()) {
+            Ok(j) => Some(j),
+            Err(e) => {
+                log::warn!("lsp job-object setup failed for pid={}: {e}", child.id());
+                None
+            }
+        };
+
         let stdin = child.stdin.take().ok_or("lsp: no stdin pipe")?;
         let stdout = child.stdout.take().ok_or("lsp: no stdout pipe")?;
 
@@ -80,6 +102,8 @@ impl LspSession {
         }
 
         let session = Self {
+            #[cfg(windows)]
+            _job: job,
             _child: child,
             stdin,
             pending,
@@ -232,9 +256,12 @@ impl LspSession {
 
 impl Drop for LspSession {
     fn drop(&mut self) {
-        // Best-effort graceful shutdown then kill.
+        // Best-effort graceful shutdown then kill. `wait` is not optional:
+        // without it the killed child stays a zombie until the app exits, and
+        // on Windows it is what releases the wrapper before the Job closes.
         let _ = self.notify("exit".to_string(), None);
         let _ = self._child.kill();
+        let _ = self._child.wait();
     }
 }
 

@@ -36,4 +36,7 @@ On Windows the suffix list tries **PATHEXT entries before the extensionless spel
 - Probe and spawn can no longer disagree: they are the same walk. A future divergence would require someone to reintroduce a second lookup.
 - Any **new** spawn site whose program name comes from config or user input should call `resolve_on_host` first. Sites that spawn a fixed system binary (`wsl.exe`, `git`) or an already-absolute path do not need it.
 - This is host-side resolution only. WSL tools resolve inside the distro via `command -v` through `wsl_exec_capture` — see pitfall #20 in CLAUDE.md for why the two sides must not answer for each other.
+- Resolving means the returned path is *spawned*, so it has to be runnable by **this** user, not merely marked executable for someone: Unix executability is `access(X_OK)`, matching what `execvp` asks before it skips a match and keeps walking `PATH`.
+- Spawning a resolved `.cmd` makes the direct child `cmd.exe`, not the server. Both session types therefore hold a `KILL_ON_JOB_CLOSE` Job Object (`modules/job.rs`, shared with the ConPTY children it was written for) — `Child::kill` alone terminates the wrapper and orphans the server.
+- The `PATHEXT` parsing is a pure function (`pathext_suffixes`) rather than an env read inside the `#[cfg(windows)]` branch.
 - The Windows branch is `#[cfg(windows)]`, so CI on Linux does not exercise it. The `windows_tries_pathext_before_the_extensionless_name` test asserts the ordering invariant on every platform by checking the suffix list's shape.
