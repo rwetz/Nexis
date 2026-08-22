@@ -4,9 +4,17 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-//! Windows Job Object with KILL_ON_JOB_CLOSE for ConPTY children.
+//! Windows Job Object with KILL_ON_JOB_CLOSE for spawned children.
 //! Dropping the handle kills the whole tree — only reliable orphan guard
 //! on Windows.
+//!
+//! Two callers need it, for the same reason from different directions. A
+//! ConPTY child is a shell, so anything it started is a grandchild. And a
+//! program resolved to a `.cmd` shim is not run directly at all: Rust's std
+//! detects the extension and spawns `cmd.exe /d /c "<shim> ..."`, so the
+//! handle the caller holds is the wrapper and the real process — an
+//! npm-installed language server or debug adapter — is a grandchild again.
+//! `Child::kill` is `TerminateProcess`, which does not walk the tree.
 
 // Panic-lint gate: no `.unwrap()`/`.expect()` in production code here.
 // Tests may still panic (allow-*-in-tests in clippy.toml). CI's
@@ -25,14 +33,14 @@ use windows_sys::Win32::System::JobObjects::{
 };
 use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_SET_QUOTA, PROCESS_TERMINATE};
 
-pub struct PtyJob {
+pub struct ProcessJob {
     handle: HANDLE,
 }
 
-unsafe impl Send for PtyJob {}
-unsafe impl Sync for PtyJob {}
+unsafe impl Send for ProcessJob {}
+unsafe impl Sync for ProcessJob {}
 
-impl PtyJob {
+impl ProcessJob {
     pub fn create_for(pid: u32) -> io::Result<Self> {
         unsafe {
             let job = CreateJobObjectW(std::ptr::null(), std::ptr::null());
@@ -74,7 +82,7 @@ impl PtyJob {
     }
 }
 
-impl Drop for PtyJob {
+impl Drop for ProcessJob {
     fn drop(&mut self) {
         if !self.handle.is_null() && self.handle != INVALID_HANDLE_VALUE {
             unsafe { CloseHandle(self.handle) };

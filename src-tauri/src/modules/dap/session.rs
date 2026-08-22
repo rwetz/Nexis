@@ -25,6 +25,16 @@ use crate::modules::proc;
 type PendingMap = Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>;
 
 pub struct DapSession {
+    /// Windows only: kills the whole process tree when the session drops.
+    ///
+    /// Load-bearing since programs are resolved before spawning. A server that
+    /// resolves to a `.cmd` shim is run as `cmd.exe /d /c "<shim> ..."`, so
+    /// `_child` is the wrapper and the server itself is a grandchild —
+    /// `kill()` would terminate the wrapper and leave the server alive holding
+    /// both pipe ends, so the reader thread never sees EOF and every restart
+    /// leaks another orphan. Declared before `_child` so the Job closes first.
+    #[cfg(windows)]
+    _job: Option<crate::modules::job::ProcessJob>,
     _child: Child,
     stdin: Arc<Mutex<Box<dyn Write + Send>>>,
     pending: PendingMap,
@@ -42,7 +52,13 @@ impl DapSession {
         session_id: u32,
         app: AppHandle,
     ) -> Result<Self, String> {
-        let mut cmd = proc::command(adapter_cmd);
+        // Same PATHEXT resolution the LSP client does, and for the same
+        // reason: the adapter command is free text in the debugger panel, so
+        // a user who types an npm-installed adapter (`js-debug-adapter`) hits
+        // the `.cmd`-shim gap that `Command` alone cannot bridge on Windows.
+        let program = crate::modules::tools::resolve_on_host(adapter_cmd)
+            .unwrap_or_else(|| std::path::PathBuf::from(adapter_cmd));
+        let mut cmd = proc::command(&program);
         cmd.args(adapter_args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -51,6 +67,18 @@ impl DapSession {
         let mut child = cmd
             .spawn()
             .map_err(|e| format!("dap: failed to start '{adapter_cmd}': {e}"))?;
+
+        // Tree-kill guard, set up before anything can fail out of this
+        // function. See the `_job` field for why `kill()` alone is not enough
+        // once a `.cmd` shim is in play.
+        #[cfg(windows)]
+        let job = match crate::modules::job::ProcessJob::create_for(child.id()) {
+            Ok(j) => Some(j),
+            Err(e) => {
+                log::warn!("dap job-object setup failed for pid={}: {e}", child.id());
+                None
+            }
+        };
 
         let stdin = child.stdin.take().ok_or("dap: no stdin")?;
         let stdout = child.stdout.take().ok_or("dap: no stdout")?;
@@ -66,6 +94,8 @@ impl DapSession {
         }
 
         Ok(Self {
+            #[cfg(windows)]
+            _job: job,
             _child: child,
             stdin,
             pending,
@@ -232,6 +262,8 @@ impl Drop for DapSession {
     fn drop(&mut self) {
         let _ = self.disconnect();
         let _ = self._child.kill();
+        // Reap, so the killed adapter does not linger as a zombie.
+        let _ = self._child.wait();
     }
 }
 

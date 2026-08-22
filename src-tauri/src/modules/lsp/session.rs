@@ -25,6 +25,16 @@ use crate::modules::proc;
 type PendingMap = Arc<Mutex<HashMap<u32, mpsc::SyncSender<Result<Value, String>>>>>;
 
 pub struct LspSession {
+    /// Windows only: kills the whole process tree when the session drops.
+    ///
+    /// Load-bearing since programs are resolved before spawning. A server that
+    /// resolves to a `.cmd` shim is run as `cmd.exe /d /c "<shim> ..."`, so
+    /// `_child` is the wrapper and the server itself is a grandchild —
+    /// `kill()` would terminate the wrapper and leave the server alive holding
+    /// both pipe ends, so the reader thread never sees EOF and every restart
+    /// leaks another orphan. Declared before `_child` so the Job closes first.
+    #[cfg(windows)]
+    _job: Option<crate::modules::job::ProcessJob>,
     /// Kept alive so stdin/stdout pipes stay open.
     _child: Child,
     stdin: Arc<Mutex<Box<dyn Write + Send>>>,
@@ -44,7 +54,17 @@ impl LspSession {
         initialization_options: Option<Value>,
         app: AppHandle,
     ) -> Result<Self, String> {
-        let mut cmd = proc::command(server_cmd);
+        // Resolve before spawning. `Command` on Windows only ever appends
+        // `.exe` to a bare name, but every npm-installed server here lands as
+        // a `.cmd` shim — so `vscode-css-language-server` fails to spawn even
+        // though `tool_probe` (which does walk PATHEXT) reports it present.
+        // That split made the missing-tools pill lie in both directions: it
+        // cleared on refresh, then came straight back on the next open.
+        // Falling back to the bare name keeps the failure path unchanged when
+        // resolution finds nothing, so the error still comes from the spawn.
+        let program = crate::modules::tools::resolve_on_host(server_cmd)
+            .unwrap_or_else(|| std::path::PathBuf::from(server_cmd));
+        let mut cmd = proc::command(&program);
         cmd.args(server_args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -53,6 +73,18 @@ impl LspSession {
         let mut child = cmd
             .spawn()
             .map_err(|e| format!("lsp: failed to start '{server_cmd}': {e}"))?;
+
+        // Tree-kill guard, set up before anything can fail out of this
+        // function. See the `_job` field for why `kill()` alone is not enough
+        // once a `.cmd` shim is in play.
+        #[cfg(windows)]
+        let job = match crate::modules::job::ProcessJob::create_for(child.id()) {
+            Ok(j) => Some(j),
+            Err(e) => {
+                log::warn!("lsp job-object setup failed for pid={}: {e}", child.id());
+                None
+            }
+        };
 
         let stdin = child.stdin.take().ok_or("lsp: no stdin pipe")?;
         let stdout = child.stdout.take().ok_or("lsp: no stdout pipe")?;
@@ -70,6 +102,8 @@ impl LspSession {
         }
 
         let session = Self {
+            #[cfg(windows)]
+            _job: job,
             _child: child,
             stdin,
             pending,
@@ -222,9 +256,12 @@ impl LspSession {
 
 impl Drop for LspSession {
     fn drop(&mut self) {
-        // Best-effort graceful shutdown then kill.
+        // Best-effort graceful shutdown then kill. `wait` is not optional:
+        // without it the killed child stays a zombie until the app exits, and
+        // on Windows it is what releases the wrapper before the Job closes.
         let _ = self.notify("exit".to_string(), None);
         let _ = self._child.kill();
+        let _ = self._child.wait();
     }
 }
 

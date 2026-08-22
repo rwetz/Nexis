@@ -23,7 +23,7 @@
 //! name resolves to an executable is the question the spawn itself will ask.
 
 use crate::modules::workspace::WorkspaceEnv;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Which of `binaries` resolve to something runnable right now.
 ///
@@ -66,40 +66,72 @@ fn resolves(workspace: &WorkspaceEnv, binary: &str) -> bool {
     }
 }
 
-/// A `which`, in-process: no subprocess, so it cannot hang or flash a console.
 fn resolves_on_host(binary: &str) -> bool {
+    resolve_on_host(binary).is_some()
+}
+
+/// A `which`, in-process: no subprocess, so it cannot hang or flash a console.
+///
+/// Returns the concrete path rather than a bool because callers need both
+/// answers from the same walk. `tool_probe` only wants "is it there", but a
+/// spawn site needs the resolved path itself: `std::process::Command` on
+/// Windows appends **only** `.exe` to a bare name — it does not consult
+/// PATHEXT — so handing it `vscode-css-language-server` fails even though the
+/// probe found `vscode-css-language-server.cmd` one directory over. Resolving
+/// here and spawning the result is what keeps the two sides agreeing.
+pub fn resolve_on_host(binary: &str) -> Option<PathBuf> {
+    if binary.is_empty() {
+        return None;
+    }
     let path = Path::new(binary);
     // A name carrying a separator is a path, not a PATH lookup — that is what
     // the OS does when it spawns it, so match that here.
+    //
+    // The suffix walk still applies. A config entry or debugger-panel command
+    // that names a *path* into an npm bin directory
+    // (`.\node_modules\.bin\js-debug-adapter`) has the identical `.cmd`-shim
+    // problem, and on Windows the extensionless sibling sitting right next to
+    // the shim is a bash script — a file that exists and cannot be spawned, so
+    // checking the bare spelling alone would "resolve" to a guaranteed
+    // failure. On a non-Windows host the suffix list is `[""]`, which makes
+    // this exactly the single exact-path check it looks like.
     if path.components().count() > 1 {
-        return is_executable_file(path);
+        return executable_suffixes().into_iter().find_map(|suffix| {
+            let candidate = if suffix.is_empty() {
+                path.to_path_buf()
+            } else {
+                PathBuf::from(format!("{binary}{suffix}"))
+            };
+            is_executable_file(&candidate).then_some(candidate)
+        });
     }
-    let Some(path_var) = std::env::var_os("PATH") else {
-        return false;
-    };
+    let path_var = std::env::var_os("PATH")?;
+    let suffixes = executable_suffixes();
+    // Suffixes inner, directories outer: the first PATH entry holding *any*
+    // spawnable spelling wins, which is the order Windows itself searches.
     std::env::split_paths(&path_var)
         .filter(|dir| !dir.as_os_str().is_empty())
-        .any(|dir| {
-            executable_suffixes()
-                .iter()
-                .any(|suffix| is_executable_file(&dir.join(format!("{binary}{suffix}"))))
+        .find_map(|dir| {
+            suffixes.iter().find_map(|suffix| {
+                let candidate = dir.join(format!("{binary}{suffix}"));
+                is_executable_file(&candidate).then_some(candidate)
+            })
         })
 }
 
 /// Suffixes to try for a bare name. On Windows the npm-installed servers here
 /// land as `.cmd` shims rather than `.exe`, so PATHEXT is not optional.
+///
+/// The extensionless spelling goes **last** on Windows, and that ordering is
+/// load-bearing. npm's shim writer emits three files per bin — `foo`, `foo.cmd`
+/// and `foo.ps1` — where the extensionless `foo` is a *bash* script for
+/// MSYS/Git Bash. `CreateProcessW` cannot run it, so preferring it would
+/// resolve to a path that is guaranteed not to spawn. Trying PATHEXT first
+/// picks the `.cmd`, which `Command` routes through `cmd.exe` for us.
 fn executable_suffixes() -> Vec<String> {
     #[cfg(windows)]
     {
-        let mut out = vec![String::new()];
-        let raw = std::env::var("PATHEXT").unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string());
-        out.extend(
-            raw.split(';')
-                .map(str::trim)
-                .filter(|e| e.starts_with('.'))
-                .map(str::to_string),
-        );
-        out
+        pathext_suffixes(std::env::var("PATHEXT").ok().as_deref())
     }
     #[cfg(not(windows))]
     {
@@ -107,13 +139,62 @@ fn executable_suffixes() -> Vec<String> {
     }
 }
 
+/// The Windows suffix list, as a pure function of the raw `PATHEXT` value.
+///
+/// Deliberately **not** `#[cfg(windows)]`: the branch it feeds is, so its
+/// tests would otherwise never run on the Linux CI that gates every push. Same
+/// reasoning as `parse_wsl_probe` (pitfall #21) — which is also why the
+/// dead-code allow is scoped to non-Windows rather than blanket: on Windows
+/// this is live production code and must stay lint-visible.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn pathext_suffixes(raw: Option<&str>) -> Vec<String> {
+    const DEFAULT_PATHEXT: &str = ".COM;.EXE;.BAT;.CMD";
+    fn parse(raw: &str) -> Vec<String> {
+        raw.split(';')
+            .map(str::trim)
+            .filter(|e| e.starts_with('.'))
+            .map(str::to_string)
+            .collect()
+    }
+    // A set-but-*empty* `PATHEXT` reads back as `Some("")`, not `None`, so a
+    // plain `unwrap_or` on the absent case would never fire and the list would
+    // collapse to the extensionless spelling — silently disabling the whole
+    // `.cmd` resolution this exists for. The second guard covers a `PATHEXT`
+    // whose entries all fail the leading-dot filter (`";;"`), which lands in
+    // the same place by a different road.
+    let mut out = raw
+        .filter(|v| !v.trim().is_empty())
+        .map(parse)
+        .unwrap_or_default();
+    if out.is_empty() {
+        out = parse(DEFAULT_PATHEXT);
+    }
+    out.push(String::new());
+    out
+}
+
 #[cfg(unix)]
 fn is_executable_file(path: &Path) -> bool {
-    use std::os::unix::fs::PermissionsExt;
+    use std::os::unix::ffi::OsStrExt;
     // `metadata` follows symlinks, which is what an exec would do too.
-    std::fs::metadata(path)
-        .map(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
+    if !std::fs::metadata(path)
+        .map(|m| m.is_file())
         .unwrap_or(false)
+    {
+        return false;
+    }
+    // Permission *bits* are the wrong question now that the answer is spawned
+    // rather than counted. `execvp` skips a match it cannot actually run
+    // (EACCES) and keeps walking PATH, so a root-owned 0700 `pylsp` early on
+    // PATH must not shadow the 0755 one later — which is exactly what
+    // `mode & 0o111 != 0` would do, since it accepts an exec bit belonging to
+    // somebody else. `access(X_OK)` asks the kernel the question the spawn
+    // will ask.
+    let Ok(c_path) = std::ffi::CString::new(path.as_os_str().as_bytes()) else {
+        return false;
+    };
+    // Safety: `c_path` outlives the call and `access` only reads it.
+    unsafe { libc::access(c_path.as_ptr(), libc::X_OK) == 0 }
 }
 
 #[cfg(not(unix))]
@@ -163,6 +244,134 @@ mod tests {
         // Contains a separator, so it must be treated as a path and fail
         // rather than matching a same-named binary somewhere on PATH.
         assert!(!resolves_on_host("no/such/dir/sh"));
+    }
+
+    #[test]
+    fn resolution_returns_a_spawnable_path_not_the_bare_name() {
+        // The whole point of `resolve_on_host` over a bool: what comes back
+        // must be something `Command` can spawn as-is. On Windows that means
+        // a PATHEXT spelling, never the bare name a `Command::new` would fail
+        // to find.
+        let probe = if cfg!(windows) { "cmd" } else { "sh" };
+        let resolved = resolve_on_host(probe).expect("probe binary on PATH");
+        assert!(resolved.is_absolute(), "{resolved:?} is not absolute");
+        assert!(
+            is_executable_file(&resolved),
+            "{resolved:?} is not runnable"
+        );
+        #[cfg(windows)]
+        assert!(
+            resolved.extension().is_some(),
+            "{resolved:?} has no extension; CreateProcessW cannot run it"
+        );
+    }
+
+    #[test]
+    fn windows_tries_pathext_before_the_extensionless_name() {
+        // npm writes `foo` (a bash script), `foo.cmd` and `foo.ps1` into the
+        // same directory. Resolving to the extensionless bash script would be
+        // a path that never spawns, so PATHEXT must come first.
+        assert_eq!(
+            executable_suffixes().last().map(String::as_str),
+            Some(""),
+            "the extensionless spelling must be the last resort"
+        );
+        // Asserted through the pure parser so the Windows ordering is covered
+        // on every platform, not only on a Windows runner.
+        let suffixes = pathext_suffixes(Some(".COM;.EXE;.BAT;.CMD"));
+        assert!(
+            suffixes.len() > 1 && !suffixes[0].is_empty(),
+            "PATHEXT entries must precede the bare name: {suffixes:?}"
+        );
+        assert_eq!(suffixes.last().map(String::as_str), Some(""));
+    }
+
+    #[test]
+    fn an_empty_or_unusable_pathext_still_yields_the_shim_extensions() {
+        // `PATHEXT=""` reads back as `Some("")`, and `";;"` parses to nothing.
+        // Either one collapsing the list to `[""]` would turn every `.cmd`
+        // shim back into "not found" — the exact bug this module fixes, but
+        // arrived at through the environment instead of through `Command`.
+        for raw in [None, Some(""), Some("   "), Some(";;"), Some("bogus")] {
+            let suffixes = pathext_suffixes(raw);
+            assert!(
+                suffixes.iter().any(|s| s.eq_ignore_ascii_case(".cmd")),
+                "{raw:?} produced {suffixes:?}, which cannot find a .cmd shim"
+            );
+            assert_eq!(suffixes.last().map(String::as_str), Some(""));
+        }
+    }
+
+    #[test]
+    fn a_real_pathext_is_honoured_and_ordered() {
+        let suffixes = pathext_suffixes(Some(".COM; .EXE ;.CMD"));
+        assert_eq!(suffixes, vec![".COM", ".EXE", ".CMD", ""]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_file_this_user_cannot_execute_is_not_a_match() {
+        // `mode & 0o111 != 0` accepted an exec bit belonging to somebody
+        // else, so a 0o001 file looked runnable. That was harmless while the
+        // answer was a bool, and wrong once the answer is the path we spawn:
+        // `execvp` skips an EACCES match and keeps walking PATH.
+        use std::os::unix::fs::PermissionsExt;
+        // Root bypasses the check (any exec bit is enough), so this cannot
+        // assert anything in a root container.
+        // Safety: `geteuid` reads process state and cannot fail.
+        if unsafe { libc::geteuid() } == 0 {
+            return;
+        }
+        let path = std::env::temp_dir().join(format!(
+            "nexis-tools-x-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        std::fs::write(&path, b"#!/bin/sh\ntrue\n").expect("write probe file");
+        let set = |mode| {
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(mode))
+                .expect("chmod probe file")
+        };
+
+        set(0o001); // executable by "other" only — not by us
+        assert!(
+            !is_executable_file(&path),
+            "0o001 must not count as runnable"
+        );
+        set(0o644);
+        assert!(!is_executable_file(&path));
+        set(0o755);
+        assert!(is_executable_file(&path));
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn an_explicit_path_to_a_non_executable_file_is_not_a_match() {
+        // The separator branch now walks suffixes too, so it must still reject
+        // a path that exists but cannot be run rather than returning it.
+        let path = std::env::temp_dir().join(format!(
+            "nexis-tools-plain-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        std::fs::write(&path, b"not a program").expect("write probe file");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644))
+                .expect("chmod probe file");
+            assert!(resolve_on_host(&path.to_string_lossy()).is_none());
+        }
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn an_empty_name_resolves_to_nothing() {
+        // `Path::new("").components().count()` is 0, so this must be rejected
+        // up front rather than falling through to a PATH walk that joins the
+        // suffix onto every directory and matches the directory itself.
+        assert!(resolve_on_host("").is_none());
     }
 
     #[test]
