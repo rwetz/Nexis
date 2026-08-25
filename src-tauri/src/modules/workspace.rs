@@ -741,6 +741,108 @@ mod tests {
         assert_eq!(wsl_drvfs_to_windows("/mnt/wsl"), None);
         assert_eq!(wsl_drvfs_to_windows("/home/vinicios"), None);
     }
+
+    // ── wsl_path_to_host: POSIX (distro) path → Windows host path ─────────
+
+    #[test]
+    fn wsl_path_to_host_maps_drvfs_children_to_the_native_drive() {
+        // /mnt/<drive> is drvfs-backed Windows storage; the UNC share can
+        // return "Access is denied" for it, so the native drive path wins.
+        // The drvfs branch short-circuits before any filesystem probe, so
+        // this is deterministic without a live distro.
+        assert_eq!(
+            wsl_path_to_host("Ubuntu", "/mnt/c/Users/ryan/repo"),
+            PathBuf::from(r"C:\Users\ryan\repo")
+        );
+        assert_eq!(
+            wsl_path_to_host("Ubuntu", "/mnt/e/projects"),
+            PathBuf::from(r"E:\projects")
+        );
+    }
+
+    #[test]
+    fn wsl_path_to_host_maps_drvfs_root_to_drive_root() {
+        assert_eq!(wsl_path_to_host("Ubuntu", "/mnt/d"), PathBuf::from(r"D:\"));
+    }
+
+    #[test]
+    fn wsl_path_to_host_sends_linux_paths_to_a_wsl_unc_share() {
+        let p = wsl_path_to_host("NoSuchDistroAnywhere", "/home/ryan/repo");
+        let s = p.to_string_lossy();
+        // Which share wins depends on whether the distro is installed here;
+        // either form is correct, a POSIX path leaking through is not.
+        assert!(
+            s.starts_with(r"\\wsl.localhost\NoSuchDistroAnywhere\")
+                || s.starts_with(r"\\wsl$\NoSuchDistroAnywhere\"),
+            "got: {s}"
+        );
+    }
+
+    #[test]
+    fn resolve_path_wsl_posix_resolves_like_the_host_mapping() {
+        let ws = WorkspaceEnv::Wsl {
+            distro: "Ubuntu".into(),
+        };
+        // drvfs child: native drive, deterministically.
+        assert_eq!(
+            resolve_path("/mnt/c/Users/ryan/x", &ws),
+            PathBuf::from(r"C:\Users\ryan\x")
+        );
+        // Pure Linux path: lands on one of the two WSL shares, never /mnt.
+        let p = resolve_path("/home/ryan/x", &ws);
+        let s = p.to_string_lossy();
+        assert!(
+            s.starts_with(r"\\wsl.localhost\Ubuntu\") || s.starts_with(r"\\wsl$\Ubuntu\"),
+            "got: {s}"
+        );
+    }
+
+    // ── decode_command_output: wsl.exe speaks UTF-16LE ─────────────────────
+
+    #[test]
+    fn decode_command_output_reads_utf16le_bom() {
+        let mut bytes = vec![0xFF, 0xFE];
+        bytes.extend("Ubuntu-22.04".encode_utf16().flat_map(u16::to_le_bytes));
+        assert_eq!(decode_command_output(&bytes), "Ubuntu-22.04");
+    }
+
+    #[test]
+    fn decode_command_output_heuristically_detects_bomless_utf16le() {
+        // `wsl --list` output has no BOM; the NUL-in-every-odd-byte shape is
+        // what the heuristic keys on.
+        let bytes: Vec<u8> = "Stopped"
+            .encode_utf16()
+            .flat_map(u16::to_le_bytes)
+            .collect();
+        assert_eq!(decode_command_output(&bytes), "Stopped");
+    }
+
+    #[test]
+    fn decode_command_output_passes_plain_utf8_through() {
+        assert_eq!(decode_command_output(b"/usr/bin/zsh"), "/usr/bin/zsh");
+        assert_eq!(
+            decode_command_output(b"line1\r\nline2\r\n"),
+            "line1\r\nline2\r\n"
+        );
+    }
+
+    #[test]
+    fn decode_command_output_is_lossy_not_fatal_on_invalid_utf8() {
+        // 0xC3 followed by 0x28 is an invalid UTF-8 sequence; from_utf8_lossy
+        // must substitute U+FFFD for just the bad byte rather than erroring
+        // or dropping output (pitfall #13's contract, applied to WSL output).
+        assert_eq!(
+            decode_command_output(&[0x68, 0xC3, 0x28, 0x69]),
+            "h\u{FFFD}(i"
+        );
+    }
+
+    #[test]
+    fn looks_utf16le_rejects_odd_length_and_short_input() {
+        assert!(!looks_utf16le(&[0x61, 0x00, 0x62]));
+        assert!(!looks_utf16le(&[0x61, 0x00]));
+        assert!(!looks_utf16le(b"ok"));
+    }
 }
 
 #[cfg(test)]

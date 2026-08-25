@@ -51,14 +51,21 @@ pub async fn pty_open(
     on_exit: Channel<i32>,
 ) -> Result<u32, String> {
     let workspace = WorkspaceEnv::from_option(workspace);
-    authorize_spawn_cwd(&registry, cwd.as_deref(), &workspace).map_err(|e| {
-        log::warn!("pty_open: cwd rejected: {e}");
-        e
-    })?;
+    let authorized_cwd =
+        authorize_spawn_cwd(&registry, cwd.as_deref(), &workspace).map_err(|e| {
+            log::warn!("pty_open: cwd rejected: {e}");
+            e
+        })?;
+    // Spawn in the *authorized* path, not the raw input. authorize_spawn_cwd
+    // resolves the workspace-relative form, heals a mangled verbatim prefix
+    // (pitfall #19) and canonicalizes symlinks; forwarding the raw string
+    // would throw that away and leave the shell starting wherever
+    // apply_common's is_dir fallback lands instead of where was authorized.
+    let spawn_cwd = authorized_cwd.map(|p| p.to_string_lossy().into_owned());
     let extra_env = extra_env.unwrap_or_default();
     let session = tauri::async_runtime::spawn_blocking(move || {
         session::spawn(
-            cols, rows, cwd, workspace, extra_env, shell, on_data, on_exit,
+            cols, rows, spawn_cwd, workspace, extra_env, shell, on_data, on_exit,
         )
         .map(|(s, _)| s)
     })

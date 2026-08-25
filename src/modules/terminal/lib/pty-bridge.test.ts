@@ -6,6 +6,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { openPty } from "./pty-bridge";
+import { currentWorkspaceEnv } from "@/modules/workspace";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -15,7 +16,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 }));
 
 vi.mock("@/modules/workspace", () => ({
-  currentWorkspaceEnv: () => ({ kind: "local" }),
+  currentWorkspaceEnv: vi.fn(() => ({ kind: "local" })),
 }));
 
 describe("pty-bridge — pitfall 1C: workspace_authorize before pty_open", () => {
@@ -25,6 +26,79 @@ describe("pty-bridge — pitfall 1C: workspace_authorize before pty_open", () =>
     const core = await import("@tauri-apps/api/core");
     invokeMock = vi.mocked(core.invoke);
     invokeMock.mockReset();
+  });
+
+  it("forwards cwd, shell and extraEnv to pty_open verbatim", async () => {
+    const calls: Array<{ cmd: string; args?: Record<string, unknown> }> = [];
+    invokeMock.mockImplementation(async (cmd: string, args?: Record<string, unknown>) => {
+      calls.push({ cmd, args });
+      if (cmd === "workspace_authorize") return "/canonical";
+      if (cmd === "pty_open") return 10;
+      return null;
+    });
+
+    await openPty(
+      100,
+      30,
+      { onData: vi.fn() },
+      "/some/path",
+      { FOO: "1" },
+      " /bin/bash ",
+    );
+
+    const open = calls.find((c) => c.cmd === "pty_open");
+    expect(open?.args).toMatchObject({
+      cols: 100,
+      rows: 30,
+      cwd: "/some/path",
+      // The shell preference is trimmed; a surrounding-space path must still
+      // resolve, not be dropped as blank.
+      shell: "/bin/bash",
+      extraEnv: { FOO: "1" },
+    });
+  });
+
+  it("normalizes empty optional arguments to null", async () => {
+    const calls: Array<{ cmd: string; args?: Record<string, unknown> }> = [];
+    invokeMock.mockImplementation(async (cmd: string, args?: Record<string, unknown>) => {
+      calls.push({ cmd, args });
+      if (cmd === "pty_open") return 11;
+      return null;
+    });
+
+    await openPty(80, 24, { onData: vi.fn() }, undefined, {}, "   ");
+
+    const open = calls.find((c) => c.cmd === "pty_open");
+    expect(open?.args).toMatchObject({
+      cwd: null,
+      // An empty env map and whitespace-only shell preference mean "unset" —
+      // the backend treats absent differently from empty in some code paths.
+      extraEnv: null,
+      shell: null,
+    });
+  });
+
+  it("stamps the current workspace environment onto both IPC calls", async () => {
+    vi.mocked(currentWorkspaceEnv).mockReturnValue({
+      kind: "wsl",
+      distro: "Ubuntu-22.04",
+    });
+    const calls: Array<{ cmd: string; args?: Record<string, unknown> }> = [];
+    invokeMock.mockImplementation(async (cmd: string, args?: Record<string, unknown>) => {
+      calls.push({ cmd, args });
+      if (cmd === "workspace_authorize") return "/canonical";
+      if (cmd === "pty_open") return 12;
+      return null;
+    });
+
+    await openPty(80, 24, { onData: vi.fn() }, "/home/ryan/repo");
+
+    // Both authorize and open must carry the same workspace stamp — the
+    // Rust side resolves POSIX cwds through the distro named here.
+    for (const cmd of ["workspace_authorize", "pty_open"]) {
+      const call = calls.find((c) => c.cmd === cmd);
+      expect(call?.args?.workspace).toEqual({ kind: "wsl", distro: "Ubuntu-22.04" });
+    }
   });
 
   it("calls workspace_authorize BEFORE pty_open when a cwd is provided (pitfall 1C)", async () => {

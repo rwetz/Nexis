@@ -54,4 +54,22 @@ describe("workspaceEnvForPath", () => {
       LOCAL_WORKSPACE,
     );
   });
+
+  it("matches UNC prefixes case-insensitively", () => {
+    // Paths arrive from the OS, from user input, and from older stored state;
+    // Windows case-folds freely, so the distro detection must not care.
+    expect(workspaceEnvForPath("//WSL.localhost/Ubuntu/home", LOCAL_WORKSPACE)).toEqual(
+      WSL,
+    );
+    expect(workspaceEnvForPath("\\\\Wsl$\\Ubuntu-22.04\\home", LOCAL_WORKSPACE)).toEqual({
+      kind: "wsl",
+      distro: "Ubuntu-22.04",
+    });
+  });
+
+  it("treats a relative path as local even while in WSL", () => {
+    // A bare name names no filesystem root at all — never route it through
+    // the current distro.
+    expect(workspaceEnvForPath("build/output", WSL)).toEqual(LOCAL_WORKSPACE);
+  });
 });

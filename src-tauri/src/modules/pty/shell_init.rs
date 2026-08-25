@@ -764,7 +764,12 @@ mod windows {
 
         /// `-d Ubuntu --cd <cwd> --exec env <BASE_ENV> <tail…>`
         fn expected(cwd: &str, tail: &[&str]) -> Vec<String> {
-            let mut out: Vec<String> = ["-d", "Ubuntu", "--cd", cwd, "--exec", "env"]
+            expected_for("Ubuntu", cwd, tail)
+        }
+
+        /// As `expected`, for a distro other than the `Ubuntu` default.
+        fn expected_for(distro: &str, cwd: &str, tail: &[&str]) -> Vec<String> {
+            let mut out: Vec<String> = ["-d", distro, "--cd", cwd, "--exec", "env"]
                 .iter()
                 .map(|s| s.to_string())
                 .collect();
@@ -1005,6 +1010,220 @@ mod windows {
         #[test]
         fn shell_kind_from_path_returns_other_for_empty() {
             assert_eq!(ShellKind::from_path(""), ShellKind::Other);
+        }
+
+        #[test]
+        fn builds_wsl_launch_spec_with_empty_cwd_falls_back_to_home() {
+            let spec = build_wsl_launch_spec(
+                Some(""),
+                "Ubuntu",
+                "/usr/bin/zsh",
+                ShellKind::Zsh,
+                WslShellIntegration::None,
+                no_extra_env(),
+            );
+            assert_eq!(spec.args, expected("~", &["/usr/bin/zsh", "-l"]));
+        }
+
+        #[test]
+        fn builds_wsl_launch_spec_treats_whitespace_cwd_as_unset() {
+            // Matches authorize_spawn_cwd's semantics: "   " is no directory.
+            let spec = build_wsl_launch_spec(
+                Some("   "),
+                "Ubuntu",
+                "/bin/bash",
+                ShellKind::Bash,
+                WslShellIntegration::None,
+                no_extra_env(),
+            );
+            assert_eq!(&spec.args[3], "~");
+        }
+
+        #[test]
+        fn builds_wsl_bash_launch_spec_without_integration_still_interactive() {
+            let spec = build_wsl_launch_spec(
+                Some("/tmp"),
+                "Debian-test.distro",
+                "/bin/bash",
+                ShellKind::Bash,
+                WslShellIntegration::None,
+                no_extra_env(),
+            );
+            // A dotted/dashed distro name must pass through untouched, and a
+            // bash whose rcfile install failed still gets an interactive shell.
+            assert_eq!(
+                spec.args,
+                expected_for("Debian-test.distro", "/tmp", &["/bin/bash", "-i"])
+            );
+        }
+
+        #[test]
+        fn builds_wsl_fish_launch_spec_without_integration_still_interactive() {
+            let spec = build_wsl_launch_spec(
+                None,
+                "Alpine",
+                "/usr/bin/fish",
+                ShellKind::Fish,
+                WslShellIntegration::None,
+                no_extra_env(),
+            );
+            assert_eq!(
+                spec.args,
+                expected_for("Alpine", "~", &["/usr/bin/fish", "-i"])
+            );
+        }
+
+        // ── build() — the CommandBuilder actually handed to ConPTY ─────────
+        //
+        // These exercise the real local-shell path (no distro probes). The WSL
+        // route is intentionally not tested at this level: build_wsl shells
+        // out to wsl.exe for the login-shell probe, which needs a live distro.
+
+        #[test]
+        fn powershell_spawn_carries_pitfall_1b_contract() {
+            let cmd =
+                build(None, WorkspaceEnv::Local, None, &HashMap::new()).expect("powershell build");
+            let argv: Vec<String> = cmd
+                .get_argv()
+                .iter()
+                .map(|a| a.to_string_lossy().into_owned())
+                .collect();
+            for flag in [
+                "-NoLogo",
+                "-NoExit",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+            ] {
+                assert!(
+                    argv.contains(&flag.to_string()),
+                    "argv missing {flag}: {argv:?}"
+                );
+            }
+            // The profile must be dot-sourced from the env var, never via a
+            // file argument: the script-mode → interactive-mode transition
+            // races ConPTY output init and drops the first prompt (CLAUDE.md
+            // pitfall #1B). Asserted as a full flag allowlist — stronger than
+            // a single missing-flag check and it keeps this source free of a
+            // certain two-word literal the pitfall_1b scanner forbids.
+            assert!(
+                argv.contains(
+                    &"if ($env:NEXIS_PWSH_PROFILE) { . $env:NEXIS_PWSH_PROFILE }".to_string()
+                ),
+                "argv must carry the dot-source command: {argv:?}"
+            );
+            let flags: Vec<String> = argv
+                .iter()
+                .filter(|a| a.starts_with('-'))
+                .cloned()
+                .collect();
+            assert_eq!(
+                flags,
+                ["-NoLogo", "-NoExit", "-ExecutionPolicy", "-Command"],
+                "unexpected PowerShell flags: {argv:?}"
+            );
+            let profile = cmd
+                .get_env("NEXIS_PWSH_PROFILE")
+                .expect("NEXIS_PWSH_PROFILE must be set")
+                .to_string_lossy()
+                .into_owned();
+            assert!(
+                std::path::Path::new(&profile).is_file(),
+                "profile env var must point at the written cache file: {profile}"
+            );
+        }
+
+        #[test]
+        fn spawn_sets_terminal_environment() {
+            let cmd = build(None, WorkspaceEnv::Local, None, &HashMap::new()).expect("build");
+            assert_eq!(cmd.get_env("TERM").unwrap(), "xterm-256color");
+            assert_eq!(cmd.get_env("COLORTERM").unwrap(), "truecolor");
+            assert_eq!(cmd.get_env("NEXIS_TERMINAL").unwrap(), "1");
+        }
+
+        #[test]
+        fn spawn_cwd_strips_verbatim_prefix_for_conpty() {
+            let dir = std::env::temp_dir().join(format!(
+                "nexis-shell-init-cwd-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_nanos())
+                    .unwrap_or(0)
+            ));
+            fs::create_dir_all(&dir).unwrap();
+            // canonicalize returns the \\?\ verbatim form on Windows — exactly
+            // what authorize_spawn_cwd hands back. Reaching PowerShell, it
+            // renders the prompt as
+            // `PS Microsoft.PowerShell.Core\FileSystem::\\?\C:\…>` instead of
+            // `PS C:\…>`, so apply_common must strip it.
+            let verbatim = fs::canonicalize(&dir).unwrap();
+            let cmd = build(
+                Some(verbatim.to_string_lossy().into_owned()),
+                WorkspaceEnv::Local,
+                None,
+                &HashMap::new(),
+            )
+            .expect("build with verbatim cwd");
+            let cwd = cmd
+                .get_cwd()
+                .expect("cwd must be set")
+                .to_string_lossy()
+                .into_owned();
+            assert!(!cwd.starts_with(r"\\?\"), "verbatim prefix leaked: {cwd}");
+            assert!(!cwd.contains('/'), "forward slashes leaked: {cwd}");
+            // The stripped path must still resolve to the same directory.
+            assert_eq!(fs::canonicalize(&cwd).unwrap(), verbatim);
+            let _ = fs::remove_dir_all(&dir);
+        }
+
+        #[test]
+        fn nonexistent_shell_override_falls_back_instead_of_spawning_dead_shell() {
+            let bogus = r"C:\nexis-test-definitely-not-a-shell.exe";
+            assert!(!std::path::Path::new(bogus).is_file());
+            let cmd = build(
+                None,
+                WorkspaceEnv::Local,
+                Some(bogus.to_string()),
+                &HashMap::new(),
+            )
+            .expect("fallback build");
+            let shell = cmd.get_shell();
+            assert_ne!(
+                shell.to_ascii_lowercase(),
+                bogus.to_ascii_lowercase(),
+                "the bogus override must not reach the spawn: {shell}"
+            );
+        }
+
+        #[test]
+        fn non_powershell_shell_spawns_without_integration_flags() {
+            let system_root = std::env::var_os("SystemRoot")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from(r"C:\Windows"));
+            let cmd_exe = system_root.join("System32").join("cmd.exe");
+            if !cmd_exe.is_file() {
+                return; // nothing to prove on a runner without cmd.exe
+            }
+            let cmd = build(
+                None,
+                WorkspaceEnv::Local,
+                Some(cmd_exe.to_string_lossy().into_owned()),
+                &HashMap::new(),
+            )
+            .expect("cmd build");
+            let argv: Vec<String> = cmd
+                .get_argv()
+                .iter()
+                .map(|a| a.to_string_lossy().into_owned())
+                .collect();
+            for flag in ["-NoLogo", "-NoExit", "-Command"] {
+                assert!(
+                    !argv.contains(&flag.to_string()),
+                    "PowerShell flags leaked into a cmd.exe spawn: {argv:?}"
+                );
+            }
+            assert!(cmd.get_env("NEXIS_PWSH_PROFILE").is_none());
         }
     }
 }
