@@ -17,13 +17,14 @@ Terminal sessions end to end: frontend xterm.js ↔ Tauri IPC ↔ Rust PTY threa
 - `src-tauri/src/modules/pty/shell_init.rs` — shell profile injection; profiles cached at `~/.cache/nexis/shell-integration/` via `write_if_changed`. **WSL installs write into the distro** (`\\wsl.localhost\<distro>\home\<user>\.cache\nexis\…`) and must commit through `windows::write_wsl_script`, not `write_if_changed` — the 9P share rejects `fs::rename` (CLAUDE.md pitfall #17). A failed install is non-fatal by design (`WslShellIntegration::None`), which is exactly why breaking it is invisible: the terminal works, but emits no OSC 7/133 at all. Also owns the WSL launch spec: `wsl.exe -d <distro> --cd <linux path> --exec env <NAME=VALUE…> <shell>`. The `env` prefix is load-bearing — **nothing set on the `wsl.exe` command reaches the Linux shell** (that needs `WSLENV` or a Linux-side assignment), so `TERM`/`COLORTERM`/`NEXIS_TERMINAL` and the user's `terminalEnvVars` all travel as `env` arguments. `--cd` is refused unless POSIX-absolute
 - Thread names are prefixed `nexis-pty-*` — searchable in logs
 
-## Invariants (authoritative detail in CLAUDE.md pitfalls #1, #6–#9)
+## Invariants (authoritative detail in CLAUDE.md pitfalls #1, #6–#9, #19)
 
 - ConPTY create and close are serialized by one shared lock; `pty_close` drops sessions on a detached thread
 - PowerShell launches via `-Command` + `NEXIS_PWSH_PROFILE` env var, never `-File`
 - Shared PTY mutexes recover from poison with `unwrap_or_else(|e| e.into_inner())` — no bare `.unwrap()`
 - No `.unwrap()`/`.expect()` on the drop-thread spawn path
 - Input goes through a per-session `nexis-pty-writer` thread fed by a FIFO channel (`Session.write_tx`); `pty_write` only enqueues. Keep it that way: a direct `write_all` in the command blocks the main thread when the child stops reading (Ctrl+S), and a `spawn_blocking` per write can reorder rapid keystrokes — the channel is what guarantees byte order. Device-query replies (DA/DSR/CPR) that xterm generates frontend-side ride the same `onData` → `pty_write` path, so they can't interleave with keystrokes — as long as `pty_write` stays sync and pty-bridge stays the only invoke site, both tripwired (`pty_write_stays_sync_and_enqueue_only` in pitfall_invariants.rs; `pty_write` confinement in pitfall-guards.test.ts).
+- Spawn cwds are canonical Windows paths in frontend clothing: every canonical→frontend conversion goes through `canonical_to_frontend` / `relative_slashes` (workspace.rs), and stored paths get `stripVerbatimPrefix` at state boundaries. A slash-flipped `\\?\` prefix (`//?/C:/…`) is an unspawnable cwd that tab persistence would re-serve forever — see CLAUDE.md pitfall #19; `openPty`'s no-cwd retry is the last-resort degradation.
 
 ## WSL probes: read by sentinel, never positionally (2026-08)
 
@@ -49,6 +50,7 @@ Exit path: `useTabs`'s `onCloseRequested` handler mints per-tab snapshot ids, fo
 
 - Blank terminal → follow the 5-step checklist in CLAUDE.md pitfall #1
 - Blank terminal *after switching into WSL* → check for a `nexis: could not start a shell here` notice in the pane (a rejected `pty_open` now prints there); if the reason names an unusable cwd, suspect a probe misread, pitfall #21
+- `cwd not accessible (os error 3)` on spawn → poisoned/stale cwd, pitfall #23; the Rust log names the path, and WebView2's localStorage (`nexis.saved-tabs`, `nexis.recent-workspaces`) holds what the frontend kept
 - Missing output on long commands → backpressure cap, pitfall #7 (intentional)
 - Stale shell profile in dev → delete the cached file; don't bypass `write_if_changed` (pitfall #6)
 

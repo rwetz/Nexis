@@ -36,6 +36,9 @@ pub async fn save_cast_recording(content: String) -> Result<String, String> {
     let path = dir.join(&filename);
     std::fs::write(&path, content.as_bytes()).map_err(|e| format!("write: {e}"))?;
 
-    // Return path with forward slashes for display consistency.
-    Ok(path.to_string_lossy().replace('\\', "/"))
+    // Return path with forward slashes for display consistency. Routed
+    // through the audited conversion so a `\\?\`-prefixed home (some Windows
+    // configurations) can never leak the unspawnable "//?/" hybrid into the
+    // frontend (pitfall #23).
+    Ok(crate::modules::workspace::canonical_to_frontend(path))
 }

@@ -133,6 +133,45 @@ describe("tab state round-trip", () => {
     expect(built.tabs).toHaveLength(1);
     expect(built.tabs[0].kind).toBe("terminal");
   });
+
+  // Pitfall 19 regression: older builds stored slash-flipped verbatim paths
+  // ("//?/C:/…") as tab cwds, and pty_open rejects that hybrid with
+  // "cwd not accessible (os error 3)" — bricking the tab on every launch.
+  it("heals mangled verbatim-prefix cwds and editor paths on restore (pitfall 19)", () => {
+    const saved = {
+      version: 1 as const,
+      activeIndex: 0,
+      tabs: [
+        {
+          kind: "terminal" as const,
+          title: "shell",
+          cwd: "//?/C:/Users/ryan/Dev/scratch-transformer",
+        },
+        {
+          kind: "editor" as const,
+          tree: {
+            kind: "leaf" as const,
+            path: "//?/C:/Users/ryan/Dev/scratch-transformer/model/attention.py",
+          },
+          activePath:
+            "//?/C:/Users/ryan/Dev/scratch-transformer/model/attention.py",
+        },
+      ],
+    };
+
+    const built = buildTabsFromSaved(saved, 1);
+    const term = built.tabs[0] as TerminalTab;
+    expect(term.cwd).toBe("C:/Users/ryan/Dev/scratch-transformer");
+    const paneLeaf = term.paneTree.kind === "leaf" ? term.paneTree : null;
+    expect(paneLeaf?.cwd).toBe("C:/Users/ryan/Dev/scratch-transformer");
+
+    const editor = built.tabs[1];
+    if (editor.kind !== "editor") throw new Error("expected editor tab");
+    const editorLeaves = editor.paneTree;
+    expect(
+      editorLeaves.kind === "leaf" ? editorLeaves.path : "",
+    ).toBe("C:/Users/ryan/Dev/scratch-transformer/model/attention.py");
+  });
 });
 
 describe("localStorage-backed save/load", () => {

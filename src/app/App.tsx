@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { packEnabled, viewEnabled } from "@/lib/packs";
-import { dirname } from "@/lib/path";
+import { dirname, stripVerbatimPrefix } from "@/lib/path";
 import { useSidebarState, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "./useSidebarState";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 import { useDialogCoordinator } from "./useDialogCoordinator";
@@ -372,7 +372,10 @@ export default function App() {
   useEffect(() => {
     homeDir()
       .then(async (p) => {
-        const normalized = p.replace(/\\/g, "/");
+        // stripVerbatimPrefix: some path sources hand back `\\?\…`, and
+        // slash-flipping that prefix yields the unspawnable "//?/…" hybrid
+        // (pitfall #19) — it must never become a tab cwd or workspace root.
+        const normalized = stripVerbatimPrefix(p).replace(/\\/g, "/");
         setHome(normalized);
         try {
           await native.workspaceAuthorize(normalized);
@@ -457,7 +460,11 @@ export default function App() {
   }, []);
 
   const switchWorkspacePath = useCallback(
-    async (path: string) => {
+    async (rawPath: string) => {
+      // Heal a mangled verbatim prefix ("//?/C:/…", pitfall #19) before the
+      // path becomes the workspace root and every new tab's cwd. Older builds
+      // stored this exact hybrid in Recent Workspaces.
+      const path = stripVerbatimPrefix(rawPath);
       const dirty = tabsRef.current.some((t) => t.kind === "editor" && editorAnyDirty(t));
       if (dirty) {
         window.alert("Save or close unsaved editor tabs before switching workspace.");

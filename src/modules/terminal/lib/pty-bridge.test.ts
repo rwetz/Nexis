@@ -81,3 +81,53 @@ describe("pty-bridge — pitfall 1C: workspace_authorize before pty_open", () =>
     expect(calls).toContain("pty_open");
   });
 });
+
+describe("pty-bridge — pitfall 19: inaccessible cwd falls back instead of bricking the tab", () => {
+  let invokeMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    const core = await import("@tauri-apps/api/core");
+    invokeMock = vi.mocked(core.invoke);
+    invokeMock.mockReset();
+  });
+
+  it("retries pty_open without a cwd when the spawn rejects with 'cwd not accessible'", async () => {
+    const cwdsSeen: (string | null)[] = [];
+    invokeMock.mockImplementation(async (cmd: string, args?: { cwd?: string | null }) => {
+      if (cmd === "workspace_authorize") return "/canonical/path";
+      if (cmd === "pty_open") {
+        if (args?.cwd) {
+          cwdsSeen.push(args.cwd);
+          throw new Error(
+            "cwd not accessible: /gone (/gone): The system cannot find the path specified. (os error 3)",
+          );
+        }
+        cwdsSeen.push(null);
+        return 7;
+      }
+      return null;
+    });
+
+    const pty = await openPty(80, 24, { onData: vi.fn() }, "//?/C:/gone");
+
+    expect(cwdsSeen).toEqual(["//?/C:/gone", null]);
+    expect(pty.id).toBe(7);
+  });
+
+  it("does NOT retry when the failure is unrelated to the cwd", async () => {
+    let ptyOpenCalls = 0;
+    invokeMock.mockImplementation(async (cmd: string) => {
+      if (cmd === "workspace_authorize") return "/canonical/path";
+      if (cmd === "pty_open") {
+        ptyOpenCalls++;
+        throw new Error("shell not found");
+      }
+      return null;
+    });
+
+    await expect(openPty(80, 24, { onData: vi.fn() }, "/some/path")).rejects.toThrow(
+      "shell not found",
+    );
+    expect(ptyOpenCalls).toBe(1);
+  });
+});

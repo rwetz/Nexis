@@ -527,3 +527,86 @@ fn pitfall_21_wsl_probes_parse_by_sentinel() {
         }
     }
 }
+
+/// CLAUDE.md pitfall #23 - never slash-flip a canonicalized Windows path into
+/// a frontend string without stripping its verbatim prefix first.
+///
+/// `fs::canonicalize` returns `\\?\C:\...` verbatim paths; `.replace('\\', "/")`
+/// on that produces `//?/C:/...`, which is *not* a verbatim prefix anymore -
+/// Windows parses it as a UNC path to server `?`, share `C:`, so every later
+/// canonicalize rejects it with ERROR_PATH_NOT_FOUND (os error 3) and any PTY
+/// spawned with it as cwd never starts. The poisoned form was stored into
+/// Recent Workspaces and persisted tab state, bricking terminals on every
+/// launch. Exactly two audited conversions are sanctioned, both in
+/// modules/workspace.rs: `canonical_to_frontend` (strips the prefix via
+/// `normalize_launch_dir` before flipping) and `relative_slashes` (heals any
+/// prefix it finds). Every other conversion site must call one of them.
+#[test]
+fn pitfall_23_no_verbatim_prefix_leaks_into_frontend_paths() {
+    const NEEDLE: &str = r#"to_string_lossy().replace('\\', "/")"#;
+    const SANCTIONED: &[&str] = &["pub fn canonical_to_frontend", "pub fn relative_slashes"];
+
+    let workspace_src = read_src("modules/workspace.rs");
+    for (sig, must_contain) in [
+        ("pub fn canonical_to_frontend", "normalize_launch_dir"),
+        ("pub fn relative_slashes", "strip_prefix"),
+    ] {
+        let body = fn_body(&workspace_src, sig, "modules/workspace.rs");
+        assert!(
+            body.contains(must_contain),
+            "{sig} must keep its verbatim-prefix defense ({must_contain}); \
+             without it the poisoned '//?/' hybrid ships again"
+        );
+    }
+
+    let mut files = Vec::new();
+    rust_files(&src_dir(), &mut files);
+    let mut offenders = Vec::new();
+    for file in &files {
+        let text = fs::read_to_string(file).unwrap_or_else(|e| panic!("{}: {e}", file.display()));
+        let prod = production_code(&text);
+        // Offsets of the sanctioned helper bodies within this file's
+        // production code (only modules/workspace.rs has any).
+        let mut safe_ranges: Vec<(usize, usize)> = Vec::new();
+        if file.ends_with(Path::new("modules/workspace.rs")) {
+            for sig in SANCTIONED {
+                if let Some(start) = prod.find(sig) {
+                    let end = prod[start..]
+                        .find("\n}")
+                        .map(|i| start + i + 2)
+                        .unwrap_or(prod.len());
+                    safe_ranges.push((start, end));
+                }
+            }
+        }
+        let in_safe = |at: usize| safe_ranges.iter().any(|(s, e)| at >= *s && at < *e);
+
+        let mut search_from = 0;
+        while let Some(rel) = prod[search_from..].find(NEEDLE) {
+            let at = search_from + rel;
+            search_from = at + NEEDLE.len();
+            if in_safe(at) {
+                continue;
+            }
+            let line_no = prod[..at].lines().count() + 1;
+            let line_start = prod[..at].rfind('\n').map(|i| i + 1).unwrap_or(0);
+            let line_end = prod[at..].find('\n').map(|i| at + i).unwrap_or(prod.len());
+            offenders.push(format!(
+                "  {}:{}: {}",
+                file.display(),
+                line_no,
+                prod[line_start..line_end].trim()
+            ));
+        }
+    }
+    assert!(
+        offenders.is_empty(),
+        "slash-flipping a path outside the two audited helpers — \
+         fs::canonicalize returns \\\\?\\-prefixed paths, and flipping their \
+         slashes yields '//?/C:/…', an unspawnable UNC-looking hybrid that \
+         bricks terminal cwds with os error 3 (CLAUDE.md pitfall #23). Route \
+         the conversion through canonical_to_frontend (frontend-bound paths) \
+         or relative_slashes (git CLI arguments):\n{}",
+        offenders.join("\n")
+    );
+}

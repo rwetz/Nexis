@@ -332,6 +332,23 @@ This stayed hidden in WSL until shell integration actually installed into the di
 
 ---
 
+### 23. Verbatim-path prefix leaking into frontend state → permanently dead terminals
+
+**Symptom:** Every terminal (or one tab lineage) fails to start with `cwd not accessible: The system cannot find the path specified. (os error 3)` — and it comes back on every relaunch because the poisoned cwd is persisted in tab state and Recent Workspaces.
+
+**Root cause:** Windows `fs::canonicalize` returns **verbatim paths** (`\\?\C:\Users\…`). `workspace_authorize` and `workspace_current_dir` returned those to the webview after only slash-flipping, producing `//?/C:/Users/…`. That hybrid is *not* a verbatim prefix: Windows parses it as a UNC path to server `?`, share `C:`, so every later canonicalize rejects it with `ERROR_PATH_NOT_FOUND`. The frontend stores paths in that form freely (Recent Workspaces, launch cwd, tab cwd), and opening a workspace from such an entry handed the poisoned string straight to `pty_open` as the spawn cwd. Three amplifiers made it sticky: restored tabs re-saved the dead cwd every session; `respawnSession` re-used `tab.cwd`; new tabs inherited it via `inheritedCwdForNewTab()`. Diagnosing required excavating WebView2's LevelDB localStorage because neither the log nor the error named the path.
+
+**Fix in place:**
+- Rust: `canonical_to_frontend()` in `workspace.rs` is the only place a canonicalized path is turned into a frontend string — it strips `\\?\` (via `normalize_launch_dir`) before slash-flipping. Used by `workspace_authorize`, `workspace_current_dir`, git's `display_path` (repo roots sent to the SCM panel), and `save_cast_recording`.
+- Rust: `resolve_path` heals an incoming `//?/` prefix, so old poisoned values stored by earlier builds resolve correctly on the backend too.
+- Frontend: `stripVerbatimPrefix` in `src/lib/path.ts` applied where path strings enter persistent state — recent-workspace pushes, `switchWorkspacePath`, home resolution, launch-dir cache, and tab restore (`buildTabsFromSaved` heals saved terminal cwds and editor leaf paths).
+- Frontend: `openPty` retries once without the cwd when `pty_open` rejects with "cwd not accessible", so a vanished directory degrades to a shell in the default directory instead of bricking the tab.
+- The rejection now names the resolved path (`cwd not accessible: <path> (<os error>)`).
+
+**Future danger:** Never `.replace('\\', "/")` a path that came from `canonicalize`/`canonicalize_cached` anywhere but the two audited helpers (`canonical_to_frontend`, `relative_slashes`); never store a path string into localStorage without `stripVerbatimPrefix`; do not remove the openPty fallback. Enforced by `pitfall_23_no_verbatim_prefix_leaks_into_frontend_paths` in `src-tauri/tests/pitfall_invariants.rs`.
+
+---
+
 ## Pre-push checklist
 First, **update `CHANGELOG.md`**: every user-facing change in this push must have an entry under `[Unreleased]` (see "CHANGELOG is the record" above) — this is not optional.
 

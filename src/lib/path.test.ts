@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { describe, expect, it } from "vitest";
-import { absoluteDirname, dirname, displayDirname } from "./path";
+import { absoluteDirname, dirname, displayDirname, stripVerbatimPrefix } from "./path";
 
 describe("dirname", () => {
   it("returns null for null input", () => {
@@ -89,5 +89,33 @@ describe("absoluteDirname", () => {
     expect(absoluteDirname("C:/file.txt")).toBe("C:/");
     expect(absoluteDirname("D:/foo")).toBe("D:/");
     expect(absoluteDirname("C:/foo/bar")).toBe("C:/foo");
+  });
+});
+
+describe("stripVerbatimPrefix", () => {
+  // Pitfall 19 regression: slash-flipping a `\\?\` verbatim path produces
+  // "//?/C:/…", which is not a verbatim prefix at all — Windows parses it as
+  // a UNC path to server "?" and every canonicalize fails with os error 3.
+  it("strips the mangled verbatim prefix (pitfall 19)", () => {
+    expect(stripVerbatimPrefix("//?/C:/Users/ryan/repo")).toBe(
+      "C:/Users/ryan/repo",
+    );
+  });
+
+  it("strips the native verbatim prefix", () => {
+    expect(stripVerbatimPrefix("\\\\?\\C:\\Users\\ryan\\repo")).toBe(
+      "C:\\Users\\ryan\\repo",
+    );
+  });
+
+  it("leaves ordinary paths untouched", () => {
+    expect(stripVerbatimPrefix("C:/Users/ryan/repo")).toBe(
+      "C:/Users/ryan/repo",
+    );
+    expect(stripVerbatimPrefix("/home/ryan/repo")).toBe("/home/ryan/repo");
+    expect(stripVerbatimPrefix("//wsl.localhost/Ubuntu/home")).toBe(
+      "//wsl.localhost/Ubuntu/home",
+    );
+    expect(stripVerbatimPrefix("//?not-a-prefix")).toBe("//?not-a-prefix");
   });
 });

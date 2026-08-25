@@ -27,7 +27,7 @@ use crate::modules::git::types::{
 use crate::modules::git::utils::{
     authorized_repo_root, canonical_dir, resolve_within_repo, split_upstream, ResolvedGitDirectory,
 };
-use crate::modules::workspace::{WorkspaceEnv, WorkspaceRegistry};
+use crate::modules::workspace::{relative_slashes, WorkspaceEnv, WorkspaceRegistry};
 
 pub fn resolve_repo(
     registry: &WorkspaceRegistry,
@@ -707,7 +707,7 @@ pub fn commit_file_diff(
     let resolved = resolve_within_repo(&repo_root.local_path, path)?;
     let rel = resolved
         .strip_prefix(&repo_root.local_path)
-        .map(|p| p.to_string_lossy().replace('\\', "/"))
+        .map(relative_slashes)
         .unwrap_or_else(|_| path.replace('\\', "/"));
 
     let original_rel = match original_path {
@@ -715,7 +715,7 @@ pub fn commit_file_diff(
             let resolved_orig = resolve_within_repo(&repo_root.local_path, orig)?;
             resolved_orig
                 .strip_prefix(&repo_root.local_path)
-                .map(|p| p.to_string_lossy().replace('\\', "/"))
+                .map(relative_slashes)
                 .unwrap_or_else(|_| orig.replace('\\', "/"))
         }
         _ => rel.clone(),
@@ -1025,10 +1025,13 @@ fn pathspec_from_input(repo_root: &Path, rel: &str) -> Result<String> {
 }
 
 fn pathspec(repo_root: &Path, absolute: &Path) -> String {
+    // Both arms produce a pathspec for git's CLI; `relative_slashes` is the
+    // audited slash-flip (pitfall #23) and the fallback path is still
+    // repo-derived, never a raw canonicalized absolute.
     absolute
         .strip_prefix(repo_root)
-        .map(|rel| rel.to_string_lossy().replace('\\', "/"))
-        .unwrap_or_else(|_| absolute.to_string_lossy().replace('\\', "/"))
+        .map(relative_slashes)
+        .unwrap_or_else(|_| relative_slashes(absolute))
 }
 
 // ---------------------------------------------------------------------------

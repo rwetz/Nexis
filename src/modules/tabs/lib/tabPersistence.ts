@@ -6,6 +6,7 @@
 
 import type { EditorPaneNode, Tab, EditorTab, TerminalTab } from "./tabTypes";
 import { basename, editorActivePath } from "./tabTypes";
+import { stripVerbatimPrefix } from "@/lib/path";
 import { leaves } from "@/modules/terminal/lib/panes";
 import { registerPendingSessionRestore } from "@/modules/terminal/lib/sessionRestore";
 
@@ -154,8 +155,15 @@ export function buildTabsFromSaved(
         id: tabId,
         kind: "terminal",
         title: p.title || "shell",
-        cwd: p.cwd,
-        paneTree: { kind: "leaf", id: leafId, cwd: p.cwd },
+        // Heal mangled verbatim prefixes saved by older builds ("//?/C:/…",
+        // pitfall #19): restoring one verbatim would brick this tab's shell
+        // on every launch, since pty_open rejects the cwd with os error 3.
+        cwd: p.cwd ? stripVerbatimPrefix(p.cwd) : undefined,
+        paneTree: {
+          kind: "leaf",
+          id: leafId,
+          cwd: p.cwd ? stripVerbatimPrefix(p.cwd) : undefined,
+        },
         activeLeafId: leafId,
         ...(p.private && { private: true }),
         ...(p.snap && !p.private && { snapshotId: p.snap }),
@@ -172,7 +180,15 @@ export function buildTabsFromSaved(
       const tabId = id++;
       const buildNode = (n: PersistedEditorNode): EditorPaneNode => {
         if (n.kind === "leaf") {
-          return { kind: "leaf", id: id++, path: n.path, dirty: false, preview: false };
+          // Same pitfall #19 healing as terminal cwds above — editor leaves
+          // persisted the mangled form too.
+          return {
+            kind: "leaf",
+            id: id++,
+            path: stripVerbatimPrefix(n.path),
+            dirty: false,
+            preview: false,
+          };
         }
         return {
           kind: "split",

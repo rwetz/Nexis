@@ -121,7 +121,7 @@ fn which_python() -> Option<PathBuf> {
 /// reattach the fs module's `display_path` does.
 fn wsl_linux_python(found: &Path, host_venv: &Path, linux_venv: &str) -> Option<String> {
     let rel = found.strip_prefix(host_venv).ok()?;
-    let rel = rel.to_string_lossy().replace('\\', "/");
+    let rel = crate::modules::workspace::relative_slashes(rel);
     Some(format!("{}/{rel}", linux_venv.trim_end_matches('/')))
 }
 

@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { create } from "zustand";
+import { stripVerbatimPrefix } from "@/lib/path";
 
 const STORAGE_KEY = "nexis.recent-workspaces";
 const MAX_ENTRIES = 12;
@@ -48,7 +49,11 @@ export const useRecentWorkspaces = create<State>((set, get) => ({
   workspaces: load(),
 
   push: (path: string) => {
-    const normalized = path.replace(/\\/g, "/");
+    // stripVerbatimPrefix: canonicalized Windows paths arrive as `\\?\…`, and
+    // slash-flipping that prefix yields the unspawnable "//?/…" hybrid
+    // (pitfall #19). Never store it — a Recent Workspaces entry becomes a
+    // terminal cwd via switchWorkspacePath.
+    const normalized = stripVerbatimPrefix(path).replace(/\\/g, "/");
     const existing = get().workspaces.filter((w) => w.path !== normalized);
     const next: RecentWorkspace[] = [
       { path: normalized, lastUsed: Date.now() },

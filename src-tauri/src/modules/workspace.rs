@@ -91,8 +91,11 @@ pub fn authorize_spawn_cwd(
         return Ok(None);
     };
     let resolved = resolve_path(cwd, workspace);
-    let canonical =
-        std::fs::canonicalize(&resolved).map_err(|e| format!("cwd not accessible: {e}"))?;
+    let canonical = std::fs::canonicalize(&resolved).map_err(|e| {
+        // Name the path: "os error 3" alone once took a LevelDB excavation of
+        // the webview's localStorage to diagnose (pitfall #23).
+        format!("cwd not accessible: {} ({e})", resolved.display())
+    })?;
     if !canonical.is_dir() {
         return Err(format!("cwd is not a directory: {}", canonical.display()));
     }
@@ -121,7 +124,7 @@ pub async fn workspace_authorize(
     let workspace = WorkspaceEnv::from_option(workspace);
     let resolved = resolve_path(&path, &workspace);
     let canonical = registry.authorize(&resolved).map_err(|e| e.to_string())?;
-    Ok(canonical.to_string_lossy().replace('\\', "/"))
+    Ok(canonical_to_frontend(canonical))
 }
 
 #[tauri::command]
@@ -130,7 +133,7 @@ pub async fn workspace_current_dir(
 ) -> Result<String, String> {
     let launch = resolve_launch_dir();
     let canonical = registry.authorize(&launch).map_err(|e| e.to_string())?;
-    Ok(canonical.to_string_lossy().replace('\\', "/"))
+    Ok(canonical_to_frontend(canonical))
 }
 
 // Snapshotted once at app startup so the live `current_dir()` drifting later
@@ -236,11 +239,44 @@ pub struct WslDistro {
     pub running: bool,
 }
 
+/// Frontend string form of a canonicalized Windows path.
+///
+/// `fs::canonicalize` returns `\\?\`-prefixed verbatim paths, and slash-flipping
+/// that prefix yields `//?/C:/…` — which is *not* a verbatim prefix anymore:
+/// Windows parses it as a UNC path to server `?`, share `C:`, so every later
+/// canonicalize rejects it with ERROR_PATH_NOT_FOUND (os error 3) and a PTY
+/// spawned with it as cwd never starts. Strip the prefix before handing a
+/// canonical path to the webview (pitfall #23). The only sanctioned
+/// `.replace('\\', "/")` on canonicalized output lives here; the pitfall-19
+/// tripwire fails the build if the pattern appears anywhere else.
+pub fn canonical_to_frontend(canonical: PathBuf) -> String {
+    normalize_launch_dir(canonical)
+        .to_string_lossy()
+        .replace('\\', "/")
+}
+
+/// Slash-separated form of a path destined for a git CLI argument (git
+/// normalizes separators itself). Unlike `canonical_to_frontend`, this does
+/// not promise verbatim-prefix stripping as a *contract* — but it heals one
+/// anyway if it finds it, so no caller can ever mint the poisoned `//?/`
+/// hybrid through this helper (pitfall #23).
+pub fn relative_slashes(p: &Path) -> String {
+    let s = p.to_string_lossy();
+    let s = s.strip_prefix(r"\\?\").unwrap_or(&s);
+    let s = s.strip_prefix("//?/").unwrap_or(s);
+    s.replace('\\', "/")
+}
+
 #[cfg(windows)]
 pub fn resolve_path(path: &str, workspace: &WorkspaceEnv) -> PathBuf {
+    // Heal mangled verbatim prefixes (`//?/C:/…`, produced by slash-flipping a
+    // `\\?\` path — see pitfall #23): as-is, Windows reads it as a UNC path and
+    // every canonicalize fails with os error 3. Stripping leaves an ordinary
+    // absolute path that resolves normally.
+    let healed = path.strip_prefix("//?/").unwrap_or(path);
     match workspace {
-        WorkspaceEnv::Local => PathBuf::from(path),
-        WorkspaceEnv::Wsl { distro } => wsl_path_to_host(distro, path),
+        WorkspaceEnv::Local => PathBuf::from(healed),
+        WorkspaceEnv::Wsl { distro } => wsl_path_to_host(distro, healed),
     }
 }
 
@@ -651,6 +687,32 @@ mod tests {
     }
 
     #[test]
+    fn resolve_path_heals_mangled_verbatim_prefix() {
+        // Pitfall #19: "//?/C:/…" is a `\\?\` verbatim path with its
+        // backslashes flipped. As-is, Windows parses it as a UNC path to
+        // server "?" and every canonicalize fails with os error 3; healing
+        // strips the prefix and leaves an ordinary absolute path.
+        assert_eq!(
+            resolve_path("//?/C:/Users/vinicios/repo", &WorkspaceEnv::Local),
+            PathBuf::from("C:/Users/vinicios/repo")
+        );
+    }
+
+    #[test]
+    fn canonical_to_frontend_strips_verbatim_prefix() {
+        // The exact shape that poisoned stored workspaces before pitfall #23.
+        assert_eq!(
+            canonical_to_frontend(PathBuf::from(r"\\?\C:\Users\vinicios\repo")),
+            "C:/Users/vinicios/repo"
+        );
+        // Off-Windows (and already-clean) input passes through unchanged.
+        assert_eq!(
+            canonical_to_frontend(PathBuf::from("/home/vinicios/repo")),
+            "/home/vinicios/repo"
+        );
+    }
+
+    #[test]
     fn resolve_path_maps_wsl_paths_to_host() {
         let workspace = WorkspaceEnv::Wsl {
             distro: "Ubuntu".into(),
@@ -769,6 +831,27 @@ mod auth_tests {
         let err = authorize_spawn_cwd(&reg, Some(&s), &WorkspaceEnv::Local)
             .expect_err("should reject missing path");
         assert!(err.contains("cwd not accessible"), "got: {err}");
+        // The error must name the path — "os error 3" alone is undiagnosable.
+        assert!(err.contains(&s), "got: {err}");
+    }
+
+    #[test]
+    fn authorize_spawn_cwd_heals_mangled_verbatim_prefix() {
+        // Pitfall #19 end-to-end: `fs::canonicalize` returns `\\?\`-prefixed
+        // paths, so slash-flipping them (as the frontend does) produces exactly
+        // this poisoned form. It must still resolve to the real directory.
+        let dir = tempdir("verbatim");
+        let reg = WorkspaceRegistry::default();
+        reg.authorize(&dir).expect("authorize root");
+        let poisoned = dir.to_string_lossy().replace('\\', "/");
+        assert!(
+            poisoned.starts_with("//?/"),
+            "precondition: canonicalize stopped returning verbatim paths: {poisoned}"
+        );
+        let resolved = authorize_spawn_cwd(&reg, Some(&poisoned), &WorkspaceEnv::Local)
+            .expect("mangled verbatim cwd must heal")
+            .expect("returned canonical");
+        assert_eq!(resolved, dir);
     }
 
     #[test]

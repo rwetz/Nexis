@@ -67,16 +67,32 @@ export async function openPty(
     releaseHandlers();
   };
 
-  const id = await invoke<number>("pty_open", {
+  const spawnArgs = (spawnCwd: string | null) => ({
     cols,
     rows,
-    cwd: cwd ?? null,
+    cwd: spawnCwd,
     workspace: currentWorkspaceEnv(),
     extraEnv: extraEnv && Object.keys(extraEnv).length > 0 ? extraEnv : null,
     shell: shell && shell.trim() ? shell.trim() : null,
     onData,
     onExit,
   });
+
+  let id: number;
+  try {
+    id = await invoke<number>("pty_open", spawnArgs(cwd ?? null));
+  } catch (e) {
+    // A stale cwd (directory deleted/renamed/moved since the session was
+    // saved, or the "//?/…" verbatim hybrid older builds stored — pitfall
+    // #19) must not brick the tab permanently: retry once without it so the
+    // shell starts in its default directory instead of never starting.
+    if (!cwd || !String(e).includes("cwd not accessible")) throw e;
+    console.warn(
+      `[nexis] cwd ${cwd} is inaccessible — falling back to the default directory:`,
+      e,
+    );
+    id = await invoke<number>("pty_open", spawnArgs(null));
+  }
 
   let closed = false;
 

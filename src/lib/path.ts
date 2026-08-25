@@ -67,3 +67,15 @@ export function absoluteDirname(path: string): string {
   if (idx === 2 && normalized[1] === ":") return normalized.slice(0, 3);
   return normalized.slice(0, idx);
 }
+
+/**
+ * Removes a Windows verbatim-path prefix, leaving an ordinary absolute path.
+ * Handles both the native `\\?\C:/…` form and the mangled `//?/C:/…` form a
+ * slash-flipped one produces (pitfall #19): as-is, that hybrid is not a
+ * verbatim prefix at all — Windows parses it as a UNC path to server `?`,
+ * so every canonicalize/spawn-cwd check rejects it with os error 3.
+ * No-op on anything else.
+ */
+export function stripVerbatimPrefix(path: string): string {
+  return path.replace(/^[/\\]{2}\?[\\/]/, "");
+}

@@ -12,7 +12,9 @@
 use std::path::{Path, PathBuf};
 
 use crate::modules::git::errors::{GitError, Result};
-use crate::modules::workspace::{resolve_path, WorkspaceEnv, WorkspaceRegistry};
+use crate::modules::workspace::{
+    canonical_to_frontend, resolve_path, WorkspaceEnv, WorkspaceRegistry,
+};
 
 #[derive(Clone, Debug)]
 pub struct ResolvedGitDirectory {
@@ -29,7 +31,11 @@ pub fn split_upstream(upstream: &str) -> (Option<String>, Option<String>) {
 }
 
 pub fn display_path(path: &Path) -> String {
-    path.to_string_lossy().replace('\\', "/")
+    // Frontend-facing form of a canonical repo path (`local_path` comes from
+    // canonicalize_cached, so it carries the `\\?\` verbatim prefix on
+    // Windows). Slash-flipping that prefix directly yields the unspawnable
+    // "//?/" hybrid — route through the audited conversion (pitfall #23).
+    canonical_to_frontend(path.to_path_buf())
 }
 
 fn normalize_git_path(path: &str) -> String {
