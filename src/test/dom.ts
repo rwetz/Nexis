@@ -59,3 +59,50 @@ if (!window.matchMedia) {
     dispatchEvent: () => false,
   })) as typeof window.matchMedia;
 }
+
+// Node ≥26 ships its own experimental web-storage global whose accessor
+// yields undefined unless the process was launched with --localstorage-file;
+// inside Vitest's jsdom environment it wins over jsdom's working
+// implementation, so component code reading `window.localStorage`
+// (ThemeProvider's fast-path reads) crashes with "Cannot read properties of
+// undefined". Backfill an in-memory Storage when the real one is absent:
+// tests only need the API surface within one file's lifetime, so persistence
+// is irrelevant. CI pins Node 22, where the global doesn't exist and jsdom's
+// is used untouched — this shim exists for development on newer Node.
+{
+  let missing = false;
+  try {
+    missing = typeof window.localStorage === "undefined";
+  } catch {
+    // An opaque-origin jsdom throws on access instead of returning undefined;
+    // either way the property is unusable, so replace it below.
+    missing = true;
+  }
+  if (missing) {
+    const backing = new Map<string, string>();
+    const storage: Storage = {
+      get length() {
+        return backing.size;
+      },
+      key(index: number) {
+        return [...backing.keys()][index] ?? null;
+      },
+      getItem(key: string) {
+        return backing.get(String(key)) ?? null;
+      },
+      setItem(key: string, value: string) {
+        backing.set(String(key), String(value));
+      },
+      removeItem(key: string) {
+        backing.delete(String(key));
+      },
+      clear() {
+        backing.clear();
+      },
+    };
+    Object.defineProperty(window, "localStorage", {
+      value: storage,
+      configurable: true,
+    });
+  }
+}
