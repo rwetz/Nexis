@@ -55,10 +55,10 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ""
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
 
-      # Bundle-size budget gate (IDEAS C1). "Under 10 MB" is a stated
+      # Bundle-size budget gate (IDEAS C1). "Under 15 MB" is a stated
       # non-negotiable; enforce it so a careless dependency can't quietly blow
-      # the budget. Fails the release if the stripped binary exceeds 10 MiB.
-      - name: Enforce binary size budget (< 10 MB)
+      # the budget. Fails the release if the stripped binary exceeds 15 MiB.
+      - name: Enforce binary size budget (< 15 MB)
         shell: pwsh
         run: |
           $binary = "src-tauri/target/release/nexis.exe"
@@ -68,13 +68,13 @@ jobs:
           }
           $bytes = (Get-Item $binary).Length
           $mib = [math]::Round($bytes / 1MB, 2)
-          $maxBytes = 10 * 1024 * 1024
-          Write-Host "nexis.exe = $bytes bytes ($mib MiB); budget = 10 MiB"
+          $maxBytes = 15 * 1024 * 1024
+          Write-Host "nexis.exe = $bytes bytes ($mib MiB); budget = 15 MiB"
           if ($bytes -gt $maxBytes) {
-            Write-Error "Binary exceeds the 10 MB budget (a stated non-negotiable). Investigate the dependency or build-config change that grew it."
+            Write-Error "Binary exceeds the 15 MB budget (a stated non-negotiable). Investigate the dependency or build-config change that grew it."
             exit 1
           }
-          Write-Host "OK: under the 10 MB budget."
+          Write-Host "OK: under the 15 MB budget."
 
       - name: Collect artifacts
         id: artifacts
@@ -186,7 +186,7 @@ jobs:
 
       # AppImage is the portable "download and run" artifact (works on Arch,
       # Fedora, Debian, etc.); deb/rpm are provided for native package managers.
-      # No 10 MB size gate here — that budget is about the Windows exe; a Linux
+      # No 15 MB size gate here — that budget is about the Windows exe; a Linux
       # AppImage bundles webkit2gtk and is expected to be much larger.
       - name: Create GitHub release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3

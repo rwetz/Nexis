@@ -56,4 +56,4 @@ The subject line's theme is reused as the tag subject and reads as the release t
 
 ## What the tag triggers
 
-`.github/workflows/release.yml` runs on `push: tags: v*` — it builds the Windows and Linux (amd64 + arm64) artifacts — there is **no macOS job**, so no release carries a macOS build — enforces the **<10 MB binary-size budget**, and creates the GitHub release. Concurrency is one release build at a time, and it does **not** cancel in progress, so a mistaken tag can't be fixed by racing a second one — delete the tag remote-side and re-push.
+`.github/workflows/release.yml` runs on `push: tags: v*` — it builds the Windows and Linux (amd64 + arm64) artifacts — there is **no macOS job**, so no release carries a macOS build — enforces the **<15 MB binary-size budget**, and creates the GitHub release. Concurrency is one release build at a time, and it does **not** cancel in progress, so a mistaken tag can't be fixed by racing a second one — delete the tag remote-side and re-push.

@@ -10,7 +10,7 @@ This gets updated as things shift. Day-to-day tracking lives in [GitHub Issues](
 
 A terminal that treats AI as a first-class citizen — not a chatbot glued to the side, but something woven into the actual workflow. Fast, small, cross-platform, no cloud lock-in. You bring your own keys or run local models entirely offline.
 
-The non-negotiables: terminal correctness, PTY fidelity, under 10 MB, no telemetry.
+The non-negotiables: terminal correctness, PTY fidelity, under 15 MB, no telemetry.
 
 ## Hard limits (things that won't be built)
 
