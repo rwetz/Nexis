@@ -93,7 +93,7 @@ describe("absoluteDirname", () => {
 });
 
 describe("stripVerbatimPrefix", () => {
-  // Pitfall 19 regression: slash-flipping a `\\?\` verbatim path produces
+  // Pitfall 23 regression: slash-flipping a `\\?\` verbatim path produces
   // "//?/C:/…", which is not a verbatim prefix at all — Windows parses it as
   // a UNC path to server "?" and every canonicalize fails with os error 3.
   it("strips the mangled verbatim prefix (pitfall 23)", () => {

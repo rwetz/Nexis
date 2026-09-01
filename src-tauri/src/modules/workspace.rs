@@ -690,7 +690,7 @@ mod tests {
 
     #[test]
     fn resolve_path_heals_mangled_verbatim_prefix() {
-        // Pitfall #19: "//?/C:/…" is a `\\?\` verbatim path with its
+        // Pitfall #23: "//?/C:/…" is a `\\?\` verbatim path with its
         // backslashes flipped. As-is, Windows parses it as a UNC path to
         // server "?" and every canonicalize fails with os error 3; healing
         // strips the prefix and leaves an ordinary absolute path.
@@ -939,9 +939,14 @@ mod auth_tests {
         assert!(err.contains(&s), "got: {err}");
     }
 
+    // Windows-only: the verbatim prefix this heals is an artifact of
+    // Windows `canonicalize`, and `resolve_path`'s healing of it is
+    // itself cfg(windows). Elsewhere canonicalize returns a plain path,
+    // so the precondition below cannot hold.
     #[test]
+    #[cfg(windows)]
     fn authorize_spawn_cwd_heals_mangled_verbatim_prefix() {
-        // Pitfall #19 end-to-end: `fs::canonicalize` returns `\\?\`-prefixed
+        // Pitfall #23 end-to-end: `fs::canonicalize` returns `\\?\`-prefixed
         // paths, so slash-flipping them (as the frontend does) produces exactly
         // this poisoned form. It must still resolve to the real directory.
         let dir = tempdir("verbatim");
