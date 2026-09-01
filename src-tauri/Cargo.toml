@@ -24,7 +24,15 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 # protocol-asset: serves local files (image viewer, ML sample grid) via
 # asset://localhost — convertFileSrc() URLs 404 without it.
-tauri = { version = "2", features = ["protocol-asset"] }
+# devtools: keeps the inspector compiled into *release* builds. Debug
+# builds enable it implicitly; without this flag a shipped Nexis has no
+# console at all, which made the frontend half of every pitfall
+# checklist ("check the devtools console for [nexis] openPty failed:")
+# impossible to follow on the binary users actually run. On WebView2 the
+# inspector UI ships with the Edge runtime, not with us, so the cost is
+# a measured +9 KiB on nexis.exe (9904128 -> 9913344 bytes, release
+# profile). Re-measure against the size gate if that ever changes.
+tauri = { version = "2", features = ["protocol-asset", "devtools"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
