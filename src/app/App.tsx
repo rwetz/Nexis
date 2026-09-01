@@ -374,7 +374,7 @@ export default function App() {
       .then(async (p) => {
         // stripVerbatimPrefix: some path sources hand back `\\?\…`, and
         // slash-flipping that prefix yields the unspawnable "//?/…" hybrid
-        // (pitfall #19) — it must never become a tab cwd or workspace root.
+        // (pitfall #23) — it must never become a tab cwd or workspace root.
         const normalized = stripVerbatimPrefix(p).replace(/\\/g, "/");
         setHome(normalized);
         try {
@@ -461,7 +461,7 @@ export default function App() {
 
   const switchWorkspacePath = useCallback(
     async (rawPath: string) => {
-      // Heal a mangled verbatim prefix ("//?/C:/…", pitfall #19) before the
+      // Heal a mangled verbatim prefix ("//?/C:/…", pitfall #23) before the
       // path becomes the workspace root and every new tab's cwd. Older builds
       // stored this exact hybrid in Recent Workspaces.
       const path = stripVerbatimPrefix(rawPath);

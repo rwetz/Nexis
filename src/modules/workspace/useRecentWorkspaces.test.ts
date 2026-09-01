@@ -37,7 +37,7 @@ describe("useRecentWorkspaces", () => {
     expect(stored()).toEqual(["/ws/a", "/ws/b"]);
   });
 
-  it("strips a mangled verbatim prefix before storing (pitfall 19)", () => {
+  it("strips a mangled verbatim prefix before storing (pitfall 23)", () => {
     // workspace_current_dir used to hand the frontend "//?/C:/…" — that form
     // must never reach Recent Workspaces, where picking it would brick every
     // new terminal's spawn cwd.

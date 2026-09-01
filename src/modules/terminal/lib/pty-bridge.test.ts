@@ -156,7 +156,7 @@ describe("pty-bridge — pitfall 1C: workspace_authorize before pty_open", () =>
   });
 });
 
-describe("pty-bridge — pitfall 19: inaccessible cwd falls back instead of bricking the tab", () => {
+describe("pty-bridge — pitfall 23: inaccessible cwd falls back instead of bricking the tab", () => {
   let invokeMock: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {

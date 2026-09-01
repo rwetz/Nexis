@@ -156,7 +156,7 @@ export function buildTabsFromSaved(
         kind: "terminal",
         title: p.title || "shell",
         // Heal mangled verbatim prefixes saved by older builds ("//?/C:/…",
-        // pitfall #19): restoring one verbatim would brick this tab's shell
+        // pitfall #23): restoring one verbatim would brick this tab's shell
         // on every launch, since pty_open rejects the cwd with os error 3.
         cwd: p.cwd ? stripVerbatimPrefix(p.cwd) : undefined,
         paneTree: {
@@ -180,7 +180,7 @@ export function buildTabsFromSaved(
       const tabId = id++;
       const buildNode = (n: PersistedEditorNode): EditorPaneNode => {
         if (n.kind === "leaf") {
-          // Same pitfall #19 healing as terminal cwds above — editor leaves
+          // Same pitfall #23 healing as terminal cwds above — editor leaves
           // persisted the mangled form too.
           return {
             kind: "leaf",

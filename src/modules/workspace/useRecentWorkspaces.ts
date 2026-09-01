@@ -51,7 +51,7 @@ export const useRecentWorkspaces = create<State>((set, get) => ({
   push: (path: string) => {
     // stripVerbatimPrefix: canonicalized Windows paths arrive as `\\?\…`, and
     // slash-flipping that prefix yields the unspawnable "//?/…" hybrid
-    // (pitfall #19). Never store it — a Recent Workspaces entry becomes a
+    // (pitfall #23). Never store it — a Recent Workspaces entry becomes a
     // terminal cwd via switchWorkspacePath.
     const normalized = stripVerbatimPrefix(path).replace(/\\/g, "/");
     const existing = get().workspaces.filter((w) => w.path !== normalized);

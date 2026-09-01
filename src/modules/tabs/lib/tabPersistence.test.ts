@@ -137,7 +137,7 @@ describe("tab state round-trip", () => {
   // Pitfall 19 regression: older builds stored slash-flipped verbatim paths
   // ("//?/C:/…") as tab cwds, and pty_open rejects that hybrid with
   // "cwd not accessible (os error 3)" — bricking the tab on every launch.
-  it("heals mangled verbatim-prefix cwds and editor paths on restore (pitfall 19)", () => {
+  it("heals mangled verbatim-prefix cwds and editor paths on restore (pitfall 23)", () => {
     const saved = {
       version: 1 as const,
       activeIndex: 0,

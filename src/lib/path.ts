@@ -71,7 +71,7 @@ export function absoluteDirname(path: string): string {
 /**
  * Removes a Windows verbatim-path prefix, leaving an ordinary absolute path.
  * Handles both the native `\\?\C:/…` form and the mangled `//?/C:/…` form a
- * slash-flipped one produces (pitfall #19): as-is, that hybrid is not a
+ * slash-flipped one produces (pitfall #23): as-is, that hybrid is not a
  * verbatim prefix at all — Windows parses it as a UNC path to server `?`,
  * so every canonicalize/spawn-cwd check rejects it with os error 3.
  * No-op on anything else.

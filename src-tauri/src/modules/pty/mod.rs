@@ -58,7 +58,7 @@ pub async fn pty_open(
         })?;
     // Spawn in the *authorized* path, not the raw input. authorize_spawn_cwd
     // resolves the workspace-relative form, heals a mangled verbatim prefix
-    // (pitfall #19) and canonicalizes symlinks; forwarding the raw string
+    // (pitfall #23) and canonicalizes symlinks; forwarding the raw string
     // would throw that away and leave the shell starting wherever
     // apply_common's is_dir fallback lands instead of where was authorized.
     let spawn_cwd = authorized_cwd.map(|p| p.to_string_lossy().into_owned());
