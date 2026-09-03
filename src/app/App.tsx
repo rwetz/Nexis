@@ -116,6 +116,7 @@ import {
 import { StatusBar } from "@/modules/statusbar";
 import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
 import { GettingStartedPanel } from "@/modules/onboarding/GettingStartedPanel";
+import { SvgPlaygroundPanel } from "@/modules/art/SvgPlaygroundPanel";
 import { OnboardingTour } from "@/modules/onboarding/OnboardingTour";
 import { useOnboardingSignals } from "@/modules/onboarding/useOnboardingSignals";
 import { signalOnboardingStep, type OnboardingAction } from "@/lib/onboarding";
@@ -189,6 +190,11 @@ const MlPanelLazy = lazy(() =>
 // Lazy for the same reason as the panel: the network tab pulls in the whole
 // ML graph/artifact reading stack, which nobody who never opens it should pay
 // the parse cost for.
+const SvgPlaygroundStackLazy = lazy(() =>
+  import("@/modules/art/SvgPlaygroundStack").then((m) => ({
+    default: m.SvgPlaygroundStack,
+  })),
+);
 const MlNetworkStackLazy = lazy(() =>
   import("@/modules/ml/MlNetworkStack").then((m) => ({
     default: m.MlNetworkStack,
@@ -231,6 +237,7 @@ export default function App() {
     openCommitHistoryTab,
     openCommitFileDiffTab,
     openMlNetworkTab,
+    openSvgPlaygroundTab,
     closeTab,
     updateTab,
     selectByIndex,
@@ -638,6 +645,7 @@ export default function App() {
     activeTab?.kind === "git-diff" || activeTab?.kind === "git-commit-file";
   const isGitHistoryTab = activeTab?.kind === "git-history";
   const isMlNetworkTab = activeTab?.kind === "ml-network";
+  const isSvgPlaygroundTab = activeTab?.kind === "svg-playground";
 
   // When an AI diff is approved (write_file applied to disk), reload any
   // open editor tabs for that path so the user sees the new content. We
@@ -1390,6 +1398,7 @@ export default function App() {
     { id: "view.zenMode",        label: "Toggle zen mode",          category: "View",    action: () => setZenMode((v) => !v), keywords: ["distraction free", "hide header"] },
     { id: "pane.splitRight",     label: "Split pane right",         category: "Panes",   action: () => splitActivePaneInActiveTab("row") },
     { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
+    { id: "art.svgPlayground",   label: "Open the SVG playground",  category: "View",    action: () => { openSvgPlaygroundTab(); }, pack: "art", keywords: ["svg", "icon", "vector", "art"] },
     { id: "sidebar.gettingStarted", label: "Show Getting Started checklist", category: "View", action: () => persistSidebarView("getting-started"), keywords: ["onboarding", "tour", "help", "first run"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
@@ -1868,6 +1877,21 @@ export default function App() {
           />
         </Suspense>
       </div>
+      <div
+        className={cn(
+          "absolute inset-0",
+          !isSvgPlaygroundTab && "invisible pointer-events-none",
+        )}
+        aria-hidden={!isSvgPlaygroundTab}
+      >
+        <Suspense fallback={null}>
+          <SvgPlaygroundStackLazy
+            tabs={tabs}
+            activeId={activeId}
+            onCollapse={closeTab}
+          />
+        </Suspense>
+      </div>
     </div>
   );
 
@@ -1947,6 +1971,8 @@ export default function App() {
                         view={sidebarView}
                         onShowExplorer={() => persistSidebarView("explorer")}
                       />
+                    ) : sidebarView === "svg-playground" ? (
+                      <SvgPlaygroundPanel onExpand={openSvgPlaygroundTab} />
                     ) : sidebarView === "getting-started" ? (
                       <GettingStartedPanel
                         onRunAction={runOnboardingAction}

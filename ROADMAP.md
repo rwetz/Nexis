@@ -107,11 +107,12 @@ and stop. Don't batch them.
   with the clearest itch
   behind it: browser-based SVG editors are bad at authoring the small, precise, icon-scale art this project
   keeps needing. Three features, ordered by value-per-effort, and **only the first is committed**:
-  1. **SVG Playground** — a live code pane beside a preview, with a pixel grid and alignment guides at icon
-     sizes, SVGO optimization showing a before/after byte count, and export/copy as raw SVG, JSX, and
-     `data:` URI. This is the one that solves the stated problem, and it is mostly CodeMirror plus preview
-     machinery that already ships. Pitfall #15 applies: a CodeMirror instance under `.zoom-content` needs
-     the zoom exemption or clicks land on the wrong line.
+  1. ~~**SVG Playground**~~ — **shipped.** Live code pane, preview at 16/24/32/64px over a pixel grid with
+     centre guides, before/after byte counts, and export as SVG / JSX / `data:` URI; sidebar panel that
+     detaches into a tab. Two deviations worth knowing: the optimizer is an in-house conservative pass
+     rather than SVGO (a large dependency for one panel; swapping it back is a change to `optimizeSvg`
+     alone), and the preview renders a **sanitized** copy because inline SVG in this webview can carry
+     script.
   2. **Shape generator** — parametric shapes and patterns in the spirit of bookofshapes.com (blobs, waves,
      arcs, dividers, grain) with live parameter controls and the playground's export path.
   3. **Animator** — a keyframe timeline over SMIL / CSS / Web Animations. Last on purpose: a timeline UI is

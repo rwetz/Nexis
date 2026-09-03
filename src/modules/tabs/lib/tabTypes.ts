@@ -176,6 +176,19 @@ export type MlNetworkTab = {
   projectDir: string;
 };
 
+/**
+ * The SVG playground detached from the sidebar.
+ *
+ * Carries no state at all: the source lives in the playground's own storage,
+ * so the panel and the tab are two views of one document rather than two
+ * documents. That is why there is only ever one of these.
+ */
+export type SvgPlaygroundTab = {
+  id: number;
+  kind: "svg-playground";
+  title: string;
+};
+
 export type Tab =
   | TerminalTab
   | EditorTab
@@ -187,7 +200,8 @@ export type Tab =
   | GitDiffTab
   | GitHistoryTab
   | GitCommitFileDiffTab
-  | MlNetworkTab;
+  | MlNetworkTab
+  | SvgPlaygroundTab;
 
 export type TabPatch = Partial<{
   title: string;

@@ -121,7 +121,7 @@ export function serializeTabState(tabs: Tab[], activeId: number): PersistedTabSt
       });
     }
     // Skip: ai-diff, git-diff, git-history, git-commit-file, markdown,
-    // notebook, image, ml-network
+    // notebook, image, ml-network, svg-playground
   }
   const activeTab = tabs.find((t) => t.id === activeId);
   let activeIndex = 0;

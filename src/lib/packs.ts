@@ -151,7 +151,7 @@ export const PACKS: Record<PackId, PackDef> = {
     description:
       "SVG authoring at icon scale: a live playground, shape generators, and export.",
     icon: "brush",
-    views: [],
+    views: ["svg-playground"],
   },
 };
 
