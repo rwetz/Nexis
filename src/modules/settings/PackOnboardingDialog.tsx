@@ -9,7 +9,12 @@
  * just starting values for the same enabledPacks config edited in
  * Settings → Features; dismissing keeps the current config (all packs on)
  * so upgrading users who close the dialog see zero change.
+ *
+ * The cards are driven by `PRESETS` in `src/lib/packs.ts` rather than by a
+ * list kept here, so this screen and Settings → Features cannot disagree
+ * about what a preset is.
  */
+import { Icon } from "@/components/icon";
 import {
   Dialog,
   DialogContent,
@@ -17,37 +22,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PACK_PRESETS, PACKS } from "@/lib/packs";
+import { PACKS, PRESET_IDS, PRESETS, type PresetId } from "@/lib/packs";
 import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setEnabledPacks, setPacksOnboarded } from "@/modules/settings/store";
 
-const PRESETS: {
-  id: keyof typeof PACK_PRESETS;
-  label: string;
-  blurb: string;
-}[] = [
-  {
-    id: "bare-bones",
-    label: "Bare-Bones",
-    blurb: "Terminal, editor, files, source control, and AI chat. Nothing else.",
-  },
-  {
-    id: "standard",
-    label: "Standard",
-    blurb: "The core plus code navigation, build/test/debug, and dev tools.",
-  },
-  {
-    id: "everything",
-    label: "Everything",
-    blurb: "The full surface, ML Lab and all. The classic Nexis experience.",
-  },
-];
-
-
 /** Applying a preset touches only module-level setters. */
-const choose = (id: keyof typeof PACK_PRESETS) => {
-  void setEnabledPacks([...PACK_PRESETS[id]]);
+const choose = (id: PresetId) => {
+  void setEnabledPacks([...PRESETS[id].packs]);
   void setPacksOnboarded(true);
 };
 
@@ -64,38 +46,55 @@ export function PackOnboardingDialog() {
         if (!o) void setPacksOnboarded(true);
       }}
     >
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Choose your setup</DialogTitle>
           <DialogDescription>
-            Nexis ships a lot of panels. Pick how much of it you want visible
-            — you can enable or disable any pack later in Settings →
-            Features. Nothing is downloaded or removed either way.
+            Nexis ships a lot of panels. Pick what you are building and it will
+            start with the ones that fit — you can enable or disable any pack
+            later in Settings → Features. Nothing is downloaded or removed
+            either way.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-2">
-          {PRESETS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => choose(p.id)}
-              className={cn(
-                "flex flex-col items-start gap-0.5 rounded-lg border border-border/60 bg-card/60 px-3 py-2.5 text-left transition-colors",
-                "hover:border-primary/40 hover:bg-primary/[0.05]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-              )}
-            >
-              <span className="text-[12.5px] font-medium">{p.label}</span>
-              <span className="text-[10.5px] leading-relaxed text-muted-foreground">
-                {p.blurb}
-              </span>
-              {PACK_PRESETS[p.id].length > 0 && (
-                <span className="mt-0.5 text-[10px] text-muted-foreground/70">
-                  {PACK_PRESETS[p.id].map((id) => PACKS[id].label).join(" · ")}
+        <div className="grid grid-cols-2 gap-2">
+          {PRESET_IDS.map((id) => {
+            const preset = PRESETS[id];
+            // Only name the packs that actually have panels today; listing a
+            // pack whose views have not landed would promise a panel the user
+            // will go looking for and not find.
+            const named = preset.packs.filter(
+              (p) => PACKS[p].views.length > 0,
+            );
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => choose(id)}
+                className={cn(
+                  "flex flex-col items-start gap-1 rounded-lg border border-border/60 bg-card/60 px-3 py-2.5 text-left transition-colors",
+                  "hover:border-primary/40 hover:bg-primary/[0.05]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                )}
+              >
+                <Icon
+                  name={preset.icon}
+                  size="xl"
+                  className="text-muted-foreground"
+                />
+                <span className="text-[12.5px] font-medium">
+                  {preset.label}
                 </span>
-              )}
-            </button>
-          ))}
+                <span className="text-[10.5px] leading-relaxed text-muted-foreground">
+                  {preset.blurb}
+                </span>
+                {named.length > 0 && (
+                  <span className="mt-0.5 text-[10px] text-muted-foreground/70">
+                    {named.map((p) => PACKS[p].label).join(" · ")}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </DialogContent>
     </Dialog>
