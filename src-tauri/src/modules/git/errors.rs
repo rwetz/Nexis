@@ -20,6 +20,7 @@ pub enum GitError {
         required: &'static str,
     },
     NotADirectory(String),
+    NotARepository(String),
     PathOutsideWorkspace(PathBuf),
     InvalidPath(String),
     FileTooLarge {
@@ -63,6 +64,11 @@ impl Display for GitError {
                 "git {found} is too old; Nexis needs git {required} or newer.",
             ),
             GitError::NotADirectory(p) => write!(f, "not a directory: {p}"),
+            // Run outside a repository, `git diff` silently falls back to
+            // `--no-index` mode, which rejects `--cached` and answers with its
+            // own ~80-line usage block. Saying what is actually wrong beats
+            // passing that through.
+            GitError::NotARepository(p) => write!(f, "not a git repository: {p}"),
             GitError::PathOutsideWorkspace(p) => write!(
                 f,
                 "path is outside the authorized workspace: {}",

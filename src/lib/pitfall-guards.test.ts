@@ -432,6 +432,46 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
   // the warning sign — because those are text: they inherit the font and the
   // theme's colour, and they are load-bearing in the file headers and the
   // keyboard hints.
+  // The SVG canvas draws a selection box and drag handles on top of the art.
+  // The first version computed those positions as container-relative *client*
+  // pixels and drew them into the overlay SVG's own coordinate space, which are
+  // the same thing only when nothing in between applies a scale. This app
+  // applies one — `zoom: var(--app-zoom)` on `.zoom-content` — so the box and
+  // every handle sat offset from the shape and mis-scaled by the zoom factor,
+  // and grabbing a handle made the point it controlled jump to the cursor.
+  //
+  // Two independent things keep it honest, and both are asserted here because
+  // either one alone would leave the other free to rot.
+  it("pitfall 15 (canvas): the SVG canvas overlay shares the art's coordinate space", () => {
+    const src = readSrc("modules/art/SvgCanvas.tsx");
+
+    expect(
+      /className="zoom-exempt/.test(src),
+      "the SvgCanvas viewport must stay `zoom-exempt` — under an ancestor CSS " +
+        "zoom, getScreenCTM/clientWidth and pointer clientX stop agreeing, " +
+        "which is the same class of bug as CLAUDE.md pitfall #15",
+    ).toBe(true);
+
+    expect(
+      /viewBox=\{viewBox\.join\(" "\)\}/.test(src),
+      "the overlay <svg> must mirror the art's viewBox — that is what makes " +
+        "its user units the art's user units, so no pixel conversion is needed",
+    ).toBe(true);
+
+    expect(
+      /rootCtm\.inverse\(\)\.multiply\(nodeCtm\)/.test(src),
+      "overlay geometry must map node space to root space with a matrix " +
+        "*ratio* — any factor the two share (ancestor zoom, device pixel " +
+        "ratio, viewBox fit) then cancels instead of needing to be divided out",
+    ).toBe(true);
+
+    expect(
+      src.includes("getBoundingClientRect"),
+      "SvgCanvas must not measure overlay geometry with getBoundingClientRect " +
+        "— it returns client pixels, and the overlay draws in user units",
+    ).toBe(false);
+  });
+
   it("pitfall 19: no emoji anywhere in the frontend source", () => {
     const EMOJI = /[\p{Emoji_Presentation}\uFE0F]/u;
     const offenders: string[] = [];

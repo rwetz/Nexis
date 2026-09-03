@@ -28,7 +28,6 @@ export const SIDEBAR_RAIL_HEIGHT = 40;
 const STORAGE_KEY = "nexis:pinned-rail-items";
 
 const DEFAULT_PINNED: SidebarView[] = [
-  "getting-started",
   "explorer",
   "recent-files",
   "source-control",
@@ -45,16 +44,22 @@ const DEFAULT_PINNED: SidebarView[] = [
  *  later unpins the item. */
 const PIN_PROMOTIONS: { id: SidebarView; marker: string }[] = [
   { id: "ml", marker: "nexis:rail-promoted:ml" },
-  // Onboarding is useless if it is only reachable by someone who already
-  // knows where things are, so it is promoted rather than left in overflow.
-  { id: "getting-started", marker: "nexis:rail-promoted:getting-started" },
 ];
+
+/** Views that were once pinnable and are not any more. A saved rail from an
+ *  older build still names them, and an id that no longer exists in
+ *  `SIDEBAR_VIEW_IDS` renders as a gap with no label — so they are stripped on
+ *  read rather than left to rot. `getting-started` became the full-window
+ *  onboarding takeover (`OnboardingDialog`) and is no longer a sidebar view. */
+const RETIRED_VIEWS: readonly string[] = ["getting-started"];
 
 function loadPinned(): SidebarView[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      let pinned = JSON.parse(raw) as SidebarView[];
+      const saved = JSON.parse(raw) as SidebarView[];
+      let pinned = saved.filter((id) => !RETIRED_VIEWS.includes(id));
+      if (pinned.length !== saved.length) savePinned(pinned);
       for (const promo of PIN_PROMOTIONS) {
         if (localStorage.getItem(promo.marker)) continue;
         localStorage.setItem(promo.marker, "1");
@@ -104,7 +109,6 @@ export function SidebarRail({
   const [popoverOpen, setPopoverOpen] = useState(false);
 
   const builtinItems: RailItemDef[] = [
-    { id: "getting-started", label: "Getting Started",  icon: "checklist",   group: "Navigation" },
     { id: "explorer",        label: "Files",            icon: "explorer",    group: "Navigation" },
     { id: "recent-files",   label: "Recent Files",     icon: "clock",       group: "Navigation" },
     { id: "outline",        label: "Outline",          icon: "outline",      group: "Navigation" },

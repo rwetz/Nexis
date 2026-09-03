@@ -10,16 +10,23 @@
  * Loads the git diff, shows a summary (files + lines), and sends the diff
  * to the AI panel as a pre-filled review prompt.  No new Rust commands are
  * needed — we reuse the existing `git_diff` IPC.
+ *
+ * The workspace root is not necessarily a repository, so the panel resolves
+ * the real repo root first and renders a plain "not a git repository" state
+ * when there is none. Handing a non-repo directory to `git_diff` used to make
+ * git fall back to `--no-index` mode, which rejects `--cached` and answers
+ * with its own usage block — eighty lines of red prose filling the pane.
  */
 import { Icon } from "@/components/icon";
-import { invoke } from "@tauri-apps/api/core";
+import { basename } from "@/lib/path";
+import { native } from "@/modules/ai/lib/native";
 import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
 import { cn } from "@/lib/utils";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type GitDiffResult = { diffText: string; truncated: boolean };
 
-type LoadState = "idle" | "loading" | "ready" | "error";
+type LoadState = "idle" | "loading" | "ready" | "error" | "no-repo";
 type ReviewScope = "staged" | "all";
 
 type DiffStats = {
@@ -44,24 +51,35 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
   const [scope, setScope] = useState<ReviewScope>("staged");
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [diff, setDiff] = useState<GitDiffResult | null>(null);
+  const [repoRoot, setRepoRoot] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const openAiPanel = useChatStore((s) => s.openPanel);
+  // Guards against a slow load landing after a newer one — switching scope or
+  // workspace while a diff is in flight would otherwise show the stale answer.
+  const requestRef = useRef(0);
 
   const loadDiff = useCallback(async () => {
     if (!workspaceRoot) return;
+    const request = ++requestRef.current;
     setLoadState("loading");
     setError(null);
     try {
-      const result = await invoke<GitDiffResult>("git_diff", {
-        repoRoot: workspaceRoot,
-        path: null,
-        staged: scope === "staged",
-        workspace: null,
-      });
+      const repo = await native.gitResolveRepo(workspaceRoot);
+      if (request !== requestRef.current) return;
+      if (!repo) {
+        setRepoRoot(null);
+        setDiff(null);
+        setLoadState("no-repo");
+        return;
+      }
+      setRepoRoot(repo.repoRoot);
+      const result = await native.gitDiff(repo.repoRoot, null, scope === "staged");
+      if (request !== requestRef.current) return;
       setDiff(result);
       setLoadState("ready");
     } catch (e) {
+      if (request !== requestRef.current) return;
       setError(String(e));
       setLoadState("error");
     }
@@ -138,26 +156,38 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
             {s === "staged" ? "Staged only" : "All changes"}
           </button>
         ))}
+        {repoRoot && (
+          <span
+            title={repoRoot}
+            className="ml-auto max-w-[45%] truncate text-[10px] text-muted-foreground/60"
+          >
+            {basename(repoRoot)}
+          </span>
+        )}
       </div>
 
       {/* Body */}
       <div className="flex min-h-0 flex-1 flex-col">
         {!workspaceRoot ? (
           <EmptyState message="No workspace open" />
-        ) : loadState === "error" ? (
-          <div className="p-4 text-center">
-            <Icon name="alert" size="lg" className="mx-auto mb-2 text-destructive" />
-            <p className="text-xs text-destructive">
-              {error ?? "Failed to load diff"}
+        ) : loadState === "no-repo" ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
+            <Icon name="git-branch" size="xl" className="text-muted-foreground/40" />
+            <p className="text-xs text-muted-foreground">Not a git repository</p>
+            <p className="max-w-[220px] text-[10.5px] leading-relaxed text-muted-foreground/60">
+              Code review reads a git diff. Open a workspace inside a repository,
+              or run <span className="font-mono">git init</span> here.
             </p>
             <button
               type="button"
               onClick={() => void loadDiff()}
-              className="mt-2 text-[10px] text-primary hover:underline"
+              className="mt-1 text-[10px] text-primary hover:underline"
             >
-              Retry
+              Check again
             </button>
           </div>
+        ) : loadState === "error" ? (
+          <ErrorState error={error} onRetry={() => void loadDiff()} />
         ) : loadState === "loading" ? (
           <EmptyState message="Loading diff…" />
         ) : !hasChanges ? (
@@ -222,6 +252,60 @@ function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex flex-1 items-center justify-center">
       <p className="text-[11px] text-muted-foreground/60">{message}</p>
+    </div>
+  );
+}
+
+/**
+ * Git's stderr has no length ceiling — a usage block or a hook's output can run
+ * to dozens of lines. Show the first line, keep the rest behind a disclosure,
+ * and give the disclosure its own scroll box so the panel layout survives.
+ */
+function ErrorState({
+  error,
+  onRetry,
+}: {
+  error: string | null;
+  onRetry: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const text = (error ?? "Failed to load diff").trim();
+  const [summary, ...rest] = text.split("\n");
+  const hasDetail = rest.some((line) => line.trim() !== "");
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
+      <div className="flex items-start gap-2">
+        <Icon name="alert" className="mt-px shrink-0 text-destructive" />
+        <p className="min-w-0 break-words text-[11px] leading-relaxed text-destructive">
+          {summary}
+        </p>
+      </div>
+
+      {hasDetail && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="flex items-center gap-1 self-start text-[10px] text-muted-foreground hover:text-foreground"
+        >
+          <Icon name={expanded ? "chevron-down" : "chevron-right"} size="xs" />
+          {expanded ? "Hide details" : "Show details"}
+        </button>
+      )}
+
+      {expanded && hasDetail && (
+        <pre className="min-h-0 flex-1 overflow-auto rounded border border-border/50 bg-muted/30 p-2 font-mono text-[10px] leading-relaxed whitespace-pre-wrap break-words text-muted-foreground">
+          {text}
+        </pre>
+      )}
+
+      <button
+        type="button"
+        onClick={onRetry}
+        className="self-start text-[10px] text-primary hover:underline"
+      >
+        Retry
+      </button>
     </div>
   );
 }

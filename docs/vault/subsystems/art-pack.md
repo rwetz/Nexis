@@ -1,11 +1,13 @@
 ---
 type: subsystem
-description: The Art pack's SVG playground — icon-scale preview, the in-house optimizer and why it is not SVGO, and why the preview renders a sanitized copy.
+description: The Art pack's SVG playground — its four panes, the direct-manipulation canvas and its three coordinate spaces, the in-house optimizer and why it is not SVGO, and why every preview renders a sanitized copy.
 ---
 
 # Art pack
 
 One panel so far, added 2026-09-03: the SVG playground, under the `art` pack (view `svg-playground`). Sidebar host stacks the preview under the code; the expand button detaches it into an `svg-playground` tab that lays out side by side — the same pattern as the ML Lab's network diagram (see [[ml-lab]]), including carrying the collapse control back on the tab.
+
+The left half is **four tabs over one document**: Source (CodeMirror), Canvas (direct manipulation), Shapes (parametric generators) and Presets (ready-made art). They are tabs, not modes — every pane reads and writes the same `source` string, so a shape can be generated, dragged on the canvas and then hand-tuned in code without any pane owning a copy. The right half (preview, optimize, export) is shared by all four.
 
 The tab holds **no document of its own**. The source lives in the playground's own `localStorage` key, so panel and tab are two views of one thing and closing the tab loses nothing.
 
@@ -40,9 +42,62 @@ The detail that matters most: **URL attributes are judged on the normalized valu
 
 The editor and every export keep the **original**; only the preview is sanitized, and the panel says what it withheld rather than silently showing different art.
 
+## The canvas
+
+`SvgCanvas.tsx` plus `lib/svgDoc.ts` and `lib/pathData.ts`. Select, move, drag points, scale, nudge, delete.
+
+**The indirection through `data-nx-id` is load-bearing and must not be "simplified".** The preview renders a *sanitized* copy (see below), so a click lands on a node in the sanitized render rather than in the user's document. `parseSvgSource` tags every element `data-nx-id` in document order before serializing for the preview; that id is what maps a hit back to the node to mutate, and `serializeSvg` strips it on the way out so it never reaches the user's source. Rendering the raw source to make selection easier would trade the pack's whole security posture for a saved lookup.
+
+**Formatting survives** because the document is parsed with `DOMParser` and every mutation writes an attribute rather than restructuring the tree — `XMLSerializer` hands back the same whitespace text nodes it was given. The one normalization is `<rect />` to `<rect/>`, and it is only paid once something is actually edited.
+
+### The three coordinate spaces
+
+Mixing these produces a drag that drifts, which is the failure mode to recognise:
+
+| Space | What lives there | How to get there |
+| --- | --- | --- |
+| Client pixels | pointer events | — |
+| Element's own user space | `x`, `cx`, `d`, `points` | `el.getScreenCTM().inverse()` |
+| Parent's space | the element's own `transform` | `el.parentElement.getScreenCTM().inverse()` |
+
+- A **move** measures its delta in the *parent's* frame. The element's own would double-count its transform every frame.
+- A **scale** freezes the screen matrix at pointerdown, because writing a transform changes the live matrix and reading it back feeds the scale into its own input. It also re-derives from the pointerdown source each move rather than compounding: twenty frames of 1.1x is not 2x, and a compounding drag can never be dragged back to its start.
+- Primitives move by rewriting **their own geometry**, not by accumulating a transform. Only groups, `<use>` and text fall back to one, and it merges into any existing translate — without the merge a drag appends one per pointer move.
+
+`pointer-events: all` on the rendered shapes is what makes unfilled icon art selectable at all; with the default only the stroke is a hit target.
+
+### The overlay is not drawn in pixels
+
+The selection box and the handles go into a **second `<svg>` that mirrors the art's `viewBox` and `preserveAspectRatio`, in the same box**, so its user units *are* the art's user units and the browser does the mapping. Positions come from the matrix ratio `rootCTM.inverse() * nodeCTM`, in which any factor the two share — ancestor zoom, device pixel ratio, the viewBox fit — cancels.
+
+The first version computed container-relative **client pixels** and drew them into the overlay's local space. Those are the same thing only when nothing between them applies a scale, and this app applies one: `zoom: var(--app-zoom)` on `.zoom-content`. The box and every handle sat offset from the shape and mis-scaled by the zoom factor, and grabbing a handle made its point jump to the cursor.
+
+The viewport is therefore also **`zoom-exempt`**, like the terminal, the REPL and every CodeMirror instance (pitfall #15): net scale 1.0 means `getScreenCTM`, `clientWidth` and a pointer's `clientX` are all in one space. Strokes use `vector-effect="non-scaling-stroke"` and handle radii are multiplied by `unitsPerPx` (derived from the overlay's own `clientWidth` and viewBox, both local values), so a handle is a constant on-screen size in a viewBox of any scale.
+
+Both halves are pinned by `pitfall 15 (canvas)` in `src/lib/pitfall-guards.test.ts`, which also fails if `getBoundingClientRect` reappears in the file.
+
+### The path parser
+
+`lib/pathData.ts` normalizes to absolute `M L C Q A Z`, expanding `H`/`V` and reflecting `S`/`T`. A handle whose position depends on the segments before it cannot be dragged independently, which is the whole reason for the normalization. Two things it exists to get right:
+
+- **Arc flags are read one character at a time.** `a5 5 0 011 1` is a valid, commonly emitted spelling of two flags plus a coordinate; a generic number scanner reads `011` and produces a silently corrupt arc.
+- **A half-typed path returns what it understood** rather than throwing. Live editing means truncated input is the normal case, not an error.
+
+The cost, stated honestly: a re-serialized path is longer than a tight relative one. The optimizer wins that back, and a path is only rewritten when something is actually dragged.
+
+## Presets
+
+`lib/presets.ts` plus `PresetGallery.tsx`, in a **Presets** tab. 27 documents in four groups (Marks, Shapes, Patterns, Dividers). A blank document is the worst starting point a drawing tool can offer.
+
+Half are hand-authored on the 24-unit grid with a 1.5 stroke — the geometry the 16/24/32/64 preview row exists to judge. Half are **generator output frozen at a parameter set**, so a preset over a generator is a name and four numbers rather than a second copy of the geometry, and improving a generator improves its presets. Unstated parameters fall back to the generator's defaults, so adding a slider later does not break the presets over it.
+
+Picking one replaces the editor and lands on the canvas. **No preset is a special case** — it is a string in the editor, and nothing records where a document came from.
+
+A test asserts every preset names `currentColor` and no literal hex: art with a baked-in colour cannot take the theme (pitfall #18's file-tree defect, same shape).
+
 ## Shape generator
 
-`lib/shapes.ts` plus `ShapeGenerator.tsx`, in a **Shapes** tab beside **Source**. Six generators: blob, wave, filled wave, arc, divider, grain.
+`lib/shapes.ts` plus `ShapeGenerator.tsx`, in a **Shapes** tab. Fourteen generators: blob, wave, filled wave, arc, divider, grain, star, polygon, gear, spiral, rings, dot grid, burst, chevrons.
 
 Each is a **pure function from numbers to a complete SVG document**. That is the load-bearing property: the output goes into the editor, where optimize/preview/export already work, so no generator owns any of those.
 
@@ -53,8 +108,16 @@ Two decisions not to undo:
 
 Grain is the odd one: raw `feTurbulence` is opaque RGB static that ignores fill, so it is turned into an alpha mask (`feColorMatrix`) and composited against a `currentColor` rect. Without that it would be the only generator that cannot take the theme.
 
+Three traps the radial generators share, each already paid for once:
+
+- **Angles are measured from twelve o'clock**, in one shared `polar` helper. SVG's own zero is three o'clock, which is right for maths and wrong for a control — nobody dialling "Rotation" on a star expects zero to mean "one point aimed right".
+- **The polygon's corner rounding clamps its cut-back to half the shorter edge.** Without the clamp, a large radius on a triangle overshoots the edge and turns the shape inside out.
+- **The gear punches its bore with `fill-rule="evenodd"`**, not with a background-coloured circle on top. It stays one path, and it works on any background rather than only the one it was drawn against.
+
 ## Not built yet
 
-The animator, which is explicitly gated on the first two earning it — a keyframe timeline is a genuinely large surface.
+The animator — a keyframe timeline over SMIL / CSS / Web Animations. Explicitly gated on the rest earning it, because a timeline UI is a genuinely large surface.
+
+Also open: the pack still owns exactly one view. A preset that exists to be a design surface wants more behind it than one panel, and what else belongs is a decision to make before building any of it.
 
 Related: [[icon-and-motion-system]], [[editor]], [[expansion-packs]].

@@ -33,9 +33,28 @@ function readSidebarWidth(): number {
   }
 }
 
+/**
+ * Views that were saved by an older build and no longer exist, mapped onto
+ * what replaced them. Without this a stored id that has since been removed
+ * fails `isSidebarView` and silently falls back to the explorer — which is the
+ * right *end state* here, but the remap is what makes that a decision rather
+ * than an accident, and it is where the next retirement goes.
+ *
+ * `getting-started` moved out of the sidebar entirely: onboarding is a
+ * full-window takeover now (`OnboardingDialog`).
+ */
+const RETIRED_VIEWS: Record<string, SidebarView> = {
+  "getting-started": "explorer",
+};
+
 function readSidebarView(): SidebarView {
   try {
     const stored = window.localStorage.getItem(SIDEBAR_VIEW_STORAGE_KEY);
+    if (stored && stored in RETIRED_VIEWS) {
+      const replacement = RETIRED_VIEWS[stored];
+      window.localStorage.setItem(SIDEBAR_VIEW_STORAGE_KEY, replacement);
+      return replacement;
+    }
     // Any valid view restores, including pack-owned ones: heavy panels are
     // lazy-loaded, and a view whose pack got disabled in the meantime lands
     // on the PackGatePlaceholder instead of a broken panel.

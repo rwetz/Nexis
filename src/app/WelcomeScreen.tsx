@@ -10,7 +10,9 @@ const DarkVeilBackground = lazy(() =>
   import("@/components/ui/backgrounds/DarkVeil").then((m) => ({ default: m.DarkVeilBackground })),
 );
 import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/icon";
 import { fmtShortcut, MOD_KEY, SHIFT_KEY } from "@/lib/platform";
+import { openOnboarding } from "@/modules/onboarding/onboardingDialogStore";
 import { getFolderColor, useTheme } from "@/modules/theme";
 
 type Props = {
@@ -87,14 +89,29 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
           </p>
         </div>
 
-        <Button
-          size="sm"
-          onClick={onNewTerminal}
-          className="bg-brand text-brand-foreground hover:bg-brand/80"
-        >
-          New Terminal
-          <span className="ml-1.5 opacity-50">{fmtShortcut(MOD_KEY, "T")}</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={onNewTerminal}
+            className="bg-brand text-brand-foreground hover:bg-brand/80"
+          >
+            New Terminal
+            <span className="ml-1.5 opacity-50">{fmtShortcut(MOD_KEY, "T")}</span>
+          </Button>
+
+          {/* Onboarding is a one-shot for anyone who dismissed it on day one
+              unless there is a way back in. This is that way in — the same
+              takeover the command palette opens. */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={openOnboarding}
+            className="bg-transparent"
+          >
+            <Icon name="checklist" size="xs" className="mr-1.5" />
+            View onboarding
+          </Button>
+        </div>
 
         {/* Thin divider */}
         <div aria-hidden className="h-px w-48 bg-gradient-to-r from-transparent via-border/50 to-transparent" />

@@ -193,7 +193,13 @@ fn diff_inner(
         args,
         DEFAULT_TIMEOUT_SECS,
     )?;
-    ensure_success(&output, "git diff failed")?;
+    if let Err(err) = ensure_success(&output, "git diff failed") {
+        // Outside a repository git does not say "not a git repository" for
+        // `diff` — it falls back to `--no-index` mode and answers with its own
+        // usage block (which rejects `--cached` outright). Probing here rather
+        // than up front keeps the happy path at one process.
+        return Err(reclassify_if_not_a_repository(repo_root, err));
+    }
 
     let diff_text = match String::from_utf8(output.stdout) {
         Ok(text) => text,
@@ -203,6 +209,23 @@ fn diff_inner(
         diff_text,
         truncated: output.truncated,
     })
+}
+
+/// Map a failed in-repo git command onto `NotARepository` when the directory
+/// turns out not to be one. Only reached on an error path, so the extra
+/// `rev-parse` costs nothing in normal use.
+fn reclassify_if_not_a_repository(repo_root: &ResolvedGitDirectory, err: GitError) -> GitError {
+    match git_stdout_line_opt(
+        &repo_root.workspace,
+        &repo_root.git_path,
+        ["rev-parse", "--is-inside-work-tree"],
+    ) {
+        Ok(Some(answer)) if answer == "true" => err,
+        Ok(_) => GitError::NotARepository(repo_root.git_path.clone()),
+        // The probe itself failed (git missing, timed out); the original error
+        // is the more informative of the two.
+        Err(_) => err,
+    }
 }
 
 pub fn diff_content(
