@@ -125,6 +125,7 @@ export function SidebarRail({
     { id: "ml",             label: "ML Lab",           icon: "brain",     group: "Dev Tools" },
     { id: "profiles",       label: "Profiles",         icon: "layers",        group: "Dev Tools" },
     { id: "ssh",            label: "SSH",              icon: "terminal",      group: "Dev Tools" },
+    { id: "web-tools",      label: "Web Tools",        icon: "tools",       group: "Dev Tools" },
     { id: "svg-playground", label: "SVG Playground",   icon: "brush",       group: "Dev Tools" },
     { id: "share",          label: "Share",            icon: "globe",       group: "Advanced" },
     { id: "notes",          label: "Workspace Notes",  icon: "note",        group: "Advanced" },

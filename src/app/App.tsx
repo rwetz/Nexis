@@ -117,6 +117,7 @@ import { StatusBar } from "@/modules/statusbar";
 import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
 import { GettingStartedPanel } from "@/modules/onboarding/GettingStartedPanel";
 import { SvgPlaygroundPanel } from "@/modules/art/SvgPlaygroundPanel";
+import { WebToolsPanel } from "@/modules/webdev/WebToolsPanel";
 import { OnboardingTour } from "@/modules/onboarding/OnboardingTour";
 import { useOnboardingSignals } from "@/modules/onboarding/useOnboardingSignals";
 import { signalOnboardingStep, type OnboardingAction } from "@/lib/onboarding";
@@ -1398,6 +1399,7 @@ export default function App() {
     { id: "view.zenMode",        label: "Toggle zen mode",          category: "View",    action: () => setZenMode((v) => !v), keywords: ["distraction free", "hide header"] },
     { id: "pane.splitRight",     label: "Split pane right",         category: "Panes",   action: () => splitActivePaneInActiveTab("row") },
     { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
+    { id: "webdev.tools",        label: "Show web tools (JSON, JWT, regex, codecs)", category: "View", action: () => persistSidebarView("web-tools"), pack: "web-dev", keywords: ["json", "jwt", "base64", "regex", "url encode", "format"] },
     { id: "art.svgPlayground",   label: "Open the SVG playground",  category: "View",    action: () => { openSvgPlaygroundTab(); }, pack: "art", keywords: ["svg", "icon", "vector", "art"] },
     { id: "sidebar.gettingStarted", label: "Show Getting Started checklist", category: "View", action: () => persistSidebarView("getting-started"), keywords: ["onboarding", "tour", "help", "first run"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
@@ -1971,6 +1973,8 @@ export default function App() {
                         view={sidebarView}
                         onShowExplorer={() => persistSidebarView("explorer")}
                       />
+                    ) : sidebarView === "web-tools" ? (
+                      <WebToolsPanel />
                     ) : sidebarView === "svg-playground" ? (
                       <SvgPlaygroundPanel onExpand={openSvgPlaygroundTab} />
                     ) : sidebarView === "getting-started" ? (

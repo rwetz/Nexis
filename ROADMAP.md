@@ -121,13 +121,14 @@ and stop. Don't batch them.
   This lives in Art rather than Web Dev because SVG authoring is a design activity a mobile or ML project
   wants just as much, and separating it leaves Web Dev free to be about running and inspecting web apps.
 
-- [ ] **Web Dev pack** — the `web-dev` pack id, its icon and the Web Dev preset already ship; this item is
-  the panels. The preview pane already handles local dev servers; the pack is what turns that
+- [ ] **Web Dev pack** — the pack, its icon, the preset and the scratchpad tools ship; what remains is the
+  multi-viewport preview and the HTTP client. The preview pane already handles local dev servers; the pack is what turns that
   into a workflow. Roughly in order: a **multi-viewport preview** (phone/tablet/desktop side by side
   against one dev server, built on the existing preview surface); an **HTTP/REST client** with
   per-workspace saved requests, environment variables and a response viewer — the thing people currently
-  leave Nexis for; and **scratchpad tools** that are cheap and constantly wanted (JSON formatter and
-  JSONPath, JWT decoder, regex tester, base64/URL codecs). Lower priority and worth re-deciding before
+  leave Nexis for; and ~~**scratchpad tools**~~ — **shipped**: JSON formatter with a deliberate JSONPath
+  subset, a JWT decoder that states it decodes rather than verifies, a regex tester, and base64/URL
+  codecs, all local and network-free. Lower priority and worth re-deciding before
   building: contrast/palette checks and CSS gradient/shadow builders overlap the Art pack and may belong
   there instead. Each is its own change — the pack is a container, not a single PR.
 

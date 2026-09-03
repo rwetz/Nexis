@@ -135,7 +135,7 @@ export const PACKS: Record<PackId, PackDef> = {
     description:
       "Running and inspecting web apps: multi-viewport preview, an HTTP client, and scratchpad codecs.",
     icon: "globe",
-    views: [],
+    views: ["web-tools"],
   },
   mobile: {
     id: "mobile",
