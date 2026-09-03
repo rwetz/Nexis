@@ -15,3 +15,5 @@ export {
   type WorkspaceEnv,
   type WslDistro,
 } from "./env";
+
+export { sameProject, workspaceProjectKey } from "./identity";

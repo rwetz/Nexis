@@ -141,24 +141,21 @@ and stop. Don't batch them.
   the Simulator pane is the first thing to revisit here. Until then the iOS half of an Expo workflow stays
   in Expo Go on a physical device.
 
-- [ ] **Command ledger — the substrate under the terminal-native backlog** — a design task before it is a
-  feature. Nexis already injects OSC 133 shell integration, so every command carries cwd, argv, exit code
-  and timing, and an fswatch runs alongside it; today all of that feeds the block gutter and is then
-  thrown away. A local, per-workspace ledger of command events is the single piece that six of the
-  features in *"terminal-native features an IDE can't have"* below sit on — provenance, success-filtered
-  history, the failure/fix loop, build-time trends, the searchable output archive, and "while you were
-  away". Build it once, deliberately, or it gets built five incompatible times.
-  **Write the data model and the privacy contract before any panel exists.** Two constraints are
-  load-bearing and have to be designed in rather than retrofitted: **private terminals never enter the
-  ledger** — that concept already exists for the AI and must hold here identically — and every record goes
-  through the same redaction pass session recordings already get, because a command line is precisely
-  where an API key ends up. Open questions for the decision note: storage (an append-only file per
-  workspace vs. SQLite — weigh against "every dependency earns its place"); retention and a hard size cap,
-  since this grows forever by construction; whether a ledger survives its workspace being reopened from a
-  different path (see pitfall #23 — path strings are not stable identity); and what the user-facing
-  "forget this" gesture is, both per-entry and per-workspace. Decision record in
-  `docs/vault/decisions/command-ledger.md`; nothing ships until that note exists.
-
+- [ ] **Command ledger — the substrate under the terminal-native backlog** — **the design gate is closed**:
+  the decision record is written at `docs/vault/decisions/command-ledger.md`, so implementation can start.
+  What it settles: an append-only NDJSON metadata log plus **separate** output blobs per workspace
+  (the split is about deletion cost, not speed); **no new dependency** — SQLite was the obvious answer and
+  is rejected with reasons, since a scan over ~200-byte records answers every gated feature except the
+  output archive, which wants a content search rather than a relational index; redaction happens
+  **frontend-side before IPC**, following the share-server and diagnostics precedent, because
+  `redactSensitive` has no Rust counterpart and two copies of a security-critical pattern list drift;
+  private terminals are excluded **at the OSC-133 source**, not downstream; "forget this" **compacts and
+  never tombstones**, because a tombstoned secret is still on disk; workspace identity is a normalized
+  path hash with the git root commit as an *offered* re-association key (pitfall #23 — and note
+  `workspaceScopeKey()` is environment-scoped, not project-scoped, so it is the wrong helper here); and
+  retention runs two independent caps, evicting output blobs before metadata.
+  Remaining work is the implementation itself, in this order: the writer plus its two tripwires (private
+  exclusion, redaction) before any panel exists, then the eight gated features read from it.
 ---
 
 ## Up next
