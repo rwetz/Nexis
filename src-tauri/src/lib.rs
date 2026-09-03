@@ -276,6 +276,7 @@ pub fn run() {
             dap::dap_sessions,
             net::lm_ping,
             net::ai_http_request,
+            net::http_send,
             net::ai_http_stream,
             python::py_detect_envs,
             recording::save_cast_recording,

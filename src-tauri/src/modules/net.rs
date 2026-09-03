@@ -350,6 +350,86 @@ pub async fn ai_http_request(
     })
 }
 
+/// A user-driven HTTP response: `HttpResponse` plus what a REST client shows
+/// next to it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClientHttpResponse {
+    pub status: u16,
+    pub status_text: String,
+    pub headers: HashMap<String, String>,
+    pub body: Vec<u8>,
+    /// Wall-clock time for the whole exchange, which is the number a REST
+    /// client is actually asked for.
+    pub elapsed_ms: u64,
+    /// Final URL after redirects, so a surprising response can be traced to a
+    /// redirect rather than to the request that was typed.
+    pub final_url: String,
+}
+
+/// The Web Dev pack's REST client.
+///
+/// Deliberately a separate command from `ai_http_request` even though the two
+/// share every validation helper below. They have different threat models and
+/// must be able to diverge without dragging each other along: `ai_http_*` is
+/// the *agent's* egress, where the URL can originate in model output or in a
+/// tool result, and `allow_private_network` defaults off for exactly that
+/// reason. This one is driven by a URL a human typed into a request bar, and
+/// reaching `localhost:3000` is the entire point of it -- so private and
+/// loopback destinations are allowed by default here.
+///
+/// What does **not** relax: `IpKind::BlockedMetadata` is refused regardless of
+/// `allow_private`, so 169.254.169.254, `fd00:ec2::254`, IPv6 link-local and
+/// the metadata hostnames stay unreachable from both paths. Nor does the
+/// header blocklist, the userinfo rejection, the scheme allow-list, or the
+/// DNS pinning that defeats rebinding between classification and connect.
+#[tauri::command]
+pub async fn http_send(
+    url: String,
+    method: String,
+    headers: Option<HashMap<String, String>>,
+    body: Option<Vec<u8>>,
+    timeout_ms: Option<u64>,
+) -> Result<ClientHttpResponse, String> {
+    // A REST client that cannot reach a dev server is not a REST client.
+    let allow_private = true;
+    let parsed = validate_url(&url, allow_private)?;
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| "missing host".to_string())?
+        .to_string();
+    let safe_ips = classify_and_collect_safe_ips(&host, allow_private).await?;
+
+    let client = build_safe_client(allow_private, &[(host, safe_ips)])?;
+    let req = build_request(&client, &method, parsed, headers, body)?;
+
+    // Bounded so a hung endpoint cannot leave the panel waiting forever;
+    // clamped so a hand-edited value cannot disable the bound entirely.
+    let timeout = Duration::from_millis(timeout_ms.unwrap_or(30_000).clamp(1_000, 120_000));
+
+    let started = std::time::Instant::now();
+    let resp = tokio::time::timeout(timeout, req.send())
+        .await
+        .map_err(|_| format!("timed out after {} ms", timeout.as_millis()))?
+        .map_err(|e| e.to_string())?;
+
+    let status = resp.status();
+    let status_text = status.canonical_reason().unwrap_or("").to_string();
+    let final_url = resp.url().to_string();
+    let headers = header_map_to_strings(resp.headers());
+    let body = resp.bytes().await.map_err(|e| e.to_string())?.to_vec();
+    let elapsed_ms = started.elapsed().as_millis() as u64;
+
+    Ok(ClientHttpResponse {
+        status: status.as_u16(),
+        status_text,
+        headers,
+        body,
+        elapsed_ms,
+        final_url,
+    })
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum AiStreamEvent {
@@ -578,6 +658,40 @@ mod tests {
         assert!(validate_url("http://metadata.google.internal/", true).is_err());
         assert!(validate_url("http://metadata/", true).is_err());
         assert!(validate_url("http://metadata.azure.com/", true).is_err());
+    }
+
+    /// Build a runtime by hand: tokio here is `default-features = false`
+    /// with only "rt", so the `#[tokio::test]` macro is not available.
+    fn block_on<F: std::future::Future>(f: F) -> F::Output {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(f)
+    }
+
+    #[test]
+    fn allow_private_never_unblocks_cloud_metadata() {
+        // `http_send` (the Web Dev REST client) passes allow_private = true so
+        // it can reach a dev server on localhost. That flag must relax private
+        // and loopback ONLY -- if it ever also unblocked metadata, the REST
+        // client would become a one-click SSRF against 169.254.169.254 on any
+        // cloud host, and the AI egress path shares this very function.
+        for host in ["169.254.169.254", "fd00:ec2::254", "fe80::1"] {
+            let got = block_on(classify_and_collect_safe_ips(host, true));
+            assert!(
+                got.is_err(),
+                "metadata address {host} must stay blocked even with allow_private",
+            );
+        }
+    }
+
+    #[test]
+    fn allow_private_is_what_permits_a_dev_server() {
+        // The other half of the contract: with the flag off, loopback is
+        // refused (the AI path); with it on, it resolves (the REST client).
+        assert!(block_on(classify_and_collect_safe_ips("127.0.0.1", false)).is_err());
+        assert!(block_on(classify_and_collect_safe_ips("127.0.0.1", true)).is_ok());
     }
 
     #[test]
