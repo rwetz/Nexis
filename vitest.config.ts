@@ -21,6 +21,12 @@ export default defineConfig({
       "src/modules/terminal/lib/keymap.test.mjs",
       // WDIO E2E specs — run with `pnpm test:e2e`, not Vitest
       "e2e/**",
+      // Agent worktrees. The Claude Code harness checks out a full second copy
+      // of the repo under here when a background task runs, and Vitest happily
+      // collects both — so a local run reports doubled counts, and any spec
+      // that reads a fixture by relative path fails in the copy. Excluding the
+      // directory is the fix; the worktree has its own checkout to test in.
+      ".claude/**",
     ],
     coverage: {
       provider: "v8",

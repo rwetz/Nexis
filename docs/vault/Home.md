@@ -52,6 +52,6 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 
 ## Other sections
 
-- `decisions/` — lightweight ADRs: why something is the way it is, alternatives rejected. [[expansion-packs]], [[nexis-ml-artifact-pinning]], [[program-resolution-before-spawn]] (new ones from `templates/decision.md`)
+- `decisions/` — lightweight ADRs: why something is the way it is, alternatives rejected. [[expansion-packs]], [[nexis-ml-artifact-pinning]], [[program-resolution-before-spawn]], [[command-ledger]] (new ones from `templates/decision.md`)
 - `runbooks/` — how to do rare-but-recurring tasks (release, debugging a class of bug, forcing cache refreshes)
 - `templates/` — copy these when creating a new note

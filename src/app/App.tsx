@@ -161,11 +161,11 @@ import { saveCustomTheme } from "@/modules/theme/customThemes";
 import { UpdaterDialog } from "@/modules/updater";
 import {
   currentWorkspaceEnv,
-  currentWorkspaceScopeKey,
   getWslHome,
   LOCAL_WORKSPACE,
   useWorkspaceEnvStore,
   workspaceEnvForPath,
+  workspaceProjectKey,
   type WorkspaceEnv,
 } from "@/modules/workspace";
 import { homeDir } from "@tauri-apps/api/path";
@@ -1977,7 +1977,7 @@ export default function App() {
                         onShowExplorer={() => persistSidebarView("explorer")}
                       />
                     ) : sidebarView === "http-client" ? (
-                      <HttpClientPanel workspaceKey={currentWorkspaceScopeKey()} />
+                      <HttpClientPanel workspaceKey={workspaceProjectKey(explorerRoot)} />
                     ) : sidebarView === "web-tools" ? (
                       <WebToolsPanel />
                     ) : sidebarView === "svg-playground" ? (

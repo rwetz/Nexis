@@ -40,8 +40,21 @@ The detail that matters most: **URL attributes are judged on the normalized valu
 
 The editor and every export keep the **original**; only the preview is sanitized, and the panel says what it withheld rather than silently showing different art.
 
+## Shape generator
+
+`lib/shapes.ts` plus `ShapeGenerator.tsx`, in a **Shapes** tab beside **Source**. Six generators: blob, wave, filled wave, arc, divider, grain.
+
+Each is a **pure function from numbers to a complete SVG document**. That is the load-bearing property: the output goes into the editor, where optimize/preview/export already work, so no generator owns any of those.
+
+Two decisions not to undo:
+
+- **Seeds are parameters, never `Math.random()`.** Otherwise the preview disagrees with the export, the shape jumps on re-render, and moving any slider rerolls the form so you cannot converge on one you liked.
+- **Insert is a button, not live-writing.** Live-writing destroys hand-written source the instant a control is touched, with no undo across the boundary.
+
+Grain is the odd one: raw `feTurbulence` is opaque RGB static that ignores fill, so it is turned into an alpha mask (`feColorMatrix`) and composited against a `currentColor` rect. Without that it would be the only generator that cannot take the theme.
+
 ## Not built yet
 
-The shape generator and the animator from the roadmap. The animator is explicitly gated on the first two earning it — a keyframe timeline is a genuinely large surface.
+The animator, which is explicitly gated on the first two earning it — a keyframe timeline is a genuinely large surface.
 
 Related: [[icon-and-motion-system]], [[editor]], [[expansion-packs]].

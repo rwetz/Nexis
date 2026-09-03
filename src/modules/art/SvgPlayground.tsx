@@ -21,6 +21,7 @@
  */
 
 import { Icon } from "@/components/icon";
+import { ShapeGenerator } from "./ShapeGenerator";
 import { cn } from "@/lib/utils";
 import {
   getCachedEditorTheme,
@@ -78,6 +79,7 @@ export function SvgPlayground({ layout }: Props) {
   const [format, setFormat] = useState<ExportFormat>("svg");
   const [copied, setCopied] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
+  const [leftPane, setLeftPane] = useState<"source" | "shapes">("source");
   const [optimized, setOptimized] = useState<OptimizeResult | null>(null);
 
   const editorThemeId = usePreferencesStore((s) => s.editorTheme);
@@ -148,12 +150,31 @@ export function SvgPlayground({ layout }: Props) {
             : "flex-1 border-b border-border/60",
         )}
       >
-        <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-1.5">
-          <Icon name="code" size="sm" className="text-muted-foreground" />
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
-            Source
-          </span>
-          {!valid && (
+        <div className="flex shrink-0 items-center gap-1.5 border-b border-border/50 px-3 py-1.5">
+          {(
+            [
+              ["source", "code", "Source"],
+              ["shapes", "brush", "Shapes"],
+            ] as const
+          ).map(([id, icon, label]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={leftPane === id}
+              onClick={() => setLeftPane(id)}
+              className={cn(
+                "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                leftPane === id
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground/70 hover:text-foreground",
+              )}
+            >
+              <Icon name={icon} size="xs" active={leftPane === id} />
+              {label}
+            </button>
+          ))}
+          {leftPane === "source" && !valid && (
             <span className="ml-auto flex items-center gap-1 text-[10px] text-amber-500">
               <Icon name="alert" size="xs" />
               not a complete &lt;svg&gt; document
@@ -161,6 +182,15 @@ export function SvgPlayground({ layout }: Props) {
           )}
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">
+          {leftPane === "shapes" ? (
+            <ShapeGenerator
+              onInsert={(generated) => {
+                setSource(generated);
+                setOptimized(null);
+                setLeftPane("source");
+              }}
+            />
+          ) : (
           <CodeMirror
             value={source}
             onChange={setSource}
@@ -176,6 +206,7 @@ export function SvgPlayground({ layout }: Props) {
               searchKeymap: true,
             }}
           />
+          )}
         </div>
       </div>
 
