@@ -35,6 +35,7 @@ export const SIDEBAR_VIEW_IDS = [
   "getting-started",
   "svg-playground",
   "web-tools",
+  "http-client",
 ] as const;
 
 export type SidebarViewId = (typeof SIDEBAR_VIEW_IDS)[number];
