@@ -1,15 +1,33 @@
 name: E2E
 
 # E2E tests require a full Tauri release build (~20 min on a cold runner) plus
-# a running WebDriver server, so they are NOT wired to every push (that would
-# tax every PR with a 20-min build). Instead they run nightly against main to
-# catch integration regressions the unit/typecheck gates can't see, and can
-# still be triggered manually from the Actions tab for an on-demand check.
+# a running WebDriver server, so this does not run on every PR — only on the
+# ones that could actually move it. The nightly sweep against main stays, to
+# catch integration regressions the unit/typecheck gates can't see and to keep
+# covering the drift the suite does not control (a WebView2 runtime roll, a
+# newer release turning on UpdaterDialog).
 on:
   # Nightly sweep against the default branch (06:17 UTC ≈ off-peak). The odd
   # minute avoids the top-of-hour congestion when GitHub defers scheduled jobs.
   schedule:
     - cron: "17 6 * * *"
+
+  # PR gate, scoped by path. A docs-only or workflow-unrelated PR has no way to
+  # break a running app, and making it wait ~20 min for a release build to say
+  # so trains people to merge without reading the result. The Rust cache is
+  # shared with ci.yml's test-rust job (same `workspaces` key), so a warm run
+  # is a great deal faster than a cold one.
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "src-tauri/**"
+      - "e2e/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "vite.config.ts"
+      - ".github/workflows/e2e.yml"
+
   workflow_dispatch:
 
 concurrency:

@@ -101,27 +101,9 @@ and stop. Don't batch them.
   into Tailwind's defaults, stepped spinner, caret-cadence status blink) and the file-tree retint onto the
   active theme's ANSI palette; and the emoji purge (v1.25.0) — an emoji is the one glyph that ignores the theme entirely, so removing them is identity work, not tidying, and a tripwire on both sides of the stack keeps them out. *Still inherited:* layout and spacing scale, panel/rail component idioms.
 
-- [ ] **Get E2E green, then make it gate PRs** — the nightly suite has failed intermittently (2026-08-18,
-  08-19, 09-02) and the notification backlog reads worse than the reality: 37 of the ~60 failure notices
-  are E2E, accumulated over weeks rather than a live outage. The current failure is precise.
-  `smoke.test.ts`'s `before all` hook dies with *"A modal was still blocking the UI after 20000 ms (an
-  unnamed dialog)"*, and the likeliest culprit is `PackOnboardingDialog` — it renders whenever
-  `hydrated && !packsOnboarded`, has no close button, and closes only by *choosing* a preset, so
-  `dismissTopDialog()` has nothing to click. The intermittency fits a race: the dialog mounts when
-  preferences hydrate, which can land after the dismiss window opens. Scope: (a) confirm the dialog's
-  identity rather than assuming it — the error says "unnamed", so give every app dialog an accessible name
-  while you are in there, which also makes the next failure of this class self-describing; (b) have the
-  E2E harness put first-run preferences into a known state before the app loads, so onboarding is never a
-  coin flip; (c) teach `dismissTopDialog()` the preset-picker shape as a backstop; (d) move E2E from
-  nightly-only to a PR gate. The gate is the expensive half — a full Tauri release build is ~20 min cold —
-  so scope it to PRs touching `src/`, `src-tauri/`, or the e2e config, keep the Rust cache shared with
-  `test-rust`, and leave the nightly schedule on main. Sweep the 20 red **Security audit** runs in the same
-  pass: that is a different workflow (`audit.yml` — `cargo deny` + `pnpm audit`) and a large share of the
-  inbox noise, and a permanently red weekly job trains you to ignore the one time it matters. **Onboarding
-  work lands after this, not before** — every first-run modal is another thing that can wedge the suite,
-  which is exactly the bug being fixed here.
-
-- [ ] **Onboarding — one first-run flow: preset, then tour, then checklist** — Nexis teaches itself
+- [ ] **Onboarding — one first-run flow: preset, then tour, then checklist** — **unblocked**: the E2E
+  suite's `before all` failure turned out to be a stale Radix overlay rather than an unclosable dialog,
+  the harness now seeds first-run preferences before launch, and E2E gates PRs. Nexis teaches itself
   badly, and the pieces it does have are disconnected. `PackOnboardingDialog` already asks for a preset on
   first run and `WelcomeScreen` shows a few shortcut hints; neither explains the AI/agent surface, which
   is both the differentiator and the least discoverable thing in the app. **Treat the preset pick as step

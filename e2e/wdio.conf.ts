@@ -6,7 +6,9 @@
 
 import type { ChildProcess } from "child_process";
 import { execFileSync, spawn } from "child_process";
-import { dirname, resolve } from "path";
+import { mkdirSync, readFileSync, writeFileSync } from "fs";
+import { homedir } from "os";
+import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
 
 
@@ -33,6 +35,88 @@ const isWindows = process.platform === "win32";
 /// `startWindowsHarness` for why it cannot be passed at launch.
 const DEBUG_PORT = 9222;
 const DRIVER_PORT = 4444;
+
+/// Tauri's `identifier` from tauri.conf.json — the app-data directory name.
+const APP_IDENTIFIER = "app.nexis.nexis";
+/// `STORE_PATH` in src/modules/settings/store.ts.
+const SETTINGS_FILE = "nexis-settings.json";
+
+/// The directory `@tauri-apps/plugin-store` resolves `nexis-settings.json`
+/// against — Tauri v2's `app_data_dir`, which is the platform data dir plus
+/// the bundle identifier.
+function appDataDir(): string {
+  if (process.platform === "win32") {
+    return join(
+      process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"),
+      APP_IDENTIFIER,
+    );
+  }
+  if (process.platform === "darwin") {
+    return join(homedir(), "Library", "Application Support", APP_IDENTIFIER);
+  }
+  return join(
+    process.env.XDG_DATA_HOME ?? join(homedir(), ".local", "share"),
+    APP_IDENTIFIER,
+  );
+}
+
+/// Put first-run preferences into a known state *before* the app starts.
+///
+/// Without this the suite is a coin flip on anything gated behind
+/// `hydrated && !<some pref>`. `PackOnboardingDialog` is the current case: on
+/// a clean runner every run is a first run, so it opens as soon as preferences
+/// hydrate and its overlay covers the chrome the specs click. Clearing it from
+/// inside a spec is a race by construction — the dialog mounts when hydration
+/// lands, which can be after the dismiss window opens.
+///
+/// Seeding it here removes the race rather than widening the timeout around
+/// it. `dismissStartupDialogs()` stays as the backstop for modals the suite
+/// does not control (`UpdaterDialog` opens on release timing).
+///
+/// This **merges** into any existing store rather than replacing it: the same
+/// path is a developer's real settings file when the suite is run locally, and
+/// a test harness has no business discarding it.
+function seedFirstRunPreferences(): void {
+  const dir = appDataDir();
+  const file = join(dir, SETTINGS_FILE);
+
+  let existing: Record<string, unknown> = {};
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(file, "utf8"));
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      existing = parsed as Record<string, unknown>;
+    }
+  } catch {
+    // No store yet (the clean-runner case), or it is unreadable/corrupt.
+    // Either way the seed below is what the app should start from.
+  }
+
+  // `enabledPacks` is seeded alongside `packsOnboarded` on purpose. Marking
+  // onboarding done without stating the pack config would leave the surface
+  // under test dependent on DEFAULT_PREFERENCES, so a future change to that
+  // default would silently change which panels the suite exercises.
+  const seeded = {
+    ...existing,
+    packsOnboarded: true,
+    enabledPacks: [
+      "navigation-plus",
+      "code-tools",
+      "ai-extras",
+      "dev-tools",
+      "ml-lab",
+      "advanced",
+    ],
+  };
+
+  try {
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(file, JSON.stringify(seeded, null, 2), "utf8");
+    console.log(`[e2e] seeded first-run preferences: ${file}`);
+  } catch (e) {
+    // Not fatal: dismissStartupDialogs() is still there to clear the dialog.
+    console.warn(`[e2e] could not seed preferences at ${file}: ${String(e)}`);
+  }
+}
 
 let tauriDriver: ChildProcess | undefined;
 let nativeDriver: ChildProcess | undefined;
@@ -206,6 +290,10 @@ export const config: WebdriverIO.Config = {
   },
 
   async onPrepare() {
+    // Must run before the app process starts: the store is read once at
+    // hydration, so seeding after launch would be too late.
+    seedFirstRunPreferences();
+
     if (isWindows) {
       await startWindowsHarness();
       return;
