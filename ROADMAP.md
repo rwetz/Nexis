@@ -121,16 +121,31 @@ and stop. Don't batch them.
   work lands after this, not before** — every first-run modal is another thing that can wedge the suite,
   which is exactly the bug being fixed here.
 
-- [ ] **Onboarding — a Getting Started checklist, plus a short first-run tour** — Nexis teaches itself
-  badly. What exists is `WelcomeScreen` (an empty state with a few shortcut hints) and
-  `PackOnboardingDialog` (a one-time preset picker); neither explains the AI/agent surface, which is both
-  the differentiator and the least discoverable thing in the app. Two pieces. A **persistent "Getting
-  Started" checklist** — a real panel, re-openable from the command palette after it is dismissed,
-  tracking a handful of concrete first actions (open a workspace, run a command, open the AI panel and
-  send a turn, approve a tool call, open the editor, make a commit), each with a one-line why and its
-  keybinding. And a **short first-run tour**, 4–6 steps maximum, spotlighting the rail, the AI panel, the
-  command palette, and Settings → Features. The checklist is the load-bearing half: it survives dismissal,
-  which a tour does not, and it is what still works for someone who skipped everything on day one.
+- [ ] **Onboarding — one first-run flow: preset, then tour, then checklist** — Nexis teaches itself
+  badly, and the pieces it does have are disconnected. `PackOnboardingDialog` already asks for a preset on
+  first run and `WelcomeScreen` shows a few shortcut hints; neither explains the AI/agent surface, which
+  is both the differentiator and the least discoverable thing in the app. **Treat the preset pick as step
+  one of onboarding rather than as a separate dialog that merely happens to fire first.** It is the moment
+  the user says what they are building, and everything after it should be a function of that answer:
+  - **Step 1 — preset.** The existing picker, extended as domain packs land.
+  - **Step 2 — a short tour**, 4–6 steps maximum, **spotlighting only panels the chosen preset actually
+    enabled**. Touring a feature that is switched off is worse than not touring at all.
+  - **Step 3 — a persistent "Getting Started" checklist**: a real panel, re-openable from the command
+    palette after it is dismissed, **with its contents derived from the preset**. A Bare-Bones user's
+    first actions (open a workspace, run a command, open the AI panel and send a turn, approve a tool
+    call, make a commit) are not a Data/SQL user's (connect a database, run a query, save it). Each entry
+    carries a one-line why and its keybinding. The checklist is the load-bearing half: it survives
+    dismissal, which a tour does not, and it is what still works for someone who skipped everything on
+    day one.
+  - **Changing the preset later in Settings → Features must re-derive the checklist**, not orphan it.
+    Presets are editable config, so onboarding state has to be a function of that config rather than a
+    snapshot taken once at first run.
+
+  **Open question to settle inside this item:** how many presets get a slot in the picker. The domain-pack
+  backlog below is long, and the first-run screen is the one place where choice paralysis costs a user
+  outright. Working assumption is six — Bare-Bones, Standard, Web Dev, Backend, Data/SQL, Everything —
+  with everything else reachable as packs in Settings → Features.
+
   Constraints: lead with the agent surface, not the terminal (people already know what a terminal is);
   persist progress through `writePref()` so it syncs across windows (pitfall #2); and every surface must
   close on Escape and carry an accessible name, so it cannot wedge E2E the way the preset picker just did.
@@ -380,6 +395,60 @@ exists and that users currently have no way to see.
   carbon.now.sh, except from a real session with real output. Cheap, delightful, and it markets the app
   every time somebody posts one. One hard constraint: it runs the recording redaction pass first, because
   the entire premise is that these get shared.
+
+---
+
+## Feature backlog — domain packs
+
+Packs organized by *what you are building*, extending the `web-dev` / `mobile` / `art` set under custom
+feature requests. Recorded as **packs, not presets**: several panels belong to more than one domain — the
+HTTP client to Backend and Web Dev, a log tailer to Backend and DevOps — which is exactly why enablement
+is per-pack and a preset is only a bundle over them. How many of these earn a slot in the first-run
+picker is a separate and deliberately open question; see the onboarding item.
+
+**Strong candidates**
+
+- **Backend / API** — the largest current gap. An HTTP/REST client with per-workspace saved requests and
+  environment variables; a **structured log tailer** that parses JSON logs into filterable columns instead
+  of leaving you to grep a wall of text; an OpenAPI/GraphQL schema browser that can generate a request
+  from a schema; request replay from a log line. Ports and Process Activity already exist and slot in
+  unchanged.
+- **Data / SQL** — the Database panel exists; this is the version that earns daily use. A query editor
+  with history and saved queries, a schema browser with an ER view, a result grid that exports to
+  CSV/JSON/Parquet, an **`EXPLAIN` plan visualizer**, a migration runner with status, and per-workspace
+  connection profiles. Query cells compose directly with the literate shell notebook.
+- **DevOps / Infra** — Docker and Compose (containers, logs, exec-into), Kubernetes context/pods/logs, a
+  **Terraform plan viewer** (a plan is a diff, and a good diff pane already ships), service status. SSH
+  already exists. For a solo developer deploying their own work this replaces three browser tabs.
+- **Systems — Rust / C / Go** — dogfooding, since Nexis is written in Rust: a flamegraph and perf-profile
+  viewer, a disassembly view, clippy/miri integration, a cross-compilation target matrix, and a **binary
+  size analyzer** (`cargo-bloat`) — the tool that makes the 40 MB tripwire diagnosable rather than
+  mysterious on the day something finally trips it. Build and Debugger already exist.
+- **Embedded / IoT** — the best structural fit on this list. A **serial monitor** is a byte stream
+  rendered into a terminal with a device on the other end, and Nexis already owns PTY streams,
+  backpressure handling (pitfall #7) and inline images. Add board flash/upload runners (Arduino,
+  PlatformIO, esptool), a device list, and a live plot of incoming serial data. The Arduino IDE's serial
+  monitor is famously poor and nothing has replaced it.
+- **Open-source maintainer** — evidenced by this repo: the GitHub inbox held 60+ CI failure notifications
+  while the live failure count was three. A cross-repo **CI status and advisory dashboard** (`gh` CLI,
+  Dependabot, audit results), issue and PR triage, and a changelog assistant. The Release panel already
+  exists. This is a role rather than a project type, which is fine — it just means it bundles differently
+  from the others and may want its own preset rather than sharing one.
+
+**Second tier**
+
+- **Game dev** — asset-pipeline watcher, sprite and texture preview, hot-reload runner, frame-time chart,
+  and a **shader playground**, which is the SVG Playground's exact shape (live code, live preview, export)
+  and therefore cheap once the Art pack lands.
+- **Docs / technical writing** — Markdown preview with live reload, Mermaid and Graphviz live preview,
+  link checker, prose linting (Vale-class), static-site preview. Composes with the literate notebook.
+- **Security / analysis** — hex viewer, hash and encoding toolkit, TLS/certificate inspector, entropy
+  view. Pairs with the secret-scan item above.
+- **Data science** — dataframe viewer, plot pane, CSV/Parquet explorer. Adjacent to ML Lab rather than
+  inside it: exploring data and training a model are different sessions wanting different panels.
+- **Content creation / teaching** — three of the five pieces already exist (zen mode, session recording,
+  themed block export); add a keystroke display and a big-font presentation mode and this is a real
+  preset for anyone making developer content.
 
 ---
 
