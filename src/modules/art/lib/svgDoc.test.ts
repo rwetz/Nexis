@@ -91,13 +91,26 @@ describe("serializeSvg", () => {
   });
 
   /**
-   * The one normalization XMLSerializer imposes: `<rect />` comes back as
-   * `<rect/>`. Everything else — attribute order, quoting, indentation, blank
-   * lines — survives. It is only ever paid when something is actually edited,
-   * since the canvas serializes on mutation rather than on load.
+   * The two normalizations XMLSerializer imposes, pinned so the claim in the
+   * module comment stays true: `<rect />` becomes `<rect/>`, and whitespace
+   * between attributes inside a start tag collapses to single spaces.
+   * Everything else — attribute order, quoting, element indentation, blank
+   * lines — survives, and all of it is only ever paid once something is
+   * actually edited, since the canvas serializes on mutation not on load.
    */
   it("round-trips an untouched document apart from self-closing spacing", () => {
     expect(serializeSvg(parse())).toBe(DOC.replace(/ \/>/g, "/>"));
+  });
+
+  it("re-joins a hand-wrapped start tag onto one line", () => {
+    const wrapped = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor">
+  <rect x="3" y="3" />
+</svg>`;
+    const out = serializeSvg(parse(wrapped));
+    expect(out).toContain('viewBox="0 0 24 24" fill="none"');
+    // The child's own indentation is untouched — only the start tag re-joins.
+    expect(out).toContain('\n  <rect x="3" y="3"/>');
   });
 });
 

@@ -48,7 +48,9 @@ The editor and every export keep the **original**; only the preview is sanitized
 
 **The indirection through `data-nx-id` is load-bearing and must not be "simplified".** The preview renders a *sanitized* copy (see below), so a click lands on a node in the sanitized render rather than in the user's document. `parseSvgSource` tags every element `data-nx-id` in document order before serializing for the preview; that id is what maps a hit back to the node to mutate, and `serializeSvg` strips it on the way out so it never reaches the user's source. Rendering the raw source to make selection easier would trade the pack's whole security posture for a saved lookup.
 
-**Formatting survives** because the document is parsed with `DOMParser` and every mutation writes an attribute rather than restructuring the tree — `XMLSerializer` hands back the same whitespace text nodes it was given. The one normalization is `<rect />` to `<rect/>`, and it is only paid once something is actually edited.
+**Formatting survives** because the document is parsed with `DOMParser` and every mutation writes an attribute rather than restructuring the tree — `XMLSerializer` hands back the same whitespace text nodes it was given, so element indentation and blank lines are preserved.
+
+Two normalizations it *does* impose, both pinned by tests rather than assumed: `<rect />` becomes `<rect/>`, and whitespace between attributes inside a start tag collapses to single spaces, so a hand-wrapped multi-line `<svg …>` header re-joins onto one line. Neither is paid until something is actually edited.
 
 ### The three coordinate spaces
 

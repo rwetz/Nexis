@@ -135,7 +135,7 @@ describe("OSC 7 cwd handler — gated by OSC 133 in-command state", () => {
 describe("OSC 133 failed-command Explain chip", () => {
   type FakeMarker = { line: number; isDisposed: boolean; dispose: () => void };
   type FakeDecoration = {
-    options: { anchor?: string };
+    options: { anchor?: string; x?: number };
     disposed: boolean;
     render: ((el: HTMLElement) => void) | null;
     dispose: () => void;
@@ -171,7 +171,7 @@ describe("OSC 133 failed-command Explain chip", () => {
         };
         return m;
       },
-      registerDecoration(options: { anchor?: string }): FakeDecoration {
+      registerDecoration(options: { anchor?: string; x?: number }): FakeDecoration {
         const dec: FakeDecoration = {
           options,
           disposed: false,
@@ -270,6 +270,37 @@ describe("OSC 133 failed-command Explain chip", () => {
     });
     return { ...t, onExplain, tracker };
   }
+
+  /**
+   * The chip is right-anchored, and xterm's `_refreshXPosition` reads
+   * `element.style.right = x ? \`${x * cellWidth}px\` : ''`. An `x` of 0 is
+   * falsy, so it *clears* `right` rather than setting `0px` — the element then
+   * has neither `left` nor `right`, falls back to its static position at the
+   * left edge, and renders as a ghost over the prompt text at 0.6 opacity.
+   * `anchor: "right"` is silently ignored, so the symptom looks nothing like a
+   * positioning bug. Keep `x` non-zero.
+   */
+  it("gives the chip a non-zero x, or xterm ignores the right anchor", () => {
+    const t = setup(["~/dev > nope", "command not found"]);
+    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "127", endLine: 2 });
+
+    const [chip] = chipsOf(t);
+    expect(chip, "expected a chip for a failed command").toBeTruthy();
+    expect(
+      chip.options.x,
+      "x must be non-zero: xterm clears `right` for a falsy x, which drops the " +
+        "chip onto the prompt text at the left edge",
+    ).toBeGreaterThan(0);
+  });
+
+  it("keeps the chip off the left edge when it renders", () => {
+    const t = setup(["~/dev > nope", "command not found"]);
+    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "127", endLine: 2 });
+
+    const el = makeChipEl();
+    chipsOf(t)[0].render?.(el as unknown as HTMLElement);
+    expect(el.style.left).toBe("auto");
+  });
 
   it("captures command, output, exit code, and cwd; clicking fires onExplain", () => {
     const t = setup([

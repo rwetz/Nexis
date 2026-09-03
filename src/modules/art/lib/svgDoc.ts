@@ -23,9 +23,16 @@
  *
  * `DOMParser` keeps whitespace text nodes, and every mutation here writes
  * attributes rather than restructuring the tree, so `XMLSerializer` gives back
- * the same indentation and line breaks it was handed. That matters more than
- * it sounds: an editor that reflows the whole document the first time you nudge
- * a rectangle is an editor people stop using.
+ * the same indentation and line breaks *between elements*. That matters more
+ * than it sounds: an editor that reflows the whole document the first time you
+ * nudge a rectangle is an editor people stop using.
+ *
+ * Two normalizations it does impose, both verified rather than assumed:
+ * `<rect />` comes back as `<rect/>`, and whitespace *between attributes
+ * inside a start tag* collapses to single spaces — so a hand-wrapped
+ * multi-line `<svg …>` header is re-joined onto one line. Element indentation
+ * and blank lines survive. Both are only ever paid once something is actually
+ * edited, since the canvas serializes on mutation rather than on load.
  *
  * ## The index attribute
  *

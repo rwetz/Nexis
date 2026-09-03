@@ -480,6 +480,22 @@ function readLines(buf: IBuffer, from: number, to: number, firstCol: number): st
 const EXPLAIN_CHIP_CELLS = 12;
 
 /**
+ * Cells between the chip and the right edge. **This must not be zero**, and the
+ * reason is a trap in xterm rather than a matter of taste. `_refreshXPosition`
+ * in `BufferDecorationRenderer` reads:
+ *
+ *     element.style.right = x ? `${x * cellWidth}px` : '';
+ *
+ * so an `x` of 0 *clears* `right` instead of setting `0px`. The element is
+ * absolutely positioned with neither `left` nor `right`, falls back to its
+ * static position at the **left** edge, and — at the chip's 0.6 opacity —
+ * renders as a ghost sitting on top of the prompt text. `anchor: "right"` is
+ * silently ignored, which is why the symptom looks nothing like a positioning
+ * bug. Pinned by a test.
+ */
+const EXPLAIN_CHIP_RIGHT_GAP = 1;
+
+/**
  * Add the clickable "✦ Explain" chip on a failed command's prompt line,
  * right-anchored. The decoration element itself is the chip — no child
  * nodes, no `document.*` — so the logic stays testable in a Node test
@@ -497,7 +513,7 @@ function addExplainDecoration(
   const dec = term.registerDecoration({
     marker,
     anchor: "right",
-    x: 0,
+    x: EXPLAIN_CHIP_RIGHT_GAP,
     width: EXPLAIN_CHIP_CELLS,
     layer: "top",
   });
@@ -514,6 +530,10 @@ function addExplainDecoration(
     // xterm re-applies its own width each paint; ours must win every render.
     s.width = "max-content";
     s.height = "auto";
+    // Belt and braces for the anchoring trap above: if a stale `left` ever
+    // survives a re-layout, it would beat `right` and put the chip back over
+    // the prompt text.
+    s.left = "auto";
     s.padding = "0 7px";
     s.fontSize = "10px";
     s.lineHeight = "16px";
