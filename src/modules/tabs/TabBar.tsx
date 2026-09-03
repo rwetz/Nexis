@@ -315,6 +315,8 @@ export function TabBar({
               size="icon"
               className="size-7 shrink-0 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               title="New tab"
+              // Anchors the onboarding tour (src/lib/onboarding.ts).
+              data-tour="tab-new"
             >
               <Icon name="add" size="md" />
             </Button>

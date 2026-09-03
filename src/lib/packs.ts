@@ -67,6 +67,10 @@ export const CORE_VIEWS: readonly SidebarViewId[] = [
   "recent-files",
   "source-control",
   "agent-queue",
+  // Onboarding is core by necessity: a Bare-Bones user has the fewest packs
+  // and the most need of it, so gating the checklist behind a pack would
+  // withhold it from exactly the person it is for.
+  "getting-started",
 ];
 
 export const PACKS: Record<PackId, PackDef> = {

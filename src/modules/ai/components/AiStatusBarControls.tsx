@@ -19,6 +19,10 @@ export function AiOpenButton({ onOpen }: { onOpen: () => void }) {
         "text-muted-foreground transition-colors hover:border-border hover:bg-accent hover:text-foreground",
       )}
       title="Open AI agent"
+      // Anchors the onboarding tour's first step (src/lib/onboarding.ts) --
+      // the agent surface leads, because it is the least discoverable thing
+      // in the app and the one people do not already have a model for.
+      data-tour="ai-panel-toggle"
     >
       <span>Open AI agent</span>
       <Kbd className="h-4 min-w-4 px-1">{fmtShortcut(MOD_KEY, "I")}</Kbd>

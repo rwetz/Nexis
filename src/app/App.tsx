@@ -115,6 +115,10 @@ import {
 } from "@/modules/source-control";
 import { StatusBar } from "@/modules/statusbar";
 import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
+import { GettingStartedPanel } from "@/modules/onboarding/GettingStartedPanel";
+import { OnboardingTour } from "@/modules/onboarding/OnboardingTour";
+import { useOnboardingSignals } from "@/modules/onboarding/useOnboardingSignals";
+import { signalOnboardingStep, type OnboardingAction } from "@/lib/onboarding";
 import { pushRecentWorkspace } from "@/modules/workspace/useRecentWorkspaces";
 import { PluginHost } from "@/lib/plugins/PluginHost";
 import { PackOnboardingDialog } from "@/modules/settings/PackOnboardingDialog";
@@ -465,6 +469,7 @@ export default function App() {
       // path becomes the workspace root and every new tab's cwd. Older builds
       // stored this exact hybrid in Recent Workspaces.
       const path = stripVerbatimPrefix(rawPath);
+      signalOnboardingStep("workspace.open");
       const dirty = tabsRef.current.some((t) => t.kind === "editor" && editorAnyDirty(t));
       if (dirty) {
         window.alert("Save or close unsaved editor tabs before switching workspace.");
@@ -832,8 +837,65 @@ export default function App() {
       void openSettingsWindow("models");
       return;
     }
+    signalOnboardingStep("ai.open");
     toggleMini();
   }, [hasComposer, toggleMini]);
+
+  // ── Onboarding ───────────────────────────────────────────────────────────
+  // Progress is recorded from wherever the user did the thing, not only from
+  // the checklist; this is the single listener that turns those signals into
+  // a preference write.
+  useOnboardingSignals();
+
+  const [tourOpen, setTourOpen] = useState(false);
+  const packsOnboarded = usePreferencesStore((s) => s.packsOnboarded);
+  const onboardingTourDone = usePreferencesStore((s) => s.onboardingTourDone);
+
+  // The tour is step two of one flow, so it waits for the preset picker to be
+  // answered rather than racing it. Both gates are preferences, so this stays
+  // correct across windows (pitfall #2).
+  useEffect(() => {
+    if (prefsHydrated && packsOnboarded && !onboardingTourDone) {
+      setTourOpen(true);
+    }
+  }, [prefsHydrated, packsOnboarded, onboardingTourDone]);
+
+  /**
+   * Performs a checklist/tour step. The actions are data in
+   * `src/lib/onboarding.ts` so that module stays free of this component's
+   * callback graph; this is the one place that maps them onto real handlers.
+   */
+  const runOnboardingAction = useCallback(
+    (action: OnboardingAction) => {
+      switch (action.kind) {
+        case "ai-panel":
+          togglePanelAndFocus();
+          break;
+        case "new-terminal":
+          newTab();
+          break;
+        case "open-folder":
+          setWorkspaceSwitcherOpen(true);
+          break;
+        case "quick-open":
+          setQuickFilePickerOpen(true);
+          break;
+        case "sidebar":
+          persistSidebarView(action.view);
+          break;
+        case "settings":
+          void openSettingsWindow(action.section);
+          break;
+      }
+    },
+    [
+      togglePanelAndFocus,
+      newTab,
+      setWorkspaceSwitcherOpen,
+      setQuickFilePickerOpen,
+      persistSidebarView,
+    ],
+  );
 
   const attachSelection = useChatStore((s) => s.attachSelection);
 
@@ -1313,7 +1375,7 @@ export default function App() {
   const paletteCommands = useMemo<CommandDef[]>(() => [
     { id: "tab.new",             label: "New terminal tab",         category: "Tabs",    action: () => newTab() },
     { id: "tab.close",           label: "Close current tab",        category: "Tabs",    action: () => closeTab(activeId) },
-    { id: "files.quickOpen",     label: "Quick file open",          category: "Files",   action: () => setQuickFilePickerOpen(true), keywords: ["cmd+p", "go to file"] },
+    { id: "files.quickOpen",     label: "Quick file open",          category: "Files",   action: () => { signalOnboardingStep("files.quickOpen"); setQuickFilePickerOpen(true); }, keywords: ["cmd+p", "go to file"] },
     { id: "search.workspace",    label: "Find & replace in project",category: "Search",  action: () => setWorkspaceSearchOpen(true), keywords: ["grep", "search"] },
     { id: "sidebar.toggle",      label: "Toggle sidebar",           category: "View",    action: toggleSidebar },
     { id: "settings.open",       label: "Open settings",            category: "General", action: () => void openSettingsWindow() },
@@ -1328,6 +1390,8 @@ export default function App() {
     { id: "view.zenMode",        label: "Toggle zen mode",          category: "View",    action: () => setZenMode((v) => !v), keywords: ["distraction free", "hide header"] },
     { id: "pane.splitRight",     label: "Split pane right",         category: "Panes",   action: () => splitActivePaneInActiveTab("row") },
     { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
+    { id: "sidebar.gettingStarted", label: "Show Getting Started checklist", category: "View", action: () => persistSidebarView("getting-started"), keywords: ["onboarding", "tour", "help", "first run"] },
+    { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
     { id: "sidebar.sc",          label: "Show source control",      category: "View",    action: () => persistSidebarView("source-control") },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
@@ -1883,6 +1947,11 @@ export default function App() {
                         view={sidebarView}
                         onShowExplorer={() => persistSidebarView("explorer")}
                       />
+                    ) : sidebarView === "getting-started" ? (
+                      <GettingStartedPanel
+                        onRunAction={runOnboardingAction}
+                        onStartTour={() => setTourOpen(true)}
+                      />
                     ) : sidebarView === "recent-files" ? (
                       <RecentFilesPanel onOpenFile={handleOpenFile} />
                     ) : sidebarView === "explorer" ? (
@@ -2112,6 +2181,15 @@ export default function App() {
               onClose={() => setWorkspaceSwitcherOpen(false)}
             />
           )}
+
+          {/* Coach-marks over real chrome. Deliberately not a modal: nothing
+              here traps pointer events, so the app stays usable underneath
+              and a first-run surface cannot wedge the E2E suite. */}
+          <OnboardingTour
+            open={tourOpen}
+            onClose={() => setTourOpen(false)}
+            onRunAction={runOnboardingAction}
+          />
 
           {workspaceSearchOpen && (
             <WorkspaceSearch
