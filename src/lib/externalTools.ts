@@ -9,7 +9,8 @@
  * does not ship, what its absence costs, and how to install it.
  *
  * Nexis deliberately shells out rather than bundling language servers,
- * debuggers, formatters, or git — that is what keeps the binary under 10 MB.
+ * debuggers, formatters, or git — that is what keeps the binary small (~10 MB)
+ * and lets each tool update on its own schedule.
  * The failure mode of that choice is silence: a missing `rust-analyzer` used
  * to mean completions simply never appeared, with nothing anywhere saying
  * why. This module is the data that turns each of those silent no-ops into a

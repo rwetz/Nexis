@@ -21,7 +21,7 @@ The ML suite is the same shape:
 - **Outside Nexis (separate repo):** the **engine** (`nexis-ml`) — the thing that actually imports an ML framework, loads datasets, runs training loops, and serves inference. Installed separately, versioned separately.
 
 Why not compile it in:
-- The roadmap's hard limits: **<15 MB binary**, "every dependency earns its place." Any real ML framework (libtorch ≈ 2 GB, ONNX Runtime ≈ 20–60 MB, even pure-Rust `burn` with a wgpu backend) blows the budget instantly.
+- The roadmap's hard limits: "every dependency earns its place," and no bundled inference engine. The binary budget that originally framed this argument is gone (loosened to a 40 MB regression tripwire in 2026-09), but the conclusion does not move: libtorch is ≈ 2 GB and never fit under any ceiling, and the ones that would now fit on size alone — ONNX Runtime at ≈ 20–60 MB, pure-Rust `burn` on wgpu — bring a per-backend build matrix and a GPU-driver support surface that an external engine keeps out of this repo entirely.
 - "No extension marketplace" is a stated hard limit, but the roadmap explicitly carves out *"maybe narrow AI tool bundles someday."* This is exactly that: a narrow, first-party, single-purpose bundle — not arbitrary third-party plugins.
 - The plugin system is compiled-in pure TypeScript (`src/lib/plugins/types.ts` forbids dynamic imports from disk), so the "downloadable" part can only ever be the engine, never the UI. That's fine — it's how LSP servers work too.
 

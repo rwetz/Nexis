@@ -55,10 +55,14 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ""
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
 
-      # Bundle-size budget gate (IDEAS C1). "Under 15 MB" is a stated
-      # non-negotiable; enforce it so a careless dependency can't quietly blow
-      # the budget. Fails the release if the stripped binary exceeds 15 MiB.
-      - name: Enforce binary size budget (< 15 MB)
+      # Bundle-size regression tripwire (was IDEAS C1's budget gate). Binary
+      # size is no longer a stated non-negotiable -- Nexis is a full ADE now,
+      # not a minimal terminal -- but an unnoticed 4x jump is still a defect,
+      # so the gate stays at a deliberately loose 40 MiB. It exists to catch an
+      # accident (a vendored runtime, a debug artifact, LTO silently off), not
+      # to force a size argument into an unrelated change. The shipped binary
+      # is ~9.5 MiB, so this ceiling has more than 4x of headroom by design.
+      - name: Binary size tripwire (< 40 MB)
         shell: pwsh
         run: |
           $binary = "src-tauri/target/release/nexis.exe"
@@ -68,13 +72,13 @@ jobs:
           }
           $bytes = (Get-Item $binary).Length
           $mib = [math]::Round($bytes / 1MB, 2)
-          $maxBytes = 15 * 1024 * 1024
-          Write-Host "nexis.exe = $bytes bytes ($mib MiB); budget = 15 MiB"
+          $maxBytes = 40 * 1024 * 1024
+          Write-Host "nexis.exe = $bytes bytes ($mib MiB); tripwire = 40 MiB"
           if ($bytes -gt $maxBytes) {
-            Write-Error "Binary exceeds the 15 MB budget (a stated non-negotiable). Investigate the dependency or build-config change that grew it."
+            Write-Error "Binary exceeds the 40 MB tripwire. This ceiling has more than 4x of headroom over the ~9.5 MiB Nexis actually ships, so crossing it means something went wrong -- a vendored runtime, a debug artifact, or a build-config regression -- not that a feature got big. Find the cause before raising this number."
             exit 1
           }
-          Write-Host "OK: under the 15 MB budget."
+          Write-Host "OK: under the 40 MB tripwire."
 
       - name: Collect artifacts
         id: artifacts
@@ -186,7 +190,7 @@ jobs:
 
       # AppImage is the portable "download and run" artifact (works on Arch,
       # Fedora, Debian, etc.); deb/rpm are provided for native package managers.
-      # No 15 MB size gate here — that budget is about the Windows exe; a Linux
+      # No size tripwire here — that ceiling is about the Windows exe; a Linux
       # AppImage bundles webkit2gtk and is expected to be much larger.
       - name: Create GitHub release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
