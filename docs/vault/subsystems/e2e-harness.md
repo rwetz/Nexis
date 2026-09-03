@@ -30,23 +30,38 @@ Both, plus port agreement between the overlay and `DEBUG_PORT` in `wdio.conf.ts`
 
 **Shipping builds never use the overlay** — `release.yml` builds plain, so no released artifact exposes a debugging port. Keep it that way.
 
-## Every run is a first run
+## First-run state is seeded, not fought
 
-The job builds a release bundle on a clean runner, so the profile is always fresh and **`PackOnboardingDialog` opens on every single run**. Its Radix overlay is `fixed inset-0` at `z-50` with `pointer-events: auto`, so it receives every click meant for app chrome. WebDriver reports that as `element click intercepted … Other element would receive the click: <div data-slot="dialog-overlay">` — the overlay is named, the dialog never is.
+The job builds a release bundle on a clean runner, so the profile would be fresh on every run and `PackOnboardingDialog` would open every time. `e2e/wdio.conf.ts` now writes `packsOnboarded` and an explicit `enabledPacks` into the settings store **in `onPrepare`, before the app process starts** (`seedFirstRunPreferences`). Clearing the dialog from inside a spec was a race by construction — it mounts when preferences hydrate, which can land after the dismiss window opens.
 
-The failure then surfaces far from its cause. With the terminal spec unable to open the new-tab dropdown, no terminal tab existed, and the run's reported error was `element (".xterm") still not existing after 15000ms` — 15 seconds downstream, pointing at the PTY layer instead of at a modal.
+The seed **merges** into an existing store rather than replacing it: the same path is a developer's real settings file when the suite is run locally.
 
-Both specs now await `dismissStartupDialogs()` from `e2e/support/dialogs.ts` in their `before()` hook. Three things about it are deliberate:
+`dismissStartupDialogs()` in `e2e/support/dialogs.ts` stays as the backstop for modals the suite does not control — `UpdaterDialog` opens itself whenever a published release is newer than the built version, which on a nightly job is release timing.
 
-- **It targets any blocking modal, not the onboarding dialog by name.** `UpdaterDialog` opens itself the same way whenever a published release is newer than the built version — on a nightly job that is release timing, not something the suite controls.
-- **It waits for the viewport to stay clear, rather than returning on the first clear poll.** `App` renders its chrome before it hydrates preferences (`initPrefs()` runs in a `useEffect`), so `[data-tauri-drag-region]` exists while `hydrated` is still false and the dialog has not mounted yet. A single clear poll would leave a window in which the dialog appears *after* the check and covers the control the spec is about to click.
-- **Escape is the fallback, not the primary.** The close button is the affordance a user has, but `AlertDialogContent` renders none and a stacked dialog's button can itself be covered. On an alert dialog Escape maps to cancel, which is the non-destructive choice.
+## The helper asserts clickability, not the absence of an overlay
 
-Dismissal persists (`packsOnboarded`), so only the first spec in a run pays for it.
+This is the correction to how it worked until 2026-09-03, and the reasoning matters more than the code.
 
-A tripwire in `src/lib/pitfall-guards.test.ts` fails if any spec in `e2e/specs/` does not call `dismissStartupDialogs()` — every new spec inherits the same first-run profile.
+It used to poll `$('[data-slot="dialog-overlay"]').isExisting()` and treat any hit as "still blocked". That is a pure DOM query, and it does not mean what the suite needs it to mean. **Radix wraps `DialogOverlay` and `DialogContent` in separate `Presence` boundaries, and `Presence` unmounts on `animationend`** — an event a backgrounded or uncomposited WebView2 on a CI runner can simply never deliver. The content unmounts, the overlay is left behind inert, and the loop dismisses a ghost until it times out.
 
-**When adding a spec that clicks anything, call it.** And note that `isEnabled()`/`isExisting()` are DOM queries that pass straight through an overlay; only `isClickable()` hit-tests the point. That is exactly how the smoke spec passed while the UI was entirely unclickable, and why it now asserts `isClickable()` on the new-tab button.
+Run `33623555508` (2026-09-02) is the proof: `smoke`'s `before all` died after 20 s with *"A modal was still blocking the UI (an unnamed dialog)"* while `terminal.test.ts` — which calls the same helper and then clicks through the whole tab lifecycle — passed all three of its cases **in the same run**. Nothing was blocking. "(an unnamed dialog)" was the corroborating detail: the content carrying `dialog-title` had already unmounted, so there was no title left to report.
+
+The predicate is now the invariant the specs actually depend on: **a known piece of app chrome is hit-testable**, via `isClickable()`, which resolves the element at the point. A real overlay fails it; a ghost does not. Dismissal is attempted only when dialog *content* is present, so the helper never fires Escape at an app that is merely still starting.
+
+Two things that remain deliberate:
+
+- **It targets any blocking modal, not the onboarding dialog by name.**
+- **It waits for the anchor to stay clickable for a settle window**, rather than returning on the first clear poll. `App` renders chrome before it hydrates preferences, so a single clear poll leaves a window in which a hydration-gated dialog appears *after* the check.
+
+On timeout it now reports whether a live dialog is mounted and its title, what element the anchor's hit point actually resolves to, and the `data-state` / `pointer-events` / `opacity` / `display` of every overlay — so the next failure of this class diagnoses itself instead of saying "an unnamed dialog".
+
+A tripwire in `src/lib/pitfall-guards.test.ts` fails if any spec in `e2e/specs/` does not call `dismissStartupDialogs()`.
+
+**When adding a spec that clicks anything, call it.** And note that `isEnabled()`/`isExisting()` are DOM queries that pass straight through an overlay; only `isClickable()` hit-tests the point.
+
+## It gates PRs now, not just the nightly
+
+As of 2026-09-03 `e2e.yml` also runs on pull requests to `main`, **path-scoped** to `src/**`, `src-tauri/**`, `e2e/**`, `package.json`, `pnpm-lock.yaml`, `vite.config.ts` and the workflow itself. A docs-only PR has no way to break a running app, and making it wait ~20 min for a release build to say so trains people to merge without reading the result. The Rust cache key is shared with `ci.yml`'s `test-rust`. The nightly run against `main` stays — it is what keeps covering drift the suite does not control (a WebView2 runtime roll, a newer release switching on `UpdaterDialog`).
 
 ## Known-stale corners
 

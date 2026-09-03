@@ -35,7 +35,10 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[system-monitor]] — btop-style resource analyzer: sysinfo sampling, braille charts, process table
 - [[ml-lab]] — the external `nexis-ml` engine: detection, spawn bridge, training store, charts and network diagram
 - [[icon-and-motion-system]] — the semantic icon choke point, the house size scale, file-tree retint, motion tokens
-- [[e2e-harness]] — how the Windows E2E suite gets a session: the compiled-in debugging port, the config overlay, and why tauri-driver is Linux-only
+- [[e2e-harness]] — how the Windows E2E suite gets a session: the compiled-in debugging port, the config overlay, seeded first-run prefs, and why the helper asserts clickability rather than the absence of an overlay
+- [[onboarding]] — the first-run flow: preset, tour, Getting Started checklist, and why all of it derives from `enabledPacks`
+- [[web-dev-pack]] — multi-viewport preview, the REST client and its own SSRF-guarded Rust command, the local-only scratchpad tools
+- [[art-pack]] — the SVG playground: icon-scale preview, the in-house optimizer, and why the preview is sanitized
 
 ## Flows (`flows/`)
 
