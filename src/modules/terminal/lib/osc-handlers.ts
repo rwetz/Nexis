@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { signalOnboardingStep } from "@/lib/onboarding";
 import type { IBuffer, IDecoration, IMarker, Terminal } from "@xterm/xterm";
 
 /**
@@ -204,6 +205,11 @@ export function registerPromptTracker(
           decorations,
           readCommandText(term, cmdMarker, cmdStartX, outMarker),
         );
+        // A finished command with a real exit status is the signal that the
+        // "run a command" onboarding step has actually happened. This is a
+        // bare dispatchEvent -- the listener owns the preference write, so
+        // nothing here touches the settings store (src/lib/onboarding.ts).
+        signalOnboardingStep("terminal.run");
         if (explain && code !== 0 && code !== EXIT_SIGINT && explain.isEnabled()) {
           const capture = captureFailedCommand(term, cmdMarker, cmdStartX, outMarker);
           // Require evidence a command actually ran: a C marker, or output.

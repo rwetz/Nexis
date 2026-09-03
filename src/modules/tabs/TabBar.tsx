@@ -315,6 +315,8 @@ export function TabBar({
               size="icon"
               className="size-7 shrink-0 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               title="New tab"
+              // Anchors the onboarding tour (src/lib/onboarding.ts).
+              data-tour="tab-new"
             >
               <Icon name="add" size="md" />
             </Button>
@@ -410,6 +412,11 @@ export function TabIcon({ tab }: { tab: Tab }) {
       <Icon name="network" size="md" className="shrink-0" />
     );
   }
+  if (tab.kind === "svg-playground") {
+    return (
+      <Icon name="brush" size="md" className="shrink-0" />
+    );
+  }
   return (
     <Icon name="terminal" size="md" className="shrink-0" />
   );
@@ -426,6 +433,7 @@ export function labelFor(t: Tab): string {
   if (t.kind === "git-history") return t.title;
   if (t.kind === "git-commit-file") return t.title;
   if (t.kind === "ml-network") return t.title;
+  if (t.kind === "svg-playground") return t.title;
   // t is TerminalTab from here — prefer OSC 0/2 title when set by the shell.
   if (t.oscTitle) return t.oscTitle;
   if (!t.cwd) return t.title;

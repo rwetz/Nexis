@@ -102,48 +102,17 @@ and stop. Don't batch them.
   active theme's ANSI palette; the six bespoke preset marks in `icon-art.tsx`, which are the first Nexis-drawn
   art in the icon registry rather than a vendor glyph pressed into service; and the emoji purge (v1.25.0) — an emoji is the one glyph that ignores the theme entirely, so removing them is identity work, not tidying, and a tripwire on both sides of the stack keeps them out. *Still inherited:* layout and spacing scale, panel/rail component idioms.
 
-- [ ] **Onboarding — one first-run flow: preset, then tour, then checklist** — **unblocked**: the E2E
-  suite's `before all` failure turned out to be a stale Radix overlay rather than an unclosable dialog,
-  the harness now seeds first-run preferences before launch, and E2E gates PRs. The preset step also has
-  its data and its art already — `PRESETS` in `src/lib/packs.ts` carries six presets with bespoke marks,
-  and the picker renders from it — so what remains here is steps 2 and 3. Nexis teaches itself
-  badly, and the pieces it does have are disconnected. `PackOnboardingDialog` already asks for a preset on
-  first run and `WelcomeScreen` shows a few shortcut hints; neither explains the AI/agent surface, which
-  is both the differentiator and the least discoverable thing in the app. **Treat the preset pick as step
-  one of onboarding rather than as a separate dialog that merely happens to fire first.** It is the moment
-  the user says what they are building, and everything after it should be a function of that answer:
-  - **Step 1 — preset.** The existing picker, extended as domain packs land.
-  - **Step 2 — a short tour**, 4–6 steps maximum, **spotlighting only panels the chosen preset actually
-    enabled**. Touring a feature that is switched off is worse than not touring at all.
-  - **Step 3 — a persistent "Getting Started" checklist**: a real panel, re-openable from the command
-    palette after it is dismissed, **with its contents derived from the preset**. A Bare-Bones user's
-    first actions (open a workspace, run a command, open the AI panel and send a turn, approve a tool
-    call, make a commit) are not a Data/SQL user's (connect a database, run a query, save it). Each entry
-    carries a one-line why and its keybinding. The checklist is the load-bearing half: it survives
-    dismissal, which a tour does not, and it is what still works for someone who skipped everything on
-    day one.
-  - **Changing the preset later in Settings → Features must re-derive the checklist**, not orphan it.
-    Presets are editable config, so onboarding state has to be a function of that config rather than a
-    snapshot taken once at first run.
-
-  **Settled:** six presets, as assumed — but the three domain slots went to the domain packs that exist,
-  so the picker ships Bare-Bones, Standard, Web Dev, Mobile, Art, Everything. Backend and Data/SQL take
-  those slots when their packs land; everything else stays reachable in Settings → Features.
-
-  Constraints: lead with the agent surface, not the terminal (people already know what a terminal is);
-  persist progress through `writePref()` so it syncs across windows (pitfall #2); and every surface must
-  close on Escape and carry an accessible name, so it cannot wedge E2E the way the preset picker just did.
-
 - [ ] **Art pack — SVG playground first, then generator, then animator** — the `art` pack id, its icon and
   the Art preset already ship; the taxonomy landed ahead of the panels, so this item is the panels. The pack
   with the clearest itch
   behind it: browser-based SVG editors are bad at authoring the small, precise, icon-scale art this project
   keeps needing. Three features, ordered by value-per-effort, and **only the first is committed**:
-  1. **SVG Playground** — a live code pane beside a preview, with a pixel grid and alignment guides at icon
-     sizes, SVGO optimization showing a before/after byte count, and export/copy as raw SVG, JSX, and
-     `data:` URI. This is the one that solves the stated problem, and it is mostly CodeMirror plus preview
-     machinery that already ships. Pitfall #15 applies: a CodeMirror instance under `.zoom-content` needs
-     the zoom exemption or clicks land on the wrong line.
+  1. ~~**SVG Playground**~~ — **shipped.** Live code pane, preview at 16/24/32/64px over a pixel grid with
+     centre guides, before/after byte counts, and export as SVG / JSX / `data:` URI; sidebar panel that
+     detaches into a tab. Two deviations worth knowing: the optimizer is an in-house conservative pass
+     rather than SVGO (a large dependency for one panel; swapping it back is a change to `optimizeSvg`
+     alone), and the preview renders a **sanitized** copy because inline SVG in this webview can carry
+     script.
   2. **Shape generator** — parametric shapes and patterns in the spirit of bookofshapes.com (blobs, waves,
      arcs, dividers, grain) with live parameter controls and the playground's export path.
   3. **Animator** — a keyframe timeline over SMIL / CSS / Web Animations. Last on purpose: a timeline UI is
@@ -152,13 +121,14 @@ and stop. Don't batch them.
   This lives in Art rather than Web Dev because SVG authoring is a design activity a mobile or ML project
   wants just as much, and separating it leaves Web Dev free to be about running and inspecting web apps.
 
-- [ ] **Web Dev pack** — the `web-dev` pack id, its icon and the Web Dev preset already ship; this item is
-  the panels. The preview pane already handles local dev servers; the pack is what turns that
-  into a workflow. Roughly in order: a **multi-viewport preview** (phone/tablet/desktop side by side
-  against one dev server, built on the existing preview surface); an **HTTP/REST client** with
+- [ ] **Web Dev pack** — the pack, its icon, the preset, the scratchpad tools and the multi-viewport
+  preview all ship; what remains is the HTTP client. The preview pane already handles local dev servers; the pack is what turns that
+  into a workflow. Roughly in order: ~~a **multi-viewport preview**~~ — **shipped** (phone/tablet/desktop
+  side by side against one dev server, CSS-pixel widths, one shared scale); an **HTTP/REST client** with
   per-workspace saved requests, environment variables and a response viewer — the thing people currently
-  leave Nexis for; and **scratchpad tools** that are cheap and constantly wanted (JSON formatter and
-  JSONPath, JWT decoder, regex tester, base64/URL codecs). Lower priority and worth re-deciding before
+  leave Nexis for; and ~~**scratchpad tools**~~ — **shipped**: JSON formatter with a deliberate JSONPath
+  subset, a JWT decoder that states it decodes rather than verifies, a regex tester, and base64/URL
+  codecs, all local and network-free. Lower priority and worth re-deciding before
   building: contrast/palette checks and CSS gradient/shadow builders overlap the Art pack and may belong
   there instead. Each is its own change — the pack is a container, not a single PR.
 

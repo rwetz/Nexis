@@ -41,6 +41,7 @@ import {
   type GitDiffTab,
   type GitHistoryTab,
   type MlNetworkTab,
+  type SvgPlaygroundTab,
   type Tab,
   type TabPatch,
   type TerminalTab,
@@ -657,6 +658,29 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     [],
   );
 
+  /**
+   * Detach the SVG playground into a tab, where the preview can sit beside
+   * the code instead of under it. Deduped outright: the playground has one
+   * document, so a second request is "show me the one I have".
+   */
+  const openSvgPlaygroundTab = useCallback(() => {
+    const curr = tabsRef.current;
+    const existing = curr.find((t) => t.kind === "svg-playground");
+    if (existing) {
+      setActiveId(existing.id);
+      return existing.id;
+    }
+    const id = nextIdRef.current++;
+    const nextTabs = [
+      ...curr,
+      { id, kind: "svg-playground", title: "SVG Playground" } satisfies SvgPlaygroundTab,
+    ];
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+    setActiveId(id);
+    return id;
+  }, []);
+
   const openCommitFileDiffTab = useCallback(
     (input: {
       repoRoot: string;
@@ -1203,6 +1227,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     openCommitHistoryTab,
     openCommitFileDiffTab,
     openMlNetworkTab,
+    openSvgPlaygroundTab,
     setAiDiffStatus,
     closeAiDiffTab,
     closeTab,

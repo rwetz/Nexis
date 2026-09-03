@@ -28,6 +28,7 @@ export const SIDEBAR_RAIL_HEIGHT = 40;
 const STORAGE_KEY = "nexis:pinned-rail-items";
 
 const DEFAULT_PINNED: SidebarView[] = [
+  "getting-started",
   "explorer",
   "recent-files",
   "source-control",
@@ -44,6 +45,9 @@ const DEFAULT_PINNED: SidebarView[] = [
  *  later unpins the item. */
 const PIN_PROMOTIONS: { id: SidebarView; marker: string }[] = [
   { id: "ml", marker: "nexis:rail-promoted:ml" },
+  // Onboarding is useless if it is only reachable by someone who already
+  // knows where things are, so it is promoted rather than left in overflow.
+  { id: "getting-started", marker: "nexis:rail-promoted:getting-started" },
 ];
 
 function loadPinned(): SidebarView[] {
@@ -100,6 +104,7 @@ export function SidebarRail({
   const [popoverOpen, setPopoverOpen] = useState(false);
 
   const builtinItems: RailItemDef[] = [
+    { id: "getting-started", label: "Getting Started",  icon: "checklist",   group: "Navigation" },
     { id: "explorer",        label: "Files",            icon: "explorer",    group: "Navigation" },
     { id: "recent-files",   label: "Recent Files",     icon: "clock",       group: "Navigation" },
     { id: "outline",        label: "Outline",          icon: "outline",      group: "Navigation" },
@@ -120,6 +125,8 @@ export function SidebarRail({
     { id: "ml",             label: "ML Lab",           icon: "brain",     group: "Dev Tools" },
     { id: "profiles",       label: "Profiles",         icon: "layers",        group: "Dev Tools" },
     { id: "ssh",            label: "SSH",              icon: "terminal",      group: "Dev Tools" },
+    { id: "web-tools",      label: "Web Tools",        icon: "tools",       group: "Dev Tools" },
+    { id: "svg-playground", label: "SVG Playground",   icon: "brush",       group: "Dev Tools" },
     { id: "share",          label: "Share",            icon: "globe",       group: "Advanced" },
     { id: "notes",          label: "Workspace Notes",  icon: "note",        group: "Advanced" },
     { id: "shell-snippets", label: "Shell Snippets",   icon: "terminal", group: "Advanced" },
@@ -215,6 +222,7 @@ export function SidebarRail({
                 <button
                   type="button"
                   aria-label="More panels"
+                  data-tour="sidebar-overflow"
                   className={cn(
                     "relative flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md outline-none transition-all duration-150",
                     "focus-visible:ring-2 focus-visible:ring-primary/40",
@@ -317,6 +325,8 @@ function RailButton({
           type="button"
           aria-label={item.label}
           aria-pressed={isActive}
+          // Anchors the onboarding tour's coach-mark (src/lib/onboarding.ts).
+          data-tour={`sidebar-${item.id}`}
           onClick={onClick}
           className={cn(
             "relative flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md outline-none transition-all duration-150",

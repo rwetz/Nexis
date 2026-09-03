@@ -190,6 +190,12 @@ export type Preferences = {
   enabledPacks: PackId[];
   /** Set once the first-run pack preset picker has been answered. */
   packsOnboarded: boolean;
+  /** Completed Getting Started step ids (src/lib/onboarding.ts). Unknown ids
+   * are kept rather than pruned: a pack toggled off and back on should
+   * restore the ticks the user already earned, not reset them. */
+  onboardingCompleted: string[];
+  /** Set once the first-run tour has been finished or skipped. */
+  onboardingTourDone: boolean;
   /** Debug status-bar readout of memory posture (slots/GL/scrollback/AI
    * history/recording). Development aid; polls only while enabled. */
   debugMemoryReport: boolean;
@@ -273,6 +279,8 @@ const KEY_ML_AUTO_OPEN = "mlAutoOpenOnTrain";
 const KEY_SYSMON_INTERVAL = "sysmonIntervalMs";
 const KEY_ENABLED_PACKS = "enabledPacks";
 const KEY_PACKS_ONBOARDED = "packsOnboarded";
+const KEY_ONBOARDING_COMPLETED = "onboardingCompleted";
+const KEY_ONBOARDING_TOUR_DONE = "onboardingTourDone";
 const KEY_DEBUG_MEMORY_REPORT = "debugMemoryReport";
 const KEY_TERMINAL_RESTORE_SCROLLBACK = "terminalRestoreScrollback";
 const KEY_QUICK_TERMINAL_ENABLED = "quickTerminalEnabled";
@@ -366,6 +374,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   sysmonIntervalMs: SYSMON_DEFAULT_INTERVAL_MS,
   enabledPacks: [...PACK_IDS],
   packsOnboarded: false,
+  onboardingCompleted: [],
+  onboardingTourDone: false,
   debugMemoryReport: false,
   terminalRestoreScrollback: true,
   quickTerminalEnabled: false,
@@ -558,6 +568,15 @@ export async function loadPreferences(): Promise<Preferences> {
     ).filter(isPackId),
     packsOnboarded:
       get<boolean>(KEY_PACKS_ONBOARDED) ?? DEFAULT_PREFERENCES.packsOnboarded,
+    // Filtered to strings only: the ids are matched against the step table at
+    // render time, so a hand-edited config cannot inject a non-string here.
+    onboardingCompleted: (
+      get<unknown[]>(KEY_ONBOARDING_COMPLETED) ??
+      DEFAULT_PREFERENCES.onboardingCompleted
+    ).filter((v): v is string => typeof v === "string"),
+    onboardingTourDone:
+      get<boolean>(KEY_ONBOARDING_TOUR_DONE) ??
+      DEFAULT_PREFERENCES.onboardingTourDone,
     debugMemoryReport:
       get<boolean>(KEY_DEBUG_MEMORY_REPORT) ??
       DEFAULT_PREFERENCES.debugMemoryReport,
@@ -886,6 +905,14 @@ export async function setPacksOnboarded(value: boolean): Promise<void> {
   await writePref(KEY_PACKS_ONBOARDED, value);
 }
 
+export async function setOnboardingCompleted(ids: string[]): Promise<void> {
+  await writePref(KEY_ONBOARDING_COMPLETED, ids);
+}
+
+export async function setOnboardingTourDone(value: boolean): Promise<void> {
+  await writePref(KEY_ONBOARDING_TOUR_DONE, value);
+}
+
 export async function setDebugMemoryReport(value: boolean): Promise<void> {
   await writePref(KEY_DEBUG_MEMORY_REPORT, value);
 }
@@ -967,6 +994,8 @@ export async function onPreferencesChange(
     [KEY_SYSMON_INTERVAL]: "sysmonIntervalMs",
     [KEY_ENABLED_PACKS]: "enabledPacks",
     [KEY_PACKS_ONBOARDED]: "packsOnboarded",
+    [KEY_ONBOARDING_COMPLETED]: "onboardingCompleted",
+    [KEY_ONBOARDING_TOUR_DONE]: "onboardingTourDone",
     [KEY_DEBUG_MEMORY_REPORT]: "debugMemoryReport",
     [KEY_TERMINAL_RESTORE_SCROLLBACK]: "terminalRestoreScrollback",
     [KEY_QUICK_TERMINAL_ENABLED]: "quickTerminalEnabled",

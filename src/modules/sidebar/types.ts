@@ -32,6 +32,9 @@ export const SIDEBAR_VIEW_IDS = [
   "shell-snippets",
   "debugger",
   "ml",
+  "getting-started",
+  "svg-playground",
+  "web-tools",
 ] as const;
 
 export type SidebarViewId = (typeof SIDEBAR_VIEW_IDS)[number];

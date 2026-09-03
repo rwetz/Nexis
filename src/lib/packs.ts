@@ -67,6 +67,10 @@ export const CORE_VIEWS: readonly SidebarViewId[] = [
   "recent-files",
   "source-control",
   "agent-queue",
+  // Onboarding is core by necessity: a Bare-Bones user has the fewest packs
+  // and the most need of it, so gating the checklist behind a pack would
+  // withhold it from exactly the person it is for.
+  "getting-started",
 ];
 
 export const PACKS: Record<PackId, PackDef> = {
@@ -131,7 +135,7 @@ export const PACKS: Record<PackId, PackDef> = {
     description:
       "Running and inspecting web apps: multi-viewport preview, an HTTP client, and scratchpad codecs.",
     icon: "globe",
-    views: [],
+    views: ["web-tools"],
   },
   mobile: {
     id: "mobile",
@@ -147,7 +151,7 @@ export const PACKS: Record<PackId, PackDef> = {
     description:
       "SVG authoring at icon scale: a live playground, shape generators, and export.",
     icon: "brush",
-    views: [],
+    views: ["svg-playground"],
   },
 };
 
