@@ -22,7 +22,7 @@ The ML Lab's standalone engine is the only true download in Nexis. The original 
 
 ## Alternatives rejected
 
-- **Minisign/ed25519 signatures with an embedded public key** — lets the engine update independently of Nexis ("latest" stays valid), but requires a signing key in nexis-ml-rs CI secrets (a real supply-chain surface), a verify crate against the <15 MB budget, and a `.minisig` sidecar for the offline path. Overkill while app and engine are released by the same maintainer, usually together. Revisit if engine releases decouple from app releases.
+- **Minisign/ed25519 signatures with an embedded public key** — lets the engine update independently of Nexis ("latest" stays valid), but requires a signing key in nexis-ml-rs CI secrets (a real supply-chain surface), a verify crate to carry, and a `.minisig` sidecar for the offline path. Overkill while app and engine are released by the same maintainer, usually together. Revisit if engine releases decouple from app releases.
 - **Checksums fetched from a manifest next to the asset** — same channel as the asset, so it adds nothing against a compromised host; HTTPS already covers transit.
 - **Self-hosting on nexisdev.org** — infra burden and a single point of failure for zero integrity gain over the pin.
 

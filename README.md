@@ -21,7 +21,7 @@
 
 ---
 
-Nexis is a lightweight, AI-first terminal and developer environment built on Tauri 2, Rust, and React 19. Native PTY backend, multi-tab terminals, a full code editor, file explorer, source control, and an AI panel that runs on your own API keys, or entirely offline with LM Studio, MLX, or Ollama. Under 10 MB, keys stored in the OS keychain, zero telemetry.
+Nexis is a lightweight, AI-first terminal and developer environment built on Tauri 2, Rust, and React 19. Native PTY backend, multi-tab terminals, a full code editor, file explorer, source control, and an AI panel that runs on your own API keys, or entirely offline with LM Studio, MLX, or Ollama. Ships as a ~10 MB native binary, keys stored in the OS keychain, zero telemetry.
 
 This README is the short version. The **[wiki](https://wiki.nexisdev.org)** has the full story: [installation](https://wiki.nexisdev.org/installation/), [quick start](https://wiki.nexisdev.org/basics/quick-start/), [features](https://wiki.nexisdev.org/features/terminal/), [keybindings](https://wiki.nexisdev.org/configuration/keybindings/), [AI provider setup](https://wiki.nexisdev.org/configuration/ai-providers/), and [troubleshooting](https://wiki.nexisdev.org/troubleshooting/).
 
