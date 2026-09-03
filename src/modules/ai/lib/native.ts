@@ -243,6 +243,14 @@ export const native = {
       content,
       workspace: currentWorkspaceEnv(),
     }),
+  /** Raw bytes, for output that is not text (an exported PNG). Shares the
+   *  backend's atomic write and its WSL rename fallback with writeFile. */
+  writeFileBytes: (path: string, bytes: Uint8Array) =>
+    invoke<void>("fs_write_file_bytes", {
+      path,
+      bytes: Array.from(bytes),
+      workspace: currentWorkspaceEnv(),
+    }),
   canonicalize: (path: string) =>
     invoke<string>("fs_canonicalize", {
       path,

@@ -368,6 +368,57 @@ pub async fn fs_write_file(
     .await
 }
 
+/// Ceiling on a single binary write.
+///
+/// Not a guess at what art weighs — it is a bound on what one IPC call can be
+/// asked to allocate. Bytes arrive as a JSON number array, so a runaway value
+/// costs memory on both sides of the boundary before anything is written.
+/// 64 MiB is far past any plausible exported image and far short of trouble.
+const MAX_WRITE_BYTES: usize = 64 * 1024 * 1024;
+
+/// Write raw bytes, for output that is not text.
+///
+/// Separate from `fs_write_file` because that one takes a `String`, and a PNG
+/// is not one: routing image bytes through UTF-8 would corrupt them silently.
+/// Everything else is deliberately shared — the same `resolve_path`, the same
+/// `write_path`, so this inherits the atomic staging *and* the WSL rename
+/// fallback (pitfall #17) rather than growing a second, unaudited write path.
+#[tauri::command]
+pub async fn fs_write_file_bytes(
+    path: String,
+    bytes: Vec<u8>,
+    workspace: Option<WorkspaceEnv>,
+    source: Option<String>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    if bytes.len() > MAX_WRITE_BYTES {
+        return Err(format!(
+            "file too large to write: {} bytes (cap {MAX_WRITE_BYTES})",
+            bytes.len()
+        ));
+    }
+    crate::modules::heavy(move || {
+        let workspace = WorkspaceEnv::from_option(workspace);
+        let target = resolve_path(&path, &workspace);
+
+        write_path(&workspace, &path, &target, &bytes).map_err(|e| {
+            log::warn!("fs_write_file_bytes({}) failed: {e}", target.display());
+            e
+        })?;
+
+        let _ = app.emit(
+            "fs:file-written",
+            FileWrittenEvent {
+                path: path.clone(),
+                source,
+            },
+        );
+
+        Ok(())
+    })
+    .await
+}
+
 #[tauri::command]
 pub async fn fs_canonicalize(
     path: String,

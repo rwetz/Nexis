@@ -21,6 +21,7 @@
  */
 
 import { Icon, type IconName } from "@/components/icon";
+import { ExportBar } from "./ExportBar";
 import { PresetGallery } from "./PresetGallery";
 import { ShapeGenerator } from "./ShapeGenerator";
 import { SvgCanvas } from "./SvgCanvas";
@@ -34,12 +35,7 @@ import { usePreferencesStore } from "@/modules/settings/preferences";
 import CodeMirror from "@uiw/react-codemirror";
 import { html } from "@codemirror/lang-html";
 import { useEffect, useMemo, useState } from "react";
-import {
-  EXPORT_LABELS,
-  formatFor,
-  looksLikeSvg,
-  type ExportFormat,
-} from "./lib/svgExport";
+import { looksLikeSvg } from "./lib/svgExport";
 import { sanitizeSvgForPreview } from "./lib/svgSanitize";
 import {
   formatBytes,
@@ -72,6 +68,8 @@ function loadSource(): string {
 type Props = {
   /** `row` puts the preview beside the code; `col` stacks it underneath. */
   layout: "row" | "col";
+  /** Where "Save" writes. Null hides the control — see ExportBar. */
+  workspaceRoot: string | null;
 };
 
 /**
@@ -89,12 +87,10 @@ const LEFT_PANES: readonly [LeftPane, IconName, string][] = [
   ["presets", "grid", "Presets"],
 ];
 
-export function SvgPlayground({ layout }: Props) {
+export function SvgPlayground({ layout, workspaceRoot }: Props) {
   // Lazy initialiser: `useState(f())` would re-read localStorage on every
   // render and keep only the first result.
   const [source, setSource] = useState<string>(loadSource);
-  const [format, setFormat] = useState<ExportFormat>("svg");
-  const [copied, setCopied] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
   const [leftPane, setLeftPane] = useState<LeftPane>("source");
   const [optimized, setOptimized] = useState<OptimizeResult | null>(null);
@@ -133,18 +129,6 @@ export function SvgPlayground({ layout }: Props) {
     () => (valid ? sanitizeSvgForPreview(source) : { svg: "", removed: [] }),
     [source, valid],
   );
-  const exported = useMemo(
-    () => (valid ? formatFor(source, format) : ""),
-    [source, format, valid],
-  );
-
-  const copy = () => {
-    void navigator.clipboard.writeText(exported).then(() => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
-    });
-  };
-
   /**
    * Swap the document wholesale. The optimize summary is cleared with it —
    * "38% smaller" left over from the previous document is a number about art
@@ -369,45 +353,7 @@ export function SvgPlayground({ layout }: Props) {
           )}
         </div>
 
-        {/* ── Export ─────────────────────────────────────────────────────── */}
-        <div className="shrink-0 border-t border-border/50 px-3 py-2">
-          <div className="flex items-center gap-1">
-            {(Object.keys(EXPORT_LABELS) as ExportFormat[]).map((f) => (
-              <button
-                key={f}
-                type="button"
-                aria-pressed={format === f}
-                onClick={() => setFormat(f)}
-                className={cn(
-                  "rounded-md px-1.5 py-0.5 text-[10.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                  format === f
-                    ? "bg-primary/15 text-primary"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {EXPORT_LABELS[f]}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={copy}
-              disabled={!valid}
-              className={cn(
-                "ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-[10.5px] transition-colors",
-                "hover:border-border hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                "disabled:cursor-not-allowed disabled:opacity-50",
-              )}
-            >
-              <Icon name={copied ? "check" : "copy"} size="xs" />
-              {copied ? "Copied" : "Copy"}
-            </button>
-          </div>
-          {valid && (
-            <pre className="mt-1.5 max-h-20 overflow-auto rounded-md bg-muted/40 p-1.5 text-[9.5px] leading-relaxed text-muted-foreground">
-              {exported}
-            </pre>
-          )}
-        </div>
+        <ExportBar source={source} valid={valid} workspaceRoot={workspaceRoot} />
       </div>
     </div>
   );

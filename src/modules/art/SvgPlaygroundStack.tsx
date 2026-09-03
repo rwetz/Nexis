@@ -22,11 +22,14 @@ export function SvgPlaygroundStack({
   tabs,
   activeId,
   onCollapse,
+  workspaceRoot,
 }: {
   tabs: Tab[];
   activeId: number | null;
   /** Close this tab — the playground stays in the sidebar. */
   onCollapse?: (tabId: number) => void;
+  /** Where "Save to workspace" writes. Null disables it. */
+  workspaceRoot: string | null;
 }) {
   const tab = tabs.find(
     (t): t is Extract<Tab, { kind: "svg-playground" }> =>
@@ -54,7 +57,7 @@ export function SvgPlaygroundStack({
         )}
       </div>
       <div className="min-h-0 flex-1">
-        <SvgPlayground layout="row" />
+        <SvgPlayground layout="row" workspaceRoot={workspaceRoot} />
       </div>
     </div>
   );

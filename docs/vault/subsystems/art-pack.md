@@ -116,10 +116,27 @@ Three traps the radial generators share, each already paid for once:
 - **The polygon's corner rounding clamps its cut-back to half the shorter edge.** Without the clamp, a large radius on a triangle overshoots the edge and turns the shape inside out.
 - **The gear punches its bore with `fill-rule="evenodd"`**, not with a background-coloured circle on top. It stays one path, and it works on any background rather than only the one it was drawn against.
 
+## Export, and the raster trap
+
+`ExportBar.tsx` plus `lib/raster.ts`. Four outputs: SVG, JSX, `data:` URI, PNG. Plus **Save**, which writes into the open workspace — the pack's only filesystem contact, and the reason the Art preset's "file manipulation" scope is not a lie.
+
+**PNG is a render, not a fourth string transform.** It goes through an `<img>` (the safe path: an SVG loaded as an image runs with no script and no external fetches), and an `<img>` is an **isolated document**. The page's custom properties do not cascade in. This is the same constraint as pitfall #18 seen from the other side: the file-tree art must be inlined because `var(--terminal-ansi-*)` cannot reach a `data:` URL, and `currentColor` cannot reach one here either — it falls back to the initial value of `color`, which is black.
+
+So **the colour is resolved into the markup before rasterizing**, and `svgToPngBlob` takes a colour rather than inferring one. Without that, every themed icon in this app exports black-on-transparent: correct-looking on white, invisible on the app's own background, and silent about it.
+
+**The intrinsic size is computed, not read.** An `<img>` with an SVG source has no intrinsic size unless the document carries absolute `width`/`height`; icon art usually carries only a `viewBox`, and Chromium falls back to 300x150. Two traps in that computation, both found by running it rather than reasoning about it, both now pinned by tests:
+
+- `\bwidth` **matches inside `stroke-width`** — a hyphen is a word boundary. An icon with `stroke-width="1.5"` measured itself as 1.5px wide.
+- **Scanning the whole document** finds the first child with a `height`. A `<rect height="18">` inside a 24-unit icon is not the icon's size.
+
+Only the root `<svg …>` start tag is searched, and an attribute name must be preceded by whitespace or a quote.
+
+**Binary writes go through `fs_write_file_bytes`**, which exists only because `fs_write_file` takes a `String` and a PNG is not one. It shares `resolve_path` and `write_path` with it, so it inherits the atomic staging and the WSL `mv` fallback (pitfall #17) instead of being a second, unaudited write path. Do not add a third.
+
 ## Not built yet
 
 The animator — a keyframe timeline over SMIL / CSS / Web Animations. Explicitly gated on the rest earning it, because a timeline UI is a genuinely large surface.
 
-Also open: the pack still owns exactly one view. A preset that exists to be a design surface wants more behind it than one panel, and what else belongs is a decision to make before building any of it.
+The rest of the panel set is **decided and written down** in ROADMAP.md, against [haikei.com](https://haikei.com) as the reference. The framing that settles it: *the playground is a precision tool and Haikei is a generative one, and those are two jobs* — so the plan adds panels beside the playground rather than growing it. In build order: raster/file export (done, above), a palette panel seeded from the active theme, a Backdrop scene generator, an icon-set review panel, and a favicon exporter. The library change that gates the Backdrop is a `SceneDef` sibling to `ShapeDef` carrying colour, aspect and layers — the three things `shapes.ts` structurally cannot express.
 
 Related: [[icon-and-motion-system]], [[editor]], [[expansion-packs]].

@@ -172,11 +172,63 @@ entry point, the Code Review non-repo bug, the SVG playground's direct-manipulat
 gallery and eight more generators, the Settings presets layout, and the Art preset's scope. See the
 CHANGELOG. What is left:
 
-- [ ] **Art pack needs to be more than the SVG playground** — the pack still owns exactly one view
-  (`art: { views: ["svg-playground"] }` in `src/lib/packs.ts`), and the playground has now grown four panes
-  inside it rather than growing the pack. A preset that exists to be a design surface needs more than one
-  panel behind it. The animator is already queued as step 3 of the Art pack item above; this is the broader
-  question of what *else* belongs — decide the panel set before building any of it.
+- [ ] **Art pack — the panel set beyond the playground.** Decided 2026-09-03 against
+  [haikei.com](https://haikei.com) as the reference. The framing that settles the rest: **the playground is
+  a precision tool and Haikei is a generative one, and those are two jobs.** The playground is icon-scale,
+  monochrome `currentColor`, a 240 square, answering "does this 1.5 stroke land on a pixel boundary at
+  16px". Haikei is wallpaper-scale, full-colour, gradient-heavy, layered, and deliberately *imprecise* —
+  you reroll until you like one. Do not grow one into the other; add panels beside it and share the library
+  underneath (seeded RNG, optimizer, sanitizer, export all transfer unchanged).
+  Ordered as they should be built — each is its own change.
+
+  - [x] **4: raster export and writing to the workspace — shipped.** Export today is clipboard-only and
+    SVG/JSX/`data:` URI. Add **PNG** at a chosen scale (`canvas.drawImage` over an SVG blob — no new
+    dependency) and **write to the open workspace folder**. The second half matters more than it looks:
+    the Art preset is scoped to "source control, file manipulation, art", and nothing in the pack touches
+    the filesystem at all today. Every item below is better once this exists, which is why it goes first.
+    Both anticipated traps were real: `currentColor` does not resolve inside an `<img>` (pitfall #18's
+    constraint, from the other direction), so the colour is baked into the markup before rasterizing; and
+    binary output got `fs_write_file_bytes`, sharing `write_path` so it inherits the WSL fallback. A third
+    was not anticipated and was found by running it — `width` matches inside `stroke-width` — see the
+    art-pack vault note.
+
+  - [ ] **2 next: a palette panel.** Everything below needs colour, and this is where the pack earns its
+    differentiator: **seed a palette from the active Nexis theme.** `iconResolver.ts` already retints the
+    file-tree art onto the theme's ANSI palette, so "generate a backdrop in Aurelian" is something no
+    other tool can do. Plus harmonies from a seed colour, and export as CSS variables / a Tailwind theme /
+    JSON. **This also answers an open question**: contrast and palette checks are parked under the Web Dev
+    pack with a note wondering whether they belong in Art. They belong here — move them.
+
+  - [ ] **1: Backdrop — the Haikei-shaped panel.** The one there is actual appetite for. Generators in
+    rough value order: layered/stacked waves (the signature), peaks, blob scene (depth-ordered), circle
+    scatter / confetti / bubbles, low-poly triangle mesh, topographic contours, isometric or square grid,
+    stacked steps, sunbeams (`burst` already exists and needs only colour and aspect).
+    - **The library change is the real work**, and it is three things `shapes.ts` structurally cannot
+      express: **colour** (every generator emits `currentColor` by design so art takes the theme),
+      **aspect** (everything is a 240 square; backdrops need 16:9, 9:16, 1:1, custom), and **layers** (a
+      `ShapeDef` is one pure function to one document). So `ShapeDef` grows a sibling — a `SceneDef` of
+      params plus palette plus aspect, returning a layered document. Keep the purity and the seeding: they
+      are what make the previews match the exports and the tests possible.
+    - **Copy the interaction, not just the output.** A **Roll** button that takes a new seed and a **lock**
+      that holds it while one parameter is tuned is half of why Haikei is enjoyable, and the existing
+      seeded-RNG decision already makes both correct by construction.
+
+  - [ ] **3: icon-set review — the project's own itch.** Point it at a folder of SVGs, grid them at
+    16/24/32, and flag inconsistent stroke widths, viewBoxes and canvas sizes. Pitfall #18 is the story of
+    160 imports expressing 136 ideas across 13 pixel sizes and 12 stroke weights; a panel that catches
+    that drift is the pack dogfooding the codebase it ships in.
+
+  - [ ] **5: favicon / app-icon set.** One SVG in, the full size set plus a manifest out. Nearly free once
+    the raster and file-writing work above exists.
+
+  - **Deliberately not built**, so these are not re-argued: **image tracing** (raster to vector) needs a
+    real tracing library, which contradicts the posture the optimizer decision already set when it
+    rejected SVGO; **type and lettering tools**, because font handling has no bottom; and **a general
+    illustration editor**, which is Figma and is the "not a VS Code replacement" hard limit wearing a
+    different hat.
+
+  The **animator** (step 3 of the Art pack item above) stays last of everything here — a keyframe timeline
+  is still the largest surface in the pack.
 
 - [ ] **Lead: invisible prompt plus "os error 3" in the file tree on startup** — seen once at launch, in a
   home-directory workspace, and it cleared itself after a few minutes of use. The file tree showed

@@ -1901,6 +1901,7 @@ export default function App() {
             tabs={tabs}
             activeId={activeId}
             onCollapse={closeTab}
+            workspaceRoot={explorerRoot}
           />
         </Suspense>
       </div>
@@ -1988,7 +1989,7 @@ export default function App() {
                     ) : sidebarView === "web-tools" ? (
                       <WebToolsPanel />
                     ) : sidebarView === "svg-playground" ? (
-                      <SvgPlaygroundPanel onExpand={openSvgPlaygroundTab} />
+                      <SvgPlaygroundPanel onExpand={openSvgPlaygroundTab} workspaceRoot={explorerRoot} />
                     ) : sidebarView === "recent-files" ? (
                       <RecentFilesPanel onOpenFile={handleOpenFile} />
                     ) : sidebarView === "explorer" ? (
