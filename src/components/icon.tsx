@@ -84,6 +84,7 @@ import {
   DatabaseIcon,
   DesktopIcon,
   DetectiveIcon,
+  DeviceMobileIcon,
   DotsThreeIcon,
   DotsThreeCircleIcon,
   DownloadSimpleIcon,
@@ -171,6 +172,29 @@ import {
   XLogoIcon,
 } from "@phosphor-icons/react";
 
+import type { ArtProps } from "@/components/icon-art";
+import {
+  PresetArt,
+  PresetBareBones,
+  PresetEverything,
+  PresetMobile,
+  PresetStandard,
+  PresetWebDev,
+} from "@/components/icon-art";
+
+/**
+ * A registry entry is either a vendor glyph or a piece of Nexis-drawn art.
+ *
+ * The registry used to be `Record<string, PhosphorIcon>`, which quietly made
+ * "an icon" and "a vendor export" the same thing and left no room for a mark
+ * drawn for this app. The first-run preset cards are the case that needed it:
+ * they are chosen once, at card scale, and a general-purpose glyph says nothing
+ * about the choice. Widening here rather than dropping a one-off inline `<svg>`
+ * at the call site keeps the choke point intact — art is still reached as
+ * `<Icon name="..." />`, still sized from the scale, still weight-aware.
+ */
+type IconGlyph = PhosphorIcon | ((props: ArtProps) => React.ReactElement);
+
 /**
  * The house size scale. `sm` is the default and covers dense chrome (tree
  * rows, status bar, inline buttons); `md` is for panel headers and toolbars;
@@ -237,6 +261,7 @@ const REGISTRY = {
   "debug-step-out": ArrowLineUpRightIcon,
   "debug-step-over": ArrowBendRightUpIcon,
   "delete": TrashIcon,
+  "device-mobile": DeviceMobileIcon,
   "disk": HardDrivesIcon,
   "download": DownloadSimpleIcon,
   "edit": PencilSimpleIcon,
@@ -285,6 +310,12 @@ const REGISTRY = {
   "pin": PushPinIcon,
   "play": PlayIcon,
   "plugin": PlugIcon,
+  "preset-art": PresetArt,
+  "preset-bare-bones": PresetBareBones,
+  "preset-everything": PresetEverything,
+  "preset-mobile": PresetMobile,
+  "preset-standard": PresetStandard,
+  "preset-web-dev": PresetWebDev,
   "queue": QueueIcon,
   "refresh": ArrowsClockwiseIcon,
   "remove-box": MinusSquareIcon,
@@ -326,7 +357,7 @@ const REGISTRY = {
   "wrench": WrenchIcon,
   "zoom-in": MagnifyingGlassPlusIcon,
   "zoom-out": MagnifyingGlassMinusIcon,
-} as const satisfies Record<string, PhosphorIcon>;
+} as const satisfies Record<string, IconGlyph>;
 
 export type IconName = keyof typeof REGISTRY;
 

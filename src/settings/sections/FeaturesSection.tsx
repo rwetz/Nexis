@@ -4,24 +4,22 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
   PACK_IDS,
   PACK_PRESETS,
   PACKS,
+  PRESET_IDS,
+  PRESETS,
   type PackId,
+  type PresetId,
 } from "@/lib/packs";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setEnabledPacks } from "@/modules/settings/store";
 import { SectionHeader } from "../components/SectionHeader";
 import { SettingRow } from "../components/SettingRow";
-
-const PRESET_LABELS: { id: keyof typeof PACK_PRESETS; label: string }[] = [
-  { id: "bare-bones", label: "Bare-Bones" },
-  { id: "standard", label: "Standard" },
-  { id: "everything", label: "Everything" },
-];
 
 export function FeaturesSection() {
   const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
@@ -35,7 +33,7 @@ export function FeaturesSection() {
   };
 
   const enabledSet = new Set(enabledPacks);
-  const matchesPreset = (id: keyof typeof PACK_PRESETS) => {
+  const matchesPreset = (id: PresetId) => {
     const preset = PACK_PRESETS[id];
     return (
       preset.length === enabledPacks.length &&
@@ -54,16 +52,17 @@ export function FeaturesSection() {
         title="Presets"
         description="One-click bundles over the same toggles below."
       >
-        <div className="flex items-center gap-1.5">
-          {PRESET_LABELS.map(({ id, label }) => (
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          {PRESET_IDS.map((id) => (
             <Button
               key={id}
               size="sm"
               variant={matchesPreset(id) ? "secondary" : "outline"}
-              className="h-6 px-2 text-[11px]"
+              className="h-6 gap-1 px-2 text-[11px]"
               onClick={() => void setEnabledPacks([...PACK_PRESETS[id]])}
             >
-              {label}
+              <Icon name={PRESETS[id].icon} size="xs" />
+              {PRESETS[id].label}
             </Button>
           ))}
         </div>
@@ -71,10 +70,23 @@ export function FeaturesSection() {
 
       {PACK_IDS.map((id) => {
         const pack = PACKS[id];
+        // A pack whose panels have not landed yet is still a real toggle, and
+        // saying so is better than a switch that appears to do nothing.
+        const empty = pack.views.length === 0;
         return (
           <SettingRow
             key={id}
-            title={pack.label}
+            title={
+              <span className="flex items-center gap-1.5">
+                <Icon name={pack.icon} size="sm" />
+                {pack.label}
+                {empty ? (
+                  <span className="rounded-sm bg-muted px-1 py-px text-[9.5px] font-normal text-muted-foreground">
+                    No panels yet
+                  </span>
+                ) : null}
+              </span>
+            }
             description={pack.description}
           >
             <Switch

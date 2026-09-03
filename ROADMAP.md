@@ -99,29 +99,14 @@ and stop. Don't batch them.
   *Re-done so far:* the theme set and the icon/mark; the icon surface (semantic choke point, Phosphor,
   house size scale, real provider brand marks) and the motion system (house easing/duration tokens wired
   into Tailwind's defaults, stepped spinner, caret-cadence status blink) and the file-tree retint onto the
-  active theme's ANSI palette; and the emoji purge (v1.25.0) — an emoji is the one glyph that ignores the theme entirely, so removing them is identity work, not tidying, and a tripwire on both sides of the stack keeps them out. *Still inherited:* layout and spacing scale, panel/rail component idioms.
+  active theme's ANSI palette; the six bespoke preset marks in `icon-art.tsx`, which are the first Nexis-drawn
+  art in the icon registry rather than a vendor glyph pressed into service; and the emoji purge (v1.25.0) — an emoji is the one glyph that ignores the theme entirely, so removing them is identity work, not tidying, and a tripwire on both sides of the stack keeps them out. *Still inherited:* layout and spacing scale, panel/rail component idioms.
 
-- [ ] **Get E2E green, then make it gate PRs** — the nightly suite has failed intermittently (2026-08-18,
-  08-19, 09-02) and the notification backlog reads worse than the reality: 37 of the ~60 failure notices
-  are E2E, accumulated over weeks rather than a live outage. The current failure is precise.
-  `smoke.test.ts`'s `before all` hook dies with *"A modal was still blocking the UI after 20000 ms (an
-  unnamed dialog)"*, and the likeliest culprit is `PackOnboardingDialog` — it renders whenever
-  `hydrated && !packsOnboarded`, has no close button, and closes only by *choosing* a preset, so
-  `dismissTopDialog()` has nothing to click. The intermittency fits a race: the dialog mounts when
-  preferences hydrate, which can land after the dismiss window opens. Scope: (a) confirm the dialog's
-  identity rather than assuming it — the error says "unnamed", so give every app dialog an accessible name
-  while you are in there, which also makes the next failure of this class self-describing; (b) have the
-  E2E harness put first-run preferences into a known state before the app loads, so onboarding is never a
-  coin flip; (c) teach `dismissTopDialog()` the preset-picker shape as a backstop; (d) move E2E from
-  nightly-only to a PR gate. The gate is the expensive half — a full Tauri release build is ~20 min cold —
-  so scope it to PRs touching `src/`, `src-tauri/`, or the e2e config, keep the Rust cache shared with
-  `test-rust`, and leave the nightly schedule on main. Sweep the 20 red **Security audit** runs in the same
-  pass: that is a different workflow (`audit.yml` — `cargo deny` + `pnpm audit`) and a large share of the
-  inbox noise, and a permanently red weekly job trains you to ignore the one time it matters. **Onboarding
-  work lands after this, not before** — every first-run modal is another thing that can wedge the suite,
-  which is exactly the bug being fixed here.
-
-- [ ] **Onboarding — one first-run flow: preset, then tour, then checklist** — Nexis teaches itself
+- [ ] **Onboarding — one first-run flow: preset, then tour, then checklist** — **unblocked**: the E2E
+  suite's `before all` failure turned out to be a stale Radix overlay rather than an unclosable dialog,
+  the harness now seeds first-run preferences before launch, and E2E gates PRs. The preset step also has
+  its data and its art already — `PRESETS` in `src/lib/packs.ts` carries six presets with bespoke marks,
+  and the picker renders from it — so what remains here is steps 2 and 3. Nexis teaches itself
   badly, and the pieces it does have are disconnected. `PackOnboardingDialog` already asks for a preset on
   first run and `WelcomeScreen` shows a few shortcut hints; neither explains the AI/agent surface, which
   is both the differentiator and the least discoverable thing in the app. **Treat the preset pick as step
@@ -141,30 +126,17 @@ and stop. Don't batch them.
     Presets are editable config, so onboarding state has to be a function of that config rather than a
     snapshot taken once at first run.
 
-  **Open question to settle inside this item:** how many presets get a slot in the picker. The domain-pack
-  backlog below is long, and the first-run screen is the one place where choice paralysis costs a user
-  outright. Working assumption is six — Bare-Bones, Standard, Web Dev, Backend, Data/SQL, Everything —
-  with everything else reachable as packs in Settings → Features.
+  **Settled:** six presets, as assumed — but the three domain slots went to the domain packs that exist,
+  so the picker ships Bare-Bones, Standard, Web Dev, Mobile, Art, Everything. Backend and Data/SQL take
+  those slots when their packs land; everything else stays reachable in Settings → Features.
 
   Constraints: lead with the agent surface, not the terminal (people already know what a terminal is);
   persist progress through `writePref()` so it syncs across windows (pitfall #2); and every surface must
   close on Escape and carry an accessible name, so it cannot wedge E2E the way the preset picker just did.
 
-- [ ] **Domain packs — Web Dev, Mobile, Art — plus icons on packs and presets** — the taxonomy in
-  `src/lib/packs.ts` is organized by *tool kind* (navigation, code-tools, dev-tools). The next three are
-  organized by *what you are building*, which is a different axis and the one that matches how the work
-  actually splits. Add `web-dev`, `mobile` and `art` as packs, keep `ml-lab` as the AI/ML one it already
-  is, and add domain-named **presets** beside Bare-Bones/Standard/Everything so first-run can offer "Web
-  Dev" instead of asking someone to reason about six pack names. Presets stay nothing but starting values
-  for `enabledPacks` — do not grow a second concept next to packs. Two icon decisions: `PackDef` gains an
-  `icon: IconName` for the rail and the Settings → Features rows, resolved through
-  `src/components/icon.tsx` like everything else (pitfall #18 — the vendor stays behind that choke point);
-  the **preset cards** in the first-run picker get bespoke SVG art, which means widening `REGISTRY` in
-  `icon.tsx` beyond `Record<string, PhosphorIcon>` to carry custom art rather than dropping a one-off
-  inline `<svg>` at the call site. Ship the taxonomy and the icon plumbing as one change and the panels
-  afterward; every pack that claims a view still owes the view-id remap discipline from expansion packs V2.
-
-- [ ] **Art pack — SVG playground first, then generator, then animator** — the pack with the clearest itch
+- [ ] **Art pack — SVG playground first, then generator, then animator** — the `art` pack id, its icon and
+  the Art preset already ship; the taxonomy landed ahead of the panels, so this item is the panels. The pack
+  with the clearest itch
   behind it: browser-based SVG editors are bad at authoring the small, precise, icon-scale art this project
   keeps needing. Three features, ordered by value-per-effort, and **only the first is committed**:
   1. **SVG Playground** — a live code pane beside a preview, with a pixel grid and alignment guides at icon
@@ -180,7 +152,8 @@ and stop. Don't batch them.
   This lives in Art rather than Web Dev because SVG authoring is a design activity a mobile or ML project
   wants just as much, and separating it leaves Web Dev free to be about running and inspecting web apps.
 
-- [ ] **Web Dev pack** — the preview pane already handles local dev servers; the pack is what turns that
+- [ ] **Web Dev pack** — the `web-dev` pack id, its icon and the Web Dev preset already ship; this item is
+  the panels. The preview pane already handles local dev servers; the pack is what turns that
   into a workflow. Roughly in order: a **multi-viewport preview** (phone/tablet/desktop side by side
   against one dev server, built on the existing preview surface); an **HTTP/REST client** with
   per-workspace saved requests, environment variables and a response viewer — the thing people currently
@@ -189,7 +162,8 @@ and stop. Don't batch them.
   building: contrast/palette checks and CSS gradient/shadow builders overlap the Art pack and may belong
   there instead. Each is its own change — the pack is a container, not a single PR.
 
-- [ ] **Mobile pack — Expo / React Native, with an Android device mirror** — aimed at the workflow
+- [ ] **Mobile pack — Expo / React Native, with an Android device mirror** — the `mobile` pack id, its icon
+  and the Mobile preset already ship; this item is the panels. Aimed at the workflow
   `rwetz/ateru` actually uses. Core: a **Metro / Expo dev-server runner** with status and an Expo Go QR
   code; streamed **device logs** (`adb logcat` filtered to the app, plus Metro's own output); an **`adb`
   device list** with connect/disconnect; and an **Android screen mirror pane** — `adb exec-out screencap`

@@ -11,9 +11,21 @@
  * docs/vault/decisions/expansion-packs.md). Every sidebar view must be
  * either in CORE_VIEWS or claimed by exactly one pack.
  */
+import type { IconName } from "@/components/icon";
 import type { SidebarViewId } from "@/modules/sidebar/types";
 import { SIDEBAR_VIEW_IDS } from "@/modules/sidebar/types";
 
+/**
+ * Packs are organized on two different axes, on purpose.
+ *
+ * The original six are by *tool kind* — navigation, code tools, dev tools.
+ * `web-dev`, `mobile` and `art` are by *what you are building*, which is the
+ * axis that matches how the work actually splits, and the one a person can
+ * answer about themselves on first run. `ml-lab` already sat on that axis and
+ * stays as it is. The two coexist because several panels belong to more than
+ * one domain (an HTTP client to both Backend and Web Dev), which is exactly
+ * why enablement is per-pack and a preset is only a bundle over them.
+ */
 export const PACK_IDS = [
   "navigation-plus",
   "code-tools",
@@ -21,6 +33,9 @@ export const PACK_IDS = [
   "dev-tools",
   "ml-lab",
   "advanced",
+  "web-dev",
+  "mobile",
+  "art",
 ] as const;
 
 export type PackId = (typeof PACK_IDS)[number];
@@ -30,6 +45,18 @@ export type PackDef = {
   label: string;
   /** One-line description shown in the Features settings section. */
   description: string;
+  /**
+   * Mark for the rail and the Settings → Features rows, resolved through
+   * `src/components/icon.tsx` like every other icon — the plugin contract
+   * names an icon, never a vendor object (pitfall #18).
+   */
+  icon: IconName;
+  /**
+   * Sidebar views this pack owns. Empty is legitimate and means the taxonomy
+   * landed before the panels did: the pack is a real, toggleable container
+   * with nothing in it yet. Surfaces that list packs should say so rather
+   * than render a toggle that appears to do nothing.
+   */
   views: readonly SidebarViewId[];
 };
 
@@ -47,6 +74,7 @@ export const PACKS: Record<PackId, PackDef> = {
     id: "navigation-plus",
     label: "Navigation+",
     description: "Symbol outline for the open file and code bookmarks.",
+    icon: "outline",
     views: ["outline", "bookmarks"],
   },
   "code-tools": {
@@ -54,6 +82,7 @@ export const PACKS: Record<PackId, PackDef> = {
     label: "Code Tools",
     description:
       "Build runner, test runner, debugger, workspace symbol search, and code review.",
+    icon: "tools",
     views: ["build", "tests", "debugger", "symbol-search", "code-review"],
   },
   "ai-extras": {
@@ -61,6 +90,7 @@ export const PACKS: Record<PackId, PackDef> = {
     label: "AI Extras",
     description:
       "AI refactoring and prompt templates. The AI chat itself is core and unaffected.",
+    icon: "sparkle",
     views: ["refactor", "prompt-templates"],
   },
   "dev-tools": {
@@ -68,6 +98,7 @@ export const PACKS: Record<PackId, PackDef> = {
     label: "Dev Tools",
     description:
       "Process activity, system resource monitor, port monitor, REPL, database client, workspace profiles, and SSH.",
+    icon: "cpu",
     views: [
       "processes",
       "system-monitor",
@@ -83,6 +114,7 @@ export const PACKS: Record<PackId, PackDef> = {
     label: "ML Lab",
     description:
       "Local model training and experiments via nexis-ml. Runs against a local Python/Rust engine.",
+    icon: "brain",
     views: ["ml"],
   },
   advanced: {
@@ -90,20 +122,128 @@ export const PACKS: Record<PackId, PackDef> = {
     label: "Advanced",
     description:
       "Terminal sharing, workspace notes, shell snippets, code snippets, and release tooling.",
+    icon: "layers",
     views: ["share", "notes", "shell-snippets", "snippets", "release"],
+  },
+  "web-dev": {
+    id: "web-dev",
+    label: "Web Dev",
+    description:
+      "Running and inspecting web apps: multi-viewport preview, an HTTP client, and scratchpad codecs.",
+    icon: "globe",
+    views: [],
+  },
+  mobile: {
+    id: "mobile",
+    label: "Mobile",
+    description:
+      "Expo and React Native: a Metro dev-server runner, device logs, and an Android device mirror.",
+    icon: "device-mobile",
+    views: [],
+  },
+  art: {
+    id: "art",
+    label: "Art",
+    description:
+      "SVG authoring at icon scale: a live playground, shape generators, and export.",
+    icon: "brush",
+    views: [],
   },
 };
 
-/** Preset bundles offered by the first-run picker. Presets are nothing more
- *  than starting values for the same enabledPacks config. */
-export const PACK_PRESETS: Record<
-  "bare-bones" | "standard" | "everything",
-  readonly PackId[]
-> = {
-  "bare-bones": [],
-  standard: ["navigation-plus", "code-tools", "dev-tools"],
-  everything: PACK_IDS,
+// ── Presets ─────────────────────────────────────────────────────────────────
+
+/**
+ * Presets are a bundle over packs and nothing else — no second concept, no
+ * state of their own. Changing a preset only ever writes `enabledPacks`, which
+ * is the same config Settings → Features edits by hand.
+ */
+export const PRESET_IDS = [
+  "bare-bones",
+  "standard",
+  "web-dev",
+  "mobile",
+  "art",
+  "everything",
+] as const;
+
+export type PresetId = (typeof PRESET_IDS)[number];
+
+export type PresetDef = {
+  id: PresetId;
+  label: string;
+  /** One line on the first-run card, addressed to what the user is building. */
+  blurb: string;
+  /** Bespoke art rather than a general-purpose glyph — see icon-art.tsx. */
+  icon: IconName;
+  packs: readonly PackId[];
 };
+
+/**
+ * The domain presets deliberately build on Standard's packs rather than
+ * replacing them: someone who says "I'm building a web app" still wants the
+ * build runner and the debugger. The domain pack is added on top, so the
+ * preset stays a strict statement about *what you are building* while the
+ * tool-kind packs keep answering *what you work with*.
+ */
+export const PRESETS: Record<PresetId, PresetDef> = {
+  "bare-bones": {
+    id: "bare-bones",
+    label: "Bare-Bones",
+    blurb:
+      "Terminal, editor, files, source control, and AI chat. Nothing else.",
+    icon: "preset-bare-bones",
+    packs: [],
+  },
+  standard: {
+    id: "standard",
+    label: "Standard",
+    blurb: "The core plus code navigation, build/test/debug, and dev tools.",
+    icon: "preset-standard",
+    packs: ["navigation-plus", "code-tools", "dev-tools"],
+  },
+  "web-dev": {
+    id: "web-dev",
+    label: "Web Dev",
+    blurb: "Standard, plus preview, request and scratchpad tools for the web.",
+    icon: "preset-web-dev",
+    packs: ["navigation-plus", "code-tools", "dev-tools", "web-dev"],
+  },
+  mobile: {
+    id: "mobile",
+    label: "Mobile",
+    blurb: "Standard, plus Expo/React Native runners, logs, and devices.",
+    icon: "preset-mobile",
+    packs: ["navigation-plus", "code-tools", "dev-tools", "mobile"],
+  },
+  art: {
+    id: "art",
+    label: "Art",
+    blurb: "A quiet surface for SVG and icon work, without the build tooling.",
+    icon: "preset-art",
+    packs: ["navigation-plus", "art"],
+  },
+  everything: {
+    id: "everything",
+    label: "Everything",
+    blurb: "The full surface, ML Lab and all. The classic Nexis experience.",
+    icon: "preset-everything",
+    packs: PACK_IDS,
+  },
+};
+
+/** Preset id → the packs it turns on. Derived so the two cannot drift. */
+export const PACK_PRESETS: Record<PresetId, readonly PackId[]> =
+  Object.fromEntries(
+    PRESET_IDS.map((id) => [id, PRESETS[id].packs]),
+  ) as Record<PresetId, readonly PackId[]>;
+
+export function isPresetId(value: unknown): value is PresetId {
+  return (
+    typeof value === "string" &&
+    (PRESET_IDS as readonly string[]).includes(value)
+  );
+}
 
 export function isPackId(value: unknown): value is PackId {
   return (
