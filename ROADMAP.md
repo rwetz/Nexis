@@ -113,8 +113,10 @@ and stop. Don't batch them.
      rather than SVGO (a large dependency for one panel; swapping it back is a change to `optimizeSvg`
      alone), and the preview renders a **sanitized** copy because inline SVG in this webview can carry
      script.
-  2. **Shape generator** — parametric shapes and patterns in the spirit of bookofshapes.com (blobs, waves,
-     arcs, dividers, grain) with live parameter controls and the playground's export path.
+  2. ~~**Shape generator**~~ — **shipped.** Blob, wave, filled wave, arc, divider and grain, with live
+     sliders in a Shapes tab beside Source; each is a pure function to a complete SVG document that reuses
+     the playground's optimize/preview/export rather than growing its own. Randomness is seeded so the
+     preview matches the export and a slider nudge does not reroll the shape.
   3. **Animator** — a keyframe timeline over SMIL / CSS / Web Animations. Last on purpose: a timeline UI is
      a genuinely large surface and should not start until the first two have earned it.
 
