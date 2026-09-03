@@ -115,7 +115,8 @@ import {
 } from "@/modules/source-control";
 import { StatusBar } from "@/modules/statusbar";
 import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
-import { GettingStartedPanel } from "@/modules/onboarding/GettingStartedPanel";
+import { OnboardingDialog } from "@/modules/onboarding/OnboardingDialog";
+import { openOnboarding } from "@/modules/onboarding/onboardingDialogStore";
 import { SvgPlaygroundPanel } from "@/modules/art/SvgPlaygroundPanel";
 import { WebToolsPanel } from "@/modules/webdev/WebToolsPanel";
 import { HttpClientPanel } from "@/modules/webdev/HttpClientPanel";
@@ -862,12 +863,18 @@ export default function App() {
   const packsOnboarded = usePreferencesStore((s) => s.packsOnboarded);
   const onboardingTourDone = usePreferencesStore((s) => s.onboardingTourDone);
 
-  // The tour is step two of one flow, so it waits for the preset picker to be
-  // answered rather than racing it. Both gates are preferences, so this stays
-  // correct across windows (pitfall #2).
+  // The startup screen is step two of one flow, so it waits for the preset
+  // picker to be answered rather than racing it. Both gates are preferences,
+  // so this stays correct across windows (pitfall #2).
+  //
+  // It opens the onboarding takeover, not the tour. The tour used to fire
+  // itself here; it is now the takeover's primary action instead, because a
+  // coach-mark sequence that starts on its own is something to dismiss, while
+  // the same sequence behind a button is something to choose. The takeover
+  // writes `onboardingTourDone` when it closes, so this runs exactly once.
   useEffect(() => {
     if (prefsHydrated && packsOnboarded && !onboardingTourDone) {
-      setTourOpen(true);
+      openOnboarding();
     }
   }, [prefsHydrated, packsOnboarded, onboardingTourDone]);
 
@@ -1404,7 +1411,7 @@ export default function App() {
     { id: "webdev.http",         label: "Show HTTP client",         category: "View",    action: () => persistSidebarView("http-client"), pack: "web-dev", keywords: ["rest", "request", "curl", "api"] },
     { id: "webdev.tools",        label: "Show web tools (JSON, JWT, regex, codecs)", category: "View", action: () => persistSidebarView("web-tools"), pack: "web-dev", keywords: ["json", "jwt", "base64", "regex", "url encode", "format"] },
     { id: "art.svgPlayground",   label: "Open the SVG playground",  category: "View",    action: () => { openSvgPlaygroundTab(); }, pack: "art", keywords: ["svg", "icon", "vector", "art"] },
-    { id: "sidebar.gettingStarted", label: "Show Getting Started checklist", category: "View", action: () => persistSidebarView("getting-started"), keywords: ["onboarding", "tour", "help", "first run"] },
+    { id: "help.gettingStarted", label: "Open Getting Started",       category: "General", action: () => openOnboarding(), keywords: ["onboarding", "tour", "help", "first run", "checklist"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
     { id: "sidebar.sc",          label: "Show source control",      category: "View",    action: () => persistSidebarView("source-control") },
@@ -1982,11 +1989,6 @@ export default function App() {
                       <WebToolsPanel />
                     ) : sidebarView === "svg-playground" ? (
                       <SvgPlaygroundPanel onExpand={openSvgPlaygroundTab} />
-                    ) : sidebarView === "getting-started" ? (
-                      <GettingStartedPanel
-                        onRunAction={runOnboardingAction}
-                        onStartTour={() => setTourOpen(true)}
-                      />
                     ) : sidebarView === "recent-files" ? (
                       <RecentFilesPanel onOpenFile={handleOpenFile} />
                     ) : sidebarView === "explorer" ? (
@@ -2224,6 +2226,15 @@ export default function App() {
             open={tourOpen}
             onClose={() => setTourOpen(false)}
             onRunAction={runOnboardingAction}
+          />
+
+          {/* The persistent half of onboarding: a full-window takeover, not a
+              sidebar column. Always mounted — it is cheap, and its open state
+              lives in a store so the welcome screen and the palette can reach
+              it without a prop chain. */}
+          <OnboardingDialog
+            onRunAction={runOnboardingAction}
+            onStartTour={() => setTourOpen(true)}
           />
 
           {workspaceSearchOpen && (

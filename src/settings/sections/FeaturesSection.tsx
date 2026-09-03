@@ -5,8 +5,8 @@
 // ╚══════════════════════════════════════╝
 
 import { Icon } from "@/components/icon";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import {
   PACK_IDS,
   PACK_PRESETS,
@@ -48,25 +48,61 @@ export function FeaturesSection() {
         description="Choose which expansion packs are enabled. The terminal, editor, Files, Recent Files, Source Control, and AI chat are always available. Disabling a pack hides its panels — nothing is uninstalled, and your pinned sidebar items come back when you re-enable it."
       />
 
-      <SettingRow
-        title="Presets"
-        description="One-click bundles over the same toggles below."
-      >
-        <div className="flex flex-wrap items-center justify-end gap-1.5">
-          {PRESET_IDS.map((id) => (
-            <Button
-              key={id}
-              size="sm"
-              variant={matchesPreset(id) ? "secondary" : "outline"}
-              className="h-6 gap-1 px-2 text-[11px]"
-              onClick={() => void setEnabledPacks([...PACK_PRESETS[id]])}
-            >
-              <Icon name={PRESETS[id].icon} size="xs" />
-              {PRESETS[id].label}
-            </Button>
-          ))}
+      {/* Presets get the full width rather than the right-hand control column
+          of a SettingRow. Six of them wrapped into that column read as a
+          cramped cluster of chips, and it left `blurb` — the one line that
+          says what each preset is actually for — with nowhere to go. */}
+      <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-card/60 px-3 py-2.5">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[12.5px] font-medium">Presets</span>
+          <span className="text-[10.5px] leading-relaxed text-muted-foreground">
+            One-click bundles over the same toggles below.
+          </span>
         </div>
-      </SettingRow>
+
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+          {PRESET_IDS.map((id) => {
+            const active = matchesPreset(id);
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => void setEnabledPacks([...PACK_PRESETS[id]])}
+                className={cn(
+                  "flex flex-col items-start gap-1 rounded-md border px-2.5 py-2 text-left transition-colors",
+                  "focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+                  active
+                    ? "border-primary/50 bg-primary/10"
+                    : "border-border/60 bg-background/40 hover:border-border hover:bg-muted/50",
+                )}
+              >
+                <span className="flex w-full items-center gap-1.5">
+                  <Icon
+                    name={PRESETS[id].icon}
+                    size="sm"
+                    active={active}
+                    className={active ? "text-primary" : "text-muted-foreground"}
+                  />
+                  <span className="min-w-0 truncate text-[11.5px] font-medium">
+                    {PRESETS[id].label}
+                  </span>
+                  {active && (
+                    <Icon
+                      name="check"
+                      size="xs"
+                      className="ml-auto shrink-0 text-primary"
+                    />
+                  )}
+                </span>
+                <span className="text-[10px] leading-snug text-muted-foreground/80">
+                  {PRESETS[id].blurb}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {PACK_IDS.map((id) => {
         const pack = PACKS[id];

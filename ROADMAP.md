@@ -120,6 +120,12 @@ and stop. Don't batch them.
   3. **Animator** — a keyframe timeline over SMIL / CSS / Web Animations. Last on purpose: a timeline UI is
      a genuinely large surface and should not start until the first two have earned it.
 
+  Also shipped, ahead of the animator and out of the original order: a **direct-manipulation canvas**
+  (select, drag, per-point handles including bezier controls, bounding-box scale) and a **preset gallery**
+  of 27 documents, plus eight more generators taking the set from six to fourteen. Both came out of the
+  2026-09-03 usage session below. The canvas is the piece with real invariants — see
+  `docs/vault/subsystems/art-pack.md` before touching its coordinate handling.
+
   This lives in Art rather than Web Dev because SVG authoring is a design activity a mobile or ML project
   wants just as much, and separating it leaves Web Dev free to be about running and inspecting web apps.
 
@@ -158,6 +164,29 @@ and stop. Don't batch them.
   retention runs two independent caps, evicting output blobs before metadata.
   Remaining work is the implementation itself, in this order: the writer plus its two tripwires (private
   exclusion, redaction) before any panel exists, then the eight gated features read from it.
+
+### From the 2026-09-03 usage session (owner feedback)
+
+Captured while driving a real build. **Shipped since:** the onboarding takeover and its welcome-screen
+entry point, the Code Review non-repo bug, the SVG playground's direct-manipulation canvas, its preset
+gallery and eight more generators, the Settings presets layout, and the Art preset's scope. See the
+CHANGELOG. What is left:
+
+- [ ] **Art pack needs to be more than the SVG playground** — the pack still owns exactly one view
+  (`art: { views: ["svg-playground"] }` in `src/lib/packs.ts`), and the playground has now grown four panes
+  inside it rather than growing the pack. A preset that exists to be a design surface needs more than one
+  panel behind it. The animator is already queued as step 3 of the Art pack item above; this is the broader
+  question of what *else* belongs — decide the panel set before building any of it.
+
+- [ ] **Lead: invisible prompt plus "os error 3" in the file tree on startup** — seen once at launch, in a
+  home-directory workspace, and it cleared itself after a few minutes of use. The file tree showed
+  `The system cannot find the path specified. (os error 3)` where the listing should be. That error string and
+  that recovery pattern are the signature of pitfall #23 (verbatim-path prefix leaking into persisted state)
+  and pitfall #1 (blank terminal / invisible prompt) — but it self-healed, so no poisoned value was captured.
+  **Next time it happens, before restarting**: read `localStorage` for the recent-workspace and tab-cwd
+  entries and check for a `//?/` prefix, and check the devtools console for `[nexis] openPty failed:`. Not
+  actionable without that evidence; recorded so the next occurrence is not wasted.
+
 ---
 
 ## Up next

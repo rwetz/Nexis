@@ -57,6 +57,7 @@ import {
   ArrowsOutIcon,
   BellIcon,
   BookmarkSimpleIcon,
+  BezierCurveIcon,
   BookmarksIcon,
   BracketsCurlyIcon,
   BracketsSquareIcon,
@@ -81,6 +82,7 @@ import {
   CompassIcon,
   CopyIcon,
   CpuIcon,
+  CursorIcon,
   DatabaseIcon,
   DesktopIcon,
   DetectiveIcon,
@@ -255,6 +257,8 @@ const REGISTRY = {
   "container": ShippingContainerIcon,
   "copy": CopyIcon,
   "cpu": CpuIcon,
+  /** Pointer/select mode, as in the SVG canvas. */
+  "cursor": CursorIcon,
   "database": DatabaseIcon,
   "debug": BugIcon,
   "debug-step-into": ArrowLineDownRightIcon,
@@ -303,6 +307,8 @@ const REGISTRY = {
   "more-circle": DotsThreeCircleIcon,
   "network": NetworkIcon,
   "network-connected": WifiHighIcon,
+  /** Vector points and their handles - the SVG canvas point overlay. */
+  "nodes": BezierCurveIcon,
   "note": NoteIcon,
   "notification": BellIcon,
   "outline": ListBulletsIcon,

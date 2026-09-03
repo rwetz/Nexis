@@ -67,10 +67,6 @@ export const CORE_VIEWS: readonly SidebarViewId[] = [
   "recent-files",
   "source-control",
   "agent-queue",
-  // Onboarding is core by necessity: a Bare-Bones user has the fewest packs
-  // and the most need of it, so gating the checklist behind a pack would
-  // withhold it from exactly the person it is for.
-  "getting-started",
 ];
 
 export const PACKS: Record<PackId, PackDef> = {
@@ -189,6 +185,8 @@ export type PresetDef = {
  * build runner and the debugger. The domain pack is added on top, so the
  * preset stays a strict statement about *what you are building* while the
  * tool-kind packs keep answering *what you work with*.
+ *
+ * Art is the exception, and it is intentional — see the note on it below.
  */
 export const PRESETS: Record<PresetId, PresetDef> = {
   "bare-bones": {
@@ -220,12 +218,16 @@ export const PRESETS: Record<PresetId, PresetDef> = {
     icon: "preset-mobile",
     packs: ["navigation-plus", "code-tools", "dev-tools", "mobile"],
   },
+  // The one preset that does not build on Standard, and deliberately does not
+  // build on anything else either. Someone drawing wants files, source control
+  // and the art tools; a symbol outline and a bookmark list are for reading
+  // code, and every panel that is not the work is a panel in the way.
   art: {
     id: "art",
     label: "Art",
-    blurb: "A quiet surface for SVG and icon work, without the build tooling.",
+    blurb: "Files, source control, and the SVG tools. Nothing that reads code.",
     icon: "preset-art",
-    packs: ["navigation-plus", "art"],
+    packs: ["art"],
   },
   everything: {
     id: "everything",

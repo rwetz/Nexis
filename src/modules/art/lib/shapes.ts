@@ -134,7 +134,51 @@ function wavePath(
   return d;
 }
 
-// ── The registry ────────────────────────────────────────────────────────────
+// ── Radial helpers ──────────────────────────────────────────────────────────
+
+/**
+ * A point on a circle, with angles measured from twelve o'clock.
+ *
+ * SVG's own zero is three o'clock, which is fine for maths and wrong for a
+ * control: nobody dialling "Rotation" on a star expects zero to mean "one
+ * point aimed right". The quarter-turn is applied once, here, so every radial
+ * generator below is consistent instead of each rediscovering it.
+ */
+function polar(
+  cx: number,
+  cy: number,
+  radius: number,
+  degrees: number,
+): [number, number] {
+  const rad = ((degrees - 90) * Math.PI) / 180;
+  return [cx + Math.cos(rad) * radius, cy + Math.sin(rad) * radius];
+}
+
+/**
+ * A point stepped back from `from` toward `to` by `distance`, clamped to the
+ * midpoint. The clamp is what stops a large corner radius on a triangle from
+ * overshooting its edge and turning the shape inside out.
+ */
+function trim(
+  from: readonly [number, number],
+  to: readonly [number, number],
+  distance: number,
+): [number, number] {
+  const dx = to[0] - from[0];
+  const dy = to[1] - from[1];
+  const len = Math.hypot(dx, dy);
+  if (len === 0) return [from[0], from[1]];
+  const t = Math.min(distance, len / 2) / len;
+  return [from[0] + dx * t, from[1] + dy * t];
+}
+
+/** A closed polygon through a list of points. */
+function closedPath(pts: readonly [number, number][]): string {
+  if (pts.length === 0) return "";
+  return `M ${pts.map(([x, y]) => `${n(x)} ${n(y)}`).join(" L ")} Z`;
+}
+
+// ── The registry ──────────────────────────────────────────────────────────
 
 const SIZE = 240;
 
@@ -267,6 +311,221 @@ export const SHAPES: readonly ShapeDef[] = [
   </filter>
   <rect width="${n(SIZE)}" height="${n(SIZE)}" fill="currentColor" filter="url(#grain)" opacity="${n(v.opacity)}" />`,
       ),
+  },
+  {
+    id: "star",
+    label: "Star",
+    params: [
+      { key: "points", label: "Points", min: 3, max: 20, step: 1, default: 5 },
+      { key: "outer", label: "Outer radius", min: 20, max: 115, step: 1, default: 100 },
+      { key: "inner", label: "Inner radius", min: 4, max: 115, step: 1, default: 42, hint: "Near the outer radius is a cog; far is a spike" },
+      { key: "rotation", label: "Rotation", min: 0, max: 360, step: 1, default: 0 },
+    ],
+    render: (v) => {
+      const c = SIZE / 2;
+      const count = Math.max(3, Math.round(v.points));
+      const pts: [number, number][] = [];
+      for (let i = 0; i < count * 2; i++) {
+        const r = i % 2 === 0 ? v.outer : v.inner;
+        pts.push(polar(c, c, r, v.rotation + (i * 180) / count));
+      }
+      return svgDoc(SIZE, `  <path d="${closedPath(pts)}" fill="currentColor" />`);
+    },
+  },
+  {
+    id: "polygon",
+    label: "Polygon",
+    params: [
+      { key: "sides", label: "Sides", min: 3, max: 24, step: 1, default: 6 },
+      { key: "radius", label: "Radius", min: 20, max: 115, step: 1, default: 100 },
+      { key: "rotation", label: "Rotation", min: 0, max: 360, step: 1, default: 0 },
+      { key: "round", label: "Corner radius", min: 0, max: 40, step: 1, default: 0, hint: "0 is a hard corner" },
+    ],
+    render: (v) => {
+      const c = SIZE / 2;
+      const sides = Math.max(3, Math.round(v.sides));
+      const pts: [number, number][] = [];
+      for (let i = 0; i < sides; i++) {
+        pts.push(polar(c, c, v.radius, v.rotation + (i * 360) / sides));
+      }
+      if (v.round <= 0) {
+        return svgDoc(SIZE, `  <path d="${closedPath(pts)}" fill="currentColor" />`);
+      }
+      // Rounded corners are cut back along both incident edges and rejoined by
+      // a quadratic through the original vertex. `trim` clamps the cut to half
+      // the edge, without which a large radius on a triangle turns the shape
+      // inside out.
+      let d = "";
+      for (let i = 0; i < sides; i++) {
+        const prev = pts[(i - 1 + sides) % sides];
+        const cur = pts[i];
+        const next = pts[(i + 1) % sides];
+        const back = trim(cur, prev, v.round);
+        const fwd = trim(cur, next, v.round);
+        d += i === 0 ? `M ${n(back[0])} ${n(back[1])}` : ` L ${n(back[0])} ${n(back[1])}`;
+        d += ` Q ${n(cur[0])} ${n(cur[1])}, ${n(fwd[0])} ${n(fwd[1])}`;
+      }
+      return svgDoc(SIZE, `  <path d="${d} Z" fill="currentColor" />`);
+    },
+  },
+  {
+    id: "gear",
+    label: "Gear",
+    params: [
+      { key: "teeth", label: "Teeth", min: 4, max: 32, step: 1, default: 10 },
+      { key: "radius", label: "Radius", min: 30, max: 115, step: 1, default: 100 },
+      { key: "depth", label: "Tooth depth", min: 2, max: 50, step: 1, default: 18 },
+      { key: "bore", label: "Bore", min: 0, max: 80, step: 1, default: 34, hint: "0 removes the hole" },
+    ],
+    render: (v) => {
+      const c = SIZE / 2;
+      const teeth = Math.max(4, Math.round(v.teeth));
+      const outer = v.radius;
+      const inner = Math.max(4, v.radius - v.depth);
+      const pts: [number, number][] = [];
+      // Four points per tooth — rise, crest, fall, valley — so the profile is
+      // square-shouldered rather than a wobbly star.
+      for (let i = 0; i < teeth * 4; i++) {
+        const r = i % 4 === 1 || i % 4 === 2 ? outer : inner;
+        pts.push(polar(c, c, r, (i * 360) / (teeth * 4)));
+      }
+      // The bore is punched with `fill-rule="evenodd"` rather than painted over
+      // in a background colour: the gear stays one path, and it works on any
+      // background rather than only on the one it was drawn against.
+      const body =
+        v.bore > 0
+          ? `  <path fill-rule="evenodd" d="${closedPath(pts)} M ${n(c + v.bore)} ${n(c)} A ${n(v.bore)} ${n(v.bore)} 0 1 0 ${n(c - v.bore)} ${n(c)} A ${n(v.bore)} ${n(v.bore)} 0 1 0 ${n(c + v.bore)} ${n(c)} Z" fill="currentColor" />`
+          : `  <path d="${closedPath(pts)}" fill="currentColor" />`;
+      return svgDoc(SIZE, body);
+    },
+  },
+  {
+    id: "spiral",
+    label: "Spiral",
+    params: [
+      { key: "turns", label: "Turns", min: 0.5, max: 8, step: 0.1, default: 3 },
+      { key: "radius", label: "Radius", min: 20, max: 115, step: 1, default: 100 },
+      { key: "start", label: "Inner radius", min: 0, max: 60, step: 1, default: 6 },
+      { key: "thickness", label: "Thickness", min: 0.5, max: 16, step: 0.5, default: 3 },
+    ],
+    render: (v) => {
+      const c = SIZE / 2;
+      const steps = Math.max(24, Math.round(v.turns * 48));
+      let d = "";
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const [x, y] = polar(c, c, v.start + (v.radius - v.start) * t, t * v.turns * 360);
+        d += `${i === 0 ? "M" : " L"} ${n(x)} ${n(y)}`;
+      }
+      return svgDoc(
+        SIZE,
+        `  <path d="${d}" fill="none" stroke="currentColor" stroke-width="${n(v.thickness)}" stroke-linecap="round" />`,
+      );
+    },
+  },
+  {
+    id: "rings",
+    label: "Rings",
+    params: [
+      { key: "count", label: "Rings", min: 1, max: 12, step: 1, default: 4 },
+      { key: "radius", label: "Outer radius", min: 20, max: 115, step: 1, default: 105 },
+      { key: "gap", label: "Gap", min: 4, max: 60, step: 1, default: 22 },
+      { key: "thickness", label: "Thickness", min: 0.5, max: 20, step: 0.5, default: 4 },
+    ],
+    render: (v) => {
+      const c = SIZE / 2;
+      const count = Math.max(1, Math.round(v.count));
+      const body: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const r = v.radius - i * v.gap;
+        if (r <= 0) break;
+        body.push(
+          `  <circle cx="${n(c)}" cy="${n(c)}" r="${n(r)}" fill="none" stroke="currentColor" stroke-width="${n(v.thickness)}" />`,
+        );
+      }
+      return svgDoc(SIZE, body.join("\n"));
+    },
+  },
+  {
+    id: "dots",
+    label: "Dot grid",
+    params: [
+      { key: "columns", label: "Columns", min: 2, max: 24, step: 1, default: 8 },
+      { key: "rows", label: "Rows", min: 2, max: 24, step: 1, default: 8 },
+      { key: "size", label: "Dot size", min: 0.5, max: 16, step: 0.5, default: 4 },
+      { key: "falloff", label: "Falloff", min: 0, max: 1, step: 0.01, default: 0, hint: "Shrinks dots toward the edges" },
+    ],
+    render: (v) => {
+      const cols = Math.max(2, Math.round(v.columns));
+      const rows = Math.max(2, Math.round(v.rows));
+      const c = SIZE / 2;
+      const maxDist = Math.hypot(c, c);
+      const body: string[] = [];
+      for (let r = 0; r < rows; r++) {
+        for (let col = 0; col < cols; col++) {
+          const x = ((col + 0.5) / cols) * SIZE;
+          const y = ((r + 0.5) / rows) * SIZE;
+          const dist = Math.hypot(x - c, y - c) / maxDist;
+          const radius = v.size * (1 - v.falloff * dist);
+          if (radius <= 0.05) continue;
+          body.push(
+            `  <circle cx="${n(x)}" cy="${n(y)}" r="${n(radius)}" fill="currentColor" />`,
+          );
+        }
+      }
+      return svgDoc(SIZE, body.join("\n"));
+    },
+  },
+  {
+    id: "burst",
+    label: "Burst",
+    params: [
+      { key: "rays", label: "Rays", min: 3, max: 48, step: 1, default: 12 },
+      { key: "outer", label: "Outer radius", min: 20, max: 115, step: 1, default: 105 },
+      { key: "inner", label: "Inner radius", min: 0, max: 100, step: 1, default: 40 },
+      { key: "thickness", label: "Thickness", min: 0.5, max: 20, step: 0.5, default: 5 },
+    ],
+    render: (v) => {
+      const c = SIZE / 2;
+      const rays = Math.max(3, Math.round(v.rays));
+      const body: string[] = [];
+      for (let i = 0; i < rays; i++) {
+        const angle = (i * 360) / rays;
+        const [x1, y1] = polar(c, c, v.inner, angle);
+        const [x2, y2] = polar(c, c, v.outer, angle);
+        body.push(
+          `  <line x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}" stroke="currentColor" stroke-width="${n(v.thickness)}" stroke-linecap="round" />`,
+        );
+      }
+      return svgDoc(SIZE, body.join("\n"));
+    },
+  },
+  {
+    id: "chevron",
+    label: "Chevrons",
+    params: [
+      { key: "count", label: "Count", min: 1, max: 12, step: 1, default: 3 },
+      { key: "spread", label: "Spread", min: 10, max: 90, step: 1, default: 40 },
+      { key: "angle", label: "Angle", min: 10, max: 80, step: 1, default: 45, hint: "Steepness of each arrow" },
+      { key: "thickness", label: "Thickness", min: 0.5, max: 20, step: 0.5, default: 6 },
+    ],
+    render: (v) => {
+      const c = SIZE / 2;
+      const count = Math.max(1, Math.round(v.count));
+      const reach = 70;
+      const rise = reach * Math.tan((v.angle * Math.PI) / 180);
+      const body: string[] = [];
+      // Centred as a set rather than each on the middle line, so raising the
+      // count grows the stack symmetrically instead of pushing it downward.
+      const top = c - ((count - 1) * v.spread) / 2;
+      for (let i = 0; i < count; i++) {
+        const y = top + i * v.spread;
+        body.push(
+          `  <path d="M ${n(c - reach)} ${n(y - rise / 2)} L ${n(c)} ${n(y + rise / 2)} L ${n(c + reach)} ${n(y - rise / 2)}" fill="none" stroke="currentColor" stroke-width="${n(v.thickness)}" stroke-linecap="round" stroke-linejoin="round" />`,
+        );
+      }
+      return svgDoc(SIZE, body.join("\n"));
+    },
   },
 ];
 

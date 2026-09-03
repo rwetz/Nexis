@@ -32,7 +32,6 @@ export const SIDEBAR_VIEW_IDS = [
   "shell-snippets",
   "debugger",
   "ml",
-  "getting-started",
   "svg-playground",
   "web-tools",
   "http-client",

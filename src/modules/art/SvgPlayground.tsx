@@ -20,8 +20,10 @@
  * not wrap this in anything that re-introduces a CSS `zoom`.
  */
 
-import { Icon } from "@/components/icon";
+import { Icon, type IconName } from "@/components/icon";
+import { PresetGallery } from "./PresetGallery";
 import { ShapeGenerator } from "./ShapeGenerator";
+import { SvgCanvas } from "./SvgCanvas";
 import { cn } from "@/lib/utils";
 import {
   getCachedEditorTheme,
@@ -72,6 +74,21 @@ type Props = {
   layout: "row" | "col";
 };
 
+/**
+ * The four ways in. They are tabs over one document rather than four modes:
+ * every pane reads and writes the same `source`, so a shape can be generated,
+ * dragged on the canvas and then hand-tuned in the code without any of them
+ * owning a copy.
+ */
+type LeftPane = "source" | "canvas" | "shapes" | "presets";
+
+const LEFT_PANES: readonly [LeftPane, IconName, string][] = [
+  ["source", "code", "Source"],
+  ["canvas", "cursor", "Canvas"],
+  ["shapes", "brush", "Shapes"],
+  ["presets", "grid", "Presets"],
+];
+
 export function SvgPlayground({ layout }: Props) {
   // Lazy initialiser: `useState(f())` would re-read localStorage on every
   // render and keep only the first result.
@@ -79,7 +96,7 @@ export function SvgPlayground({ layout }: Props) {
   const [format, setFormat] = useState<ExportFormat>("svg");
   const [copied, setCopied] = useState(false);
   const [showGrid, setShowGrid] = useState(true);
-  const [leftPane, setLeftPane] = useState<"source" | "shapes">("source");
+  const [leftPane, setLeftPane] = useState<LeftPane>("source");
   const [optimized, setOptimized] = useState<OptimizeResult | null>(null);
 
   const editorThemeId = usePreferencesStore((s) => s.editorTheme);
@@ -128,6 +145,16 @@ export function SvgPlayground({ layout }: Props) {
     });
   };
 
+  /**
+   * Swap the document wholesale. The optimize summary is cleared with it —
+   * "38% smaller" left over from the previous document is a number about art
+   * that is no longer on screen.
+   */
+  const replaceSource = (next: string) => {
+    setSource(next);
+    setOptimized(null);
+  };
+
   const runOptimize = () => {
     const result = optimizeSvg(source);
     setOptimized(result);
@@ -151,12 +178,7 @@ export function SvgPlayground({ layout }: Props) {
         )}
       >
         <div className="flex shrink-0 items-center gap-1.5 border-b border-border/50 px-3 py-1.5">
-          {(
-            [
-              ["source", "code", "Source"],
-              ["shapes", "brush", "Shapes"],
-            ] as const
-          ).map(([id, icon, label]) => (
+          {LEFT_PANES.map(([id, icon, label]) => (
             <button
               key={id}
               type="button"
@@ -182,12 +204,20 @@ export function SvgPlayground({ layout }: Props) {
           )}
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">
-          {leftPane === "shapes" ? (
+          {leftPane === "canvas" ? (
+            <SvgCanvas source={source} onChange={replaceSource} />
+          ) : leftPane === "shapes" ? (
             <ShapeGenerator
               onInsert={(generated) => {
-                setSource(generated);
-                setOptimized(null);
+                replaceSource(generated);
                 setLeftPane("source");
+              }}
+            />
+          ) : leftPane === "presets" ? (
+            <PresetGallery
+              onInsert={(generated) => {
+                replaceSource(generated);
+                setLeftPane("canvas");
               }}
             />
           ) : (

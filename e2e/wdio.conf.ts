@@ -95,9 +95,17 @@ function seedFirstRunPreferences(): void {
   // onboarding done without stating the pack config would leave the surface
   // under test dependent on DEFAULT_PREFERENCES, so a future change to that
   // default would silently change which panels the suite exercises.
+  //
+  // `onboardingTourDone` is seeded for a harder reason: the first-run screen
+  // is a modal takeover (`OnboardingDialog`), and a Radix overlay at
+  // `fixed inset-0` answers every click meant for app chrome — exactly the
+  // failure `support/dialogs.ts` documents for the preset picker. The tour it
+  // replaced was deliberately non-modal and did not need this; the takeover
+  // does. Do not drop it.
   const seeded = {
     ...existing,
     packsOnboarded: true,
+    onboardingTourDone: true,
     enabledPacks: [
       "navigation-plus",
       "code-tools",
