@@ -168,7 +168,11 @@ export default defineConfig(async ({ mode }) => ({
         }
       : undefined,
     watch: {
-      ignored: ["**/src-tauri/**"],
+      // `coverage/` is written by `pnpm test:coverage`, which is run *while*
+      // the dev app is open — every file in the HTML report triggers a full
+      // page reload, so a single coverage run reloads the running app a few
+      // hundred times and loses whatever was on screen.
+      ignored: ["**/src-tauri/**", "**/coverage/**"],
     },
   },
 }));
