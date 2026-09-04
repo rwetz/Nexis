@@ -59,6 +59,7 @@ import { CheckpointSection } from "./CheckpointSection";
 import { StashSection } from "./StashSection";
 import { SubmoduleSection } from "./SubmoduleSection";
 import { ConflictSection } from "./ConflictSection";
+import { SecretScanSection } from "./SecretScanSection";
 import { WorktreeSection } from "./WorktreeSection";
 import { basename, displayDirname as dirname } from "@/lib/path";
 
@@ -140,6 +141,13 @@ export const SourceControlPanel = memo(function SourceControlPanel({
   onOpenWorktree,
 }: Props) {
   const scm = useSourceControlPanel(open, sourceControl, onOpenDiff);
+
+  // Identity of the staged set, for the secret scan. Staging is what changes
+  // which lines the next commit will contain, so it is what should re-run it.
+  const stagedScanKey = scm.fileEntries
+    .filter((e) => e.staged)
+    .map((e) => e.path)
+    .join("|");
   const refreshAnimationRef = useRef<number | null>(null);
   const [refreshAnimating, setRefreshAnimating] = useState(false);
   const [prDialogOpen, setPrDialogOpen] = useState(false);
@@ -802,6 +810,21 @@ export const SourceControlPanel = memo(function SourceControlPanel({
             )}
           </>
         ) : null}
+
+        {scm.repo && (
+          <SecretScanSection
+            repoRoot={scm.repo.repoRoot}
+            stagedKey={stagedScanKey}
+            onOpenFile={(path) =>
+              onOpenDiff({
+                path,
+                repoRoot: scm.repo?.repoRoot ?? "",
+                mode: "+",
+                originalPath: null,
+              })
+            }
+          />
+        )}
 
         {scm.repo && scm.status && (
           <ConflictSection

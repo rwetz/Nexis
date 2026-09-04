@@ -48,6 +48,7 @@ export default defineConfig({
         "src/modules/ai/tools/shell.ts",
         "src/modules/command-history/lib/analysis.ts",
         "src/modules/sidebar/pluginPanels.ts",
+        "src/modules/source-control/lib/secretScan.ts",
         "src/modules/sysmon/braille.ts",
         "src/modules/tabs/lib/mru.ts",
         "src/modules/tabs/lib/tabPersistence.ts",

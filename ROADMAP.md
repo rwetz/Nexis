@@ -398,10 +398,11 @@ call. (These use words rather than the coloured markers the two surveys above us
   fires inside a full-screen program that owns the tty; it must be trivially skippable, because a
   preflight you cannot bypass becomes a preflight you disable; and the pattern list has to be
   user-editable or it will be wrong for somebody's stack on the first day.
-- **cheap** — **Secret scan before commit.** Point the redaction machinery that already guards recordings
-  and the diagnostics bundle at the staged diff, surfaced in the Source Control panel. Cheap because the
-  detectors exist; the work is the panel affordance and a per-repo allowlist, without which one false
-  positive becomes a reason to switch the whole thing off.
+- ~~**Secret scan before commit**~~ — **shipped.** As predicted, the detectors were the easy half and the
+  per-repo allowlist was the load-bearing part. Two calls worth keeping: it scans only the lines the
+  commit *adds* (a secret already on the branch is not this commit's doing, and flagging it every time
+  trains you to ignore the panel), and it never blocks the commit, because a check you cannot bypass
+  becomes a check you disable.
 
 ---
 
