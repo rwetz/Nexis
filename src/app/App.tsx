@@ -118,6 +118,7 @@ import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
 import { OnboardingDialog } from "@/modules/onboarding/OnboardingDialog";
 import { openOnboarding } from "@/modules/onboarding/onboardingDialogStore";
 import { BackdropPanel } from "@/modules/art/BackdropPanel";
+import { IconSetPanel } from "@/modules/art/IconSetPanel";
 import { PalettePanel } from "@/modules/art/PalettePanel";
 import { SvgPlaygroundPanel } from "@/modules/art/SvgPlaygroundPanel";
 import { WebToolsPanel } from "@/modules/webdev/WebToolsPanel";
@@ -1415,6 +1416,7 @@ export default function App() {
     { id: "art.svgPlayground",   label: "Open the SVG playground",  category: "View",    action: () => { openSvgPlaygroundTab(); }, pack: "art", keywords: ["svg", "icon", "vector", "art"] },
     { id: "art.palette",         label: "Open the palette",         category: "View",    action: () => persistSidebarView("palette"), pack: "art", keywords: ["colour", "color", "contrast", "wcag", "swatch", "theme"] },
     { id: "art.backdrop",        label: "Open the backdrop generator", category: "View",  action: () => persistSidebarView("backdrop"), pack: "art", keywords: ["wallpaper", "background", "gradient", "waves", "generative"] },
+    { id: "art.iconSet",         label: "Open the icon set review", category: "View",    action: () => persistSidebarView("icon-set"), pack: "art", keywords: ["icons", "audit", "consistency", "stroke", "svg"] },
     { id: "help.gettingStarted", label: "Open Getting Started",       category: "General", action: () => openOnboarding(), keywords: ["onboarding", "tour", "help", "first run", "checklist"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
@@ -1992,6 +1994,8 @@ export default function App() {
                       <HttpClientPanel workspaceKey={workspaceProjectKey(explorerRoot)} />
                     ) : sidebarView === "web-tools" ? (
                       <WebToolsPanel />
+                    ) : sidebarView === "icon-set" ? (
+                      <IconSetPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "backdrop" ? (
                       <BackdropPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "palette" ? (

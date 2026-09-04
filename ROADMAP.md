@@ -213,7 +213,7 @@ CHANGELOG. What is left:
       that holds it while one parameter is tuned is half of why Haikei is enjoyable, and the existing
       seeded-RNG decision already makes both correct by construction.
 
-  - [ ] **3: icon-set review — the project's own itch.** Point it at a folder of SVGs, grid them at
+  - [x] **3: icon-set review — shipped.** Point it at a folder of SVGs, grid them at
     16/24/32, and flag inconsistent stroke widths, viewBoxes and canvas sizes. Pitfall #18 is the story of
     160 imports expressing 136 ideas across 13 pixel sizes and 12 stroke weights; a panel that catches
     that drift is the pack dogfooding the codebase it ships in.
