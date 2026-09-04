@@ -270,6 +270,15 @@ export const native = {
     invoke<number>("ledger_forget_since", { workspaceId, sinceMs }),
   ledgerForgetWorkspace: (workspaceId: string) =>
     invoke<void>("ledger_forget_workspace", { workspaceId }),
+  ledgerStats: (workspaceId: string) =>
+    invoke<{
+      records: number;
+      logBytes: number;
+      blobCount: number;
+      blobBytes: number;
+      oldestMs: number | null;
+      newestMs: number | null;
+    }>("ledger_stats", { workspaceId }),
   ledgerPrune: (params: {
     workspaceId: string;
     maxRecords: number;

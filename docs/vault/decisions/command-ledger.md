@@ -6,7 +6,21 @@ description: A per-workspace command ledger stored as an append-only NDJSON meta
 # The command ledger is an NDJSON log plus content-addressed output blobs
 
 **Date:** 2026-09
-**Status:** active — design only. **No code exists yet.** This note is the gate the ROADMAP item names; implementation follows it.
+**Status:** active — partially implemented.
+
+Shipped so far, and where it lives:
+
+| Piece | Where | Notes |
+| --- | --- | --- |
+| The store (append, blobs, read, forget x3, prune, stats) | `src-tauri/src/modules/ledger.rs` | `ledger_stats` is not in the design above; it was added with the privacy surface because every forget gesture is blind without it. |
+| The writer, identity, redaction | `src/modules/terminal/lib/ledger.ts` | Also the workspace-scoped read/forget/prune helpers the UI calls, so no caller outside it derives a ledger id. |
+| The OSC-133 gate (§4) | `src/modules/terminal/lib/osc-handlers.ts` | |
+| Retention caps (§7) as preferences | `src/modules/terminal/lib/ledgerRetention.ts`, `src/modules/settings/store.ts` | A leaf module with no imports, so the settings store does not pull in the IPC surface. |
+| Forget + retention UI (§5, §7) | `src/settings/sections/PrivacySection.tsx` | Global toggle, three caps, the three time windows, and the per-workspace wipe. |
+| Prune on workspace open (§7) | `src/app/App.tsx` | Keyed on the caps as well as the root, so a changed cap applies without a folder switch. |
+| Tripwires | `src/lib/pitfall-guards.test.ts` | Redaction before IPC; private terminals excluded at the source. |
+
+**Not built yet:** the eight gated features, the per-entry forget from the block gutter (§5 — it belongs with the panel that shows entries), and the git-root-commit re-association offer (§6 — identity is the path hash alone today, so a moved non-git *or* git workspace starts fresh).
 
 ## Context
 
@@ -98,6 +112,10 @@ Blobs dominate the footprint and are the least valuable per byte, so they are ca
 **Makes hard:** cross-workspace queries (each workspace is its own directory — deliberate, since it also makes "forget this workspace" a directory removal). Full-text search over output is a scan, so a very large archive will be slower than an indexed store.
 
 **A future change must respect:** private terminals never recorded; redaction before IPC with a tripwire; forget means compaction, not tombstones; the store stays in host app-data; identity is a normalized path plus an offered git re-association, never a bare path string.
+
+**Two things §7 left open that the implementation had to decide.** The caps are preset steps rather than free numbers, because these answer "how much of my own history am I comfortable keeping" and a typed value is wrong in a way nothing surfaces; and the age steps deliberately exclude zero and "forever", because the prune reads the cap as `now - days` and a stored zero would delete the whole log on the next workspace open. The coercion that enforces that is tested, not assumed.
+
+**The windowed forget does not confirm, and that is deliberate.** §5 calls it the escape hatch for a redaction miss: a key just went to disk and the user wants it gone now. A confirmation step buys nothing there — nobody regrets deleting their own last fifteen minutes — and costs the seconds that make it feel like a remedy. The per-workspace wipe does confirm, because that one is months.
 
 **Known follow-up, unrelated to the ledger itself:** the HTTP client (`src/modules/webdev/HttpClientPanel.tsx`) scopes its saved requests with `currentWorkspaceScopeKey()` and therefore shares them across all local projects. It should use the §6 workspace id. Tracked as a fix, not a design change.
 

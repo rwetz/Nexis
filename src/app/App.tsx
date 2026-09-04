@@ -70,6 +70,7 @@ import {
 import { PreviewStack, type PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
 import {
+  pruneLedger,
   setLedgerPrivacyResolver,
   setLedgerWorkspaceSource,
 } from "@/modules/terminal/lib/ledger";
@@ -1716,6 +1717,34 @@ export default function App() {
   ]);
 
   const activeCwd = activeTerminalLeafCwd;
+
+  // Ledger retention, applied on workspace open — decision record §7 puts it
+  // here rather than on a timer or on every write, so a long session never
+  // pays for it and a workspace nobody opens costs nothing. Depending on the
+  // caps as well as the root means changing one in Settings takes effect
+  // without waiting for the next folder switch.
+  const commandLedgerEnabled = usePreferencesStore(
+    (s) => s.commandLedgerEnabled,
+  );
+  const ledgerMaxRecords = usePreferencesStore((s) => s.commandLedgerMaxRecords);
+  const ledgerMaxAgeDays = usePreferencesStore((s) => s.commandLedgerMaxAgeDays);
+  const ledgerMaxOutputMb = usePreferencesStore(
+    (s) => s.commandLedgerMaxOutputMb,
+  );
+  useEffect(() => {
+    if (!commandLedgerEnabled || !explorerRoot) return;
+    void pruneLedger(explorerRoot, {
+      maxRecords: ledgerMaxRecords,
+      maxAgeDays: ledgerMaxAgeDays,
+      maxOutputMb: ledgerMaxOutputMb,
+    });
+  }, [
+    commandLedgerEnabled,
+    explorerRoot,
+    ledgerMaxRecords,
+    ledgerMaxAgeDays,
+    ledgerMaxOutputMb,
+  ]);
 
   useEffect(() => {
     const findCwd = () => {

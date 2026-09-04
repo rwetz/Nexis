@@ -50,6 +50,8 @@ export default defineConfig({
         "src/modules/sysmon/braille.ts",
         "src/modules/tabs/lib/mru.ts",
         "src/modules/tabs/lib/tabPersistence.ts",
+        "src/modules/terminal/lib/ledger.ts",
+        "src/modules/terminal/lib/ledgerRetention.ts",
         "src/modules/terminal/lib/sessionRestore.ts",
         "src/modules/terminal/lib/keymap.ts",
         "src/modules/terminal/lib/osc-handlers.ts",
@@ -61,15 +63,15 @@ export default defineConfig({
         "src/settings/SettingsDialog.tsx",
       ],
       // Minimum-coverage gate (IDEAS D4): floors sit a few points below the
-      // current numbers (lines/statements ~86%, branches ~88%, functions ~75%)
+      // current numbers (lines/statements ~88%, branches ~89%, functions ~78%)
       // so ordinary churn doesn't flake the build, but a real regression that
       // drops coverage fails `pnpm test:coverage` — which CI now runs.
       // Ratchet these up as coverage improves; never lower them to make CI pass.
       thresholds: {
-        lines: 84,
-        branches: 86,
-        functions: 73,
-        statements: 84,
+        lines: 86,
+        branches: 87,
+        functions: 76,
+        statements: 86,
       },
     },
   },

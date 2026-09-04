@@ -10,6 +10,7 @@ export type SettingsTab =
   | "general"
   | "features"
   | "themes"
+  | "privacy"
   | "shortcuts"
   | "models"
   | "agents"

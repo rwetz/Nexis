@@ -194,6 +194,91 @@ export async function recordCommand(
   }
 }
 
+// ── Reading, forgetting, pruning ────────────────────────────────────────────
+//
+// The surfaces below all take a workspace *root* rather than a ledger id, so
+// no caller outside this module has to know how identity is derived. Every one
+// of them answers null / 0 rather than throwing when there is no workspace
+// open: "nothing to do" is the ordinary case here, not an error.
+
+export type LedgerStats = {
+  records: number;
+  logBytes: number;
+  blobCount: number;
+  blobBytes: number;
+  oldestMs: number | null;
+  newestMs: number | null;
+};
+
+/** What the ledger holds for a workspace, or null if none is open. */
+export async function ledgerStats(
+  root: string | null,
+): Promise<LedgerStats | null> {
+  if (!root) return null;
+  try {
+    return await native.ledgerStats(workspaceLedgerId(root));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Forget everything recorded at or after `sinceMs`. Returns how many records
+ * went, which the caller reports back — a forget gesture that says nothing is
+ * indistinguishable from one that silently failed.
+ *
+ * This is the escape hatch for a redaction miss (decision record §5): the
+ * pattern list will eventually miss something, and when it does the user needs
+ * one gesture rather than a hunt through their own history.
+ */
+export async function forgetLedgerSince(
+  root: string | null,
+  sinceMs: number,
+): Promise<number> {
+  if (!root) return 0;
+  return native.ledgerForgetSince(workspaceLedgerId(root), sinceMs);
+}
+
+/** Forget a workspace entirely — log, blobs, directory. */
+export async function forgetLedgerWorkspace(
+  root: string | null,
+): Promise<void> {
+  if (!root) return;
+  await native.ledgerForgetWorkspace(workspaceLedgerId(root));
+}
+
+export type LedgerRetention = {
+  maxRecords: number;
+  maxAgeDays: number;
+  maxOutputMb: number;
+};
+
+/**
+ * Apply the retention caps for one workspace. Runs on workspace open, which
+ * is where §7 puts it — not on a timer and not on every write, so a long
+ * session never pays for it and a workspace nobody opens costs nothing.
+ *
+ * Failures are swallowed for the same reason writes are: retention is
+ * housekeeping, and housekeeping must not be able to break opening a folder.
+ */
+export async function pruneLedger(
+  root: string | null,
+  retention: LedgerRetention,
+): Promise<void> {
+  if (!root) return;
+  try {
+    await native.ledgerPrune({
+      workspaceId: workspaceLedgerId(root),
+      maxRecords: retention.maxRecords,
+      maxAgeDays: retention.maxAgeDays,
+      maxBlobBytes: retention.maxOutputMb * 1024 * 1024,
+      nowMs: Date.now(),
+    });
+  } catch {
+    // Housekeeping must never break opening a workspace.
+  }
+}
+
 /** Parse a stored line back into a record, or null if it is not one. */
 export function parseRecord(line: string): CommandRecord | null {
   try {

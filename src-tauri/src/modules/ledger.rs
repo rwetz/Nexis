@@ -225,6 +225,67 @@ pub async fn ledger_read(workspace_id: String, limit: usize) -> Result<Vec<Strin
     .await
 }
 
+/// What the ledger currently holds for one workspace.
+///
+/// This exists because every gesture on the privacy surface is otherwise
+/// blind: "forget everything for this workspace" with no indication of what is
+/// there is a button nobody can evaluate before pressing, and a retention cap
+/// is meaningless without the number it is capping. Metadata and output are
+/// counted separately, because §7 caps them separately.
+#[derive(serde::Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LedgerStats {
+    pub records: usize,
+    pub log_bytes: u64,
+    pub blob_count: usize,
+    pub blob_bytes: u64,
+    /// `startedAt` of the oldest and newest surviving record, or null on an
+    /// empty ledger. The log is append-ordered, but a record with no parsable
+    /// timestamp is skipped rather than assumed, so these are a min/max.
+    pub oldest_ms: Option<i64>,
+    pub newest_ms: Option<i64>,
+}
+
+fn stats_in(dir: &Path, blobs: &Path) -> Result<LedgerStats, String> {
+    let lines = read_log(dir)?;
+    let mut stats = LedgerStats {
+        records: lines.len(),
+        log_bytes: fs::metadata(dir.join(LOG_FILE))
+            .map(|m| m.len())
+            .unwrap_or(0),
+        ..LedgerStats::default()
+    };
+    for line in &lines {
+        let Some(t) = line_started_at(line) else {
+            continue;
+        };
+        stats.oldest_ms = Some(stats.oldest_ms.map_or(t, |o: i64| o.min(t)));
+        stats.newest_ms = Some(stats.newest_ms.map_or(t, |n: i64| n.max(t)));
+    }
+    if let Ok(entries) = fs::read_dir(blobs) {
+        for entry in entries.flatten() {
+            let Ok(meta) = entry.metadata() else { continue };
+            if meta.is_file() {
+                stats.blob_count += 1;
+                stats.blob_bytes += meta.len();
+            }
+        }
+    }
+    Ok(stats)
+}
+
+/// Counts for the privacy surface. Never fails on an absent ledger: a
+/// workspace that has recorded nothing reports zeroes, which is the truth.
+#[tauri::command]
+pub async fn ledger_stats(workspace_id: String) -> Result<LedgerStats, String> {
+    crate::modules::heavy(move || {
+        let dir = workspace_dir(&workspace_id)?;
+        let blobs = blobs_dir(&workspace_id)?;
+        stats_in(&dir, &blobs)
+    })
+    .await
+}
+
 /// Forget one entry: rewrite the log without it and unlink its blob.
 ///
 /// Compaction, never a tombstone — §5 of the decision record. A tombstoned
@@ -466,6 +527,37 @@ mod tests {
         assert_eq!(after.len(), 2);
         // The bytes are gone, not tombstoned — that is the whole point of §5.
         assert!(!after.iter().any(|l| l.contains("drop")));
+    }
+
+    #[test]
+    fn stats_count_metadata_and_output_separately() {
+        let dir = temp_dir("stats");
+        let blobs = dir.join(BLOBS_DIR);
+        fs::create_dir_all(&blobs).expect("create blobs");
+        append_in(&dir, r#"{"id":"a","startedAt":300,"outputId":"out-a"}"#).expect("append");
+        append_in(&dir, r#"{"id":"b","startedAt":100}"#).expect("append");
+        fs::write(blobs.join("out-a"), "hello").expect("write blob");
+
+        let stats = stats_in(&dir, &blobs).expect("stats");
+        assert_eq!(stats.records, 2);
+        assert_eq!(stats.blob_count, 1);
+        assert_eq!(stats.blob_bytes, 5);
+        assert!(stats.log_bytes > 0);
+        // Min/max rather than first/last: a record with no parsable timestamp
+        // must not be able to claim either end.
+        assert_eq!(stats.oldest_ms, Some(100));
+        assert_eq!(stats.newest_ms, Some(300));
+    }
+
+    #[test]
+    fn stats_report_zeroes_for_a_workspace_that_recorded_nothing() {
+        let dir = temp_dir("stats-empty");
+        let blobs = dir.join(BLOBS_DIR);
+        let stats = stats_in(&dir, &blobs).expect("stats");
+        assert_eq!(stats.records, 0);
+        assert_eq!(stats.blob_count, 0);
+        assert_eq!(stats.log_bytes, 0);
+        assert_eq!(stats.oldest_ms, None);
     }
 
     #[test]

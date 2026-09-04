@@ -54,6 +54,7 @@ describe("navigation", () => {
       "General",
       "Features",
       "Themes",
+      "Privacy",
       "Shortcuts",
       "Models",
       "Agents",
@@ -93,6 +94,8 @@ describe("search", () => {
     ["api key", "Models"],
     ["format on save", "Formatters"],
     ["license", "About"],
+    ["command ledger", "Privacy"],
+    ["retention", "Privacy"],
   ])("%s finds the section that owns it (%s)", async (query, expected) => {
     const { user, search } = await renderOpen();
     await user.type(search, query);
@@ -146,7 +149,7 @@ describe("escape handling", () => {
 
     expect(search).toHaveValue("");
     expect(useSettingsDialogStore.getState().isOpen).toBe(true);
-    expect(navItemNames()).toHaveLength(9);
+    expect(navItemNames()).toHaveLength(10);
   });
 
   test("Escape on an empty filter closes the dialog", async () => {
@@ -170,6 +173,6 @@ test("reopening starts from a cleared query", async () => {
 
   const reopened = await screen.findByLabelText("Search settings");
   expect(reopened).toHaveValue("");
-  expect(navItemNames()).toHaveLength(9);
+  expect(navItemNames()).toHaveLength(10);
   expect(activeSectionTitle()).toBe("Models");
 });

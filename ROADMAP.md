@@ -177,12 +177,15 @@ and stop. Don't batch them.
   path hash with the git root commit as an *offered* re-association key (pitfall #23 — and note
   `workspaceScopeKey()` is environment-scoped, not project-scoped, so it is the wrong helper here); and
   retention runs two independent caps, evicting output blobs before metadata.
-  **The writer and both tripwires have shipped** — the store (`src-tauri/src/modules/ledger.rs`), the
-  frontend writer (`src/modules/terminal/lib/ledger.ts`), the OSC-133 gate, and the two guards in
-  `src/lib/pitfall-guards.test.ts`, all before any panel exists as the record required. Remaining work is
-  the eight gated features that read from it, plus the "forget" and retention surfaces in Settings — the
-  commands exist (`ledger_forget_entry`, `ledger_forget_since`, `ledger_forget_workspace`,
-  `ledger_prune`) and are not yet wired to any UI, so recording is currently write-and-prune only.
+  **The writer, both tripwires, and the privacy surface have shipped** — the store
+  (`src-tauri/src/modules/ledger.rs`), the frontend writer (`src/modules/terminal/lib/ledger.ts`), the
+  OSC-133 gate, the two guards in `src/lib/pitfall-guards.test.ts`, and now a **Settings > Privacy page**
+  carrying §5's forget gestures (three time windows plus a per-workspace wipe) and §7's two retention
+  caps, with `ledger_prune` finally called on workspace open. All of it before any panel exists, as the
+  record required. Remaining work: the **eight gated features** that read from it; the **per-entry
+  forget** from the block gutter, which belongs with the panel that shows entries; and §6's **git
+  root-commit re-association offer**, so a moved workspace can adopt its old ledger instead of starting
+  fresh.
 
 ### From the 2026-09-03 usage session (owner feedback)
 

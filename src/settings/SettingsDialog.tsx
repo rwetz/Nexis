@@ -33,6 +33,7 @@ import { FeaturesSection } from "./sections/FeaturesSection";
 import { FormattersSection } from "./sections/FormattersSection";
 import { GeneralSection } from "./sections/GeneralSection";
 import { ModelsSection } from "./sections/ModelsSection";
+import { PrivacySection } from "./sections/PrivacySection";
 import { ShortcutsSection } from "./sections/ShortcutsSection";
 import { ThemesSection } from "./sections/ThemesSection";
 
@@ -78,6 +79,14 @@ const TAB_GROUPS: TabGroup[] = [
         component: ThemesSection,
         keywords:
           "theme colors palette appearance dark light community themes your themes halcyon meridian cinder aurelian thicket vermillion",
+      },
+      {
+        id: "privacy",
+        label: "Privacy",
+        icon: "security",
+        component: PrivacySection,
+        keywords:
+          "command ledger record history retention forget delete telemetry data local recorded commands output",
       },
       {
         id: "shortcuts",

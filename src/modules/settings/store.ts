@@ -27,6 +27,17 @@ import {
   coerceSysmonInterval,
   SYSMON_DEFAULT_INTERVAL_MS,
 } from "@/modules/sysmon/interval";
+import {
+  coerceLedgerMaxAgeDays,
+  coerceLedgerMaxOutputMb,
+  coerceLedgerMaxRecords,
+  LEDGER_DEFAULT_MAX_AGE_DAYS,
+  LEDGER_DEFAULT_MAX_OUTPUT_MB,
+  LEDGER_DEFAULT_MAX_RECORDS,
+  type LedgerMaxAgeDays,
+  type LedgerMaxOutputMb,
+  type LedgerMaxRecords,
+} from "@/modules/terminal/lib/ledgerRetention";
 import type { KeyBinding, ShortcutId } from "@/modules/shortcuts/shortcuts";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { LazyStore } from "@tauri-apps/plugin-store";
@@ -181,6 +192,14 @@ export type Preferences = {
   /** Records finished commands to the per-workspace command ledger. Private
    *  terminals are excluded regardless of this, at the OSC 133 source. */
   commandLedgerEnabled: boolean;
+  /** Ledger retention, metadata half: whichever of these binds first. Both
+   * are enforced by `ledger_prune`, which runs on workspace open. */
+  commandLedgerMaxRecords: LedgerMaxRecords;
+  commandLedgerMaxAgeDays: LedgerMaxAgeDays;
+  /** Ledger retention, output half — an independent byte cap, evicted
+   * oldest-first. Separate from the metadata caps by decision (§7): blobs
+   * dominate the footprint and are the least valuable per byte. */
+  commandLedgerMaxOutputMb: LedgerMaxOutputMb;
   toolApprovalPolicies: Record<string, ToolApprovalPolicy>;
   wordWrap: boolean;
   /** Open the ML Lab panel automatically when a training run starts. */
@@ -277,6 +296,9 @@ const KEY_TERMINAL_OSC52_CLIPBOARD = "terminalOsc52Clipboard";
 const KEY_TERMINAL_CONFIRM_CLOSE_BUSY = "terminalConfirmCloseBusy";
 const KEY_TERMINAL_EXPLAIN_FAILURES = "terminalExplainFailures";
 const KEY_COMMAND_LEDGER_ENABLED = "commandLedgerEnabled";
+const KEY_COMMAND_LEDGER_MAX_RECORDS = "commandLedgerMaxRecords";
+const KEY_COMMAND_LEDGER_MAX_AGE_DAYS = "commandLedgerMaxAgeDays";
+const KEY_COMMAND_LEDGER_MAX_OUTPUT_MB = "commandLedgerMaxOutputMb";
 const KEY_TOOL_APPROVAL_POLICIES = "toolApprovalPolicies";
 const KEY_WORD_WRAP = "wordWrap";
 const KEY_ML_AUTO_OPEN = "mlAutoOpenOnTrain";
@@ -375,6 +397,9 @@ export const DEFAULT_PREFERENCES: Preferences = {
   // Off by default. This store is durable and holds command lines, so it is a
   // thing the user opts into rather than discovers after the fact.
   commandLedgerEnabled: false,
+  commandLedgerMaxRecords: LEDGER_DEFAULT_MAX_RECORDS,
+  commandLedgerMaxAgeDays: LEDGER_DEFAULT_MAX_AGE_DAYS,
+  commandLedgerMaxOutputMb: LEDGER_DEFAULT_MAX_OUTPUT_MB,
   toolApprovalPolicies: {},
   wordWrap: false,
   mlAutoOpenOnTrain: false,
@@ -562,6 +587,17 @@ export async function loadPreferences(): Promise<Preferences> {
     commandLedgerEnabled:
       get<boolean>(KEY_COMMAND_LEDGER_ENABLED) ??
       DEFAULT_PREFERENCES.commandLedgerEnabled,
+    // Snapped to the allowed steps. A hand-edited age limit of 0 would make
+    // the next prune delete the whole log, so this is a guard, not tidiness.
+    commandLedgerMaxRecords: coerceLedgerMaxRecords(
+      get<number>(KEY_COMMAND_LEDGER_MAX_RECORDS),
+    ),
+    commandLedgerMaxAgeDays: coerceLedgerMaxAgeDays(
+      get<number>(KEY_COMMAND_LEDGER_MAX_AGE_DAYS),
+    ),
+    commandLedgerMaxOutputMb: coerceLedgerMaxOutputMb(
+      get<number>(KEY_COMMAND_LEDGER_MAX_OUTPUT_MB),
+    ),
     toolApprovalPolicies:
       get<Record<string, ToolApprovalPolicy>>(KEY_TOOL_APPROVAL_POLICIES) ??
       DEFAULT_PREFERENCES.toolApprovalPolicies,
@@ -883,6 +919,24 @@ export async function setCommandLedgerEnabled(value: boolean): Promise<void> {
   await writePref(KEY_COMMAND_LEDGER_ENABLED, value);
 }
 
+export async function setCommandLedgerMaxRecords(
+  value: LedgerMaxRecords,
+): Promise<void> {
+  await writePref(KEY_COMMAND_LEDGER_MAX_RECORDS, value);
+}
+
+export async function setCommandLedgerMaxAgeDays(
+  value: LedgerMaxAgeDays,
+): Promise<void> {
+  await writePref(KEY_COMMAND_LEDGER_MAX_AGE_DAYS, value);
+}
+
+export async function setCommandLedgerMaxOutputMb(
+  value: LedgerMaxOutputMb,
+): Promise<void> {
+  await writePref(KEY_COMMAND_LEDGER_MAX_OUTPUT_MB, value);
+}
+
 export async function setToolApprovalPolicies(
   value: Record<string, ToolApprovalPolicy>,
 ): Promise<void> {
@@ -1001,6 +1055,9 @@ export async function onPreferencesChange(
     [KEY_TERMINAL_CONFIRM_CLOSE_BUSY]: "terminalConfirmCloseBusy",
     [KEY_TERMINAL_EXPLAIN_FAILURES]: "terminalExplainFailures",
     [KEY_COMMAND_LEDGER_ENABLED]: "commandLedgerEnabled",
+    [KEY_COMMAND_LEDGER_MAX_RECORDS]: "commandLedgerMaxRecords",
+    [KEY_COMMAND_LEDGER_MAX_AGE_DAYS]: "commandLedgerMaxAgeDays",
+    [KEY_COMMAND_LEDGER_MAX_OUTPUT_MB]: "commandLedgerMaxOutputMb",
     [KEY_TOOL_APPROVAL_POLICIES]: "toolApprovalPolicies",
     [KEY_FORMATTERS]: "formatters",
     [KEY_FORMAT_ON_SAVE]: "formatOnSave",

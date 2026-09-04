@@ -295,6 +295,7 @@ pub fn run() {
             ledger::ledger_forget_since,
             ledger::ledger_forget_workspace,
             ledger::ledger_prune,
+            ledger::ledger_stats,
             snapshots::session_snapshot_save,
             snapshots::session_snapshot_load,
             snapshots::session_snapshot_delete,
