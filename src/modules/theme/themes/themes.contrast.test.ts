@@ -70,8 +70,8 @@ function variantOf(theme: Theme, mode: ThemeMode) {
 describe("Nexis theme set — contrast ramp", () => {
   const nexis = listNexisThemes().filter((t) => t.id !== "nexis-default");
 
-  it("ships six themes plus the default", () => {
-    expect(listNexisThemes()).toHaveLength(7);
+  it("ships sixteen themes plus the default", () => {
+    expect(listNexisThemes()).toHaveLength(17);
     expect(listNexisThemes()[0].id).toBe("nexis-default");
   });
 

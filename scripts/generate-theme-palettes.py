@@ -125,6 +125,33 @@ THEMES = [
      152.0, 1.0, 150.0, 0.140, -3.0, 0.132, ("atomone", "github-light")),
     ("vermillion", "Vermillion", "Clay and rose over charcoal — warm, high energy.",
      18.0, 1.0, 22.0, 0.160, 3.0, 0.148, ("aura", "xcode-light")),
+
+    # ── The loud half of the set ────────────────────────────────────────────
+    # Same ramp, same lightness steps, same floors — the only thing turned up
+    # is chroma. `baseCmul` above 1.0 saturates the *surfaces*, so the
+    # background stops being a neutral grey and becomes a colour, which is
+    # what actually makes a theme read as loud. The contrast checks below are
+    # unchanged and still gate the emit: these are vivid, not unreadable.
+    ("hotwire", "Hotwire", "Live-wire scarlet over saturated oxblood.",
+     14.0, 1.9, 12.0, 0.190, 2.0, 0.180, ("aura", "xcode-light")),
+    ("tangerine", "Tangerine", "Molten orange on a burnt, glowing ground.",
+     44.0, 1.9, 48.0, 0.180, -2.0, 0.175, ("atomone", "xcode-light")),
+    ("sulfur", "Sulfur", "Citron and brimstone — acidic yellow-green.",
+     98.0, 1.8, 95.0, 0.175, 3.0, 0.180, ("atomone", "github-light")),
+    ("acid", "Acid", "Chartreuse burn-in over a deep green CRT.",
+     132.0, 1.8, 128.0, 0.185, -3.0, 0.185, ("aura", "github-light")),
+    ("absinthe", "Absinthe", "Spring green and wormwood, faintly toxic.",
+     168.0, 1.8, 165.0, 0.175, 2.0, 0.175, ("atomone", "github-light")),
+    ("cyanotype", "Cyanotype", "Blueprint cyan on saturated Prussian blue.",
+     202.0, 1.9, 198.0, 0.180, -2.0, 0.178, ("tokyo-night", "github-light")),
+    ("glacier", "Glacier", "Ice blue under a hard, bright edge.",
+     240.0, 1.8, 218.0, 0.175, 2.0, 0.172, ("tokyo-night", "github-light")),
+    ("ultramarine", "Ultramarine", "Pigment-dense blue, straight from the tube.",
+     274.0, 2.0, 272.0, 0.185, 3.0, 0.180, ("aura", "github-light")),
+    ("ultraviolet", "Ultraviolet", "Blacklight magenta over a plum void.",
+     306.0, 2.0, 310.0, 0.190, 4.0, 0.185, ("aura", "github-light")),
+    ("synthwave", "Synthwave", "Hot pink on deep purple — grid, horizon, sunset.",
+     292.0, 2.1, 340.0, 0.190, 6.0, 0.185, ("aura", "xcode-light")),
 ]
 
 
@@ -298,7 +325,10 @@ def render(data):
             f"}};\n"
         )
         path = os.path.join(THEMES_DIR, f"{tid}.ts")
-        with open(path, "w") as f:
+        # Explicit UTF-8 and LF: the file header is box-drawing, and Python on
+        # Windows defaults to the ANSI codepage, which cannot encode it. Left
+        # implicit, this script only runs on macOS and Linux.
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write(body)
         print(f"wrote {os.path.relpath(path)}")
     print("\nfolderColor.ts entries — paste these if an accent changed:")

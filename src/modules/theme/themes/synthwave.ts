@@ -1,0 +1,100 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
+import type { Theme } from "../types";
+
+export const synthwave: Theme = {
+  id: "synthwave",
+  name: "Synthwave",
+  description: "Hot pink on deep purple — grid, horizon, sunset.",
+  editorTheme: { dark: "aura", light: "xcode-light" },
+  variants: {
+    dark: {
+      colors: {
+        background: "#12101c",
+        foreground: "#e7e5f7",
+        card: "#1a1725",
+        cardForeground: "#e7e5f7",
+        popover: "#1a1725",
+        popoverForeground: "#e7e5f7",
+        primary: "#fd7ad6",
+        primaryForeground: "#12101a",
+        secondary: "#252232",
+        secondaryForeground: "#e7e5f7",
+        muted: "#252232",
+        mutedForeground: "#9e9bb5",
+        accent: "#2b283a",
+        accentForeground: "#e7e5f7",
+        destructive: "#e8605b",
+        border: "rgba(231,229,247,0.10)",
+        input: "rgba(231,229,247,0.14)",
+        ring: "#fd7ad6",
+        sidebar: "#0c0a16",
+        sidebarForeground: "#e7e5f7",
+        sidebarPrimary: "#fd7ad6",
+        sidebarPrimaryForeground: "#12101a",
+        sidebarAccent: "#2b283a",
+        sidebarAccentForeground: "#e7e5f7",
+        sidebarBorder: "rgba(231,229,247,0.10)",
+        sidebarRing: "#fd7ad6",
+        radius: "0.5rem",
+      },
+      terminal: {
+        cursor: "#fd7ad6",
+        cursorAccent: "#12101c",
+        selection: "rgba(253,122,214,0.26)",
+        ansi: [
+          "#252234", "#fe6b4e", "#16bf60", "#c19b00",
+          "#679eff", "#d971dd", "#00b6be", "#cfcce2",
+          "#5b586d", "#ffac99", "#2ae978", "#edbe00",
+          "#a3c5ff", "#fc9aff", "#00dee9", "#f2f0ff",
+        ],
+      },
+    },
+    light: {
+      colors: {
+        background: "#f8f7ff",
+        foreground: "#262239",
+        card: "#ffffff",
+        cardForeground: "#262239",
+        popover: "#ffffff",
+        popoverForeground: "#262239",
+        primary: "#aa2b8a",
+        primaryForeground: "#fdfdff",
+        secondary: "#eae7f9",
+        secondaryForeground: "#262239",
+        muted: "#eae7f9",
+        mutedForeground: "#67637d",
+        accent: "#e5e2f8",
+        accentForeground: "#262239",
+        destructive: "#b91c1e",
+        border: "rgba(38,34,57,0.14)",
+        input: "rgba(38,34,57,0.18)",
+        ring: "#aa2b8a",
+        sidebar: "#f1f0fb",
+        sidebarForeground: "#262239",
+        sidebarPrimary: "#aa2b8a",
+        sidebarPrimaryForeground: "#fdfdff",
+        sidebarAccent: "#e5e2f8",
+        sidebarAccentForeground: "#262239",
+        sidebarBorder: "rgba(38,34,57,0.14)",
+        sidebarRing: "#aa2b8a",
+        radius: "0.5rem",
+      },
+      terminal: {
+        cursor: "#aa2b8a",
+        cursorAccent: "#f8f7ff",
+        selection: "rgba(170,43,138,0.20)",
+        ansi: [
+          "#2e2b3d", "#ca3a1e", "#008c43", "#8e7100",
+          "#2e6ddf", "#a943ad", "#00858b", "#726f82",
+          "#636075", "#ad2100", "#007335", "#745c00",
+          "#0052d2", "#96179c", "#006d72", "#2b2939",
+        ],
+      },
+    },
+  },
+};

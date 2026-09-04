@@ -5,24 +5,42 @@
 // ╚══════════════════════════════════════╝
 
 import { DEFAULT_THEME_ID, type Theme } from "../types";
+import { absinthe } from "./absinthe";
+import { acid } from "./acid";
 import { aurelian } from "./aurelian";
 import { cinder } from "./cinder";
+import { cyanotype } from "./cyanotype";
 import { catppuccin } from "./community/catppuccin";
 import { gruvbox } from "./community/gruvbox";
 import { nord } from "./community/nord";
 import { rosePine } from "./community/rose-pine";
 import { tokyoNight } from "./community/tokyo-night";
+import { glacier } from "./glacier";
 import { halcyon } from "./halcyon";
+import { hotwire } from "./hotwire";
 import { meridian } from "./meridian";
 import { nexisDefault } from "./nexis-default";
+import { sulfur } from "./sulfur";
+import { synthwave } from "./synthwave";
+import { tangerine } from "./tangerine";
 import { thicket } from "./thicket";
+import { ultramarine } from "./ultramarine";
+import { ultraviolet } from "./ultraviolet";
 import { vermillion } from "./vermillion";
 
 /**
  * Nexis-designed themes. Every one is generated from a single shared OKLCH
  * ramp (see `themes.contrast.test.ts` for the floors it guarantees), so the
- * set holds one contrast profile across six different hue families and both
- * light and dark. These are original palettes, not recolours of anything.
+ * set holds one contrast profile across sixteen hue families and both light
+ * and dark. These are original palettes, not recolours of anything.
+ *
+ * Ordered quiet-first. The original six are muted, near-neutral surfaces with
+ * one accent; the ten that follow turn the *surface* chroma up rather than
+ * only the accent, which is what actually makes a theme loud — a saturated
+ * background reads as a colour instead of as grey. They sit on the identical
+ * ramp and clear the identical floors: vivid, not unreadable. The generator
+ * refuses to emit a palette that drops below one, and it caught exactly that
+ * while these were being cut.
  */
 const NEXIS: Theme[] = [
   nexisDefault,
@@ -32,6 +50,17 @@ const NEXIS: Theme[] = [
   aurelian,
   thicket,
   vermillion,
+  // The loud half.
+  hotwire,
+  tangerine,
+  sulfur,
+  acid,
+  absinthe,
+  cyanotype,
+  glacier,
+  ultramarine,
+  ultraviolet,
+  synthwave,
 ];
 
 /**

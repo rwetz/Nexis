@@ -78,7 +78,7 @@ const TAB_GROUPS: TabGroup[] = [
         icon: "theme",
         component: ThemesSection,
         keywords:
-          "theme colors palette appearance dark light community themes your themes halcyon meridian cinder aurelian thicket vermillion",
+          "theme colors palette appearance dark light community themes your themes halcyon meridian cinder aurelian thicket vermillion hotwire tangerine sulfur acid absinthe cyanotype glacier ultramarine ultraviolet synthwave",
       },
       {
         id: "privacy",

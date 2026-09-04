@@ -1,0 +1,100 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
+import type { Theme } from "../types";
+
+export const ultraviolet: Theme = {
+  id: "ultraviolet",
+  name: "Ultraviolet",
+  description: "Blacklight magenta over a plum void.",
+  editorTheme: { dark: "aura", light: "github-light" },
+  variants: {
+    dark: {
+      colors: {
+        background: "#140f1a",
+        foreground: "#ebe3f4",
+        card: "#1c1623",
+        cardForeground: "#ebe3f4",
+        popover: "#1c1623",
+        popoverForeground: "#ebe3f4",
+        primary: "#d190ff",
+        primaryForeground: "#140f19",
+        secondary: "#28212f",
+        secondaryForeground: "#ebe3f4",
+        muted: "#28212f",
+        mutedForeground: "#a499b1",
+        accent: "#2f2738",
+        accentForeground: "#ebe3f4",
+        destructive: "#e8605b",
+        border: "rgba(235,227,244,0.10)",
+        input: "rgba(235,227,244,0.14)",
+        ring: "#d190ff",
+        sidebar: "#0f0914",
+        sidebarForeground: "#ebe3f4",
+        sidebarPrimary: "#d190ff",
+        sidebarPrimaryForeground: "#140f19",
+        sidebarAccent: "#2f2738",
+        sidebarAccentForeground: "#ebe3f4",
+        sidebarBorder: "rgba(235,227,244,0.10)",
+        sidebarRing: "#d190ff",
+        radius: "0.5rem",
+      },
+      terminal: {
+        cursor: "#d190ff",
+        cursorAccent: "#140f1a",
+        selection: "rgba(209,144,255,0.26)",
+        ansi: [
+          "#292132", "#fe6a53", "#2abe5a", "#c49a00",
+          "#629fff", "#d672e0", "#00b6bc", "#d4cbde",
+          "#5f5669", "#ffab9c", "#3de872", "#f0bd00",
+          "#a1c6ff", "#f79eff", "#00dfe6", "#f6eeff",
+        ],
+      },
+    },
+    light: {
+      colors: {
+        background: "#faf7ff",
+        foreground: "#2b2135",
+        card: "#ffffff",
+        cardForeground: "#2b2135",
+        popover: "#ffffff",
+        popoverForeground: "#2b2135",
+        primary: "#8a3db8",
+        primaryForeground: "#fefdff",
+        secondary: "#ede6f6",
+        secondaryForeground: "#2b2135",
+        muted: "#ede6f6",
+        mutedForeground: "#6c6179",
+        accent: "#eae1f5",
+        accentForeground: "#2b2135",
+        destructive: "#b91c1e",
+        border: "rgba(43,33,53,0.14)",
+        input: "rgba(43,33,53,0.18)",
+        ring: "#8a3db8",
+        sidebar: "#f3eff9",
+        sidebarForeground: "#2b2135",
+        sidebarPrimary: "#8a3db8",
+        sidebarPrimaryForeground: "#fefdff",
+        sidebarAccent: "#eae1f5",
+        sidebarAccentForeground: "#2b2135",
+        sidebarBorder: "rgba(43,33,53,0.14)",
+        sidebarRing: "#8a3db8",
+        radius: "0.5rem",
+      },
+      terminal: {
+        cursor: "#8a3db8",
+        cursorAccent: "#faf7ff",
+        selection: "rgba(138,61,184,0.20)",
+        ansi: [
+          "#322a3b", "#ca3925", "#008c3b", "#8f7000",
+          "#256fde", "#a644b0", "#008589", "#766e7f",
+          "#685f72", "#b11500", "#00732f", "#765b00",
+          "#0057c6", "#9419a0", "#006d71", "#2f2837",
+        ],
+      },
+    },
+  },
+};
