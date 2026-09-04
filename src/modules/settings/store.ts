@@ -178,6 +178,9 @@ export type Preferences = {
    * shell integration, like the exit gutter). Clicking sends the command,
    * its output, and the cwd to the AI chat — see osc-handlers.ts. */
   terminalExplainFailures: boolean;
+  /** Records finished commands to the per-workspace command ledger. Private
+   *  terminals are excluded regardless of this, at the OSC 133 source. */
+  commandLedgerEnabled: boolean;
   toolApprovalPolicies: Record<string, ToolApprovalPolicy>;
   wordWrap: boolean;
   /** Open the ML Lab panel automatically when a training run starts. */
@@ -273,6 +276,7 @@ const KEY_TERMINAL_CURSOR_BLINK = "terminalCursorBlink";
 const KEY_TERMINAL_OSC52_CLIPBOARD = "terminalOsc52Clipboard";
 const KEY_TERMINAL_CONFIRM_CLOSE_BUSY = "terminalConfirmCloseBusy";
 const KEY_TERMINAL_EXPLAIN_FAILURES = "terminalExplainFailures";
+const KEY_COMMAND_LEDGER_ENABLED = "commandLedgerEnabled";
 const KEY_TOOL_APPROVAL_POLICIES = "toolApprovalPolicies";
 const KEY_WORD_WRAP = "wordWrap";
 const KEY_ML_AUTO_OPEN = "mlAutoOpenOnTrain";
@@ -368,6 +372,9 @@ export const DEFAULT_PREFERENCES: Preferences = {
   terminalOsc52Clipboard: true,
   terminalConfirmCloseBusy: true,
   terminalExplainFailures: true,
+  // Off by default. This store is durable and holds command lines, so it is a
+  // thing the user opts into rather than discovers after the fact.
+  commandLedgerEnabled: false,
   toolApprovalPolicies: {},
   wordWrap: false,
   mlAutoOpenOnTrain: false,
@@ -552,6 +559,9 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalExplainFailures:
       get<boolean>(KEY_TERMINAL_EXPLAIN_FAILURES) ??
       DEFAULT_PREFERENCES.terminalExplainFailures,
+    commandLedgerEnabled:
+      get<boolean>(KEY_COMMAND_LEDGER_ENABLED) ??
+      DEFAULT_PREFERENCES.commandLedgerEnabled,
     toolApprovalPolicies:
       get<Record<string, ToolApprovalPolicy>>(KEY_TOOL_APPROVAL_POLICIES) ??
       DEFAULT_PREFERENCES.toolApprovalPolicies,
@@ -869,6 +879,10 @@ export async function setTerminalExplainFailures(value: boolean): Promise<void> 
   await writePref(KEY_TERMINAL_EXPLAIN_FAILURES, value);
 }
 
+export async function setCommandLedgerEnabled(value: boolean): Promise<void> {
+  await writePref(KEY_COMMAND_LEDGER_ENABLED, value);
+}
+
 export async function setToolApprovalPolicies(
   value: Record<string, ToolApprovalPolicy>,
 ): Promise<void> {
@@ -986,6 +1000,7 @@ export async function onPreferencesChange(
     [KEY_TERMINAL_OSC52_CLIPBOARD]: "terminalOsc52Clipboard",
     [KEY_TERMINAL_CONFIRM_CLOSE_BUSY]: "terminalConfirmCloseBusy",
     [KEY_TERMINAL_EXPLAIN_FAILURES]: "terminalExplainFailures",
+    [KEY_COMMAND_LEDGER_ENABLED]: "commandLedgerEnabled",
     [KEY_TOOL_APPROVAL_POLICIES]: "toolApprovalPolicies",
     [KEY_FORMATTERS]: "formatters",
     [KEY_FORMAT_ON_SAVE]: "formatOnSave",

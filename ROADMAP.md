@@ -177,8 +177,12 @@ and stop. Don't batch them.
   path hash with the git root commit as an *offered* re-association key (pitfall #23 — and note
   `workspaceScopeKey()` is environment-scoped, not project-scoped, so it is the wrong helper here); and
   retention runs two independent caps, evicting output blobs before metadata.
-  Remaining work is the implementation itself, in this order: the writer plus its two tripwires (private
-  exclusion, redaction) before any panel exists, then the eight gated features read from it.
+  **The writer and both tripwires have shipped** — the store (`src-tauri/src/modules/ledger.rs`), the
+  frontend writer (`src/modules/terminal/lib/ledger.ts`), the OSC-133 gate, and the two guards in
+  `src/lib/pitfall-guards.test.ts`, all before any panel exists as the record required. Remaining work is
+  the eight gated features that read from it, plus the "forget" and retention surfaces in Settings — the
+  commands exist (`ledger_forget_entry`, `ledger_forget_since`, `ledger_forget_workspace`,
+  `ledger_prune`) and are not yet wired to any UI, so recording is currently write-and-prune only.
 
 ### From the 2026-09-03 usage session (owner feedback)
 

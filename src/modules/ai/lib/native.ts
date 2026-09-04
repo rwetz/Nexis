@@ -251,6 +251,32 @@ export const native = {
       bytes: Array.from(bytes),
       workspace: currentWorkspaceEnv(),
     }),
+  // ── Command ledger ───────────────────────────────────────────────────────
+  // Records arrive already redacted: redaction is frontend-side by decision
+  // (docs/vault/decisions/command-ledger.md §3), because redactSensitive has
+  // no Rust counterpart and two copies of a security-critical pattern list
+  // drift. Do not add a second redaction pass behind these.
+  ledgerAppend: (workspaceId: string, record: string) =>
+    invoke<void>("ledger_append", { workspaceId, record }),
+  ledgerWriteOutput: (workspaceId: string, outputId: string, content: string) =>
+    invoke<void>("ledger_write_output", { workspaceId, outputId, content }),
+  ledgerReadOutput: (workspaceId: string, outputId: string) =>
+    invoke<string | null>("ledger_read_output", { workspaceId, outputId }),
+  ledgerRead: (workspaceId: string, limit: number) =>
+    invoke<string[]>("ledger_read", { workspaceId, limit }),
+  ledgerForgetEntry: (workspaceId: string, id: string) =>
+    invoke<void>("ledger_forget_entry", { workspaceId, id }),
+  ledgerForgetSince: (workspaceId: string, sinceMs: number) =>
+    invoke<number>("ledger_forget_since", { workspaceId, sinceMs }),
+  ledgerForgetWorkspace: (workspaceId: string) =>
+    invoke<void>("ledger_forget_workspace", { workspaceId }),
+  ledgerPrune: (params: {
+    workspaceId: string;
+    maxRecords: number;
+    maxAgeDays: number;
+    maxBlobBytes: number;
+    nowMs: number;
+  }) => invoke<void>("ledger_prune", params),
   canonicalize: (path: string) =>
     invoke<string>("fs_canonicalize", {
       path,

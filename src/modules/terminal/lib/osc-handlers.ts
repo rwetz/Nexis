@@ -140,6 +140,31 @@ export type FailureExplainOptions = {
   onExplain: (failure: CommandFailure) => void;
 };
 
+/**
+ * The command-ledger hook.
+ *
+ * `isEnabled` is checked **here**, in the OSC 133 handler, and never
+ * downstream. That placement is §4 of `docs/vault/decisions/command-ledger.md`
+ * and it is deliberate: a private terminal must never enter the ledger, and a
+ * filter applied at write time is a filter someone later moves. The gate lives
+ * where the event is born.
+ */
+export type LedgerOptions = {
+  /** False for a private terminal, or when recording is switched off. */
+  isEnabled: () => boolean;
+  /** cwd the command ran in; read at OSC 133 D time. */
+  getCwd: () => string | null;
+  /** One finished command. Redaction happens inside the recorder. */
+  record: (entry: {
+    cwd: string;
+    argv: string;
+    exitCode: number;
+    startedAt: number;
+    endedAt: number;
+    output: string;
+  }) => void;
+};
+
 /** SIGINT exit — a deliberate Ctrl+C is a cancel, not a failure to explain. */
 const EXIT_SIGINT = 130;
 
@@ -147,6 +172,7 @@ export function registerPromptTracker(
   term: Terminal,
   state?: ShellIntegrationState,
   explain?: FailureExplainOptions,
+  ledger?: LedgerOptions,
 ): PromptTracker {
   let marker: IMarker | null = null;
   // Failed-command capture state, one command at a time. `cmdMarker` pins
@@ -158,6 +184,7 @@ export function registerPromptTracker(
   let cmdStartX = 0;
   let outMarker: IMarker | null = null;
   let sawExec = false;
+  let cmdStartedAt = 0;
   const decorations: IDecoration[] = [];
   const disposeCommandMarkers = () => {
     cmdMarker?.dispose();
@@ -185,6 +212,11 @@ export function registerPromptTracker(
       cmdMarker?.dispose();
       cmdMarker = term.registerMarker(0);
       cmdStartX = term.buffer?.active?.cursorX ?? 0;
+      // Wall-clock start, for the ledger's duration. Taken at B (the prompt
+      // accepting input) rather than at C, because C is optional — PowerShell's
+      // profile emits none, and a duration that silently disappears on one
+      // shell is worse than one that includes a moment of typing.
+      cmdStartedAt = Date.now();
     } else if (data.startsWith("C")) {
       // OSC 133 C — command pre-execution marker; still inside command.
       if (state) state.inCommand = true;
@@ -210,6 +242,28 @@ export function registerPromptTracker(
         // bare dispatchEvent -- the listener owns the preference write, so
         // nothing here touches the settings store (src/lib/onboarding.ts).
         signalOnboardingStep("terminal.run");
+
+        // The command ledger. Gated here at the source, never downstream:
+        // a private terminal must not enter it, and a filter applied at write
+        // time is a filter someone later moves (decision record §4).
+        if (ledger?.isEnabled()) {
+          const captured = captureFailedCommand(
+            term,
+            cmdMarker,
+            cmdStartX,
+            outMarker,
+          );
+          if (captured && (sawExec || captured.output.length > 0)) {
+            ledger.record({
+              cwd: ledger.getCwd() ?? "",
+              argv: captured.command,
+              exitCode: code,
+              startedAt: cmdStartedAt || Date.now(),
+              endedAt: Date.now(),
+              output: captured.output,
+            });
+          }
+        }
         if (explain && code !== 0 && code !== EXIT_SIGINT && explain.isEnabled()) {
           const capture = captureFailedCommand(term, cmdMarker, cmdStartX, outMarker);
           // Require evidence a command actually ran: a C marker, or output.

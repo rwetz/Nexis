@@ -18,6 +18,11 @@ import {
   type CommandFailure,
   type ShellIntegrationState,
 } from "./osc-handlers";
+import {
+  currentLedgerWorkspaceRoot,
+  ledgerAllowsLeaf,
+  recordCommand,
+} from "./ledger";
 import { openPty, ptyCwd, type PtySession } from "./pty-bridge";
 import { takePendingSessionRestore } from "./sessionRestore";
 import { loadSessionSnapshot } from "./snapshot-bridge";
@@ -447,6 +452,23 @@ function bindLeafToSlot(leafId: number, s: Session): void {
               detail: failure,
             }),
           ),
+      },
+      {
+        // Private terminals never enter the ledger. The resolver is owned by
+        // App (it holds the tab list); an uninstalled resolver answers
+        // "private", so forgetting to wire it records nothing rather than
+        // recording something it should not.
+        isEnabled: () =>
+          usePreferencesStore.getState().commandLedgerEnabled &&
+          ledgerAllowsLeaf(leafId),
+        getCwd: () => s.lastCwd,
+        record: (entry) => {
+          void recordCommand({
+            leafId,
+            workspaceRoot: currentLedgerWorkspaceRoot(),
+            ...entry,
+          });
+        },
       });
       const cwd = registerCwdHandler(
         term,

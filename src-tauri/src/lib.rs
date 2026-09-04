@@ -19,8 +19,8 @@ pub mod bench_internals {
 }
 
 use modules::{
-    ai_audit, autosave, crash, dap, diagnostics, fs, fswatch, git, http_share, lsp, ml, net, pty,
-    python, recording, secrets, shell, snapshots, sysmon, tools, winstate, workspace,
+    ai_audit, autosave, crash, dap, diagnostics, fs, fswatch, git, http_share, ledger, lsp, ml,
+    net, pty, python, recording, secrets, shell, snapshots, sysmon, tools, winstate, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -287,6 +287,14 @@ pub fn run() {
             autosave::editor_autosave_read,
             autosave::editor_autosave_delete,
             autosave::editor_autosave_sweep,
+            ledger::ledger_append,
+            ledger::ledger_write_output,
+            ledger::ledger_read_output,
+            ledger::ledger_read,
+            ledger::ledger_forget_entry,
+            ledger::ledger_forget_since,
+            ledger::ledger_forget_workspace,
+            ledger::ledger_prune,
             snapshots::session_snapshot_save,
             snapshots::session_snapshot_load,
             snapshots::session_snapshot_delete,

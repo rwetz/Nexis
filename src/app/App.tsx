@@ -69,6 +69,10 @@ import {
 } from "@/modules/header";
 import { PreviewStack, type PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
+import {
+  setLedgerPrivacyResolver,
+  setLedgerWorkspaceSource,
+} from "@/modules/terminal/lib/ledger";
 import { openNewWindow } from "@/modules/window/openNewWindow";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { usePreferencesStore } from "@/modules/settings/preferences";
@@ -1727,6 +1731,19 @@ export default function App() {
       }
       return explorerRoot ?? launchCwd ?? home ?? null;
     };
+
+    // The command ledger asks App for two facts it cannot know itself: whether
+    // a leaf sits in a private tab, and which workspace to file a command
+    // under. Both live here because App owns the tab list and the root.
+    setLedgerPrivacyResolver((leafId) =>
+      tabs.some(
+        (t) =>
+          t.kind === "terminal" &&
+          t.private === true &&
+          hasLeaf(t.paneTree, leafId),
+      ),
+    );
+    setLedgerWorkspaceSource(() => explorerRoot ?? null);
 
     setLive({
       getCwd: findCwd,

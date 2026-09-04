@@ -237,6 +237,73 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
     }
   });
 
+  /**
+   * The command ledger's two invariants, both from
+   * `docs/vault/decisions/command-ledger.md`. The decision record names this
+   * guard explicitly and says it must land in the same change as the writer.
+   *
+   * The store is durable and holds command lines, which is exactly where an
+   * API key ends up; and a ledger that records a private terminal is a silent
+   * privacy failure. Silent failures need tripwires, not review.
+   */
+  it("command ledger: argv and output are redacted before they reach IPC", () => {
+    const ledger = readSrc("modules/terminal/lib/ledger.ts");
+
+    expect(
+      /redactSensitive\(input\.argv\)/.test(ledger),
+      "recordCommand must pass argv through redactSensitive() before writing — " +
+        "a command line is precisely where an API key ends up, and the ledger " +
+        "is durable by design (command-ledger.md §3)",
+    ).toBe(true);
+
+    expect(
+      /redactSensitive\(input\.output\)/.test(ledger),
+      "recordCommand must pass captured output through redactSensitive() too — " +
+        "the decision record says argv *and* the output blob (command-ledger.md §3)",
+    ).toBe(true);
+
+    // Redaction is frontend-side on purpose: redactSensitive has no Rust
+    // counterpart, and two copies of a security-critical pattern list drift.
+    const rust = fs.readFileSync(
+      path.join(SRC_ROOT, "..", "src-tauri", "src", "modules", "ledger.rs"),
+      "utf8",
+    );
+    // Comments stripped first: the module documents *why* it does not redact,
+    // and matching that prose would fail the guard for saying the right thing.
+    const rustCode = rust
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("//"))
+      .join("\n");
+    expect(
+      /redact/i.test(rustCode),
+      "ledger.rs must NOT redact — redaction is frontend-side by decision, and " +
+        "a second implementation is how the first stops being maintained",
+    ).toBe(false);
+  });
+
+  it("command ledger: private terminals are excluded at the OSC 133 source", () => {
+    const osc = readSrc("modules/terminal/lib/osc-handlers.ts");
+    // The gate must be in the handler, not downstream: a filter applied at
+    // write time is a filter someone later moves (command-ledger.md §4).
+    expect(
+      /if \(ledger\?\.isEnabled\(\)\)/.test(osc),
+      "the OSC 133 D branch must gate the ledger write on ledger.isEnabled() — " +
+        "the exclusion belongs where the event is born, not at write time",
+    ).toBe(true);
+
+    const ledger = readSrc("modules/terminal/lib/ledger.ts");
+    expect(
+      /let isPrivateLeaf: PrivacyResolver = \(\) => true;/.test(ledger),
+      "the privacy resolver must default to `private` — forgetting to wire it " +
+        "must fail closed (record nothing), never open (record a private tab)",
+    ).toBe(true);
+    expect(
+      /if \(!ledgerAllowsLeaf\(input\.leafId\)\) return null;/.test(ledger),
+      "recordCommand must re-check the privacy gate itself: it is the entry " +
+        "point the other gated features will call directly",
+    ).toBe(true);
+  });
+
   it("secret redaction: outbound surfaces route through redactSensitive", () => {
     // The LAN share stream and saved recordings leave the machine (viewers,
     // bug-report attachments). Key-shaped strings captured from terminal

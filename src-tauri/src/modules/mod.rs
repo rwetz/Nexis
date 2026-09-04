@@ -15,6 +15,7 @@ pub mod git;
 pub mod http_share;
 #[cfg(windows)]
 pub mod job;
+pub mod ledger;
 pub mod lsp;
 pub mod ml;
 pub mod net;
