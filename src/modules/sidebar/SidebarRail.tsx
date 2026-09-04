@@ -133,6 +133,7 @@ export function SidebarRail({
     { id: "web-tools",      label: "Web Tools",        icon: "tools",       group: "Dev Tools" },
     { id: "svg-playground", label: "SVG Playground",   icon: "brush",       group: "Dev Tools" },
     { id: "palette",        label: "Palette",         icon: "theme",       group: "Dev Tools" },
+    { id: "backdrop",       label: "Backdrop",        icon: "image",       group: "Dev Tools" },
     { id: "share",          label: "Share",            icon: "globe",       group: "Advanced" },
     { id: "notes",          label: "Workspace Notes",  icon: "note",        group: "Advanced" },
     { id: "shell-snippets", label: "Shell Snippets",   icon: "terminal", group: "Advanced" },

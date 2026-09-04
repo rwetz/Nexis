@@ -145,9 +145,9 @@ export const PACKS: Record<PackId, PackDef> = {
     id: "art",
     label: "Art",
     description:
-      "SVG authoring at icon scale: a live playground, shape generators, export, and a palette with contrast checks.",
+      "SVG work: an icon-scale playground, generative backdrops, and a palette with contrast checks.",
     icon: "brush",
-    views: ["svg-playground", "palette"],
+    views: ["svg-playground", "palette", "backdrop"],
   },
 };
 

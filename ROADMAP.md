@@ -199,7 +199,7 @@ CHANGELOG. What is left:
     JSON. **This also answered an open question**: contrast and palette checks were parked under the Web
     Dev pack with a note wondering whether they belonged in Art. They shipped here.
 
-  - [ ] **1: Backdrop — the Haikei-shaped panel.** The one there is actual appetite for. Generators in
+  - [x] **1: Backdrop — shipped.** The one there is actual appetite for. Generators in
     rough value order: layered/stacked waves (the signature), peaks, blob scene (depth-ordered), circle
     scatter / confetti / bubbles, low-poly triangle mesh, topographic contours, isometric or square grid,
     stacked steps, sunbeams (`burst` already exists and needs only colour and aspect).

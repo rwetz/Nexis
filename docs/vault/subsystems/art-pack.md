@@ -5,7 +5,7 @@ description: The Art pack's SVG playground — its four panes, the direct-manipu
 
 # Art pack
 
-Two panels. The SVG playground, added 2026-09-03, under the `art` pack (view `svg-playground`). Sidebar host stacks the preview under the code; the expand button detaches it into an `svg-playground` tab that lays out side by side — the same pattern as the ML Lab's network diagram (see [[ml-lab]]), including carrying the collapse control back on the tab.
+Three panels. The SVG playground, added 2026-09-03, under the `art` pack (view `svg-playground`). Sidebar host stacks the preview under the code; the expand button detaches it into an `svg-playground` tab that lays out side by side — the same pattern as the ML Lab's network diagram (see [[ml-lab]]), including carrying the collapse control back on the tab.
 
 The left half is **four tabs over one document**: Source (CodeMirror), Canvas (direct manipulation), Shapes (parametric generators) and Presets (ready-made art). They are tabs, not modes — every pane reads and writes the same `source` string, so a shape can be generated, dragged on the canvas and then hand-tuned in code without any pane owning a copy. The right half (preview, optimize, export) is shared by all four.
 
@@ -149,10 +149,32 @@ Only the root `<svg …>` start tag is searched, and an attribute name must be p
 
 **Contrast lives here, not in [[web-dev-pack]]**, where the roadmap originally parked it. Picking colours and judging them is one activity; splitting it across two packs puts neither where you are when the question arises.
 
+## Backdrop (scenes)
+
+`BackdropPanel.tsx` plus `lib/scenes.ts`. View id `backdrop`. Nine generators at four aspects, coloured from a palette, with Roll and a seed lock.
+
+**`SceneDef` is a sibling to `ShapeDef`, never a replacement.** Three things a shape generator structurally cannot express, and they are the entire reason for the second type:
+
+| | `ShapeDef` | `SceneDef` |
+| --- | --- | --- |
+| Colour | `currentColor`, so art takes the theme | a palette, because a backdrop is *about* its colours |
+| Size | a 240 square | an aspect; a wave must know its own width |
+| Structure | one function, one document | layers — the stack *is* the generator |
+
+Everything else is unchanged and must stay so: pure function of its numbers, seeded randomness, output through the same optimizer/sanitizer/preview/exporter.
+
+**Colours come from the Palette panel's storage key**, read-only. That is why the two shipped in that order — they compose rather than each growing a colour picker.
+
+### Three decisions not to undo
+
+- **Depth is painted, not composited.** Bands are shaded by walking the palette, never by stacking translucent fills. Opacity stacking makes every layer depend on what is beneath it: a ten-layer wave goes muddy at the top and the palette stops meaning anything. A test asserts no scene emits a colour outside the palette it was given.
+- **Low-poly triangles carry a hairline stroke in their own fill.** Adjacent triangles share an edge and antialiasing leaves background showing through every seam. `shape-rendering: crispEdges` also fixes it and discards the antialiasing that makes the diagonals look right.
+- **The seeded PRNG lives in `lib/generative.ts`**, shared with `shapes.ts`. A second mulberry32 is pitfall #18's drift in miniature — identical at first, then one gets improved, and a seed means two different things depending on the panel.
+
 ## Not built yet
 
 The animator — a keyframe timeline over SMIL / CSS / Web Animations. Explicitly gated on the rest earning it, because a timeline UI is a genuinely large surface.
 
-The rest of the panel set is **decided and written down** in ROADMAP.md, against [haikei.com](https://haikei.com) as the reference. The framing that settles it: *the playground is a precision tool and Haikei is a generative one, and those are two jobs* — so the plan adds panels beside the playground rather than growing it. In build order: raster/file export (done), the palette panel (done), a Backdrop scene generator, an icon-set review panel, and a favicon exporter. The library change that gates the Backdrop is a `SceneDef` sibling to `ShapeDef` carrying colour, aspect and layers — the three things `shapes.ts` structurally cannot express.
+The rest of the panel set is **decided and written down** in ROADMAP.md, against [haikei.com](https://haikei.com) as the reference. The framing that settles it: *the playground is a precision tool and Haikei is a generative one, and those are two jobs* — so the plan adds panels beside the playground rather than growing it. In build order: raster/file export (done), the palette panel (done), the Backdrop scene generator (done), an icon-set review panel, and a favicon exporter. The library change that gates the Backdrop is a `SceneDef` sibling to `ShapeDef` carrying colour, aspect and layers — the three things `shapes.ts` structurally cannot express.
 
 Related: [[icon-and-motion-system]], [[editor]], [[expansion-packs]].
