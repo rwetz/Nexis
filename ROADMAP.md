@@ -218,7 +218,7 @@ CHANGELOG. What is left:
     160 imports expressing 136 ideas across 13 pixel sizes and 12 stroke weights; a panel that catches
     that drift is the pack dogfooding the codebase it ships in.
 
-  - [ ] **5: favicon / app-icon set.** One SVG in, the full size set plus a manifest out. Nearly free once
+  - [x] **5: favicon / app-icon set — shipped.** One SVG in, the full size set plus a manifest out. Nearly free once
     the raster and file-writing work above exists.
 
   - **Deliberately not built**, so these are not re-argued: **image tracing** (raster to vector) needs a
