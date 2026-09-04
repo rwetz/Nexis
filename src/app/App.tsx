@@ -219,6 +219,11 @@ const DatabasePanelLazy = lazy(() =>
 );
 // Lazy: the resource analyzer is only mounted when its rail item is selected,
 // which also stops it polling the Rust sampler on every launch.
+const CommandHistoryPanelLazy = lazy(() =>
+  import("@/modules/command-history/CommandHistoryPanel").then((m) => ({
+    default: m.CommandHistoryPanel,
+  })),
+);
 const SystemMonitorPanelLazy = lazy(() =>
   import("@/modules/sysmon/SystemMonitorPanel").then((m) => ({
     default: m.SystemMonitorPanel,
@@ -1418,6 +1423,7 @@ export default function App() {
     { id: "view.zenMode",        label: "Toggle zen mode",          category: "View",    action: () => setZenMode((v) => !v), keywords: ["distraction free", "hide header"] },
     { id: "pane.splitRight",     label: "Split pane right",         category: "Panes",   action: () => splitActivePaneInActiveTab("row") },
     { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
+    { id: "ledger.history",      label: "Show command history",     category: "View",    action: () => persistSidebarView("command-history"), pack: "dev-tools", keywords: ["ledger", "recorded", "commands", "trends", "journal", "output", "build time"] },
     { id: "webdev.http",         label: "Show HTTP client",         category: "View",    action: () => persistSidebarView("http-client"), pack: "web-dev", keywords: ["rest", "request", "curl", "api"] },
     { id: "webdev.tools",        label: "Show web tools (JSON, JWT, regex, codecs)", category: "View", action: () => persistSidebarView("web-tools"), pack: "web-dev", keywords: ["json", "jwt", "base64", "regex", "url encode", "format"] },
     { id: "art.svgPlayground",   label: "Open the SVG playground",  category: "View",    action: () => { openSvgPlaygroundTab(); }, pack: "art", keywords: ["svg", "icon", "vector", "art"] },
@@ -2040,6 +2046,10 @@ export default function App() {
                         view={sidebarView}
                         onShowExplorer={() => persistSidebarView("explorer")}
                       />
+                    ) : sidebarView === "command-history" ? (
+                      <Suspense fallback={null}>
+                        <CommandHistoryPanelLazy workspaceRoot={explorerRoot} />
+                      </Suspense>
                     ) : sidebarView === "http-client" ? (
                       <HttpClientPanel workspaceKey={workspaceProjectKey(explorerRoot)} />
                     ) : sidebarView === "web-tools" ? (

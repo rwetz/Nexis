@@ -201,6 +201,98 @@ export async function recordCommand(
 // of them answers null / 0 rather than throwing when there is no workspace
 // open: "nothing to do" is the ordinary case here, not an error.
 
+/** What a read of the metadata log is asking for. */
+export type LedgerQuery = {
+  /** Substring match against the command line only. */
+  query?: string;
+  /** Restrict by outcome. Absent means every record. */
+  exit?: "success" | "failure" | null;
+  /** Collapse repeats of the same command line, keeping the newest run. */
+  dedupe?: boolean;
+  limit: number;
+};
+
+/**
+ * Read this workspace's recorded commands, newest first.
+ *
+ * `exit: "success"` with `dedupe` is the success-filtered history the shell
+ * cannot offer: a history file records what you *typed*, never whether it
+ * worked, so "the docker command that succeeded in this repo" needs both the
+ * exit code and the per-workspace scope that only the ledger kept.
+ *
+ * Returns parsed records; an unparsable line is skipped rather than surfaced
+ * as a blank row.
+ */
+export async function queryLedger(
+  root: string | null,
+  query: LedgerQuery,
+): Promise<CommandRecord[]> {
+  if (!root) return [];
+  const lines = await native.ledgerQuery({
+    workspaceId: workspaceLedgerId(root),
+    query: {
+      query: query.query ?? "",
+      exit: query.exit ?? null,
+      dedupe: query.dedupe ?? false,
+      limit: query.limit,
+    },
+  });
+  return lines.map(parseRecord).filter((r): r is CommandRecord => r !== null);
+}
+
+/** One hit from the output archive: the command, and the line it matched. */
+export type OutputHit = {
+  record: CommandRecord;
+  snippet: string;
+  matches: number;
+};
+
+/**
+ * Search captured output — "where did I see that error string?".
+ *
+ * The live buffer answers this only until scrollback rolls past its cap
+ * (pitfall #7). The archive answers it for as long as retention keeps the
+ * blob, which is the whole reason output is stored at all.
+ */
+export async function searchLedgerOutput(
+  root: string | null,
+  query: string,
+  limit: number,
+): Promise<OutputHit[]> {
+  if (!root || query.trim() === "") return [];
+  const hits = await native.ledgerSearchOutput({
+    workspaceId: workspaceLedgerId(root),
+    query,
+    limit,
+  });
+  return hits.flatMap((h) => {
+    const record = parseRecord(h.line);
+    return record ? [{ record, snippet: h.snippet, matches: h.matches }] : [];
+  });
+}
+
+/** Forget one recorded command — §5's per-entry gesture. */
+export async function forgetLedgerEntry(
+  root: string | null,
+  id: string,
+): Promise<void> {
+  if (!root) return;
+  await native.ledgerForgetEntry(workspaceLedgerId(root), id);
+}
+
+/** Read one command's captured output, or null if the blob is gone. */
+export async function readLedgerOutput(
+  root: string | null,
+  outputId: string,
+): Promise<string | null> {
+  if (!root) return null;
+  try {
+    return await native.ledgerReadOutput(workspaceLedgerId(root), outputId);
+  } catch {
+    return null;
+  }
+}
+
 export type LedgerStats = {
   records: number;
   logBytes: number;

@@ -5,20 +5,34 @@
 // ╚══════════════════════════════════════╝
 
 /**
- * Shell history overlay (Ctrl-R style).
+ * Command history overlay (Ctrl-R style), over two sources.
  *
- * Performance improvement: instead of loading the full history into JS
- * (up to 10 000 entries) and filtering client-side on every keystroke, we
- * call `search_shell_history` on the Rust side.  Rust parses all history
- * files, deduplicates, filters with a substring match, and returns only the
- * matching `limit` entries — keeping the IPC payload small regardless of
- * history size.
+ * **Shell history** is every shell's history file, parsed, deduplicated and
+ * substring-filtered on the Rust side by `search_shell_history` — the payload
+ * stays small regardless of history size, instead of shipping up to 10,000
+ * entries into JS and filtering there on every keystroke.
+ *
+ * **Succeeded here** is the command ledger, filtered to exit code 0 and to
+ * the open workspace. This is ROADMAP's *success-filtered history*, and it is
+ * the query you always actually want: no shell's history file records whether
+ * a command **worked**, so "the docker command that succeeded in this repo" is
+ * unanswerable from `~/.zsh_history` no matter how good the fuzzy match is.
+ * Both facts it needs — the exit code and the per-workspace scope — exist only
+ * because the ledger kept them. The source is off unless recording is on, and
+ * the toggle says so rather than showing an empty list.
  *
  * Queries are debounced at 120 ms so we don't hammer the IPC channel while
  * the user is typing quickly.
  */
+import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
+import { formatDuration, relativeTime } from "@/lib/format";
+import { usePreferencesStore } from "@/modules/settings/preferences";
 import { writeToLeaf } from "@/modules/terminal";
+import {
+  currentLedgerWorkspaceRoot,
+  queryLedger,
+} from "@/modules/terminal/lib/ledger";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState, useCallback } from "react";
 
@@ -31,68 +45,133 @@ type Props = {
   onClose: () => void;
 };
 
-function useSearchHistory() {
-  const [results, setResults] = useState<string[]>([]);
+/** Which store the rows came from. */
+type Source = "shell" | "ledger";
+
+/**
+ * One row, whichever source produced it. The shell file has nothing but the
+ * command line; the ledger adds what it alone knows.
+ */
+type Row = { command: string; meta: string | null };
+
+/** "12s · 3h ago" — the ledger's added value, in the width of a timestamp. */
+function ledgerMeta(durationMs: number, startedAt: number): string {
+  const when = relativeTime(startedAt);
+  // Sub-second commands report no duration: "0s" next to every `cd` is noise,
+  // and the number only earns its place once it is worth noticing.
+  return durationMs >= 1000
+    ? `${formatDuration(Math.round(durationMs / 1000))} · ${when}`
+    : when;
+}
+
+/**
+ * Runs the query against whichever source is selected.
+ *
+ * The source is a dependency of the search rather than of a second hook, so
+ * flipping it re-runs the *current* query immediately — a toggle that made you
+ * retype what you had already typed would not be worth pressing.
+ */
+function useSearchHistory(source: Source, workspaceRoot: string | null) {
+  const [results, setResults] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Every response carries the request that produced it, so a slow answer for
+  // an abandoned query or a switched-away source cannot overwrite a newer one.
+  const seqRef = useRef(0);
 
-  // Fire an immediate search (no debounce) — used for the initial empty-query load.
-  const searchNow = useCallback((query: string, limit: number) => {
-    invoke<string[]>("search_shell_history", { query, limit })
-      .then((entries) => {
-        setResults(entries);
-        setError(false);
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Debounced version for query changes while the user is typing.
-  const searchDebounced = useCallback((query: string) => {
-    if (timerRef.current !== null) clearTimeout(timerRef.current);
-    // Show "…" immediately so the badge doesn't show stale counts while
-    // waiting for the debounced Rust call to fire and return.
-    setLoading(true);
-    timerRef.current = setTimeout(() => {
-      void invoke<string[]>("search_shell_history", {
-        query,
-        limit: SEARCH_LIMIT,
-      })
-        .then((entries) => {
-          setResults(entries);
+  const run = useCallback(
+    (query: string, limit: number) => {
+      const seq = ++seqRef.current;
+      const settle = (rows: Row[] | null) => {
+        if (seq !== seqRef.current) return;
+        if (rows === null) {
+          setError(true);
+        } else {
+          setResults(rows);
           setError(false);
-        })
-        .catch(() => setError(true))
-        .finally(() => setLoading(false));
-    }, DEBOUNCE_MS);
-  }, []);
+        }
+        setLoading(false);
+      };
 
-  // Load initial results on mount.
-  useEffect(() => {
-    searchNow("", INITIAL_LIMIT);
-    return () => {
+      if (source === "ledger") {
+        void queryLedger(workspaceRoot, {
+          query,
+          exit: "success",
+          dedupe: true,
+          limit,
+        })
+          .then((records) =>
+            settle(
+              records.map((r) => ({
+                command: r.argv,
+                meta: ledgerMeta(r.durationMs, r.startedAt),
+              })),
+            ),
+          )
+          .catch(() => settle(null));
+        return;
+      }
+
+      void invoke<string[]>("search_shell_history", { query, limit })
+        .then((entries) =>
+          settle(entries.map((command) => ({ command, meta: null }))),
+        )
+        .catch(() => settle(null));
+    },
+    [source, workspaceRoot],
+  );
+
+  const searchDebounced = useCallback(
+    (query: string) => {
       if (timerRef.current !== null) clearTimeout(timerRef.current);
-    };
-  }, [searchNow]);
+      // Show "…" immediately so the badge doesn't show stale counts while
+      // waiting for the debounced call to fire and return.
+      setLoading(true);
+      timerRef.current = setTimeout(
+        () => run(query, query === "" ? INITIAL_LIMIT : SEARCH_LIMIT),
+        DEBOUNCE_MS,
+      );
+    },
+    [run],
+  );
+
+  useEffect(
+    () => () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current);
+    },
+    [],
+  );
 
   return { results, loading, error, searchDebounced };
 }
 
 export function ShellHistoryOverlay({ leafId, onClose }: Props) {
   const [query, setQuery] = useState("");
+  const [source, setSource] = useState<Source>("shell");
   const [activeIdx, setActiveIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const { results, loading, error, searchDebounced } = useSearchHistory();
+  // The ledger source needs both halves of its own promise: something must
+  // have been recorded, and there must be a workspace to scope it to. Read
+  // once — neither can change while this overlay is open.
+  const ledgerEnabled = usePreferencesStore((s) => s.commandLedgerEnabled);
+  const [workspaceRoot] = useState(() => currentLedgerWorkspaceRoot());
+  const ledgerAvailable = ledgerEnabled && workspaceRoot !== null;
+
+  const { results, loading, error, searchDebounced } = useSearchHistory(
+    source,
+    workspaceRoot,
+  );
 
   // Focus input on mount.
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Trigger server-side search whenever query changes.
+  // Re-run whenever the query *or* the source changes, so flipping the toggle
+  // answers the question already typed rather than clearing it.
   useEffect(() => {
     setActiveIdx(0);
     searchDebounced(query.trim());
@@ -105,15 +184,28 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
   }, [activeIdx]);
 
   const commit = (idx: number) => {
-    const cmd = results[idx];
-    if (cmd != null) {
+    const row = results[idx];
+    if (row != null) {
       // Insert into terminal — do NOT auto-submit; let the user review / edit.
-      writeToLeaf(leafId, cmd);
+      writeToLeaf(leafId, row.command);
     }
     onClose();
   };
 
+  // Ctrl+R opens this overlay from the terminal; pressing it again once the
+  // overlay has focus cycles the source, which is the idiom every other
+  // history picker uses and costs no new binding.
+  const toggleSource = () => {
+    if (!ledgerAvailable) return;
+    setSource((s) => (s === "shell" ? "ledger" : "shell"));
+  };
+
   const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === "r" && e.ctrlKey && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      toggleSource();
+      return;
+    }
     switch (e.key) {
       case "Escape":
         onClose();
@@ -130,12 +222,14 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
         e.preventDefault();
         commit(activeIdx);
         return;
-      case "Tab":
+      case "Tab": {
         // Insert selected command without closing so the user can keep editing.
         e.preventDefault();
-        if (results[activeIdx] != null) writeToLeaf(leafId, results[activeIdx]);
+        const row = results[activeIdx];
+        if (row != null) writeToLeaf(leafId, row.command);
         onClose();
         return;
+      }
     }
   };
 
@@ -164,24 +258,24 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
       <div className="relative z-10 flex w-[600px] max-w-[90vw] flex-col overflow-hidden rounded-xl border border-border/60 bg-background shadow-2xl">
         {/* Search input */}
         <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5">
-          <svg
-            className="size-4 shrink-0 text-muted-foreground"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.75}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-            />
-          </svg>
+          <Icon
+            name="clock"
+            size="sm"
+            className="shrink-0 text-muted-foreground"
+          />
           <input
             ref={inputRef}
             type="text"
-            aria-label="Search shell history"
-            placeholder="Search history…"
+            aria-label={
+              source === "ledger"
+                ? "Search commands that succeeded here"
+                : "Search shell history"
+            }
+            placeholder={
+              source === "ledger"
+                ? "Search commands that worked here…"
+                : "Search history…"
+            }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKey}
@@ -189,6 +283,59 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
           />
           <span className="text-[10.5px] text-muted-foreground/60">
             {loading ? "…" : `${results.length} results`}
+          </span>
+        </div>
+
+        {/* Source toggle. Rendered even when the ledger is unavailable, with
+            the reason on it: a control that silently disappears teaches the
+            user nothing, and this one is the only place the feature is
+            discoverable from. */}
+        <div className="flex items-center gap-1 border-b border-border/40 px-2.5 py-1.5">
+          {(
+            [
+              ["shell", "Shell history"],
+              ["ledger", "Succeeded here"],
+            ] as const
+          ).map(([id, label]) => {
+            const active = source === id;
+            const disabled = id === "ledger" && !ledgerAvailable;
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={active}
+                disabled={disabled}
+                title={
+                  disabled
+                    ? workspaceRoot === null
+                      ? "Open a folder to search commands recorded in it"
+                      : "Turn on command recording in Settings > Privacy"
+                    : undefined
+                }
+                onMouseDown={(e) => {
+                  // Keep focus in the input: the toggle is a detour, not a
+                  // destination, and losing the caret would cost a click back.
+                  e.preventDefault();
+                  setSource(id);
+                }}
+                className={cn(
+                  "rounded-md px-2 py-0.5 text-[11px] transition-colors",
+                  active
+                    ? "bg-accent/70 text-foreground"
+                    : "text-muted-foreground hover:bg-muted/40",
+                  disabled && "cursor-not-allowed opacity-40 hover:bg-transparent",
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+          <span className="ml-auto pr-1 text-[10px] text-muted-foreground/60">
+            {source === "ledger"
+              ? "exit 0, this workspace"
+              : ledgerAvailable
+                ? "Ctrl+R switches"
+                : null}
           </span>
         </div>
 
@@ -200,15 +347,17 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
           {isEmpty && (
             <div className="px-4 py-6 text-center text-[12px] text-muted-foreground">
               {error
-                ? "Could not load shell history"
+                ? "Could not load history"
                 : query.trim()
                   ? "No matches"
-                  : "No shell history found"}
+                  : source === "ledger"
+                    ? "Nothing recorded here yet — commands appear once they finish"
+                    : "No shell history found"}
             </div>
           )}
-          {results.map((cmd, idx) => (
+          {results.map((row, idx) => (
             <button
-              key={`${cmd}-${idx}`}
+              key={`${row.command}-${idx}`}
               type="button"
               onMouseDown={(e) => {
                 e.preventDefault();
@@ -216,15 +365,20 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
               }}
               onMouseEnter={() => setActiveIdx(idx)}
               className={cn(
-                "flex w-full items-center px-3 py-1.5 text-left",
+                "flex w-full items-center gap-3 px-3 py-1.5 text-left",
                 idx === activeIdx
                   ? "bg-accent/60 text-foreground"
                   : "text-foreground hover:bg-muted/40",
               )}
             >
-              <span className="block w-full truncate font-mono text-[12px]">
-                {cmd}
+              <span className="min-w-0 flex-1 truncate font-mono text-[12px]">
+                {row.command}
               </span>
+              {row.meta ? (
+                <span className="shrink-0 font-mono text-[10.5px] text-muted-foreground/70">
+                  {row.meta}
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -234,6 +388,11 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
           <span><kbd className="font-mono">↵</kbd> insert</span>
           <span><kbd className="font-mono">↑↓</kbd> navigate</span>
           <span><kbd className="font-mono">Esc</kbd> close</span>
+          {ledgerAvailable ? (
+            <span className="ml-auto">
+              <kbd className="font-mono">Ctrl+R</kbd> source
+            </span>
+          ) : null}
         </div>
       </div>
     </div>

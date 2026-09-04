@@ -126,6 +126,7 @@ export function SidebarRail({
     { id: "ports",          label: "Ports",            icon: "network",      group: "Dev Tools" },
     { id: "repl",           label: "REPL",             icon: "terminal", group: "Dev Tools" },
     { id: "database",       label: "Database",         icon: "database",    group: "Dev Tools" },
+    { id: "command-history", label: "Command History", icon: "clock",       group: "Dev Tools" },
     { id: "ml",             label: "ML Lab",           icon: "brain",     group: "Dev Tools" },
     { id: "profiles",       label: "Profiles",         icon: "layers",        group: "Dev Tools" },
     { id: "ssh",            label: "SSH",              icon: "terminal",      group: "Dev Tools" },

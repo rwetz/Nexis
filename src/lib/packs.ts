@@ -97,7 +97,7 @@ export const PACKS: Record<PackId, PackDef> = {
     id: "dev-tools",
     label: "Dev Tools",
     description:
-      "Process activity, system resource monitor, port monitor, REPL, database client, workspace profiles, and SSH.",
+      "Process activity, system resource monitor, port monitor, REPL, database client, command history, workspace profiles, and SSH.",
     icon: "cpu",
     views: [
       "processes",
@@ -105,6 +105,7 @@ export const PACKS: Record<PackId, PackDef> = {
       "ports",
       "repl",
       "database",
+      "command-history",
       "profiles",
       "ssh",
     ],

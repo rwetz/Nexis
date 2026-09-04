@@ -177,15 +177,19 @@ and stop. Don't batch them.
   path hash with the git root commit as an *offered* re-association key (pitfall #23 — and note
   `workspaceScopeKey()` is environment-scoped, not project-scoped, so it is the wrong helper here); and
   retention runs two independent caps, evicting output blobs before metadata.
-  **The writer, both tripwires, and the privacy surface have shipped** — the store
+  **The substrate, the privacy surface, and the first four gated features have shipped.** The store
   (`src-tauri/src/modules/ledger.rs`), the frontend writer (`src/modules/terminal/lib/ledger.ts`), the
-  OSC-133 gate, the two guards in `src/lib/pitfall-guards.test.ts`, and now a **Settings > Privacy page**
-  carrying §5's forget gestures (three time windows plus a per-workspace wipe) and §7's two retention
-  caps, with `ledger_prune` finally called on workspace open. All of it before any panel exists, as the
-  record required. Remaining work: the **eight gated features** that read from it; the **per-entry
-  forget** from the block gutter, which belongs with the panel that shows entries; and §6's **git
-  root-commit re-association offer**, so a moved workspace can adopt its old ledger instead of starting
-  fresh.
+  OSC-133 gate and the two guards in `src/lib/pitfall-guards.test.ts` came first, before any panel, as
+  the record required. Then **Settings > Privacy**, carrying §5's forget gestures and §7's two retention
+  caps with `ledger_prune` finally called on workspace open. Then the read side: a **Command History
+  panel** (Dev Tools) plus a source toggle in the Ctrl+R overlay, which between them deliver
+  **success-filtered history**, the **searchable output archive**, **build-time trends**, the **work
+  journal**, and §5's per-entry forget.
+
+  Remaining: **command provenance** (correlating fswatch events against the block that was running —
+  the hard part is attribution confidence, not capture), the **failure-to-fix loop**, **"while you were
+  away"**, **"where was I?"**, and §6's **git root-commit re-association offer**, so a moved workspace
+  can adopt its old ledger instead of starting fresh.
 
 ### From the 2026-09-03 usage session (owner feedback)
 
@@ -329,28 +333,28 @@ call. (These use words rather than the coloured markers the two surveys above us
   owns both the PTY and the watcher. The hard part is attribution confidence, not capture — concurrent
   commands, background jobs, and editor saves all write files, so the panel has to be honest about
   "probably" rather than inventing a causal claim.
-- **cheap** *(ledger)* — **Success-filtered history.** Fuzzy shell-history search already ships; the
-  filter missing from it is the one you always actually want — **exit code 0 only, scoped to this repo**.
-  "The docker command that *worked* here" is a different query from "a docker command I typed," and no
-  shell's history file stores the difference.
+- ~~**Success-filtered history**~~ — **shipped.** A source toggle in the Ctrl+R overlay rather than a new
+  surface: *Succeeded here* reads the ledger filtered to exit 0 and to the open workspace, and Ctrl+R
+  again cycles the source. Ledger rows carry the duration and age, which no history file knows.
 - **moderate** *(ledger)* — **Failure to fix loop.** The exit-status gutter already knows a command
   failed. Offer an inline fix that receives the real stderr, cwd, exit code and preceding commands — then
   **record whether the fix worked**, which is the part that makes it compound. Over months it becomes a
   repo-local playbook: *this error, this fix, worked 4 of 5 times.* A chatbot cannot build this because it
   never observes the outcome.
-- **cheap** *(ledger)* — **Build-time trends.** Every block is already timed. Chart the p50 of a given
-  command per repo over weeks: *`cargo build` went 18s to 47s three commits ago.* Nothing else times the
-  commands you actually run, and the regression is usually invisible until it is unbearable.
-- **moderate** *(ledger)* — **Searchable output archive.** Search all past terminal output for a
-  workspace, not just the live buffer. "Where did I see that error string?" is currently unanswerable the
-  moment scrollback rolls past the cap (pitfall #7). Storage cap and redaction are the whole design.
+- ~~**Build-time trends**~~ — **shipped** as the Command History panel's Trends tab. One decision worth
+  keeping: rows are ranked by **total** time spent, not by the slowest run, because a command run 200
+  times for 2s costs more of the day than one 40s outlier. Drift is withheld below six runs rather than
+  computed from two samples pretending to be a trend.
+- ~~**Searchable output archive**~~ — **shipped** as the panel's *In output* mode. A scan over blobs, not
+  an index, per §2 of the decision record. Storage cap and redaction were indeed the whole design, and
+  both were already answered by the writer and the retention caps before this was built.
 - **moderate** *(ledger)* — **"While you were away."** On reopening a workspace: commits pulled, files
   changed by other processes, dependency drift, CI status. A standup for one person. IDEs show git status;
   none of them narrate what changed since you last looked.
-- **cheap** *(ledger)* — **Work journal.** Auto-assembled from the ledger, git, and AI turns: *"Today: 3
-  commits, 47 builds, 2h in `src/modules/ai`."* Feeds standups, invoices, and your own memory of what you
-  did last Tuesday. Worth naming why this is missing everywhere else: developer tools are built for teams,
-  and a team gets this from the tracker. A solo developer has no tracker, and nothing reconstructs the day.
+- ~~**Work journal**~~ — **shipped** as the panel's Journal tab, over today / 7 days / 30 days. Ledger
+  only for now; folding in git and AI turns is the obvious next increment. The "running" figure is
+  labelled as time inside commands rather than time worked, because a dev server left running inflates it
+  and an hours-worked number would be a claim this data cannot support.
 - **moderate** *(ledger)* — **"Where was I?"** Session restore already brings back tabs and layout. This
   restores *intent*: the test that was failing, the branch, the unanswered question left in the AI thread,
   the command that was half-typed. The gap between "my windows came back" and "I know what I was doing" is

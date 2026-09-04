@@ -225,6 +225,184 @@ pub async fn ledger_read(workspace_id: String, limit: usize) -> Result<Vec<Strin
     .await
 }
 
+/// What a caller wants out of the metadata log.
+///
+/// One options struct rather than a widening list of positional flags: the
+/// history overlay wants successes only and deduplicated, the panel's list
+/// wants every run in order, and its failure filter wants the opposite exit
+/// filter. Those are the same scan with different predicates, and splitting
+/// them into separate commands would mean three copies of it.
+#[derive(serde::Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LedgerQuery {
+    /// Substring match, against the command line only.
+    pub query: String,
+    /// `"success"` (exit 0), `"failure"` (anything else), or absent for any.
+    pub exit: Option<String>,
+    /// Collapse repeats of the same command line, keeping the newest run.
+    pub dedupe: bool,
+    pub limit: usize,
+}
+
+/// Read the metadata log, newest first, filtered.
+///
+/// This is the read side of ROADMAP's ledger-gated features. The one that
+/// justifies the store on its own is **success-filtered history**: a shell's
+/// history file records what you *typed*, never whether it worked, so "the
+/// docker command that succeeded in this repo" is a question no `Ctrl+R` can
+/// answer. Both facts it needs — the exit code and the per-workspace scope —
+/// exist only because the ledger kept them.
+///
+/// Filtering happens here rather than in the webview for the same reason
+/// `search_shell_history` does it in Rust: the log can be tens of MB, and
+/// shipping all of it across IPC on every keystroke to filter it there would
+/// make a debounced search cost more than the search saves.
+///
+/// The matched **lines are returned untouched**. Rust reads two fields to
+/// decide whether a record matches; it never rewrites one. The frontend still
+/// owns the record schema, exactly as `ledger_append` intends.
+#[tauri::command]
+pub async fn ledger_query(workspace_id: String, query: LedgerQuery) -> Result<Vec<String>, String> {
+    crate::modules::heavy(move || {
+        let dir = workspace_dir(&workspace_id)?;
+        let lines = read_log(&dir)?;
+        Ok(query_lines(&lines, &query))
+    })
+    .await
+}
+
+/// Whether a record's `exitCode` satisfies the query's exit filter.
+fn exit_matches(value: &serde_json::Value, want: Option<&str>) -> bool {
+    let code = value.get("exitCode").and_then(serde_json::Value::as_i64);
+    match want {
+        Some("success") => code == Some(0),
+        // A record with no exit code is not a *failure*; it is an unknown, and
+        // reporting unknowns as failures would make the filter lie.
+        Some("failure") => code.is_some_and(|c| c != 0),
+        _ => true,
+    }
+}
+
+fn query_lines(lines: &[String], q: &LedgerQuery) -> Vec<String> {
+    let needle = q.query.trim().to_lowercase();
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut out: Vec<String> = Vec::new();
+    // Reverse: the log is append-ordered, so newest-first is the tail. The
+    // dedupe therefore keeps the *most recent* run of a repeated command,
+    // which is the one "did this work here" is asking about.
+    for line in lines.iter().rev() {
+        if out.len() >= q.limit {
+            break;
+        }
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else {
+            continue;
+        };
+        let Some(argv) = value.get("argv").and_then(|v| v.as_str()) else {
+            continue;
+        };
+        if !exit_matches(&value, q.exit.as_deref()) {
+            continue;
+        }
+        if !needle.is_empty() && !argv.to_lowercase().contains(&needle) {
+            continue;
+        }
+        if !q.dedupe || seen.insert(argv.to_string()) {
+            out.push(line.clone());
+        }
+    }
+    out
+}
+
+/// One hit from the output archive: the record, and the line it matched on.
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LedgerOutputHit {
+    /// The NDJSON metadata record, untouched.
+    pub line: String,
+    /// The matching line of output, trimmed and capped.
+    pub snippet: String,
+    /// How many lines of that blob matched, so a single hit and a hundred
+    /// hits do not look identical.
+    pub matches: usize,
+}
+
+/// The longest snippet worth putting in a list row.
+const SNIPPET_CHARS: usize = 240;
+
+/// Search captured output — "where did I see that error string?".
+///
+/// The live buffer answers this only until scrollback rolls past its cap
+/// (pitfall #7); the archive answers it for as long as retention keeps the
+/// blob. Deliberately a scan rather than an index: §2 of the decision record
+/// rejects a relational store, and a content search over blobs is the same
+/// problem `ripgrep` solves at the same cost class.
+///
+/// Bounded twice — it stops at `limit` hits, and it only ever opens blobs
+/// named by a surviving record, newest first. An unreferenced blob is
+/// unreachable by design and the next prune deletes it.
+#[tauri::command]
+pub async fn ledger_search_output(
+    workspace_id: String,
+    query: String,
+    limit: usize,
+) -> Result<Vec<LedgerOutputHit>, String> {
+    crate::modules::heavy(move || {
+        let needle = query.trim().to_lowercase();
+        if needle.is_empty() {
+            return Ok(Vec::new());
+        }
+        let dir = workspace_dir(&workspace_id)?;
+        let blobs = blobs_dir(&workspace_id)?;
+        let lines = read_log(&dir)?;
+
+        let mut hits: Vec<LedgerOutputHit> = Vec::new();
+        for line in lines.iter().rev() {
+            if hits.len() >= limit {
+                break;
+            }
+            let Some(output_id) = line_output_id(line) else {
+                continue;
+            };
+            let Ok(body) = fs::read_to_string(blobs.join(&output_id)) else {
+                continue;
+            };
+            if let Some(hit) = first_match(&body, &needle) {
+                hits.push(LedgerOutputHit {
+                    line: line.clone(),
+                    snippet: hit.0,
+                    matches: hit.1,
+                });
+            }
+        }
+        Ok(hits)
+    })
+    .await
+}
+
+/// The first matching line of a blob and the total number that matched.
+fn first_match(body: &str, needle: &str) -> Option<(String, usize)> {
+    let mut first: Option<String> = None;
+    let mut count = 0usize;
+    for raw in body.lines() {
+        if raw.to_lowercase().contains(needle) {
+            count += 1;
+            if first.is_none() {
+                let trimmed = raw.trim();
+                // Cap by *characters*, not bytes: slicing a multi-byte
+                // sequence in half would panic, and terminal output is full
+                // of box-drawing and accented text.
+                let snippet: String = trimmed.chars().take(SNIPPET_CHARS).collect();
+                first = Some(if trimmed.chars().count() > SNIPPET_CHARS {
+                    format!("{snippet}…")
+                } else {
+                    snippet
+                });
+            }
+        }
+    }
+    first.map(|s| (s, count))
+}
+
 /// What the ledger currently holds for one workspace.
 ///
 /// This exists because every gesture on the privacy surface is otherwise
@@ -527,6 +705,130 @@ mod tests {
         assert_eq!(after.len(), 2);
         // The bytes are gone, not tombstoned — that is the whole point of §5.
         assert!(!after.iter().any(|l| l.contains("drop")));
+    }
+
+    fn record(argv: &str, exit: i64, started: i64) -> String {
+        format!(r#"{{"id":"c{started}","startedAt":{started},"argv":"{argv}","exitCode":{exit}}}"#)
+    }
+
+    fn q(query: &str, exit: Option<&str>, dedupe: bool, limit: usize) -> LedgerQuery {
+        LedgerQuery {
+            query: query.to_string(),
+            exit: exit.map(str::to_string),
+            dedupe,
+            limit,
+        }
+    }
+
+    #[test]
+    fn query_keeps_only_successful_commands_when_asked() {
+        let lines = vec![
+            record("cargo build", 101, 1),
+            record("cargo test", 0, 2),
+            record("cargo clippy", 1, 3),
+        ];
+        let hits = query_lines(&lines, &q("cargo", Some("success"), true, 10));
+        assert_eq!(hits.len(), 1);
+        assert!(hits[0].contains("cargo test"));
+        // The opposite filter is the panel's "only failures" view.
+        assert_eq!(
+            query_lines(&lines, &q("cargo", Some("failure"), true, 10)).len(),
+            2
+        );
+        // No filter at all is every one of them.
+        assert_eq!(query_lines(&lines, &q("cargo", None, true, 10)).len(), 3);
+    }
+
+    /// A record with no exit code is an *unknown*, not a failure. Reporting
+    /// unknowns as failures would make the filter lie about what it shows.
+    #[test]
+    fn query_does_not_count_a_missing_exit_code_as_a_failure() {
+        let lines = vec![r#"{"id":"a","startedAt":1,"argv":"ls"}"#.to_string()];
+        assert!(query_lines(&lines, &q("", Some("failure"), false, 10)).is_empty());
+        assert!(query_lines(&lines, &q("", Some("success"), false, 10)).is_empty());
+        assert_eq!(query_lines(&lines, &q("", None, false, 10)).len(), 1);
+    }
+
+    /// The dedupe must keep the newest run, not the first: "did this work
+    /// here" is a question about the last time it was tried.
+    #[test]
+    fn query_dedupes_by_command_line_keeping_the_newest_run() {
+        let lines = vec![
+            record("pnpm build", 0, 1),
+            record("pnpm build", 0, 2),
+            record("pnpm build", 0, 3),
+        ];
+        let hits = query_lines(&lines, &q("", Some("success"), true, 10));
+        assert_eq!(hits.len(), 1);
+        assert!(hits[0].contains(r#""startedAt":3"#));
+        // Undeduped, the same query is the panel's chronological list.
+        assert_eq!(
+            query_lines(&lines, &q("", Some("success"), false, 10)).len(),
+            3
+        );
+    }
+
+    #[test]
+    fn query_returns_newest_first_and_respects_the_limit() {
+        let lines: Vec<String> = (1..=5).map(|i| record(&format!("cmd{i}"), 0, i)).collect();
+        let hits = query_lines(&lines, &q("", None, true, 2));
+        assert_eq!(hits.len(), 2);
+        assert!(hits[0].contains("cmd5"));
+        assert!(hits[1].contains("cmd4"));
+    }
+
+    /// The query matches the command line only. Matching the raw record would
+    /// let a search for "src" hit every command that merely *ran* in a cwd
+    /// containing it, which is not what the box says it does.
+    #[test]
+    fn query_matches_the_command_line_and_not_the_rest_of_the_record() {
+        let lines = vec![
+            r#"{"id":"a","startedAt":1,"cwd":"C:/proj/docker","argv":"ls","exitCode":0}"#
+                .to_string(),
+            record("docker ps", 0, 2),
+        ];
+        let hits = query_lines(&lines, &q("docker", None, true, 10));
+        assert_eq!(hits.len(), 1);
+        assert!(hits[0].contains("docker ps"));
+    }
+
+    #[test]
+    fn query_is_case_insensitive_and_skips_junk_lines() {
+        let lines = vec![
+            "not json at all".to_string(),
+            r#"{"id":"a","startedAt":1}"#.to_string(), // no argv
+            record("Cargo Build", 0, 2),
+        ];
+        assert_eq!(
+            query_lines(&lines, &q("cargo build", None, true, 10)).len(),
+            1
+        );
+    }
+
+    #[test]
+    fn query_returns_the_line_untouched_so_the_frontend_still_owns_the_schema() {
+        let line = record("ls", 0, 7);
+        let hits = query_lines(&[line.clone()], &q("", None, true, 10));
+        assert_eq!(hits[0], line);
+    }
+
+    #[test]
+    fn output_search_reports_the_first_matching_line_and_the_total() {
+        let body = "compiling\nerror: cannot find value `x`\nerror: aborting\n";
+        let (snippet, count) = first_match(body, "error:").expect("a match");
+        assert_eq!(snippet, "error: cannot find value `x`");
+        assert_eq!(count, 2);
+        assert!(first_match(body, "warning:").is_none());
+    }
+
+    /// Terminal output is full of box drawing and accented text, so the cap
+    /// counts characters. A byte slice through a multi-byte sequence panics.
+    #[test]
+    fn output_snippet_caps_by_characters_not_bytes() {
+        let body = "x".to_string() + &"\u{2500}".repeat(SNIPPET_CHARS + 50);
+        let (snippet, _) = first_match(&body, "x").expect("a match");
+        assert_eq!(snippet.chars().count(), SNIPPET_CHARS + 1); // + the ellipsis
+        assert!(snippet.ends_with('\u{2026}'));
     }
 
     #[test]

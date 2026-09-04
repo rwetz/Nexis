@@ -19,8 +19,23 @@ Shipped so far, and where it lives:
 | Forget + retention UI (§5, §7) | `src/settings/sections/PrivacySection.tsx` | Global toggle, three caps, the three time windows, and the per-workspace wipe. |
 | Prune on workspace open (§7) | `src/app/App.tsx` | Keyed on the caps as well as the root, so a changed cap applies without a folder switch. |
 | Tripwires | `src/lib/pitfall-guards.test.ts` | Redaction before IPC; private terminals excluded at the source. |
+| The read side (`ledger_query`, `ledger_search_output`) | `src-tauri/src/modules/ledger.rs` | One options struct rather than four commands — see below. |
+| Command History panel | `src/modules/command-history/` | Recent + per-entry forget, output archive, trends, journal. |
+| Success-filtered history | `src/components/ShellHistoryOverlay.tsx` | A source toggle on the existing Ctrl+R overlay, not a new surface. |
 
-**Not built yet:** the eight gated features, the per-entry forget from the block gutter (§5 — it belongs with the panel that shows entries), and the git-root-commit re-association offer (§6 — identity is the path hash alone today, so a moved non-git *or* git workspace starts fresh).
+**Four gated features have shipped**: success-filtered history, the searchable output archive, build-time trends, and the work journal. **Not built yet:** command provenance, the failure-to-fix loop, "while you were away", "where was I?", and the git-root-commit re-association offer (§6 — identity is the path hash alone today, so a moved workspace starts fresh).
+
+### What the read side had to decide
+
+**One query command, not four.** The overlay wants successes deduplicated; the panel's list wants every run in order; its failure filter wants the opposite exit predicate. Those are the same scan, so `ledger_query` takes an options struct (`query`, `exit`, `dedupe`, `limit`) rather than growing a positional flag per caller or three commands with three copies of the loop.
+
+**Rust reads two fields and rewrites none.** `ledger_query` parses each line to test `argv` and `exitCode`, then returns the **original line**. That keeps §1's rule intact — the frontend owns the record schema — while still filtering where the data is. Substring matching is against `argv` only: matching the raw record would let a search for `src` hit every command that merely *ran* in a directory containing it.
+
+**A missing `exitCode` is an unknown, not a failure.** The failure filter excludes it. Reporting unknowns as failures would make the filter lie about what it is showing, and the count beside it is something a person acts on.
+
+**The output archive is a scan, and stays one.** §2 already rejected a relational store; content search over blobs is what ripgrep solves at the same cost class. It is bounded twice — it stops at the hit limit, and it only opens blobs a surviving record names, newest first. An unreferenced blob is unreachable by design and the next prune deletes it.
+
+**Trends rank by total time, not by the slowest run**, and withhold drift below six runs. A command run 200 times for 2s costs more of the day than one 40s outlier; a drift figure from two samples is a number nobody should act on, so the panel shows a gap instead.
 
 ## Context
 

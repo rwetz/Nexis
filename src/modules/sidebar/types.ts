@@ -40,6 +40,7 @@ export const SIDEBAR_VIEW_IDS = [
   "animator",
   "web-tools",
   "http-client",
+  "command-history",
 ] as const;
 
 export type SidebarViewId = (typeof SIDEBAR_VIEW_IDS)[number];

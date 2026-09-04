@@ -270,6 +270,24 @@ export const native = {
     invoke<number>("ledger_forget_since", { workspaceId, sinceMs }),
   ledgerForgetWorkspace: (workspaceId: string) =>
     invoke<void>("ledger_forget_workspace", { workspaceId }),
+  ledgerQuery: (params: {
+    workspaceId: string;
+    query: {
+      query: string;
+      exit: "success" | "failure" | null;
+      dedupe: boolean;
+      limit: number;
+    };
+  }) => invoke<string[]>("ledger_query", params),
+  ledgerSearchOutput: (params: {
+    workspaceId: string;
+    query: string;
+    limit: number;
+  }) =>
+    invoke<{ line: string; snippet: string; matches: number }[]>(
+      "ledger_search_output",
+      params,
+    ),
   ledgerStats: (workspaceId: string) =>
     invoke<{
       records: number;

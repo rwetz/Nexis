@@ -7,8 +7,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { native } from "@/modules/ai/lib/native";
 import {
+  forgetLedgerEntry,
   forgetLedgerSince,
+  queryLedger,
+  readLedgerOutput,
   recordCommand,
+  searchLedgerOutput,
   setLedgerPrivacyResolver,
   setLedgerWorkspaceSource,
   forgetLedgerWorkspace,
@@ -25,6 +29,8 @@ vi.mock("@/modules/ai/lib/native", () => ({
     ledgerReadOutput: vi.fn(),
     ledgerRead: vi.fn(),
     ledgerStats: vi.fn(),
+    ledgerQuery: vi.fn(),
+    ledgerSearchOutput: vi.fn(),
     ledgerForgetEntry: vi.fn(),
     ledgerForgetSince: vi.fn(),
     ledgerForgetWorkspace: vi.fn(),
@@ -39,6 +45,10 @@ beforeEach(() => {
   vi.mocked(native.ledgerPrune).mockReset();
   vi.mocked(native.ledgerAppend).mockReset();
   vi.mocked(native.ledgerWriteOutput).mockReset();
+  vi.mocked(native.ledgerQuery).mockReset();
+  vi.mocked(native.ledgerSearchOutput).mockReset();
+  vi.mocked(native.ledgerForgetEntry).mockReset();
+  vi.mocked(native.ledgerReadOutput).mockReset();
   setLedgerPrivacyResolver(() => false);
   setLedgerWorkspaceSource(() => "C:/ws");
 });
@@ -223,6 +233,78 @@ describe("retention and forgetting", () => {
 
     vi.mocked(native.ledgerForgetSince).mockRejectedValue(new Error("locked"));
     await expect(forgetLedgerSince("C:/ws", 1000)).rejects.toThrow("locked");
+  });
+});
+
+describe("reading", () => {
+  const line = JSON.stringify({
+    id: "cmd-1",
+    startedAt: 1,
+    endedAt: 2,
+    durationMs: 1,
+    cwd: "/x",
+    argv: "cargo build",
+    exitCode: 0,
+  });
+
+  it("fills in the query defaults the Rust side expects", async () => {
+    vi.mocked(native.ledgerQuery).mockResolvedValue([]);
+    await queryLedger("C:/ws", { limit: 10 });
+    expect(native.ledgerQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: { query: "", exit: null, dedupe: false, limit: 10 },
+      }),
+    );
+  });
+
+  /**
+   * A line the reader cannot parse is dropped rather than surfaced. A blank
+   * row in a history list is worse than one fewer row.
+   */
+  it("drops unparsable lines instead of rendering blanks", async () => {
+    vi.mocked(native.ledgerQuery).mockResolvedValue([line, "corrupt", "{}"]);
+    const records = await queryLedger("C:/ws", { limit: 10 });
+    expect(records).toHaveLength(1);
+    expect(records[0].argv).toBe("cargo build");
+  });
+
+  it("pairs each output hit with its record, and skips a hit it cannot", async () => {
+    vi.mocked(native.ledgerSearchOutput).mockResolvedValue([
+      { line, snippet: "error: boom", matches: 3 },
+      { line: "corrupt", snippet: "error: orphan", matches: 1 },
+    ]);
+    const hits = await searchLedgerOutput("C:/ws", "error", 10);
+    expect(hits).toHaveLength(1);
+    expect(hits[0].record.argv).toBe("cargo build");
+    expect(hits[0].matches).toBe(3);
+  });
+
+  it("does not send an empty output search to the backend", async () => {
+    expect(await searchLedgerOutput("C:/ws", "   ", 10)).toEqual([]);
+    expect(native.ledgerSearchOutput).not.toHaveBeenCalled();
+  });
+
+  it("treats a missing output blob as absent rather than as an error", async () => {
+    vi.mocked(native.ledgerReadOutput).mockRejectedValue(new Error("gone"));
+    await expect(readLedgerOutput("C:/ws", "out-1")).resolves.toBeNull();
+  });
+
+  it("does nothing when there is no workspace to read or forget in", async () => {
+    expect(await queryLedger(null, { limit: 10 })).toEqual([]);
+    expect(await searchLedgerOutput(null, "x", 10)).toEqual([]);
+    expect(await readLedgerOutput(null, "out-1")).toBeNull();
+    await forgetLedgerEntry(null, "cmd-1");
+    expect(native.ledgerQuery).not.toHaveBeenCalled();
+    expect(native.ledgerForgetEntry).not.toHaveBeenCalled();
+  });
+
+  it("forgets one entry by id", async () => {
+    vi.mocked(native.ledgerForgetEntry).mockResolvedValue(undefined);
+    await forgetLedgerEntry("C:/ws", "cmd-1");
+    expect(native.ledgerForgetEntry).toHaveBeenCalledWith(
+      expect.stringMatching(/^ws-/),
+      "cmd-1",
+    );
   });
 });
 
