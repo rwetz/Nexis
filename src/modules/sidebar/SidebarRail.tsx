@@ -136,6 +136,7 @@ export function SidebarRail({
     { id: "backdrop",       label: "Backdrop",        icon: "image",       group: "Dev Tools" },
     { id: "icon-set",       label: "Icon Set",        icon: "grid",        group: "Dev Tools" },
     { id: "favicon",        label: "Favicon Set",     icon: "rocket",      group: "Dev Tools" },
+    { id: "animator",       label: "Animator",        icon: "play",        group: "Dev Tools" },
     { id: "share",          label: "Share",            icon: "globe",       group: "Advanced" },
     { id: "notes",          label: "Workspace Notes",  icon: "note",        group: "Advanced" },
     { id: "shell-snippets", label: "Shell Snippets",   icon: "terminal", group: "Advanced" },

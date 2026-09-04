@@ -37,6 +37,7 @@ export const SIDEBAR_VIEW_IDS = [
   "backdrop",
   "icon-set",
   "favicon",
+  "animator",
   "web-tools",
   "http-client",
 ] as const;

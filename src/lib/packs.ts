@@ -147,7 +147,14 @@ export const PACKS: Record<PackId, PackDef> = {
     description:
       "SVG work: an icon-scale playground, generative backdrops, and a palette with contrast checks.",
     icon: "brush",
-    views: ["svg-playground", "palette", "backdrop", "icon-set", "favicon"],
+    views: [
+      "svg-playground",
+      "palette",
+      "backdrop",
+      "icon-set",
+      "favicon",
+      "animator",
+    ],
   },
 };
 

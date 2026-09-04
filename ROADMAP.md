@@ -29,6 +29,19 @@ place" survives as a design principle — it just isn't enforced by a number any
 - **No bundled LLM inference.** This outlives the size budget that first justified it. What still holds: weights are gigabytes and no binary ceiling covers them; a real engine means per-backend builds (CUDA / ROCm / Metal / Vulkan) and a GPU-driver support surface this repo has no business carrying; and Ollama, LM Studio and MLX already do it well and are what people already have installed. Local models stay supported by shelling out, not by embedding an inference engine.
 - **No mobile (iOS/Android).** The app's shape — real shells, PTY, arbitrary filesystem access — doesn't map onto mobile sandboxes. This is about Nexis *running* on a phone. Building mobile apps *with* Nexis is a different question and is planned — see the Mobile pack under custom feature requests.
 
+## Standing decisions
+
+- **WSL support is on notice (2026-09-03).** It has been the source of a disproportionate share of this
+  project's hardest bugs — pitfalls #17 (9P rename, three separate occurrences), #20 (env-blind backend
+  commands answering for the wrong machine), #21 (probes reading a distro's boot log) and #22 (which only
+  surfaced once WSL shell integration finally worked) are all WSL, and each cost real time to find. If it
+  keeps costing more than it returns, **deprecating it until later is an accepted outcome** rather than a
+  failure. Nothing is being removed today; this is written down so the option is a decision already taken
+  rather than an argument to have under pressure. If it is exercised: hide `WorkspaceEnv::Wsl` from the
+  workspace switcher first, leave `resolve_path` and the probe parsers in place (they are correct and
+  their tests run on every platform), and keep the pitfalls documented — a re-introduction would hit every
+  one of them again.
+
 ## Design principles
 
 1. AI should feel native, not bolted on — agents, autocomplete, and voice are first-class features
@@ -117,8 +130,10 @@ and stop. Don't batch them.
      sliders in a Shapes tab beside Source; each is a pure function to a complete SVG document that reuses
      the playground's optimize/preview/export rather than growing its own. Randomness is seeded so the
      preview matches the export and a slider nudge does not reroll the shape.
-  3. **Animator** — a keyframe timeline over SMIL / CSS / Web Animations. Last on purpose: a timeline UI is
-     a genuinely large surface and should not start until the first two have earned it.
+  3. ~~**Animator**~~ — **shipped.** A keyframe timeline over SMIL or CSS. Held back on purpose, and the
+     hold paid off in a way that was not obvious in advance: a timeline has to *address* elements, and the
+     canvas's `data-nx-id` tagging already does that. Built first, it would have needed a second selection
+     model of its own, which was the genuinely large part.
 
   Also shipped, ahead of the animator and out of the original order: a **direct-manipulation canvas**
   (select, drag, per-point handles including bezier controls, bounding-box scale) and a **preset gallery**
@@ -227,8 +242,8 @@ CHANGELOG. What is left:
     illustration editor**, which is Figma and is the "not a VS Code replacement" hard limit wearing a
     different hat.
 
-  The **animator** (step 3 of the Art pack item above) stays last of everything here — a keyframe timeline
-  is still the largest surface in the pack.
+  The **animator** shipped last, as planned. The Art pack now owns six panels: playground, palette,
+  backdrop, icon set, favicon set, animator.
 
 - [ ] **Lead: invisible prompt plus "os error 3" in the file tree on startup** — seen once at launch, in a
   home-directory workspace, and it cleared itself after a few minutes of use. The file tree showed

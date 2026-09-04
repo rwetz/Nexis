@@ -5,7 +5,7 @@ description: The Art pack's SVG playground — its four panes, the direct-manipu
 
 # Art pack
 
-Three panels. The SVG playground, added 2026-09-03, under the `art` pack (view `svg-playground`). Sidebar host stacks the preview under the code; the expand button detaches it into an `svg-playground` tab that lays out side by side — the same pattern as the ML Lab's network diagram (see [[ml-lab]]), including carrying the collapse control back on the tab.
+Six panels. The SVG playground, added 2026-09-03, under the `art` pack (view `svg-playground`). Sidebar host stacks the preview under the code; the expand button detaches it into an `svg-playground` tab that lays out side by side — the same pattern as the ML Lab's network diagram (see [[ml-lab]]), including carrying the collapse control back on the tab.
 
 The left half is **four tabs over one document**: Source (CodeMirror), Canvas (direct manipulation), Shapes (parametric generators) and Presets (ready-made art). They are tabs, not modes — every pane reads and writes the same `source` string, so a shape can be generated, dragged on the canvas and then hand-tuned in code without any pane owning a copy. The right half (preview, optimize, export) is shared by all four.
 
@@ -171,10 +171,32 @@ Everything else is unchanged and must stay so: pure function of its numbers, see
 - **Low-poly triangles carry a hairline stroke in their own fill.** Adjacent triangles share an edge and antialiasing leaves background showing through every seam. `shape-rendering: crispEdges` also fixes it and discards the antialiasing that makes the diagonals look right.
 - **The seeded PRNG lives in `lib/generative.ts`**, shared with `shapes.ts`. A second mulberry32 is pitfall #18's drift in miniature — identical at first, then one gets improved, and a seed means two different things depending on the panel.
 
+## Animator
+
+`AnimatorPanel.tsx` plus `lib/animate.ts`. View id `animator`. A keyframe timeline over the playground's document, emitted as SMIL or CSS.
+
+**The hold paid off in a way that was not obvious in advance.** A timeline has to *address* elements, and the canvas's `data-nx-id` tagging already does that. Built before the canvas, this panel would have needed a second selection model — the genuinely large part.
+
+**Both formats ship because they fail in opposite directions**, and SMIL is the default:
+
+| | Travels in the file | Reachable from CSS |
+| --- | --- | --- |
+| SMIL `<animate>` | yes — `<img>` and `background-image` animate | no |
+| CSS `@keyframes` | only when the SVG is inline in a page | yes, incl. `prefers-reduced-motion` |
+
+The pack's output is a *file*, so the file-portable one wins by default. (Chromium's intent to remove SMIL was withdrawn in 2016; the folklore outlived the fact.)
+
+### Four decisions not to undo
+
+- **Keyframe positions are a fraction, never a millisecond.** Changing the duration is the edit people make over and over; absolute times would mean rewriting every key each time.
+- **`additive="sum"` on every animated transform.** Without it the animation *replaces* the element's existing transform and teleports the shape to the origin — the commonest way hand-written SMIL goes wrong.
+- **Self-closing targets are reopened.** `<rect … />` cannot hold a child and SMIL nests inside its target. Most icon art is self-closing, so this is the common path.
+- **`data-nx-id` never reaches an exported file**, on any path — including an empty timeline, so a caller need not know whether anything animated before deciding the output is shippable. For CSS the tag on addressed elements is promoted to a real `data-nx-anim` first: a stylesheet pointing at an attribute the strip removed is a rule that silently does nothing.
+
 ## Not built yet
 
-The animator — a keyframe timeline over SMIL / CSS / Web Animations. Explicitly gated on the rest earning it, because a timeline UI is a genuinely large surface.
+Nothing in the original plan. The pack owns six panels: playground, palette, backdrop, icon set, favicon set, animator.
 
-The rest of the panel set is **decided and written down** in ROADMAP.md, against [haikei.com](https://haikei.com) as the reference. The framing that settles it: *the playground is a precision tool and Haikei is a generative one, and those are two jobs* — so the plan adds panels beside the playground rather than growing it. In build order: raster/file export (done), the palette panel (done), the Backdrop scene generator (done), an icon-set review panel, and a favicon exporter. The library change that gates the Backdrop is a `SceneDef` sibling to `ShapeDef` carrying colour, aspect and layers — the three things `shapes.ts` structurally cannot express.
+The rest of the panel set is **decided and written down** in ROADMAP.md, against [haikei.com](https://haikei.com) as the reference. The framing that settles it: *the playground is a precision tool and Haikei is a generative one, and those are two jobs* — so the plan adds panels beside the playground rather than growing it. In build order: raster/file export (done), the palette panel (done), the Backdrop scene generator (done), the icon-set review panel (done), and the favicon exporter (done). The library change that gates the Backdrop is a `SceneDef` sibling to `ShapeDef` carrying colour, aspect and layers — the three things `shapes.ts` structurally cannot express.
 
 Related: [[icon-and-motion-system]], [[editor]], [[expansion-packs]].

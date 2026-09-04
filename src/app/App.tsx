@@ -117,6 +117,7 @@ import { StatusBar } from "@/modules/statusbar";
 import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
 import { OnboardingDialog } from "@/modules/onboarding/OnboardingDialog";
 import { openOnboarding } from "@/modules/onboarding/onboardingDialogStore";
+import { AnimatorPanel } from "@/modules/art/AnimatorPanel";
 import { BackdropPanel } from "@/modules/art/BackdropPanel";
 import { FaviconPanel } from "@/modules/art/FaviconPanel";
 import { IconSetPanel } from "@/modules/art/IconSetPanel";
@@ -1419,6 +1420,7 @@ export default function App() {
     { id: "art.backdrop",        label: "Open the backdrop generator", category: "View",  action: () => persistSidebarView("backdrop"), pack: "art", keywords: ["wallpaper", "background", "gradient", "waves", "generative"] },
     { id: "art.iconSet",         label: "Open the icon set review", category: "View",    action: () => persistSidebarView("icon-set"), pack: "art", keywords: ["icons", "audit", "consistency", "stroke", "svg"] },
     { id: "art.favicon",         label: "Open the favicon exporter", category: "View",   action: () => persistSidebarView("favicon"), pack: "art", keywords: ["favicon", "app icon", "manifest", "apple touch", "pwa"] },
+    { id: "art.animator",        label: "Open the SVG animator",    category: "View",    action: () => persistSidebarView("animator"), pack: "art", keywords: ["animate", "keyframe", "smil", "motion", "timeline"] },
     { id: "help.gettingStarted", label: "Open Getting Started",       category: "General", action: () => openOnboarding(), keywords: ["onboarding", "tour", "help", "first run", "checklist"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
@@ -1996,6 +1998,8 @@ export default function App() {
                       <HttpClientPanel workspaceKey={workspaceProjectKey(explorerRoot)} />
                     ) : sidebarView === "web-tools" ? (
                       <WebToolsPanel />
+                    ) : sidebarView === "animator" ? (
+                      <AnimatorPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "favicon" ? (
                       <FaviconPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "icon-set" ? (
