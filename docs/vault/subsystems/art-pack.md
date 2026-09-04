@@ -5,7 +5,7 @@ description: The Art pack's SVG playground — its four panes, the direct-manipu
 
 # Art pack
 
-One panel so far, added 2026-09-03: the SVG playground, under the `art` pack (view `svg-playground`). Sidebar host stacks the preview under the code; the expand button detaches it into an `svg-playground` tab that lays out side by side — the same pattern as the ML Lab's network diagram (see [[ml-lab]]), including carrying the collapse control back on the tab.
+Two panels. The SVG playground, added 2026-09-03, under the `art` pack (view `svg-playground`). Sidebar host stacks the preview under the code; the expand button detaches it into an `svg-playground` tab that lays out side by side — the same pattern as the ML Lab's network diagram (see [[ml-lab]]), including carrying the collapse control back on the tab.
 
 The left half is **four tabs over one document**: Source (CodeMirror), Canvas (direct manipulation), Shapes (parametric generators) and Presets (ready-made art). They are tabs, not modes — every pane reads and writes the same `source` string, so a shape can be generated, dragged on the canvas and then hand-tuned in code without any pane owning a copy. The right half (preview, optimize, export) is shared by all four.
 
@@ -133,10 +133,26 @@ Only the root `<svg …>` start tag is searched, and an attribute name must be p
 
 **Binary writes go through `fs_write_file_bytes`**, which exists only because `fs_write_file` takes a `String` and a PNG is not one. It shares `resolve_path` and `write_path` with it, so it inherits the atomic staging and the WSL `mv` fallback (pitfall #17) instead of being a second, unaudited write path. Do not add a third.
 
+## Palette
+
+`PalettePanel.tsx` plus `lib/color.ts` (pure maths), `lib/themePalette.ts` (DOM), `lib/paletteExport.ts` (formats). View id `palette`, second panel in the pack.
+
+**Seeding from the live theme is the differentiator.** `applyTheme` puts every colour on the document root as a custom property, so the panel reads the *active* theme: Interface for the UI tokens, Terminal for the sixteen ANSI colours. No standalone palette tool can do this, because none of them know what Aurelian is. Same lever [[icon-and-motion-system]]'s file-tree retint pulls.
+
+**Colours resolve through a one-pixel canvas**, not through a parser of ours. A theme's computed value is whatever its author wrote — hex in one, `oklch(…)` in another — and `color.ts` refuses everything but hex and `rgb()` rather than half-parsing. The browser has a complete CSS Color 4 parser; paint a pixel and read the bytes. `fillStyle` round-tripping looks equivalent and is not: Chromium returns `oklab(…)` for wide-gamut input, so you end up parsing after all. A sentinel fill detects values the browser rejects, so an unresolvable token is dropped rather than reported as black.
+
+### Three decisions not to undo
+
+- **Ratios truncate, never round.** WCAG's thresholds sit exactly on one-decimal values, so rounding 4.47 to "4.5:1" shows a passing number beside a failing badge — and the number is what gets believed. Truncation can only understate. A property test sweeps the range to keep the figure and the grade consistent.
+- **Harmonies rotate in HSL.** Perceptual spaces are better for *interpolation*; harmonies are rotations on the classical wheel, and that wheel is HSL's hue circle. 120 degrees in OKLCH is a defensible colour that is not the triad anyone means. Monochromatic is the documented exception to "base first" — it is an ordered lightness ramp with the base mid-scale, because a ramp is only usable as a scale if it is ordered.
+- **Harmony appends, never replaces.** Entries persist on change, so replacing would let one mis-click destroy a sixteen-swatch palette with no undo. A palette is a collection you build up — unlike the playground's single document, where replacement *is* the point (see the ShapeGenerator note above). Duplicates are skipped.
+
+**Contrast lives here, not in [[web-dev-pack]]**, where the roadmap originally parked it. Picking colours and judging them is one activity; splitting it across two packs puts neither where you are when the question arises.
+
 ## Not built yet
 
 The animator — a keyframe timeline over SMIL / CSS / Web Animations. Explicitly gated on the rest earning it, because a timeline UI is a genuinely large surface.
 
-The rest of the panel set is **decided and written down** in ROADMAP.md, against [haikei.com](https://haikei.com) as the reference. The framing that settles it: *the playground is a precision tool and Haikei is a generative one, and those are two jobs* — so the plan adds panels beside the playground rather than growing it. In build order: raster/file export (done, above), a palette panel seeded from the active theme, a Backdrop scene generator, an icon-set review panel, and a favicon exporter. The library change that gates the Backdrop is a `SceneDef` sibling to `ShapeDef` carrying colour, aspect and layers — the three things `shapes.ts` structurally cannot express.
+The rest of the panel set is **decided and written down** in ROADMAP.md, against [haikei.com](https://haikei.com) as the reference. The framing that settles it: *the playground is a precision tool and Haikei is a generative one, and those are two jobs* — so the plan adds panels beside the playground rather than growing it. In build order: raster/file export (done), the palette panel (done), a Backdrop scene generator, an icon-set review panel, and a favicon exporter. The library change that gates the Backdrop is a `SceneDef` sibling to `ShapeDef` carrying colour, aspect and layers — the three things `shapes.ts` structurally cannot express.
 
 Related: [[icon-and-motion-system]], [[editor]], [[expansion-packs]].

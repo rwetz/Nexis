@@ -192,12 +192,12 @@ CHANGELOG. What is left:
     was not anticipated and was found by running it — `width` matches inside `stroke-width` — see the
     art-pack vault note.
 
-  - [ ] **2 next: a palette panel.** Everything below needs colour, and this is where the pack earns its
+  - [x] **2: a palette panel — shipped.** Everything below needs colour, and this is where the pack earns its
     differentiator: **seed a palette from the active Nexis theme.** `iconResolver.ts` already retints the
     file-tree art onto the theme's ANSI palette, so "generate a backdrop in Aurelian" is something no
     other tool can do. Plus harmonies from a seed colour, and export as CSS variables / a Tailwind theme /
-    JSON. **This also answers an open question**: contrast and palette checks are parked under the Web Dev
-    pack with a note wondering whether they belong in Art. They belong here — move them.
+    JSON. **This also answered an open question**: contrast and palette checks were parked under the Web
+    Dev pack with a note wondering whether they belonged in Art. They shipped here.
 
   - [ ] **1: Backdrop — the Haikei-shaped panel.** The one there is actual appetite for. Generators in
     rough value order: layered/stacked waves (the signature), peaks, blob scene (depth-ordered), circle

@@ -33,6 +33,7 @@ export const SIDEBAR_VIEW_IDS = [
   "debugger",
   "ml",
   "svg-playground",
+  "palette",
   "web-tools",
   "http-client",
 ] as const;
