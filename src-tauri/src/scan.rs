@@ -29,7 +29,8 @@ pub struct RepoSummary {
     pub ahead: usize,
     pub behind: usize,
     pub upstream: Option<String>,
-    /// Unix seconds of the last commit — drives the "age" dimming in the atlas.
+    /// Unix seconds of the last commit. Read by the repo list and the
+    /// inspector; the renderer does not use it.
     pub last_commit_time: Option<i64>,
     pub last_commit_summary: Option<String>,
     pub files: usize,
@@ -47,7 +48,17 @@ impl RepoSummary {
     }
 }
 
-pub fn summarize(path: &Path, limit: usize) -> RepoSummary {
+/// Everything one pass over a repo yields. The atlas only wants `summary` and
+/// drops the rest; the city needs all three, and getting them together is what
+/// keeps drilling in from walking the tree — and opening the repo — twice.
+pub struct RepoScan {
+    pub summary: RepoSummary,
+    pub walked: WalkResult,
+    pub repo: Option<Repository>,
+}
+
+/// One walk, one `Repository::open`, one status pass.
+pub fn scan_repo(path: &Path, limit: usize) -> RepoScan {
     let mut sum = RepoSummary {
         path: path.display().to_string(),
         name: path
@@ -73,7 +84,16 @@ pub fn summarize(path: &Path, limit: usize) -> RepoSummary {
 
     let walked = walk::walk_repo(path, repo.as_ref(), limit);
     fill_size(&walked, &mut sum);
-    sum
+    RepoScan {
+        summary: sum,
+        walked,
+        repo,
+    }
+}
+
+/// Aggregate stats alone — the atlas path, which never looks at the file list.
+pub fn summarize(path: &Path, limit: usize) -> RepoSummary {
+    scan_repo(path, limit).summary
 }
 
 fn fill_size(walked: &WalkResult, sum: &mut RepoSummary) {
@@ -97,7 +117,10 @@ fn fill_size(walked: &WalkResult, sum: &mut RepoSummary) {
         })
         .collect();
     langs.sort_by(|a, b| b.bytes.cmp(&a.bytes).then_with(|| a.lang.cmp(&b.lang)));
-    langs.truncate(8);
+    // Headroom, because the atlas drops the inert slices (images, binaries,
+    // fonts, lockfiles) before it draws. Truncating to 8 here can leave a repo
+    // with five kinds of asset and only three of its actual languages.
+    langs.truncate(12);
     sum.langs = langs;
 }
 

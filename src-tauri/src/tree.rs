@@ -5,8 +5,6 @@
 
 use crate::lang;
 use crate::scan::{self, RepoSummary};
-use crate::walk;
-use git2::Repository;
 use rayon::prelude::*;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
@@ -43,11 +41,18 @@ pub struct RepoCity {
 
 pub fn build(root: &Path, limit: usize) -> Result<RepoCity, String> {
     let started = Instant::now();
-    let summary = scan::summarize(root, limit);
-    let repo = Repository::open(root).ok();
+    // One pass: the summary, the file list and the open repo all come from the
+    // same walk. Doing `summarize` and then walking again cost two full
+    // traversals of the tree on every drill-in.
+    let scan::RepoScan {
+        summary,
+        walked,
+        repo,
+    } = scan::scan_repo(root, limit);
+    // Per-file codes need the recursive-untracked variant, which is a
+    // different query from the counts `summarize` already took.
     let statuses = repo.as_ref().map(scan::status_map).unwrap_or_default();
 
-    let walked = walk::walk_repo(root, repo.as_ref(), limit);
     let leaves: Vec<(String, Leaf)> = walked
         .files
         .par_iter()

@@ -21,6 +21,7 @@ import { Legend } from "@/modules/city/Legend";
 import { RepoList } from "@/modules/city/RepoList";
 import { StatusBar } from "@/modules/city/StatusBar";
 import { useCityStore } from "@/modules/city/store";
+import { formatCount } from "@/modules/city/types";
 import { ThemeProvider, useTheme } from "@/modules/theme/ThemeProvider";
 import { BUILTIN_THEMES } from "@/modules/theme/themes";
 import {
@@ -189,6 +190,7 @@ function Stage() {
   const cityLoading = useCityStore((s) => s.cityLoading);
   const city = useCityStore((s) => s.city);
   const view = useCityStore((s) => s.view);
+  const omitted = useCityStore((s) => s.omitted);
 
   if (repos.length === 0) {
     return (
@@ -253,11 +255,26 @@ function Stage() {
           </div>
         </div>
       )}
-      {view === "city" && city?.summary.truncated && (
-        <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 rounded-full border border-border/60 bg-card/85 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur">
-          Truncated at the configured max_files — the city is partial.
-        </div>
-      )}
+      <Incomplete
+        truncated={view === "city" && Boolean(city?.summary.truncated)}
+        omitted={omitted}
+      />
+    </div>
+  );
+}
+
+/** Says so out loud when the scene is not the whole story — either the walk
+ *  stopped at `max_files`, or the layout ran out of room for the smallest
+ *  boxes. Both used to fail silently, which is the one thing a view like this
+ *  cannot afford. */
+function Incomplete({ truncated, omitted }: { truncated: boolean; omitted: number }) {
+  if (!truncated && omitted === 0) return null;
+  const parts: string[] = [];
+  if (truncated) parts.push("stopped at the configured max_files");
+  if (omitted > 0) parts.push(`${formatCount(omitted)} too small to draw`);
+  return (
+    <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 rounded-full border border-border/60 bg-card/85 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur">
+      Partial view — {parts.join(", ")}.
     </div>
   );
 }

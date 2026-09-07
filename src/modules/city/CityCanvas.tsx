@@ -12,6 +12,7 @@ import {
   isoDeltaToWorld,
   prepare,
   renderScene,
+  rotatePoint,
   rotateRect,
   type Camera,
   type Prepared,
@@ -36,7 +37,7 @@ export function CityCanvas() {
   const showLabels = useCityStore((s) => s.showLabels);
   const fitNonce = useCityStore((s) => s.fitNonce);
   const enterRepo = useCityStore((s) => s.enterRepo);
-  const { resolvedMode } = useTheme();
+  const { resolvedMode, themeId, paletteEpoch } = useTheme();
 
   const scene: Scene = useMemo(
     () => (view === "city" && city ? layoutCity(city.root) : layoutAtlas(repos)),
@@ -46,8 +47,10 @@ export function CityCanvas() {
   const palette = useMemo(
     () => readPalette(resolvedMode === "dark"),
     // Theme id changes rewrite the same CSS variables, so re-read whenever the
-    // provider says anything about the theme changed.
-    [resolvedMode],
+    // provider says anything about the theme changed — and only once the epoch
+    // confirms the new variables are on the document, since this reads them
+    // back through a computed-style probe.
+    [resolvedMode, themeId, paletteEpoch],
   );
 
   const cam = useRef<Camera>({ tx: 50, tz: 50, scale: 6, rot: 0 });
@@ -143,6 +146,10 @@ export function CityCanvas() {
     return () => ro.disconnect();
   }, [schedule]);
 
+  useEffect(() => {
+    useCityStore.getState().setOmitted(scene.omitted);
+  }, [scene]);
+
   // Fit on every new scene and whenever something asks for it.
   useEffect(() => {
     stopFly();
@@ -184,6 +191,10 @@ export function CityCanvas() {
     const hit = hitTest(preparedRef.current, cam.current, vp.current, p.x, p.y);
     const store = useCityStore.getState();
     if (store.hover?.id !== (hit?.id ?? null)) {
+      // Swapped on the element rather than through state: hover deliberately
+      // never re-renders React, and the class carries the bespoke cursor PNG.
+      e.currentTarget.classList.toggle("cursor-pointer", hit !== null);
+      e.currentTarget.classList.toggle("cursor-grab", hit === null);
       store.setHover(hit);
       schedule();
     }
@@ -278,9 +289,22 @@ export function CityCanvas() {
 
       const turn = (by: number) => {
         stopFly();
-        cam.current = { ...cam.current, rot: (cam.current.rot + by + 4) % 4 };
+        // The camera target lives in the rotated frame, so turning it by the
+        // same quarter turn keeps whatever you were looking at under the
+        // crosshair — and your zoom survives the turn.
+        const [tx, tz] = rotatePoint(
+          cam.current.tx,
+          cam.current.tz,
+          by,
+          scene.extent / 2,
+        );
+        cam.current = {
+          tx,
+          tz,
+          scale: cam.current.scale,
+          rot: (cam.current.rot + by + 4) % 4,
+        };
         preparedRef.current = prepare(scene, cam.current.rot);
-        cam.current = fitCamera(scene, vp.current, cam.current.rot);
         schedule();
       };
 
@@ -321,7 +345,9 @@ export function CityCanvas() {
         onPointerCancel={() => {
           drag.current = null;
         }}
-        onPointerLeave={() => {
+        onPointerLeave={(e) => {
+          e.currentTarget.classList.remove("cursor-pointer");
+          e.currentTarget.classList.add("cursor-grab");
           useCityStore.getState().setHover(null);
         }}
         onDoubleClick={onDoubleClick}

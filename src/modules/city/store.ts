@@ -27,6 +27,10 @@ type CityState = {
   hover: Block | null;
   selected: Block | null;
   showLabels: boolean;
+  /** Blocks the layout had to drop — reported by the canvas once it has built
+   *  the scene, so the UI can admit the view is incomplete instead of quietly
+   *  rendering a partial city. */
+  omitted: number;
   /** Bumped to ask the canvas to re-fit the camera to the scene. */
   fitNonce: number;
 
@@ -35,6 +39,7 @@ type CityState = {
   backToAtlas: () => void;
   setHover: (block: Block | null) => void;
   setSelected: (block: Block | null) => void;
+  setOmitted: (count: number) => void;
   toggleLabels: () => void;
   requestFit: () => void;
 };
@@ -56,6 +61,7 @@ export const useCityStore = create<CityState>((set, get) => ({
   hover: null,
   selected: null,
   showLabels: true,
+  omitted: 0,
   fitNonce: 0,
 
   refresh: async () => {
@@ -129,6 +135,11 @@ export const useCityStore = create<CityState>((set, get) => ({
   },
 
   setSelected: (block) => set({ selected: block }),
+
+  setOmitted: (count) => {
+    if (get().omitted === count) return;
+    set({ omitted: count });
+  },
 
   toggleLabels: () => set((s) => ({ showLabels: !s.showLabels })),
 

@@ -9,6 +9,7 @@
 // Layout is deterministic: the Rust side already sorts children biggest-first,
 // so refreshing a repo you have not touched redraws the identical city.
 
+import { langTier } from "./palette";
 import type { LangSlice, RepoSummary, TreeNode } from "./types";
 import { dirtyCount } from "./types";
 
@@ -22,6 +23,10 @@ export type BlockRef =
 
 export type Block = {
   id: number;
+  /** Index into `Scene.blocks` of the terrace this sits on, or null for the
+   *  outermost plate. The painter walks this tree instead of guessing the
+   *  nesting back out of `depth`. */
+  parent: number | null;
   ref: BlockRef;
   /** Plan rect, world units. */
   x: number;
@@ -35,6 +40,9 @@ export type Block = {
   depth: number;
   /** A terrace (directory / repo plot) rather than an extruded thing. */
   terrace: boolean;
+  /** 0 for work in progress, up to `DIM_MAX` for a repo nobody has touched in
+   *  a year. Atlas only — inside a city every building shares one history. */
+  dim: number;
   lang: string;
   dirty: boolean;
   status: string | null;
@@ -54,9 +62,32 @@ export const EXTENT = 100;
 
 const TERRACE_H = 0.55;
 const PLOT_H = 0.8;
-const BUILDING_SCALE = 1.95;
 /** Past this the canvas stops being interactive on a laptop GPU-less path. */
 const MAX_BLOCKS = 12_000;
+
+/** Tallest a source file is allowed to get, in world units against EXTENT.
+ *  The curve saturates rather than clipping, so the 8000-line file and the
+ *  12000-line file are both "the landmark" instead of one dwarfing the other. */
+const CODE_H = 40;
+/** Docs and config are real work, so they are visible — but they are never
+ *  allowed to be the tallest thing you see. */
+const SUPPORT_H = 14;
+/** Images, binaries and lockfiles get a pad, not a tower. */
+const PAD_H = 2.4;
+
+/** How far a long-abandoned repo fades toward the haze, and how quickly it
+ *  gets there. Anything you touched this week is essentially undimmed; a repo
+ *  parked for a year reads as clearly asleep without vanishing. */
+const DIM_MAX = 0.55;
+const DIM_KNEE_DAYS = 150;
+
+/** Fade for a repo by how long ago its last commit was. A repo with no commits
+ *  at all is brand new, not stale, so it gets nothing. */
+function ageDim(lastCommit: number | null, nowSeconds: number): number {
+  if (lastCommit === null) return 0;
+  const days = Math.max(0, (nowSeconds - lastCommit) / 86400);
+  return DIM_MAX * (1 - Math.exp(-days / DIM_KNEE_DAYS));
+}
 
 // ---------------------------------------------------------------------------
 // Squarified treemap
@@ -161,13 +192,37 @@ export function loc(node: TreeNode): number {
   return node.lines > 0 ? node.lines : node.bytes / 45;
 }
 
+/** Saturating growth: steep where real files live (tens to low thousands of
+ *  lines), flattening out after, so the skyline has a genuine spread between
+ *  a helper and a monolith without one 30k-line generated file owning the sky. */
+function saturate(value: number, ceiling: number, knee: number): number {
+  return ceiling * (1 - Math.exp(-value / knee));
+}
+
+/**
+ * Height is code. A file only earns a tower for lines someone wrote — assets,
+ * binaries and lockfiles get a low pad sized by bytes, because otherwise the
+ * tallest thing in a typical repo is a PNG.
+ */
 function buildingHeight(node: TreeNode): number {
-  return 0.7 + Math.log2(1 + loc(node)) * BUILDING_SCALE;
+  switch (langTier(node.lang)) {
+    case "code":
+      return 1.2 + saturate(loc(node), CODE_H, 850);
+    case "support":
+      return 1.0 + saturate(loc(node), SUPPORT_H, 600);
+    default:
+      return 0.5 + saturate(node.bytes / 1024, PAD_H, 260);
+  }
 }
 
 /** Footprint weight. Sublinear in size so one huge file does not swallow the
- *  block — its bulk shows up as height instead. */
+ *  block — its bulk shows up as height instead. Assets are weighed on a
+ *  separate, capped curve so a directory of screenshots cannot crowd out the
+ *  source next to it. */
 function fileWeight(node: TreeNode): number {
+  if (langTier(node.lang) === "inert") {
+    return 1 + Math.min(2.5, Math.sqrt(node.bytes / 1024) / 6);
+  }
   return 1 + Math.sqrt(loc(node)) / 12;
 }
 
@@ -191,15 +246,26 @@ export function layoutCity(root: TreeNode): Scene {
   let omitted = 0;
   let nextId = 1;
 
-  const placeDir = (node: TreeNode, rect: Rect, depth: number, y: number) => {
+  const placeDir = (
+    node: TreeNode,
+    rect: Rect,
+    depth: number,
+    y: number,
+    parent: number | null,
+  ) => {
+    // Recorded before the children are placed, so the index stays valid as a
+    // parent pointer for everything below.
+    const self = blocks.length;
     blocks.push({
       id: nextId++,
+      parent,
       ref: { kind: "dir", node },
       ...rect,
       y,
       h: TERRACE_H,
       depth,
       terrace: true,
+      dim: 0,
       lang: node.lang,
       dirty: node.dirty > 0,
       status: null,
@@ -225,7 +291,7 @@ export function layoutCity(root: TreeNode): Scene {
         continue;
       }
       if (child.is_dir) {
-        placeDir(child, cell, depth + 1, top);
+        placeDir(child, cell, depth + 1, top, self);
         continue;
       }
       const foot = inset(cell, gapFor(cell));
@@ -235,12 +301,14 @@ export function layoutCity(root: TreeNode): Scene {
       }
       blocks.push({
         id: nextId++,
+        parent: self,
         ref: { kind: "file", node: child },
         ...foot,
         y: top,
         h: buildingHeight(child),
         depth: depth + 1,
         terrace: false,
+        dim: 0,
         lang: child.lang,
         dirty: child.status !== null,
         status: child.status,
@@ -249,7 +317,7 @@ export function layoutCity(root: TreeNode): Scene {
     }
   };
 
-  placeDir(root, { x: 0, z: 0, w: EXTENT, d: EXTENT }, 0, 0);
+  placeDir(root, { x: 0, z: 0, w: EXTENT, d: EXTENT }, 0, 0, null);
   return { blocks, extent: EXTENT, omitted };
 }
 
@@ -263,7 +331,11 @@ function countNodes(node: TreeNode): number {
 
 export function layoutAtlas(repos: RepoSummary[]): Scene {
   const blocks: Block[] = [];
+  let omitted = 0;
   let nextId = 1;
+  // Geometry stays deterministic across refreshes; only the age fade moves,
+  // and only as slowly as the calendar does.
+  const now = Date.now() / 1000;
 
   const plots = squarify(
     repos.map((r) => ({ weight: 2 + Math.sqrt(Math.max(1, r.files)), data: r })),
@@ -272,43 +344,71 @@ export function layoutAtlas(repos: RepoSummary[]): Scene {
 
   for (const { rect, data: repo } of plots) {
     const plot = inset(rect, gapFor(rect));
-    if (plot.w <= 0.2 || plot.d <= 0.2) continue;
+    if (plot.w <= 0.2 || plot.d <= 0.2) {
+      omitted += 1;
+      continue;
+    }
 
+    const dim = ageDim(repo.last_commit_time, now);
+    const self = blocks.length;
     blocks.push({
       id: nextId++,
+      parent: null,
       ref: { kind: "repo", repo },
       ...plot,
       y: 0,
       h: PLOT_H,
       depth: 0,
       terrace: true,
+      dim,
       lang: repo.langs[0]?.lang ?? "Other",
       dirty: dirtyCount(repo) > 0,
       status: null,
       label: repo.name,
     });
 
-    // The skyline: one tower per language. Same rule as the city — footprint
-    // counts how many files, height measures how much they weigh. Sizing the
-    // footprint by bytes instead would hand 95% of every plot to whichever
-    // repo happens to check in a few megabytes of images.
-    const inner = inset(plot, gapFor(plot) * 1.6);
+    // The skyline: one tower per language you write in. Footprint counts how
+    // many files, height measures how much code they hold. Assets, binaries
+    // and lockfiles are folded into a single low pad instead of getting towers
+    // of their own — otherwise the tallest thing on most plots is a PNG, and
+    // the atlas ends up a map of where the screenshots live.
+    const inner = inset(plot, gapFor(plot) * 1.9);
     if (inner.w <= 0.1 || inner.d <= 0.1) continue;
+
+    const code = repo.langs.filter((s) => langTier(s.lang) !== "inert");
+    const assets = repo.langs.filter((s) => langTier(s.lang) === "inert");
+    const districts: LangSlice[] = [...code];
+    if (assets.length > 0) {
+      districts.push({
+        lang: "Assets",
+        bytes: assets.reduce((t, s) => t + s.bytes, 0),
+        files: assets.reduce((t, s) => t + s.files, 0),
+      });
+    }
+
     const towers = squarify(
-      repo.langs.map((s) => ({ weight: 1 + Math.sqrt(s.files), data: s })),
+      districts.map((s) => ({ weight: 1 + Math.sqrt(s.files), data: s })),
       inner,
     );
     for (const { rect: cell, data: slice } of towers) {
-      const foot = inset(cell, gapFor(cell));
-      if (foot.w <= 0.05 || foot.d <= 0.05) continue;
+      const foot = inset(cell, gapFor(cell) * 1.5);
+      if (foot.w <= 0.05 || foot.d <= 0.05) {
+        omitted += 1;
+        continue;
+      }
+      const inert = slice.lang === "Assets";
       blocks.push({
         id: nextId++,
+        parent: self,
         ref: { kind: "district", repo, slice },
         ...foot,
         y: PLOT_H,
-        h: 0.9 + Math.log2(1 + slice.bytes / 1024) * 1.05,
+        h: inert
+          ? 0.6 + saturate(slice.bytes / 1024, PAD_H * 1.6, 900)
+          : 1.2 + saturate(slice.bytes / 1024, CODE_H * 0.85, 190),
         depth: 1,
         terrace: false,
+        dim,
         lang: slice.lang,
         dirty: false,
         status: null,
@@ -317,5 +417,5 @@ export function layoutAtlas(repos: RepoSummary[]): Scene {
     }
   }
 
-  return { blocks, extent: EXTENT, omitted: 0 };
+  return { blocks, extent: EXTENT, omitted };
 }

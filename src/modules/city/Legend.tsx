@@ -1,6 +1,6 @@
 import { useTheme } from "@/modules/theme/ThemeProvider";
 import { useMemo } from "react";
-import { css, readPalette } from "./palette";
+import { css, langTier, readPalette } from "./palette";
 import { useCityStore } from "./store";
 import { formatBytes } from "./types";
 
@@ -10,22 +10,32 @@ export function Legend() {
   const view = useCityStore((s) => s.view);
   const repos = useCityStore((s) => s.repos);
   const city = useCityStore((s) => s.city);
-  const { resolvedMode } = useTheme();
+  const { resolvedMode, themeId, paletteEpoch } = useTheme();
 
-  const palette = useMemo(() => readPalette(resolvedMode === "dark"), [resolvedMode]);
+  const palette = useMemo(
+    () => readPalette(resolvedMode === "dark"),
+    [resolvedMode, themeId, paletteEpoch],
+  );
 
   const entries = useMemo(() => {
     const totals = new Map<string, number>();
     const source = view === "city" && city ? [city.summary] : repos;
     for (const repo of source) {
       for (const slice of repo.langs) {
-        totals.set(slice.lang, (totals.get(slice.lang) ?? 0) + slice.bytes);
+        // Folded the same way the scene folds them, so the key describes what
+        // is actually on the canvas rather than what the scanner found.
+        const key = langTier(slice.lang) === "inert" ? "Assets" : slice.lang;
+        totals.set(key, (totals.get(key) ?? 0) + slice.bytes);
       }
     }
-    return [...totals.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 7)
-      .map(([lang, bytes]) => ({ lang, bytes }));
+    const assets = totals.get("Assets");
+    totals.delete("Assets");
+    const top = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
+    // Assets keeps a reserved slot rather than competing for one: it is on the
+    // canvas either way, and it is usually large enough to crowd out real
+    // languages if it is allowed to sort on bytes.
+    if (assets !== undefined) top.push(["Assets", assets]);
+    return top.map(([lang, bytes]) => ({ lang, bytes }));
   }, [view, repos, city]);
 
   if (entries.length === 0) return null;

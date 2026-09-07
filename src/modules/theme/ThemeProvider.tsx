@@ -50,6 +50,16 @@ type ThemeProviderState = {
   mode: ThemeModePref;
   resolvedMode: "dark" | "light";
   themeId: string;
+  /**
+   * Bumped once the new palette is actually on the document.
+   *
+   * Consumers that read computed CSS (the canvas resolves every token through
+   * the probe in styles/tokens.ts) cannot key off `resolvedMode` alone: a memo
+   * runs during render, and the class swap and `applyTheme` below are effects,
+   * so the probe would sample the palette being replaced. Depending on this
+   * instead re-reads on the render that follows the swap.
+   */
+  paletteEpoch: number;
   setMode: (mode: ThemeModePref) => void;
   setThemeId: (id: string) => void;
 };
@@ -86,6 +96,7 @@ export function ThemeProvider({
   const [systemDark, setSystemDark] = useState<boolean>(() =>
     window.matchMedia("(prefers-color-scheme: dark)").matches,
   );
+  const [paletteEpoch, setPaletteEpoch] = useState(0);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -103,13 +114,16 @@ export function ThemeProvider({
     root.classList.add(resolvedMode);
   }, [resolvedMode]);
 
+  // Declared after the class swap above so it runs second: by the time the
+  // epoch moves, both halves of the palette change have landed.
   useEffect(() => {
     if (themeId === DEFAULT_THEME_ID) {
       clearTheme();
-      return;
+    } else {
+      const theme = getBuiltinTheme(themeId) ?? getDefaultTheme();
+      applyTheme(theme, resolvedMode);
     }
-    const theme = getBuiltinTheme(themeId) ?? getDefaultTheme();
-    applyTheme(theme, resolvedMode);
+    setPaletteEpoch((e) => e + 1);
   }, [themeId, resolvedMode]);
 
   const setMode = useCallback((next: ThemeModePref) => {
@@ -123,8 +137,8 @@ export function ThemeProvider({
   }, []);
 
   const value = useMemo<ThemeProviderState>(
-    () => ({ mode, resolvedMode, themeId, setMode, setThemeId }),
-    [mode, resolvedMode, themeId, setMode, setThemeId],
+    () => ({ mode, resolvedMode, themeId, paletteEpoch, setMode, setThemeId }),
+    [mode, resolvedMode, themeId, paletteEpoch, setMode, setThemeId],
   );
 
   return (

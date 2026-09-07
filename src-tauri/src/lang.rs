@@ -6,10 +6,17 @@
 //! "Other", which renders as neutral grey — the city stays mostly neutral, per
 //! the design system, with colour carrying language and nothing else.
 
-/// Extensions whose contents are worth counting lines for. Everything else is
-/// sized by bytes alone (binaries, images, lockfiles we don't want to read).
+/// Languages whose contents are worth counting lines for.
+///
+/// This mirrors the "inert" tier in `src/modules/city/palette.ts`: the renderer
+/// sizes those by bytes and never asks for their line count, so reading them is
+/// pure I/O for a number nothing consumes. Lockfiles matter most here — a
+/// `pnpm-lock.yaml` is a quarter of a megabyte of text that no one wrote.
 pub fn is_countable(lang: &str) -> bool {
-    !matches!(lang, "Binary" | "Image" | "Other")
+    !matches!(
+        lang,
+        "Binary" | "Image" | "Other" | "Lockfile" | "Font"
+    )
 }
 
 pub fn lang_for(file_name: &str) -> &'static str {

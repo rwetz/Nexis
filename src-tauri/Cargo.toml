@@ -1,6 +1,6 @@
 [package]
 name = "nexis-imagine"
-version = "0.1.0"
+version = "0.2.0"
 description = "Isometric visualization of local git repos — directories as terraces, files as buildings."
 authors = ["Ryan Wetzstein"]
 edition = "2021"
