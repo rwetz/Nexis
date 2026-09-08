@@ -4,6 +4,8 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.26.0] — 2026-09-07
+
 ### Added
 - **Secret scanning before commit, in the Source Control panel.** The detectors already existed — the same ones that guard terminal recordings, the diagnostics bundle and the command ledger — so this is a matter of pointing them at the change you are about to make permanent, which is the last moment a secret is still cheap to remove. After a commit it is in the reflog; after a push it has to be rotated, not deleted.
   - **It scans only the lines the commit *adds*.** A secret already on the branch is not something this commit introduces, and flagging it on every unrelated change that touches the file is exactly how a scanner trains you to ignore it.
