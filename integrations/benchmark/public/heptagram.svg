@@ -1,0 +1,13 @@
+<svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Nexis heptagram</title>
+  <circle cx="250" cy="250" r="244" stroke="#e8825f" stroke-opacity="0.5" stroke-width="4" />
+  <circle cx="250" cy="250" r="231" stroke="#e8825f" stroke-opacity="0.5" stroke-width="4" />
+  <!-- {7/2} star: vertices stepped by two around the circle, one stroke. -->
+  <path
+    d="M250 50 L445 294.5 L163.22 430.19 L93.63 125.3 L406.37 125.3 L336.78 430.19 L55.01 294.5 Z"
+    stroke="#e8825f"
+    stroke-width="5"
+    stroke-linejoin="miter"
+    stroke-miterlimit="8"
+  />
+</svg>

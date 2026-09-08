@@ -1,0 +1,26 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#e8825f" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#e8825f" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="1280" height="640" fill="#0c0e10" />
+  <rect x="0" y="636" width="1280" height="4" fill="#e8825f" fill-opacity="0.8" />
+  <circle cx="340" cy="320" r="270" fill="url(#glow)" />
+
+  <!-- Heptagram logomark -->
+  <g transform="translate(140 120) scale(0.8)" fill="none">
+    <circle cx="250" cy="250" r="244" stroke="#e8825f" stroke-opacity="0.45" stroke-width="4" />
+    <circle cx="250" cy="250" r="231" stroke="#e8825f" stroke-opacity="0.45" stroke-width="4" />
+    <path
+      d="M250 50 L445 294.5 L163.22 430.19 L93.63 125.3 L406.37 125.3 L336.78 430.19 L55.01 294.5 Z"
+      stroke="#e8825f" stroke-width="6" stroke-linejoin="miter" stroke-miterlimit="8" />
+  </g>
+
+  <!-- Wordmark -->
+  <text x="600" y="306" font-family="Segoe UI, Arial, sans-serif" font-size="66" font-weight="700" fill="#f5f5f5">Nexis Benchmark</text>
+  <text x="602" y="352" font-family="Segoe UI, Arial, sans-serif" font-size="27" fill="#9aa0a6">Benchmark local AI models across backends</text>
+  <text x="602" y="398" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" fill="#e8825f">ONNX Runtime · llama.cpp · nexis-ml-rs</text>
+</svg>

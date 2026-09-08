@@ -1,0 +1,27 @@
+# Design reference files — local only, not part of the project
+_design/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Tauri / Rust
+src-tauri/target/
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Env
+.env
+.env.*
+!.env.example

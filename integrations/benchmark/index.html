@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexis Benchmark</title>
+    <!-- Pre-paint theme: set the class + background before the bundle loads so the
+         first painted frame is already the right theme (no color flash). -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("nexis-bench-ui-theme");
+          var resolved =
+            t === "light" || t === "dark"
+              ? t
+              : window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          document.documentElement.classList.add(resolved);
+          document.documentElement.style.backgroundColor =
+            resolved === "dark" ? "#0c0e10" : "#ffffff";
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

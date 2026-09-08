@@ -1,0 +1,3 @@
+# pnpm 11 blocks build scripts by default. Allow the ones we need.
+allowBuilds:
+  esbuild: true
