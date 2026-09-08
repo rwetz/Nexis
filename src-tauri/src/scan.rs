@@ -1,13 +1,25 @@
-//! Per-repo aggregate stats — the data behind the atlas view, where every repo
-//! is one island. Read-only: git state comes from libgit2, size and language
-//! mix from a single filesystem walk. Cheap enough to run for every repo on
-//! every refresh, with rayon fanning the repos out.
+//! Per-repo aggregate stats — the one scan behind both views. The list reads
+//! the git half (branch, sync, changes, last commit, stashes); the map reads
+//! the size half (files, bytes, language mix) and builds an island from it.
+//! Read-only: git state comes from libgit2, size and language mix from a
+//! single filesystem walk. Cheap enough to run for every repo on every
+//! refresh, with rayon fanning the repos out.
 
 use crate::walk::{self, WalkResult};
 use git2::{BranchType, ErrorCode, Repository, Status, StatusOptions};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::Path;
+
+/// The head commit, as much of it as either view shows.
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct CommitInfo {
+    pub summary: String,
+    pub author: String,
+    /// Unix seconds — the frontend renders relative time.
+    pub time: i64,
+    pub hash: String,
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct LangSlice {
@@ -29,10 +41,10 @@ pub struct RepoSummary {
     pub ahead: usize,
     pub behind: usize,
     pub upstream: Option<String>,
-    /// Unix seconds of the last commit. Read by the repo list and the
-    /// inspector; the renderer does not use it.
-    pub last_commit_time: Option<i64>,
-    pub last_commit_summary: Option<String>,
+    pub stash_count: usize,
+    /// Read by both views: the list renders it as a column, the map dims an
+    /// island by its age. `None` on a repo with no commits yet.
+    pub last_commit: Option<CommitInfo>,
     pub files: usize,
     pub dirs: usize,
     pub bytes: u64,
@@ -68,7 +80,7 @@ pub fn scan_repo(path: &Path, limit: usize) -> RepoScan {
         ..Default::default()
     };
 
-    let repo = match Repository::open(path) {
+    let mut repo = match Repository::open(path) {
         Ok(r) => Some(r),
         Err(e) => {
             sum.error = Some(e.message().to_string());
@@ -76,7 +88,9 @@ pub fn scan_repo(path: &Path, limit: usize) -> RepoScan {
         }
     };
 
-    if let Some(repo) = &repo {
+    // `&mut` because counting stashes needs it; the borrow ends before the
+    // walk below takes `repo` by shared reference.
+    if let Some(repo) = &mut repo {
         if let Err(e) = fill_git(repo, &mut sum) {
             sum.error = Some(e.message().to_string());
         }
@@ -124,7 +138,7 @@ fn fill_size(walked: &WalkResult, sum: &mut RepoSummary) {
     sum.langs = langs;
 }
 
-fn fill_git(repo: &Repository, sum: &mut RepoSummary) -> Result<(), git2::Error> {
+fn fill_git(repo: &mut Repository, sum: &mut RepoSummary) -> Result<(), git2::Error> {
     match repo.head() {
         Ok(head) => {
             if repo.head_detached().unwrap_or(false) {
@@ -137,8 +151,12 @@ fn fill_git(repo: &Repository, sum: &mut RepoSummary) -> Result<(), git2::Error>
                 sum.branch = head.shorthand().unwrap_or("HEAD").to_string();
             }
             if let Ok(commit) = head.peel_to_commit() {
-                sum.last_commit_time = Some(commit.time().seconds());
-                sum.last_commit_summary = commit.summary().map(str::to_string);
+                sum.last_commit = Some(CommitInfo {
+                    summary: commit.summary().unwrap_or("").to_string(),
+                    author: commit.author().name().unwrap_or("").to_string(),
+                    time: commit.time().seconds(),
+                    hash: commit.id().to_string()[..7].to_string(),
+                });
             }
         }
         // Freshly-initialized repo with no commits: HEAD points at an unborn
@@ -158,9 +176,12 @@ fn fill_git(repo: &Repository, sum: &mut RepoSummary) -> Result<(), git2::Error>
 
     let mut opts = StatusOptions::new();
     opts.include_untracked(true).exclude_submodules(true);
-    for entry in repo.statuses(Some(&mut opts))?.iter() {
+    let statuses = repo.statuses(Some(&mut opts))?;
+    for entry in statuses.iter() {
         count_status(entry.status(), sum);
     }
+    // `statuses` borrows `repo`; stash_foreach below needs `&mut repo`.
+    drop(statuses);
 
     if !sum.detached && !sum.branch.is_empty() {
         if let Ok(local) = repo.find_branch(&sum.branch, BranchType::Local) {
@@ -177,6 +198,13 @@ fn fill_git(repo: &Repository, sum: &mut RepoSummary) -> Result<(), git2::Error>
             }
         }
     }
+
+    let mut stash_count = 0usize;
+    let _ = repo.stash_foreach(|_, _, _| {
+        stash_count += 1;
+        true
+    });
+    sum.stash_count = stash_count;
 
     Ok(())
 }
@@ -247,4 +275,68 @@ fn code_for(s: Status) -> Option<&'static str> {
         return Some("T");
     }
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testutil::{git, temp_repo};
+
+    /// One pass has to satisfy both views at once: the git fields the list
+    /// renders and the size/language fields the map builds from.
+    #[test]
+    fn one_scan_serves_both_views() {
+        let tmp = temp_repo("scan");
+        git(&tmp, &["init", "-b", "main"]);
+        std::fs::write(tmp.join("a.rs"), "fn main() {}
+").unwrap();
+        git(&tmp, &["add", "a.rs"]);
+        git(&tmp, &["commit", "-m", "first commit"]);
+        std::fs::write(tmp.join("a.rs"), "fn main() { todo!() }
+").unwrap();
+        std::fs::write(tmp.join("b.txt"), "untracked").unwrap();
+
+        let sum = summarize(&tmp, 20_000);
+        assert_eq!(sum.error, None);
+
+        // git half — what the list column reads
+        assert_eq!(sum.branch, "main");
+        assert_eq!(sum.unstaged, 1);
+        assert_eq!(sum.untracked, 1);
+        assert_eq!(sum.dirty(), 2);
+        assert_eq!(sum.stash_count, 0);
+        let commit = sum.last_commit.as_ref().expect("has last commit");
+        assert_eq!(commit.summary, "first commit");
+        assert_eq!(commit.hash.len(), 7);
+        assert_eq!(commit.author, "t");
+
+        // size half — what the map builds an island from
+        assert_eq!(sum.files, 2);
+        assert!(sum.bytes > 0);
+        assert!(sum.langs.iter().any(|l| l.lang == "Rust"));
+
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn counts_stashes() {
+        let tmp = temp_repo("scan-stash");
+        git(&tmp, &["init", "-b", "main"]);
+        std::fs::write(tmp.join("a.txt"), "one").unwrap();
+        git(&tmp, &["add", "a.txt"]);
+        git(&tmp, &["commit", "-m", "first"]);
+        std::fs::write(tmp.join("a.txt"), "two").unwrap();
+        git(&tmp, &["stash"]);
+
+        assert_eq!(summarize(&tmp, 20_000).stash_count, 1);
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn reports_error_for_non_repo() {
+        let tmp = temp_repo("scan-nonrepo");
+        let sum = summarize(&tmp, 20_000);
+        assert!(sum.error.is_some());
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
 }

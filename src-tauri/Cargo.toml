@@ -1,12 +1,12 @@
 [package]
-name = "nexis-imagine"
-version = "0.2.0"
-description = "Isometric visualization of local git repos — directories as terraces, files as buildings."
+name = "nexis-atlas"
+version = "0.3.0"
+description = "Every git repo on your machine, as a list and as a map — one scan, two views."
 authors = ["Ryan Wetzstein"]
 edition = "2021"
 
 [lib]
-name = "nexis_imagine_lib"
+name = "nexis_atlas_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

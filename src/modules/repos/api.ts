@@ -1,12 +1,19 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AtlasResult, RepoCity } from "./types";
+import type { AtlasResult, RepoCity, RepoDetail } from "./types";
 
-/** Aggregate stats for every configured repo — the atlas. */
+/** One scan, both views: git state for the list, size and language mix for
+ *  the map. Re-reads config.toml every time, so a config edit lands on the
+ *  next refresh. */
 export function scanRepos(): Promise<AtlasResult> {
   return invoke<AtlasResult>("scan_repos");
 }
 
-/** Full file tree for one repo — the city. */
+/** The list view's drill-in: changed files and stashes for one repo. */
+export function fetchRepoDetail(path: string): Promise<RepoDetail> {
+  return invoke<RepoDetail>("repo_detail", { path });
+}
+
+/** The map view's drill-in: the full file tree for one repo. */
 export function fetchRepoCity(path: string): Promise<RepoCity> {
   return invoke<RepoCity>("repo_city", { path });
 }

@@ -1,4 +1,4 @@
-//! Headless scan — the same data the atlas renders, printed as text.
+//! Headless scan — the same data both views render, printed as text.
 //!
 //!   cargo run --example scan            # every configured repo
 //!   cargo run --example scan <path>     # one repo, with its top directories
@@ -6,7 +6,7 @@
 //! Useful for checking discovery, gitignore handling and timings without
 //! starting the GUI.
 
-use nexis_imagine_lib::{config, scan, tree};
+use nexis_atlas_lib::{config, scan, tree};
 use std::time::Instant;
 
 fn main() {
@@ -49,12 +49,15 @@ fn main() {
     for p in &repos {
         let s = scan::summarize(p, cfg.max_files);
         println!(
-            "  {:<24} {:<18} {:>6} files  {:>9} B  {:>3} dirty  {}",
+            "  {:<24} {:<18} {:>3}↑{:<3}↓ {:>6} files  {:>9} B  {:>3} dirty  {:>2} stash  {}",
             s.name,
             s.branch,
+            s.ahead,
+            s.behind,
             s.files,
             s.bytes,
             s.dirty(),
+            s.stash_count,
             s.langs
                 .iter()
                 .take(3)

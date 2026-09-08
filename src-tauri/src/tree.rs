@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn builds_a_city_from_a_small_repo() {
-        let tmp = std::env::temp_dir().join(format!("imagine-test-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("atlas-tree-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&tmp);
         std::fs::create_dir_all(tmp.join("src")).unwrap();
         git(&tmp, &["init", "-b", "main"]);

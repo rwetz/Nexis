@@ -1,4 +1,4 @@
-import { ImagineLogo } from "@/components/AppLogo";
+import { AtlasLogo } from "@/components/AppLogo";
 import { ResizeHandles } from "@/components/ResizeHandles";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,18 +14,22 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { WindowControls } from "@/components/WindowControls";
 import { IS_MAC } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { openConfig } from "@/modules/city/api";
-import { CityCanvas } from "@/modules/city/CityCanvas";
-import { Inspector } from "@/modules/city/Inspector";
-import { Legend } from "@/modules/city/Legend";
-import { RepoList } from "@/modules/city/RepoList";
-import { StatusBar } from "@/modules/city/StatusBar";
-import { useCityStore } from "@/modules/city/store";
-import { formatCount } from "@/modules/city/types";
+import { DetailPanel } from "@/modules/list/DetailPanel";
+import { RepoTable } from "@/modules/list/RepoTable";
+import { CityCanvas } from "@/modules/map/CityCanvas";
+import { Inspector } from "@/modules/map/Inspector";
+import { Legend } from "@/modules/map/Legend";
+import { RepoList } from "@/modules/map/RepoList";
+import { openConfig, openInTerminal, openPath } from "@/modules/repos/api";
+import { useAtlasStore, type Mode } from "@/modules/repos/store";
+import { formatCount } from "@/modules/repos/types";
 import { ThemeProvider, useTheme } from "@/modules/theme/ThemeProvider";
 import { BUILTIN_THEMES } from "@/modules/theme/themes";
+import { StatusBar } from "./StatusBar";
 import {
+  Menu01Icon,
   Moon02Icon,
+  MapsGlobal01Icon,
   RefreshIcon,
   Sun01Icon,
   TextFontIcon,
@@ -49,8 +53,10 @@ export default function App() {
 }
 
 function Shell() {
-  const refresh = useCityStore((s) => s.refresh);
-  const repos = useCityStore((s) => s.repos);
+  const refresh = useAtlasStore((s) => s.refresh);
+  const mode = useAtlasStore((s) => s.mode);
+  const repos = useAtlasStore((s) => s.repos);
+  const hasRepos = repos.length > 0;
 
   useEffect(() => {
     void refresh();
@@ -62,9 +68,10 @@ function Shell() {
     <div className="flex h-full flex-col">
       <Header />
       <main className="zoom-content flex min-h-0 flex-1">
-        {repos.length > 0 && <RepoList />}
+        {mode === "map" && hasRepos && <RepoList />}
         <Stage />
-        {repos.length > 0 && <Inspector />}
+        {mode === "map" && hasRepos && <Inspector />}
+        {mode === "list" && <DetailPanel />}
       </main>
       <StatusBar />
       <ResizeHandles />
@@ -73,13 +80,14 @@ function Shell() {
 }
 
 function Header() {
-  const scanning = useCityStore((s) => s.scanning);
-  const refresh = useCityStore((s) => s.refresh);
-  const showLabels = useCityStore((s) => s.showLabels);
-  const toggleLabels = useCityStore((s) => s.toggleLabels);
-  const view = useCityStore((s) => s.view);
-  const city = useCityStore((s) => s.city);
-  const backToAtlas = useCityStore((s) => s.backToAtlas);
+  const scanning = useAtlasStore((s) => s.scanning);
+  const refresh = useAtlasStore((s) => s.refresh);
+  const showLabels = useAtlasStore((s) => s.showLabels);
+  const toggleLabels = useAtlasStore((s) => s.toggleLabels);
+  const mode = useAtlasStore((s) => s.mode);
+  const mapView = useAtlasStore((s) => s.mapView);
+  const city = useAtlasStore((s) => s.city);
+  const backToAtlas = useAtlasStore((s) => s.backToAtlas);
 
   return (
     <header
@@ -89,15 +97,15 @@ function Header() {
         IS_MAC ? "pl-20" : "pl-3",
       )}
     >
-      <ImagineLogo className="pointer-events-none size-6" />
+      <AtlasLogo className="pointer-events-none size-6" />
       <button
         type="button"
         onClick={backToAtlas}
         className="font-heading text-sm font-semibold"
       >
-        Imagine
+        Atlas
       </button>
-      {view === "city" && city && (
+      {mode === "map" && mapView === "city" && city && (
         <span className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
           <span aria-hidden>/</span>
           <span className="truncate text-foreground">{city.summary.name}</span>
@@ -106,16 +114,20 @@ function Header() {
 
       <div data-tauri-drag-region className="h-full flex-1" />
 
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Toggle labels (l)"
-        title="Toggle labels (l)"
-        onClick={toggleLabels}
-        className={showLabels ? undefined : "text-muted-foreground/50"}
-      >
-        <HugeiconsIcon icon={TextFontIcon} size={15} strokeWidth={2} />
-      </Button>
+      <ModeSwitch />
+
+      {mode === "map" && (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Toggle labels (l)"
+          title="Toggle labels (l)"
+          onClick={toggleLabels}
+          className={showLabels ? undefined : "text-muted-foreground/50"}
+        >
+          <HugeiconsIcon icon={TextFontIcon} size={15} strokeWidth={2} />
+        </Button>
+      )}
       <Button
         variant="ghost"
         size="icon-sm"
@@ -134,6 +146,45 @@ function Header() {
       <ThemeMenu />
       <WindowControls />
     </header>
+  );
+}
+
+/** The two views of one scan. A segmented control rather than a tab strip:
+ *  these are two ways of looking at the same thing, not two places to be. */
+function ModeSwitch() {
+  const mode = useAtlasStore((s) => s.mode);
+  const setMode = useAtlasStore((s) => s.setMode);
+
+  const options: { id: Mode; label: string; icon: typeof Menu01Icon }[] = [
+    { id: "list", label: "List", icon: Menu01Icon },
+    { id: "map", label: "Map", icon: MapsGlobal01Icon },
+  ];
+
+  return (
+    <div
+      role="group"
+      aria-label="View"
+      className="flex items-center gap-0.5 rounded-lg border border-border/60 bg-background/60 p-0.5"
+    >
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          aria-pressed={mode === o.id}
+          title={`${o.label} view (v)`}
+          onClick={() => setMode(o.id)}
+          className={cn(
+            "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors",
+            mode === o.id
+              ? "bg-accent text-foreground"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <HugeiconsIcon icon={o.icon} size={13} strokeWidth={2} />
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -179,86 +230,93 @@ function ThemeMenu() {
   );
 }
 
-/** The canvas, or whatever needs saying instead of it. */
+/** Whichever view is up, or whatever needs saying instead of it. */
 function Stage() {
-  const repos = useCityStore((s) => s.repos);
-  const scanning = useCityStore((s) => s.scanning);
-  const elapsedMs = useCityStore((s) => s.elapsedMs);
-  const scanError = useCityStore((s) => s.scanError);
-  const configPath = useCityStore((s) => s.configPath);
-  const scanRoot = useCityStore((s) => s.scanRoot);
-  const cityLoading = useCityStore((s) => s.cityLoading);
-  const city = useCityStore((s) => s.city);
-  const view = useCityStore((s) => s.view);
-  const omitted = useCityStore((s) => s.omitted);
+  const repos = useAtlasStore((s) => s.repos);
+  const mode = useAtlasStore((s) => s.mode);
 
-  if (repos.length === 0) {
-    return (
-      <div className="flex min-w-0 flex-1 items-center justify-center p-8">
-        <div
-          className={cn(
-            "max-w-md rounded-2xl border border-border/60 bg-card p-6 text-center",
-            scanning && "aurora-border",
-          )}
-        >
-          {scanning && elapsedMs === null ? (
-            <p className="text-sm text-muted-foreground">Scanning repositories…</p>
-          ) : scanError ? (
-            <>
-              <p className="text-sm font-medium text-destructive">Scan failed</p>
-              <p className="mt-2 break-all font-mono text-xs text-muted-foreground">
-                {scanError}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-sm font-medium">Nothing to build</p>
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                {scanRoot
-                  ? `No git repos under ${scanRoot}. Add explicit paths or point scan_root somewhere else.`
-                  : "Add repo paths or a scan_root to your config."}
-              </p>
-              {configPath && (
-                <p className="mt-1 break-all font-mono text-xs text-muted-foreground/60">
-                  {configPath}
-                </p>
-              )}
-            </>
-          )}
-          {!scanning && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="mt-4"
-              onClick={() =>
-                void openConfig().catch((e) =>
-                  toast.error("Could not open config", { description: String(e) }),
-                )
-              }
-            >
-              Open config.toml
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  }
+  if (repos.length === 0) return <EmptyState />;
+  if (mode === "list") return <RepoTable />;
 
   return (
     <div className="relative flex min-h-0 min-w-0 flex-1">
       <CityCanvas />
       <Legend />
-      {view === "city" && cityLoading && !city && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="aurora-border rounded-2xl border border-border/60 bg-card/90 px-5 py-3 text-sm text-muted-foreground backdrop-blur">
-            Reading the repository…
-          </div>
-        </div>
-      )}
-      <Incomplete
-        truncated={view === "city" && Boolean(city?.summary.truncated)}
-        omitted={omitted}
-      />
+      <CityLoading />
+      <Incomplete />
+    </div>
+  );
+}
+
+function EmptyState() {
+  const scanning = useAtlasStore((s) => s.scanning);
+  const elapsedMs = useAtlasStore((s) => s.elapsedMs);
+  const scanError = useAtlasStore((s) => s.scanError);
+  const configPath = useAtlasStore((s) => s.configPath);
+  const scanRoot = useAtlasStore((s) => s.scanRoot);
+
+  return (
+    <div className="flex min-w-0 flex-1 items-center justify-center p-8">
+      <div
+        className={cn(
+          "max-w-md rounded-2xl border border-border/60 bg-card p-6 text-center",
+          scanning && "aurora-border",
+        )}
+      >
+        {scanning && elapsedMs === null ? (
+          <p className="text-sm text-muted-foreground">Scanning repositories…</p>
+        ) : scanError ? (
+          <>
+            <p className="text-sm font-medium text-destructive">Scan failed</p>
+            <p className="mt-2 break-all font-mono text-xs text-muted-foreground">
+              {scanError}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-medium">No git repos found</p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {scanRoot
+                ? `Nothing under ${scanRoot}. Add explicit paths or point scan_root somewhere else.`
+                : "Add repo paths or a scan_root to your config."}
+            </p>
+            {configPath && (
+              <p className="mt-1 break-all font-mono text-xs text-muted-foreground/60">
+                {configPath}
+              </p>
+            )}
+          </>
+        )}
+        {!scanning && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-4"
+            onClick={() =>
+              void openConfig().catch((e) =>
+                toast.error("Could not open config", { description: String(e) }),
+              )
+            }
+          >
+            Open config.toml
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CityLoading() {
+  const mapView = useAtlasStore((s) => s.mapView);
+  const cityLoading = useAtlasStore((s) => s.cityLoading);
+  const city = useAtlasStore((s) => s.city);
+  if (!(mapView === "city" && cityLoading && !city)) return null;
+
+  return (
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <div className="aurora-border rounded-2xl border border-border/60 bg-card/90 px-5 py-3 text-sm text-muted-foreground backdrop-blur">
+        Reading the repository…
+      </div>
     </div>
   );
 }
@@ -267,8 +325,14 @@ function Stage() {
  *  stopped at `max_files`, or the layout ran out of room for the smallest
  *  boxes. Both used to fail silently, which is the one thing a view like this
  *  cannot afford. */
-function Incomplete({ truncated, omitted }: { truncated: boolean; omitted: number }) {
+function Incomplete() {
+  const mapView = useAtlasStore((s) => s.mapView);
+  const city = useAtlasStore((s) => s.city);
+  const omitted = useAtlasStore((s) => s.omitted);
+
+  const truncated = mapView === "city" && Boolean(city?.summary.truncated);
   if (!truncated && omitted === 0) return null;
+
   const parts: string[] = [];
   if (truncated) parts.push("stopped at the configured max_files");
   if (omitted > 0) parts.push(`${formatCount(omitted)} too small to draw`);
@@ -279,7 +343,10 @@ function Incomplete({ truncated, omitted }: { truncated: boolean; omitted: numbe
   );
 }
 
-/** App-level bindings. Camera keys (q/e/f/l) live with the canvas. */
+/** App-level bindings. Keys that mean different things per view dispatch on
+ *  the mode; the ones that act on "the selected repo" work in both, which is
+ *  the point of the selection being shared. Camera keys (q/e/f/l) live with
+ *  the canvas. */
 function useGlobalKeys() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -291,17 +358,66 @@ function useGlobalKeys() {
       )
         return;
 
-      const s = useCityStore.getState();
+      const s = useAtlasStore.getState();
+
+      // ── both views ─────────────────────────────────────────────────────
       switch (e.key) {
+        case "v":
+          e.preventDefault();
+          s.toggleMode();
+          return;
         case "r":
           void s.refresh();
-          break;
+          return;
+        case "t":
+          if (s.selectedPath) {
+            openInTerminal(s.selectedPath)
+              .then((term) => toast.success(`Opened ${term}`))
+              .catch((err) =>
+                toast.error("Could not open terminal", { description: String(err) }),
+              );
+          }
+          return;
+        case "o":
+          if (s.selectedPath) {
+            openPath(s.selectedPath).catch((err) =>
+              toast.error("Could not open folder", { description: String(err) }),
+            );
+          }
+          return;
+      }
+
+      // ── per view ───────────────────────────────────────────────────────
+      if (s.mode === "list") {
+        switch (e.key) {
+          case "j":
+          case "ArrowDown":
+            e.preventDefault();
+            s.moveSelection(1);
+            break;
+          case "k":
+          case "ArrowUp":
+            e.preventDefault();
+            s.moveSelection(-1);
+            break;
+          case "Enter":
+            e.preventDefault();
+            void s.toggleDetail();
+            break;
+          case "Escape":
+            s.closeDetail();
+            break;
+        }
+        return;
+      }
+
+      switch (e.key) {
         case "Escape":
-          if (s.view === "city") s.backToAtlas();
-          else s.setSelected(null);
+          if (s.mapView === "city") s.backToAtlas();
+          else s.setSelectedBlock(null);
           break;
         case "Enter": {
-          const ref = s.selected?.ref;
+          const ref = s.selectedBlock?.ref;
           if (ref && (ref.kind === "repo" || ref.kind === "district")) {
             void s.enterRepo(ref.repo.path);
           }

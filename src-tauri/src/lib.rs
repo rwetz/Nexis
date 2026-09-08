@@ -1,8 +1,12 @@
 pub mod config;
+pub mod detail;
 pub mod lang;
 pub mod scan;
 pub mod tree;
 pub mod walk;
+
+#[cfg(test)]
+pub mod testutil;
 
 use rayon::prelude::*;
 use serde::Serialize;
@@ -17,8 +21,11 @@ struct AtlasResult {
 }
 
 /// Re-reads config.toml on every scan so edits are picked up by a plain
-/// refresh, then fans the per-repo walk out across rayon's pool. This is the
-/// atlas: one island per repo.
+/// refresh, then fans the per-repo walk out across rayon's pool.
+///
+/// One scan, both views: the list renders the git half of every summary and
+/// the map builds an island out of the size half. Running it once is the whole
+/// point of the two apps being one app.
 #[tauri::command]
 async fn scan_repos() -> Result<AtlasResult, String> {
     tauri::async_runtime::spawn_blocking(|| {
@@ -29,7 +36,9 @@ async fn scan_repos() -> Result<AtlasResult, String> {
             .par_iter()
             .map(|p| scan::summarize(p, cfg.max_files))
             .collect();
-        // Biggest first so the atlas treemap is stable across refreshes.
+        // Biggest first: the squarified treemap in `layoutAtlas` requires
+        // descending weight, and a stable order keeps islands from hopping
+        // between refreshes. The list view sorts its own rows by name.
         repos.sort_by(|a, b| {
             b.bytes
                 .cmp(&a.bytes)
@@ -46,7 +55,7 @@ async fn scan_repos() -> Result<AtlasResult, String> {
     .map_err(|e| e.to_string())?
 }
 
-/// The full file tree for one repo — the city you drill into.
+/// The full file tree for one repo — the city the map drills into.
 #[tauri::command]
 async fn repo_city(path: String) -> Result<tree::RepoCity, String> {
     tauri::async_runtime::spawn_blocking(move || {
@@ -57,6 +66,15 @@ async fn repo_city(path: String) -> Result<tree::RepoCity, String> {
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// Which files are dirty and what is stashed — the list view's drill-in.
+/// Returns only what the summary could not carry; see `detail.rs`.
+#[tauri::command]
+async fn repo_detail(path: String) -> Result<detail::RepoDetail, String> {
+    tauri::async_runtime::spawn_blocking(move || detail::repo_detail(std::path::Path::new(&path)))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 /// Open a repo directory (or a file inside it) with the system handler.
@@ -152,9 +170,9 @@ pub fn run() {
     // but loses window alpha (black behind the rounded borderless corners),
     // and hardware-acceleration-policy=Never paints nothing at all on 2.52.
     // Forcing Mesa's EGL for this process is the one combination verified
-    // stable AND alpha-correct on NVIDIA; skip via IMAGINE_KEEP_HW_ACCEL=1.
+    // stable AND alpha-correct on NVIDIA; skip via ATLAS_KEEP_HW_ACCEL=1.
     #[cfg(target_os = "linux")]
-    if is_nvidia() && std::env::var_os("IMAGINE_KEEP_HW_ACCEL").is_none() {
+    if is_nvidia() && std::env::var_os("ATLAS_KEEP_HW_ACCEL").is_none() {
         const MESA: &str = "/usr/share/glvnd/egl_vendor.d/50_mesa.json";
         if std::env::var_os("__EGL_VENDOR_LIBRARY_FILENAMES").is_none()
             && std::path::Path::new(MESA).exists()
@@ -173,6 +191,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             scan_repos,
             repo_city,
+            repo_detail,
             open_path,
             open_in_terminal,
             open_config

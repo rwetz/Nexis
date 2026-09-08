@@ -1,15 +1,15 @@
 import { useTheme } from "@/modules/theme/ThemeProvider";
 import { useMemo } from "react";
 import { css, langTier, readPalette } from "./palette";
-import { useCityStore } from "./store";
-import { formatBytes } from "./types";
+import { useAtlasStore } from "@/modules/repos/store";
+import { formatBytes } from "@/modules/repos/types";
 
 /** Floating key for the colour ramp. Glass card over the canvas, so it reads
  *  as part of the view rather than another panel. */
 export function Legend() {
-  const view = useCityStore((s) => s.view);
-  const repos = useCityStore((s) => s.repos);
-  const city = useCityStore((s) => s.city);
+  const view = useAtlasStore((s) => s.mapView);
+  const repos = useAtlasStore((s) => s.repos);
+  const city = useAtlasStore((s) => s.city);
   const { resolvedMode, themeId, paletteEpoch } = useTheme();
 
   const palette = useMemo(

@@ -10,8 +10,8 @@
 // so refreshing a repo you have not touched redraws the identical city.
 
 import { langTier } from "./palette";
-import type { LangSlice, RepoSummary, TreeNode } from "./types";
-import { dirtyCount } from "./types";
+import type { LangSlice, RepoSummary, TreeNode } from "@/modules/repos/types";
+import { dirtyCount } from "@/modules/repos/types";
 
 export type Rect = { x: number; z: number; w: number; d: number };
 
@@ -349,7 +349,7 @@ export function layoutAtlas(repos: RepoSummary[]): Scene {
       continue;
     }
 
-    const dim = ageDim(repo.last_commit_time, now);
+    const dim = ageDim(repo.last_commit?.time ?? null, now);
     const self = blocks.length;
     blocks.push({
       id: nextId++,

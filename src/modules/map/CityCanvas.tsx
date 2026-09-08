@@ -20,7 +20,7 @@ import {
 } from "./iso";
 import { layoutAtlas, layoutCity, type Block, type Scene } from "./layout";
 import { readPalette } from "./palette";
-import { useCityStore } from "./store";
+import { useAtlasStore } from "@/modules/repos/store";
 
 const MIN_SCALE = 0.6;
 const MAX_SCALE = 260;
@@ -31,12 +31,12 @@ export function CityCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
-  const view = useCityStore((s) => s.view);
-  const repos = useCityStore((s) => s.repos);
-  const city = useCityStore((s) => s.city);
-  const showLabels = useCityStore((s) => s.showLabels);
-  const fitNonce = useCityStore((s) => s.fitNonce);
-  const enterRepo = useCityStore((s) => s.enterRepo);
+  const view = useAtlasStore((s) => s.mapView);
+  const repos = useAtlasStore((s) => s.repos);
+  const city = useAtlasStore((s) => s.city);
+  const showLabels = useAtlasStore((s) => s.showLabels);
+  const fitNonce = useAtlasStore((s) => s.fitNonce);
+  const enterRepo = useAtlasStore((s) => s.enterRepo);
   const { resolvedMode, themeId, paletteEpoch } = useTheme();
 
   const scene: Scene = useMemo(
@@ -68,7 +68,7 @@ export function CityCanvas() {
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
 
-    const { hover, selected } = useCityStore.getState();
+    const { hover, selectedBlock: selected } = useAtlasStore.getState();
     renderScene(ctx, preparedRef.current, scene, cam.current, vp.current, {
       palette,
       hoverId: hover?.id ?? null,
@@ -147,7 +147,7 @@ export function CityCanvas() {
   }, [schedule]);
 
   useEffect(() => {
-    useCityStore.getState().setOmitted(scene.omitted);
+    useAtlasStore.getState().setOmitted(scene.omitted);
   }, [scene]);
 
   // Fit on every new scene and whenever something asks for it.
@@ -189,7 +189,7 @@ export function CityCanvas() {
       return;
     }
     const hit = hitTest(preparedRef.current, cam.current, vp.current, p.x, p.y);
-    const store = useCityStore.getState();
+    const store = useAtlasStore.getState();
     if (store.hover?.id !== (hit?.id ?? null)) {
       // Swapped on the element rather than through state: hover deliberately
       // never re-renders React, and the class carries the bespoke cursor PNG.
@@ -208,7 +208,7 @@ export function CityCanvas() {
     const moved = Math.hypot(p.x - d.x, p.y - d.y);
     if (moved > 4) return; // a pan, not a click
     const hit = hitTest(preparedRef.current, cam.current, vp.current, p.x, p.y);
-    useCityStore.getState().setSelected(hit);
+    useAtlasStore.getState().setSelectedBlock(hit);
     schedule();
   };
 
@@ -323,7 +323,7 @@ export function CityCanvas() {
           break;
         case "l":
           e.preventDefault();
-          useCityStore.getState().toggleLabels();
+          useAtlasStore.getState().toggleLabels();
           break;
       }
     };
@@ -332,7 +332,7 @@ export function CityCanvas() {
   }, [scene, schedule, stopFly, flyTo]);
 
   // Hover/selection are drawn, not React state, so repaint when they move.
-  useEffect(() => useCityStore.subscribe(schedule), [schedule]);
+  useEffect(() => useAtlasStore.subscribe(schedule), [schedule]);
 
   return (
     <div ref={wrapRef} className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
@@ -348,7 +348,7 @@ export function CityCanvas() {
         onPointerLeave={(e) => {
           e.currentTarget.classList.remove("cursor-pointer");
           e.currentTarget.classList.add("cursor-grab");
-          useCityStore.getState().setHover(null);
+          useAtlasStore.getState().setHover(null);
         }}
         onDoubleClick={onDoubleClick}
       />

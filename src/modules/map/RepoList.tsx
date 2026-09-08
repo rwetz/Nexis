@@ -2,17 +2,25 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ArrowLeft02Icon, GitBranchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useCityStore } from "./store";
-import { dirtyCount, formatCount, relativeTime, type RepoSummary } from "./types";
+import { useAtlasStore } from "@/modules/repos/store";
+import { dirtyCount, formatCount, relativeTime, type RepoSummary } from "@/modules/repos/types";
 
 /** The rail on the left: every repo the config found, and the way back out
- *  of a city. Deliberately text-only — the canvas is where the shapes live. */
+ *  of a city. Deliberately text-only — the canvas is where the shapes live.
+ *
+ *  In the atlas it marks whatever the list view had selected, so switching
+ *  over from the list lands on the repo you were already looking at. */
 export function RepoList() {
-  const repos = useCityStore((s) => s.repos);
-  const view = useCityStore((s) => s.view);
-  const activeRepo = useCityStore((s) => s.activeRepo);
-  const enterRepo = useCityStore((s) => s.enterRepo);
-  const backToAtlas = useCityStore((s) => s.backToAtlas);
+  const repos = useAtlasStore((s) => s.repos);
+  const view = useAtlasStore((s) => s.mapView);
+  const activeRepo = useAtlasStore((s) => s.activeRepo);
+  const selectedPath = useAtlasStore((s) => s.selectedPath);
+  const enterRepo = useAtlasStore((s) => s.enterRepo);
+  const backToAtlas = useAtlasStore((s) => s.backToAtlas);
+
+  // Inside a city the rail marks where you are; out in the atlas it marks
+  // the shared selection, which the list view may have set.
+  const marked = view === "city" ? activeRepo : selectedPath;
 
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-border/60 bg-card">
@@ -39,7 +47,7 @@ export function RepoList() {
           <RepoRow
             key={repo.path}
             repo={repo}
-            active={repo.path === activeRepo}
+            active={repo.path === marked}
             onOpen={() => void enterRepo(repo.path)}
           />
         ))}
@@ -88,7 +96,7 @@ function RepoRow({
         </span>
       </span>
       <span className="text-[11px] text-muted-foreground/60">
-        {relativeTime(repo.last_commit_time)}
+        {relativeTime(repo.last_commit?.time ?? null)}
         {repo.ahead > 0 && ` · ↑${repo.ahead}`}
         {repo.behind > 0 && ` · ↓${repo.behind}`}
       </span>

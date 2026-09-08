@@ -67,8 +67,8 @@ type ThemeProviderState = {
 const ThemeProviderContext = createContext<ThemeProviderState | null>(null);
 
 // Same keys index.html reads before the bundle loads (anti-flash fast path).
-const FAST_PATH_KEY = "imagine-ui-theme-shadow";
-const FAST_PATH_THEME_ID = "imagine-ui-theme-id-shadow";
+const FAST_PATH_KEY = "atlas-ui-theme-shadow";
+const FAST_PATH_THEME_ID = "atlas-ui-theme-id-shadow";
 
 function readMode(fallback: ThemeModePref): ThemeModePref {
   const v = window.localStorage.getItem(FAST_PATH_KEY);

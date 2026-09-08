@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Imagine",
-  "version": "0.2.0",
-  "identifier": "app.nexis.imagine",
+  "productName": "Atlas",
+  "version": "0.3.0",
+  "identifier": "app.nexis.atlas",
   "build": {
     "beforeDevCommand": "pnpm typecheck && pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
   "app": {
     "windows": [
       {
-        "title": "Imagine",
+        "title": "Atlas",
         "width": 1280,
         "height": 800,
         "minWidth": 640,
@@ -65,7 +65,7 @@
       }
     },
     "category": "DeveloperTool",
-    "shortDescription": "Isometric visualization of your local git repos",
-    "longDescription": "Imagine — renders every local git repo as an isometric city: directories are terraces, files are buildings sized by their code, coloured by language, and flagged coral when the working tree is dirty."
+    "shortDescription": "Every git repo on your machine, as a list and as a map",
+    "longDescription": "Atlas — one scan of every git repo on your machine, shown two ways. The list is branch, sync state, changed files and last commit at a glance. The map renders the same repos as an isometric city: directories are terraces, files are buildings sized by their code, coloured by language, and flagged coral when the working tree is dirty."
   }
 }

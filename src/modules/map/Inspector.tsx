@@ -7,26 +7,26 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { toast } from "sonner";
-import { openInTerminal, openPath } from "./api";
+import { openInTerminal, openPath } from "@/modules/repos/api";
 import type { Block } from "./layout";
 import { loc } from "./layout";
-import { useCityStore } from "./store";
+import { useAtlasStore } from "@/modules/repos/store";
 import {
   dirtyCount,
   formatBytes,
   formatCount,
   relativeTime,
   statusLabel,
-} from "./types";
+} from "@/modules/repos/types";
 
 /** Right-hand pane. Shows whatever the pointer is over, falling back to the
  *  last click, so the city can be read without ever taking your hand off the
  *  mouse. */
 export function Inspector() {
-  const hover = useCityStore((s) => s.hover);
-  const selected = useCityStore((s) => s.selected);
-  const city = useCityStore((s) => s.city);
-  const view = useCityStore((s) => s.view);
+  const hover = useAtlasStore((s) => s.hover);
+  const selected = useAtlasStore((s) => s.selectedBlock);
+  const city = useAtlasStore((s) => s.city);
+  const view = useAtlasStore((s) => s.mapView);
   const subject = hover ?? selected;
 
   return (
@@ -80,13 +80,13 @@ function BlockDetail({ block, repoPath }: { block: Block; repoPath: string | nul
               ["Size", formatBytes(repo.bytes)],
               ["Uncommitted", dirty === 0 ? "clean" : formatCount(dirty)],
               ["Ahead / behind", `${repo.ahead} / ${repo.behind}`],
-              ["Last commit", relativeTime(repo.last_commit_time)],
+              ["Last commit", relativeTime(repo.last_commit?.time ?? null)],
             ]}
           />
         )}
-        {repo.last_commit_summary && (
+        {repo.last_commit?.summary && (
           <p className="border-l-2 border-border pl-2 text-xs leading-relaxed text-muted-foreground">
-            {repo.last_commit_summary}
+            {repo.last_commit?.summary}
           </p>
         )}
         {repo.langs.length > 0 && <LangBars repo={repo} />}
@@ -198,8 +198,8 @@ function LangBars({ repo }: { repo: { langs: { lang: string; bytes: number }[]; 
 }
 
 function Actions({ path, withTerminal }: { path: string; withTerminal?: boolean }) {
-  const enterRepo = useCityStore((s) => s.enterRepo);
-  const view = useCityStore((s) => s.view);
+  const enterRepo = useAtlasStore((s) => s.enterRepo);
+  const view = useAtlasStore((s) => s.mapView);
 
   return (
     <div className="flex flex-wrap gap-1.5 pt-1">

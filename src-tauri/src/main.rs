@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    nexis_imagine_lib::run()
+    nexis_atlas_lib::run()
 }

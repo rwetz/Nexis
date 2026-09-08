@@ -6,18 +6,18 @@
 
 import { cn } from "@/lib/utils";
 
-/** Imagine mark — four extruded blocks on an isometric plate, drawn with the
- * same projection the app renders with. Self-contained palette (dark tile,
+/** Atlas mark — four extruded blocks on an isometric plate, drawn with the
+ * same projection the map renders with. Self-contained palette (dark tile,
  * one coral tower) so it reads identically in light and dark, matching the
  * family convention. `defs` ids are `im-`-prefixed because inline SVG ids are
  * document-global. */
-export function ImagineLogo({ className }: { className?: string }) {
+export function AtlasLogo({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 256 256"
       xmlns="http://www.w3.org/2000/svg"
       className={cn("size-12", className)}
-      aria-label="Imagine"
+      aria-label="Atlas"
     >
       <defs>
         <linearGradient id="im-bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -57,7 +57,7 @@ export function ImagineLogo({ className }: { className?: string }) {
   );
 }
 
-// Projection mirrors modules/city/iso.ts, scaled for a 256px tile.
+// Projection mirrors modules/map/iso.ts, scaled for a 256px tile.
 const U = 30;
 const OX = 128;
 const OY = 156;
