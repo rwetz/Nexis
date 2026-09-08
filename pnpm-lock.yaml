@@ -21,8 +21,8 @@ importers:
         specifier: ^1.0.5
         version: 1.1.10(react@19.2.8)
       '@nexis/design':
-        specifier: link:../nexis-design
-        version: link:../nexis-design
+        specifier: github:rwetz/nexis-design
+        version: https://codeload.github.com/rwetz/nexis-design/tar.gz/28333833a237735012aaf906114725c31bf2185e(@hugeicons/core-free-icons@1.2.1)(@hugeicons/react@1.1.10(react@19.2.8))(@tauri-apps/api@2.11.1)(@tauri-apps/plugin-os@2.3.2)(clsx@2.1.1)(motion@12.43.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwind-merge@3.6.0)
       '@tauri-apps/api':
         specifier: ^2.6.0
         version: 2.11.1
@@ -510,6 +510,21 @@ packages:
     cpu: [x64]
     os: [linux]
     libc: [glibc]
+
+  '@nexis/design@https://codeload.github.com/rwetz/nexis-design/tar.gz/28333833a237735012aaf906114725c31bf2185e':
+    resolution: {gitHosted: true, integrity: sha512-ICYfvI4LP+TQEIIg0PpAqUqL2kD/cTj5Umngr5dse3iEkse4ZDTdMKVOU87eGYe0gon9coN+4zkSVm0QWzT98w==, tarball: https://codeload.github.com/rwetz/nexis-design/tar.gz/28333833a237735012aaf906114725c31bf2185e}
+    version: 0.1.0
+    hasBin: true
+    peerDependencies:
+      '@hugeicons/core-free-icons': ^1.0.13
+      '@hugeicons/react': ^1.0.5
+      '@tauri-apps/api': ^2.6.0
+      '@tauri-apps/plugin-os': ^2.3.0
+      clsx: ^2.1.1
+      motion: ^12.19.1
+      react: ^19.0.0
+      react-dom: ^19.0.0
+      tailwind-merge: ^3.3.1
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -3569,6 +3584,18 @@ snapshots:
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
+
+  '@nexis/design@https://codeload.github.com/rwetz/nexis-design/tar.gz/28333833a237735012aaf906114725c31bf2185e(@hugeicons/core-free-icons@1.2.1)(@hugeicons/react@1.1.10(react@19.2.8))(@tauri-apps/api@2.11.1)(@tauri-apps/plugin-os@2.3.2)(clsx@2.1.1)(motion@12.43.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(tailwind-merge@3.6.0)':
+    dependencies:
+      '@hugeicons/core-free-icons': 1.2.1
+      '@hugeicons/react': 1.1.10(react@19.2.8)
+      '@tauri-apps/api': 2.11.1
+      '@tauri-apps/plugin-os': 2.3.2
+      clsx: 2.1.1
+      motion: 12.43.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+      tailwind-merge: 3.6.0
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
