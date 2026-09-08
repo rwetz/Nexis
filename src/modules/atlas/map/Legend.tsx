@@ -1,8 +1,8 @@
-import { useTheme } from "@nexis/design";
+import { useTheme } from "@/modules/theme";
 import { useMemo } from "react";
 import { css, langTier, readPalette } from "./palette";
-import { useAtlasStore } from "@/modules/repos/store";
-import { formatBytes } from "@/modules/repos/types";
+import { useAtlasStore } from "@/modules/atlas/repos/store";
+import { formatBytes } from "@/modules/atlas/repos/types";
 
 /** Floating key for the colour ramp. Glass card over the canvas, so it reads
  *  as part of the view rather than another panel. */

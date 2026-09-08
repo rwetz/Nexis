@@ -1,3 +1,9 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import {
@@ -5,11 +11,10 @@ import {
   listBackends,
   onProgress,
   onResult,
+  isRunning,
   probeLlama,
   runBenchmark,
-} from "@/lib/api";
-import { DEMO_MODELS } from "@/lib/mockEngine";
-import { IS_TAURI } from "@/lib/platform";
+} from "@/modules/benchmark/lib/api";
 import {
   type BackendId,
   type BackendInfo,
@@ -22,7 +27,7 @@ import {
   type Preset,
   cellKey,
   DEFAULT_CONFIG,
-} from "@/lib/types";
+} from "@/modules/benchmark/lib/types";
 
 let uid = 0;
 const nextId = (p: string) => `${p}-${Date.now().toString(36)}-${(uid++).toString(36)}`;
@@ -87,16 +92,9 @@ export const useBenchStore = create<BenchState>()(
       init: async () => {
         if (get().initialized) return;
         let backends = await listBackends();
-        // Seed demo models only for a fresh browser session (nothing persisted).
-        if (get().models.length === 0 && !IS_TAURI) {
-          set({
-            models: DEMO_MODELS,
-            selectedModelIds: DEMO_MODELS.map((m) => m.id),
-          });
-        }
         // Re-validate a previously located llama-bench binary.
         const llamaPath = get().llamaBenchPath;
-        if (IS_TAURI && llamaPath) {
+        if (llamaPath) {
           try {
             const probe = await probeLlama(llamaPath);
             backends = backends.map((b) =>
@@ -113,10 +111,23 @@ export const useBenchStore = create<BenchState>()(
           available.includes(id),
         );
         // Show the most recent run's results on load if there's no live run.
-        const { run, history } = get();
+        const { run, history, jobId } = get();
+        // A run outlives the panel: the sidebar view can be switched away from,
+        // or the frontend hot-reloaded, while the harness keeps working. Ask it
+        // whether our job is still registered rather than assuming it stopped —
+        // assuming would let the user start a second job on top of the first.
+        let running = false;
+        if (jobId) {
+          try {
+            running = await isRunning(jobId);
+          } catch {
+            /* harness unreachable — treat as not running */
+          }
+        }
         set({
           initialized: true,
           backends,
+          running,
           selectedBackendIds:
             selectedBackendIds.length > 0 ? selectedBackendIds : available.slice(0, 2),
           run: run ?? history[0] ?? null,
@@ -257,11 +268,15 @@ export const useBenchStore = create<BenchState>()(
       },
     }),
     {
-      name: "nexis-bench-state",
+      name: "nexis:benchmark",
       version: 1,
       storage: createJSONStorage(() => localStorage),
-      // Persist the durable bits; live run state stays ephemeral.
+      // Persist the durable bits; live run state stays ephemeral -- except
+      // `jobId`, which has to survive a reload for `init` to be able to ask the
+      // harness whether that job is still going (see `init`). It is an opaque
+      // string; without it a reload mid-run silently orphans the run.
       partialize: (s) => ({
+        jobId: s.jobId,
         models: s.models,
         selectedModelIds: s.selectedModelIds,
         selectedBackendIds: s.selectedBackendIds,

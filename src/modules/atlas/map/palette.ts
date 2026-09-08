@@ -13,7 +13,7 @@
 // Within that ring hues are spread as far apart as the language list allows —
 // telling TypeScript from Rust at a glance is the whole point of the view.
 
-import { resolveCssColor } from "@nexis/design/tokens";
+import { resolveCssColor } from "@/styles/tokens";
 
 export type Rgb = { r: number; g: number; b: number };
 

@@ -4,7 +4,7 @@
 // canvas repaints through a single rAF-scheduled draw. Only things the rest
 // of the UI needs (hover, selection) are pushed into the store.
 
-import { useTheme } from "@nexis/design";
+import { useTheme } from "@/modules/theme";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   fitCamera,
@@ -20,7 +20,7 @@ import {
 } from "./iso";
 import { layoutAtlas, layoutCity, type Block, type Scene } from "./layout";
 import { readPalette } from "./palette";
-import { useAtlasStore } from "@/modules/repos/store";
+import { useAtlasStore } from "@/modules/atlas/repos/store";
 
 const MIN_SCALE = 0.6;
 const MAX_SCALE = 260;

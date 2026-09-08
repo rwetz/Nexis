@@ -1,18 +1,12 @@
+import { Icon } from "@/components/icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Database02Icon,
-  Delete02Icon,
-  DocumentCodeIcon,
-  FolderOpenIcon,
-  HugeiconsIcon,
-  PlusSignIcon,
-} from "@/components/icons";
-import { pickModels } from "@/lib/api";
-import { cn, formatBytes } from "@/lib/utils";
-import { TASK_LABELS, type ModelInfo } from "@/lib/types";
-import { useBenchStore } from "@/store/useBenchStore";
-import { useFileDrop } from "@/modules/window/useFileDrop";
+import { pickModels } from "@/modules/benchmark/lib/api";
+import { cn } from "@/lib/utils";
+import { formatBytes } from "@/lib/format";
+import { TASK_LABELS, type ModelInfo } from "@/modules/benchmark/lib/types";
+import { useBenchStore } from "@/modules/benchmark/store";
+import { useFileDrop } from "@/modules/benchmark/lib/useFileDrop";
 
 const FORMAT_STYLES: Record<string, string> = {
   gguf: "bg-llama/15 text-llama",
@@ -42,7 +36,7 @@ export function ModelLibrary() {
           <span className="ml-1 text-muted-foreground/60">{models.length}</span>
         </CardTitle>
         <Button variant="ghost" size="icon-xs" onClick={onAdd} aria-label="Add models">
-          <HugeiconsIcon icon={PlusSignIcon} size={15} strokeWidth={2} />
+          <Icon name="add" size="sm" />
         </Button>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-col gap-1.5">
@@ -54,12 +48,7 @@ export function ModelLibrary() {
               dragging && "border-brand bg-brand/10",
             )}
           >
-            <HugeiconsIcon
-              icon={FolderOpenIcon}
-              size={22}
-              strokeWidth={1.5}
-              className="text-muted-foreground"
-            />
+            <Icon name="folder-open" size="lg" className="text-muted-foreground" />
             <div className="text-sm font-medium">Drop ONNX / GGUF models</div>
             <div className="text-xs text-muted-foreground">or click to browse</div>
           </button>
@@ -124,10 +113,9 @@ function ModelRow({
       </button>
 
       <button onClick={onToggle} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
-        <HugeiconsIcon
-          icon={model.format === "onnx" ? DocumentCodeIcon : Database02Icon}
-          size={16}
-          strokeWidth={1.6}
+        <Icon
+          name={model.format === "onnx" ? "file-code" : "database"}
+          size="md"
           className="shrink-0 text-muted-foreground"
         />
         <div className="min-w-0 flex-1">
@@ -156,7 +144,7 @@ function ModelRow({
         aria-label="Remove model"
         className="opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
       >
-        <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.8} />
+        <Icon name="delete" size="sm" />
       </Button>
     </div>
   );

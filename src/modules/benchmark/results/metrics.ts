@@ -1,5 +1,6 @@
-import { formatBytes, formatCompact, formatMs } from "@/lib/utils";
-import { type BenchMetrics } from "@/lib/types";
+import { formatBytes } from "@/lib/format";
+import { formatCompact, formatMs } from "@/modules/benchmark/lib/format";
+import { type BenchMetrics } from "@/modules/benchmark/lib/types";
 
 export type MetricKey =
   | "tokensPerSec"

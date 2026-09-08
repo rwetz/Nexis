@@ -1,8 +1,8 @@
+import { Icon } from "@/components/icon";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Clock01Icon, Delete02Icon, HugeiconsIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
-import { useBenchStore } from "@/store/useBenchStore";
+import { useBenchStore } from "@/modules/benchmark/store";
 
 export function HistoryMenu() {
   const history = useBenchStore((s) => s.history);
@@ -22,7 +22,7 @@ export function HistoryMenu() {
         disabled={history.length === 0}
         onClick={() => setOpen((o) => !o)}
       >
-        <HugeiconsIcon icon={Clock01Icon} size={15} strokeWidth={1.8} />
+        <Icon name="clock" size="sm" />
         History
         <span className="font-mono text-[11px] text-muted-foreground">{history.length}</span>
       </Button>
@@ -81,7 +81,7 @@ export function HistoryMenu() {
                       aria-label="Delete run"
                       className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
                     >
-                      <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={1.8} />
+                      <Icon name="delete" size="sm" />
                     </button>
                   </div>
                 );

@@ -1,19 +1,14 @@
-import { relativeTime } from "@/lib/time";
+import { Icon } from "@/components/icon";
+import { relativeTime } from "@/modules/atlas/lib/time";
 import { cn } from "@/lib/utils";
-import {
-  ArrowDown02Icon,
-  ArrowUp02Icon,
-  GitBranchIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useMemo, useRef } from "react";
-import { useAtlasStore } from "@/modules/repos/store";
+import { useAtlasStore } from "@/modules/atlas/repos/store";
 import {
   displayOrder,
   repoState,
   STATE_META,
   type RepoSummary,
-} from "@/modules/repos/types";
+} from "@/modules/atlas/repos/types";
 
 const GRID =
   "grid grid-cols-[minmax(150px,1.1fr)_minmax(110px,0.8fr)_86px_120px_minmax(180px,1.6fr)_80px] items-center gap-x-3";
@@ -90,7 +85,7 @@ function RepoRow({ repo, selected }: { repo: RepoSummary; selected: boolean }) {
       </span>
 
       <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
-        <HugeiconsIcon icon={GitBranchIcon} size={13} strokeWidth={2} className="shrink-0" />
+        <Icon name="git-branch" size="sm" className="shrink-0" />
         <span className="truncate font-mono text-xs">
           {repo.branch || "—"}
           {repo.detached && " (detached)"}
@@ -126,13 +121,13 @@ function SyncCell({ repo }: { repo: RepoSummary }) {
     <span className="flex items-center gap-1.5 font-mono text-xs tabular-nums">
       {repo.ahead > 0 && (
         <span className="flex items-center text-sky-400">
-          <HugeiconsIcon icon={ArrowUp02Icon} size={12} strokeWidth={2.5} />
+          <Icon name="chevron-up" size="xs" />
           {repo.ahead}
         </span>
       )}
       {repo.behind > 0 && (
         <span className="flex items-center text-orange-400">
-          <HugeiconsIcon icon={ArrowDown02Icon} size={12} strokeWidth={2.5} />
+          <Icon name="chevron-down" size="xs" />
           {repo.behind}
         </span>
       )}

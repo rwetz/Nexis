@@ -1,6 +1,6 @@
-import { BACKEND_COLOR, BACKEND_SHORT } from "@/lib/backendMeta";
+import { BACKEND_COLOR, BACKEND_SHORT } from "@/modules/benchmark/lib/backendMeta";
 import { cn } from "@/lib/utils";
-import { cellKey, type BackendId, type BenchResult, type ModelInfo } from "@/lib/types";
+import { cellKey, type BackendId, type BenchResult, type ModelInfo } from "@/modules/benchmark/lib/types";
 import { type MetricDef } from "./metrics";
 
 interface Props {

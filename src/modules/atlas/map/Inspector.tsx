@@ -1,25 +1,19 @@
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  FolderOpenIcon,
-  SourceCodeIcon,
-  ConsoleIcon,
-  ArrowRight02Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { toast } from "sonner";
-import { openInNexis, openInTerminal, openPath } from "@/modules/repos/api";
-import { useNexisInstalled } from "@/modules/repos/useNexisInstalled";
+import { revealPath } from "@/modules/atlas/repos/api";
+import { useAtlasHost } from "@/modules/atlas/repos/host";
 import type { Block } from "./layout";
 import { loc } from "./layout";
-import { useAtlasStore } from "@/modules/repos/store";
+import { useAtlasStore } from "@/modules/atlas/repos/store";
 import {
   dirtyCount,
   formatBytes,
   formatCount,
   relativeTime,
   statusLabel,
-} from "@/modules/repos/types";
+} from "@/modules/atlas/repos/types";
 
 /** Right-hand pane. Shows whatever the pointer is over, falling back to the
  *  last click, so the city can be read without ever taking your hand off the
@@ -202,13 +196,13 @@ function LangBars({ repo }: { repo: { langs: { lang: string; bytes: number }[]; 
 function Actions({ path, withTerminal }: { path: string; withTerminal?: boolean }) {
   const enterRepo = useAtlasStore((s) => s.enterRepo);
   const view = useAtlasStore((s) => s.mapView);
-  const nexisInstalled = useNexisInstalled();
+  const host = useAtlasHost();
 
   return (
     <div className="flex flex-wrap gap-1.5 pt-1">
       {withTerminal && view === "atlas" && (
         <Button size="xs" variant="outline" onClick={() => void enterRepo(path)}>
-          <HugeiconsIcon icon={ArrowRight02Icon} size={12} strokeWidth={2} />
+          <Icon name="chevron-right" size="xs" />
           Enter
         </Button>
       )}
@@ -216,44 +210,32 @@ function Actions({ path, withTerminal }: { path: string; withTerminal?: boolean 
         size="xs"
         variant="outline"
         onClick={() =>
-          openPath(path).catch((e) =>
-            toast.error("Could not open", { description: String(e) }),
+          revealPath(path).catch((e) =>
+            toast.error("Could not reveal", { description: String(e) }),
           )
         }
       >
-        <HugeiconsIcon icon={FolderOpenIcon} size={12} strokeWidth={2} />
+        <Icon name="folder-open" size="xs" />
         Open
       </Button>
       {withTerminal && (
         <Button
           size="xs"
           variant="outline"
-          onClick={() =>
-            openInTerminal(path)
-              .then((term) => toast.success(`Opened ${term}`))
-              .catch((e) =>
-                toast.error("Could not open terminal", { description: String(e) }),
-              )
-          }
+          onClick={() => host.openTerminal(path)}
         >
-          <HugeiconsIcon icon={ConsoleIcon} size={12} strokeWidth={2} />
+          <Icon name="terminal" size="xs" />
           Terminal
         </Button>
       )}
-      {withTerminal && nexisInstalled && (
+      {withTerminal && (
         <Button
           size="xs"
           variant="outline"
-          onClick={() =>
-            openInNexis(path)
-              .then((bin) => toast.success(`Opened in ${bin}`))
-              .catch((e) =>
-                toast.error("Could not open Nexis", { description: String(e) }),
-              )
-          }
+          onClick={() => host.openWorkspace(path)}
         >
-          <HugeiconsIcon icon={SourceCodeIcon} size={12} strokeWidth={2} />
-          Nexis
+          <Icon name="folder-open" size="xs" />
+          Workspace
         </Button>
       )}
     </div>

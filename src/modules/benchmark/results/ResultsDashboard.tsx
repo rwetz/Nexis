@@ -1,14 +1,13 @@
+import { Icon } from "@/components/icon";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { BrandMark } from "@/components/BrandMark";
-import { BACKEND_COLOR, BACKEND_SHORT } from "@/lib/backendMeta";
+import { BACKEND_COLOR, BACKEND_SHORT } from "@/modules/benchmark/lib/backendMeta";
 import { toast } from "sonner";
-import { Copy01Icon, DocumentCodeIcon, Download04Icon, HugeiconsIcon } from "@/components/icons";
-import { copyRunMarkdown, exportRunCsv, exportRunJson } from "@/lib/api";
+import { copyRunMarkdown, exportRunCsv, exportRunJson } from "@/modules/benchmark/lib/api";
 import { HistoryMenu } from "./HistoryMenu";
 import { cn } from "@/lib/utils";
-import { type BackendId, type BenchResult } from "@/lib/types";
-import { useBenchStore } from "@/store/useBenchStore";
+import { type BackendId, type BenchResult } from "@/modules/benchmark/lib/types";
+import { useBenchStore } from "@/modules/benchmark/store";
 import { ComparisonChart } from "./ComparisonChart";
 import { RunMatrix } from "./RunMatrix";
 import { SummaryStrip } from "./viz/SummaryStrip";
@@ -74,7 +73,7 @@ export function ResultsDashboard() {
               else toast.error("Clipboard unavailable");
             }}
           >
-            <HugeiconsIcon icon={Copy01Icon} size={15} strokeWidth={1.8} />
+            <Icon name="copy" size="sm" />
             Copy
           </Button>
           <Button
@@ -84,7 +83,7 @@ export function ResultsDashboard() {
             className="rounded-md"
             onClick={() => exportRunCsv(run, models)}
           >
-            <HugeiconsIcon icon={Download04Icon} size={15} strokeWidth={1.8} />
+            <Icon name="download" size="sm" />
             CSV
           </Button>
           <Button
@@ -94,7 +93,7 @@ export function ResultsDashboard() {
             className="rounded-md"
             onClick={() => exportRunJson(run, models)}
           >
-            <HugeiconsIcon icon={DocumentCodeIcon} size={15} strokeWidth={1.8} />
+            <Icon name="file-code" size="sm" />
             JSON
           </Button>
         </div>
@@ -196,18 +195,19 @@ function Legend({ backendIds }: { backendIds: BackendId[] }) {
 }
 
 function EmptyState() {
+  // The standalone app put its own logomark here. Inside Nexis that would be a
+  // second brand sitting inside the first, so the mark is gone and the copy is
+  // rewritten for a panel that sits below its controls rather than beside them.
   return (
-    <div className="flex min-h-0 flex-1 items-center justify-center p-8">
-      <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-        <div className="aurora-border grid size-16 place-items-center rounded-2xl bg-card">
-          <BrandMark size={34} />
-        </div>
+    <div className="flex min-h-0 flex-1 items-center justify-center p-6">
+      <div className="flex max-w-xs flex-col items-center gap-3 text-center">
+        <Icon name="activity" size="xl" className="text-muted-foreground/60" />
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Ready to benchmark</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Pick models and backends on the left, set the protocol, then hit{" "}
-            <span className="font-medium text-foreground">Run benchmark</span>. Results stream in
-            live — throughput, latency, memory, and accuracy, side by side.
+          <h2 className="text-sm font-semibold tracking-tight">Ready to benchmark</h2>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Pick models and backends above, set the protocol, then hit{" "}
+            <span className="font-medium text-foreground">Run benchmark</span>. Results
+            stream in live — throughput, latency, memory, and accuracy, side by side.
           </p>
         </div>
       </div>

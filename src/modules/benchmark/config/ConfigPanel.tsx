@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { TASK_LABELS, type TaskType } from "@/lib/types";
-import { useBenchStore } from "@/store/useBenchStore";
+import { TASK_LABELS, type TaskType } from "@/modules/benchmark/lib/types";
+import { useBenchStore } from "@/modules/benchmark/store";
 
 const TASKS: TaskType[] = ["generation", "classification", "embedding"];
 

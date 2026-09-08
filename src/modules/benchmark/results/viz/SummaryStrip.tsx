@@ -1,6 +1,7 @@
-import { BACKEND_COLOR, BACKEND_SHORT } from "@/lib/backendMeta";
-import { formatBytes, formatCompact, formatMs } from "@/lib/utils";
-import { type BenchResult, type ModelInfo } from "@/lib/types";
+import { BACKEND_COLOR, BACKEND_SHORT } from "@/modules/benchmark/lib/backendMeta";
+import { formatBytes } from "@/lib/format";
+import { formatCompact, formatMs } from "@/modules/benchmark/lib/format";
+import { type BenchResult, type ModelInfo } from "@/modules/benchmark/lib/types";
 
 interface Winner {
   label: string;
@@ -44,7 +45,7 @@ export function SummaryStrip({
   const tiles = [
     best("Fastest", (r) => r.metrics?.tokensPerSec, "max", (v) => `${formatCompact(v)} tok/s`),
     best("Snappiest", (r) => r.metrics?.firstTokenMs, "min", formatMs),
-    best("Leanest", (r) => (r.metrics?.peakMemBytes || 0) > 0 ? r.metrics?.peakMemBytes : null, "min", (v) => formatBytes(v, 0)),
+    best("Leanest", (r) => (r.metrics?.peakMemBytes || 0) > 0 ? r.metrics?.peakMemBytes : null, "min", (v) => formatBytes(v)),
     best("Most accurate", (r) => r.metrics?.accuracy ?? null, "max", (v) => `${(v * 100).toFixed(1)}%`),
   ].filter((t): t is Winner => t !== null);
 

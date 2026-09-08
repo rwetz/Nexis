@@ -1,6 +1,6 @@
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
-import { HugeiconsIcon, Loading03Icon, PlayIcon, StopIcon } from "@/components/icons";
-import { useBenchStore } from "@/store/useBenchStore";
+import { useBenchStore } from "@/modules/benchmark/store";
 
 export function RunBar() {
   const running = useBenchStore((s) => s.running);
@@ -31,7 +31,7 @@ export function RunBar() {
           className="w-full"
           title="Esc"
         >
-          <HugeiconsIcon icon={StopIcon} size={16} strokeWidth={2} />
+          <Icon name="stop" size="md" />
           Stop
         </Button>
       ) : (
@@ -43,11 +43,7 @@ export function RunBar() {
           className="w-full"
           title="⌘/Ctrl + Enter"
         >
-          <HugeiconsIcon
-            icon={cells.length === 0 ? Loading03Icon : PlayIcon}
-            size={16}
-            strokeWidth={2}
-          />
+          <Icon name={cells.length === 0 ? "loading" : "play"} size="md" />
           Run benchmark
         </Button>
       )}

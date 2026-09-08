@@ -41,6 +41,8 @@ export const SIDEBAR_VIEW_IDS = [
   "web-tools",
   "http-client",
   "command-history",
+  "atlas",
+  "benchmark",
 ] as const;
 
 export type SidebarViewId = (typeof SIDEBAR_VIEW_IDS)[number];

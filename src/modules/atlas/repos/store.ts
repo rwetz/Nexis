@@ -4,7 +4,7 @@ import { fetchRepoCity, fetchRepoDetail, scanRepos } from "./api";
 import { displayOrder, type RepoCity, type RepoDetail, type RepoSummary } from "./types";
 // Type-only: the store holds the canvas's current block but never imports the
 // renderer. `layout` depends on `./types`, not on this file, so there is no cycle.
-import type { Block } from "@/modules/map/layout";
+import type { Block } from "@/modules/atlas/map/layout";
 
 /** Which view is on screen. Both read the same scan. */
 export type Mode = "list" | "map";

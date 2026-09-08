@@ -76,6 +76,19 @@ type ThemeProviderState = {
   resolvedMode: "dark" | "light";
   themeId: string;
   customThemes: Theme[];
+  /**
+   * Bumped once the theme's CSS variables are actually on the document.
+   *
+   * For anything styled in CSS this is redundant — the cascade handles it. It
+   * exists for consumers that have to read colours *back out* through a
+   * computed-style probe because their rendering target cannot see custom
+   * properties at all: a `<canvas>` (the Atlas map), and anything drawing to
+   * one. Those consumers cannot key off `themeId` alone, because the id
+   * changes during the render that requests the new theme while the variables
+   * only land in the effect below — probing on the id gives you the *previous*
+   * palette, once, and it stays wrong until something else re-renders.
+   */
+  paletteEpoch: number;
   setMode: (mode: ThemePref) => void;
   setThemeId: (id: string) => void;
 };
@@ -178,17 +191,25 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
     const root = document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(resolvedMode);
+    setPaletteEpoch((n) => n + 1);
   }, [resolvedMode]);
+
+  // See `paletteEpoch` on ThemeProviderState.
+  const [paletteEpoch, setPaletteEpoch] = useState(0);
 
   const lastEditorPairRef = useRef<string | null>(null);
   useEffect(() => {
     if (themeId === DEFAULT_THEME_ID) {
       clearTheme();
       lastEditorPairRef.current = null;
+      setPaletteEpoch((n) => n + 1);
       return;
     }
     const theme = resolveTheme(themeId, customThemes);
     applyTheme(theme, resolvedMode);
+    // Strictly after applyTheme: the whole point of the epoch is that a probe
+    // reading on it sees the variables this effect just wrote.
+    setPaletteEpoch((n) => n + 1);
     const editorPair = theme.editorTheme?.[resolvedMode];
     if (
       editorPair &&
@@ -233,8 +254,16 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
   }, []);
 
   const value = useMemo<ThemeProviderState>(
-    () => ({ mode, resolvedMode, themeId, customThemes, setMode, setThemeId }),
-    [mode, resolvedMode, themeId, customThemes, setMode, setThemeId],
+    () => ({
+      mode,
+      resolvedMode,
+      themeId,
+      customThemes,
+      paletteEpoch,
+      setMode,
+      setThemeId,
+    }),
+    [mode, resolvedMode, themeId, customThemes, paletteEpoch, setMode, setThemeId],
   );
 
   return (

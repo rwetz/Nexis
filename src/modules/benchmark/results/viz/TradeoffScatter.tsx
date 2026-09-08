@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { BACKEND_COLOR, BACKEND_SHORT } from "@/lib/backendMeta";
-import { formatCompact, formatMs } from "@/lib/utils";
-import { type BenchResult, type ModelInfo } from "@/lib/types";
+import { BACKEND_COLOR, BACKEND_SHORT } from "@/modules/benchmark/lib/backendMeta";
+import { formatCompact, formatMs } from "@/modules/benchmark/lib/format";
+import { type BenchResult, type ModelInfo } from "@/modules/benchmark/lib/types";
 
 interface Pt {
   x: number; // mean latency (ms) — lower is better

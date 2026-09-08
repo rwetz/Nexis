@@ -1,29 +1,17 @@
+import { Icon, type IconName } from "@/components/icon";
 import { Button } from "@/components/ui/button";
-import { spring } from "@nexis/design";
-import { absoluteTime, relativeTime } from "@/lib/time";
+import { absoluteTime, relativeTime } from "@/modules/atlas/lib/time";
 import { cn } from "@/lib/utils";
-import { openInNexis, openInTerminal, openPath } from "@/modules/repos/api";
-import { useNexisInstalled } from "@/modules/repos/useNexisInstalled";
-import { useAtlasStore } from "@/modules/repos/store";
+import { revealPath } from "@/modules/atlas/repos/api";
+import { useAtlasHost } from "@/modules/atlas/repos/host";
+import { useAtlasStore } from "@/modules/atlas/repos/store";
 import {
   repoState,
   STATE_META,
   type FileChange,
   type RepoDetail,
   type RepoSummary,
-} from "@/modules/repos/types";
-import {
-  Archive02Icon,
-  Cancel01Icon,
-  ComputerTerminal01Icon,
-  FolderOpenIcon,
-  GitBranchIcon,
-  GitCommitIcon,
-  MapsGlobal01Icon,
-  SourceCodeIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { AnimatePresence, motion } from "motion/react";
+} from "@/modules/atlas/repos/types";
 import { toast } from "sonner";
 
 export function DetailPanel() {
@@ -37,26 +25,23 @@ export function DetailPanel() {
     (s) => s.repos.find((r) => r.path === s.selectedPath) ?? null,
   );
 
+  if (!detailOpen) return null;
+
+  // Was a `motion/react` spring from the standalone app's design package.
+  // Nexis animates in CSS with the house motion tokens, so this is the same
+  // movement without pulling an animation library in for one panel. The exit
+  // animation goes with it -- `AnimatePresence` is what made that possible,
+  // and a pane that leaves immediately is the lesser loss.
   return (
-    <AnimatePresence>
-      {detailOpen && (
-        <motion.aside
-          initial={{ x: 40, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 40, opacity: 0 }}
-          transition={spring.smooth}
-          className="flex h-full w-[380px] shrink-0 flex-col border-l border-border/60 bg-card"
-        >
-          {summary && detail ? (
-            <DetailBody summary={summary} detail={detail} onClose={closeDetail} />
-          ) : (
-            <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-              {detailLoading ? "Loading…" : "No repo selected"}
-            </div>
-          )}
-        </motion.aside>
+    <aside className="nexis-slide-in-right flex h-full w-[380px] shrink-0 flex-col border-l border-border/60 bg-card">
+      {summary && detail ? (
+        <DetailBody summary={summary} detail={detail} onClose={closeDetail} />
+      ) : (
+        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+          {detailLoading ? "Loading…" : "No repo selected"}
+        </div>
       )}
-    </AnimatePresence>
+    </aside>
   );
 }
 
@@ -72,23 +57,18 @@ function DetailBody({
   const { files, stashes } = detail;
   const enterRepo = useAtlasStore((s) => s.enterRepo);
   const meta = STATE_META[repoState(summary)];
-  const nexisInstalled = useNexisInstalled();
+  const host = useAtlasHost();
 
-  const handleTerminal = () => {
-    openInTerminal(summary.path)
-      .then((term) => toast.success(`Opened ${term} at ${summary.name}`))
-      .catch((e) => toast.error("Could not open terminal", { description: String(e) }));
-  };
+  const handleTerminal = () => host.openTerminal(summary.path);
   const handleFolder = () => {
-    openPath(summary.path).catch((e) =>
-      toast.error("Could not open folder", { description: String(e) }),
+    revealPath(summary.path).catch((e) =>
+      toast.error("Could not reveal folder", { description: String(e) }),
     );
   };
-  const handleNexis = () => {
-    openInNexis(summary.path)
-      .then((bin) => toast.success(`Opened ${summary.name} in ${bin}`))
-      .catch((e) => toast.error("Could not open Nexis", { description: String(e) }));
-  };
+  // Was "Open in Nexis", which spawned a second copy of the app. Now it points
+  // this window at the repo, so there is nothing to detect and nothing to hide:
+  // the action always works.
+  const handleOpenWorkspace = () => host.openWorkspace(summary.path);
 
   return (
     <>
@@ -106,14 +86,14 @@ function DetailBody({
           </p>
         </div>
         <Button variant="ghost" size="icon-xs" aria-label="Close details" onClick={onClose}>
-          <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
+          <Icon name="close" size="sm" />
         </Button>
       </header>
 
       <div className="nexis-scrollbar min-h-0 flex-1 overflow-y-auto p-4 pt-3">
         <section className="space-y-1.5 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
-            <HugeiconsIcon icon={GitBranchIcon} size={14} strokeWidth={2} />
+            <Icon name="git-branch" size="sm" />
             <span className="font-mono text-xs">
               {summary.branch}
               {summary.detached && " (detached)"}
@@ -137,7 +117,7 @@ function DetailBody({
 
         {summary.last_commit && (
           <section className="mt-4">
-            <SectionTitle icon={GitCommitIcon}>Last commit</SectionTitle>
+            <SectionTitle icon="git-commit">Last commit</SectionTitle>
             <div className="mt-1.5 rounded-xl border border-border/60 bg-background/60 p-3">
               <p className="text-sm">{summary.last_commit.summary}</p>
               <p className="mt-1.5 font-mono text-xs text-muted-foreground">
@@ -154,7 +134,7 @@ function DetailBody({
         )}
 
         <section className="mt-4">
-          <SectionTitle icon={GitBranchIcon}>
+          <SectionTitle icon="git-branch">
             Changed files{files.length > 0 && ` (${files.length})`}
           </SectionTitle>
           {files.length === 0 ? (
@@ -169,7 +149,7 @@ function DetailBody({
         </section>
 
         <section className="mt-4">
-          <SectionTitle icon={Archive02Icon}>
+          <SectionTitle icon="archive">
             Stashes{stashes.length > 0 && ` (${stashes.length})`}
           </SectionTitle>
           {stashes.length === 0 ? (
@@ -195,22 +175,20 @@ function DetailBody({
           variant="secondary"
           onClick={() => void enterRepo(summary.path)}
         >
-          <HugeiconsIcon icon={MapsGlobal01Icon} size={14} strokeWidth={2} />
+          <Icon name="globe" size="sm" />
           Show on map
         </Button>
-        {nexisInstalled && (
-          <Button size="sm" variant="secondary" onClick={handleNexis}>
-            <HugeiconsIcon icon={SourceCodeIcon} size={14} strokeWidth={2} />
-            Open in Nexis
-          </Button>
-        )}
+        <Button size="sm" variant="secondary" onClick={handleOpenWorkspace}>
+          <Icon name="folder-open" size="sm" />
+          Open as workspace
+        </Button>
         <div className="flex gap-2">
           <Button size="sm" className="flex-1" onClick={handleTerminal}>
-            <HugeiconsIcon icon={ComputerTerminal01Icon} size={14} strokeWidth={2} />
+            <Icon name="terminal" size="sm" />
             Terminal
           </Button>
           <Button size="sm" variant="outline" className="flex-1" onClick={handleFolder}>
-            <HugeiconsIcon icon={FolderOpenIcon} size={14} strokeWidth={2} />
+            <Icon name="folder-open" size="sm" />
             Folder
           </Button>
         </div>
@@ -223,12 +201,12 @@ function SectionTitle({
   icon,
   children,
 }: {
-  icon: typeof GitBranchIcon;
+  icon: IconName;
   children: React.ReactNode;
 }) {
   return (
     <h3 className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-      <HugeiconsIcon icon={icon} size={13} strokeWidth={2} />
+      <Icon name={icon} size="xs" />
       {children}
     </h3>
   );

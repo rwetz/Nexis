@@ -88,6 +88,29 @@ function resolveTerminal(el: HTMLDivElement, varName: string): string {
   return getComputedStyle(el).color;
 }
 
+/**
+ * Resolve any CSS colour expression to concrete `rgb(...)` / `rgba(...)`.
+ *
+ * Canvas cannot read custom properties, and it cannot evaluate `oklch()`
+ * either, so a canvas-backed view has to ask the document what a colour
+ * actually is. Pass a full expression, not a bare variable name:
+ * `resolveCssColor("var(--brand)")` or `resolveCssColor("oklch(0.7 0.1 40)")`.
+ *
+ * Reuses the same hidden probe element as the terminal tokens above rather
+ * than creating a second one -- it is already attached, already `contain:
+ * strict`, and one probe means one place where a stale document reference has
+ * to be handled.
+ *
+ * Call this *after* a theme change has landed on the document, not during the
+ * render that requests it: the value is whatever the current variables say.
+ */
+export function resolveCssColor(expr: string): string {
+  const el = getTerminalProbe();
+  el.style.color = "";
+  el.style.color = expr;
+  return getComputedStyle(el).color;
+}
+
 export function readTerminalTokens(): TerminalTokens {
   const el = getTerminalProbe();
   const out = {} as TerminalTokens;

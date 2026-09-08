@@ -1,12 +1,11 @@
+import { Icon } from "@/components/icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Alert02Icon, HugeiconsIcon } from "@/components/icons";
-import { BACKEND_COLOR } from "@/lib/backendMeta";
-import { pickLlamaBench } from "@/lib/api";
-import { IS_TAURI } from "@/lib/platform";
+import { BACKEND_COLOR } from "@/modules/benchmark/lib/backendMeta";
+import { pickLlamaBench } from "@/modules/benchmark/lib/api";
 import { cn } from "@/lib/utils";
-import { type BackendInfo } from "@/lib/types";
-import { useBenchStore } from "@/store/useBenchStore";
+import { type BackendInfo } from "@/modules/benchmark/lib/types";
+import { useBenchStore } from "@/modules/benchmark/store";
 
 export function BackendSelector() {
   const backends = useBenchStore((s) => s.backends);
@@ -32,7 +31,7 @@ export function BackendSelector() {
             selected={selected.includes(b.id)}
             onToggle={() => b.available && toggleBackend(b.id)}
             action={
-              b.id === "llama" && IS_TAURI ? (
+              b.id === "llama" ? (
                 <button
                   onClick={locateLlama}
                   className="shrink-0 rounded-md px-1.5 py-0.5 text-[10.5px] font-medium text-brand hover:bg-brand/10"
@@ -106,7 +105,7 @@ function BackendRow({
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="shrink-0 text-muted-foreground">
-              <HugeiconsIcon icon={Alert02Icon} size={14} strokeWidth={1.8} />
+              <Icon name="alert" size="sm" />
             </span>
           </TooltipTrigger>
           <TooltipContent>Not available on this machine</TooltipContent>

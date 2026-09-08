@@ -10,8 +10,8 @@
 // so refreshing a repo you have not touched redraws the identical city.
 
 import { langTier } from "./palette";
-import type { LangSlice, RepoSummary, TreeNode } from "@/modules/repos/types";
-import { dirtyCount } from "@/modules/repos/types";
+import type { LangSlice, RepoSummary, TreeNode } from "@/modules/atlas/repos/types";
+import { dirtyCount } from "@/modules/atlas/repos/types";
 
 export type Rect = { x: number; z: number; w: number; d: number };
 

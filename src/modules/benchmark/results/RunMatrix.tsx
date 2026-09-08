@@ -1,5 +1,7 @@
-import { BACKEND_COLOR, BACKEND_SHORT } from "@/lib/backendMeta";
-import { cn, formatBytes, formatCompact, formatMs } from "@/lib/utils";
+import { BACKEND_COLOR, BACKEND_SHORT } from "@/modules/benchmark/lib/backendMeta";
+import { cn } from "@/lib/utils";
+import { formatBytes } from "@/lib/format";
+import { formatCompact, formatMs } from "@/modules/benchmark/lib/format";
 import {
   cellKey,
   PHASE_LABELS,
@@ -7,9 +9,9 @@ import {
   type BenchProgress,
   type BenchResult,
   type ModelInfo,
-} from "@/lib/types";
-import { useBenchStore } from "@/store/useBenchStore";
-import { NOISY_CV, sampleStats } from "@/lib/stats";
+} from "@/modules/benchmark/lib/types";
+import { useBenchStore } from "@/modules/benchmark/store";
+import { NOISY_CV, sampleStats } from "@/modules/benchmark/lib/stats";
 import { DistributionStrip } from "./viz/DistributionStrip";
 
 export function RunMatrix() {
@@ -94,7 +96,7 @@ function Cell({
           <div className="mt-0.5 grid grid-cols-3 gap-2">
             <Stat label="tok/s" value={formatCompact(result!.metrics!.tokensPerSec)} />
             <Stat label="TTFT" value={formatMs(result!.metrics!.firstTokenMs)} />
-            <Stat label="mem" value={formatBytes(result!.metrics!.peakMemBytes, 0)} />
+            <Stat label="mem" value={formatBytes(result!.metrics!.peakMemBytes)} />
             <Stat label="p50" value={formatMs(result!.metrics!.latencyP50Ms)} />
             <Stat label="p95" value={formatMs(result!.metrics!.latencyP95Ms)} />
             <Stat

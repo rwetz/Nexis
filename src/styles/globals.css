@@ -503,6 +503,26 @@ html *::-webkit-scrollbar {
   }
 }
 
+@keyframes nexis-slide-in-right {
+  from {
+    transform: translateX(2.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* A side panel arriving from the right edge. Nexis animates with CSS and the
+   house motion tokens rather than a JS animation library, so the Atlas detail
+   pane -- which arrived using `motion/react` and a spring from the standalone
+   app's design package -- uses this instead. Same shape of movement, one less
+   dependency, and it inherits the curve every other panel uses. */
+.nexis-slide-in-right {
+  animation: nexis-slide-in-right var(--dur-panel) var(--ease-enter);
+}
+
 .nexis-collapsible-content {
   overflow: hidden;
 }

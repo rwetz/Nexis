@@ -1,9 +1,8 @@
+import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ArrowLeft02Icon, GitBranchIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { useAtlasStore } from "@/modules/repos/store";
-import { dirtyCount, formatCount, relativeTime, type RepoSummary } from "@/modules/repos/types";
+import { useAtlasStore } from "@/modules/atlas/repos/store";
+import { dirtyCount, formatCount, relativeTime, type RepoSummary } from "@/modules/atlas/repos/types";
 
 /** The rail on the left: every repo the config found, and the way back out
  *  of a city. Deliberately text-only — the canvas is where the shapes live.
@@ -32,7 +31,7 @@ export function RepoList() {
             className="-ml-1.5 gap-1.5"
             onClick={backToAtlas}
           >
-            <HugeiconsIcon icon={ArrowLeft02Icon} size={13} strokeWidth={2} />
+            <Icon name="chevron-left" size="sm" />
             Atlas
           </Button>
         ) : (
@@ -89,7 +88,7 @@ function RepoRow({
         )}
       </span>
       <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-        <HugeiconsIcon icon={GitBranchIcon} size={11} strokeWidth={2} />
+        <Icon name="git-branch" size="xs" />
         <span className="truncate font-mono">{repo.branch || "—"}</span>
         <span className="ml-auto shrink-0 tabular-nums">
           {formatCount(repo.files)} files
