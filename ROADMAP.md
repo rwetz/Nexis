@@ -14,9 +14,14 @@ The non-negotiables: terminal correctness, PTY fidelity, no telemetry.
 
 Binary size used to be on that list. It isn't any more (2026-09) — Nexis grew into a full ADE, and a
 byte budget that once kept a terminal honest had started vetoing features on principle rather than on
-merit. A deliberately loose **40 MB tripwire** stays in `release.yml` as a regression guard: the binary
-ships at ~9.5 MiB, so crossing 40 MB means an accident, not a feature. "Every dependency earns its
-place" survives as a design principle — it just isn't enforced by a number any more.
+merit. A deliberately loose tripwire stays in `release.yml` as a regression guard against an accident
+— a debug artifact, LTO silently off, a runtime vendored twice — not as a budget. "Every dependency
+earns its place" survives as a design principle; it just isn't enforced by a number any more.
+
+That ceiling moved from 40 MB to **150 MB** in v1.27.0, when the Benchmark panel was absorbed: its
+ONNX backend links a prebuilt ONNX Runtime, which is the one vendored runtime this repo has agreed to
+carry. The reasoning is in `docs/vault/decisions/bundling-onnx-runtime.md`, and it is the decision to
+argue with — not the number.
 
 ## Hard limits (things that won't be built)
 
@@ -470,8 +475,9 @@ picker is a separate and deliberately open question; see the onboarding item.
   already exists. For a solo developer deploying their own work this replaces three browser tabs.
 - **Systems — Rust / C / Go** — dogfooding, since Nexis is written in Rust: a flamegraph and perf-profile
   viewer, a disassembly view, clippy/miri integration, a cross-compilation target matrix, and a **binary
-  size analyzer** (`cargo-bloat`) — the tool that makes the 40 MB tripwire diagnosable rather than
-  mysterious on the day something finally trips it. Build and Debugger already exist.
+  size analyzer** (`cargo-bloat`) — the tool that makes the size tripwire diagnosable rather than
+  mysterious on the day something finally trips it, and which got materially more useful the day a
+  bundled ONNX Runtime became the biggest thing in the binary. Build and Debugger already exist.
 - **Embedded / IoT** — the best structural fit on this list. A **serial monitor** is a byte stream
   rendered into a terminal with a device on the other end, and Nexis already owns PTY streams,
   backpressure handling (pitfall #7) and inline images. Add board flash/upload runners (Arduino,
