@@ -97,7 +97,7 @@ export const PACKS: Record<PackId, PackDef> = {
     id: "dev-tools",
     label: "Dev Tools",
     description:
-      "Process activity, system resource monitor, port monitor, REPL, database client, command history, workspace profiles, and SSH.",
+      "Process activity, system resource monitor, port monitor, REPL, database client, command history, workspace profiles, SSH, and the Atlas repo map.",
     icon: "cpu",
     views: [
       "processes",
@@ -108,15 +108,16 @@ export const PACKS: Record<PackId, PackDef> = {
       "command-history",
       "profiles",
       "ssh",
+      "atlas",
     ],
   },
   "ml-lab": {
     id: "ml-lab",
     label: "ML Lab",
     description:
-      "Local model training and experiments via nexis-ml. Runs against a local Python/Rust engine.",
+      "Local model training, experiments, and benchmarking via nexis-ml. Runs against a local Python/Rust engine.",
     icon: "brain",
-    views: ["ml"],
+    views: ["ml", "benchmark"],
   },
   advanced: {
     id: "advanced",

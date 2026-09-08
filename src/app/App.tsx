@@ -235,6 +235,17 @@ const DebuggerPanelLazy = lazy(() =>
 const DebugToolbarLazy = lazy(() =>
   import("@/modules/debugger/DebugToolbar").then((m) => ({ default: m.DebugToolbar })),
 );
+// Both absorbed apps are lazy for the same reason ML Lab is: they are whole
+// applications' worth of UI, and Atlas additionally pulls in an isometric
+// canvas renderer that nobody who never opens the map should pay to parse.
+const AtlasPanelLazy = lazy(() =>
+  import("@/modules/atlas/AtlasPanel").then((m) => ({ default: m.AtlasPanel })),
+);
+const BenchmarkPanelLazy = lazy(() =>
+  import("@/modules/benchmark/BenchmarkPanel").then((m) => ({
+    default: m.BenchmarkPanel,
+  })),
+);
 
 
 export default function App() {
@@ -1438,6 +1449,8 @@ export default function App() {
     { id: "sidebar.sc",          label: "Show source control",      category: "View",    action: () => persistSidebarView("source-control") },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
+    { id: "atlas.open",          label: "Show Atlas (every git repo on this machine)", category: "View", action: () => persistSidebarView("atlas"), pack: "dev-tools", keywords: ["repos", "repositories", "map", "isometric", "city", "dirty", "branch", "stash", "scan"] },
+    { id: "benchmark.open",      label: "Show Benchmark (compare local models)", category: "View", action: () => persistSidebarView("benchmark"), pack: "ml-lab", keywords: ["onnx", "gguf", "llama.cpp", "throughput", "latency", "tokens per second", "inference", "model"] },
   ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
@@ -2169,6 +2182,18 @@ export default function App() {
                             onOpenNetworkTab={openMlNetworkTab}
                           />
                         </Suspense>
+                    ) : sidebarView === "atlas" ? (
+                      <Suspense fallback={null}>
+                        <AtlasPanelLazy
+                          openWorkspace={(path) => void switchWorkspacePath(path)}
+                          openTerminal={cdInNewTab}
+                          openFile={(path) => openFileTab(path, true)}
+                        />
+                      </Suspense>
+                    ) : sidebarView === "benchmark" ? (
+                      <Suspense fallback={null}>
+                        <BenchmarkPanelLazy />
+                      </Suspense>
                     ) : (
                       <SourceControlPanel
                         open

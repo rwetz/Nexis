@@ -128,6 +128,8 @@ export function SidebarRail({
     { id: "database",       label: "Database",         icon: "database",    group: "Dev Tools" },
     { id: "command-history", label: "Command History", icon: "clock",       group: "Dev Tools" },
     { id: "ml",             label: "ML Lab",           icon: "brain",     group: "Dev Tools" },
+    { id: "benchmark",      label: "Benchmark",        icon: "activity",  group: "Dev Tools" },
+    { id: "atlas",          label: "Atlas",            icon: "globe",     group: "Navigation" },
     { id: "profiles",       label: "Profiles",         icon: "layers",        group: "Dev Tools" },
     { id: "ssh",            label: "SSH",              icon: "terminal",      group: "Dev Tools" },
     { id: "http-client",    label: "HTTP Client",      icon: "network",     group: "Dev Tools" },

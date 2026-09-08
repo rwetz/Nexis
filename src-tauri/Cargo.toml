@@ -86,6 +86,61 @@ sysinfo = { version = "0.39", default-features = false, features = [
 # release budget is 10 MB and headroom is thin.
 notify = { version = "8", default-features = false, features = ["macos_fsevent"] }
 
+# ── Atlas panel (modules/atlas) ──────────────────────────────────────────────
+# Repo scanning without shelling out to git. `default-features = false` drops
+# the ssh/https transports: Atlas is read-only and never talks to a remote, so
+# the network half of libgit2 is pure size. Note this is the one place Nexis
+# links libgit2 -- the source-control panel drives the `git` CLI instead
+# (modules/git), and that split is deliberate: the CLI respects the user's
+# config, credential helpers and hooks, which is what a panel that *writes*
+# needs, while a read-only whole-machine sweep wants in-process reads.
+git2 = { version = "0.20", default-features = false }
+# The scan fans out one worker per repo. Previously argued against for the
+# sysinfo dep on size grounds; Atlas is the use that justifies it -- ten repos
+# including a full filesystem walk land in ~270 ms because of this.
+rayon = "1.10"
+# `atlas.toml`, the hand-edited repo list.
+toml = "0.8"
+
+# ── Benchmark panel (modules/benchmark) ──────────────────────────────────────
+# Result timestamps.
+chrono = { version = "0.4", features = ["serde"] }
+# Real ONNX inference. This is the largest single dependency in the tree by a
+# wide margin: `download-binaries` (a default feature) fetches a prebuilt ONNX
+# Runtime at build time, which is why the release size tripwire moved from
+# 40 MB to 150 MB in the same change that added this. Bundling an inference
+# engine reverses the position argued in docs/ML_SUITE.md; the reasoning for
+# reversing it is in docs/vault/decisions/bundling-onnx-runtime.md. Pinned to
+# the rc because 2.0 has not had a final release -- revisit on the first stable
+# tag rather than tracking rcs.
+#
+# `default-features = false` drops exactly one thing from the default set:
+# `copy-dylibs`. That feature copies whatever shared libraries the downloaded
+# ORT ships next to the built binary -- on Windows that is DirectML.dll, for a
+# GPU execution provider the Benchmark panel never requests (onnx.rs commits a
+# session with no execution providers, i.e. the CPU one). Leaving it on put a
+# DLL beside the exe that `tauri build` does not bundle, so a dev build and an
+# installed build would have differed in what sat next to the binary -- and the
+# fix for that would have been a Windows-only path in bundle.resources that
+# breaks the Linux release job. CPU-only ORT static-links, so there is nothing
+# to ship on any platform and the whole class of problem does not exist.
+#
+# This is also the shape the decision note claims: a fixed-size, CPU-by-default,
+# prebuilt artifact with one build path and no GPU-driver support surface. If a
+# GPU execution provider is ever wanted, it is a real piece of work -- the
+# feature, the bundled dylibs, and per-platform bundle config -- not a flag.
+ort = { version = "2.0.0-rc.12", default-features = false, features = [
+	"std",
+	"ndarray",
+	"download-binaries",
+	"tls-native",
+	"api-27",
+] }
+# Native file pickers for model files, the llama-bench binary, and the export
+# save target. All three are by definition outside the workspace, so the
+# explorer cannot stand in for them.
+tauri-plugin-dialog = "2"
+
 [dev-dependencies]
 # Benchmarks only — never compiled into shipping builds (dev-dependency +
 # the bench target requires the non-default `bench-internals` feature).

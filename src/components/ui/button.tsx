@@ -16,6 +16,12 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        // The coral accent, for the one action a surface exists to perform.
+        // `--brand` is documented in globals.css as being for primary CTAs
+        // and active state; before this there was no button that could use
+        // it, so a surface with a real primary action had to reach for
+        // `default` (neutral high-contrast) or hand-roll the colour.
+        brand: "bg-brand text-brand-foreground hover:bg-brand/90",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:bg-transparent dark:hover:bg-input/30",
         secondary:

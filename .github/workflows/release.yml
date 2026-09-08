@@ -56,13 +56,24 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
 
       # Bundle-size regression tripwire (was IDEAS C1's budget gate). Binary
-      # size is no longer a stated non-negotiable -- Nexis is a full ADE now,
-      # not a minimal terminal -- but an unnoticed 4x jump is still a defect,
-      # so the gate stays at a deliberately loose 40 MiB. It exists to catch an
-      # accident (a vendored runtime, a debug artifact, LTO silently off), not
-      # to force a size argument into an unrelated change. The shipped binary
-      # is ~9.5 MiB, so this ceiling has more than 4x of headroom by design.
-      - name: Binary size tripwire (< 40 MB)
+      # size is not a stated non-negotiable -- Nexis is a full ADE now, not a
+      # minimal terminal -- but an unnoticed jump is still a defect, so a loose
+      # ceiling stays. It exists to catch an *accident* (a debug artifact, LTO
+      # silently off, a second copy of a runtime), not to force a size argument
+      # into an unrelated change.
+      #
+      # Raised from 40 MB to 150 MB when the Benchmark panel was absorbed
+      # (v1.27.0). Benchmark's ONNX backend runs real inference through the
+      # `ort` crate, whose default `download-binaries` feature links a prebuilt
+      # ONNX Runtime -- tens of MB, deliberately. That is the one vendored
+      # runtime this repo has agreed to carry, and the reasoning is written up
+      # in docs/vault/decisions/bundling-onnx-runtime.md.
+      #
+      # If you are here because the tripwire fired: the question is still "what
+      # accident caused this", not "what number makes it pass". A second
+      # runtime, or ORT appearing in a build that should not have it, both land
+      # here first.
+      - name: Binary size tripwire (< 150 MB)
         shell: pwsh
         run: |
           $binary = "src-tauri/target/release/nexis.exe"
@@ -72,13 +83,13 @@ jobs:
           }
           $bytes = (Get-Item $binary).Length
           $mib = [math]::Round($bytes / 1MB, 2)
-          $maxBytes = 40 * 1024 * 1024
-          Write-Host "nexis.exe = $bytes bytes ($mib MiB); tripwire = 40 MiB"
+          $maxBytes = 150 * 1024 * 1024
+          Write-Host "nexis.exe = $bytes bytes ($mib MiB); tripwire = 150 MiB"
           if ($bytes -gt $maxBytes) {
-            Write-Error "Binary exceeds the 40 MB tripwire. This ceiling has more than 4x of headroom over the ~9.5 MiB Nexis actually ships, so crossing it means something went wrong -- a vendored runtime, a debug artifact, or a build-config regression -- not that a feature got big. Find the cause before raising this number."
+            Write-Error "Binary exceeds the 150 MB tripwire. Nexis ships at ~30 MiB with the bundled ONNX Runtime, so crossing 150 MiB means something went wrong -- a debug artifact, a build-config regression, or a second copy of a runtime -- not that a feature got big. Find the cause before raising this number."
             exit 1
           }
-          Write-Host "OK: under the 40 MB tripwire."
+          Write-Host "OK: under the 150 MB tripwire."
 
       - name: Collect artifacts
         id: artifacts

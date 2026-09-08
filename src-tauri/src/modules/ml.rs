@@ -329,7 +329,10 @@ pub async fn ml_detect(
 /// dir), whether or not it exists yet. The frontend adds it to the detection
 /// candidates so a downloaded engine is found like any other; a missing path
 /// just fails the `--version` probe instantly.
-fn managed_engine_exe(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+/// `pub(crate)` for the Benchmark panel: its nexis-ml backend resolves the same
+/// engine, so an install done once in ML Lab is visible in both places rather
+/// than only to whichever of them happens to find a copy on PATH.
+pub(crate) fn managed_engine_exe(app: &AppHandle) -> Result<std::path::PathBuf, String> {
     let name = if cfg!(windows) {
         "nexis-ml.exe"
     } else {
