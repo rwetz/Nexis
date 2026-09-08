@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { spring } from "@/lib/motion";
+import { spring } from "@nexis/design";
 import { absoluteTime, relativeTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 import { openInTerminal, openPath } from "@/modules/repos/api";

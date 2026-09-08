@@ -4,7 +4,7 @@
 // canvas repaints through a single rAF-scheduled draw. Only things the rest
 // of the UI needs (hover, selection) are pushed into the store.
 
-import { useTheme } from "@/modules/theme/ThemeProvider";
+import { useTheme } from "@nexis/design";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   fitCamera,

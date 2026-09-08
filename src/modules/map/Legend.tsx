@@ -1,4 +1,4 @@
-import { useTheme } from "@/modules/theme/ThemeProvider";
+import { useTheme } from "@nexis/design";
 import { useMemo } from "react";
 import { css, langTier, readPalette } from "./palette";
 import { useAtlasStore } from "@/modules/repos/store";

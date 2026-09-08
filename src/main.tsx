@@ -7,7 +7,7 @@ import "./styles/globals.css";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import ReactDOM from "react-dom/client";
 import App from "./app/App";
-import { USE_CUSTOM_WINDOW_CONTROLS } from "./lib/platform";
+import { USE_CUSTOM_WINDOW_CONTROLS } from "@nexis/design";
 
 // Non-macOS: we paint our own rounded, borderless frame (see globals.css
 // html[data-chrome="borderless"]). macOS keeps native traffic lights.

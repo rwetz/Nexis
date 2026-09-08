@@ -1,4 +1,4 @@
-import { useTheme } from "@/modules/theme/ThemeProvider";
+import { useTheme } from "@nexis/design";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 function Toaster(props: ToasterProps) {

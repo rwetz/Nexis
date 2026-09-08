@@ -1,5 +1,5 @@
 import { AtlasLogo } from "@/components/AppLogo";
-import { ResizeHandles } from "@/components/ResizeHandles";
+import { BUILTIN_THEMES, IS_MAC, ResizeHandles, ThemeProvider, useTheme, WindowControls } from "@nexis/design";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,8 +11,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { WindowControls } from "@/components/WindowControls";
-import { IS_MAC } from "@/lib/platform";
 import { cn } from "@/lib/utils";
 import { DetailPanel } from "@/modules/list/DetailPanel";
 import { RepoTable } from "@/modules/list/RepoTable";
@@ -23,8 +21,6 @@ import { RepoList } from "@/modules/map/RepoList";
 import { openConfig, openInTerminal, openPath } from "@/modules/repos/api";
 import { useAtlasStore, type Mode } from "@/modules/repos/store";
 import { formatCount } from "@/modules/repos/types";
-import { ThemeProvider, useTheme } from "@/modules/theme/ThemeProvider";
-import { BUILTIN_THEMES } from "@/modules/theme/themes";
 import { StatusBar } from "./StatusBar";
 import {
   Menu01Icon,
