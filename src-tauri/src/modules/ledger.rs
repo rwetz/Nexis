@@ -808,7 +808,7 @@ mod tests {
     #[test]
     fn query_returns_the_line_untouched_so_the_frontend_still_owns_the_schema() {
         let line = record("ls", 0, 7);
-        let hits = query_lines(&[line.clone()], &q("", None, true, 10));
+        let hits = query_lines(std::slice::from_ref(&line), &q("", None, true, 10));
         assert_eq!(hits[0], line);
     }
 
