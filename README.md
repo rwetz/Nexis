@@ -33,6 +33,14 @@ v4, OKLCH tokens, borderless chrome, the bespoke cursor set, and a
 runtime-swappable theme engine. Git scanning is native Rust via `git2` and
 `rayon`; ten repos including the full filesystem walk take ~270 ms.
 
+## Install
+
+Download the installer for your platform from
+**[Releases](https://github.com/rwetz/nexis-atlas/releases)** — Windows NSIS/MSI,
+macOS `.dmg` (Apple Silicon and Intel), Linux `.AppImage` / `.deb` / `.rpm`.
+
+What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
+
 ## Running it
 
 ```bash
@@ -117,6 +125,11 @@ grammar and its tests live in [`src-tauri/src/links.rs`](src-tauri/src/links.rs)
 
 If Atlas is already running, the link goes to the running copy and raises it,
 rather than starting a second one.
+
+> On Windows, install with the **NSIS `-setup.exe`** if you want deep links.
+> Tauri registers the scheme from the NSIS installer only — the `.msi` installs
+> a working app but writes no `HKCU\Software\Classes\nexis-atlas` entry, so
+> links do nothing until the scheme is registered by other means.
 
 Going the other way, the detail pane and the map inspector offer **Open in
 Nexis**, which launches [Nexis](https://github.com/rwetz/Nexis) with the repo as
