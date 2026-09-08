@@ -3,7 +3,7 @@
 //! is arbitrary, so we fabricate tensors matching each input's dtype/shape),
 //! and times warm-up + measured forward passes. Every latency here is real.
 
-use crate::domain::*;
+use crate::modules::benchmark::domain::*;
 use ort::session::builder::GraphOptimizationLevel;
 use ort::session::{Session, SessionInputValue};
 use ort::value::{Tensor, TensorElementType, ValueType};

@@ -1,16 +1,21 @@
-//! Config loading + repo discovery.
+//! Config loading + repo discovery for the Atlas view.
 //!
-//! `config.toml` lives in the platform config dir
-//! (`%APPDATA%\nexis-atlas\config.toml` on Windows,
-//! `~/.config/nexis-atlas/config.toml` on Linux). Knobs: an explicit `repos`
-//! list, and/or a `scan_root` that is walked (up to `scan_depth` levels) for
-//! directories containing `.git`. Both are honored, deduplicated, with explicit
-//! entries listed first. `max_files` caps how much of a single repo is
-//! materialized into the map so one monorepo can't wedge the renderer.
+//! `atlas.toml` lives in Nexis's own config dir (`%APPDATA%\nexis\atlas.toml`
+//! on Windows, `~/.config/nexis/atlas.toml` on Linux). Knobs: an explicit
+//! `repos` list, and/or a `scan_root` that is walked (up to `scan_depth`
+//! levels) for directories containing `.git`. Both are honored, deduplicated,
+//! with explicit entries listed first. `max_files` caps how much of a single
+//! repo is materialized into the map so one monorepo can't wedge the renderer.
 //!
 //! One config serves both views: the list reads the git fields, the map reads
-//! the size and language fields, and both come from the same scan. On first
-//! run the config of either app Atlas replaces is adopted if present.
+//! the size and language fields, and both come from the same scan.
+//!
+//! This is deliberately a separate file rather than a set of keys inside Nexis
+//! preferences. Preferences are per-user UI state written through `writePref`
+//! and synced across windows (pitfall #2); this is a hand-edited machine
+//! description the user is expected to open in an editor, which is why the
+//! default is written with comments in it. Keeping it apart also means a
+//! config written by the standalone Atlas can be adopted verbatim.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -51,8 +56,8 @@ fn default_max_files() -> usize {
 pub fn config_path() -> PathBuf {
     dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("nexis-atlas")
-        .join("config.toml")
+        .join("nexis")
+        .join("atlas.toml")
 }
 
 fn default_config_contents() -> String {
@@ -65,7 +70,7 @@ fn default_config_contents() -> String {
         "~"
     };
     format!(
-        r#"# Atlas — repo configuration
+        r#"# Nexis Atlas — repo configuration
 #
 # Explicit repos to track (tilde is expanded). Always included.
 repos = []
@@ -83,10 +88,12 @@ max_files = 20000
     )
 }
 
-/// Config dirs of the two apps Atlas replaces, newest first. On first run we
-/// adopt whichever one exists rather than making the user re-point `scan_root`
-/// at the same directory a third time.
-const LEGACY_DIRS: &[&str] = &["nexis-imagine", "nexis-dev-dashboard"];
+/// Config dirs of the standalone apps this view replaces, newest first. On
+/// first run we adopt whichever one exists rather than making the user
+/// re-point `scan_root` at the same directory yet again -- someone who has
+/// been running Atlas as its own app should see their repos the first time
+/// they open the panel, not an empty scan and a config file to go write.
+const LEGACY_DIRS: &[&str] = &["nexis-atlas", "nexis-imagine", "nexis-dev-dashboard"];
 
 /// Copy a predecessor's `config.toml` into place if we have none of our own.
 /// Best-effort: a failure here just means the caller writes a fresh default.
@@ -196,7 +203,7 @@ fn discover(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
         }
         let name = entry.file_name();
         let name = name.to_string_lossy();
-        if name.starts_with('.') || crate::walk::SKIP_DIRS.contains(&name.as_ref()) {
+        if name.starts_with('.') || crate::modules::atlas::walk::SKIP_DIRS.contains(&name.as_ref()) {
             continue;
         }
         discover(&entry.path(), depth - 1, out);

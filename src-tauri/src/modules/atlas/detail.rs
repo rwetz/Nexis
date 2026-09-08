@@ -2,7 +2,7 @@
 //!
 //! Deliberately *not* a second scan. Everything the detail pane shows about
 //! the repo as a whole — branch, sync, counts, last commit, stash count —
-//! already came back with [`crate::scan::RepoSummary`], so this returns only
+//! already came back with [`crate::modules::atlas::scan::RepoSummary`], so this returns only
 //! the two things a summary cannot carry: the per-file status list and the
 //! stash messages. The frontend pairs them with the summary it already holds.
 
@@ -104,7 +104,7 @@ fn worktree_code(s: Status) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testutil::{git, temp_repo};
+    use crate::modules::atlas::testutil::{git, temp_repo};
 
     #[test]
     fn lists_staged_and_untracked_files() {

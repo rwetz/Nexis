@@ -3,10 +3,10 @@
 //! generator (`simulated() == true`); real inference drops in behind this trait
 //! without touching the harness, IPC, or UI.
 
-use crate::domain::*;
-use crate::nexis;
-use crate::simulate::run_simulated;
-use std::path::PathBuf;
+use crate::modules::benchmark::domain::*;
+use crate::modules::benchmark::ml_engine;
+use crate::modules::benchmark::simulate::run_simulated;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 
 pub trait Engine: Send + Sync {
@@ -68,10 +68,10 @@ pub struct NexisMl {
     device: DeviceKind,
 }
 impl NexisMl {
-    pub fn detect() -> Self {
-        let binary = find_nexis_ml();
+    pub fn detect(managed: Option<&Path>) -> Self {
+        let binary = find_nexis_ml(managed);
         let (version, device) = match binary.as_ref() {
-            Some(p) => nexis::probe(p),
+            Some(p) => ml_engine::probe(p),
             None => (None, DeviceKind::Cpu),
         };
         NexisMl {
@@ -108,13 +108,13 @@ impl Engine for NexisMl {
         cancel: &AtomicBool,
     ) -> Result<BenchMetrics, String> {
         let bin = self.binary.as_ref().ok_or("nexis-ml binary not found")?;
-        nexis::run(bin, job_id, model, config, emit, cancel)
+        ml_engine::run(bin, job_id, model, config, emit, cancel)
     }
     fn simulated(&self) -> bool {
         false
     }
     fn note(&self) -> Option<String> {
-        Some(nexis::NEXIS_NOTE.to_string())
+        Some(ml_engine::NEXIS_NOTE.to_string())
     }
 }
 
@@ -144,13 +144,13 @@ impl Engine for OnnxRuntime {
         emit: &dyn Fn(BenchProgress),
         cancel: &AtomicBool,
     ) -> Result<BenchMetrics, String> {
-        crate::onnx::run(job_id, model, config, emit, cancel)
+        crate::modules::benchmark::onnx::run(job_id, model, config, emit, cancel)
     }
     fn simulated(&self) -> bool {
         false
     }
     fn note(&self) -> Option<String> {
-        Some(crate::onnx::ONNX_NOTE.to_string())
+        Some(crate::modules::benchmark::onnx::ONNX_NOTE.to_string())
     }
 }
 
@@ -162,13 +162,13 @@ pub struct LlamaCpp {
 impl LlamaCpp {
     pub fn detect() -> Self {
         Self {
-            binary: crate::llama::find_on_path(),
+            binary: crate::modules::benchmark::llama::find_on_path(),
         }
     }
     /// Resolve a user-located path, falling back to PATH.
     pub fn resolve(path: Option<&str>) -> Self {
         Self {
-            binary: crate::llama::resolve(path),
+            binary: crate::modules::benchmark::llama::resolve(path),
         }
     }
 }
@@ -200,33 +200,41 @@ impl Engine for LlamaCpp {
             .binary
             .as_ref()
             .ok_or("llama-bench not found — locate it in the Backends panel")?;
-        crate::llama::run(bin, job_id, model, config, emit, cancel)
+        crate::modules::benchmark::llama::run(bin, job_id, model, config, emit, cancel)
     }
     fn simulated(&self) -> bool {
         false
     }
     fn note(&self) -> Option<String> {
-        Some(crate::llama::LLAMA_NOTE.to_string())
+        Some(crate::modules::benchmark::llama::LLAMA_NOTE.to_string())
     }
 }
 
 // ── Registry ─────────────────────────────────────────────────────────────────
 
-pub fn registry() -> Vec<Box<dyn Engine>> {
+/// Build one of each engine.
+///
+/// `managed` is the path Nexis's own ML Lab installs the standalone engine to
+/// (`ml::managed_engine_exe`). It is threaded through rather than looked up
+/// here because resolving it needs an `AppHandle`, and because it is the whole
+/// reason this panel and ML Lab agree about what "the engine" is: an engine
+/// downloaded once in ML Lab must show up here without a second install and
+/// without asking the user to put it on PATH.
+pub fn registry(managed: Option<&Path>) -> Vec<Box<dyn Engine>> {
     vec![
-        Box::new(NexisMl::detect()),
+        Box::new(NexisMl::detect(managed)),
         Box::new(OnnxRuntime),
         Box::new(LlamaCpp::detect()),
         Box::new(Simulated),
     ]
 }
 
-pub fn infos() -> Vec<BackendInfo> {
-    registry().iter().map(|e| e.info()).collect()
+pub fn infos(managed: Option<&Path>) -> Vec<BackendInfo> {
+    registry(managed).iter().map(|e| e.info()).collect()
 }
 
-pub fn engine_for(id: BackendId) -> Option<Box<dyn Engine>> {
-    registry().into_iter().find(|e| e.id() == id)
+pub fn engine_for(id: BackendId, managed: Option<&Path>) -> Option<Box<dyn Engine>> {
+    registry(managed).into_iter().find(|e| e.id() == id)
 }
 
 // ── nexis-ml binary discovery ────────────────────────────────────────────────
@@ -239,7 +247,17 @@ fn exe_name() -> &'static str {
     }
 }
 
-fn find_nexis_ml() -> Option<PathBuf> {
+fn find_nexis_ml(managed: Option<&Path>) -> Option<PathBuf> {
+    // 0) The engine Nexis manages itself, if it has been installed. Checked
+    //    first on purpose: a deliberate install through ML Lab is a stronger
+    //    statement of intent than whatever happens to be on PATH, and having
+    //    the two panels disagree about which binary they are measuring would
+    //    make every cross-panel comparison quietly meaningless.
+    if let Some(p) = managed {
+        if p.is_file() {
+            return Some(p.to_path_buf());
+        }
+    }
     // 1) Anything on PATH (split_paths handles the per-OS separator).
     if let Some(path) = std::env::var_os("PATH") {
         for dir in std::env::split_paths(&path) {

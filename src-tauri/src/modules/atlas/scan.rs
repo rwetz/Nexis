@@ -5,7 +5,7 @@
 //! single filesystem walk. Cheap enough to run for every repo on every
 //! refresh, with rayon fanning the repos out.
 
-use crate::walk::{self, WalkResult};
+use crate::modules::atlas::walk::{self, WalkResult};
 use git2::{BranchType, ErrorCode, Repository, Status, StatusOptions};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -54,11 +54,6 @@ pub struct RepoSummary {
     pub error: Option<String>,
 }
 
-impl RepoSummary {
-    pub fn dirty(&self) -> usize {
-        self.staged + self.unstaged + self.untracked + self.conflicted
-    }
-}
 
 /// Everything one pass over a repo yields. The atlas only wants `summary` and
 /// drops the rest; the city needs all three, and getting them together is what
@@ -280,7 +275,7 @@ fn code_for(s: Status) -> Option<&'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testutil::{git, temp_repo};
+    use crate::modules::atlas::testutil::{git, temp_repo};
 
     /// One pass has to satisfy both views at once: the git fields the list
     /// renders and the size/language fields the map builds from.
@@ -311,7 +306,12 @@ mod tests {
         assert_eq!(sum.branch, "main");
         assert_eq!(sum.unstaged, 1);
         assert_eq!(sum.untracked, 1);
-        assert_eq!(sum.dirty(), 2);
+        // Was `sum.dirty()`; the helper was only ever reachable from here, and
+        // the frontend computes the same sum in `types.ts` for display.
+        assert_eq!(
+            sum.staged + sum.unstaged + sum.untracked + sum.conflicted,
+            2
+        );
         assert_eq!(sum.stash_count, 0);
         let commit = sum.last_commit.as_ref().expect("has last commit");
         assert_eq!(commit.summary, "first commit");

@@ -4,10 +4,11 @@
 //! the NDJSON protocol (`--nexis-protocol train`). Every number here is real —
 //! real wgpu/ndarray compute, real `mem/gpu_mb`, real validation accuracy.
 
-use crate::domain::*;
+use crate::modules::benchmark::domain::*;
 use serde_json::Value;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
+use crate::modules::proc::command as new_command;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -35,7 +36,7 @@ fn configure(_cmd: &mut Command) {}
 fn kill_tree(pid: u32) {
     #[cfg(windows)]
     {
-        let _ = Command::new("taskkill")
+        let _ = new_command("taskkill")
             .args(["/PID", &pid.to_string(), "/T", "/F"])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -43,7 +44,7 @@ fn kill_tree(pid: u32) {
     }
     #[cfg(not(windows))]
     {
-        let _ = Command::new("kill")
+        let _ = new_command("kill")
             .args(["-TERM", &pid.to_string()])
             .status();
     }
@@ -51,7 +52,7 @@ fn kill_tree(pid: u32) {
 
 /// Run `nexis-ml env` and return (version, device).
 pub fn probe(binary: &Path) -> (Option<String>, DeviceKind) {
-    let mut cmd = Command::new(binary);
+    let mut cmd = new_command(binary);
     cmd.arg("env").stdout(Stdio::piped()).stderr(Stdio::null());
     configure(&mut cmd);
     let Ok(out) = cmd.output() else {
@@ -143,16 +144,21 @@ pub fn run(
         tokens_per_sec: tps,
     };
 
-    // Isolated temp run directory.
-    let run_dir = std::env::temp_dir()
-        .join("nexis-benchmark")
-        .join(uuid::Uuid::new_v4().to_string());
-    std::fs::create_dir_all(&run_dir).map_err(|e| format!("temp dir: {e}"))?;
+    // Isolated temp run directory. `TempDir` rather than a uuid-named dir under
+    // the system temp: the guard deletes the tree when this function returns, so
+    // a long benchmarking session stops leaving one run directory per cell
+    // behind. Bound to a named local because dropping it early would delete the
+    // config out from under the engine that is still reading it.
+    let run_guard = tempfile::Builder::new()
+        .prefix("nexis-benchmark-")
+        .tempdir()
+        .map_err(|e| format!("temp dir: {e}"))?;
+    let run_dir = run_guard.path().to_path_buf();
     write_train_toml(&run_dir, config).map_err(|e| format!("train.toml: {e}"))?;
 
     emit(mk(RunPhase::Loading, 0, None));
 
-    let mut cmd = Command::new(binary);
+    let mut cmd = new_command(binary);
     cmd.arg("--nexis-protocol")
         .arg("train")
         .arg(&run_dir)

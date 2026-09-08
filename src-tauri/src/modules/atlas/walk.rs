@@ -3,7 +3,7 @@
 //! in the atlas and its skyline after drill-in are computed from exactly the
 //! same set of files.
 
-use crate::lang;
+use crate::modules::atlas::lang;
 use git2::Repository;
 use std::fs;
 use std::path::Path;

@@ -5,7 +5,7 @@
 //! would test nothing.
 
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use crate::modules::proc::command as new_command;
 
 /// A fresh empty directory, unique per test name and process.
 pub fn temp_repo(tag: &str) -> PathBuf {
@@ -17,7 +17,7 @@ pub fn temp_repo(tag: &str) -> PathBuf {
 
 /// Run git in `dir` with a fixed identity, asserting it succeeded.
 pub fn git(dir: &Path, args: &[&str]) {
-    let out = Command::new("git")
+    let out = new_command("git")
         .args(args)
         .current_dir(dir)
         .env("GIT_AUTHOR_NAME", "t")

@@ -1,6 +1,6 @@
 //! Resolve file paths into `ModelInfo` via extension + filename heuristics.
 
-use crate::domain::*;
+use crate::modules::benchmark::domain::*;
 use chrono::Utc;
 use std::fs;
 use std::path::Path;
@@ -57,14 +57,14 @@ fn derive(path: &str) -> Option<ModelInfo> {
 
     // Prefer real header metadata over filename heuristics for GGUF.
     if format == ModelFormat::Gguf {
-        if let Some(meta) = crate::gguf::read_metadata(p) {
+        if let Some(meta) = crate::modules::benchmark::gguf::read_metadata(p) {
             arch = meta.arch;
             context_length = meta.context_length;
             if let Some(pc) = meta.param_count {
-                params_label = Some(crate::gguf::fmt_params(pc));
+                params_label = Some(crate::modules::benchmark::gguf::fmt_params(pc));
             }
             if let Some(ft) = meta.file_type {
-                if let Some(q) = crate::gguf::file_type_quant(ft) {
+                if let Some(q) = crate::modules::benchmark::gguf::file_type_quant(ft) {
                     quant = Some(q.to_string());
                 }
             }

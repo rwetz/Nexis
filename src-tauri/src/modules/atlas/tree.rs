@@ -3,8 +3,8 @@
 //! so they are counted for real (not estimated from bytes) for every text file
 //! under `MAX_READ_BYTES`, in parallel.
 
-use crate::lang;
-use crate::scan::{self, RepoSummary};
+use crate::modules::atlas::lang;
+use crate::modules::atlas::scan::{self, RepoSummary};
 use rayon::prelude::*;
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
@@ -208,10 +208,10 @@ impl Builder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::process::Command;
+    use crate::modules::proc::command as new_command;
 
     fn git(dir: &Path, args: &[&str]) {
-        let out = Command::new("git")
+        let out = new_command("git")
             .args(args)
             .current_dir(dir)
             .env("GIT_AUTHOR_NAME", "t")

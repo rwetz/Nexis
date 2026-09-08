@@ -2,10 +2,11 @@
 //! (no cmake / source build) with `-o json` and parse the result — the same
 //! spawn-and-parse pattern as the nexis-ml backend. Real GGUF inference numbers.
 
-use crate::domain::*;
+use crate::modules::benchmark::domain::*;
 use serde_json::Value;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use crate::modules::proc::command as new_command;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -27,7 +28,7 @@ fn configure(_cmd: &mut Command) {}
 fn kill_tree(pid: u32) {
     #[cfg(windows)]
     {
-        let _ = Command::new("taskkill")
+        let _ = new_command("taskkill")
             .args(["/PID", &pid.to_string(), "/T", "/F"])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -35,7 +36,7 @@ fn kill_tree(pid: u32) {
     }
     #[cfg(not(windows))]
     {
-        let _ = Command::new("kill")
+        let _ = new_command("kill")
             .args(["-TERM", &pid.to_string()])
             .status();
     }
@@ -173,7 +174,7 @@ pub fn run(
 
     emit(mk(RunPhase::Loading, 0, None));
 
-    let mut cmd = Command::new(binary);
+    let mut cmd = new_command(binary);
     cmd.arg("-m")
         .arg(&model.path)
         .arg("-o")

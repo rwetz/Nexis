@@ -19,8 +19,9 @@ pub mod bench_internals {
 }
 
 use modules::{
-    ai_audit, autosave, crash, dap, diagnostics, fs, fswatch, git, http_share, ledger, lsp, ml,
-    net, pty, python, recording, secrets, shell, snapshots, sysmon, tools, winstate, workspace,
+    ai_audit, atlas, autosave, benchmark, crash, dap, diagnostics, fs, fswatch, git, http_share,
+    ledger, lsp, ml, net, pty, python, recording, secrets, shell, snapshots, sysmon, tools,
+    winstate, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -146,6 +147,10 @@ pub fn run() {
                 .level(tauri_plugin_log::log::LevelFilter::Info)
                 .build(),
         )
+        // Native file pickers for the Benchmark panel: model files, the
+        // llama-bench binary, and the CSV/JSON export target all live outside
+        // the workspace by definition, so the explorer cannot stand in.
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(pty::PtyState::default())
         .manage(shell::ShellState::default())
@@ -159,6 +164,7 @@ pub fn run() {
         .manage(dap::DapState::default())
         .manage(ml::MlState::default())
         .manage(http_share::HttpShareState::default())
+        .manage(benchmark::state::BenchState::default())
         .manage(LaunchDir(Mutex::new(parse_launch_dir())))
         .setup(|_app| {
             // Re-assert undecorated after the webview is up (webkit2gtk can
@@ -314,6 +320,16 @@ pub fn run() {
             http_share::http_share_lan_ip,
             crash::list_crash_reports,
             diagnostics::diagnostics_export,
+            atlas::atlas_scan_repos,
+            atlas::atlas_repo_city,
+            atlas::atlas_repo_detail,
+            atlas::atlas_config_path,
+            benchmark::commands::bench_list_backends,
+            benchmark::commands::bench_scan_models,
+            benchmark::commands::bench_run,
+            benchmark::commands::bench_cancel,
+            benchmark::commands::bench_probe_llama,
+            benchmark::commands::bench_is_running,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

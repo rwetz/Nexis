@@ -2,7 +2,7 @@
 //! the Simulated backend (and, for now, the not-yet-wired real backends). Real
 //! engines replace `run` with actual inference timing behind the same trait.
 
-use crate::domain::*;
+use crate::modules::benchmark::domain::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::sleep;
 use std::time::Duration;

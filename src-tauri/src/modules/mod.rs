@@ -5,7 +5,9 @@
 // ╚══════════════════════════════════════╝
 
 pub mod ai_audit;
+pub mod atlas;
 pub mod autosave;
+pub mod benchmark;
 pub mod crash;
 pub mod dap;
 pub mod diagnostics;
