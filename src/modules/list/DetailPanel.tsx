@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { spring } from "@nexis/design";
 import { absoluteTime, relativeTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
-import { openInTerminal, openPath } from "@/modules/repos/api";
+import { openInNexis, openInTerminal, openPath } from "@/modules/repos/api";
+import { useNexisInstalled } from "@/modules/repos/useNexisInstalled";
 import { useAtlasStore } from "@/modules/repos/store";
 import {
   repoState,
@@ -19,6 +20,7 @@ import {
   GitBranchIcon,
   GitCommitIcon,
   MapsGlobal01Icon,
+  SourceCodeIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { AnimatePresence, motion } from "motion/react";
@@ -70,6 +72,7 @@ function DetailBody({
   const { files, stashes } = detail;
   const enterRepo = useAtlasStore((s) => s.enterRepo);
   const meta = STATE_META[repoState(summary)];
+  const nexisInstalled = useNexisInstalled();
 
   const handleTerminal = () => {
     openInTerminal(summary.path)
@@ -80,6 +83,11 @@ function DetailBody({
     openPath(summary.path).catch((e) =>
       toast.error("Could not open folder", { description: String(e) }),
     );
+  };
+  const handleNexis = () => {
+    openInNexis(summary.path)
+      .then((bin) => toast.success(`Opened ${summary.name} in ${bin}`))
+      .catch((e) => toast.error("Could not open Nexis", { description: String(e) }));
   };
 
   return (
@@ -190,6 +198,12 @@ function DetailBody({
           <HugeiconsIcon icon={MapsGlobal01Icon} size={14} strokeWidth={2} />
           Show on map
         </Button>
+        {nexisInstalled && (
+          <Button size="sm" variant="secondary" onClick={handleNexis}>
+            <HugeiconsIcon icon={SourceCodeIcon} size={14} strokeWidth={2} />
+            Open in Nexis
+          </Button>
+        )}
         <div className="flex gap-2">
           <Button size="sm" className="flex-1" onClick={handleTerminal}>
             <HugeiconsIcon icon={ComputerTerminal01Icon} size={14} strokeWidth={2} />
@@ -237,3 +251,4 @@ function FileRow({ file }: { file: FileChange }) {
     </li>
   );
 }
+

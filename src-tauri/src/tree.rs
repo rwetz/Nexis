@@ -61,7 +61,12 @@ pub fn build(root: &Path, limit: usize) -> Result<RepoCity, String> {
             let status = statuses.get(&f.rel).cloned();
             (
                 f.rel.clone(),
-                Leaf { bytes: f.bytes, lines, lang: f.lang, status },
+                Leaf {
+                    bytes: f.bytes,
+                    lines,
+                    lang: f.lang,
+                    status,
+                },
             )
         })
         .collect();

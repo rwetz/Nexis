@@ -288,12 +288,20 @@ mod tests {
     fn one_scan_serves_both_views() {
         let tmp = temp_repo("scan");
         git(&tmp, &["init", "-b", "main"]);
-        std::fs::write(tmp.join("a.rs"), "fn main() {}
-").unwrap();
+        std::fs::write(
+            tmp.join("a.rs"),
+            "fn main() {}
+",
+        )
+        .unwrap();
         git(&tmp, &["add", "a.rs"]);
         git(&tmp, &["commit", "-m", "first commit"]);
-        std::fs::write(tmp.join("a.rs"), "fn main() { todo!() }
-").unwrap();
+        std::fs::write(
+            tmp.join("a.rs"),
+            "fn main() { todo!() }
+",
+        )
+        .unwrap();
         std::fs::write(tmp.join("b.txt"), "untracked").unwrap();
 
         let sum = summarize(&tmp, 20_000);

@@ -44,10 +44,16 @@
     "linux": {
       "deb": {
         "section": "utils",
-        "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"]
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0"
+        ]
       },
       "rpm": {
-        "depends": ["webkit2gtk4.1", "gtk3"]
+        "depends": [
+          "webkit2gtk4.1",
+          "gtk3"
+        ]
       },
       "appimage": {
         "bundleMediaFramework": false
@@ -59,13 +65,24 @@
       },
       "nsis": {
         "installMode": "currentUser",
-        "languages": ["English"],
+        "languages": [
+          "English"
+        ],
         "displayLanguageSelector": false,
         "headerImage": "icons/installer-header.bmp"
       }
     },
     "category": "DeveloperTool",
     "shortDescription": "Every git repo on your machine, as a list and as a map",
-    "longDescription": "Atlas — one scan of every git repo on your machine, shown two ways. The list is branch, sync state, changed files and last commit at a glance. The map renders the same repos as an isometric city: directories are terraces, files are buildings sized by their code, coloured by language, and flagged coral when the working tree is dirty."
+    "longDescription": "Atlas \u2014 one scan of every git repo on your machine, shown two ways. The list is branch, sync state, changed files and last commit at a glance. The map renders the same repos as an isometric city: directories are terraces, files are buildings sized by their code, coloured by language, and flagged coral when the working tree is dirty."
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "nexis-atlas"
+        ]
+      }
+    }
   }
 }

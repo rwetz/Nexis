@@ -2,12 +2,14 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   FolderOpenIcon,
+  SourceCodeIcon,
   ConsoleIcon,
   ArrowRight02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { toast } from "sonner";
-import { openInTerminal, openPath } from "@/modules/repos/api";
+import { openInNexis, openInTerminal, openPath } from "@/modules/repos/api";
+import { useNexisInstalled } from "@/modules/repos/useNexisInstalled";
 import type { Block } from "./layout";
 import { loc } from "./layout";
 import { useAtlasStore } from "@/modules/repos/store";
@@ -200,6 +202,7 @@ function LangBars({ repo }: { repo: { langs: { lang: string; bytes: number }[]; 
 function Actions({ path, withTerminal }: { path: string; withTerminal?: boolean }) {
   const enterRepo = useAtlasStore((s) => s.enterRepo);
   const view = useAtlasStore((s) => s.mapView);
+  const nexisInstalled = useNexisInstalled();
 
   return (
     <div className="flex flex-wrap gap-1.5 pt-1">
@@ -235,6 +238,22 @@ function Actions({ path, withTerminal }: { path: string; withTerminal?: boolean 
         >
           <HugeiconsIcon icon={ConsoleIcon} size={12} strokeWidth={2} />
           Terminal
+        </Button>
+      )}
+      {withTerminal && nexisInstalled && (
+        <Button
+          size="xs"
+          variant="outline"
+          onClick={() =>
+            openInNexis(path)
+              .then((bin) => toast.success(`Opened in ${bin}`))
+              .catch((e) =>
+                toast.error("Could not open Nexis", { description: String(e) }),
+              )
+          }
+        >
+          <HugeiconsIcon icon={SourceCodeIcon} size={12} strokeWidth={2} />
+          Nexis
         </Button>
       )}
     </div>

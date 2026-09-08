@@ -1,6 +1,8 @@
 pub mod config;
 pub mod detail;
 pub mod lang;
+pub mod links;
+pub mod nexis;
 pub mod scan;
 pub mod tree;
 pub mod walk;
@@ -149,6 +151,28 @@ fn spawn_terminal(path: &str) -> Result<String, String> {
         .map_err(|e| e.to_string())
 }
 
+/// Open a repo in Nexis, the family's terminal/ADE. Resolves to the binary
+/// that was launched so the toast can name it.
+#[tauri::command]
+async fn open_in_nexis(path: String) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        nexis::open_dir(&path).map(|bin| {
+            bin.file_name()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_else(|| bin.display().to_string())
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Whether an installed Nexis was found — the UI hides its "Open in Nexis"
+/// action rather than offering a button that can only fail.
+#[tauri::command]
+fn has_nexis() -> bool {
+    nexis::locate().is_some()
+}
+
 /// Open config.toml in the default editor (creating it first if needed).
 #[tauri::command]
 fn open_config() -> Result<(), String> {
@@ -185,6 +209,22 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        // Single-instance must be registered before everything else, and it is
+        // what makes deep links work at all on Windows and Linux: a link opens
+        // the app with the URL as its only argument, so a second launch has to
+        // hand that argument to the copy already running instead of starting a
+        // rival one.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            use tauri::Manager;
+            if let Some(win) = app.get_webview_window("main") {
+                let _ = win.unminimize();
+                let _ = win.show();
+                let _ = win.set_focus();
+            }
+            use tauri_plugin_deep_link::DeepLinkExt;
+            app.deep_link().handle_cli_arguments(argv.into_iter());
+        }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
@@ -192,10 +232,55 @@ pub fn run() {
             scan_repos,
             repo_city,
             repo_detail,
+            open_in_nexis,
+            has_nexis,
             open_path,
             open_in_terminal,
             open_config
         ])
+        .setup(|app| {
+            use tauri::{Emitter, Manager};
+            use tauri_plugin_deep_link::DeepLinkExt;
+
+            // Installers register the scheme; a dev or unpacked build has no
+            // installer, so register at runtime there. Release builds are left
+            // alone so a portable copy cannot quietly steal the association
+            // from an installed one.
+            #[cfg(any(windows, target_os = "linux"))]
+            if cfg!(debug_assertions) {
+                if let Err(e) = app.deep_link().register_all() {
+                    eprintln!("[atlas] deep-link registration failed: {e}");
+                }
+            }
+
+            // Re-emit as a validated {action, path} so the webview never has to
+            // parse a URL that arrived from another process.
+            let handle = app.handle().clone();
+            app.deep_link().on_open_url(move |event| {
+                for link in links::parse_all(&event.urls()) {
+                    let _ = handle.emit("atlas://deep-link", link);
+                }
+            });
+
+            // A cold start puts the URL in argv rather than through the event
+            // above, so ask for it explicitly. The window is created hidden and
+            // shown from main.tsx, so the webview is listening by the time this
+            // is delivered on the next tick.
+            if let Ok(Some(urls)) = app.deep_link().get_current() {
+                let handle = app.handle().clone();
+                let pending = links::parse_all(&urls);
+                if !pending.is_empty() {
+                    app.get_webview_window("main");
+                    tauri::async_runtime::spawn(async move {
+                        for link in pending {
+                            let _ = handle.emit("atlas://deep-link", link);
+                        }
+                    });
+                }
+            }
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

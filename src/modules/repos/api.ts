@@ -30,3 +30,14 @@ export function openInTerminal(path: string): Promise<string> {
 export function openConfig(): Promise<void> {
   return invoke<void>("open_config");
 }
+
+/** Hand a repo to Nexis. Resolves to the binary that was launched. */
+export function openInNexis(path: string): Promise<string> {
+  return invoke<string>("open_in_nexis", { path });
+}
+
+/** Whether an installed Nexis was found, so the UI can hide the action rather
+ *  than offering a button that can only fail. */
+export function hasNexis(): Promise<boolean> {
+  return invoke<boolean>("has_nexis");
+}

@@ -25,6 +25,9 @@ toml = "0.8"
 git2 = { version = "0.20", default-features = false }
 rayon = "1.10"
 dirs = "6"
+tauri-plugin-deep-link = "2.4.10"
+tauri-plugin-single-instance = { version = "2.4.4", features = ["deep-link"] }
+url = "2.5.8"
 
 [profile.release]
 codegen-units = 1

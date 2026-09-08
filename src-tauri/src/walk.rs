@@ -82,7 +82,9 @@ fn descend(root: &Path, dir: &Path, repo: Option<&Repository>, limit: usize, out
             continue;
         }
         let Ok(meta) = entry.metadata() else { continue };
-        let Some(rel) = relative(root, &path) else { continue };
+        let Some(rel) = relative(root, &path) else {
+            continue;
+        };
         out.files.push(FileEntry {
             rel,
             bytes: meta.len(),

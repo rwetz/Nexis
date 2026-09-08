@@ -96,6 +96,33 @@ Map:
 | `l` | toggle labels |
 | `Esc` | back to the atlas |
 
+## Family links
+
+Atlas registers `nexis-atlas://`, so anything on the machine can point it at a
+repo. Two verbs, one argument:
+
+```bash
+nexis-atlas://focus?path=C:\Users\me\Dev\thing   # select it in the list
+nexis-atlas://map?path=/home/me/dev/thing        # open its city on the map
+```
+
+A link only ever *selects* something Atlas already scanned — the path is matched
+against the repo list, never handed to the backend, so no link can make Atlas
+read a directory it would not otherwise have looked at. An unknown path triggers
+one rescan (the usual reason is a repo added since the last one) before it gives
+up. URLs are parsed and validated in Rust before the webview sees them; the
+grammar and its tests live in [`src-tauri/src/links.rs`](src-tauri/src/links.rs).
+
+If Atlas is already running, the link goes to the running copy and raises it,
+rather than starting a second one.
+
+Going the other way, the detail pane and the map inspector offer **Open in
+Nexis**, which launches [Nexis](https://github.com/rwetz/Nexis) with the repo as
+its workspace. That uses Nexis's existing launch-argument contract rather than a
+`nexis://` URL, because Nexis does not register a scheme yet — when it does,
+this becomes a one-line change. The button is hidden when no Nexis is installed;
+set `NEXIS_BIN` to point at a specific binary.
+
 ## Layout
 
 ```
@@ -121,6 +148,8 @@ src/
   styles/                  globals.css, fonts.css, tokens.ts
 src-tauri/src/
   config.rs                config.toml, repo discovery, legacy config adoption
+  links.rs                 the nexis-atlas:// grammar (parsed + validated here)
+  nexis.rs                 finding and launching Nexis
   walk.rs                  the one filesystem walk both views share
   scan.rs                  the one scan: git state + size aggregates per repo
   tree.rs                  nested tree with real line counts (the city)

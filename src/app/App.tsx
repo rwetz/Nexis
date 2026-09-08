@@ -19,6 +19,7 @@ import { Inspector } from "@/modules/map/Inspector";
 import { Legend } from "@/modules/map/Legend";
 import { RepoList } from "@/modules/map/RepoList";
 import { openConfig, openInTerminal, openPath } from "@/modules/repos/api";
+import { useDeepLinks } from "@/modules/repos/deepLinks";
 import { useAtlasStore, type Mode } from "@/modules/repos/store";
 import { formatCount } from "@/modules/repos/types";
 import { StatusBar } from "./StatusBar";
@@ -59,6 +60,7 @@ function Shell() {
   }, [refresh]);
 
   useGlobalKeys();
+  useDeepLinks();
 
   return (
     <div className="flex h-full flex-col">

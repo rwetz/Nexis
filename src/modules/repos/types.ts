@@ -189,3 +189,17 @@ export function displayOrder(
     a.name.toLowerCase().localeCompare(b.name.toLowerCase()),
   );
 }
+
+/** Find a repo by a path that came from somewhere else — a deep link, a config
+ *  file, another app. Separators and drive-letter case vary between whoever
+ *  wrote the path and whoever scanned it, so compare on a normalized form
+ *  rather than requiring the two strings to be identical. */
+export function findByPath(
+  repos: RepoSummary[],
+  path: string,
+): RepoSummary | null {
+  const norm = (p: string) =>
+    p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+  const want = norm(path);
+  return repos.find((r) => norm(r.path) === want) ?? null;
+}

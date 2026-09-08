@@ -13,10 +13,7 @@
 /// pure I/O for a number nothing consumes. Lockfiles matter most here — a
 /// `pnpm-lock.yaml` is a quarter of a megabyte of text that no one wrote.
 pub fn is_countable(lang: &str) -> bool {
-    !matches!(
-        lang,
-        "Binary" | "Image" | "Other" | "Lockfile" | "Font"
-    )
+    !matches!(lang, "Binary" | "Image" | "Other" | "Lockfile" | "Font")
 }
 
 pub fn lang_for(file_name: &str) -> &'static str {
@@ -25,8 +22,8 @@ pub fn lang_for(file_name: &str) -> &'static str {
         "Dockerfile" | "Containerfile" => return "Docker",
         "Makefile" | "makefile" | "GNUmakefile" => return "Make",
         "CMakeLists.txt" => return "CMake",
-        "Cargo.lock" | "pnpm-lock.yaml" | "package-lock.json" | "yarn.lock"
-        | "poetry.lock" | "Gemfile.lock" | "uv.lock" => return "Lockfile",
+        "Cargo.lock" | "pnpm-lock.yaml" | "package-lock.json" | "yarn.lock" | "poetry.lock"
+        | "Gemfile.lock" | "uv.lock" => return "Lockfile",
         _ => {}
     }
 
@@ -73,8 +70,8 @@ pub fn lang_for(file_name: &str) -> &'static str {
         "ipynb" => "Notebook",
         "png" | "jpg" | "jpeg" | "gif" | "webp" | "svg" | "ico" | "avif" | "bmp" => "Image",
         "woff" | "woff2" | "ttf" | "otf" | "eot" => "Font",
-        "wasm" | "so" | "dll" | "dylib" | "exe" | "a" | "o" | "bin" | "pdf" | "zip"
-        | "gz" | "tar" | "7z" | "mp4" | "mp3" | "wav" | "webm" => "Binary",
+        "wasm" | "so" | "dll" | "dylib" | "exe" | "a" | "o" | "bin" | "pdf" | "zip" | "gz"
+        | "tar" | "7z" | "mp4" | "mp3" | "wav" | "webm" => "Binary",
         _ => "Other",
     }
 }
