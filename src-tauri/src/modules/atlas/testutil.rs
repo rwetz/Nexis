@@ -4,8 +4,8 @@
 //! repo — libgit2 reading a fixture is the thing under test, so faking it
 //! would test nothing.
 
-use std::path::{Path, PathBuf};
 use crate::modules::proc::command as new_command;
+use std::path::{Path, PathBuf};
 
 /// A fresh empty directory, unique per test name and process.
 pub fn temp_repo(tag: &str) -> PathBuf {

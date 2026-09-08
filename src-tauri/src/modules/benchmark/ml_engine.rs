@@ -5,10 +5,10 @@
 //! real wgpu/ndarray compute, real `mem/gpu_mb`, real validation accuracy.
 
 use crate::modules::benchmark::domain::*;
+use crate::modules::proc::command as new_command;
 use serde_json::Value;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
-use crate::modules::proc::command as new_command;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -272,7 +272,8 @@ pub fn run(
     };
 
     let mean = samples_ms.iter().sum::<f64>() / samples_ms.len() as f64;
-    let mut sorted = samples_ms.clone();
+    // `samples_ms` is not read again -- move rather than clone.
+    let mut sorted = samples_ms;
     sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
     // Throughput = training samples processed per second (real items/sec).

@@ -58,10 +58,8 @@ pub fn bench_cancel(state: State<BenchState>, job_id: String) {
 /// null. Spawns the binary to read its version, hence `heavy`.
 #[tauri::command]
 pub async fn bench_probe_llama(path: Option<String>) -> Result<LlamaProbe, String> {
-    crate::modules::heavy(move || {
-        Ok(crate::modules::benchmark::llama::probe(path.as_deref()))
-    })
-    .await
+    crate::modules::heavy(move || Ok(crate::modules::benchmark::llama::probe(path.as_deref())))
+        .await
 }
 
 /// Whether a cancellable job is still registered -- used by the panel to

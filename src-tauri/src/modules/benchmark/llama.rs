@@ -3,10 +3,10 @@
 //! spawn-and-parse pattern as the nexis-ml backend. Real GGUF inference numbers.
 
 use crate::modules::benchmark::domain::*;
+use crate::modules::proc::command as new_command;
 use serde_json::Value;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use crate::modules::proc::command as new_command;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};

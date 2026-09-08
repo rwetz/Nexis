@@ -87,7 +87,7 @@ pub async fn atlas_scan_repos() -> Result<AtlasResult, String> {
             repos,
             elapsed_ms: started.elapsed().as_millis() as u64,
             config_path: path.display().to_string(),
-            scan_root: cfg.scan_root.clone(),
+            scan_root: cfg.scan_root,
         })
     })
     .await

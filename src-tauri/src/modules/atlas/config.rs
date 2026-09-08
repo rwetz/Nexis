@@ -203,7 +203,8 @@ fn discover(dir: &Path, depth: usize, out: &mut Vec<PathBuf>) {
         }
         let name = entry.file_name();
         let name = name.to_string_lossy();
-        if name.starts_with('.') || crate::modules::atlas::walk::SKIP_DIRS.contains(&name.as_ref()) {
+        if name.starts_with('.') || crate::modules::atlas::walk::SKIP_DIRS.contains(&name.as_ref())
+        {
             continue;
         }
         discover(&entry.path(), depth - 1, out);

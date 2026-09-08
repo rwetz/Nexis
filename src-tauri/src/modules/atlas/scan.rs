@@ -54,7 +54,6 @@ pub struct RepoSummary {
     pub error: Option<String>,
 }
 
-
 /// Everything one pass over a repo yields. The atlas only wants `summary` and
 /// drops the rest; the city needs all three, and getting them together is what
 /// keeps drilling in from walking the tree — and opening the repo — twice.

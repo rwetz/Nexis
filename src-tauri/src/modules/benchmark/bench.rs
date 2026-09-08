@@ -29,9 +29,11 @@ fn run(app: &AppHandle, job: &BenchJob, cancel: &AtomicBool) {
             // The llama.cpp backend uses the user-located binary from the job;
             // everything else builds from the static registry.
             let engine: Box<dyn crate::modules::benchmark::backend::Engine> = match backend_id {
-                BackendId::Llama => Box::new(crate::modules::benchmark::backend::LlamaCpp::resolve(
-                    job.llama_bench_path.as_deref(),
-                )),
+                BackendId::Llama => {
+                    Box::new(crate::modules::benchmark::backend::LlamaCpp::resolve(
+                        job.llama_bench_path.as_deref(),
+                    ))
+                }
                 other => match engine_for(other, managed.as_deref()) {
                     Some(e) => e,
                     None => continue,
