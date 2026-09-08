@@ -1,0 +1,417 @@
+/* ══════════════════════════════════════════════════════════════════════════
+ * Design-system core — for ANY Tauri + React app.
+ *
+ * Trimmed from the Nexis blueprint: terminal (xterm.js) and code-editor
+ * (CodeMirror / LSP / debugger gutter / Lezer syntax) rules have been removed,
+ * along with the terminal ANSI palette. If you embed a terminal or code editor,
+ * use `globals.ide.css` instead — it's the full version with those added back.
+ *
+ * Kept: OKLCH token system, radius scale, dark mode, custom borderless window
+ * chrome, the bespoke cursor set, scrollbar handling, app-zoom, collapsible
+ * animation, the --brand primitives, and the View-Transition theme crossfade.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "./fonts.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Inter Variable', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --color-brand: var(--brand);
+    --color-brand-foreground: var(--brand-foreground);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    --background: oklch(1 0 0);
+    /* Brand accent — coral/salmon used for primary CTAs, active/selected states,
+       and the "alive" indicator. Not for links or decorative elements. */
+    --brand: oklch(0.72 0.15 35);
+    --brand-foreground: oklch(1 0 0);
+    --foreground: oklch(0.148 0.004 228.8);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.148 0.004 228.8);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.148 0.004 228.8);
+    --primary: oklch(0.218 0.008 223.9);
+    --primary-foreground: oklch(0.987 0.002 197.1);
+    --secondary: oklch(0.963 0.002 197.1);
+    --secondary-foreground: oklch(0.218 0.008 223.9);
+    --muted: oklch(0.963 0.002 197.1);
+    --muted-foreground: oklch(0.56 0.021 213.5);
+    --accent: oklch(0.963 0.002 197.1);
+    --accent-foreground: oklch(0.218 0.008 223.9);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.925 0.005 214.3);
+    --input: oklch(0.925 0.005 214.3);
+    --ring: oklch(0.723 0.014 214.4);
+    --chart-1: oklch(0.872 0.007 219.6);
+    --chart-2: oklch(0.56 0.021 213.5);
+    --chart-3: oklch(0.45 0.017 213.2);
+    --chart-4: oklch(0.378 0.015 216);
+    --chart-5: oklch(0.275 0.011 216.9);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.987 0.002 197.1);
+    --sidebar-foreground: oklch(0.148 0.004 228.8);
+    --sidebar-primary: oklch(0.218 0.008 223.9);
+    --sidebar-primary-foreground: oklch(0.987 0.002 197.1);
+    --sidebar-accent: oklch(0.963 0.002 197.1);
+    --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
+    --sidebar-border: oklch(0.925 0.005 214.3);
+    --sidebar-ring: oklch(0.723 0.014 214.4);
+}
+
+.dark {
+    --background: oklch(0.148 0.004 228.8);
+    --brand: oklch(0.72 0.15 35);
+    --brand-foreground: oklch(1 0 0);
+    --foreground: oklch(0.987 0.002 197.1);
+    --card: oklch(0.218 0.008 223.9);
+    --card-foreground: oklch(0.987 0.002 197.1);
+    --popover: oklch(0.218 0.008 223.9);
+    --popover-foreground: oklch(0.987 0.002 197.1);
+    --primary: oklch(0.925 0.005 214.3);
+    --primary-foreground: oklch(0.218 0.008 223.9);
+    --secondary: oklch(0.275 0.011 216.9);
+    --secondary-foreground: oklch(0.987 0.002 197.1);
+    --muted: oklch(0.275 0.011 216.9);
+    --muted-foreground: oklch(0.723 0.014 214.4);
+    --accent: oklch(0.275 0.011 216.9);
+    --accent-foreground: oklch(0.987 0.002 197.1);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.56 0.021 213.5);
+    --chart-1: oklch(0.872 0.007 219.6);
+    --chart-2: oklch(0.56 0.021 213.5);
+    --chart-3: oklch(0.45 0.017 213.2);
+    --chart-4: oklch(0.378 0.015 216);
+    --chart-5: oklch(0.275 0.011 216.9);
+    --sidebar: oklch(0.218 0.008 223.9);
+    --sidebar-foreground: oklch(0.987 0.002 197.1);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.987 0.002 197.1);
+    --sidebar-accent: oklch(0.275 0.011 216.9);
+    --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.56 0.021 213.5);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    overflow: hidden;
+    }
+  html, body, #root {
+    height: 100%;
+    }
+  html {
+    @apply font-sans;
+    }
+}
+
+/* ── App-wide UI zoom (Ctrl±) ──────────────────────────────────────────────
+ * Set --app-zoom from JS; regions that must stay at 1× (e.g. an overlay you
+ * don't want scaled) get .zoom-exempt. */
+:root {
+  --app-zoom: 1;
+}
+.zoom-content {
+  zoom: var(--app-zoom);
+}
+.zoom-exempt {
+  zoom: calc(1 / var(--app-zoom));
+}
+
+/* ── Custom window chrome (Linux/Windows) ──────────────────────────────────
+ * The OS gives us a transparent borderless window; we paint the rounded
+ * corners + surface ourselves so the app doesn't look naked on
+ * GNOME/KDE/Hyprland/Windows. Toggled by main.tsx setting
+ * document.documentElement.dataset.chrome = "borderless" on non-macOS. */
+html[data-chrome="borderless"],
+html[data-chrome="borderless"] body {
+  background: transparent !important;
+}
+html[data-chrome="borderless"] #root {
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--background);
+}
+
+/* ── Scrollbars ────────────────────────────────────────────────────────────
+ * Kill native scrollbars app-wide (Linux/Windows ship chunky Chromium bars
+ * that break the chrome; macOS WKWebView flashes its overlay during layout
+ * transitions). Provide visible scroll affordances per-region via shadcn
+ * <ScrollArea>, or opt in to the thin .nexis-scrollbar below. */
+html,
+html *,
+html *::before,
+html *::after {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* Explicit opt-out helpers for individual containers. */
+.no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.no-scrollbar::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+.no-scrollbar-deep,
+.no-scrollbar-deep * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.no-scrollbar-deep::-webkit-scrollbar,
+.no-scrollbar-deep *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+/* Thin custom scrollbar — apply .nexis-scrollbar to any overflow container
+ * that should show a minimal 3px track instead of the global "none" default. */
+.nexis-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(1 0 0 / 12%) transparent;
+}
+.nexis-scrollbar::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+  display: block;
+}
+.nexis-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nexis-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(1 0 0 / 12%);
+  border-radius: 99px;
+}
+.nexis-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(1 0 0 / 22%);
+}
+:root:not(.dark) .nexis-scrollbar {
+  scrollbar-color: oklch(0 0 0 / 12%) transparent;
+}
+:root:not(.dark) .nexis-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0 0 0 / 12%);
+}
+:root:not(.dark) .nexis-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(0 0 0 / 22%);
+}
+
+/* ── Collapsible animation (Radix Collapsible / shadcn) ────────────────────── */
+@keyframes nexis-collapsible-down {
+  from { height: 0; opacity: 0; }
+  to   { height: var(--radix-collapsible-content-height); opacity: 1; }
+}
+@keyframes nexis-collapsible-up {
+  from { height: var(--radix-collapsible-content-height); opacity: 1; }
+  to   { height: 0; opacity: 0; }
+}
+.nexis-collapsible-content {
+  overflow: hidden;
+}
+.nexis-collapsible-content[data-state="open"] {
+  animation: nexis-collapsible-down 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.nexis-collapsible-content[data-state="closed"] {
+  animation: nexis-collapsible-up 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Custom cursor set — "Tailless Smooth" ─────────────────────────────────
+ * PNGs live in /public/cursors/ (32×32). The two numbers after each url() are
+ * the hotspot (click point); catalogued in /public/cursors/hotspots.json.
+ * Native fallbacks are preserved after the comma. */
+
+/* Default arrow for the whole app */
+html {
+  cursor: url('/cursors/arrow.png') 5 5, default;
+}
+
+/* Pointer — links, buttons, Radix interactive primitives */
+a,
+button,
+[role="button"],
+[role="link"],
+[role="tab"],
+[role="menuitem"],
+[role="option"],
+[role="checkbox"],
+[role="radio"],
+[role="switch"],
+select,
+summary,
+label[for],
+[type="button"],
+[type="submit"],
+[type="reset"],
+.cursor-pointer {
+  cursor: url('/cursors/pointer.png') 6 5, pointer;
+}
+
+/* Text / caret */
+input:not([type="button"]):not([type="submit"]):not([type="reset"])
+      :not([type="checkbox"]):not([type="radio"]):not([type="range"])
+      :not([type="file"]):not([type="color"]),
+textarea,
+[contenteditable="true"],
+[contenteditable=""],
+.cursor-text {
+  cursor: url('/cursors/text.png') 10 14, text;
+}
+
+/* Tailwind cursor utility overrides — these appear after the Tailwind @import
+ * so cascade order lets them win; className="cursor-col-resize" etc. use the
+ * custom PNG transparently. */
+.cursor-default      { cursor: url('/cursors/arrow.png') 5 5,       default;      }
+.cursor-pointer      { cursor: url('/cursors/pointer.png') 6 5,     pointer;      }
+.cursor-text         { cursor: url('/cursors/text.png') 10 14,      text;         }
+.cursor-vertical-text{ cursor: url('/cursors/text_h.png') 10 14,    vertical-text;}
+.cursor-wait         { cursor: url('/cursors/wait.png') 12 13,      wait;         }
+.cursor-progress     { cursor: url('/cursors/progress.png') 5 5,    progress;     }
+.cursor-help         { cursor: url('/cursors/help.png') 5 5,        help;         }
+.cursor-crosshair    { cursor: url('/cursors/crosshair.png') 9 11,  crosshair;    }
+.cursor-move         { cursor: url('/cursors/all_scroll.png') 16 13,move;         }
+.cursor-all-scroll   { cursor: url('/cursors/all_scroll.png') 16 13,all-scroll;   }
+.cursor-not-allowed  { cursor: url('/cursors/not_allowed.png') 9 11,not-allowed;  }
+.cursor-no-drop      { cursor: url('/cursors/no_drop.png') 5 5,     no-drop;      }
+.cursor-grab         { cursor: url('/cursors/grab.png') 10 14,      grab;         }
+.cursor-grabbing     { cursor: url('/cursors/grabbing.png') 10 14,  grabbing;     }
+.cursor-col-resize   { cursor: url('/cursors/col_resize.png') 16 13,col-resize;   }
+.cursor-row-resize   { cursor: url('/cursors/row_resize.png') 16 13,row-resize;   }
+.cursor-ns-resize    { cursor: url('/cursors/ns_resize.png') 16 13, ns-resize;    }
+.cursor-ew-resize    { cursor: url('/cursors/ew_resize.png') 16 13, ew-resize;    }
+.cursor-nesw-resize  { cursor: url('/cursors/nesw_resize.png') 16 13,nesw-resize; }
+.cursor-nwse-resize  { cursor: url('/cursors/nwse_resize.png') 16 13,nwse-resize; }
+.cursor-zoom-in      { cursor: url('/cursors/zoom_in.png') 9 9,     zoom-in;      }
+.cursor-zoom-out     { cursor: url('/cursors/zoom_out.png') 9 9,    zoom-out;     }
+.cursor-copy         { cursor: url('/cursors/copy.png') 5 5,        copy;         }
+.cursor-alias        { cursor: url('/cursors/alias.png') 5 5,       alias;        }
+
+/* ── Brand primitives (keyed off --brand) ──────────────────────────────────── */
+
+/* Soft brand-colored glow — focus rings, active chips, "alive" accents. */
+.brand-glow {
+  box-shadow: 0 0 12px -2px color-mix(in oklch, var(--brand) 60%, transparent);
+}
+
+/* Inset brand ring + inner glow for a focused region. Render as a
+ * pointer-events-none overlay drawn ON TOP of the region's content so opaque
+ * children (a canvas, a media element) can't paint over the ring's edges. */
+.pane-focus-ring {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--brand) 55%, transparent),
+    inset 0 0 16px -6px color-mix(in oklch, var(--brand) 45%, transparent);
+  transition: box-shadow 0.2s ease;
+}
+
+/* Aurora border — a slow conic-gradient of --brand traced around an element's
+ * 1px edge. Use to signal an element is "alive / working". The @property angle
+ * is animatable; mask-composite shows only the border, not the fill. */
+@property --aurora-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes aurora-spin {
+  to { --aurora-angle: 360deg; }
+}
+.aurora-border {
+  position: relative;
+}
+.aurora-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--aurora-angle),
+    transparent 0%,
+    var(--brand) 16%,
+    transparent 34%,
+    transparent 66%,
+    var(--brand) 84%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: aurora-spin 4s linear infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurora-border::before {
+    animation: none;
+    background: conic-gradient(
+      from 90deg,
+      transparent,
+      var(--brand),
+      transparent 50%
+    );
+  }
+}
+
+/* ── Theme switch crossfade (View Transitions API — see ThemeProvider) ──────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.25s;
+}
