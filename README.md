@@ -108,9 +108,11 @@ nexis-atlas://map?path=/home/me/dev/thing        # open its city on the map
 
 A link only ever *selects* something Atlas already scanned — the path is matched
 against the repo list, never handed to the backend, so no link can make Atlas
-read a directory it would not otherwise have looked at. An unknown path triggers
-one rescan (the usual reason is a repo added since the last one) before it gives
-up. URLs are parsed and validated in Rust before the webview sees them; the
+read a directory it would not otherwise have looked at. A path *inside* a repo
+resolves to that repo (senders often know a working directory long before they
+know which repo contains it), with the innermost match winning so a submodule
+beats its parent. An unknown path triggers one rescan (the usual reason is a
+repo added since the last one) before it gives up. URLs are parsed and validated in Rust before the webview sees them; the
 grammar and its tests live in [`src-tauri/src/links.rs`](src-tauri/src/links.rs).
 
 If Atlas is already running, the link goes to the running copy and raises it,

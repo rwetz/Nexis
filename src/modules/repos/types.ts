@@ -191,9 +191,20 @@ export function displayOrder(
 }
 
 /** Find a repo by a path that came from somewhere else — a deep link, a config
- *  file, another app. Separators and drive-letter case vary between whoever
- *  wrote the path and whoever scanned it, so compare on a normalized form
- *  rather than requiring the two strings to be identical. */
+ *  file, another app.
+ *
+ *  Two kinds of forgiveness, both earned from real senders:
+ *
+ *  Separators and drive-letter case vary between whoever wrote the path and
+ *  whoever scanned it, so the comparison is on a normalized form rather than
+ *  requiring the two strings to be identical.
+ *
+ *  And the path may point *inside* a repo rather than at its root — Nexis, for
+ *  one, knows a terminal's working directory long before it knows which repo
+ *  contains it. So a path under a scanned repo resolves to that repo. The
+ *  longest match wins, which is what makes nested repos (a submodule, a repo
+ *  inside a monorepo) resolve to the innermost one rather than its parent.
+ */
 export function findByPath(
   repos: RepoSummary[],
   path: string,
@@ -201,5 +212,18 @@ export function findByPath(
   const norm = (p: string) =>
     p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
   const want = norm(path);
-  return repos.find((r) => norm(r.path) === want) ?? null;
+
+  let best: RepoSummary | null = null;
+  let bestLen = -1;
+  for (const r of repos) {
+    const root = norm(r.path);
+    // Exact, or `want` sits under `root`. The trailing "/" matters: without it
+    // "/dev/nexis-atlas" would look like it contains "/dev/nexis".
+    if (want !== root && !want.startsWith(root + "/")) continue;
+    if (root.length > bestLen) {
+      best = r;
+      bestLen = root.length;
+    }
+  }
+  return best;
 }
