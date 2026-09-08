@@ -37,9 +37,20 @@ experience is a simulation labelled `sim`.
 
 ## Decision
 
-**Link a prebuilt ONNX Runtime.** `ort = "2.0.0-rc.12"` with its default
-`download-binaries` feature, which fetches a prebuilt ORT at build time — no
-cmake, no vendored C++ toolchain, no per-platform build matrix in this repo.
+**Link a prebuilt ONNX Runtime, CPU-only.** `ort = "2.0.0-rc.12"` with
+`download-binaries`, which fetches a prebuilt ORT at build time — no cmake, no
+vendored C++ toolchain, no per-platform build matrix in this repo.
+
+`default-features = false` drops exactly one thing: `copy-dylibs`. That feature
+copies whatever shared libraries the downloaded ORT ships next to the built
+binary, and on Windows that is `DirectML.dll` — a GPU execution provider the
+panel never requests. It was found by building and looking at what landed in
+`target/`, not by reading the manifest, and it mattered: `tauri build` does not
+bundle a stray sibling DLL, so a dev build and an installed build would have
+differed in what sat next to the binary. The fix for *that* would have been a
+Windows-only path in `bundle.resources`, which breaks the Linux release job.
+CPU-only ORT static-links, so there is nothing to ship on any platform and the
+whole class of problem does not arise.
 
 **Move the release tripwire from 40 MB to 150 MB.** Deliberately well above
 what the binary actually weighs, because the tripwire's job is catching an
@@ -76,15 +87,23 @@ measurement is linked in.**
 
 ## Consequences
 
-- The Windows release binary goes from ~9.5 MiB to tens of MB. This is the
-  single largest thing in the tree and should be the first suspect in any
-  future size investigation.
+- **The Windows release binary goes from ~9.5 MiB to 29.7 MiB** (31,106,048
+  bytes, measured on the v1.27.0 branch). ORT is therefore ~20 MiB of it, and
+  is the single largest thing in the tree — the first suspect in any future
+  size investigation. The 150 MB tripwire leaves roughly the same headroom
+  ratio the old 40 MB one did over 9.5 MiB, which is the point: it is a
+  regression guard, not a target to grow into.
 - `ort` is pinned to a release candidate because 2.0 has no final release.
   Revisit on the first stable tag rather than tracking rcs. Note this is the
   only rc-pinned dependency in `src-tauri/Cargo.toml`.
 - `download-binaries` fetches at **build** time, which makes a clean build
   network-dependent in a way it was not before. CI already has network; an
   offline `cargo build` from a cold cache does not.
+- **There is no GPU path, and adding one is real work rather than a flag.** It
+  means the execution-provider feature, the dylibs it drags in, and per-platform
+  `bundle.resources` config to ship them — which is precisely the support
+  surface the original no-bundled-engine argument was objecting to. If someone
+  wants DirectML/CUDA/CoreML benchmarking, that is the shape of the task.
 - ORT's own license and the licenses of what it pulls now matter to
   `cargo deny`. If `audit.yml` fails on a license after this change, this is
   why.

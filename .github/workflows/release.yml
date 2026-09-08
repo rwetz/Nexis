@@ -86,7 +86,7 @@ jobs:
           $maxBytes = 150 * 1024 * 1024
           Write-Host "nexis.exe = $bytes bytes ($mib MiB); tripwire = 150 MiB"
           if ($bytes -gt $maxBytes) {
-            Write-Error "Binary exceeds the 150 MB tripwire. This ceiling is set well above what Nexis ships with the bundled ONNX Runtime, so crossing it means something went wrong -- a debug artifact, a build-config regression, or a second copy of a runtime -- not that a feature got big. Find the cause before raising this number."
+            Write-Error "Binary exceeds the 150 MB tripwire. Nexis ships at ~30 MiB with the bundled ONNX Runtime, so crossing 150 MiB means something went wrong -- a debug artifact, a build-config regression, or a second copy of a runtime -- not that a feature got big. Find the cause before raising this number."
             exit 1
           }
           Write-Host "OK: under the 150 MB tripwire."

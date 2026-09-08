@@ -24,7 +24,10 @@ import { useAtlasStore } from "@/modules/atlas/repos/store";
 
 const MIN_SCALE = 0.6;
 const MAX_SCALE = 260;
-/** Camera moves are a tween, matching lib/motion.ts `tween.slow`. */
+/** Camera moves are a tween. Longer than any of the `--dur-*` motion
+ *  tokens on purpose: those size a UI element getting out of the way,
+ *  and this is a camera crossing a scene — reusing `--dur-window` here
+ *  would make flying into a repo feel like a popover opening. */
 const FLY_MS = 340;
 
 export function CityCanvas() {
@@ -364,7 +367,10 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
-/** The `tween.slow` curve from lib/motion.ts, as a scalar easing. */
+/** The house `--ease-enter` shape as a scalar easing, for a value the
+ *  canvas has to interpolate itself — CSS custom properties are not
+ *  reachable from a requestAnimationFrame loop. Decelerating, no
+ *  overshoot, matching every panel transition in the app. */
 function easeOutQuint(t: number): number {
   return 1 - Math.pow(1 - t, 5);
 }
