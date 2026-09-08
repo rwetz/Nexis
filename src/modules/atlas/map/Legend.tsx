@@ -1,4 +1,8 @@
-import { useTheme } from "@/modules/theme";
+// Imported from the concrete module, not the `@/modules/theme` barrel: the
+// barrel and ThemeProvider are mutually dependent, so a lazy chunk reaching
+// useTheme through it makes Rollup emit a circular chunk dependency and warn
+// about broken execution order. Same reason the ML plugin avoids its barrel.
+import { useTheme } from "@/modules/theme/ThemeProvider";
 import { useMemo } from "react";
 import { css, langTier, readPalette } from "./palette";
 import { useAtlasStore } from "@/modules/atlas/repos/store";
