@@ -4,6 +4,13 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Added
+- **"Show this repo in Atlas" in the command palette.** [Atlas](https://github.com/rwetz/nexis-atlas) is the view of every repo on the machine at once — a git-status list and an isometric map of the file tree — and it is precisely the view Nexis cannot give you, because Nexis is the view from *inside* one project. The command hands the open workspace over by opening `nexis-atlas://map?path=…`, which Atlas registers.
+  - **A URL, not a subprocess.** Nexis does not probe for an install, spawn anything, or hold a path to a binary that could go stale. Atlas parses and validates the URL on its own side and only ever *selects* a repo it has already scanned, so the link cannot make it read a directory it would not otherwise have looked at. If Atlas is not installed the OS has no handler, `openUrl` rejects, and the palette says so rather than failing silently.
+  - **The path is percent-encoded, not interpolated.** A Windows path is mostly backslashes and frequently contains a space, and `C:\Users\me\My Repo` pasted raw into a query string is not a URL that parses back out. `src/lib/atlas.test.ts` pins the round trip, including paths containing `&`, `#` and `?`, which would otherwise be read as a second parameter or a fragment and silently truncate what Atlas receives.
+  - **Needed a capability change to work at all**: `tauri-plugin-opener`'s `opener:default` permission carries a scope allowing only `mailto:`, `tel:`, `http://` and `https://`, so a custom scheme is rejected before it reaches the OS. `src-tauri/capabilities/default.json` now grants `opener:allow-open-url` scoped to `nexis-atlas://*` — and to nothing else.
+  - It links to Atlas's **map** rather than its list: a repo list is the view you already have two panes away, and the map is the part that is new information.
+
 ## [1.26.0] — 2026-09-07
 
 ### Added

@@ -60,6 +60,8 @@ import {
   type GitHistorySearchHandle,
 } from "@/modules/git-history";
 import { getLaunchDir } from "@/lib/launchDir";
+import { showInAtlas } from "@/lib/atlas";
+import { toast } from "sonner";
 import { useZoom } from "@/lib/useZoom";
 import { FileExplorer, type FileExplorerHandle } from "@/modules/explorer";
 import {
@@ -1405,6 +1407,23 @@ export default function App() {
     [activeId, focusNextPaneInTab, focusNextEditorPane],
   );
 
+  /** Hand the open workspace to Atlas. Sends the workspace root rather than the
+   *  active terminal's cwd — that is the repo you mean, and Atlas resolves a
+   *  subdirectory to its repo anyway. */
+  const showRepoInAtlas = useCallback(() => {
+    if (!explorerRoot) {
+      toast.error("No workspace open", {
+        description: "Open a folder before showing it in Atlas.",
+      });
+      return;
+    }
+    void showInAtlas(explorerRoot).catch(() =>
+      toast.error("Could not open Atlas", {
+        description: "Atlas does not appear to be installed.",
+      }),
+    );
+  }, [explorerRoot]);
+
   const paletteCommands = useMemo<CommandDef[]>(() => [
     { id: "tab.new",             label: "New terminal tab",         category: "Tabs",    action: () => newTab() },
     { id: "tab.close",           label: "Close current tab",        category: "Tabs",    action: () => closeTab(activeId) },
@@ -1415,6 +1434,7 @@ export default function App() {
     { id: "settings.themes",     label: "Open theme settings",      category: "General", action: () => void openSettingsWindow("themes") },
     { id: "settings.shortcuts",  label: "Open keyboard shortcuts",  category: "General", action: () => setShortcutsOpen(true) },
     { id: "window.new",          label: "New window",               category: "General", action: () => void openNewWindow() },
+    { id: "atlas.showRepo",      label: "Show this repo in Atlas",  category: "General", icon: "globe", action: showRepoInAtlas, keywords: ["atlas", "map", "repos", "isometric"] },
     { id: "ai.toggle",           label: "Toggle AI panel",          category: "AI",      action: togglePanelAndFocus },
     { id: "terminal.aiCommand",  label: "AI command search",        category: "AI",      action: () => window.dispatchEvent(new CustomEvent("nexis:terminal-ai-command")), keywords: ["natural language", "generate command"] },
     { id: "view.zoomIn",         label: "Zoom in",                  category: "View",    action: zoomIn },
@@ -1438,7 +1458,7 @@ export default function App() {
     { id: "sidebar.sc",          label: "Show source control",      category: "View",    action: () => persistSidebarView("source-control") },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
-  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView]);
+  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, showRepoInAtlas]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
   // mirroring how the rail hides their views (V2 gating; decision doc in

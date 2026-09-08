@@ -39,6 +39,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[onboarding]] — the first-run flow: preset, tour, Getting Started checklist, and why all of it derives from `enabledPacks`
 - [[web-dev-pack]] — multi-viewport preview, the REST client and its own SSRF-guarded Rust command, the local-only scratchpad tools
 - [[art-pack]] — the SVG playground: icon-scale preview, the in-house optimizer, and why the preview is sanitized
+- [[family-links]] — handing the open workspace to the sibling apps by custom-scheme URL, and the opener scope that gates it
 
 ## Flows (`flows/`)
 

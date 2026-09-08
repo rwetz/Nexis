@@ -32,6 +32,14 @@
     "core:event:allow-listen",
     "core:event:allow-unlisten",
     "opener:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "nexis-atlas://*"
+        }
+      ]
+    },
     "log:default",
     "os:default",
     "store:default",
