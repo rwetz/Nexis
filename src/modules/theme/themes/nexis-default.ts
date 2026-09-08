@@ -10,7 +10,7 @@ export const nexisDefault: Theme = {
   id: "nexis-default",
   name: "Nexis Default",
   description: "The default Nexis look — clean glass over neutral surfaces.",
-  editorTheme: { dark: "atomone", light: "atomone" },
+  editorTheme: { dark: "atomone", light: "github-light" },
   variants: {
     light: {},
     dark: {},

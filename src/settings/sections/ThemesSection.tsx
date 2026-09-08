@@ -7,6 +7,7 @@
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
@@ -15,6 +16,7 @@ import {
   setBackgroundImageId,
   setBackgroundKind,
   setBackgroundOpacity,
+  setRainbowAccent,
 } from "@/modules/settings/store";
 import type { AnimatedBgId } from "@/modules/settings/store";
 import { useTheme } from "@/modules/theme";
@@ -35,6 +37,7 @@ import type { Theme } from "@/modules/theme/types";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useRef, useState } from "react";
 import { SectionHeader } from "../components/SectionHeader";
+import { SettingRow } from "../components/SettingRow";
 
 // ─── Animated background option metadata ─────────────────────────────────────
 
@@ -101,6 +104,7 @@ export function ThemesSection() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const bgInputRef = useRef<HTMLInputElement | null>(null);
 
+  const rainbowAccent = usePreferencesStore((s) => s.rainbowAccent);
   const backgroundKind = usePreferencesStore((s) => s.backgroundKind);
   const backgroundImageId = usePreferencesStore((s) => s.backgroundImageId);
   const backgroundAnimatedId = usePreferencesStore((s) => s.backgroundAnimatedId);
@@ -277,6 +281,17 @@ export function ThemesSection() {
           />
         ) : null}
       </div>
+
+      {/* Only the default theme reads this — every other theme's accent hue is
+        * its own identity — so the row is absent rather than inert elsewhere. */}
+      {themeId === DEFAULT_THEME_ID ? (
+        <SettingRow title="Rainbow hover accent">
+          <Switch
+            checked={rainbowAccent}
+            onCheckedChange={(v) => void setRainbowAccent(v)}
+          />
+        </SettingRow>
+      ) : null}
 
       <div
         className="flex flex-col gap-2"

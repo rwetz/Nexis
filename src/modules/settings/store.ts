@@ -126,6 +126,9 @@ export const DEFAULT_FORMATTERS: Record<FormatterLanguage, FormatterConfig> = {
 export type Preferences = {
   theme: ThemePref;
   themeId: string;
+  /** Rainbow hover accent. Only the Nexis Default theme reads it — every
+   * other theme's accent hue is its own identity. */
+  rainbowAccent: boolean;
   backgroundKind: BackgroundKind;
   backgroundImageId: string | null;
   backgroundAnimatedId: AnimatedBgId | null;
@@ -242,6 +245,7 @@ export type Preferences = {
 const STORE_PATH = "nexis-settings.json";
 const KEY_THEME = "theme";
 const KEY_THEME_ID = "themeId";
+const KEY_RAINBOW_ACCENT = "rainbowAccent";
 const KEY_BG_KIND = "backgroundKind";
 const KEY_BG_IMAGE_ID = "backgroundImageId";
 const KEY_BG_ANIMATED_ID = "backgroundAnimatedId";
@@ -342,6 +346,7 @@ export const TERMINAL_SCROLLBACK_PRESETS = [
 export const DEFAULT_PREFERENCES: Preferences = {
   theme: "system",
   themeId: DEFAULT_THEME_ID,
+  rainbowAccent: true,
   backgroundKind: "none",
   backgroundImageId: null,
   backgroundAnimatedId: null,
@@ -450,6 +455,8 @@ export async function loadPreferences(): Promise<Preferences> {
   return {
     theme: get<ThemePref>(KEY_THEME) ?? DEFAULT_PREFERENCES.theme,
     themeId: get<string>(KEY_THEME_ID) ?? DEFAULT_PREFERENCES.themeId,
+    rainbowAccent:
+      get<boolean>(KEY_RAINBOW_ACCENT) ?? DEFAULT_PREFERENCES.rainbowAccent,
     backgroundKind:
       get<BackgroundKind>(KEY_BG_KIND) ?? DEFAULT_PREFERENCES.backgroundKind,
     backgroundImageId:
@@ -666,6 +673,10 @@ function clampBgOpacity(v: number): number {
 function clampBlur(v: number): number {
   if (!Number.isFinite(v)) return 16;
   return Math.min(64, Math.max(0, Math.round(v)));
+}
+
+export async function setRainbowAccent(value: boolean): Promise<void> {
+  await writePref(KEY_RAINBOW_ACCENT, value);
 }
 
 export async function setBackgroundKind(value: BackgroundKind): Promise<void> {
@@ -1004,6 +1015,7 @@ export async function onPreferencesChange(
   const map: Record<string, PrefKey> = {
     [KEY_THEME]: "theme",
     [KEY_THEME_ID]: "themeId",
+    [KEY_RAINBOW_ACCENT]: "rainbowAccent",
     [KEY_BG_KIND]: "backgroundKind",
     [KEY_BG_IMAGE_ID]: "backgroundImageId",
     [KEY_BG_ANIMATED_ID]: "backgroundAnimatedId",

@@ -155,6 +155,104 @@ THEMES = [
 ]
 
 
+# ---------- the base palette (Nexis Default) ----------
+# Nexis Default is the one theme with no `colors` of its own: ThemeProvider
+# calls clearTheme() for it and globals.css supplies the surfaces, so anything
+# put in `nexis-default.ts` would never be applied. Its terminal palette
+# therefore lives in globals.css — but it is generated *here*, off the same
+# ramp and against the same floors, because the alternative is what was there
+# before: the stock Tailwind hexes, i.e. the most-looked-at surface in a
+# terminal app wearing an off-the-shelf palette.
+#
+# Hue 220 and a 0.32 chroma multiplier match the near-neutral cool surfaces
+# already in globals.css (hue 214-229, chroma 0.004-0.014), so the black and
+# white slots sit on the same grey the app does.
+BASE_HUE, BASE_C_MUL, BASE_ANSI_C = 220.0, 0.32, 0.142
+
+# Read off globals.css. The backgrounds are what the floors are checked
+# against; the brand coral is the default theme's only signature colour, and
+# giving it the cursor makes the caret the one unmistakably Nexis thing on
+# screen instead of another shade of foreground.
+BASE_BG = {"dark": (0.148, 0.004, 228.8), "light": (1.0, 0.0, 0.0)}
+BASE_BRAND = (0.72, 0.15, 35.0)
+
+
+def build_base():
+    out = {}
+    failures = []
+    for mode, dark in (("dark", True), ("light", False)):
+        bg = hex_of(*BASE_BG[mode])
+        ansi = build_ansi(dark, BASE_HUE, BASE_C_MUL, 0.0, BASE_ANSI_C)
+        p = f"nexis-default/{mode}"
+        for i in list(range(1, 7)) + list(range(9, 15)):
+            check(f"{p} ansi[{i}]", contrast(ansi[i], bg), 4.0, failures)
+        check(f"{p} ansi[7]", contrast(ansi[7], bg), 4.5, failures)
+        check(f"{p} ansi[15]", contrast(ansi[15], bg), 7.0, failures)
+        check(f"{p} ansi[8] (dim/comment)", contrast(ansi[8], bg), 2.6, failures)
+        out[mode] = {
+            "bg": bg,
+            "ansi": ansi,
+            "cursor": hex_of(*BASE_BRAND),
+            "selection": rgba(hex_of(*BASE_BRAND), 0.26 if dark else 0.20),
+        }
+    if failures:
+        print("BASE CONTRAST FAILURES:", file=sys.stderr)
+        for f in failures:
+            print("  " + f, file=sys.stderr)
+        sys.exit(1)
+    return out
+
+
+ANSI_VAR_NAMES = [
+    "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white",
+    "bright-black", "bright-red", "bright-green", "bright-yellow",
+    "bright-blue", "bright-magenta", "bright-cyan", "bright-white",
+]
+
+
+def render_base(base):
+    """Print the globals.css block. Not written in place: globals.css is a
+    hand-maintained file and a script that rewrites part of it would be one
+    bad regex away from eating the rest."""
+    print()
+    print("globals.css terminal palette - paste these two blocks:")
+    print()
+    for mode in ("light", "dark"):
+        b = base[mode]
+        sel = ":root" if mode == "light" else ".dark"
+        print(f"  /* {mode} */")
+        print(f"  {sel} {{")
+        print(f'    --terminal-cursor: {b["cursor"]};')
+        print(f'    --terminal-selection: {b["selection"]};')
+        for name, hx in zip(ANSI_VAR_NAMES, b["ansi"]):
+            print(f"    --terminal-ansi-{name}: {hx};")
+        print("  }")
+        print()
+
+
+def build_ansi(dark, base_h, base_c_mul, ansi_shift, ansi_c):
+    """The 16 ANSI slots. Shared by the generated themes and by the base
+    palette in globals.css, so the default theme's terminal sits on the same
+    ramp as the rest of the set rather than on stock library colours."""
+    a = ANSI_DARK if dark else ANSI_LIGHT
+    ansi = []
+    for i in range(16):
+        bright = i >= 8
+        slot = i % 8
+        if slot == 0:
+            ansi.append(hex_of(a["brightBlack"] if bright else a["black"],
+                               0.016 * base_c_mul, base_h))
+        elif slot == 7:
+            ansi.append(hex_of(a["brightWhite"] if bright else a["white"],
+                               0.014 * base_c_mul, base_h))
+        else:
+            h = ANSI_HUES[slot] + ansi_shift
+            L = a["bright"] if bright else a["norm"]
+            C = ansi_c * (1.14 if bright else 1.0)
+            ansi.append(hex_of(L, C, h))
+    return ansi
+
+
 def build_variant(dark, base_h, base_c_mul, acc_h, acc_c, ansi_shift, ansi_c):
     ramp = DARK if dark else LIGHT
     def col(key):
@@ -188,23 +286,7 @@ def build_variant(dark, base_h, base_c_mul, acc_h, acc_c, ansi_shift, ansi_c):
         "radius": "0.5rem",
     }
 
-    a = ANSI_DARK if dark else ANSI_LIGHT
-    ansi = []
-    for i in range(16):
-        bright = i >= 8
-        slot = i % 8
-        if slot == 0:
-            ansi.append(hex_of(a["brightBlack"] if bright else a["black"],
-                               0.016 * base_c_mul, base_h))
-        elif slot == 7:
-            ansi.append(hex_of(a["brightWhite"] if bright else a["white"],
-                               0.014 * base_c_mul, base_h))
-        else:
-            h = ANSI_HUES[slot] + ansi_shift
-            L = a["bright"] if bright else a["norm"]
-            C = ansi_c * (1.14 if bright else 1.0)
-            ansi.append(hex_of(L, C, h))
-
+    ansi = build_ansi(dark, base_h, base_c_mul, ansi_shift, ansi_c)
     terminal = {
         "cursor": prim,
         "cursorAccent": bg,
@@ -340,3 +422,4 @@ def render(data):
 
 if __name__ == "__main__":
     render(main())
+    render_base(build_base())

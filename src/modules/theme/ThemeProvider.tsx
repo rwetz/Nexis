@@ -57,6 +57,8 @@ import {
   listCustomThemes,
   onCustomThemesChange,
 } from "./customThemes";
+import { RainbowDefs } from "./RainbowDefs";
+import { installRainbowAccent } from "./rainbowAccent";
 import { SurfaceLayer } from "./SurfaceLayer";
 import { getBuiltinTheme, getDefaultTheme, migrateThemeId } from "./themes";
 import type { Theme } from "./types";
@@ -112,6 +114,7 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
   const [mode, setModeState] = useState<ThemePref>(() => readFastMode(defaultMode));
   const [themeId, setThemeIdState] = useState<string>(() => readFastThemeId());
   const [customThemes, setCustomThemes] = useState<Theme[]>([]);
+  const [rainbowAccent, setRainbowAccentState] = useState(true);
   const [systemDark, setSystemDark] = useState<boolean>(() =>
     typeof window === "undefined"
       ? true
@@ -125,6 +128,7 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
       const id = migrateThemeId(p.themeId);
       setModeState(p.theme);
       setThemeIdState(id);
+      setRainbowAccentState(p.rainbowAccent);
       writeFastMode(p.theme);
       writeFastThemeId(id);
       // Write the migration back so it happens once, not on every launch.
@@ -138,6 +142,8 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
         const id = migrateThemeId(value);
         setThemeIdState(id);
         writeFastThemeId(id);
+      } else if (key === "rainbowAccent" && typeof value === "boolean") {
+        setRainbowAccentState(value);
       }
     });
     return () => {
@@ -194,6 +200,26 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
     }
   }, [themeId, resolvedMode, customThemes]);
 
+  // Only the default theme has a rainbow accent, and only when the preference
+  // is on. Gating the *install* rather than only the CSS means a disabled
+  // setting costs nothing: no listener, no paint servers, no attributes.
+  const rainbowActive = rainbowAccent && themeId === DEFAULT_THEME_ID;
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!rainbowActive) {
+      root.removeAttribute("data-rainbow-accent");
+      return;
+    }
+    // One flag for every rainbow. The hover gradients need the listener anyway,
+    // but the aurora border is pure CSS, so it needs a signal it can select on.
+    root.setAttribute("data-rainbow-accent", "");
+    const stop = installRainbowAccent();
+    return () => {
+      root.removeAttribute("data-rainbow-accent");
+      stop();
+    };
+  }, [rainbowActive]);
+
   const setMode = useCallback((next: ThemePref) => {
     withViewTransition(() => setModeState(next));
     writeFastMode(next);
@@ -214,6 +240,7 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
   return (
     <ThemeProviderContext.Provider value={value}>
       <SurfaceLayer />
+      {rainbowActive ? <RainbowDefs /> : null}
       {children}
     </ThemeProviderContext.Provider>
   );

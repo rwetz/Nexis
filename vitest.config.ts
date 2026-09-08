@@ -51,6 +51,7 @@ export default defineConfig({
         "src/modules/source-control/lib/secretScan.ts",
         "src/modules/sysmon/braille.ts",
         "src/modules/tabs/lib/mru.ts",
+        "src/modules/theme/rainbowAccent.ts",
         "src/modules/tabs/lib/tabPersistence.ts",
         "src/modules/terminal/lib/ledger.ts",
         "src/modules/terminal/lib/ledgerRetention.ts",
