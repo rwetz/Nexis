@@ -7,6 +7,8 @@ description: ML Lab — the external nexis-ml engine, its detection/spawn bridge
 
 Trains models locally through an **external** tool called `nexis-ml`, which Nexis does not ship: it is detected (venv / PATH / a managed download) and driven over a line-oriented NDJSON protocol. Rust owns the process and batches its output into Tauri events; the frontend owns the store, the charts, and the run browser.
 
+The **AI / ML** preset turns on standard navigation and code tools, AI Extras, Dev Tools, and the ML Lab pack. Under any configuration with the ML Lab pack, its former `ml` rail view is promoted into the titlebar as a singleton `ml-lab` workbench tab; the store remains the single owner of engine, project, and live-run state, so the move creates no second training session.
+
 **The standalone (Rust) engine is the default.** It is a single pinned binary from GitHub releases with no Python involved, and it is the only thing the setup card installs. The Python engine is documented, not automated — `PythonEngineSteps` hands over the commands, because choosing an interpreter and committing to a ~3 GB PyTorch download are not decisions Nexis should make silently. `upgradeToGpu` is the one pip path still driven in-app, and it acts on an environment the user already built.
 
 Two engines answer to the same name and have different feature sets — the Python one (torch, every template, HTML report) and the standalone Rust one (config-only, wgpu, ONNX export). `engineKindFromEnv` tells them apart by the `backend` field only the Rust engine reports; treat `null` as "don't block" and let the engine raise its own error. The product spec lives in `docs/ML_SUITE.md` and `docs/ML_LAB_GUIDE.md` — this note is only the code map.
@@ -18,6 +20,7 @@ Two engines answer to the same name and have different feature sets — the Pyth
 - `src/modules/ml/lib/engine-bridge.ts` — the IPC seam; candidate building, the detection memo, event subscription
 - `src/modules/ml/store.ts` — engine state, the live run, historical runs, compare, serve/playground
 - `src/modules/ml/MlPanel.tsx` — the whole panel (large; setup card, run browser, hyperparams, playground)
+- `src/modules/ml/MlLabStack.tsx` — the full-workspace `ml-lab` tab host; passes the same shared panel and network-tab action into the primary work area
 - `src/modules/ml/NetworkGraph.tsx` — the architecture drawing, canvas; also the `ml-network` tab body via `MlNetworkStack.tsx`
 - `src/modules/ml/lib/protocol.ts` / `series.ts` / `artifacts.ts` — event parsing, metric buffers, on-disk artifacts
 

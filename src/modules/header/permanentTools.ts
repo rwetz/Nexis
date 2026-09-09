@@ -14,7 +14,7 @@ import type { IconName } from "@/components/icon";
 import type { PackId } from "@/lib/packs";
 import type { SidebarViewId } from "@/modules/sidebar/types";
 
-export type PermanentToolId = "svg-playground";
+export type PermanentToolId = "svg-playground" | "ml-lab";
 
 export type PermanentTool = {
   id: PermanentToolId;
@@ -22,6 +22,8 @@ export type PermanentTool = {
   title: string;
   icon: IconName;
   pack: PackId;
+  /** The former sidebar view this titlebar tool replaces. */
+  view: SidebarViewId;
 };
 
 export const PERMANENT_TOOLS: readonly PermanentTool[] = [
@@ -31,6 +33,15 @@ export const PERMANENT_TOOLS: readonly PermanentTool[] = [
     title: "Open SVG Studio",
     icon: "brush",
     pack: "art",
+    view: "svg-playground",
+  },
+  {
+    id: "ml-lab",
+    label: "ML Lab",
+    title: "Open ML Lab",
+    icon: "brain",
+    pack: "ml-lab",
+    view: "ml",
   },
 ];
 
@@ -46,5 +57,5 @@ export function isPermanentToolView(
   view: SidebarViewId,
   enabledPacks: readonly PackId[],
 ): boolean {
-  return visiblePermanentTools(enabledPacks).some((tool) => tool.id === view);
+  return visiblePermanentTools(enabledPacks).some((tool) => tool.view === view);
 }

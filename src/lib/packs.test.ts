@@ -130,6 +130,8 @@ describe("presets", () => {
     // Standard and the first-run choice stops meaning anything.
     expect(PRESETS["web-dev"].packs).toContain("web-dev");
     expect(PRESETS.mobile.packs).toContain("mobile");
+    expect(PRESETS["ai-ml"].packs).toContain("ai-extras");
+    expect(PRESETS["ai-ml"].packs).toContain("ml-lab");
     expect(PRESETS.art.packs).toContain("art");
   });
 

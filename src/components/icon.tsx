@@ -177,6 +177,7 @@ import {
 
 import type { ArtProps } from "@/components/icon-art";
 import {
+  PresetAiMl,
   PresetArt,
   PresetBareBones,
   PresetEverything,
@@ -319,6 +320,7 @@ const REGISTRY = {
   "play": PlayIcon,
   "plugin": PlugIcon,
   "preset-art": PresetArt,
+  "preset-ai-ml": PresetAiMl,
   "preset-bare-bones": PresetBareBones,
   "preset-everything": PresetEverything,
   "preset-mobile": PresetMobile,

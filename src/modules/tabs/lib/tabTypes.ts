@@ -176,6 +176,13 @@ export type MlNetworkTab = {
   projectDir: string;
 };
 
+/** The ML Lab workbench promoted from the sidebar by the AI / ML preset. */
+export type MlLabTab = {
+  id: number;
+  kind: "ml-lab";
+  title: string;
+};
+
 /**
  * The SVG playground detached from the sidebar.
  *
@@ -200,6 +207,7 @@ export type Tab =
   | GitDiffTab
   | GitHistoryTab
   | GitCommitFileDiffTab
+  | MlLabTab
   | MlNetworkTab
   | SvgPlaygroundTab;
 

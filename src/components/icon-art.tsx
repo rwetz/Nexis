@@ -141,6 +141,22 @@ export function PresetMobile(props: ArtProps) {
   );
 }
 
+/** AI / ML: a model node diagram with an input stream and a result. */
+export function PresetAiMl(props: ArtProps) {
+  return (
+    <Art {...props}>
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="12" cy="7" r="2.5" />
+      <circle cx="12" cy="17" r="2.5" />
+      <circle cx="18" cy="12" r="2.5" />
+      <path d="M8.2 10.8 L9.8 8.2" />
+      <path d="M8.2 13.2 L9.8 15.8" />
+      <path d="M14.2 8.2 L15.8 10.8" />
+      <path d="M14.2 15.8 L15.8 13.2" />
+    </Art>
+  );
+}
+
 /** Art: a bezier with its control handles — authoring a curve, not viewing one. */
 export function PresetArt(props: ArtProps) {
   return (

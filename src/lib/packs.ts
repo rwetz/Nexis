@@ -172,6 +172,7 @@ export const PRESET_IDS = [
   "standard",
   "web-dev",
   "mobile",
+  "ai-ml",
   "art",
   "everything",
 ] as const;
@@ -226,6 +227,20 @@ export const PRESETS: Record<PresetId, PresetDef> = {
     blurb: "Standard, plus Expo/React Native runners, logs, and devices.",
     icon: "preset-mobile",
     packs: ["navigation-plus", "code-tools", "dev-tools", "mobile"],
+  },
+  "ai-ml": {
+    id: "ai-ml",
+    label: "AI / ML",
+    blurb:
+      "Standard developer tools, AI workflows, and local model training and benchmarks.",
+    icon: "preset-ai-ml",
+    packs: [
+      "navigation-plus",
+      "code-tools",
+      "ai-extras",
+      "dev-tools",
+      "ml-lab",
+    ],
   },
   // The one preset that does not build on Standard, and deliberately does not
   // build on anything else either. Someone drawing wants files, source control

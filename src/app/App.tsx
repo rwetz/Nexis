@@ -94,6 +94,7 @@ import {
 } from "@/modules/shortcuts";
 import {
   isPluginPanelViewId,
+  isSidebarViewId,
   PackGatePlaceholder,
   PluginPanelSlot,
   SidebarRail,
@@ -204,6 +205,9 @@ const SettingsDialogLazy = lazy(() =>
 const MlPanelLazy = lazy(() =>
   import("@/modules/ml/MlPanel").then((m) => ({ default: m.MlPanel })),
 );
+const MlLabStackLazy = lazy(() =>
+  import("@/modules/ml/MlLabStack").then((m) => ({ default: m.MlLabStack })),
+);
 // Lazy for the same reason as the panel: the network tab pulls in the whole
 // ML graph/artifact reading stack, which nobody who never opens it should pay
 // the parse cost for.
@@ -276,6 +280,7 @@ function MainApp() {
     openGitDiffTab,
     openCommitHistoryTab,
     openCommitFileDiffTab,
+    openMlLabTab,
     openMlNetworkTab,
     openSvgPlaygroundTab,
     closeTab,
@@ -684,6 +689,7 @@ function MainApp() {
   const isGitDiffTab =
     activeTab?.kind === "git-diff" || activeTab?.kind === "git-commit-file";
   const isGitHistoryTab = activeTab?.kind === "git-history";
+  const isMlLabTab = activeTab?.kind === "ml-lab";
   const isMlNetworkTab = activeTab?.kind === "ml-network";
   const isSvgPlaygroundTab = activeTab?.kind === "svg-playground";
 
@@ -1448,6 +1454,7 @@ function MainApp() {
     { id: "webdev.http",         label: "Show HTTP client",         category: "View",    action: () => persistSidebarView("http-client"), pack: "web-dev", keywords: ["rest", "request", "curl", "api"] },
     { id: "webdev.tools",        label: "Show web tools (JSON, JWT, regex, codecs)", category: "View", action: () => persistSidebarView("web-tools"), pack: "web-dev", keywords: ["json", "jwt", "base64", "regex", "url encode", "format"] },
     { id: "art.svgPlayground",   label: "Open the SVG playground",  category: "View",    action: () => { openSvgPlaygroundTab(); }, pack: "art", keywords: ["svg", "icon", "vector", "art"] },
+    { id: "ml.open",             label: "Open ML Lab",              category: "View",    action: () => { openMlLabTab(); }, pack: "ml-lab", keywords: ["model", "training", "inference", "onnx", "benchmark"] },
     { id: "art.palette",         label: "Open the palette",         category: "View",    action: () => persistSidebarView("palette"), pack: "art", keywords: ["colour", "color", "contrast", "wcag", "swatch", "theme"] },
     { id: "art.backdrop",        label: "Open the backdrop generator", category: "View",  action: () => persistSidebarView("backdrop"), pack: "art", keywords: ["wallpaper", "background", "gradient", "waves", "generative"] },
     { id: "art.iconSet",         label: "Open the icon set review", category: "View",    action: () => persistSidebarView("icon-set"), pack: "art", keywords: ["icons", "audit", "consistency", "stroke", "svg"] },
@@ -1461,17 +1468,16 @@ function MainApp() {
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
     { id: "atlas.open",          label: "Show Atlas (every git repo on this machine)", category: "View", action: () => persistSidebarView("atlas"), pack: "dev-tools", keywords: ["repos", "repositories", "map", "isometric", "city", "dirty", "branch", "stash", "scan"] },
     { id: "benchmark.open",      label: "Show Benchmark (compare local models)", category: "View", action: () => persistSidebarView("benchmark"), pack: "ml-lab", keywords: ["onnx", "gguf", "llama.cpp", "throughput", "latency", "tokens per second", "inference", "model"] },
-  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView]);
+  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgPlaygroundTab, openMlLabTab]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
   // mirroring how the rail hides their views (V2 gating; decision doc in
   // docs/vault/decisions/expansion-packs.md).
   const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
-  // SVG Studio is a durable workbench tab whenever its Art pack is enabled,
-  // not a second sidebar surface. Heal an old persisted rail selection when
-  // a preset or Settings → Features promotes it into the titlebar.
+  // Promoted workbenches have one titlebar home, not a second sidebar surface.
+  // Heal old persisted rail selections when Settings → Features promotes them.
   useEffect(() => {
-    if (sidebarView === "svg-playground" && isPermanentToolView(sidebarView, enabledPacks)) {
+    if (isSidebarViewId(sidebarView) && isPermanentToolView(sidebarView, enabledPacks)) {
       persistSidebarView("explorer");
     }
   }, [enabledPacks, persistSidebarView, sidebarView]);
@@ -1851,6 +1857,22 @@ function MainApp() {
     <div className="relative h-full min-h-0">
       <div
         className={cn(
+          "absolute inset-0",
+          !isMlLabTab && "invisible pointer-events-none",
+        )}
+        aria-hidden={!isMlLabTab}
+      >
+        <Suspense fallback={null}>
+          <MlLabStackLazy
+            tabs={tabs}
+            activeId={activeId}
+            workspaceRoot={explorerRoot}
+            onOpenNetworkTab={openMlNetworkTab}
+          />
+        </Suspense>
+      </div>
+      <div
+        className={cn(
           "absolute inset-0 px-3 pt-2 pb-2",
           !isTerminalTab && "invisible pointer-events-none",
         )}
@@ -2035,6 +2057,7 @@ function MainApp() {
             onOpenShortcuts={() => setShortcutsOpen(true)}
             onOpenSettings={() => void openSettingsWindow()}
             onOpenSvgStudio={openSvgPlaygroundTab}
+            onOpenMlLab={openMlLabTab}
             searchTarget={searchTarget}
             searchRef={searchInlineRef}
           />

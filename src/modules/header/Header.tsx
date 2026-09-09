@@ -53,6 +53,7 @@ type Props = {
   onOpenShortcuts: () => void;
   onOpenSettings: () => void;
   onOpenSvgStudio: () => void;
+  onOpenMlLab: () => void;
   searchTarget: SearchTarget;
   searchRef: RefObject<SearchInlineHandle | null>;
 };
@@ -78,6 +79,7 @@ export function Header({
   onOpenShortcuts,
   onOpenSettings,
   onOpenSvgStudio,
+  onOpenMlLab,
   searchTarget,
   searchRef,
 }: Props) {
@@ -225,6 +227,7 @@ export function Header({
         compact={compact}
         onOpenTool={(tool) => {
           if (tool === "svg-playground") onOpenSvgStudio();
+          if (tool === "ml-lab") onOpenMlLab();
         }}
       />
 
