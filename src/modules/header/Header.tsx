@@ -28,6 +28,8 @@ import {
   type SearchInlineHandle,
   type SearchTarget,
 } from "./SearchInline";
+import { PermanentToolShelf } from "./PermanentToolShelf";
+import { ToolLaunchers } from "./ToolLaunchers";
 
 type Props = {
   tabs: Tab[];
@@ -50,6 +52,7 @@ type Props = {
   onNewWindow: () => void;
   onOpenShortcuts: () => void;
   onOpenSettings: () => void;
+  onOpenSvgStudio: () => void;
   searchTarget: SearchTarget;
   searchRef: RefObject<SearchInlineHandle | null>;
 };
@@ -74,6 +77,7 @@ export function Header({
   canSplit,
   onOpenShortcuts,
   onOpenSettings,
+  onOpenSvgStudio,
   searchTarget,
   searchRef,
 }: Props) {
@@ -216,6 +220,15 @@ export function Header({
       </div>
 
       <SearchInline ref={searchRef} target={searchTarget} compact={compact} />
+
+      <PermanentToolShelf
+        compact={compact}
+        onOpenTool={(tool) => {
+          if (tool === "svg-playground") onOpenSvgStudio();
+        }}
+      />
+
+      <ToolLaunchers compact={compact} />
 
       {IS_MAC && (
         <>

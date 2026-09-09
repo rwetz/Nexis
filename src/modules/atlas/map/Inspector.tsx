@@ -6,6 +6,7 @@ import { revealPath } from "@/modules/atlas/repos/api";
 import { useAtlasHost } from "@/modules/atlas/repos/host";
 import type { Block } from "./layout";
 import { loc } from "./layout";
+import { ProjectIntelligence } from "./ProjectIntelligence";
 import { useAtlasStore } from "@/modules/atlas/repos/store";
 import {
   dirtyCount,
@@ -26,13 +27,15 @@ export function Inspector() {
   const subject = hover ?? selected;
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-l border-border/60 bg-card">
-      <div className="flex h-9 shrink-0 items-center border-b border-border/60 px-3">
-        <span className="text-xs font-medium text-muted-foreground">
+    <aside className="nexis-scene-enter flex w-[22.5%] min-w-72 max-w-[28rem] shrink-0 flex-col border-l border-border/60 bg-card/75">
+      <div className="flex h-13 shrink-0 items-center border-b border-border/60 px-4">
+        <span className="text-sm font-medium text-muted-foreground">
           {hover ? "Under cursor" : selected ? "Selected" : "Inspector"}
         </span>
       </div>
-      <div className="nexis-scrollbar min-h-0 flex-1 overflow-y-auto p-3">
+      <div className="nexis-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
+        {city && <ProjectIntelligence city={city} />}
+        {city && subject && <div className="my-3 border-t border-border/60" />}
         {subject ? (
           <BlockDetail block={subject} repoPath={city?.summary.path ?? null} />
         ) : (

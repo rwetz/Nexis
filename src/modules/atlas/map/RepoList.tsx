@@ -22,8 +22,8 @@ export function RepoList() {
   const marked = view === "city" ? activeRepo : selectedPath;
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col border-r border-border/60 bg-card">
-      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border/60 px-3">
+    <aside className="nexis-scene-enter flex w-[18%] min-w-64 max-w-[22rem] shrink-0 flex-col border-r border-border/60 bg-card/75">
+      <div className="flex h-13 shrink-0 items-center gap-2 border-b border-border/60 px-3">
         {view === "city" ? (
           <Button
             variant="ghost"
@@ -35,13 +35,13 @@ export function RepoList() {
             Atlas
           </Button>
         ) : (
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="text-sm font-medium text-muted-foreground">
             {repos.length} repositories
           </span>
         )}
       </div>
 
-      <div className="nexis-scrollbar min-h-0 flex-1 overflow-y-auto py-1">
+      <div className="nexis-scrollbar min-h-0 flex-1 overflow-y-auto py-1.5">
         {repos.map((repo) => (
           <RepoRow
             key={repo.path}
@@ -72,14 +72,14 @@ function RepoRow({
       onClick={onOpen}
       title={repo.path}
       className={cn(
-        "flex w-full flex-col gap-0.5 border-l-2 px-3 py-1.5 text-left transition-colors",
+        "flex w-full flex-col gap-1 border-l-2 px-3 py-3 text-left transition-colors",
         active
-          ? "border-l-[var(--brand)] bg-accent/70"
-          : "border-l-transparent hover:bg-accent/40",
+          ? "border-l-[var(--brand)] bg-accent/80"
+          : "border-l-transparent hover:bg-accent/45",
       )}
     >
       <span className="flex items-center gap-1.5">
-        <span className="truncate text-[13px] font-medium">{repo.name}</span>
+        <span className="truncate text-sm font-semibold">{repo.name}</span>
         {dirty > 0 && (
           <span
             className="size-1.5 shrink-0 rounded-full bg-[var(--brand)]"
@@ -87,14 +87,14 @@ function RepoRow({
           />
         )}
       </span>
-      <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Icon name="git-branch" size="xs" />
         <span className="truncate font-mono">{repo.branch || "—"}</span>
         <span className="ml-auto shrink-0 tabular-nums">
           {formatCount(repo.files)} files
         </span>
       </span>
-      <span className="text-[11px] text-muted-foreground/60">
+      <span className="text-xs text-muted-foreground/65">
         {relativeTime(repo.last_commit?.time ?? null)}
         {repo.ahead > 0 && ` · ↑${repo.ahead}`}
         {repo.behind > 0 && ` · ↓${repo.behind}`}

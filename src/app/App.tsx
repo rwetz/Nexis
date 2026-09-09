@@ -67,6 +67,7 @@ import {
   type SearchInlineHandle,
   type SearchTarget,
 } from "@/modules/header";
+import { isPermanentToolView } from "@/modules/header/permanentTools";
 import { PreviewStack, type PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
 import {
@@ -75,6 +76,8 @@ import {
   setLedgerWorkspaceSource,
 } from "@/modules/terminal/lib/ledger";
 import { openNewWindow } from "@/modules/window/openNewWindow";
+import { ToolWindowShell } from "@/modules/window/ToolWindowShell";
+import { currentToolWindowKind } from "@/modules/window/toolWindow";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
@@ -249,6 +252,13 @@ const BenchmarkPanelLazy = lazy(() =>
 
 
 export default function App() {
+  const toolWindowKind = currentToolWindowKind();
+  if (toolWindowKind) return <ToolWindowShell kind={toolWindowKind} />;
+
+  return <MainApp />;
+}
+
+function MainApp() {
   const {
     tabs,
     activeId,
@@ -1457,6 +1467,14 @@ export default function App() {
   // mirroring how the rail hides their views (V2 gating; decision doc in
   // docs/vault/decisions/expansion-packs.md).
   const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
+  // SVG Studio is a durable workbench tab whenever its Art pack is enabled,
+  // not a second sidebar surface. Heal an old persisted rail selection when
+  // a preset or Settings → Features promotes it into the titlebar.
+  useEffect(() => {
+    if (sidebarView === "svg-playground" && isPermanentToolView(sidebarView, enabledPacks)) {
+      persistSidebarView("explorer");
+    }
+  }, [enabledPacks, persistSidebarView, sidebarView]);
   const visiblePaletteCommands = useMemo(
     () => paletteCommands.filter((c) => packEnabled(c.pack, enabledPacks)),
     [paletteCommands, enabledPacks],
@@ -2016,6 +2034,7 @@ export default function App() {
             }
             onOpenShortcuts={() => setShortcutsOpen(true)}
             onOpenSettings={() => void openSettingsWindow()}
+            onOpenSvgStudio={openSvgPlaygroundTab}
             searchTarget={searchTarget}
             searchRef={searchInlineRef}
           />

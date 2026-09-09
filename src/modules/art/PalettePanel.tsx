@@ -166,18 +166,22 @@ export function PalettePanel({ workspaceRoot }: Props) {
    * button twice does nothing rather than growing duplicates.
    */
   const applyHarmony = (baseHex: string) => {
+    const have = new Set(entries.map((entry) => entry.hex.toLowerCase()));
+    const added = harmony(baseHex, harmonyKind)
+      .filter((hex) => !have.has(hex.toLowerCase()))
+      .map((hex, i) => ({
+        name: `${HARMONY_LABELS[harmonyKind]} ${i + 1}`,
+        hex,
+      }));
+    if (added.length === 0) {
+      say("Those colours are already in the palette");
+      return;
+    }
     setEntries((prev) => {
-      const have = new Set(prev.map((e) => e.hex.toLowerCase()));
-      const added = harmony(baseHex, harmonyKind)
-        .filter((hex) => !have.has(hex.toLowerCase()))
-        .map((hex, i) => ({
-          name: `${HARMONY_LABELS[harmonyKind]} ${i + 1}`,
-          hex,
-        }));
-      if (added.length === 0) say("Those colours are already in the palette");
-      else say(`Added ${added.length} (${HARMONY_LABELS[harmonyKind].toLowerCase()})`);
-      return [...prev, ...added];
+      const existing = new Set(prev.map((entry) => entry.hex.toLowerCase()));
+      return [...prev, ...added.filter((entry) => !existing.has(entry.hex.toLowerCase()))];
     });
+    say(`Added ${added.length} (${HARMONY_LABELS[harmonyKind].toLowerCase()})`);
   };
 
   const copy = async () => {

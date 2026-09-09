@@ -46,15 +46,20 @@ export function AtlasHostProvider({
   host,
   children,
 }: {
-  host: AtlasHost;
+  host: Partial<AtlasHost>;
   children: ReactNode;
 }) {
+  const {
+    openWorkspace = NOOP.openWorkspace,
+    openTerminal = NOOP.openTerminal,
+    openFile = NOOP.openFile,
+  } = host;
   // Memoized on the three callbacks rather than on `host`: App.tsx builds the
   // object inline, so without this every parent render would hand every
   // consumer a new context value.
   const value = useMemo(
-    () => host,
-    [host.openWorkspace, host.openTerminal, host.openFile],
+    () => ({ openWorkspace, openTerminal, openFile }),
+    [openWorkspace, openTerminal, openFile],
   );
   return (
     <AtlasHostContext.Provider value={value}>{children}</AtlasHostContext.Provider>

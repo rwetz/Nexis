@@ -34,6 +34,9 @@ import { useBenchStore } from "@/modules/benchmark/store";
 export function BenchmarkPanel() {
   const init = useBenchStore((s) => s.init);
   const running = useBenchStore((s) => s.running);
+  const models = useBenchStore((s) => s.models);
+  const selectedModelIds = useBenchStore((s) => s.selectedModelIds);
+  const selectedBackendIds = useBenchStore((s) => s.selectedBackendIds);
   const onKeyDown = useScopedKeys();
 
   useEffect(() => {
@@ -42,36 +45,71 @@ export function BenchmarkPanel() {
 
   return (
     <div
-      className="flex h-full flex-col outline-none"
+      className="@container flex h-full flex-col bg-background outline-none"
       tabIndex={-1}
       onKeyDown={onKeyDown}
     >
-      <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border/40 px-2">
-        <span className="text-xs font-medium">Benchmark</span>
-        {running && (
-          <span className="flex items-center gap-1 text-[10px] text-brand">
-            <Icon name="loading" size="xs" className="nexis-spin" />
-            running
-          </span>
-        )}
-        <div className="flex-1" />
+      <header className="shrink-0 border-b border-border/60 bg-card/40 px-4 py-4 @4xl:px-6 @4xl:py-5">
+        <div className="mx-auto flex w-full max-w-[1700px] items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="grid size-9 shrink-0 place-items-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+              <Icon name="activity" size="md" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-medium text-muted-foreground">
+                Local model performance
+              </div>
+              <h1 className="truncate text-base font-semibold tracking-tight @4xl:text-lg">
+                Benchmark workspace
+              </h1>
+            </div>
+          </div>
+          <div className="hidden items-center gap-2 text-xs text-muted-foreground @md:flex">
+            {running ? (
+              <>
+                <Icon name="loading" size="sm" className="nexis-spin text-primary" />
+                <span>Benchmark running</span>
+              </>
+            ) : (
+              <>
+                <span className="font-mono tabular-nums">{selectedModelIds.length}</span>
+                <span>models</span>
+                <span className="text-border">/</span>
+                <span className="font-mono tabular-nums">{selectedBackendIds.length}</span>
+                <span>backends</span>
+              </>
+            )}
+          </div>
+        </div>
       </header>
 
-      {/* Configuration: what to run, on what, how many times. */}
-      <div className="nexis-scrollbar flex shrink-0 flex-col gap-2 overflow-y-auto p-2"
-           style={{ maxHeight: "45%" }}>
-        <ModelLibrary />
-        <BackendSelector />
-        <ConfigPanel />
-      </div>
+      <div className="nexis-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="mx-auto flex w-full max-w-[1700px] flex-col gap-4 p-3 @4xl:gap-5 @4xl:p-6">
+          <section className="flex flex-col gap-3">
+            <div className="flex items-end justify-between gap-3 px-1">
+              <div>
+                <h2 className="text-sm font-semibold">Set up a comparison</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Choose the models, engines, and workload you want to measure.
+                </p>
+              </div>
+              <span className="hidden rounded-full border border-border bg-muted/40 px-2.5 py-1 font-mono text-[10px] text-muted-foreground tabular-nums @2xl:block">
+                {models.length} in library
+              </span>
+            </div>
+            <div className="nexis-stagger grid gap-3 @4xl:grid-cols-[minmax(20rem,1.3fr)_minmax(18rem,1fr)_minmax(18rem,1fr)] @4xl:items-stretch">
+              <ModelLibrary />
+              <BackendSelector />
+              <ConfigPanel />
+            </div>
+          </section>
 
-      <div className="shrink-0 border-y border-border/40 p-2">
-        <RunBar />
-      </div>
+          <RunBar />
 
-      {/* Results take the remainder. */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <ResultsDashboard />
+          <div className="min-h-[18rem] flex-1 overflow-hidden rounded-2xl border border-border/70 bg-card/35 @4xl:min-h-[24rem]">
+            <ResultsDashboard />
+          </div>
+        </div>
       </div>
     </div>
   );

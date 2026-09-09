@@ -42,7 +42,8 @@ The UI labels every result's provenance with a `real` / `sim` badge plus a per-r
 - **`ort` is the only rc-pinned dependency in the tree** and by far the largest thing in the binary. It is the first suspect in any size investigation. Its `download-binaries` feature fetches at *build* time, so a cold offline build now needs network.
 - **ORT is deliberately CPU-only** (`default-features = false`, dropping `copy-dylibs`). The default feature set copies ORT's shipped dylibs next to the binary — on Windows `DirectML.dll`, for an execution provider `onnx.rs` never requests — and `tauri build` does not bundle a stray sibling DLL, so a dev build and an installed build would have differed. Do not re-enable `copy-dylibs` without also solving the per-platform bundling; see [[bundling-onnx-runtime]].
 - **`useFileDrop` listens window-wide** — Tauri has no per-element drag-drop target. It filters by `.onnx`/`.gguf` and only claims what it recognises, and only while the panel is mounted.
-- **The layout is rotated from the standalone app's.** That was a 340px config rail beside a wide results canvas; a sidebar panel is all rail, so config and results stack and the run bar is pinned rather than sitting at the bottom of a scrolling column.
+- **The layout responds to its container.** A narrow sidebar stacks models, engines, workload, run plan, and results; a wide dedicated window makes those three setup areas a single board above the results canvas. Do not use viewport breakpoints here: a narrow panel can live inside a wide Nexis window.
+- **Motion marks benchmark state, not every option.** Setup cards stagger only when the workspace enters, the running plan carries a slow brand scan, and a finished matrix cell gets one arrival flash. The classes are the data-motion primitives from [[icon-and-motion-system]] and are all disabled for reduced-motion users; selection rows and ordinary controls retain their short default transitions.
 
 ## See also
 

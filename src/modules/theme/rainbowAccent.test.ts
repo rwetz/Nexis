@@ -75,7 +75,7 @@ describe("scope", () => {
   });
 });
 
-describe("surface vs glyph", () => {
+describe("glyph vs text", () => {
   it("calls an icon-only button a glyph", () => {
     const root = mount(`<button id="a" class="hover:bg-muted"><svg></svg></button>`);
     expect(rainbowMode(root.querySelector("#a")!)).toBe("glyph");
@@ -88,13 +88,20 @@ describe("surface vs glyph", () => {
     expect(rainbowMode(root.querySelector("#a")!)).toBe("glyph");
   });
 
-  it("calls a labelled button a surface, icon or not", () => {
+  it("gives the glyph priority when a labelled button has an icon", () => {
     const root = mount(`
       <button id="a" class="hover:bg-muted"><svg></svg><span>View onboarding</span></button>
       <button id="b" class="hover:bg-accent">Plain</button>
     `);
-    expect(rainbowMode(root.querySelector("#a")!)).toBe("surface");
-    expect(rainbowMode(root.querySelector("#b")!)).toBe("surface");
+    expect(rainbowMode(root.querySelector("#a")!)).toBe("glyph");
+    expect(rainbowMode(root.querySelector("#b")!)).toBe("text");
+  });
+
+  it("does not mark an empty control", () => {
+    const root = mount(`<button id="a" class="hover:bg-muted"></button>`);
+    const button = root.querySelector("#a")!;
+    expect(rainbowMode(button)).toBe(null);
+    expect(isRainbowTarget(button)).toBe(false);
   });
 
   it("ignores icons and screen-reader text when reading a label", () => {
@@ -177,7 +184,7 @@ describe("install", () => {
     const stop = installRainbowAccent(document);
     const a = root.querySelector<HTMLElement>("#a")!;
     a.dispatchEvent(new Event("focusin", { bubbles: true }));
-    expect(a.dataset.rainbow).toBe("surface");
+    expect(a.dataset.rainbow).toBe("text");
     stop();
   });
 
@@ -188,7 +195,7 @@ describe("install", () => {
     const stop = installRainbowAccent(document);
     const a = root.querySelector<HTMLElement>("#a")!;
     hover(a);
-    expect(a.dataset.rainbow).toBe("surface");
+    expect(a.dataset.rainbow).toBe("text");
     stop();
     expect(a.dataset.rainbow).toBeUndefined();
     expect(a.style.getPropertyValue("--rainbow-angle")).toBe("");

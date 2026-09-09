@@ -183,6 +183,8 @@
   --dur-tap: 90ms; /* toggles, chevrons, hovers — in-place state changes */
   --dur-panel: 140ms; /* collapsibles, popovers, tooltips */
   --dur-window: 200ms; /* dialogs, sheets, anything screen-scale */
+  --dur-scene: 420ms; /* data canvases and completed measurements arriving */
+  --live-cadence: 1600ms; /* the slow scan of an active long-running operation */
 
   /* A DEC VT100 blinked its cursor at roughly this period. Pending and
    * live-status indicators use it so they read as "a terminal is waiting"
@@ -533,6 +535,85 @@ html *::-webkit-scrollbar {
   animation: nexis-collapsible-up var(--dur-tap) var(--ease-exit);
 }
 
+/* ── Data moments ──────────────────────────────────────────────────────────
+ * These effects are deliberately reserved for a scene arriving or a long-lived
+ * operation changing state. They are the places motion can carry information:
+ * an Atlas city assembles, a Benchmark cell lands, and the run plan is visibly
+ * alive. Ordinary buttons retain the compact transition budget above.
+ *
+ * The movement is all opacity/transform except the single run-plan glow. It
+ * stays on the compositor, never asks React to draw frames, and never bounces
+ * past its destination. */
+@keyframes nexis-scene-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes nexis-result-arrival {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+    box-shadow: 0 0 0 color-mix(in oklch, var(--brand) 0%, transparent);
+  }
+  52% {
+    opacity: 1;
+    box-shadow: 0 0 24px -10px color-mix(in oklch, var(--brand) 65%, transparent);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 0 color-mix(in oklch, var(--brand) 0%, transparent);
+  }
+}
+
+@keyframes nexis-run-live {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--brand) 16%, transparent);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1px color-mix(in oklch, var(--brand) 42%, transparent),
+      0 0 22px -13px color-mix(in oklch, var(--brand) 85%, transparent);
+  }
+}
+
+.nexis-scene-enter {
+  animation: nexis-scene-enter var(--dur-scene) var(--ease-enter) both;
+}
+
+.nexis-stagger > * {
+  animation: nexis-scene-enter var(--dur-scene) var(--ease-enter) both;
+}
+.nexis-stagger > :nth-child(2) {
+  animation-delay: 70ms;
+}
+.nexis-stagger > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.nexis-result-arrival {
+  animation: nexis-result-arrival var(--dur-scene) var(--ease-enter) both;
+}
+
+.nexis-run-live {
+  animation: nexis-run-live var(--live-cadence) var(--ease-enter) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nexis-scene-enter,
+  .nexis-stagger > *,
+  .nexis-result-arrival,
+  .nexis-run-live {
+    animation: none;
+  }
+}
+
 /* ── Breakpoint gutter ─────────────────────────────────────────────────────── */
 .cm-breakpoint-gutter {
   width: 16px;
@@ -785,11 +866,11 @@ textarea,
 /* ── Rainbow hover accent (Nexis Default only) ────────────────────────
  * The default theme is the one palette in the set with no signature hue — it is
  * deliberately neutral glass, so its hover highlight was a flat step of grey.
- * Here it lights up instead: a labelled button's surface takes one of four
- * rainbows, an icon-only button's glyph does.
+ * Here it lights up instead: the glyph takes one of four rainbows when a
+ * control has an icon; a text-only control's label does.
  *
  * This file paints; it does not decide. Which controls qualify, which of the
- * four they get, and whether they light the surface or the glyph all come from
+ * four they get, and whether they light the glyph or text all come from
  * `modules/theme/rainbowAccent.ts`, which stamps `data-rainbow` plus three
  * custom properties onto the element on pointer-enter. The reason the choice
  * cannot live here is that it *rotates*: a button shows a different gradient on
@@ -803,42 +884,39 @@ textarea,
  * `html[data-os="linux"]` rule below. Turning the preference off also skips
  * installing the listener, so no element ever carries `data-rainbow` either.
  *
- * The gradient is opaque rather than a tint over the hover colour, which is
- * what makes it bright — and is why a lit surface also carries its own ink
- * colour. White-on-hover text over stops this vivid lands near 3:1; the dark
- * ink puts it back above 5:1. Holding ONE lightness across all seven stops is
- * the other half of that: the hue rotates, the value does not, so there is no
- * bright band for a label to disappear into. */
+ * The gradient lives only inside a glyph or label, never behind one. Holding
+ * ONE lightness across all seven stops keeps the hue moving without producing
+ * a bright band that becomes illegible against the neutral hover surface. */
 :root {
   --accent-rainbow-c: 0.20;
-  --accent-rainbow-l: 0.80;
   --accent-rainbow-glyph-l: 0.58;
-  /* Label and icon colour over a lit surface. Not mode-dependent: the surface
-   * under it is a known bright value in both modes, not the theme background. */
-  --accent-rainbow-ink: oklch(0.16 0.01 250);
 }
 .dark {
   --accent-rainbow-c: 0.22;
-  --accent-rainbow-l: 0.62;
   --accent-rainbow-glyph-l: 0.74;
 }
 
-html[data-rainbow-accent] [data-rainbow="surface"]:is(:hover, :focus-visible) {
+/* Text-only controls keep their normal hover surface. `background-clip: text`
+ * confines the spectrum to the label rather than making the button a colour
+ * field. Controls with an SVG use the glyph rule below instead. */
+html[data-rainbow-accent] [data-rainbow="text"]:is(:hover, :focus-visible) {
   background-image: linear-gradient(
     var(--rainbow-angle, 100deg),
-    oklch(var(--accent-rainbow-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 0)),
-    oklch(var(--accent-rainbow-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 50)),
-    oklch(var(--accent-rainbow-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 100)),
-    oklch(var(--accent-rainbow-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 150)),
-    oklch(var(--accent-rainbow-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 200)),
-    oklch(var(--accent-rainbow-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 250)),
-    oklch(var(--accent-rainbow-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 300))
+    oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 0)),
+    oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 50)),
+    oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 100)),
+    oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 150)),
+    oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 200)),
+    oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 250)),
+    oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 300))
   );
-  color: var(--accent-rainbow-ink);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-/* Icon-only buttons keep their ordinary hover background and light the glyph
- * instead. `--rainbow-paint` is a `url(#…) currentColor` pair, so a missing
+/* Icon-bearing controls keep their ordinary hover background and light the
+ * glyph instead. `--rainbow-paint` is a `url(#…) currentColor` pair, so a missing
  * paint server degrades to the normal icon colour rather than to nothing. */
 html[data-rainbow-accent] [data-rainbow="glyph"]:is(:hover, :focus-visible) svg {
   fill: var(--rainbow-paint, currentColor);

@@ -20,6 +20,7 @@ macOS keeps native decorations (overlay title bar, traffic lights).
 - `src/components/WindowControls.tsx` — custom min/max/close buttons
 - `src/components/WindowResizeEdges.tsx` — Linux-only invisible edge/corner strips that call `startResizeDragging()`; see gotcha below
 - `src/modules/window/openNewWindow.ts` — secondary windows must repeat the platform chrome options; they don't inherit the config-file overrides
+- `src/modules/window/toolWindow.ts` / `ToolWindowShell.tsx` — Atlas and Benchmark are singleton companion windows, opened from the permanent titlebar launchers. The `?tool=` route is validated against a closed union before rendering a focused full-window panel.
 - `src/modules/window/quickTerminal.ts` — the quick-terminal drop-down window (create / toggle / hide); `quickTerminalConfig.ts` holds its pure geometry + accelerator logic, `useQuickTerminal.ts` the hotkey registration and dismiss-on-blur hooks
 
 ## Invariants / gotchas

@@ -59,7 +59,7 @@ import {
   setWordWrap,
   setZoomLevel,
 } from "@/modules/settings/store";
-import { useTheme } from "@/modules/theme";
+import { useTheme } from "@/modules/theme/ThemeProvider";
 import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { invoke } from "@tauri-apps/api/core";

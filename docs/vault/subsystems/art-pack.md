@@ -5,7 +5,7 @@ description: The Art pack's SVG playground — its four panes, the direct-manipu
 
 # Art pack
 
-Six panels. The SVG playground, added 2026-09-03, under the `art` pack (view `svg-playground`). Sidebar host stacks the preview under the code; the expand button detaches it into an `svg-playground` tab that lays out side by side — the same pattern as the ML Lab's network diagram (see [[ml-lab]]), including carrying the collapse control back on the tab.
+Six panels. The SVG playground, added 2026-09-03, under the `art` pack (view `svg-playground`). When Art is enabled, **SVG Studio** is promoted into the top titlebar shelf and opens its reusable `svg-playground` tab directly; it deliberately has no duplicate rail row. This is based on `enabledPacks`, not a persisted preset label, so Art, Everything, and a custom configuration with Art enabled stay in sync. The tab lays its preview beside the code; the older rail host stacks them and survives only to heal an old persisted selection.
 
 The left half is **four tabs over one document**: Source (CodeMirror), Canvas (direct manipulation), Shapes (parametric generators) and Presets (ready-made art). They are tabs, not modes — every pane reads and writes the same `source` string, so a shape can be generated, dragged on the canvas and then hand-tuned in code without any pane owning a copy. The right half (preview, optimize, export) is shared by all four.
 
@@ -140,6 +140,8 @@ Only the root `<svg …>` start tag is searched, and an attribute name must be p
 **Seeding from the live theme is the differentiator.** `applyTheme` puts every colour on the document root as a custom property, so the panel reads the *active* theme: Interface for the UI tokens, Terminal for the sixteen ANSI colours. No standalone palette tool can do this, because none of them know what Aurelian is. Same lever [[icon-and-motion-system]]'s file-tree retint pulls.
 
 **Colours resolve through a one-pixel canvas**, not through a parser of ours. A theme's computed value is whatever its author wrote — hex in one, `oklch(…)` in another — and `color.ts` refuses everything but hex and `rgb()` rather than half-parsing. The browser has a complete CSS Color 4 parser; paint a pixel and read the bytes. `fillStyle` round-tripping looks equivalent and is not: Chromium returns `oklab(…)` for wide-gamut input, so you end up parsing after all. A sentinel fill detects values the browser rejects, so an unresolvable token is dropped rather than reported as black.
+
+Harmony feedback is emitted by the click handler, never from the `setEntries` updater. React may replay an updater, while a toast is an external effect that must fire once.
 
 ### Three decisions not to undo
 

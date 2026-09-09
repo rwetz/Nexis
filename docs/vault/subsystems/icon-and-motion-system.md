@@ -37,7 +37,8 @@ What is new is that catppuccin's art is **retinted onto the active theme** — s
 Tokens live in `:root` in `src/styles/globals.css`:
 
 - `--ease-exit` / `--ease-enter` — asymmetric. Leaving accelerates away, arriving decelerates hard into place. Neither overshoots; nothing in a tool should bounce.
-- `--dur-tap` 90ms / `--dur-panel` 140ms / `--dur-window` 200ms — scaled by how far the element actually travels.
+- `--dur-tap` 90ms / `--dur-panel` 140ms / `--dur-window` 200ms / `--dur-scene` 420ms — scaled by how far the element actually travels. The scene budget is only for a data visualization or completed work arriving; do not use it for a button or menu.
+- `--live-cadence` 1600ms — the deliberately slow scan of a long-running operation, currently Benchmark's run plan.
 - `--blink-cadence` 1060ms — a VT100 cursor's period, for live and pending indicators.
 - `--tick-cadence` 640ms + `--tick-steps` 4 — for indeterminate progress.
 
@@ -49,6 +50,8 @@ Two utility classes replace the stock Tailwind animations on the app's most-seen
 - `.nexis-blink` — live/pending indicators, a near-square wave at caret cadence rather than `animate-pulse`'s sine-eased breathe.
 
 `animate-pulse` deliberately survives on `Skeleton` and on indeterminate progress *bars* — a content placeholder is a different idiom from a status caret, and blinking a large filled surface is visually heavy.
+
+`.nexis-scene-enter`, `.nexis-stagger`, `.nexis-result-arrival`, and `.nexis-run-live` are the opt-in data-motion primitives. They are not general decoration: companion windows and result canvases enter once, setup cards stagger once, a finished benchmark cell gets one accent flash, and a running plan gets a slow live scan. The shared reduced-motion rule disables all four. Canvas scenes cannot consume CSS animation, so Atlas's renderer has the same 420ms budget in `CityCanvas.tsx`; it schedules only the short assembly run and draws the complete city in its first frame under reduced motion.
 
 ## Key files
 

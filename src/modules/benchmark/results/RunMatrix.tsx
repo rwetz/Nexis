@@ -63,6 +63,7 @@ function Cell({
     <div
       className={cn(
         "flex flex-col gap-2 rounded-xl border bg-card p-3 transition-colors",
+        done && "nexis-result-arrival",
         running ? "border-brand/30" : "border-border",
       )}
     >

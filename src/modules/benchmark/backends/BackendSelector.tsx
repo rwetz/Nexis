@@ -19,9 +19,12 @@ export function BackendSelector() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Backends</CardTitle>
+    <Card size="sm" className="rounded-2xl border border-border/70 bg-card/80 shadow-none">
+      <CardHeader className="pb-0">
+        <div>
+          <CardTitle className="text-sm">Engines</CardTitle>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">The runtimes to measure</p>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-1.5">
         {backends.map((b) => (
@@ -64,7 +67,7 @@ function BackendRow({
       className={cn(
         "group flex items-center gap-2 rounded-lg border px-2.5 py-2 transition-colors",
         !disabled && selected
-          ? "border-border bg-muted/60"
+          ? "border-primary/30 bg-primary/5"
           : "border-transparent bg-muted/30 hover:bg-muted",
       )}
     >

@@ -18,6 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { viewEnabled } from "@/lib/packs";
+import { isPermanentToolView } from "@/modules/header/permanentTools";
 import { usePluginRegistry } from "@/lib/plugins/registry";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { visiblePluginPanels } from "./pluginPanels";
@@ -170,7 +171,10 @@ export function SidebarRail({
 
   const visibleItems = [
     ...builtinItems.filter(
-      (i) => isSidebarViewId(i.id) && viewEnabled(i.id, enabledPacks),
+      (i) =>
+        isSidebarViewId(i.id) &&
+        viewEnabled(i.id, enabledPacks) &&
+        !isPermanentToolView(i.id, enabledPacks),
     ),
     ...pluginItems,
   ];

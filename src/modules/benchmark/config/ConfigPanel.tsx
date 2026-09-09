@@ -11,9 +11,12 @@ export function ConfigPanel() {
   const setConfig = useBenchStore((s) => s.setConfig);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Benchmark protocol</CardTitle>
+    <Card size="sm" className="rounded-2xl border border-border/70 bg-card/80 shadow-none">
+      <CardHeader className="pb-0">
+        <div>
+          <CardTitle className="text-sm">Workload</CardTitle>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">A repeatable test protocol</p>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {/* Task segmented control */}
@@ -25,7 +28,7 @@ export function ConfigPanel() {
               className={cn(
                 "rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors",
                 config.task === t
-                  ? "bg-card text-foreground shadow-sm"
+                  ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >

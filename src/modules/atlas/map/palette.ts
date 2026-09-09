@@ -7,11 +7,10 @@
 // keyed on the provider's palette epoch so the probe runs *after* the new
 // variables land on the document.
 //
-// Language colours are a data-viz ramp, not brand: an OKLCH ring with the
-// 15deg–55deg wedge left empty so nothing in the city can be mistaken for the
-// coral `--brand`, which is reserved for working-tree state and selection.
-// Within that ring hues are spread as far apart as the language list allows —
-// telling TypeScript from Rust at a glance is the whole point of the view.
+// Language colours start on a data-viz ramp, then take a controlled tint from
+// the active Nexis theme. The relative hues still distinguish TypeScript from
+// Rust, but the whole city now belongs to Aurelian, Vermillion, or any custom
+// theme rather than carrying a permanent purple personality of its own.
 
 import { resolveCssColor } from "@/styles/tokens";
 
@@ -88,6 +87,23 @@ export function mix(a: Rgb, b: Rgb, t: number): Rgb {
     g: a.g + (b.g - a.g) * t,
     b: a.b + (b.b - a.b) * t,
   };
+}
+
+/**
+ * Keep the language ramp useful while making its overall temperature follow
+ * Nexis. Code receives the strongest tint, support files a gentler one, and
+ * inert assets remain neutral so a screenshot folder cannot become the visual
+ * theme of an entire project.
+ */
+export function tintLanguageForTheme(
+  language: Rgb,
+  brand: Rgb,
+  tier: LangTier,
+  isDark: boolean,
+): Rgb {
+  if (tier === "inert") return language;
+  const tint = tier === "code" ? (isDark ? 0.38 : 0.3) : (isDark ? 0.25 : 0.2);
+  return mix(language, brand, tint);
 }
 
 // Face lighting: sun from the upper left, so the top face is brightest, the
@@ -202,11 +218,13 @@ export function readPalette(isDark: boolean): Palette {
       resolveCssColor(`oklch(${L + lightDelta} ${C * chromaScale} ${hue})`),
       background,
     );
+    const tier = langTier(name);
+    value = tintLanguageForTheme(value, brand, tier, isDark);
     // Assets are pulled toward the plate they stand on, in whichever direction
     // that happens to be. Desaturating alone is not enough — a mid-grey on a
     // dark plate is *brighter* than most of the languages around it, and the
     // eye goes straight back to the screenshots.
-    if (langTier(name) === "inert") value = mix(value, groundColor, 0.45);
+    if (tier === "inert") value = mix(value, groundColor, 0.45);
     langCache.set(name, value);
     return value;
   };

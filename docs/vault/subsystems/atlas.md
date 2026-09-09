@@ -18,6 +18,7 @@ Distinct from [[source-control]] territory: that panel is *this workspace's* rep
 - `src-tauri/src/modules/atlas/scan.rs` — one walk + one `Repository::open` + one status pass per repo, fanned out with rayon
 - `src-tauri/src/modules/atlas/tree.rs` — the per-repo file tree the map drills into
 - `src/modules/atlas/AtlasPanel.tsx` — the panel shell, mode switch, scoped keymap, status line
+- `src/modules/atlas/AtlasWindowActions.tsx` — List/Map, labels, and refresh controls shared by the panel toolbar and the standalone-like companion-window title bar
 - `src/modules/atlas/repos/store.ts` — the shared scan/selection state
 - `src/modules/atlas/repos/host.tsx` — the callbacks Atlas asks Nexis for (open workspace / terminal / file)
 - `src/modules/atlas/map/CityCanvas.tsx`, `iso.ts`, `layout.ts`, `palette.ts` — the isometric renderer
@@ -30,8 +31,12 @@ Distinct from [[source-control]] territory: that panel is *this workspace's* rep
 - **Config lives at `~/.config/nexis/atlas.toml`** (`%APPDATA%\nexis\atlas.toml`), deliberately a separate hand-edited file rather than keys in preferences — see the header comment in `config.rs`. `LEGACY_DIRS` adopts a config written by the standalone Atlas, Imagine, or Dev Dashboard on first open.
 - **`scan_repos` must stay `async` + `heavy()`.** It walks the filesystem for every repo on the machine; sync would stall the Tauri main thread and every queued `pty_write`.
 - **The scan sorts biggest-first in Rust.** `layoutAtlas`'s squarified treemap requires descending weight, and a stable order stops islands hopping between refreshes. The list view sorts its own rows.
-- **The canvas palette is keyed on `paletteEpoch`, not just `themeId`.** Canvas cannot read CSS variables, so `palette.ts` probes computed style via `resolveCssColor`. `themeId` changes during the render that *requests* a theme, while the variables land in an effect — probing on the id alone reads the previous palette and stays wrong. See [[theming]].
+- **The canvas palette is keyed on `paletteEpoch`, not just `themeId`.** Canvas cannot read CSS variables, so `palette.ts` probes computed style via `resolveCssColor`. `themeId` changes during the render that *requests* a theme, while the variables land in an effect — probing on the id alone reads the previous palette and stays wrong. `tintLanguageForTheme` then moves the language ramp toward `--brand` while preserving language separation, so any cross-window theme event visibly redraws an open city. See [[theming]].
+- **A new city assembles once, but interaction stays immediate.** `CityCanvas` rises non-terrace blocks in a short deterministic wave after a new scene is fitted, while the terrain is drawn in full from the first frame. The renderer schedules only those 420ms of frames, then returns to on-demand drawing; it bypasses the effect under `prefers-reduced-motion`. Keep its scalar easing aligned with the house entry curve in [[icon-and-motion-system]].
+- **LOC is measured only in a city view.** The machine-wide scan intentionally stays cheap and records bytes/files; opening one repo builds its tree and counts readable text lines. `projectStats.ts` derives the Inspector's clearly-labelled size signals from that real count, excluding binary and oversized files. Its solo-build, typing, and coffee numbers are perspective, never schedules.
 - **The keymap is scoped to the panel subtree, not `window`.** The standalone app could claim bare `r`/`t`/`v`/`j`/`k` because the whole window was Atlas. Here the terminal is one pane away.
+- **The companion window keeps Atlas's own title-bar controls; the embedded panel keeps its toolbar.** `ToolWindowShell` passes `standalone` to Atlas so controls do not appear twice. The map rails are proportional to their container, matching the standalone composition without hardcoding screen-width breakpoints.
+- **The scoped keymap updates its host ref in an effect.** Do not assign `hostRef.current` during render: React may discard that render while the stable key handler survives.
 - **Deep links are gone.** `nexis-atlas://focus?path=…` had nothing to link to once the two processes became one. If Nexis registers a URL scheme later, the old grammar is in this repo's history under `src-tauri/src/links.rs`.
 
 ## See also

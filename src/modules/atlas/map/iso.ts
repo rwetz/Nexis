@@ -367,6 +367,8 @@ export type RenderOptions = {
   selectedId: number | null;
   /** Directory/plot names on terraces wide enough to hold them. */
   showLabels: boolean;
+  /** 0 → 1 while a new city assembles; `1` is the steady scene. */
+  reveal: number;
 };
 
 type Label = { sx: number; sy: number; text: string; size: number; alpha: number };
@@ -401,7 +403,13 @@ export function renderScene(
   const margin = 64;
 
   for (const b of prepared) {
-    const top = b.y + b.h;
+    // Terraces form the complete ground plane immediately. Buildings then
+    // rise from it in a small deterministic wave, so a large city feels like
+    // it is being assembled instead of fading in as a flat screenshot.
+    const grow = b.terrace
+      ? 1
+      : easeOutQuint(clamp01((opts.reveal - (b.id % 12) * 0.018) / 0.78));
+    const top = b.y + b.h * grow;
     const a = screen(cam, vp, isoX(b.rx, b.rz), isoY(b.rx, b.rz, top));
     const right = screen(
       cam,
@@ -541,7 +549,7 @@ export function renderScene(
         sy: (a.sy + near.sy) / 2,
         text: b.label,
         size: Math.max(9, Math.min(14, wide / 9)),
-        alpha: Math.min(0.9, 0.35 + wide / 400) * (1 - b.dim * 0.75),
+        alpha: Math.min(0.9, 0.35 + wide / 400) * (1 - b.dim * 0.75) * opts.reveal,
       });
     }
     // Whatever the pointer is on says its own name, however deep it sits.
@@ -551,7 +559,7 @@ export function renderScene(
         sy: Math.min(a.sy, near.sy) - 9,
         text: b.label,
         size: 12,
-        alpha: 1,
+        alpha: opts.reveal,
       });
     }
   }
@@ -570,6 +578,15 @@ function fillPoly(ctx: CanvasRenderingContext2D, pts: Point[], color: string): v
   ctx.closePath();
   ctx.fillStyle = color;
   ctx.fill();
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+/** The CSS house arrival curve in scalar form for the canvas renderer. */
+function easeOutQuint(value: number): number {
+  return 1 - Math.pow(1 - value, 5);
 }
 
 function strokePoly(ctx: CanvasRenderingContext2D, pts: Point[]): void {

@@ -33,6 +33,10 @@ const MAX_SCALE = 260;
  *  and this is a camera crossing a scene — reusing `--dur-window` here
  *  would make flying into a repo feel like a popover opening. */
 const FLY_MS = 340;
+/** A new city does more than arrive: its towers assemble from their terraces.
+ * It is intentionally scene-scale rather than UI-token scale, and reduced
+ * motion users receive the complete city in its first frame. */
+const SCENE_REVEAL_MS = 420;
 
 export function CityCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -64,6 +68,7 @@ export function CityCanvas() {
   const vp = useRef<Viewport>({ w: 1, h: 1 });
   const preparedRef = useRef<Prepared[]>([]);
   const frame = useRef<number | null>(null);
+  const sceneReveal = useRef<number | null>(null);
   const fly = useRef<{ from: Camera; to: Camera; start: number } | null>(null);
   const drag = useRef<{ x: number; y: number; tx: number; tz: number } | null>(null);
 
@@ -75,12 +80,21 @@ export function CityCanvas() {
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
 
+    let reveal = 1;
+    if (sceneReveal.current !== null) {
+      const elapsed = performance.now() - sceneReveal.current;
+      reveal = easeOutQuint(Math.min(1, elapsed / SCENE_REVEAL_MS));
+      if (reveal < 1) frame.current = requestAnimationFrame(draw);
+      else sceneReveal.current = null;
+    }
+
     const { hover, selectedBlock: selected } = useAtlasStore.getState();
     renderScene(ctx, preparedRef.current, scene, cam.current, vp.current, {
       palette,
       hoverId: hover?.id ?? null,
       selectedId: selected?.id ?? null,
       showLabels,
+      reveal,
     });
   }, [scene, palette, showLabels]);
 
@@ -160,11 +174,21 @@ export function CityCanvas() {
   // Fit on every new scene and whenever something asks for it.
   useEffect(() => {
     stopFly();
+    sceneReveal.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? null
+      : performance.now();
     cam.current = fitCamera(scene, vp.current, cam.current.rot);
     preparedRef.current = prepare(scene, cam.current.rot);
     schedule();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitNonce, scene]);
+
+  useEffect(
+    () => () => {
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
 
   // ── pointer ──────────────────────────────────────────────────────────────
 

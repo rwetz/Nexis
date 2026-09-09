@@ -1,5 +1,5 @@
 import { Icon } from "@/components/icon";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { pickModels } from "@/modules/benchmark/lib/api";
 import { cn } from "@/lib/utils";
@@ -29,28 +29,36 @@ export function ModelLibrary() {
   };
 
   return (
-    <Card className={cn("min-h-0", dragging && "pane-focus-ring")}>
-      <CardHeader>
-        <CardTitle>
-          Models{" "}
-          <span className="ml-1 text-muted-foreground/60">{models.length}</span>
-        </CardTitle>
-        <Button variant="ghost" size="icon-xs" onClick={onAdd} aria-label="Add models">
-          <Icon name="add" size="sm" />
-        </Button>
+    <Card
+      size="sm"
+      className={cn(
+        "min-h-0 rounded-2xl border border-border/70 bg-card/80 shadow-none",
+        dragging && "pane-focus-ring",
+      )}
+    >
+      <CardHeader className="pb-0">
+        <div>
+          <CardTitle className="text-sm">Models</CardTitle>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">The files to compare</p>
+        </div>
+        <CardAction>
+          <Button variant="ghost" size="icon-xs" onClick={onAdd} aria-label="Add models">
+            <Icon name="add" size="sm" />
+          </Button>
+        </CardAction>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-col gap-1.5">
         {models.length === 0 ? (
           <button
             onClick={onAdd}
             className={cn(
-              "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border px-4 py-8 text-center transition-colors hover:border-brand/50 hover:bg-brand/5",
+              "flex min-h-32 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-5 text-center transition-colors hover:border-primary/50 hover:bg-primary/5",
               dragging && "border-brand bg-brand/10",
             )}
           >
-            <Icon name="folder-open" size="lg" className="text-muted-foreground" />
-            <div className="text-sm font-medium">Drop ONNX / GGUF models</div>
-            <div className="text-xs text-muted-foreground">or click to browse</div>
+            <Icon name="folder-open" size="lg" className="text-primary/75" />
+            <div className="text-sm font-medium">Add a model to begin</div>
+            <div className="text-xs text-muted-foreground">Drop ONNX or GGUF files, or browse.</div>
           </button>
         ) : (
           <div className="-mr-1.5 flex max-h-[34vh] flex-col gap-1.5 overflow-y-auto pr-1.5 nexis-scrollbar">
@@ -86,7 +94,7 @@ function ModelRow({
       className={cn(
         "group flex items-center gap-2.5 rounded-lg border px-2.5 py-2 transition-colors",
         selected
-          ? "border-brand/40 bg-brand/5"
+          ? "border-primary/40 bg-primary/5"
           : "border-transparent bg-muted/40 hover:bg-muted",
       )}
     >
@@ -96,7 +104,7 @@ function ModelRow({
         onClick={onToggle}
         className={cn(
           "grid size-4 shrink-0 place-items-center rounded-[5px] border transition-colors",
-          selected ? "border-brand bg-brand text-brand-foreground" : "border-border bg-background",
+          selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background",
         )}
       >
         {selected && (
@@ -142,7 +150,7 @@ function ModelRow({
         size="icon-xs"
         onClick={onRemove}
         aria-label="Remove model"
-        className="opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+        className="opacity-60 transition-opacity hover:opacity-100 hover:text-destructive focus-visible:opacity-100"
       >
         <Icon name="delete" size="sm" />
       </Button>

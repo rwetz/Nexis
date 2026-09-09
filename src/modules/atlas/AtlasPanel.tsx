@@ -23,14 +23,14 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { AtlasWindowActions } from "@/modules/atlas/AtlasWindowActions";
 import { DetailPanel } from "@/modules/atlas/list/DetailPanel";
 import { RepoTable } from "@/modules/atlas/list/RepoTable";
 import { CityCanvas } from "@/modules/atlas/map/CityCanvas";
 import { Inspector } from "@/modules/atlas/map/Inspector";
 import { Legend } from "@/modules/atlas/map/Legend";
+import { projectStats } from "@/modules/atlas/map/projectStats";
 import { RepoList } from "@/modules/atlas/map/RepoList";
 import { configPath } from "@/modules/atlas/repos/api";
 import {
@@ -38,20 +38,20 @@ import {
   useAtlasHost,
   type AtlasHost,
 } from "@/modules/atlas/repos/host";
-import { useAtlasStore, type Mode } from "@/modules/atlas/repos/store";
+import { useAtlasStore } from "@/modules/atlas/repos/store";
 import { formatCount } from "@/modules/atlas/repos/types";
 
-export type AtlasPanelProps = AtlasHost;
+export type AtlasPanelProps = Partial<AtlasHost> & { standalone?: boolean };
 
-export function AtlasPanel(props: AtlasPanelProps) {
+export function AtlasPanel({ standalone = false, ...host }: AtlasPanelProps = {}) {
   return (
-    <AtlasHostProvider host={props}>
-      <Shell />
+    <AtlasHostProvider host={host}>
+      <Shell standalone={standalone} />
     </AtlasHostProvider>
   );
 }
 
-function Shell() {
+function Shell({ standalone }: { standalone: boolean }) {
   const refresh = useAtlasStore((s) => s.refresh);
   const mode = useAtlasStore((s) => s.mode);
   const repos = useAtlasStore((s) => s.repos);
@@ -71,8 +71,8 @@ function Shell() {
       tabIndex={-1}
       onKeyDown={onKeyDown}
     >
-      <Toolbar />
-      <div className="flex min-h-0 flex-1">
+      {!standalone && <Toolbar />}
+      <div className="flex min-h-0 flex-1 bg-background">
         {mode === "map" && hasRepos && <RepoList />}
         <Stage />
         {mode === "map" && hasRepos && <Inspector />}
@@ -84,17 +84,12 @@ function Shell() {
 }
 
 function Toolbar() {
-  const scanning = useAtlasStore((s) => s.scanning);
-  const refresh = useAtlasStore((s) => s.refresh);
-  const showLabels = useAtlasStore((s) => s.showLabels);
-  const toggleLabels = useAtlasStore((s) => s.toggleLabels);
-  const mode = useAtlasStore((s) => s.mode);
   const mapView = useAtlasStore((s) => s.mapView);
   const city = useAtlasStore((s) => s.city);
   const backToAtlas = useAtlasStore((s) => s.backToAtlas);
 
   return (
-    <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border/40 px-2">
+    <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border/60 bg-card/60 px-3">
       <button
         type="button"
         onClick={backToAtlas}
@@ -102,7 +97,7 @@ function Toolbar() {
       >
         Atlas
       </button>
-      {mode === "map" && mapView === "city" && city && (
+      {mapView === "city" && city && (
         <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
           <span aria-hidden>/</span>
           <span className="truncate text-foreground">{city.summary.name}</span>
@@ -111,70 +106,8 @@ function Toolbar() {
 
       <div className="flex-1" />
 
-      <ModeSwitch />
-
-      {mode === "map" && (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Toggle labels"
-          title="Toggle labels (l)"
-          onClick={toggleLabels}
-          className={showLabels ? undefined : "text-muted-foreground/50"}
-        >
-          <Icon name="text" size="sm" />
-        </Button>
-      )}
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label="Rescan repositories"
-        title="Rescan (r)"
-        disabled={scanning}
-        onClick={() => void refresh()}
-      >
-        <Icon name="refresh" size="sm" className={scanning ? "nexis-spin" : undefined} />
-      </Button>
+      <AtlasWindowActions />
     </header>
-  );
-}
-
-/** The two views of one scan. A segmented control rather than a tab strip:
- *  these are two ways of looking at the same thing, not two places to be. */
-function ModeSwitch() {
-  const mode = useAtlasStore((s) => s.mode);
-  const setMode = useAtlasStore((s) => s.setMode);
-
-  const options = [
-    { id: "list" as Mode, label: "List", icon: "layout-left" as const },
-    { id: "map" as Mode, label: "Map", icon: "globe" as const },
-  ];
-
-  return (
-    <div
-      role="group"
-      aria-label="View"
-      className="flex items-center gap-0.5 rounded-lg border border-border/60 bg-background/60 p-0.5"
-    >
-      {options.map((o) => (
-        <button
-          key={o.id}
-          type="button"
-          aria-pressed={mode === o.id}
-          title={`${o.label} view (v)`}
-          onClick={() => setMode(o.id)}
-          className={cn(
-            "flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] transition-colors",
-            mode === o.id
-              ? "bg-accent text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          <Icon name={o.icon} size="xs" active={mode === o.id} />
-          {o.label}
-        </button>
-      ))}
-    </div>
   );
 }
 
@@ -187,11 +120,32 @@ function Stage() {
   if (mode === "list") return <RepoTable />;
 
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1">
+    <div className="nexis-scene-enter relative flex min-h-0 min-w-0 flex-1">
       <CityCanvas />
+      <CityLocReadout />
       <Legend />
       <CityLoading />
       <Incomplete />
+    </div>
+  );
+}
+
+/** A persistent, at-a-glance LOC reading while walking a project's city. */
+function CityLocReadout() {
+  const mapView = useAtlasStore((s) => s.mapView);
+  const city = useAtlasStore((s) => s.city);
+  if (mapView !== "city" || !city) return null;
+
+  const stats = projectStats(city.root);
+  return (
+    <div className="nexis-scene-enter pointer-events-none absolute top-3 left-3 rounded-xl border border-primary/25 bg-card/90 px-3 py-2.5 shadow-sm backdrop-blur">
+      <div className="text-[10px] font-medium text-muted-foreground">Measured source lines</div>
+      <div className="mt-0.5 font-mono text-xl font-semibold text-primary tabular-nums">
+        {formatCount(stats.lines)} LOC
+      </div>
+      <div className="mt-0.5 text-[10px] text-muted-foreground">
+        {formatCount(stats.codeFiles)} readable files
+      </div>
     </div>
   );
 }
@@ -336,8 +290,11 @@ function StatusLine() {
  * bare letter belongs to whatever has focus.
  */
 function useScopedKeys() {
+  const host = useAtlasHost();
   const hostRef = useRef<AtlasHost | null>(null);
-  hostRef.current = useAtlasHost();
+  useEffect(() => {
+    hostRef.current = host;
+  }, [host]);
 
   return useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;

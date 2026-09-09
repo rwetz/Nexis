@@ -19,7 +19,7 @@ import {
   setRainbowAccent,
 } from "@/modules/settings/store";
 import type { AnimatedBgId } from "@/modules/settings/store";
-import { useTheme } from "@/modules/theme";
+import { useTheme } from "@/modules/theme/ThemeProvider";
 import {
   deleteBgImage,
   importBgImageFromFile,
@@ -285,7 +285,7 @@ export function ThemesSection() {
       {/* Only the default theme reads this — every other theme's accent hue is
         * its own identity — so the row is absent rather than inert elsewhere. */}
       {themeId === DEFAULT_THEME_ID ? (
-        <SettingRow title="Rainbow hover accent">
+        <SettingRow title="Rainbow icon and text accent">
           <Switch
             checked={rainbowAccent}
             onCheckedChange={(v) => void setRainbowAccent(v)}

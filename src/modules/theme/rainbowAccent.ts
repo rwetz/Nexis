@@ -31,14 +31,14 @@
  * menu items (`[role="menuitem"]`), options and tree items are excluded by the
  * first half — they are the bulk of what made the first version too much.
  *
- * ## Surface or glyph
- * An icon-only button paints the **glyph** and leaves its background alone; a
- * labelled button paints the **surface** and leaves its glyph alone. One idea
- * either way — the hover colours whatever part of the control carries the
- * meaning — and it keeps a rainbow from ever landing behind a rainbow.
+ * ## Glyph or text
+ * A control with an SVG paints the **glyph** — even when it also has a label.
+ * A text-only control paints its **text**. Its ordinary neutral hover surface
+ * always stays in place, which keeps the spectrum as a small signal rather
+ * than turning every eligible button into a billboard.
  */
 
-export type RainbowMode = "surface" | "glyph";
+export type RainbowMode = "glyph" | "text" | null;
 
 export type RainbowVariant = {
   /** CSS gradient angle, in degrees (0 = up, 90 = right). */
@@ -76,7 +76,7 @@ const NEUTRAL_HOVER = /(?:^|\s)(?:hover|group-hover|focus):bg-(?:accent|muted)(?
 export function isRainbowTarget(el: Element): boolean {
   if (!el.matches(CANDIDATE)) return false;
   const cls = el.getAttribute("class");
-  return cls !== null && NEUTRAL_HOVER.test(cls);
+  return cls !== null && NEUTRAL_HOVER.test(cls) && rainbowMode(el) !== null;
 }
 
 /**
@@ -100,13 +100,14 @@ export function visibleLabel(el: Element): string {
 }
 
 export function rainbowMode(el: Element): RainbowMode {
-  return el.querySelector("svg") !== null && visibleLabel(el) === ""
-    ? "glyph"
-    : "surface";
+  if (el.querySelector("svg") !== null) return "glyph";
+  return visibleLabel(el) === "" ? null : "text";
 }
 
 /** Stamp one variant onto an element. Exported for the test suite. */
 export function applyRainbow(el: HTMLElement, index: number): void {
+  const mode = rainbowMode(el);
+  if (mode === null) return;
   const v = RAINBOW_VARIANTS[index % RAINBOW_VARIANTS.length];
   el.style.setProperty("--rainbow-angle", `${v.angle}deg`);
   el.style.setProperty("--rainbow-hue", String(v.hue));
@@ -117,7 +118,7 @@ export function applyRainbow(el: HTMLElement, index: number): void {
     "--rainbow-paint",
     `url(#${RAINBOW_GRADIENT_ID_PREFIX}${index % RAINBOW_VARIANTS.length}) currentColor`,
   );
-  el.dataset.rainbow = rainbowMode(el);
+  el.dataset.rainbow = mode;
 }
 
 export function clearRainbow(el: HTMLElement): void {

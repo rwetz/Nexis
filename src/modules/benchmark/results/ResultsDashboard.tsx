@@ -38,7 +38,7 @@ export function ResultsDashboard() {
   const total = run.matrix.length;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="nexis-scene-enter flex min-h-0 flex-1 flex-col">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-5 py-3">
         <div className="flex items-center gap-1 overflow-x-auto">
@@ -199,17 +199,51 @@ function EmptyState() {
   // second brand sitting inside the first, so the mark is gone and the copy is
   // rewritten for a panel that sits below its controls rather than beside them.
   return (
-    <div className="flex min-h-0 flex-1 items-center justify-center p-6">
-      <div className="flex max-w-xs flex-col items-center gap-3 text-center">
-        <Icon name="activity" size="xl" className="text-muted-foreground/60" />
-        <div>
-          <h2 className="text-sm font-semibold tracking-tight">Ready to benchmark</h2>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Pick models and backends above, set the protocol, then hit{" "}
-            <span className="font-medium text-foreground">Run benchmark</span>. Results
-            stream in live — throughput, latency, memory, and accuracy, side by side.
+    <div className="flex min-h-0 flex-1 items-center justify-center p-5 @4xl:p-8">
+      <div className="nexis-scene-enter w-full max-w-2xl">
+        <div className="mx-auto mb-5 grid size-11 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+          <Icon name="activity" size="lg" />
+        </div>
+        <div className="text-center">
+          <p className="text-xs font-medium text-muted-foreground">
+            Results canvas
+          </p>
+          <h2 className="mt-1 text-base font-semibold tracking-tight">Your comparison will land here</h2>
+          <p className="mx-auto mt-1.5 max-w-md text-xs leading-relaxed text-muted-foreground">
+            Add models, choose the engines that can run them, then start the benchmark. Live
+            throughput, latency, memory, and accuracy will appear as each cell finishes.
           </p>
         </div>
+        <div className="nexis-stagger mt-6 grid gap-2.5 @2xl:grid-cols-3">
+          <EmptyStep icon="folder-open" step="01" title="Add models" detail="ONNX or GGUF" />
+          <EmptyStep icon="cpu" step="02" title="Choose engines" detail="Compatible runtimes" />
+          <EmptyStep icon="play" step="03" title="Run comparison" detail="Results stream live" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyStep({
+  icon,
+  step,
+  title,
+  detail,
+}: {
+  icon: "folder-open" | "cpu" | "play";
+  step: string;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-background/55 px-3 py-3 text-left">
+      <Icon name={icon} size="sm" className="text-primary" />
+      <div className="min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-[10px] text-primary/80">{step}</span>
+          <span className="text-xs font-medium">{title}</span>
+        </div>
+        <p className="mt-0.5 text-[10px] text-muted-foreground">{detail}</p>
       </div>
     </div>
   );

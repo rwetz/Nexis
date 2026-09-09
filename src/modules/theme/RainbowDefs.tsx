@@ -14,8 +14,8 @@ import {
  * The four rainbows as SVG paint servers, so an icon *glyph* can be filled with
  * one. CSS gradients cannot paint an SVG path — `fill` takes a colour or a
  * `url()` reference — so the same four gradients exist twice: once as a
- * `linear-gradient()` in `globals.css` for button surfaces, and once here for
- * glyphs. The duplication is held to the direction and hue only; both read the
+ * `linear-gradient()` in `globals.css` for text, and once here for glyphs.
+ * The duplication is held to the direction and hue only; both read the
  * *same* `--accent-rainbow-*` tokens for lightness and chroma, so a change to
  * the palette moves both.
  *
