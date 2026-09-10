@@ -9,6 +9,7 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 - **Atlas no longer turns dark themes into a blue city.** WebKit can preserve an OKLCH value when serializing a computed CSS colour; Atlas's canvas parser then mistook the OKLCH lightness, chroma, and hue for RGB channels, making a neutral dark background such as `oklch(0.148 0.004 228.8)` render as intense blue. The shared CSS colour resolver now round-trips every computed token through one canvas pixel, whose bytes are always sRGB, before Atlas or any other canvas consumer reads it.
 
 ### Added
+- **ML Lab's text generator can now be created as your own local GPT-style model.** Pick starter, balanced, or ambitious before creating a project; Nexis writes the matching context window, model width, attention heads, layer count, and training budget into the newly scaffolded `train.toml`. These are intentionally small character models for learning and focused corpora, not a misleading “build ChatGPT” button, and every generated setting stays editable before the first run.
 - **ML Lab can now start from a real training goal, not only a raw template.** Churn risk, lead scoring, demand forecast, photo sorting, a tiny writer, and custom research quick starts choose the compatible engine template, a useful project name, and a plainly editable training brief. The optional “what should this model help with?” answer is saved as `PROJECT.md` beside `train.toml`, so the reason for a model survives after the run details have moved on.
 
 ## [1.27.0] — 2026-09-09

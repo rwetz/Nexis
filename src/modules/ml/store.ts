@@ -73,7 +73,9 @@ import {
 import { appendPoint, createSeriesMap, type Series } from "./lib/series";
 import { readRunMeta, writeRunMeta, type RunMeta } from "./lib/notes";
 import { readTextFile, type ReadResult } from "./lib/fs";
-import { writeProjectBrief } from "./lib/config";
+import { readTrainToml, writeProjectBrief, writeTrainToml } from "./lib/config";
+import { tomlSet } from "./lib/toml-edit";
+import type { CreationOverride } from "./lib/model-blueprint";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 
 type DirEntry = {
@@ -312,6 +314,7 @@ type MlStore = {
     dir: string;
     autoTrain: boolean;
     purpose?: string;
+    overrides?: CreationOverride[];
   } | null;
   /** Why the last "Create & train" didn't start — shown on the create card. */
   createError: string | null;
@@ -380,6 +383,7 @@ type MlStore = {
     name: string,
     autoTrain: boolean,
     purpose?: string,
+    overrides?: CreationOverride[],
   ) => Promise<void>;
   startTrain: (projectDir: string) => Promise<void>;
   cancelActive: () => Promise<void>;
@@ -791,7 +795,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     void get().refreshRuns(dir);
   },
 
-  async createProject(workspaceRoot, template, name, autoTrain, purpose) {
+  async createProject(workspaceRoot, template, name, autoTrain, purpose, overrides) {
     const { engineExe, engineKind, pendingCreate } = get();
     if (pendingCreate) return; // already creating one
     // Surface why nothing would happen, instead of silently returning.
@@ -832,6 +836,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
           dir: `${workspaceRoot}/${clean}`,
           autoTrain,
           purpose,
+          overrides,
         },
       });
     } catch (err) {
@@ -1495,7 +1500,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
 
     // project scaffold finished → select it (and maybe start training)
     if (payload.sid === pendingCreate?.sid) {
-      const { workspaceRoot, dir, autoTrain, purpose } = pendingCreate;
+      const { workspaceRoot, dir, autoTrain, purpose, overrides = [] } = pendingCreate;
       set({ pendingCreate: null });
       if (payload.code === 0) {
         void get()
@@ -1503,8 +1508,18 @@ export const useMlStore = create<MlStore>((set, get) => ({
           .then(async () => {
             try {
               await writeProjectBrief(dir, purpose ?? "");
+              const config = await readTrainToml(dir);
+              if (config && overrides.length > 0) {
+                await writeTrainToml(
+                  dir,
+                  overrides.reduce(
+                    (next, override) => tomlSet(next, override.section, override.key, override.value),
+                    config,
+                  ),
+                );
+              }
             } catch (err) {
-              set((s) => ({ logs: pushLog(s.logs, `couldn't save training brief: ${String(err)}`) }));
+              set((s) => ({ logs: pushLog(s.logs, `couldn't save model setup: ${String(err)}`) }));
             }
             get().selectProject(dir);
             if (autoTrain) void get().startTrain(dir);

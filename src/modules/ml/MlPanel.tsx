@@ -70,6 +70,7 @@ import {
   TORCH_MIN_MINOR,
 } from "./lib/pythonSupport";
 import { tomlGet, tomlSet } from "./lib/toml-edit";
+import { creationOverrides, type ModelScale } from "./lib/model-blueprint";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setMlAutoOpenOnTrain } from "@/modules/settings/store";
 import {
@@ -397,9 +398,9 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
                 creating={pendingCreate != null}
                 createError={createError}
                 engineKind={engineKind}
-                onCreate={(template, name, autoTrain, purpose) => {
+                onCreate={(template, name, autoTrain, purpose, scale) => {
                   setShowCreate(false);
-                  void createProject(workspaceRoot, template, name, autoTrain, purpose);
+                  void createProject(workspaceRoot, template, name, autoTrain, purpose, creationOverrides(template, scale));
                 }}
                 onDismiss={() => setShowCreate(false)}
               />
@@ -1080,13 +1081,14 @@ function CreateCard({
   creating: boolean;
   createError: string | null;
   engineKind: EngineKind | null;
-  onCreate: (template: MlTemplate, name: string, autoTrain: boolean, purpose: string) => void;
+  onCreate: (template: MlTemplate, name: string, autoTrain: boolean, purpose: string, scale: ModelScale) => void;
   onDismiss?: () => void;
 }) {
   const [template, setTemplate] = useState<MlTemplate>("tabular");
   const [name, setName] = useState(TEMPLATE_OPTIONS[0].defaultName);
   const [autoTrain, setAutoTrain] = useState(false);
   const [purpose, setPurpose] = useState("");
+  const [scale, setScale] = useState<ModelScale>("starter");
 
   // Switching template swaps in its suggested name (the user can still
   // rename); keeps "tiny-writer" from sticking on a tabular project.
@@ -1218,7 +1220,7 @@ function CreateCard({
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && name.trim())
-                  onCreate(template, name, autoTrain, purpose);
+                  onCreate(template, name, autoTrain, purpose, scale);
               }}
               aria-label="New project name"
               spellCheck={false}
@@ -1227,12 +1229,40 @@ function CreateCard({
             <button
               type="button"
               disabled={!name.trim()}
-              onClick={() => onCreate(template, name, autoTrain, purpose)}
+              onClick={() => onCreate(template, name, autoTrain, purpose, scale)}
               className="h-6 shrink-0 rounded-md bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Create
             </button>
           </div>
+          <fieldset className="mt-1.5 rounded border border-border/60 p-1.5">
+            <legend className="px-1 text-[10px] text-muted-foreground">Default model size</legend>
+            <div className="flex gap-1">
+              {(["starter", "balanced", "ambitious"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={scale === option}
+                  onClick={() => setScale(option)}
+                  className={cn(
+                    "flex-1 rounded px-1 py-0.5 text-[10px] capitalize transition-colors",
+                    scale === option ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            {template === "textgen" ? (
+              <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+                This creates a local GPT-style character model. Size controls context, width, heads, layers, and training defaults; you can edit every value before training.
+              </p>
+            ) : (
+              <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+                Sets a sensible training budget now; all values remain editable in the hyperparameters form.
+              </p>
+            )}
+          </fieldset>
           <label className="mt-1.5 block text-[10px] text-muted-foreground">
             What should this model help with? <span className="text-muted-foreground/60">Optional, saved in PROJECT.md.</span>
             <textarea

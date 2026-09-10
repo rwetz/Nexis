@@ -38,6 +38,7 @@ Two engines answer to the same name and have different feature sets — the Pyth
 - **`ALLOWED_SUBCOMMANDS` and `is_nexis_ml_exe` are the security boundary.** `ml_spawn` must never become a generic process launcher; the exe stem must be exactly `nexis-ml` and the subcommand must be on the allowlist.
 - **Canvas drawings size through `src/lib/canvas.ts:canvasBackingScale`** (`dpr × --app-zoom`) and take `zoomLevel` as a redraw dependency — a `ResizeObserver` never fires for a zoom change. Same family as pitfall #15.
 - **Quick starts are conveniences, not unsupported engine templates.** The creation card maps recognizable goals such as churn risk and photo sorting onto the engine's supported `tabular` / `image` / `textgen` / `blank` templates, then writes an optional human training brief to `PROJECT.md` only after scaffold success. Never put the brief in `train.toml`: the engine owns that schema.
+- **Creation scales write only keys the scaffold already owns.** Starter, balanced, and ambitious selections become `tomlSet` edits after a successful scaffold; for `textgen` they set the tiny GPT-style context, width, heads, and layers too. This is intentionally local, small-model configuration, not a claim to create a foundation model. The Python engine remains required for text generation.
 
 ## Debugging entry points
 
