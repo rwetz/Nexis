@@ -38,24 +38,35 @@ import { PlanDiffReview } from "./PlanDiffReview";
 import { TodoStrip } from "./TodoStrip";
 import { useComposer } from "../lib/composer";
 
-const SUGGESTIONS: { label: string; hint: string; icon: IconName; text: string }[] = [
+const SUGGESTIONS: {
+  label: string;
+  hint: string;
+  icon: IconName;
+  text: string;
+}[] = [
   {
-    label: "Explain the last error",
-    hint: "Read the terminal buffer",
+    label: "Understand the failure",
+    hint: "Explain the latest terminal error",
     icon: "alert-circle",
     text: "Explain the last error in the terminal.",
   },
   {
-    label: "Generate a command",
-    hint: "Tell me what you want to do",
+    label: "Plan the next command",
+    hint: "Describe the outcome you want",
     icon: "terminal",
     text: "Give me a command to ",
   },
   {
-    label: "Summarize buffer",
-    hint: "Recap recent activity",
+    label: "Catch me up",
+    hint: "Summarize recent terminal activity",
     icon: "filter",
     text: "Summarize what just happened in the terminal.",
+  },
+  {
+    label: "Inspect this workspace",
+    hint: "Find the right files and next steps",
+    icon: "search",
+    text: "Help me understand this workspace and where I should start.",
   },
 ];
 
@@ -490,37 +501,68 @@ function SessionRow({
 
 function EmptyState({ onPick }: { onPick: (text: string) => void }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8 py-10 text-center">
-      <img src="/nexis-logo.png" alt="Nexis" className="size-14 opacity-90" />
-      <div className="space-y-1.5">
-        <p className="text-[14px] font-semibold tracking-tight">
-          Ask Nexis anything
-        </p>
-        <p className="max-w-[18rem] text-[11.5px] leading-relaxed text-muted-foreground">
-          Nexis sees the active terminal — cwd, recent commands, and output.
-        </p>
+    <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
+      <div className="relative overflow-hidden rounded-xl border border-border/70 bg-muted/30 px-4 py-3.5">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-8 -top-12 size-32 rounded-full bg-primary/[0.09] blur-2xl"
+        />
+        <div className="relative flex items-start gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card shadow-sm">
+            <img src="/nexis-logo.png" alt="" className="size-6 opacity-90" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold tracking-tight">
+              Start with the work in front of you
+            </p>
+            <p className="mt-0.5 text-[10.5px] leading-relaxed text-muted-foreground">
+              Nexis can use the active terminal, workspace, and files as context.
+            </p>
+          </div>
+        </div>
+        <div className="relative mt-3 flex flex-wrap gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-1 text-[10px] text-muted-foreground">
+            <Icon name="terminal" size="xs" /> Active terminal
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-1 text-[10px] text-muted-foreground">
+            <Icon name="folder" size="xs" /> Workspace aware
+          </span>
+          <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-1 text-[10px] text-muted-foreground">
+            <Icon name="file" size="xs" /> Attach files with @
+          </span>
+        </div>
       </div>
-      <div className="flex w-full flex-col gap-2.5">
+
+      <div className="mt-5 flex items-center justify-between px-0.5">
+        <div>
+          <p className="text-[11px] font-semibold text-foreground">Jump in</p>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            Or write your own prompt below
+          </p>
+        </div>
+        <Icon name="sparkle" size="sm" className="text-primary/75" />
+      </div>
+
+      <div className="mt-2.5 grid grid-cols-2 gap-2">
         {SUGGESTIONS.map((s) => (
           <button
             key={s.label}
             type="button"
             onClick={() => onPick(s.text)}
             className={cn(
-              "group flex items-center gap-2.5 bg-card/70 rounded-lg px-2.5 py-2 border border-border text-left",
-              "transition-colors hover:bg-muted/50 hover:text-foreground",
+              "group flex min-h-24 flex-col items-start rounded-lg border border-border/70 bg-card/50 p-3 text-left",
+              "transition-[background-color,border-color,transform] duration-150 hover:-translate-y-px hover:border-primary/35 hover:bg-primary/[0.045]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card",
             )}
           >
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted/70 text-muted-foreground transition-colors group-hover:bg-foreground/5 group-hover:text-foreground">
-              <Icon name={s.icon} />
+            <div className="flex size-7 items-center justify-center rounded-md border border-border/50 bg-muted/65 text-muted-foreground transition-colors group-hover:border-primary/20 group-hover:bg-primary/10 group-hover:text-primary">
+              <Icon name={s.icon} size="sm" />
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-[12px] font-medium text-foreground">
-                {s.label}
-              </div>
-              <div className="text-[10.5px] text-muted-foreground">
-                {s.hint}
-              </div>
+            <div className="mt-2 text-[11px] font-medium leading-tight text-foreground">
+              {s.label}
+            </div>
+            <div className="mt-1 text-[10px] leading-snug text-muted-foreground">
+              {s.hint}
             </div>
           </button>
         ))}

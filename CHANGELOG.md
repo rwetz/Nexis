@@ -13,6 +13,7 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 - **ML Lab can now start from a real training goal, not only a raw template.** Churn risk, lead scoring, demand forecast, photo sorting, a tiny writer, and custom research quick starts choose the compatible engine template, a useful project name, and a plainly editable training brief. The optional “what should this model help with?” answer is saved as `PROJECT.md` beside `train.toml`, so the reason for a model survives after the run details have moved on.
 
 ### Changed
+- **The floating AI panel now starts as a contextual launchpad instead of a sparse list of terminal shortcuts.** Its first view makes the active terminal, workspace context, and file attachment affordance visible, then offers four compact paths for understanding a failure, planning a command, catching up, or inspecting the workspace. Each path still only pre-fills the shared composer, so there is one chat workflow rather than a hidden second kind of AI action.
 - **ML Lab's model creator is now a proper builder instead of a stretched one-column form.** Goals and model families sit together in the first step; project name, size, purpose, auto-train choice, and the create action form a compact configuration panel beside them. Starter, balanced, and ambitious are now distinct cards with stable hit areas rather than a broken-looking full-width segmented row.
 
 ## [1.27.0] — 2026-09-09
