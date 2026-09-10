@@ -1127,9 +1127,14 @@ function CreateCard({
   };
 
   return (
-    <div className="mb-2 rounded-md border border-primary/25 bg-primary/[0.04] p-2.5">
-      <div className="mb-1 flex items-start justify-between">
-        <p className="text-[12px] font-semibold">New model</p>
+    <div className="mb-3 rounded-xl border border-primary/25 bg-primary/[0.035] p-4 shadow-sm">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold">Build a model</p>
+          <p className="mt-0.5 max-w-2xl text-[11px] leading-snug text-muted-foreground">
+            Choose a job, tune the starting configuration, then create an editable project.
+          </p>
+        </div>
         {onDismiss ? (
           <button
             type="button"
@@ -1141,32 +1146,24 @@ function CreateCard({
           </button>
         ) : null}
       </div>
-      <p className="mb-2 text-[11px] leading-snug text-muted-foreground">
-        Scaffolds a project folder in this workspace:{" "}
-        <span className="font-mono">train.toml</span> for the settings and a{" "}
-        <span className="font-mono">data/</span> folder for your files (with
-        starter data so the setup is verifiable — replace it with your own).
-      </p>
-
-      <div className="mb-2">
-        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">Start with a goal</span>
-        <div className="mt-1 flex flex-wrap gap-1">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(19rem,0.85fr)]">
+        <section className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">1. Pick a starting point</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
           {QUICK_STARTS.filter((quick) => engineSupportsTemplate(quick.template, engineKind)).map((quick) => (
             <button
               key={quick.label}
               type="button"
               disabled={creating}
               onClick={() => pickQuickStart(quick)}
-              className="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50"
+              className="rounded-full border border-border bg-background/50 px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/[0.06] hover:text-foreground disabled:opacity-50"
             >
               {quick.label}
             </button>
           ))}
-        </div>
-      </div>
-
-      {/* Template chooser — only options the active engine can scaffold */}
-      <div className="mb-2 flex flex-col gap-1">
+          </div>
+          <p className="mt-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Or choose the model family</p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
         {templateOptions.map((opt) => {
           const selected = opt.id === template;
           return (
@@ -1176,13 +1173,13 @@ function CreateCard({
               disabled={creating}
               onClick={() => pick(opt.id)}
               className={cn(
-                "rounded border px-2 py-1 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                "min-h-20 rounded-lg border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                 selected
                   ? "border-primary/50 bg-primary/[0.07]"
                   : "border-border hover:bg-foreground/[0.04]",
               )}
             >
-              <span className="flex items-center gap-1.5 text-[11px] font-medium text-foreground/90">
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/90">
                 <span
                   className={cn(
                     "size-1.5 rounded-full",
@@ -1191,22 +1188,25 @@ function CreateCard({
                 />
                 {opt.label}
               </span>
-              <span className="ml-3 block text-[10px] leading-snug text-muted-foreground">
+              <span className="mt-1 block text-[10px] leading-snug text-muted-foreground">
                 {opt.desc}
               </span>
             </button>
           );
         })}
-      </div>
+          </div>
 
       {/* Factual note when the standalone engine hides templates. */}
       {templateOptions.length < TEMPLATE_OPTIONS.length ? (
-        <p className="mb-2 text-[10px] leading-snug text-muted-foreground/70">
+        <p className="mt-2 text-[10px] leading-snug text-muted-foreground/70">
           Text generation and the code-your-own Blank project need the Python
           engine — the standalone engine is config-driven.
         </p>
       ) : null}
+        </section>
 
+        <section className="rounded-lg border border-border/70 bg-background/45 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">2. Configure it</p>
       {creating ? (
         <p className="flex items-center gap-1.5 text-[11px] text-foreground/90">
           <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
@@ -1214,7 +1214,8 @@ function CreateCard({
         </p>
       ) : (
         <>
-          <div className="flex items-center gap-1.5">
+          <label className="mt-2 block text-[10px] text-muted-foreground">
+            Project name
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -1224,20 +1225,12 @@ function CreateCard({
               }}
               aria-label="New project name"
               spellCheck={false}
-              className="h-6 min-w-0 flex-1 rounded border border-border bg-background px-1.5 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+              className="mt-1 h-8 w-full rounded border border-border bg-background px-2 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
             />
-            <button
-              type="button"
-              disabled={!name.trim()}
-              onClick={() => onCreate(template, name, autoTrain, purpose, scale)}
-              className="h-6 shrink-0 rounded-md bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Create
-            </button>
-          </div>
-          <fieldset className="mt-1.5 rounded border border-border/60 p-1.5">
-            <legend className="px-1 text-[10px] text-muted-foreground">Default model size</legend>
-            <div className="flex gap-1">
+          </label>
+          <fieldset className="mt-3">
+            <legend className="text-[10px] text-muted-foreground">Starting configuration</legend>
+            <div className="mt-1 grid grid-cols-3 gap-1.5">
               {(["starter", "balanced", "ambitious"] as const).map((option) => (
                 <button
                   key={option}
@@ -1245,8 +1238,8 @@ function CreateCard({
                   aria-pressed={scale === option}
                   onClick={() => setScale(option)}
                   className={cn(
-                    "flex-1 rounded px-1 py-0.5 text-[10px] capitalize transition-colors",
-                    scale === option ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted",
+                    "rounded-md border px-1 py-2 text-[10px] font-medium capitalize transition-colors",
+                    scale === option ? "border-primary/50 bg-primary/[0.10] text-primary" : "border-border bg-background/50 text-muted-foreground hover:bg-muted",
                   )}
                 >
                   {option}
@@ -1254,16 +1247,16 @@ function CreateCard({
               ))}
             </div>
             {template === "textgen" ? (
-              <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+              <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
                 This creates a local GPT-style character model. Size controls context, width, heads, layers, and training defaults; you can edit every value before training.
               </p>
             ) : (
-              <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+              <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
                 Sets a sensible training budget now; all values remain editable in the hyperparameters form.
               </p>
             )}
           </fieldset>
-          <label className="mt-1.5 block text-[10px] text-muted-foreground">
+          <label className="mt-3 block text-[10px] text-muted-foreground">
             What should this model help with? <span className="text-muted-foreground/60">Optional, saved in PROJECT.md.</span>
             <textarea
               value={purpose}
@@ -1273,7 +1266,7 @@ function CreateCard({
               className="mt-1 w-full resize-y rounded border border-border bg-background px-1.5 py-1 text-[10.5px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
             />
           </label>
-          <label className="mt-1.5 flex cursor-pointer items-center gap-1.5 text-[10px] text-muted-foreground">
+          <label className="mt-3 flex cursor-pointer items-center gap-1.5 text-[10px] text-muted-foreground">
             <input
               type="checkbox"
               checked={autoTrain}
@@ -1283,6 +1276,14 @@ function CreateCard({
             Start training right away (otherwise review the hyperparameters
             first)
           </label>
+          <button
+            type="button"
+            disabled={!name.trim()}
+            onClick={() => onCreate(template, name, autoTrain, purpose, scale)}
+            className="mt-3 h-8 w-full rounded-md bg-primary px-3 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Create {template === "textgen" ? "GPT-style model" : "model"}
+          </button>
         </>
       )}
       {createError && !creating ? (
@@ -1290,6 +1291,8 @@ function CreateCard({
           {createError}
         </p>
       ) : null}
+        </section>
+      </div>
     </div>
   );
 }

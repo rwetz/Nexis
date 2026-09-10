@@ -12,6 +12,9 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 - **ML Lab's text generator can now be created as your own local GPT-style model.** Pick starter, balanced, or ambitious before creating a project; Nexis writes the matching context window, model width, attention heads, layer count, and training budget into the newly scaffolded `train.toml`. These are intentionally small character models for learning and focused corpora, not a misleading “build ChatGPT” button, and every generated setting stays editable before the first run.
 - **ML Lab can now start from a real training goal, not only a raw template.** Churn risk, lead scoring, demand forecast, photo sorting, a tiny writer, and custom research quick starts choose the compatible engine template, a useful project name, and a plainly editable training brief. The optional “what should this model help with?” answer is saved as `PROJECT.md` beside `train.toml`, so the reason for a model survives after the run details have moved on.
 
+### Changed
+- **ML Lab's model creator is now a proper builder instead of a stretched one-column form.** Goals and model families sit together in the first step; project name, size, purpose, auto-train choice, and the create action form a compact configuration panel beside them. Starter, balanced, and ambitious are now distinct cards with stable hit areas rather than a broken-looking full-width segmented row.
+
 ## [1.27.0] — 2026-09-09
 
 ### Added
