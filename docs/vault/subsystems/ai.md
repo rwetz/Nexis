@@ -40,6 +40,7 @@ Per-tool policies (`toolApprovalPolicies` pref, Settings → Agents): `prompt` (
 - `lib/nlCommand.ts` — natural-language → command for the terminal's AI command bar (`terminal/components/AiCommandBar.tsx`, opened via the `terminal.aiCommand` shortcut → `nexis:terminal-ai-command` event). Insert-only contract: the parser rejects multi-line/control-char suggestions because the result is written into the PTY input line, where a stray `\r` would self-execute — keep `sanitizeCommand` strict
 - `store/` — five Zustand stores ([[zustand-stores]]); `chatStore.ts` is the big one
 - `components/AiInputBar.tsx` — composer; **never re-add `disabled={c.isBusy}`** (pitfall #5)
+- `src/components/ai-elements/context.tsx` — token-cost rows; with AI SDK 7, reasoning lives at `usage.outputTokenDetails.reasoningTokens` and cache reads at `usage.inputTokenDetails.cacheReadTokens`, not the removed flat fields.
 
 ## Related
 

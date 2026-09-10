@@ -146,7 +146,7 @@ fn fill_git(repo: &mut Repository, sum: &mut RepoSummary) -> Result<(), git2::Er
             }
             if let Ok(commit) = head.peel_to_commit() {
                 sum.last_commit = Some(CommitInfo {
-                    summary: commit.summary().unwrap_or("").to_string(),
+                    summary: commit.summary().ok().flatten().unwrap_or("").to_string(),
                     author: commit.author().name().unwrap_or("").to_string(),
                     time: commit.time().seconds(),
                     hash: commit.id().to_string()[..7].to_string(),
@@ -157,7 +157,7 @@ fn fill_git(repo: &mut Repository, sum: &mut RepoSummary) -> Result<(), git2::Er
         // branch — surface its name instead of erroring out.
         Err(e) if e.code() == ErrorCode::UnbornBranch => {
             if let Ok(head_ref) = repo.find_reference("HEAD") {
-                if let Some(target) = head_ref.symbolic_target() {
+                if let Ok(Some(target)) = head_ref.symbolic_target() {
                     sum.branch = target
                         .strip_prefix("refs/heads/")
                         .unwrap_or(target)
@@ -236,7 +236,7 @@ pub fn status_map(repo: &Repository) -> HashMap<String, String> {
     };
     let mut out = HashMap::new();
     for entry in statuses.iter() {
-        let Some(path) = entry.path() else { continue };
+        let Ok(path) = entry.path() else { continue };
         if let Some(code) = code_for(entry.status()) {
             out.insert(path.to_string(), code.to_string());
         }

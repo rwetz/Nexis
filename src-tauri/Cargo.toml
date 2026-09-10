@@ -1,6 +1,6 @@
 [package]
 name = "nexis"
-version = "1.26.0"
+version = "1.27.0"
 description = "Nexis — an AI-native terminal emulator"
 authors = []
 edition = "2021"
@@ -94,7 +94,7 @@ notify = { version = "8", default-features = false, features = ["macos_fsevent"]
 # (modules/git), and that split is deliberate: the CLI respects the user's
 # config, credential helpers and hooks, which is what a panel that *writes*
 # needs, while a read-only whole-machine sweep wants in-process reads.
-git2 = { version = "0.20", default-features = false }
+git2 = { version = "0.21", default-features = false }
 # The scan fans out one worker per repo. Previously argued against for the
 # sysinfo dep on size grounds; Atlas is the use that justifies it -- ten repos
 # including a full filesystem walk land in ~270 ms because of this.
