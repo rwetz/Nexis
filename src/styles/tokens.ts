@@ -71,6 +71,7 @@ const TERMINAL_VAR_BY_KEY: Record<keyof TerminalTokens, string> = {
 const TERMINAL_KEYS = Object.keys(TERMINAL_VAR_BY_KEY) as (keyof TerminalTokens)[];
 
 let terminalProbe: HTMLDivElement | null = null;
+let colorCanvas: HTMLCanvasElement | null = null;
 
 function getTerminalProbe(): HTMLDivElement {
   if (terminalProbe && terminalProbe.isConnected) return terminalProbe;
@@ -85,7 +86,40 @@ function getTerminalProbe(): HTMLDivElement {
 
 function resolveTerminal(el: HTMLDivElement, varName: string): string {
   el.style.color = `var(${varName})`;
-  return getComputedStyle(el).color;
+  return normalizeCssColor(getComputedStyle(el).color);
+}
+
+/**
+ * Read a CSS Color 4 value back as sRGB pixels.
+ *
+ * WebKit preserves `oklch()` in `getComputedStyle(...).color`; treating its
+ * three numeric components as RGB turns a neutral dark background such as
+ * `oklch(0.148 0.004 228.8)` into vivid blue. Canvas pixel data is always
+ * sRGB, even when CSS serialization is not.
+ */
+function normalizeCssColor(value: string): string {
+  if (!value || typeof document === "undefined") return value;
+  const canvas = colorCanvas ?? document.createElement("canvas");
+  colorCanvas = canvas;
+  canvas.width = 1;
+  canvas.height = 1;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return value;
+
+  const sentinel = "#010203";
+  ctx.fillStyle = sentinel;
+  ctx.fillStyle = value;
+  if (ctx.fillStyle === sentinel && value.toLowerCase() !== sentinel) return value;
+
+  ctx.clearRect(0, 0, 1, 1);
+  ctx.fillRect(0, 0, 1, 1);
+  try {
+    const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+    if (a === 0) return value;
+    return a === 255 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+  } catch {
+    return value;
+  }
 }
 
 /**
@@ -108,7 +142,7 @@ export function resolveCssColor(expr: string): string {
   const el = getTerminalProbe();
   el.style.color = "";
   el.style.color = expr;
-  return getComputedStyle(el).color;
+  return normalizeCssColor(getComputedStyle(el).color);
 }
 
 export function readTerminalTokens(): TerminalTokens {

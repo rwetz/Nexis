@@ -4,6 +4,9 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Fixed
+- **Atlas no longer turns dark themes into a blue city.** WebKit can preserve an OKLCH value when serializing a computed CSS colour; Atlas's canvas parser then mistook the OKLCH lightness, chroma, and hue for RGB channels, making a neutral dark background such as `oklch(0.148 0.004 228.8)` render as intense blue. The shared CSS colour resolver now round-trips every computed token through one canvas pixel, whose bytes are always sRGB, before Atlas or any other canvas consumer reads it.
+
 ## [1.27.0] — 2026-09-09
 
 ### Added
