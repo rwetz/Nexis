@@ -842,11 +842,18 @@ function attachWebglWith(
       // (a frozen ghost cursor) on top of the DOM renderer, and leaks per loss.
       let canvases: HTMLCanvasElement[] = [];
       if (slot.webglAddon === webgl) {
-        canvases = slot.webglCanvases;
+        canvases = collectWebglCanvases(webgl, slot.webglCanvases);
         slot.webglAddon = null;
         slot.webglCanvases = [];
       }
       hardTeardownWebgl(webgl, canvases);
+      // The addon restores xterm's DOM renderer as it disposes. Repaint it on
+      // every loss, not only after the retry cap: a single lost GPU frame can
+      // otherwise leave a coloured cursor or glyph fragment over that fresh
+      // renderer until another terminal write happens to cover the pixel.
+      try {
+        slot.term.refresh(0, slot.term.rows - 1);
+      } catch {}
       // Count losses to tell a one-off (sleep/wake, GPU reset) apart from a
       // thrash loop. If WebGL was stable for a while, this is fresh — reset the
       // counter so the one-off still gets a recovery attempt.
@@ -860,12 +867,6 @@ function attachWebglWith(
       // re-attach thrash and stay on the DOM renderer for good (this slot).
       if (slot.webglLossCount >= WEBGL_MAX_LOSSES) {
         slot.webglGaveUp = true;
-        // Force the DOM renderer to repaint every row now that the GPU layer is
-        // gone, so the cursor and cells draw clean instead of inheriting stale
-        // state from the dead WebGL frame.
-        try {
-          slot.term.refresh(0, slot.term.rows - 1);
-        } catch {}
         console.warn(
           "[nexis-webgl] repeated context loss — staying on DOM renderer",
         );
@@ -886,7 +887,7 @@ function attachWebglWith(
     const added: HTMLCanvasElement[] = [];
     for (const c of after) if (!before.has(c)) added.push(c);
     slot.webglAddon = webgl;
-    slot.webglCanvases = added;
+    slot.webglCanvases = collectWebglCanvases(webgl, added);
   } catch (e) {
     console.warn("[nexis-webgl] unavailable:", e);
   }
@@ -927,6 +928,21 @@ function hardTeardownWebgl(
       addon as unknown as { _renderer?: unknown; _renderService?: unknown }
     )._renderService = null;
   } catch {}
+}
+
+/** The addon appends its renderer canvas synchronously today, but that is an
+ * implementation detail. Keep the private renderer canvas as a second handle
+ * so an async/host-specific attach cannot strand a stale GPU frame. */
+function collectWebglCanvases(
+  addon: WebglAddon,
+  known: HTMLCanvasElement[],
+): HTMLCanvasElement[] {
+  const canvas = (
+    addon as unknown as { _renderer?: { _canvas?: unknown } | null }
+  )._renderer?._canvas;
+  return canvas instanceof HTMLCanvasElement && !known.includes(canvas)
+    ? [...known, canvas]
+    : known;
 }
 
 function disposeSlotWebgl(slot: Slot): void {

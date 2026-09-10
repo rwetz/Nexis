@@ -36,6 +36,12 @@ Why it matters here rather than in a WSL note: `wsl_home` is the first thing `sw
 
 ## Renderer-slot binding is not a place to put live state (2026-08)
 
+When xterm's WebGL context is lost, `rendererPool.ts` must release both the
+canvases observed in the DOM and the addon's renderer-owned canvas, then refresh
+every row immediately. Waiting for a second or third loss leaves the old GPU
+frame painted above the replacement DOM renderer as coloured cursor or glyph
+fragments.
+
 The `useTerminalSession` effect that binds a leaf to a renderer slot must depend only on identity (`leafId`, `container`). `initialCwd` used to be in that dep array, and since the pane-tree leaf's `cwd` is rewritten by `setLeafCwd` on every OSC 7, **every `cd` ran a full slot teardown and rebuild** — serialize, release, `term.clear()` + `term.reset()`, replay, two frames hidden. `ensureSession` only reads the value at creation, so it is mirrored through a ref instead. CLAUDE.md pitfall #22, guarded in `pitfall-guards.test.ts`.
 
 ## cwd tracking when integration is missing (2026-07)
