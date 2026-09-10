@@ -28,3 +28,17 @@ export async function writeTrainToml(
     source: "ml-lab",
   });
 }
+
+/** Preserve the human reason a project exists next to its engine config.
+ * This is a separate file so it never risks making train.toml invalid for an
+ * engine that only understands its own schema. */
+export async function writeProjectBrief(projectDir: string, purpose: string): Promise<void> {
+  const text = purpose.trim();
+  if (!text) return;
+  await invoke("fs_write_file", {
+    path: `${projectDir}/PROJECT.md`,
+    content: `# Training brief\n\n${text}\n`,
+    workspace: currentWorkspaceEnv(),
+    source: "ml-lab",
+  });
+}

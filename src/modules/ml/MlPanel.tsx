@@ -117,6 +117,21 @@ const TEMPLATE_OPTIONS: {
   },
 ];
 
+/** Familiar jobs, mapped honestly onto the engine templates it can train. */
+const QUICK_STARTS: {
+  label: string;
+  template: MlTemplate;
+  name: string;
+  purpose: string;
+}[] = [
+  { label: "Churn risk", template: "tabular", name: "churn-risk", purpose: "Predict which customers are likely to leave from a CSV." },
+  { label: "Lead score", template: "tabular", name: "lead-score", purpose: "Rank incoming leads using known conversion signals." },
+  { label: "Demand forecast", template: "tabular", name: "demand-forecast", purpose: "Estimate demand from historical spreadsheet rows." },
+  { label: "Photo sorter", template: "image", name: "photo-sorter", purpose: "Classify images into folders that represent the desired labels." },
+  { label: "Tiny writer", template: "textgen", name: "tiny-writer", purpose: "Learn the style and patterns in a focused text corpus." },
+  { label: "Custom research", template: "blank", name: "research-model", purpose: "Explore a custom training architecture and dataset." },
+];
+
 type Props = {
   workspaceRoot: string | null;
   /** Detach the network diagram into its own tab. Optional so the panel
@@ -382,9 +397,9 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
                 creating={pendingCreate != null}
                 createError={createError}
                 engineKind={engineKind}
-                onCreate={(template, name, autoTrain) => {
+                onCreate={(template, name, autoTrain, purpose) => {
                   setShowCreate(false);
-                  void createProject(workspaceRoot, template, name, autoTrain);
+                  void createProject(workspaceRoot, template, name, autoTrain, purpose);
                 }}
                 onDismiss={() => setShowCreate(false)}
               />
@@ -1065,12 +1080,13 @@ function CreateCard({
   creating: boolean;
   createError: string | null;
   engineKind: EngineKind | null;
-  onCreate: (template: MlTemplate, name: string, autoTrain: boolean) => void;
+  onCreate: (template: MlTemplate, name: string, autoTrain: boolean, purpose: string) => void;
   onDismiss?: () => void;
 }) {
   const [template, setTemplate] = useState<MlTemplate>("tabular");
   const [name, setName] = useState(TEMPLATE_OPTIONS[0].defaultName);
   const [autoTrain, setAutoTrain] = useState(false);
+  const [purpose, setPurpose] = useState("");
 
   // Switching template swaps in its suggested name (the user can still
   // rename); keeps "tiny-writer" from sticking on a tabular project.
@@ -1102,6 +1118,12 @@ function CreateCard({
     engineSupportsTemplate(o.id, engineKind),
   );
 
+  const pickQuickStart = (quick: (typeof QUICK_STARTS)[number]) => {
+    pick(quick.template);
+    setName(quick.name);
+    setPurpose(quick.purpose);
+  };
+
   return (
     <div className="mb-2 rounded-md border border-primary/25 bg-primary/[0.04] p-2.5">
       <div className="mb-1 flex items-start justify-between">
@@ -1123,6 +1145,23 @@ function CreateCard({
         <span className="font-mono">data/</span> folder for your files (with
         starter data so the setup is verifiable — replace it with your own).
       </p>
+
+      <div className="mb-2">
+        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">Start with a goal</span>
+        <div className="mt-1 flex flex-wrap gap-1">
+          {QUICK_STARTS.filter((quick) => engineSupportsTemplate(quick.template, engineKind)).map((quick) => (
+            <button
+              key={quick.label}
+              type="button"
+              disabled={creating}
+              onClick={() => pickQuickStart(quick)}
+              className="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:opacity-50"
+            >
+              {quick.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Template chooser — only options the active engine can scaffold */}
       <div className="mb-2 flex flex-col gap-1">
@@ -1179,7 +1218,7 @@ function CreateCard({
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && name.trim())
-                  onCreate(template, name, autoTrain);
+                  onCreate(template, name, autoTrain, purpose);
               }}
               aria-label="New project name"
               spellCheck={false}
@@ -1188,12 +1227,22 @@ function CreateCard({
             <button
               type="button"
               disabled={!name.trim()}
-              onClick={() => onCreate(template, name, autoTrain)}
+              onClick={() => onCreate(template, name, autoTrain, purpose)}
               className="h-6 shrink-0 rounded-md bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Create
             </button>
           </div>
+          <label className="mt-1.5 block text-[10px] text-muted-foreground">
+            What should this model help with? <span className="text-muted-foreground/60">Optional, saved in PROJECT.md.</span>
+            <textarea
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              placeholder="For example: flag invoices that need a human review"
+              rows={2}
+              className="mt-1 w-full resize-y rounded border border-border bg-background px-1.5 py-1 text-[10.5px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+            />
+          </label>
           <label className="mt-1.5 flex cursor-pointer items-center gap-1.5 text-[10px] text-muted-foreground">
             <input
               type="checkbox"
