@@ -19,7 +19,7 @@ Distinct from [[source-control]] territory: that panel is *this workspace's* rep
 - `src-tauri/src/modules/atlas/tree.rs` — the per-repo file tree the map drills into
 - `src/modules/atlas/AtlasPanel.tsx` — the panel shell, mode switch, scoped keymap, status line
 - `src/modules/atlas/AtlasWindowActions.tsx` — List/Map, labels, and refresh controls shared by the panel toolbar and the standalone-like companion-window title bar
-- `src/modules/atlas/repos/store.ts` — the shared scan/selection state
+- `src/modules/atlas/repos/store.ts` — the shared scan/selection state and the config-bounded `showRepo` command-palette entrypoint
 - `src/modules/atlas/repos/host.tsx` — the callbacks Atlas asks Nexis for (open workspace / terminal / file)
 - `src/modules/atlas/map/CityCanvas.tsx`, `iso.ts`, `layout.ts`, `palette.ts` — the isometric renderer
 
@@ -38,6 +38,7 @@ Distinct from [[source-control]] territory: that panel is *this workspace's* rep
 - **The companion window keeps Atlas's own title-bar controls; the embedded panel keeps its toolbar.** `ToolWindowShell` passes `standalone` to Atlas so controls do not appear twice. The map rails are proportional to their container, matching the standalone composition without hardcoding screen-width breakpoints.
 - **The scoped keymap updates its host ref in an effect.** Do not assign `hostRef.current` during render: React may discard that render while the stable key handler survives.
 - **Deep links are gone.** `nexis-atlas://focus?path=…` had nothing to link to once the two processes became one. If Nexis registers a URL scheme later, the old grammar is in this repo's history under `src-tauri/src/links.rs`.
+- **"Show this repo in Atlas" refreshes before it opens.** The palette action switches to Atlas and calls `showRepo(explorerRoot)`, which opens only an exact path from the current configured scan. Do not bypass that check with a direct `enterRepo` call: the city command accepts a path and must stay reachable only through Atlas's admitted repository set.
 
 ## See also
 

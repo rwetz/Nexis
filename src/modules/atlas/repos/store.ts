@@ -51,6 +51,8 @@ type AtlasState = {
   fitNonce: number;
 
   refresh: () => Promise<void>;
+  /** Open one of the repositories already admitted by Atlas's scan. */
+  showRepo: (path: string) => Promise<void>;
 
   setMode: (mode: Mode) => void;
   toggleMode: () => void;
@@ -139,6 +141,21 @@ export const useAtlasStore = create<AtlasState>((set, get) => ({
     } finally {
       set({ scanning: false });
     }
+  },
+
+  showRepo: async (path) => {
+    // Atlas is deliberately host-scoped and config-bounded. Refresh first so a
+    // command-palette request cannot turn this IPC surface into an arbitrary
+    // filesystem walk; only a repo the scan returned may be opened as a city.
+    await get().refresh();
+    const repo = get().repos.find((candidate) => candidate.path === path);
+    if (!repo) {
+      toast.error("Workspace is not in Atlas", {
+        description: "Add this repository to atlas.toml, then refresh Atlas.",
+      });
+      return;
+    }
+    await get().enterRepo(repo.path);
   },
 
   setMode: (mode) => {
