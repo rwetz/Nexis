@@ -5,6 +5,7 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 ## [Unreleased]
 
 ### Fixed
+- **Contributed panels and commands now reject duplicate or unnamespaced IDs.** A later plugin can no longer silently replace another command or create an ambiguous panel. Disposing an old registration cannot remove a newer registration with the same ID. The workbench contracts also declare panel lifetime and command scope for the incremental architecture migration.
 - **Terminal WebGL loss no longer leaves coloured cursor and glyph fragments behind.** A single GPU-context loss switched xterm back to its DOM renderer but did not force that renderer to repaint until the third loss, letting the abandoned GPU frame linger as stray vertical lines or text. Every loss now releases the renderer-owned canvas and redraws the entire terminal before an optional WebGL recovery.
 - **Atlas no longer turns dark themes into a blue city.** WebKit can preserve an OKLCH value when serializing a computed CSS colour; Atlas's canvas parser then mistook the OKLCH lightness, chroma, and hue for RGB channels, making a neutral dark background such as `oklch(0.148 0.004 228.8)` render as intense blue. The shared CSS colour resolver now round-trips every computed token through one canvas pixel, whose bytes are always sRGB, before Atlas or any other canvas consumer reads it.
 

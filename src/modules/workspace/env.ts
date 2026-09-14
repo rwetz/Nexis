@@ -6,11 +6,10 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
+import { environmentIdentity, type WorkspaceEnvironment } from "@/platform/workspace";
 import { setLastWslDistro } from "@/modules/settings/store";
 
-export type WorkspaceEnv =
-  | { kind: "local" }
-  | { kind: "wsl"; distro: string };
+export type WorkspaceEnv = WorkspaceEnvironment;
 
 export type WslDistro = {
   name: string;
@@ -85,7 +84,7 @@ export function workspaceEnvForPath(
 }
 
 export function workspaceScopeKey(env: WorkspaceEnv): string {
-  return env.kind === "wsl" ? `wsl:${env.distro}` : "local";
+  return environmentIdentity(env);
 }
 
 export function currentWorkspaceScopeKey(): string {

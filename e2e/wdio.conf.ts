@@ -36,8 +36,8 @@ const isWindows = process.platform === "win32";
 const DEBUG_PORT = 9222;
 const DRIVER_PORT = 4444;
 
-/// Tauri's `identifier` from tauri.conf.json — the app-data directory name.
-const APP_IDENTIFIER = "app.nexis.nexis";
+/// Match the E2E overlay so local tests never seed the developer's real prefs.
+const APP_IDENTIFIER = "app.nexis.nexis.e2e";
 /// `STORE_PATH` in src/modules/settings/store.ts.
 const SETTINGS_FILE = "nexis-settings.json";
 
@@ -241,7 +241,7 @@ async function waitForDebugPort(port: number, timeoutMs: number): Promise<string
 async function startWindowsHarness(): Promise<void> {
   const msedgedriverPath = await resolveMsedgedriver();
 
-  appProcess = spawn(appBinary, [], { stdio: ["ignore", "inherit", "inherit"] });
+  appProcess = spawn(appBinary, [], { stdio: ["ignore", "inherit", "inherit"], windowsHide: true });
   appProcess.on("exit", (code) => {
     if (code !== 0 && code !== null) console.error(`[e2e] app exited early with code ${code}`);
   });
@@ -251,6 +251,7 @@ async function startWindowsHarness(): Promise<void> {
 
   nativeDriver = spawn(msedgedriverPath, [`--port=${DRIVER_PORT}`], {
     stdio: ["ignore", "inherit", "inherit"],
+    windowsHide: true,
   });
 }
 

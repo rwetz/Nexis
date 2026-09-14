@@ -22,25 +22,31 @@
  * delegates, and it uses the same `plugin-opener` call the explorer does.
  */
 
-import { invoke } from "@tauri-apps/api/core";
+import { defineCommand } from "@/platform/ipc";
+import { hostIpc } from "@/platform/tauri";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import type { AtlasResult, RepoCity, RepoDetail } from "./types";
+
+const scan = defineCommand<Record<string, never>, AtlasResult>("atlas_scan_repos", "host");
+const detail = defineCommand<{ path: string }, RepoDetail>("atlas_repo_detail", "host");
+const city = defineCommand<{ path: string }, RepoCity>("atlas_repo_city", "host");
+const config = defineCommand<Record<string, never>, string>("atlas_config_path", "host");
 
 /** One scan, both views: git state for the list, size and language mix for
  *  the map. Re-reads `atlas.toml` every time, so a config edit lands on the
  *  next refresh. */
 export function scanRepos(): Promise<AtlasResult> {
-  return invoke<AtlasResult>("atlas_scan_repos");
+  return hostIpc.call(scan, {});
 }
 
 /** The list view's drill-in: changed files and stashes for one repo. */
 export function fetchRepoDetail(path: string): Promise<RepoDetail> {
-  return invoke<RepoDetail>("atlas_repo_detail", { path });
+  return hostIpc.call(detail, { path });
 }
 
 /** The map view's drill-in: the full file tree for one repo. */
 export function fetchRepoCity(path: string): Promise<RepoCity> {
-  return invoke<RepoCity>("atlas_repo_city", { path });
+  return hostIpc.call(city, { path });
 }
 
 /** Show a repo directory in the OS file manager. */
@@ -51,5 +57,5 @@ export function revealPath(path: string): Promise<void> {
 /** Absolute path of `atlas.toml`, created with the commented default if this
  *  is the first time anyone has asked. The caller opens it in an editor tab. */
 export function configPath(): Promise<string> {
-  return invoke<string>("atlas_config_path");
+  return hostIpc.call(config, {});
 }

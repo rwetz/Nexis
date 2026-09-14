@@ -21,6 +21,7 @@ Distinct from [[source-control]] territory: that panel is *this workspace's* rep
 - `src/modules/atlas/AtlasWindowActions.tsx` — List/Map, labels, and refresh controls shared by the panel toolbar and the standalone-like companion-window title bar
 - `src/modules/atlas/repos/store.ts` — the shared scan/selection state and the config-bounded `showRepo` command-palette entrypoint
 - `src/modules/atlas/repos/host.tsx` — the callbacks Atlas asks Nexis for (open workspace / terminal / file)
+- `src/modules/atlas/repos/api.ts` — typed host-only command descriptors through `platform/ipc.ts`; scanner calls cannot acquire the active WSL scope
 - `src/modules/atlas/map/CityCanvas.tsx`, `iso.ts`, `layout.ts`, `palette.ts` — the isometric renderer
 
 ## Invariants / gotchas

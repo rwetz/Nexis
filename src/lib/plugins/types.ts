@@ -16,6 +16,7 @@
  */
 
 import type React from "react";
+import type { ActivationContext, CommandScope, PanelLifecycle } from "@/workbench/contributions";
 import type { PackId } from "@/lib/packs";
 import type { ToolContribution } from "@/modules/ai/tools/plugin-tools";
 
@@ -74,6 +75,10 @@ export type PanelContribution = {
   location: PanelLocation;
   /** Return the React node to render inside the panel. */
   render: () => React.ReactNode;
+  /** Default unmount preserves legacy behavior. Retained panels stay mounted
+   * after first activation until their contribution or pack is removed. */
+  lifecycle?: PanelLifecycle;
+  enabled?: (context: ActivationContext) => boolean;
 
   // ── Sidebar presentation (expansion packs V2) ────────────────────────────
   // Ignored for `location: "bottom"`. All optional so an existing
@@ -115,6 +120,13 @@ export type CommandContribution = {
   id: string;
   title: string;
   handler: (...args: unknown[]) => void | Promise<void>;
+  scope?: CommandScope;
+  enabled?: (context: ActivationContext) => boolean;
+  keybindings?: readonly string[];
+  pack?: PackId;
+  category?: string;
+  icon?: IconName;
+  keywords?: string[];
 };
 
 // ── Plugin event bus ──────────────────────────────────────────────────────────

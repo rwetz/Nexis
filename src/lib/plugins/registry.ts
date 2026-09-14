@@ -11,6 +11,7 @@
  * from here to render contributed UI (status bar items, panels, etc.).
  */
 import { create } from "zustand";
+import { assertContributionId } from "@/workbench/contributions";
 import type {
   CommandContribution,
   Disposable,
@@ -63,6 +64,8 @@ export const usePluginRegistry = create<RegistryState & RegistryActions>(
     },
 
     _addPanel(panel) {
+      assertContributionId(panel.id);
+      if (get().panels.some((item) => item.id === panel.id)) throw new Error(`Duplicate panel: ${panel.id}`);
       set((s) => ({ panels: [...s.panels, panel] }));
     },
     _removePanel(id) {
@@ -77,6 +80,8 @@ export const usePluginRegistry = create<RegistryState & RegistryActions>(
     },
 
     _addCommand(cmd) {
+      assertContributionId(cmd.id);
+      if (get().commands.has(cmd.id)) throw new Error(`Duplicate command: ${cmd.id}`);
       const next = new Map(get().commands);
       next.set(cmd.id, cmd);
       set({ commands: next });
@@ -144,9 +149,13 @@ export function createPluginAPI(): PluginAPI {
 
     registerPanel(panel) {
       registry._addPanel(panel);
+      let disposed = false;
       return {
         dispose() {
-          usePluginRegistry.getState()._removePanel(panel.id);
+          if (disposed) return;
+          disposed = true;
+          const current = usePluginRegistry.getState();
+          if (current.panels.includes(panel)) current._removePanel(panel.id);
         },
       };
     },
@@ -162,9 +171,13 @@ export function createPluginAPI(): PluginAPI {
 
     registerCommand(cmd) {
       registry._addCommand(cmd);
+      let disposed = false;
       return {
         dispose() {
-          usePluginRegistry.getState()._removeCommand(cmd.id);
+          if (disposed) return;
+          disposed = true;
+          const current = usePluginRegistry.getState();
+          if (current.commands.get(cmd.id) === cmd) current._removeCommand(cmd.id);
         },
       };
     },

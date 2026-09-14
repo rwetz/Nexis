@@ -23,4 +23,4 @@ The [redesign plan](../../architecture/nexis-architecture-redesign-plan.md) defi
 - Atlas and Benchmark remain host-scoped. Benchmark jobs and listeners survive panel unmount; host export paths must not inherit the active WSL environment. See [[atlas]] and [[benchmark]].
 - The global shortcut hook is `modules/shortcuts/lib/useGlobalShortcuts.ts`; built-in handlers and the command list still live in App. Panel keymaps such as Atlas's have separate scope today.
 
-The inventory proposes Web Tools as the first low-risk contributed panel, followed by Atlas. No production consumers have migrated in Phase 0. The root invariants remain authoritative; this note maps their locations rather than restating them.
+The inventory proposes Web Tools as the first low-risk contributed panel, followed by Atlas. Phase 1 adds policy contracts in `src/platform/` and `src/workbench/`; Atlas's four scanner calls are the first typed host-only IPC consumer. The existing plugin registry now rejects duplicate panel/command IDs. See the [phase progress](../../architecture/nexis-redesign-progress.md) for verification and remaining legacy paths. The root invariants remain authoritative.

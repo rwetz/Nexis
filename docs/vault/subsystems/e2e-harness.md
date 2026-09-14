@@ -34,7 +34,7 @@ Both, plus port agreement between the overlay and `DEBUG_PORT` in `wdio.conf.ts`
 
 The job builds a release bundle on a clean runner, so the profile would be fresh on every run and `PackOnboardingDialog` would open every time. `e2e/wdio.conf.ts` now writes `packsOnboarded` and an explicit `enabledPacks` into the settings store **in `onPrepare`, before the app process starts** (`seedFirstRunPreferences`). Clearing the dialog from inside a spec was a race by construction — it mounts when preferences hydrate, which can land after the dismiss window opens.
 
-The seed **merges** into an existing store rather than replacing it: the same path is a developer's real settings file when the suite is run locally.
+The seed **merges** into an existing test store rather than replacing it. Since the architecture migration's 2026-09-14 baseline, the overlay and harness use `app.nexis.nexis.e2e`, separate from the shipping identifier. Local E2E runs therefore cannot seed the developer's real preference store. `src/platform/e2e-profile.test.ts` checks that the identifiers agree and remain distinct. Native driver/helper launches hide Windows console windows.
 
 `dismissStartupDialogs()` in `e2e/support/dialogs.ts` stays as the backstop for modals the suite does not control — `UpdaterDialog` opens itself whenever a published release is newer than the built version, which on a nightly job is release timing.
 
@@ -64,6 +64,8 @@ A tripwire in `src/lib/pitfall-guards.test.ts` fails if any spec in `e2e/specs/`
 As of 2026-09-03 `e2e.yml` also runs on pull requests to `main`, **path-scoped** to `src/**`, `src-tauri/**`, `e2e/**`, `package.json`, `pnpm-lock.yaml`, `vite.config.ts` and the workflow itself. A docs-only PR has no way to break a running app, and making it wait ~20 min for a release build to say so trains people to merge without reading the result. The Rust cache key is shared with `ci.yml`'s `test-rust`. The nightly run against `main` stays — it is what keeps covering drift the suite does not control (a WebView2 runtime roll, a newer release switching on `UpdaterDialog`).
 
 ## Known-stale corners
+
+- Use Node 22, matching CI. On 2026-09-14 Node 26.7.0 failed before WebDriver session creation with `UND_ERR_INVALID_ARG`; the same build and matching driver passed all six tests under Node 22.23.2. Verify `process.version` and `process.execPath`: the local `npx --package=node@22 node` invocation still selected the system Node 26 binary.
 
 - `e2e/specs/terminal.test.ts` has 3 pre-existing type errors (WDIO's `ChainablePromiseArray.length` resolving as `Promise<number>`). Runtime is unaffected. Nothing typechecks `e2e/` in CI — `pnpm exec tsc --noEmit` uses the root tsconfig, which does not include it; check it by hand with `-p e2e/tsconfig.json`.
 - msedgedriver is pinned to the installed **WebView2 Runtime** version, deliberately not the Edge browser version (`webview2RuntimeVersion()`). That pin is still right even though it was not the bug.
