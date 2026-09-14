@@ -42,4 +42,6 @@ As of 2026-07. One-liners are orientation, not spec — verify in code, and fix 
 
 - `src/lib/path.ts` — canonical `dirname`/`basename` helpers; **never write a local copy** (CLAUDE.md pitfall #12)
 - `src/lib/pitfall-guards.test.ts` — frontend tripwire suite; never weaken
-- `src/plugins/` — plugin registry (`usePluginRegistry`)
+- `src/lib/plugins/` — contribution contracts, registry (`usePluginRegistry`) and activation host; `src/plugins/` contains first-party plugin implementations
+- `src/app/App.tsx` — workbench composition and the built-in sidebar render chain; see [[architecture-boundaries]] for extraction seams
+- `src/modules/atlas/` / `src/modules/benchmark/` — absorbed host-scoped tools, with embedded panels and companion windows; see [[atlas]] and [[benchmark]]

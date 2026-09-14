@@ -5,33 +5,38 @@ description: The Tauri IPC seam — every command family, its Rust handler, and 
 
 # IPC surface (frontend ↔ Rust)
 
-The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/lib.rs` (~90 commands as of 2026-07 — that macro is the authoritative list; this note is the map of families and seams).
+The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/lib.rs` (145 commands verified 2026-09-14; that macro is the authoritative list). See [[architecture-boundaries]] for the reproducible call-site inventory and migration ownership.
 
-**Convention:** each family has one frontend "bridge" file that owns the `invoke()` calls. Don't scatter raw `invoke("cmd_x")` through components — go through (or extend) the bridge.
+**Intended convention:** call through the family's frontend bridge rather than scattering raw `invoke("cmd_x")` through components. The current source does not fully follow this: the Phase 0 census found 204 raw calls in 42 files, and `ai/lib/native.ts` serves many non-AI consumers. The redesign inventory tracks those legacy paths.
 
 | Family | Commands (prefix) | Rust handler | Frontend seam |
 |---|---|---|---|
 | PTY | `pty_open/write/resize/close/cwd` | `modules/pty/mod.rs` | `terminal/lib/pty-bridge.ts` — see [[terminal-tab-open]] |
 | Filesystem | `fs_*`, `list_subdirs` | `modules/fs/{file,tree,mutate,search,grep}.rs` | `ai/lib/native.ts` (AI tools), `editor/lib/useDocument.ts` |
-| Git | `git_*` (25 cmds: status, diff, stage, commit, stash, worktree…) | `modules/git/commands.rs` | `ai/lib/native.ts`; source-control UI |
+| Git | `git_*` (status, diff, stage, commit, stash, worktree…) | `modules/git/commands.rs` | `ai/lib/native.ts`; source-control UI |
 | Shell one-shots & sessions | `shell_run_command`, `shell_session_*`, `shell_bg_*`, `*_shell_history` | `modules/shell/mod.rs` | `ai/lib/native.ts`, `ai/tools/shell.ts`; also `editor/lib/formatter.ts`, `ports/`, `ssh/` |
 | Workspace / WSL | `workspace_authorize`, `workspace_current_dir`, `wsl_*`, `get_launch_dir` | `modules/workspace.rs`, `lib.rs` | `workspace/env.ts`, `lib/launchDir.ts`, and every bridge that spawns with a cwd |
 | Secrets | `secrets_get/set/delete/get_all` | `modules/secrets.rs` (OS keychain) | `ai/lib/keyring.ts` |
 | LSP / DAP | `lsp_*`, `dap_*` | `modules/lsp/mod.rs`, `modules/dap/mod.rs` | `lsp/client.ts`, `debugger/debugSession.ts` |
-| AI HTTP proxy | `ai_http_request`, `ai_http_stream`, `lm_ping` | `modules/net.rs` | `ai/lib/proxyFetch.ts` — see [[ai]] |
-| ML engine | `ml_*` (11 cmds) | `modules/ml.rs` | `ml/lib/engine-bridge.ts` |
+| HTTP | `ai_http_request`, `ai_http_stream`, `lm_ping`, `http_send` | `modules/net.rs` | `ai/lib/proxyFetch.ts`, `webdev/HttpClientPanel.tsx` — see [[ai]], [[web-dev-pack]] |
+| ML engine | `ml_*` | `modules/ml.rs` | `ml/lib/engine-bridge.ts` |
 | Python | `py_detect_envs` | `modules/python.rs` | `python/usePythonEnv.ts`, `ml/store.ts` |
 | Share server | `http_share_*` (start takes `bind` + `token`; `http_share_lan_ip` probes the primary LAN IP) | `modules/http_share.rs` | `share/useShareServer.ts` (global Zustand store — sharing survives panel close) |
 | Recording | `save_cast_recording` | `modules/recording.rs` | `terminal/lib/useRecording.ts` |
 | Session snapshots | `session_snapshot_save/load/delete/gc` | `modules/snapshots.rs` | `terminal/lib/snapshot-bridge.ts` |
-| AI checkpoints | `git_checkpoint_create/list/restore/delete` | `modules/git/operations.rs` (checkpoint section) | `ai/lib/checkpoint.ts` (create, from edit tools) · `source-control/CheckpointSection.tsx` (list/restore) |
+| AI checkpoints | `git_checkpoint_create/list/restore/delete` | `modules/git/commands.rs` adapters → `operations.rs` | `ai/lib/checkpoint.ts` (create, from edit tools) · `source-control/CheckpointSection.tsx` (list/restore) |
 | FS watching | `fs_watch_start`, `fs_watch_stop` + `nexis://fs-changed` event | `modules/fswatch.rs` | `ai/lib/native.ts` → `explorer/FileExplorer.tsx` |
 | System monitor | `sysmon_sample`, `sysmon_kill` | `modules/sysmon.rs` | `ai/lib/native.ts` → `sysmon/useSystemMonitor.ts` |
 | Editor autosave | `editor_autosave_write/read/delete/sweep` | `modules/autosave.rs` | `editor/lib/autosave-bridge.ts` |
 | Crash reports | `list_crash_reports` | `modules/crash.rs` | (settings/diagnostics UI) |
 | Diagnostics | `diagnostics_export` | `modules/diagnostics.rs` (hand-rolled store-only zip) | `settings/sections/GeneralSection.tsx` |
+| Atlas | `atlas_*` | `modules/atlas/mod.rs` | `atlas/repos/api.ts` — host-scoped; see [[atlas]] |
+| Benchmark | `bench_*` | `modules/benchmark/commands.rs` | `benchmark/lib/api.ts` — see [[benchmark]] |
+| Command ledger | `ledger_*` | `modules/ledger.rs` | `ai/lib/native.ts` → `terminal/lib/ledger.ts` — see [[command-ledger]] |
+| AI audit | `ai_audit_append`, `ai_audit_log_path` | `modules/ai_audit.rs` | `ai/lib/audit.ts`, `settings/sections/GeneralSection.tsx` |
+| Tool probing | `tool_probe` | `modules/tools.rs` | `lib/missingTools.ts` |
 
-## Streaming: Channels, not events
+## Streaming channels
 
 High-volume data uses `tauri::ipc::Channel` passed as a command argument, not global events:
 
@@ -40,7 +45,7 @@ High-volume data uses `tauri::ipc::Channel` passed as a command argument, not gl
 
 ## Global events (`emit`/`listen`)
 
-Low-volume broadcast only. Frontend-to-frontend cross-window sync: `nexis://prefs-changed` (see [[settings-sync]]), `nexis://ai-keys-changed`, `nexis://ai-agents-changed`, `nexis://ai-snippets-changed`, `nexis://code-snippets-changed`, `nexis://custom-themes-changed`, `nexis://theme-edit`. Rust→frontend: `lsp:workspace:applyEdit`, `ml:proto`, `ml:exit`.
+Frontend-to-frontend cross-window sync includes `nexis://prefs-changed` (see [[settings-sync]]), `nexis://ai-keys-changed`, `nexis://ai-agents-changed`, `nexis://ai-snippets-changed`, `nexis://code-snippets-changed`, `nexis://custom-themes-changed`, `nexis://theme-edit`. Rust→frontend also uses events for `fs:file-written`, `nexis://fs-changed`, LSP/DAP messages, `ml:proto` / `ml:stderr` / `ml:exit`, and `bench://progress` / `bench://result`. ML and Benchmark stream through events today; channels are not a universal streaming boundary. Benchmark listeners outlive the panel.
 
 ## Sync vs async — main-thread rule
 

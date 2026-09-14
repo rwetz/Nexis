@@ -23,6 +23,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[rust-modules]] — every backend module under `src-tauri/src/modules/`
 - [[ipc-surface]] — the frontend ↔ Rust seam: all command families, handlers, bridge files, channels, events
 - [[zustand-stores]] — every state store and what it owns
+- [[architecture-boundaries]] — current platform/workbench/capability/design seams and the redesign inventory
 
 ## Subsystems (`subsystems/`)
 

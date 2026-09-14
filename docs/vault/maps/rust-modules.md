@@ -20,6 +20,13 @@ As of 2026-07. One-liners are orientation, not spec — verify in code, and fix 
 - `sysmon.rs` — system resource sampling for the System Monitor panel (`sysinfo`, feature-minimal). Process-global stateful `Sampler` — rates are deltas between refreshes. See [[system-monitor]].
 - `ml.rs` / `python.rs` — ML engine and python probing
 - `crash.rs` — crash handling
+- `atlas/` — configured host-repository discovery and read-only libgit2 inspection; see [[atlas]]
+- `benchmark/` — host model/backend discovery and benchmark job services; see [[benchmark]]
+- `autosave.rs` / `snapshots.rs` — host app-data staging for unsaved editor content and terminal snapshots
+- `ledger.rs` / `ai_audit.rs` — command-history records/output and AI audit storage
+- `diagnostics.rs` / `tools.rs` / `winstate.rs` / `job.rs` — diagnostic export, tool probing, saved window policy and Windows process job containment
+
+The 2026-09-14 boundary census is linked from [[architecture-boundaries]]. Current `modules/` combines platform policies, services and Tauri adapters; moving directories alone will not separate them.
 
 ## Guard rails
 
