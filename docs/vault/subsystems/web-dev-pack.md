@@ -40,6 +40,8 @@ The iframe `sandbox` is a single shared constant (`PREVIEW_SANDBOX`) so the fram
 
 ## Scratchpad tools (`modules/webdev/WebToolsPanel.tsx`)
 
+The lazy sidebar panel and its palette command register through `capabilities/web-tools/index.tsx`. Their pack admission and unmount lifecycle are owned by [[workbench]], with the saved `web-tools` view ID preserved.
+
 JSON format/minify + a JSONPath subset, JWT decode, base64/URL codecs, regex tester. All logic is pure and total in `lib/scratchpad.ts` — every function returns a result rather than throwing, because they run on each keystroke against text that is half-typed by definition.
 
 Points worth not re-litigating:

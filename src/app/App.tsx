@@ -1,3 +1,7 @@
+import { CAPABILITIES, CAPABILITY_VIEWS } from "@/capabilities";
+import { CapabilityHost } from "@/workbench/CapabilityHost";
+import { PanelHost } from "@/workbench/PanelHost";
+import { useCapabilities } from "./useCapabilities";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -29,7 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { packEnabled, viewEnabled } from "@/lib/packs";
+import { viewEnabled } from "@/lib/packs";
 import { dirname, stripVerbatimPrefix } from "@/lib/path";
 import { useSidebarState, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "./useSidebarState";
 import type { PanelImperativeHandle } from "react-resizable-panels";
@@ -60,8 +64,6 @@ import {
   type GitHistorySearchHandle,
 } from "@/modules/git-history";
 import { getLaunchDir } from "@/lib/launchDir";
-import { useAtlasStore } from "@/modules/atlas/repos/store";
-import { toast } from "sonner";
 import { useZoom } from "@/lib/useZoom";
 import { FileExplorer, type FileExplorerHandle } from "@/modules/explorer";
 import {
@@ -134,7 +136,6 @@ import { FaviconPanel } from "@/modules/art/FaviconPanel";
 import { IconSetPanel } from "@/modules/art/IconSetPanel";
 import { PalettePanel } from "@/modules/art/PalettePanel";
 import { SvgPlaygroundPanel } from "@/modules/art/SvgPlaygroundPanel";
-import { WebToolsPanel } from "@/modules/webdev/WebToolsPanel";
 import { HttpClientPanel } from "@/modules/webdev/HttpClientPanel";
 import { OnboardingTour } from "@/modules/onboarding/OnboardingTour";
 import { useOnboardingSignals } from "@/modules/onboarding/useOnboardingSignals";
@@ -247,9 +248,6 @@ const DebugToolbarLazy = lazy(() =>
 // Both absorbed apps are lazy for the same reason ML Lab is: they are whole
 // applications' worth of UI, and Atlas additionally pulls in an isometric
 // canvas renderer that nobody who never opens the map should pay to parse.
-const AtlasPanelLazy = lazy(() =>
-  import("@/modules/atlas/AtlasPanel").then((m) => ({ default: m.AtlasPanel })),
-);
 const BenchmarkPanelLazy = lazy(() =>
   import("@/modules/benchmark/BenchmarkPanel").then((m) => ({
     default: m.BenchmarkPanel,
@@ -1434,16 +1432,6 @@ function MainApp() {
     [activeId, focusNextPaneInTab, focusNextEditorPane],
   );
 
-  const showRepoInAtlas = useCallback(() => {
-    if (!explorerRoot) {
-      toast.error("No workspace open", {
-        description: "Open a folder before showing it in Atlas.",
-      });
-      return;
-    }
-    persistSidebarView("atlas");
-    void useAtlasStore.getState().showRepo(explorerRoot);
-  }, [explorerRoot, persistSidebarView]);
 
   const paletteCommands = useMemo<CommandDef[]>(() => [
     { id: "tab.new",             label: "New terminal tab",         category: "Tabs",    action: () => newTab() },
@@ -1455,7 +1443,6 @@ function MainApp() {
     { id: "settings.themes",     label: "Open theme settings",      category: "General", action: () => void openSettingsWindow("themes") },
     { id: "settings.shortcuts",  label: "Open keyboard shortcuts",  category: "General", action: () => setShortcutsOpen(true) },
     { id: "window.new",          label: "New window",               category: "General", action: () => void openNewWindow() },
-    { id: "atlas.showRepo",      label: "Show this repo in Atlas",  category: "General", icon: "globe", action: showRepoInAtlas, keywords: ["atlas", "map", "repos", "isometric"] },
     { id: "ai.toggle",           label: "Toggle AI panel",          category: "AI",      action: togglePanelAndFocus },
     { id: "terminal.aiCommand",  label: "AI command search",        category: "AI",      action: () => window.dispatchEvent(new CustomEvent("nexis:terminal-ai-command")), keywords: ["natural language", "generate command"] },
     { id: "view.zoomIn",         label: "Zoom in",                  category: "View",    action: zoomIn },
@@ -1466,7 +1453,6 @@ function MainApp() {
     { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
     { id: "ledger.history",      label: "Show command history",     category: "View",    action: () => persistSidebarView("command-history"), pack: "dev-tools", keywords: ["ledger", "recorded", "commands", "trends", "journal", "output", "build time"] },
     { id: "webdev.http",         label: "Show HTTP client",         category: "View",    action: () => persistSidebarView("http-client"), pack: "web-dev", keywords: ["rest", "request", "curl", "api"] },
-    { id: "webdev.tools",        label: "Show web tools (JSON, JWT, regex, codecs)", category: "View", action: () => persistSidebarView("web-tools"), pack: "web-dev", keywords: ["json", "jwt", "base64", "regex", "url encode", "format"] },
     { id: "art.svgPlayground",   label: "Open the SVG playground",  category: "View",    action: () => { openSvgPlaygroundTab(); }, pack: "art", keywords: ["svg", "icon", "vector", "art"] },
     { id: "ml.open",             label: "Open ML Lab",              category: "View",    action: () => { openMlLabTab(); }, pack: "ml-lab", keywords: ["model", "training", "inference", "onnx", "benchmark"] },
     { id: "art.palette",         label: "Open the palette",         category: "View",    action: () => persistSidebarView("palette"), pack: "art", keywords: ["colour", "color", "contrast", "wcag", "swatch", "theme"] },
@@ -1480,9 +1466,8 @@ function MainApp() {
     { id: "sidebar.sc",          label: "Show source control",      category: "View",    action: () => persistSidebarView("source-control") },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
-    { id: "atlas.open",          label: "Show Atlas (every git repo on this machine)", category: "View", action: () => persistSidebarView("atlas"), pack: "dev-tools", keywords: ["repos", "repositories", "map", "isometric", "city", "dirty", "branch", "stash", "scan"] },
     { id: "benchmark.open",      label: "Show Benchmark (compare local models)", category: "View", action: () => persistSidebarView("benchmark"), pack: "ml-lab", keywords: ["onnx", "gguf", "llama.cpp", "throughput", "latency", "tokens per second", "inference", "model"] },
-  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgPlaygroundTab, openMlLabTab, showRepoInAtlas]);
+  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgPlaygroundTab, openMlLabTab]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
   // mirroring how the rail hides their views (V2 gating; decision doc in
@@ -1495,11 +1480,6 @@ function MainApp() {
       persistSidebarView("explorer");
     }
   }, [enabledPacks, persistSidebarView, sidebarView]);
-  const visiblePaletteCommands = useMemo(
-    () => paletteCommands.filter((c) => packEnabled(c.pack, enabledPacks)),
-    [paletteCommands, enabledPacks],
-  );
-
   const handleCloseTabOrPane = useCallback(() => {
     const t = tabsRef.current.find((x) => x.id === activeId);
     if (t?.kind === "terminal" && leafIds(t.paneTree).length > 1) {
@@ -2037,6 +2017,14 @@ function MainApp() {
     </div>
   );
 
+  const { context: capabilityContext, paletteCommands: visiblePaletteCommands } = useCapabilities({
+    view: sidebarView, root: explorerRoot, packs: enabledPacks, builtins: paletteCommands,
+    activateView: persistSidebarView,
+    terminal: { open: cdInNewTab, write: (text) => { if (activeLeafId) terminalRefs.current.get(activeLeafId)?.write(text); } },
+    editor: { open: (path) => { openFileTab(path, true); } },
+    openWorkspace: (path) => { void switchWorkspacePath(path); },
+  });
+
   const shell = (
     <ThemeProvider>
       <TooltipProvider>
@@ -2097,7 +2085,7 @@ function MainApp() {
                 <div className="flex h-full min-h-0 flex-col border-r border-border/60 bg-card">
                   <div className="min-h-0 flex-1">
                     <ErrorBoundary>
-                    {isPluginPanelViewId(sidebarView) ? (
+                    <PanelHost view={sidebarView} pendingViews={CAPABILITY_VIEWS} onShowExplorer={() => persistSidebarView("explorer")} fallback={isPluginPanelViewId(sidebarView) ? (
                       // Registry-contributed panel (expansion packs V2). The
                       // slot owns its own gated/missing states, since a
                       // contribution's pack lives on the contribution rather
@@ -2121,8 +2109,6 @@ function MainApp() {
                       </Suspense>
                     ) : sidebarView === "http-client" ? (
                       <HttpClientPanel workspaceKey={workspaceProjectKey(explorerRoot)} />
-                    ) : sidebarView === "web-tools" ? (
-                      <WebToolsPanel />
                     ) : sidebarView === "animator" ? (
                       <AnimatorPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "favicon" ? (
@@ -2238,14 +2224,6 @@ function MainApp() {
                             onOpenNetworkTab={openMlNetworkTab}
                           />
                         </Suspense>
-                    ) : sidebarView === "atlas" ? (
-                      <Suspense fallback={null}>
-                        <AtlasPanelLazy
-                          openWorkspace={(path) => void switchWorkspacePath(path)}
-                          openTerminal={cdInNewTab}
-                          openFile={(path) => openFileTab(path, true)}
-                        />
-                      </Suspense>
                     ) : sidebarView === "benchmark" ? (
                       <Suspense fallback={null}>
                         <BenchmarkPanelLazy />
@@ -2258,7 +2236,7 @@ function MainApp() {
                         onOpenGitGraph={openGitGraphFromContext}
                         onOpenWorktree={(path) => void switchWorkspacePath(path)}
                       />
-                    )}
+                    )} />
                     </ErrorBoundary>
                   </div>
                   <SidebarRail
@@ -2532,5 +2510,5 @@ function MainApp() {
     </ThemeProvider>
   );
 
-  return <AiComposerProvider>{shell}</AiComposerProvider>;
+  return <CapabilityHost definitions={CAPABILITIES} context={capabilityContext}><AiComposerProvider>{shell}</AiComposerProvider></CapabilityHost>;
 }

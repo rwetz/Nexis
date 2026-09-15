@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { useEffect, useRef } from "react";
+import { dispatchContributedShortcut } from "@/workbench/commands";
 import { packEnabled } from "@/lib/packs";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
@@ -57,6 +58,7 @@ export function useGlobalShortcuts(
         h(e);
         return;
       }
+      dispatchContributedShortcut(e);
     };
     window.addEventListener("keydown", onKey, { capture: true });
     return () =>

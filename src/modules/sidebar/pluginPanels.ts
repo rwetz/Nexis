@@ -32,8 +32,7 @@ export function findPluginPanel(
   panels: readonly PanelContribution[],
 ): PanelContribution | null {
   const id = panelIdFromView(view);
-  if (id == null) return null;
-  return panels.find((p) => p.id === id && p.location === "sidebar") ?? null;
+  return panels.find((p) => p.location === "sidebar" && (id == null ? p.legacyView === view : p.id === id)) ?? null;
 }
 
 /**

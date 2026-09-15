@@ -17,6 +17,8 @@
 
 import type React from "react";
 import type { ActivationContext, CommandScope, PanelLifecycle } from "@/workbench/contributions";
+import type { KeyBinding } from "@/modules/shortcuts/shortcuts";
+import type { SidebarViewId } from "@/modules/sidebar/types";
 import type { PackId } from "@/lib/packs";
 import type { ToolContribution } from "@/modules/ai/tools/plugin-tools";
 
@@ -79,6 +81,9 @@ export type PanelContribution = {
    * after first activation until their contribution or pack is removed. */
   lifecycle?: PanelLifecycle;
   enabled?: (context: ActivationContext) => boolean;
+  /** Only first-party migrations use old persisted view ids. New panels use
+   * plugin:<namespaced id> and need no central view-union edit. */
+  legacyView?: SidebarViewId;
 
   // ── Sidebar presentation (expansion packs V2) ────────────────────────────
   // Ignored for `location: "bottom"`. All optional so an existing
@@ -122,7 +127,7 @@ export type CommandContribution = {
   handler: (...args: unknown[]) => void | Promise<void>;
   scope?: CommandScope;
   enabled?: (context: ActivationContext) => boolean;
-  keybindings?: readonly string[];
+  keybindings?: readonly KeyBinding[];
   pack?: PackId;
   category?: string;
   icon?: IconName;

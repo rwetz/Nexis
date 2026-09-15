@@ -66,6 +66,7 @@ export const usePluginRegistry = create<RegistryState & RegistryActions>(
     _addPanel(panel) {
       assertContributionId(panel.id);
       if (get().panels.some((item) => item.id === panel.id)) throw new Error(`Duplicate panel: ${panel.id}`);
+      if (panel.legacyView && get().panels.some((item) => item.legacyView === panel.legacyView)) throw new Error(`Duplicate panel view: ${panel.legacyView}`);
       set((s) => ({ panels: [...s.panels, panel] }));
     },
     _removePanel(id) {

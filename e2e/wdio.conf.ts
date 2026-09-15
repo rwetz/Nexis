@@ -113,6 +113,7 @@ function seedFirstRunPreferences(): void {
       "dev-tools",
       "ml-lab",
       "advanced",
+      "web-dev",
     ],
   };
 

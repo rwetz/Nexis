@@ -130,11 +130,9 @@ export function SidebarRail({
     { id: "command-history", label: "Command History", icon: "clock",       group: "Dev Tools" },
     { id: "ml",             label: "ML Lab",           icon: "brain",     group: "Dev Tools" },
     { id: "benchmark",      label: "Benchmark",        icon: "activity",  group: "Dev Tools" },
-    { id: "atlas",          label: "Atlas",            icon: "globe",     group: "Navigation" },
     { id: "profiles",       label: "Profiles",         icon: "layers",        group: "Dev Tools" },
     { id: "ssh",            label: "SSH",              icon: "terminal",      group: "Dev Tools" },
     { id: "http-client",    label: "HTTP Client",      icon: "network",     group: "Dev Tools" },
-    { id: "web-tools",      label: "Web Tools",        icon: "tools",       group: "Dev Tools" },
     { id: "svg-playground", label: "SVG Playground",   icon: "brush",       group: "Dev Tools" },
     { id: "palette",        label: "Palette",         icon: "theme",       group: "Dev Tools" },
     { id: "backdrop",       label: "Backdrop",        icon: "image",       group: "Dev Tools" },
@@ -157,13 +155,13 @@ export function SidebarRail({
 
   // Registry-contributed sidebar panels (expansion packs V2) appear beside
   // the built-ins and are gated by their own declared pack. They're resolved
-  // here rather than merged into `builtinItems` so a contribution can never
-  // displace or shadow a built-in row.
+  // here rather than merged into `builtinItems`. First-party migrations keep
+  // their saved view IDs; new plugins use the plugin: namespace.
   const pluginItems: RailItemDef[] = visiblePluginPanels(
     registryPanels,
     enabledPacks,
-  ).map((p) => ({
-    id: pluginPanelViewId(p.id),
+  ).filter((p) => !p.legacyView || !isPermanentToolView(p.legacyView, enabledPacks)).map((p) => ({
+    id: p.legacyView ?? pluginPanelViewId(p.id),
     label: p.title,
     icon: p.icon ?? "layers",
     group: p.group ?? "Advanced",

@@ -21,3 +21,16 @@ Remaining legacy paths: all non-Atlas IPC call sites, direct storage/window APIs
 Verification: TypeScript, frontend coverage (1,189 tests in 79 files; statements/lines 90.42%, branches 89.86%, functions 82.44%), all 294 Rust tests, clippy, rustfmt, and Windows release build passed. React Doctor stayed at 89, with only the pre-existing ML panel complexity warning. Both existing E2E specs passed (six tests) against the isolated E2E release build using Node 22.23.2 and WebView2/driver 152.0.4191.66. Node 26 fails before session creation with `UND_ERR_INVALID_ARG`; use the CI runtime for this harness. Local evidence is `%TEMP%/nexis-phase1-*.log`, with the successful E2E run in `nexis-phase1-e2e-node22-verified.log`.
 
 The E2E overlay/harness now use `app.nexis.nexis.e2e` so repeated phase verification does not overwrite real preferences. This isolation is separately tested. No real WSL or cross-drive terminal scenarios are claimed at this stage; the terminal implementation is unchanged.
+
+## Phase 2: workbench complete
+
+- `CapabilityHost` registers declarations transactionally, supplies current callbacks and disposes contributions correctly under StrictMode.
+- `PanelHost` owns lazy rendering, activation focus, pack/enablement admission and declared retain/unmount lifetime. Inactive retained panels are hidden and inert; disabling a pack releases their state. Legacy fallback component identity is preserved.
+- Web Tools and embedded Atlas now register panels and commands through `capabilities/` without App render branches. Old saved view/pin IDs remain valid. Atlas scanner state stays inside Atlas.
+- The existing shortcut router dispatches contributed bindings with focused-panel/input scope. The palette consumes registered commands, applying pack and panel checks. Existing built-in binding precedence is preserved.
+- `app/useCapabilities.ts` supplies terminal/editor/workspace operations without giving capabilities access to the tab store. Existing `useTabs`, pane-tree utilities, tab persistence, `useSidebarState`, pack definitions and the plugin registry remain their sole owners; no competing implementations were added.
+- The HTTP-share denial test now consumes the declared response length and asserts the exact denial body, after repeated Windows resets on EOF. Production HTTP behavior and the pitfall suites are unchanged.
+
+Verification: TypeScript, 1,193 frontend tests in 80 files (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%), all 294 Rust tests, clippy, rustfmt and Windows production build pass. React Doctor remains 89; it reports existing large App/ML function complexity in the changed-file scope. All eight desktop E2E tests in three specs passed, including lazy Web Tools restoration after reload and Atlas command scope. Evidence: `%TEMP%/nexis-phase2-*.log`.
+
+Remaining legacy paths: other built-in panel branches/commands and companion-window composition, raw non-Atlas IPC, direct store/window APIs, shared AI-native utility imports. These are Phase 3/4 work. Terminal implementation and actual PTY behavior remain unchanged in this phase.

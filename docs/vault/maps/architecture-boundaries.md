@@ -10,7 +10,7 @@ The [redesign plan](../../architecture/nexis-architecture-redesign-plan.md) defi
 ## Where the boundaries currently live
 
 - **Platform policy:** `modules/workspace/env.ts`, `modules/settings/store.ts`, `lib/path.ts`, and Rust `modules/{workspace,proc}.rs` / `modules/fs/`. IPC transport is still distributed through capability bridges, especially `modules/ai/lib/native.ts`. See [[ipc-surface]] and [[settings-sync]].
-- **Workbench:** `app/App.tsx`, `app/useSidebarState.ts`, `modules/tabs/`, `modules/sidebar/`, `modules/shortcuts/`, `lib/packs.ts` and `lib/plugins/`. App still renders built-in sidebar panels with a central conditional chain; contributed panels use `PluginPanelSlot` and the registry.
+- **Workbench:** `workbench/`, `app/App.tsx`, `app/useCapabilities.ts`, `app/useSidebarState.ts`, `modules/tabs/`, `modules/sidebar/`, `modules/shortcuts/`, `lib/packs.ts` and `lib/plugins/`. Web Tools and Atlas use declarative registration and `PanelHost`; App still renders remaining built-in sidebar panels with a central conditional chain. See [[workbench]].
 - **Capabilities:** `modules/atlas`, `benchmark`, `terminal`, `editor`, `ai`, source-control/git-history and integrations. The module directory is not itself an enforced boundary. See [[frontend-modules]] and [[rust-modules]].
 - **Design:** `components/icon.tsx`, `components/icon-art.tsx`, `styles/`, `modules/theme/` and explorer icon retint. Persistence and native theme-window access need platform seams even though theme definitions are design-owned. See [[icon-and-motion-system]] and [[theming]].
 

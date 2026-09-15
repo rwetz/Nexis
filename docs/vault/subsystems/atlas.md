@@ -13,6 +13,7 @@ Distinct from [[source-control]] territory: that panel is *this workspace's* rep
 
 ## Key files
 
+- `src/capabilities/atlas/index.tsx` — declarative embedded panel and palette commands; `workbench/PanelHost` supplies activation focus and scoped refresh routing (see [[workbench]])
 - `src-tauri/src/modules/atlas/mod.rs` — the four commands (`atlas_scan_repos`, `atlas_repo_city`, `atlas_repo_detail`, `atlas_config_path`) and the module's own scope note
 - `src-tauri/src/modules/atlas/config.rs` — `atlas.toml` loading, legacy-config adoption, repo discovery under `scan_root`
 - `src-tauri/src/modules/atlas/scan.rs` — one walk + one `Repository::open` + one status pass per repo, fanned out with rayon

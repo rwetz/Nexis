@@ -15,6 +15,8 @@ describe("contribution policies", () => {
     const panel = { id: "test:panel", title: "Panel", location: "sidebar" as const, render: () => null };
     api.registerPanel(panel);
     expect(() => api.registerPanel(panel)).toThrow("Duplicate");
+    api.registerPanel({ ...panel, id: "test:atlas", legacyView: "atlas" });
+    expect(() => api.registerPanel({ ...panel, id: "test:other", legacyView: "atlas" })).toThrow("Duplicate panel view");
   });
 
   it("old disposables cannot remove a later registration, even using the same object", () => {

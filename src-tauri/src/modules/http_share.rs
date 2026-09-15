@@ -948,13 +948,28 @@ mod tests {
             let mut stream = connect(port);
             stream.write_all(req.as_bytes()).unwrap();
             let mut reader = BufReader::new(stream);
-            let (status, _) = read_http_head(&mut reader);
+            let (status, headers) = read_http_head(&mut reader);
             assert!(
                 status.starts_with("HTTP/1.1 403"),
                 "req {req:?} got: {status}"
             );
             let mut body = String::new();
-            reader.read_to_string(&mut body).unwrap();
+            // Read the declared HTTP body, not the TCP close: Windows can
+            // report ConnectionReset after delivering the complete response.
+            let length: usize = headers
+                .lines()
+                .find_map(|line| line.strip_prefix("Content-Length: "))
+                .unwrap()
+                .trim()
+                .parse()
+                .unwrap();
+            reader
+                .by_ref()
+                .take(length as u64)
+                .read_to_string(&mut body)
+                .unwrap();
+            assert_eq!(body.len(), length, "truncated forbidden response");
+            assert_eq!(body, "This share link is invalid or has expired. Ask the person sharing for the current link.");
             assert!(
                 !body.contains("SECRET-CONTENT"),
                 "req {req:?} leaked content"
