@@ -16,7 +16,7 @@ Two engines answer to the same name and have different feature sets — the Pyth
 ## Key files
 
 - `src-tauri/src/modules/ml.rs` — every `ml_*` command: detect, env probe, spawn + reader/flusher threads, pip install, the pinned managed-engine download
-- `src-tauri/src/modules/python.rs:py_detect_envs` — interpreter discovery, shared with the status-bar Python picker
+- `src/capabilities/python/api.ts` / `src-tauri/src/modules/python.rs:py_detect_envs` — typed workspace-scoped interpreter discovery, shared with the status-bar Python picker
 - `src/modules/ml/lib/engine-bridge.ts` — the IPC seam; candidate building, the detection memo, event subscription
 - `src/modules/ml/store.ts` — engine state, the live run, historical runs, compare, serve/playground
 - `src/modules/ml/MlPanel.tsx` — the whole panel (large; setup card, run browser, hyperparams, playground)
@@ -27,6 +27,7 @@ Two engines answer to the same name and have different feature sets — the Pyth
 ## Invariants / gotchas
 
 - **Every engine command is workspace-scoped.** `ml_detect` / `ml_env` / `ml_spawn` / `ml_install` / `py_detect_envs` take `workspace` and build their child through `ml.rs:env_command`, which routes a WSL workspace through `wsl.exe`. `ml_spawn` authorizes the *host* view of the project dir but hands the child the *Linux* path. See CLAUDE.md pitfall #20 before adding a command here.
+- ML project discovery, `train.toml`, `PROJECT.md`, run metadata, and metrics reads go through `platform/filesystem.ts`. Do not reconstruct `WorkspaceEnv` payloads in the store or UI.
 - **Anything host-scoped is hidden, not silently offered, in a WSL workspace** — the pinned download, the managed binary, its uninstall row. A Windows `.exe` in the host's app-data dir is unreachable from inside a distro. Hiding alone left WSL with no path at all, so `WslEngineSteps` gives the commands instead.
 - **`lib/pythonSupport.ts` only ever warns.** Its torch version bounds are a heuristic that goes stale in one direction (a new CPython gains wheels later), so a stale bound must never block an environment that already works.
 - **Caches of engine facts must carry the workspace scope.** `detectCache` keys on `currentWorkspaceScopeKey()`; `MlStore.engineScope` records who answered and discards everything on a mismatch.

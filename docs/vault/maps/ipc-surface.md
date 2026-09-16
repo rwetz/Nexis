@@ -20,7 +20,7 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | LSP / DAP | `lsp_*`, `dap_*` | `modules/lsp/mod.rs`, `modules/dap/mod.rs` | `capabilities/lsp/api.ts` → `lsp/client.ts`; `capabilities/debugger/api.ts` → `debugger/debugSession.ts` |
 | HTTP | `ai_http_request`, `ai_http_stream`, `lm_ping`, `http_send` | `modules/net.rs` | `platform/http-stream.ts` → `ai/lib/proxyFetch.ts`; Web Dev remains on the integration migration queue — see [[ai]], [[web-dev-pack]] |
 | ML engine | `ml_*` | `modules/ml.rs` | `ml/lib/engine-bridge.ts` |
-| Python | `py_detect_envs` | `modules/python.rs` | `python/usePythonEnv.ts`, `ml/store.ts` |
+| Python | `py_detect_envs` | `modules/python.rs` | `capabilities/python/api.ts` → `python/usePythonEnv.ts`, `ml/store.ts` |
 | Share server | `http_share_*` (start takes `bind` + `token`; `http_share_lan_ip` probes the primary LAN IP) | `modules/http_share.rs` | `share/useShareServer.ts` (global Zustand store — sharing survives panel close) |
 | Recording | `save_cast_recording` | `modules/recording.rs` | typed host descriptor in `terminal/lib/useRecording.ts` |
 | Session snapshots | `session_snapshot_save/load/delete/gc` | `modules/snapshots.rs` | typed host descriptors in `terminal/lib/snapshot-bridge.ts` |

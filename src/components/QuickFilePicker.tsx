@@ -6,7 +6,7 @@
 
 import { basename, displayDirname as dirname } from "@/lib/path";
 import { cn } from "@/lib/utils";
-import { invoke } from "@tauri-apps/api/core";
+import { filesystem } from "@/platform/filesystem";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type SearchHit = {
@@ -14,11 +14,6 @@ type SearchHit = {
   rel: string;
   name: string;
   is_dir: boolean;
-};
-
-type ListFilesResult = {
-  files: string[];
-  truncated: boolean;
 };
 
 type Props = {
@@ -44,8 +39,7 @@ export function QuickFilePicker({ root, onSelect, onClose }: Props) {
   useEffect(() => {
     if (!root) return;
     setLoading(true);
-    invoke<ListFilesResult>("fs_list_files", {
-      root,
+    filesystem.listFiles(root, {
       limit: 3000,
       maxDepth: 10,
       showHidden: false,

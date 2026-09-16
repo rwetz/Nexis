@@ -4,17 +4,10 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { currentWorkspaceEnv } from "@/platform/workspaces";
+import { python, type PythonEnv } from "@/capabilities/python/api";
 
-export type PythonEnv = {
-  name: string;
-  path: string;
-  python_path: string;
-  kind: "venv" | "conda" | "system";
-  version: string | null;
-};
+export type { PythonEnv } from "@/capabilities/python/api";
 
 const STORAGE_KEY_PREFIX = "nexis.python.active:";
 
@@ -64,10 +57,7 @@ export function usePythonEnv(workspaceRoot: string | null) {
   const detect = useCallback(async (root: string) => {
     setState((prev) => ({ ...prev, loading: true }));
     try {
-      const envs = await invoke<PythonEnv[]>("py_detect_envs", {
-        workspaceRoot: root,
-        workspace: currentWorkspaceEnv(),
-      });
+      const envs = await python.detectEnvs(root);
       const savedPath = readActiveEnvPath(root);
       const active =
         envs.find((e) => e.path === savedPath) ??

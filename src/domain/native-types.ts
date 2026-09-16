@@ -17,6 +17,12 @@ export type DirEntry = {
   mtime: number;
 };
 
+export type FileStat = {
+  size: number;
+  mtime: number;
+  kind: "file" | "dir" | "symlink";
+};
+
 /** Sort keys for the system-monitor process table. Sorting happens in Rust so
  *  that truncation keeps the rows the user asked to see (see `sysmon.rs`). */
 export type SysmonSort = "cpu" | "memory" | "pid" | "name";

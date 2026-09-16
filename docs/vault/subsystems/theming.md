@@ -13,6 +13,8 @@ A theme is a data object (`Theme` in `src/modules/theme/types.ts`), not a styles
 - **Community themes** (`themes/community/*.ts`) — authored elsewhere, credited via `author`, and deliberately *not* conformed to the Nexis ramp. Held only to WCAG AA.
 - **Custom themes** — user `.nexis-theme` JSON, validated by `validateTheme.ts`, stored via `customThemes.ts`/`themeFiles.ts`, created and edited in a separate window (`emitThemeEdit`).
 
+Custom theme files live under the host app-config directory. `themeFiles.ts` must use `hostFilesystem`, never the active workspace environment; otherwise a WSL workspace incorrectly routes a Windows app-data path into the distro.
+
 ## Key files
 
 - `src/modules/theme/types.ts` — `Theme`, `ThemeColors`, `TerminalPalette`, `DEFAULT_THEME_ID`

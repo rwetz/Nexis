@@ -112,3 +112,11 @@ Verification for this slice: TypeScript and the production frontend build pass; 
 - Like LSP, the current Rust adapter protocol is host-scoped and accepts no `WorkspaceEnv`; this slice preserves that truth instead of claiming WSL-native debugging.
 
 Verification for this slice: TypeScript and the production frontend build pass; all 1,212 frontend tests in 91 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused DAP API checks and `git diff --check` pass. Remaining Phase 4 integration families include ML/Python, SSH/ports/share, Web Dev HTTP, theme/settings native access, and smaller filesystem/window consumers.
+
+### Slice 8: Workspace files and Python discovery
+
+- Quick file picking, workspace notes, ML project discovery/config/run metadata, and file existence checks now use the shared workspace filesystem contract. The picker retains its explicit 3,000-file, depth-10, hidden-file policy instead of falling back to platform defaults.
+- Python environment discovery is a shared `python.environments` capability used by both the status picker and ML Lab. Its command is workspace-scoped, so the captured WSL/local environment is injected at the platform seam rather than reconstructed by each consumer.
+- Custom theme files are explicitly host-scoped because their paths come from the host app-config directory. This fixes create/save/delete under an active WSL workspace, which previously paired a Windows app-data path with a distro environment.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,214 frontend tests in 92 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused ML/theme/filesystem/Python tests and `git diff --check` pass. Changed-scope React Doctor reports 20 accumulated-branch findings: the prior 19 plus the existing sequential DAP breakpoint setup now included because the debugger store changed in Slice 7. Remaining Phase 4 integration families include the ML engine protocol, SSH/ports/share, Web Dev HTTP, settings native access, and smaller window/shell consumers.

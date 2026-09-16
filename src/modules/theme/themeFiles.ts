@@ -4,10 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { currentWorkspaceEnv } from "@/platform/workspaces";
-import { invoke } from "@tauri-apps/api/core";
+import { hostFilesystem } from "@/platform/filesystem";
+import { hostAppConfigDir, joinHostPath } from "@/platform/paths";
 import { emit, listen, type UnlistenFn } from "@/platform/events";
-import { appConfigDir, join } from "@tauri-apps/api/path";
 import type { Theme } from "./types";
 
 const THEME_FILE_EXT = ".nexis-theme";
@@ -18,36 +17,30 @@ export type ThemeEditRequest =
   | { action: "edit"; id: string };
 
 async function themesDir(): Promise<string> {
-  return join(await appConfigDir(), "themes");
+  return joinHostPath(await hostAppConfigDir(), "themes");
 }
 
 export async function themeFilePath(id: string): Promise<string> {
-  return join(await themesDir(), `${id}${THEME_FILE_EXT}`);
+  return joinHostPath(await themesDir(), `${id}${THEME_FILE_EXT}`);
 }
 
 export async function writeThemeFile(theme: Theme): Promise<string> {
   const dir = await themesDir();
-  const ws = currentWorkspaceEnv();
-  const dirExists = await invoke("fs_stat", { path: dir, workspace: ws })
+  const dirExists = await hostFilesystem.stat(dir)
     .then(() => true)
     .catch(() => false);
   if (!dirExists) {
-    await invoke("fs_create_dir", { path: dir, workspace: ws });
+    await hostFilesystem.createDir(dir);
   }
-  const path = await join(dir, `${theme.id}${THEME_FILE_EXT}`);
-  await invoke("fs_write_file", {
-    path,
-    content: JSON.stringify(theme, null, 2),
-    workspace: ws,
-    source: "theme",
-  });
+  const path = await joinHostPath(dir, `${theme.id}${THEME_FILE_EXT}`);
+  await hostFilesystem.writeFile(path, JSON.stringify(theme, null, 2), "theme");
   return path;
 }
 
 export async function deleteThemeFile(id: string): Promise<void> {
   try {
     const path = await themeFilePath(id);
-    await invoke("fs_delete", { path, workspace: currentWorkspaceEnv() });
+    await hostFilesystem.delete(path);
   } catch {
     /* file may not exist yet — nothing to clean up */
   }

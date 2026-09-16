@@ -9,6 +9,7 @@ import type {
   GlobResponse,
   FileSearchResponse,
   ListFilesResult,
+  FileStat,
 } from "@/domain/native-types";
 
 export function createFilesystem(
@@ -67,6 +68,10 @@ export function createFilesystem(
         ),
         { path, showHidden },
       ),
+    stat: (path: string) =>
+      ipc.call(defineCommand<{ path: string }, FileStat>("fs_stat", scope), {
+        path,
+      }),
     grep: (params: {
       pattern: string;
       root: string;
@@ -118,10 +123,21 @@ export function createFilesystem(
         >("fs_search", scope),
         params,
       ),
-    listFiles: (root: string) =>
+    listFiles: (
+      root: string,
+      options: { limit?: number; maxDepth?: number; showHidden?: boolean } = {},
+    ) =>
       ipc.call(
-        defineCommand<{ root: string }, ListFilesResult>("fs_list_files", scope),
-        { root },
+        defineCommand<
+          {
+            root: string;
+            limit?: number;
+            maxDepth?: number;
+            showHidden?: boolean;
+          },
+          ListFilesResult
+        >("fs_list_files", scope),
+        { root, ...options },
       ),
     fsWatchStart: (path: string) =>
       hostIpc.call(

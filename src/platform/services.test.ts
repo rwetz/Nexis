@@ -63,10 +63,21 @@ it("file writes preserve caller paths and source while host exports reject WSL i
     showHidden: false,
     workspace: { kind: "wsl", distro: "Ubuntu" },
   });
-  await filesystem.listFiles("/home/me/project");
+  await filesystem.listFiles("/home/me/project", {
+    limit: 3_000,
+    maxDepth: 10,
+    showHidden: false,
+  });
   expect(mocks.invoke).toHaveBeenLastCalledWith("fs_list_files", {
     root: "/home/me/project",
+    limit: 3_000,
+    maxDepth: 10,
+    showHidden: false,
     workspace: { kind: "wsl", distro: "Ubuntu" },
+  });
+  await hostFilesystem.stat("C:/Users/me/AppData/Roaming/nexis/themes");
+  expect(mocks.invoke).toHaveBeenLastCalledWith("fs_stat", {
+    path: "C:/Users/me/AppData/Roaming/nexis/themes",
   });
 });
 

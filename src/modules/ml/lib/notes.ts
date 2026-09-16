@@ -10,8 +10,7 @@
  * and is gitignorable/portable like the rest of the run store. Read in
  * the run browser; written via the atomic fs_write_file.
  */
-import { invoke } from "@tauri-apps/api/core";
-import { currentWorkspaceEnv } from "@/platform/workspaces";
+import { filesystem } from "@/platform/filesystem";
 import { readTextFile } from "./fs";
 
 export type RunMeta = { note: string; tags: string[]; pinned: boolean };
@@ -43,10 +42,9 @@ export async function readRunMeta(dir: string): Promise<RunMeta> {
 }
 
 export async function writeRunMeta(dir: string, meta: RunMeta): Promise<void> {
-  await invoke("fs_write_file", {
-    path: `${dir}/notes.json`,
-    content: `${JSON.stringify(meta, null, 2)}\n`,
-    workspace: currentWorkspaceEnv(),
-    source: "ml-lab",
-  });
+  await filesystem.writeFile(
+    `${dir}/notes.json`,
+    `${JSON.stringify(meta, null, 2)}\n`,
+    "ml-lab",
+  );
 }

@@ -17,7 +17,6 @@ import { filesystem } from "@/platform/filesystem";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 
-import { invoke } from "@tauri-apps/api/core";
 import {
   useCallback,
   useEffect,
@@ -80,13 +79,8 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
       setSaveStatus("saving");
       try {
         // Ensure .nexis directory exists
-        await invoke("fs_create_dir", {
-          path: `${workspaceRoot}/.nexis`,
-        }).catch(() => undefined);
-        await invoke("fs_write_file", {
-          path: notesPath(workspaceRoot),
-          content,
-        });
+        await filesystem.createDir(`${workspaceRoot}/.nexis`).catch(() => undefined);
+        await filesystem.writeFile(notesPath(workspaceRoot), content, "workspace-notes");
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 1500);
       } catch {

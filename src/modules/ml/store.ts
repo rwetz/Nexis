@@ -14,8 +14,10 @@
  * Every selector here must return a primitive or a stored reference.
  */
 import { create } from "zustand";
-import { invoke } from "@tauri-apps/api/core";
 import { basename } from "@/lib/path";
+import { filesystem } from "@/platform/filesystem";
+import { revealPathInHost } from "@/platform/opener";
+import { python } from "@/capabilities/python/api";
 import {
   currentWorkspaceEnv,
   currentWorkspaceScopeKey,
@@ -73,18 +75,9 @@ import {
 import { appendPoint, createSeriesMap, type Series } from "./lib/series";
 import { readRunMeta, writeRunMeta, type RunMeta } from "./lib/notes";
 import { readTextFile } from "./lib/fs";
-import type { ReadResult } from "@/domain/native-types";
 import { readTrainToml, writeProjectBrief, writeTrainToml } from "./lib/config";
 import { tomlSet } from "./lib/toml-edit";
 import type { CreationOverride } from "./lib/model-blueprint";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
-
-type DirEntry = {
-  name: string;
-  kind: "file" | "dir" | "symlink";
-  size: number;
-  mtime: number;
-};
 
 export type EngineStatus = "idle" | "detecting" | "ready" | "missing";
 
@@ -424,7 +417,7 @@ const SKIP_DIRS = new Set(["node_modules", "dist", "build", "target", "coverage"
 
 async function fileExists(path: string): Promise<boolean> {
   try {
-    await invoke("fs_stat", { path, workspace: currentWorkspaceEnv() });
+    await filesystem.stat(path);
     return true;
   } catch {
     return false;
@@ -532,10 +525,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     let envs: PythonEnv[] = [];
     if (workspaceRoot) {
       try {
-        envs = await invoke<PythonEnv[]>("py_detect_envs", {
-          workspaceRoot,
-          workspace: currentWorkspaceEnv(),
-        });
+        envs = await python.detectEnvs(workspaceRoot);
       } catch {
         // no python detection → still try PATH
       }
@@ -753,11 +743,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
       found.push(await toProject(workspaceRoot, basename(workspaceRoot)));
     }
     try {
-      const entries = await invoke<DirEntry[]>("fs_read_dir", {
-        path: workspaceRoot,
-        showHidden: false,
-        workspace: currentWorkspaceEnv(),
-      });
+      const entries = await filesystem.readDir(workspaceRoot, false);
       const candidates = entries
         .filter(
           (e) =>
@@ -943,11 +929,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     // load for the currently selected project may write the list.
     const stillCurrent = () => get().selectedProject === projectDir;
     try {
-      const entries = await invoke<DirEntry[]>("fs_read_dir", {
-        path: runsDir,
-        showHidden: true,
-        workspace: currentWorkspaceEnv(),
-      });
+      const entries = await filesystem.readDir(runsDir, true);
       const dirs = entries
         .filter((e) => e.kind === "dir")
         .map((e) => e.name)
@@ -1003,10 +985,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     }
     void get().stopServe(); // viewing a different run closes the playground
     try {
-      const res = await invoke<ReadResult>("fs_read_file", {
-        path: `${run.dir}/metrics.jsonl`,
-        workspace: currentWorkspaceEnv(),
-      });
+      const res = await filesystem.readFile(`${run.dir}/metrics.jsonl`);
       if (res.kind !== "text") {
         set((s) => ({
           logs: pushLog(
@@ -1403,7 +1382,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
             p.dir === projectDir ? { ...p, hasOnnx: true } : p,
           ),
         }));
-        void revealItemInDir(outPath).catch(() => {});
+        void revealPathInHost(outPath).catch(() => {});
       } else {
         set((s) => ({
           logs: pushLog(
@@ -1421,7 +1400,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
       set({ pendingExport: null });
       if (payload.code === 0) {
         set((s) => ({ logs: pushLog(s.logs, `report written: ${reportPath}`) }));
-        void revealItemInDir(reportPath).catch(() => {});
+        void revealPathInHost(reportPath).catch(() => {});
       } else {
         set((s) => ({
           logs: pushLog(s.logs, `export failed (exit ${payload.code ?? "?"})`),
