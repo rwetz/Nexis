@@ -13,6 +13,8 @@ CodeMirror 6 via `@uiw/react-codemirror`. Three pane types render CM instances �
 - `src/modules/editor/EditorPane.tsx` — main pane; wires LSP (`modules/lsp/lspExtension.ts`), breakpoints, vim, snippets, inline completion
 - `src/modules/editor/lib/autocomplete/inlineExtension.ts` — AI ghost-text completion (StateField + widget decoration, LRU cache, debounced driver)
 - `src/modules/editor/lib/useDocument.ts` — file load/save/dirty state through `platform/filesystem.ts`; also owns crash recovery: debounced dirty-buffer autosaves via `autosave-bridge.ts` → `modules/autosave.rs` (path-keyed by pinned FNV-1a hash, collision-guarded), offered back as a Restore/Discard banner when an autosave differs from disk on load
+- `src/modules/editor/lib/formatter.ts` — formatter selection and execution through `platform/processes.ts`, preserving workspace environment and hidden subprocess policy
+- `src/modules/editor/lib/autosave-bridge.ts` — typed host-scoped crash-recovery storage; autosaves live in app data, not the active workspace
 - `src/modules/editor/Minimap.tsx` — separate DOM sibling, polls the view every 200 ms; not a CM extension
 - `src/lib/useZoom.ts` + `.zoom-content` / `.zoom-exempt` in `src/styles/globals.css` — app zoom (CSS `zoom`), which the editor must be exempt from
 
@@ -22,6 +24,7 @@ CodeMirror 6 via `@uiw/react-codemirror`. Three pane types render CM instances �
 - The `extensions` array passed to `<CodeMirror>` must keep a stable identity (memoized once, callbacks via refs) — a new identity makes `@uiw/react-codemirror` rebuild state and wipes the language compartment (comment at `EditorPane.tsx:167`).
 - **Large-file mode** (2026-07): files over `LARGE_FILE_BYTES` (2 MiB, `EditorPane.tsx`) open with LSP/lint/folding/minimap/AI-completion off and a banner offering "Enable anyway" (per-path session override in `largeFileOverrides`). Lint toggles through `lintCompartment` precisely because of the stable-identity invariant above — don't switch it by rebuilding the extensions array. Distinct from the hard `fs_read_file` size cap (Rust), which refuses the file entirely.
 - Runtime reconfiguration goes through the exported Compartments (`languageCompartment`, `vimCompartment`, `wrapCompartment`), not by changing the extensions array.
+- File reads/writes/searches are workspace-scoped, but crash-recovery autosaves are host-scoped app data. Do not stamp autosave commands with the active WSL environment.
 
 - The Problems panel + status-bar error counts are **LSP-fed only** (`modules/problems/diagnosticsStore.ts`) — the built-in Lezer `syntaxLinter` never reaches them. No language server on PATH (see `modules/lsp/languages.ts` for the expected binaries) → they stay empty. The LSP workspace root comes from `chatStore.live`, which hydrates after mount — `EditorPane` subscribes to it reactively; a one-shot check races and kills LSP for restored tabs.
 

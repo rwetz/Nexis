@@ -105,6 +105,18 @@ export type GlobHit = { path: string; rel: string };
 
 export type GlobResponse = { hits: GlobHit[]; truncated: boolean };
 
+export type FileSearchHit = {
+  path: string;
+  rel: string;
+  name: string;
+  is_dir: boolean;
+};
+
+export type FileSearchResponse = {
+  hits: FileSearchHit[];
+  truncated: boolean;
+};
+
 export type GitRepoInfo = {
   repoRoot: string;
   branch: string;

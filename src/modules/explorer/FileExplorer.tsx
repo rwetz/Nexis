@@ -46,7 +46,7 @@ export type FileExplorerHandle = {
   isFocused: () => boolean;
 };
 
-type Props = {
+export type FileExplorerProps = {
   rootPath: string | null;
   onOpenFile: (path: string, pin?: boolean) => void;
   onPathRenamed?: (from: string, to: string) => void;
@@ -149,7 +149,7 @@ function buildRows(
   return { rows, entryIndexByPath };
 }
 
-export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
+export const FileExplorer = forwardRef<FileExplorerHandle, FileExplorerProps>(
   function FileExplorer(
     {
       rootPath,

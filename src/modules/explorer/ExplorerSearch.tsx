@@ -14,8 +14,8 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { invoke } from "@tauri-apps/api/core";
-import { currentWorkspaceEnv } from "@/platform/workspaces";
+import { filesystem } from "@/platform/filesystem";
+import type { FileSearchHit } from "@/domain/native-types";
 import {
   forwardRef,
   useCallback,
@@ -29,18 +29,6 @@ import { FileTypeIcon } from "./lib/FileTypeIcon";
 import { copyToClipboard, revealInFinder } from "./lib/contextActions";
 import { COMPACT_CONTENT, COMPACT_ITEM } from "./lib/menuItemClass";
 import { cn } from "@/lib/utils";
-
-type SearchHit = {
-  path: string;
-  rel: string;
-  name: string;
-  is_dir: boolean;
-};
-
-type SearchResult = {
-  hits: SearchHit[];
-  truncated: boolean;
-};
 
 const MIN_QUERY_LEN = 2;
 const DEBOUNCE_MS = 300;
@@ -73,7 +61,7 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
 ) {
   const showHidden = usePreferencesStore((s) => s.showHidden);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchHit[]>([]);
+  const [results, setResults] = useState<FileSearchHit[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [searching, setSearching] = useState(false);
   const [truncated, setTruncated] = useState(false);
@@ -128,12 +116,11 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
     let alive = true;
     const handle = setTimeout(async () => {
       try {
-        const res = await invoke<SearchResult>("fs_search", {
+        const res = await filesystem.search({
           root: rootPath,
           query: q,
           limit: 200,
           showHidden,
-          workspace: currentWorkspaceEnv(),
         });
         if (alive) {
           setResults(res.hits);
@@ -178,7 +165,7 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
     }
   }, [selectedIndex, results, active]);
 
-  const handleSelect = (hit: SearchHit) => {
+  const handleSelect = (hit: FileSearchHit) => {
     if (!hit.is_dir) {
       onOpenFile(hit.path);
     }

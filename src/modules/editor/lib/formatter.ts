@@ -5,9 +5,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { invoke } from "@tauri-apps/api/core";
-import { currentWorkspaceEnv } from "@/platform/workspaces";
-import type { CommandOutput } from "@/domain/native-types";
+import { processes } from "@/platform/processes";
 import type { FormatterConfig, FormatterLanguage } from "@/modules/settings/store";
 
 const EXT_TO_LANG: Record<string, FormatterLanguage> = {
@@ -67,12 +65,7 @@ export async function formatFile(
 
   const command = cfg.command.replace("{file}", basename);
 
-  const result = await invoke<CommandOutput>("shell_run_command", {
-    command,
-    cwd: dir,
-    timeoutSecs: 30,
-    workspace: currentWorkspaceEnv(),
-  });
+  const result = await processes.runCommand(command, dir, 30);
 
   if (result.exit_code !== 0) {
     const errText = (result.stderr || result.stdout || "formatter exited with non-zero code").trim();

@@ -1,6 +1,7 @@
 import { activeWorkspace, workspaceCurrentDir } from "@/platform/workspaces";
 import { git } from "@/capabilities/git/api";
-import { GitCapabilityHostProvider } from "@/capabilities/git";
+import { GitCapabilityHostProvider } from "@/capabilities/git/context";
+import { ExplorerCapabilityHostProvider } from "@/capabilities/editor/context";
 import { CAPABILITIES, CAPABILITY_TOOL_WINDOWS, CAPABILITY_VIEWS } from "@/capabilities";
 import { CapabilityHost } from "@/workbench/CapabilityHost";
 import { PanelHost } from "@/workbench/PanelHost";
@@ -68,7 +69,7 @@ import {
 } from "@/modules/git-history";
 import { getLaunchDir } from "@/lib/launchDir";
 import { useZoom } from "@/lib/useZoom";
-import { FileExplorer, type FileExplorerHandle } from "@/modules/explorer";
+import { type FileExplorerHandle } from "@/modules/explorer";
 import {
   Header,
   type SearchInlineHandle,
@@ -1451,7 +1452,6 @@ function MainApp() {
     { id: "art.animator",        label: "Open the SVG animator",    category: "View",    action: () => persistSidebarView("animator"), pack: "art", keywords: ["animate", "keyframe", "smil", "motion", "timeline"] },
     { id: "help.gettingStarted", label: "Open Getting Started",       category: "General", action: () => openOnboarding(), keywords: ["onboarding", "tour", "help", "first run", "checklist"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
-    { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
   ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgPlaygroundTab, openMlLabTab]);
@@ -2110,19 +2110,6 @@ function MainApp() {
                       <SvgPlaygroundPanel onExpand={openSvgPlaygroundTab} workspaceRoot={explorerRoot} />
                     ) : sidebarView === "recent-files" ? (
                       <RecentFilesPanel onOpenFile={handleOpenFile} />
-                    ) : sidebarView === "explorer" ? (
-                      <FileExplorer
-                        ref={explorerRef}
-                        rootPath={explorerRoot}
-                        onOpenFile={handleOpenFile}
-                        onPathRenamed={handlePathRenamed}
-                        onPathDeleted={handlePathDeleted}
-                        onRevealInTerminal={cdInNewTab}
-                        onAttachToAgent={handleAttachFileToAgent}
-                        onOpenMarkdownPreview={openMarkdownPreview}
-                        onOpenNotebook={openNotebookViewer}
-                        onOpenImage={openImageViewer}
-                      />
                     ) : sidebarView === "processes" ? (
                       <ActivityPanel />
                     ) : sidebarView === "system-monitor" ? (
@@ -2493,7 +2480,20 @@ function MainApp() {
         onOpenGitGraph: openGitGraphFromContext,
         onOpenWorktree: (path) => void switchWorkspacePath(path),
       }}>
-        <AiComposerProvider>{shell}</AiComposerProvider>
+        <ExplorerCapabilityHostProvider value={{
+          explorerRef,
+          rootPath: explorerRoot,
+          onOpenFile: handleOpenFile,
+          onPathRenamed: handlePathRenamed,
+          onPathDeleted: handlePathDeleted,
+          onRevealInTerminal: cdInNewTab,
+          onAttachToAgent: handleAttachFileToAgent,
+          onOpenMarkdownPreview: openMarkdownPreview,
+          onOpenNotebook: openNotebookViewer,
+          onOpenImage: openImageViewer,
+        }}>
+          <AiComposerProvider>{shell}</AiComposerProvider>
+        </ExplorerCapabilityHostProvider>
       </GitCapabilityHostProvider>
     </CapabilityHost>
   );

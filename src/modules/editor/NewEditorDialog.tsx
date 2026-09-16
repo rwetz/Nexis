@@ -15,9 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { invoke } from "@tauri-apps/api/core";
+import { filesystem } from "@/platform/filesystem";
 import { useEffect, useRef, useState } from "react";
-import { currentWorkspaceEnv } from "@/platform/workspaces";
 
 type Props = {
   open: boolean;
@@ -87,7 +86,7 @@ export function NewEditorDialog({
       ? trimmed
       : joinPath(rootPath, trimmed);
     try {
-      await invoke("fs_create_file", { path, workspace: currentWorkspaceEnv() });
+      await filesystem.createFile(path);
       onCreated(path);
       onOpenChange(false);
     } catch (e) {

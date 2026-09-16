@@ -4,5 +4,5 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-export { FileExplorer, type FileExplorerHandle } from "./FileExplorer";
+export { FileExplorer, type FileExplorerHandle, type FileExplorerProps } from "./FileExplorer";
 export { ExplorerSearch } from "./ExplorerSearch";

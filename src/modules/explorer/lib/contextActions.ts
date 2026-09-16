@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { revealPathInHost } from "@/platform/opener";
 import { toast } from "sonner";
 
 export async function copyToClipboard(text: string): Promise<void> {
@@ -23,7 +23,7 @@ export function relativePath(rootPath: string, path: string): string {
 
 export async function revealInFinder(path: string): Promise<void> {
   try {
-    await revealItemInDir(path);
+    await revealPathInHost(path);
   } catch (e) {
     toast.error("Could not reveal in file manager", { description: String(e) });
   }

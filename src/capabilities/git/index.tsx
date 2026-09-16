@@ -34,5 +34,3 @@ export const gitCapability: CapabilityDefinition = {
     handler: () => context().panels.activate("git:source-control"),
   }],
 };
-
-export { GitCapabilityHostProvider } from "./context";

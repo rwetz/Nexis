@@ -7,6 +7,7 @@ import type {
   DirEntry,
   GrepResponse,
   GlobResponse,
+  FileSearchResponse,
 } from "@/domain/native-types";
 
 export function createFilesystem(
@@ -102,6 +103,19 @@ export function createFilesystem(
           root: params.root,
           maxResults: params.maxResults ?? null,
         },
+      ),
+    search: (params: {
+      root: string;
+      query: string;
+      limit: number;
+      showHidden: boolean;
+    }) =>
+      ipc.call(
+        defineCommand<
+          { root: string; query: string; limit: number; showHidden: boolean },
+          FileSearchResponse
+        >("fs_search", scope),
+        params,
       ),
     fsWatchStart: (path: string) =>
       hostIpc.call(

@@ -68,3 +68,12 @@ Remaining Phase 4 order: source control/Git history; editor/explorer; AI; termin
 - A focused declaration test locks the persisted `source-control` view, unmount lifetime, hidden duplicate rail contribution, and command activation target.
 
 Verification for this slice: TypeScript and the production frontend build pass; all 1,199 frontend tests in 84 files pass (coverage statements/lines 90.65%, branches 89.97%, functions 83.51%); focused capability/workbench/sidebar tests and `git diff --check` pass. Changed-scope React Doctor reports 17 accumulated-branch findings; the only newly listed file is the pre-existing high-complexity `SourceControlPanel` now touched solely to export its prop contract. Remaining Phase 4 order: editor/explorer; AI; terminal; integrations.
+
+### Slice 3: Editor and Explorer
+
+- Explorer now contributes the persisted `explorer` panel and palette command from `capabilities/editor`. Its capability-specific host preserves the stable imperative focus ref and existing file/tab/terminal/preview callbacks without exposing App or tab-store internals. The old App render and command branches are gone; the core shell-owned rail row remains.
+- Explorer file search and new-file creation now use `platform/filesystem.ts` with workspace scope. File-manager reveal uses `platform/opener.ts`. Editor formatting uses `platform/processes.ts`, preserving captured local/WSL execution and subprocess policy.
+- Editor crash-recovery autosave commands use typed host-scoped descriptors because recovery files live in app data, independent of the active workspace environment.
+- Focused tests lock Explorer declaration/lifetime/activation and cover the existing editor/explorer logic. CodeMirror composition, stable extension identity, tab ownership, WSL rename behavior, and zoom exemption are unchanged.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,200 frontend tests in 85 files pass with the existing coverage floors; focused editor/explorer/capability/workbench tests and `git diff --check` pass. Changed-scope React Doctor reports 19 accumulated-branch findings, all existing complexity/size or the Phase 2 `PanelHost` lookup warning; the temporary mixed-export warning was removed. Remaining Phase 4 order: AI; terminal; integrations.
