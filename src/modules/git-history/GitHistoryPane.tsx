@@ -18,8 +18,8 @@ import { cn } from "@/lib/utils";
 import type { GitCommitFileChange, GitLogEntry } from "@/domain/native-types";
 import { FileTypeIcon } from "@/modules/explorer/lib/FileTypeIcon";
 import { sendMessage } from "@/modules/ai/store/chatStore";
+import { openHostUrl } from "@/platform/opener";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   memo,
   useCallback,
@@ -867,7 +867,7 @@ function CommitDetail({
               size="xs"
               variant="ghost"
               className="h-6 cursor-pointer gap-1.5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
-              onClick={() => void openUrl(webUrl).catch(console.error)}
+              onClick={() => void openHostUrl(webUrl).catch(console.error)}
             >
               <Icon name="link-external" size="xs" />
               {hostLabel(remoteWeb!)}

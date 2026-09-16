@@ -159,7 +159,7 @@ export function SidebarRail({
   const pluginItems: RailItemDef[] = visiblePluginPanels(
     registryPanels,
     enabledPacks,
-  ).filter((p) => !p.legacyView || !isPermanentToolView(p.legacyView, enabledPacks)).map((p) => ({
+  ).filter((p) => p.showInRail !== false && (!p.legacyView || !isPermanentToolView(p.legacyView, enabledPacks))).map((p) => ({
     id: p.legacyView ?? pluginPanelViewId(p.id),
     label: p.title,
     icon: p.icon ?? "layers",

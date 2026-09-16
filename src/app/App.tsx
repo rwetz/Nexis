@@ -1,5 +1,6 @@
 import { activeWorkspace, workspaceCurrentDir } from "@/platform/workspaces";
 import { git } from "@/capabilities/git/api";
+import { GitCapabilityHostProvider } from "@/capabilities/git";
 import { CAPABILITIES, CAPABILITY_TOOL_WINDOWS, CAPABILITY_VIEWS } from "@/capabilities";
 import { CapabilityHost } from "@/workbench/CapabilityHost";
 import { PanelHost } from "@/workbench/PanelHost";
@@ -124,10 +125,7 @@ import { PortsPanel } from "@/modules/ports";
 import { ProfilesPanel } from "@/modules/profiles";
 import { ReplPanel, sendToRepl } from "@/modules/repl";
 import { ReleasePanel } from "@/modules/release";
-import {
-  SourceControlPanel,
-  useSourceControl,
-} from "@/modules/source-control";
+import { useSourceControl } from "@/modules/source-control";
 import { StatusBar } from "@/modules/statusbar";
 import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
 import { OnboardingDialog } from "@/modules/onboarding/OnboardingDialog";
@@ -1454,7 +1452,6 @@ function MainApp() {
     { id: "help.gettingStarted", label: "Open Getting Started",       category: "General", action: () => openOnboarding(), keywords: ["onboarding", "tour", "help", "first run", "checklist"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.explorer",    label: "Show file explorer",       category: "View",    action: () => persistSidebarView("explorer") },
-    { id: "sidebar.sc",          label: "Show source control",      category: "View",    action: () => persistSidebarView("source-control") },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
   ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgPlaygroundTab, openMlLabTab]);
@@ -2214,15 +2211,7 @@ function MainApp() {
                             onOpenNetworkTab={openMlNetworkTab}
                           />
                         </Suspense>
-                    ) : (
-                      <SourceControlPanel
-                        open
-                        sourceControl={sourceControl}
-                        onOpenDiff={openGitDiffTab}
-                        onOpenGitGraph={openGitGraphFromContext}
-                        onOpenWorktree={(path) => void switchWorkspacePath(path)}
-                      />
-                    )} />
+                    ) : null} />
                     </ErrorBoundary>
                   </div>
                   <SidebarRail
@@ -2496,5 +2485,16 @@ function MainApp() {
     </ThemeProvider>
   );
 
-  return <CapabilityHost definitions={CAPABILITIES} context={capabilityContext}><AiComposerProvider>{shell}</AiComposerProvider></CapabilityHost>;
+  return (
+    <CapabilityHost definitions={CAPABILITIES} context={capabilityContext}>
+      <GitCapabilityHostProvider value={{
+        sourceControl,
+        onOpenDiff: openGitDiffTab,
+        onOpenGitGraph: openGitGraphFromContext,
+        onOpenWorktree: (path) => void switchWorkspacePath(path),
+      }}>
+        <AiComposerProvider>{shell}</AiComposerProvider>
+      </GitCapabilityHostProvider>
+    </CapabilityHost>
+  );
 }

@@ -59,3 +59,12 @@ Remaining legacy paths: capability-local raw IPC and Tauri plugin calls, remaini
 Verification for this slice: TypeScript and the production frontend build pass; all 1,198 frontend tests in 83 files pass (coverage statements/lines 90.65%, branches 89.97%, functions 83.51%); `git diff --check` passes. Changed-scope React Doctor reports 16 existing findings from the accumulated branch diff, none in this slice's new capability, window-routing, Benchmark, or platform files. Full Rust and desktop E2E phase gates remain due before Phase 4 is marked complete.
 
 Remaining Phase 4 order: source control/Git history; editor/explorer; AI; terminal; integrations. Raw IPC and central composition in those families remain legacy until their slice lands. Terminal and PTY behavior are untouched by this slice.
+
+### Slice 2: Source Control and Git History
+
+- Source Control now contributes its legacy-compatible panel and palette command from `capabilities/git`. A capability-specific host context supplies the existing summary and tab/workspace callbacks without giving the panel direct access to App or the tab store. The old lazy adapter and App render/command branches are gone; the existing shell-owned rail item remains because it carries the live changed-file badge.
+- The Git API now covers worktree list/add/remove through typed workspace-scoped descriptors. Source Control and Git History contain no raw Tauri invoke calls, and Git History opens remote commit pages through the platform opener adapter.
+- Git state, remote throttling, contextual repository selection, diff tabs, history tabs, CLI behavior, and the changed-file badge keep their existing owners and behavior. Git History remains a workbench tab surface rather than being misrepresented as a sidebar panel.
+- A focused declaration test locks the persisted `source-control` view, unmount lifetime, hidden duplicate rail contribution, and command activation target.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,199 frontend tests in 84 files pass (coverage statements/lines 90.65%, branches 89.97%, functions 83.51%); focused capability/workbench/sidebar tests and `git diff --check` pass. Changed-scope React Doctor reports 17 accumulated-branch findings; the only newly listed file is the pre-existing high-complexity `SourceControlPanel` now touched solely to export its prop contract. Remaining Phase 4 order: editor/explorer; AI; terminal; integrations.

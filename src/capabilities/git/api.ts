@@ -16,6 +16,7 @@ import type {
   GitBranchEntry,
   GitSubmoduleEntry,
   GitDiscardEntry,
+  GitWorktreeEntry,
 } from "@/domain/native-types";
 
 export const git = {
@@ -274,5 +275,34 @@ export const git = {
         "workspace",
       ),
       { repoRoot, stashRef },
+    ),
+  gitWorktreeList: (repoRoot: string) =>
+    workspaceIpc.call(
+      defineCommand<{ repoRoot: string }, GitWorktreeEntry[]>(
+        "git_worktree_list",
+        "workspace",
+      ),
+      { repoRoot },
+    ),
+  gitWorktreeAdd: (
+    repoRoot: string,
+    path: string,
+    branch: string,
+    newBranch: boolean,
+  ) =>
+    workspaceIpc.call(
+      defineCommand<
+        { repoRoot: string; path: string; branch: string; newBranch: boolean },
+        void
+      >("git_worktree_add", "workspace"),
+      { repoRoot, path, branch, newBranch },
+    ),
+  gitWorktreeRemove: (repoRoot: string, path: string) =>
+    workspaceIpc.call(
+      defineCommand<{ repoRoot: string; path: string }, void>(
+        "git_worktree_remove",
+        "workspace",
+      ),
+      { repoRoot, path },
     ),
 };

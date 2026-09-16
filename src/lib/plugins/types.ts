@@ -84,6 +84,9 @@ export type PanelContribution = {
   /** Only first-party migrations use old persisted view ids. New panels use
    * plugin:<namespaced id> and need no central view-union edit. */
   legacyView?: SidebarViewId;
+  /** First-party migrations may retain an existing shell-owned rail item while
+   * moving render/command ownership. New contributed panels default to true. */
+  showInRail?: boolean;
 
   // ── Sidebar presentation (expansion packs V2) ────────────────────────────
   // Ignored for `location: "bottom"`. All optional so an existing

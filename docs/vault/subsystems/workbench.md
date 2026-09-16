@@ -13,7 +13,7 @@ description: Workbench contribution registration, panel lifetime, command routin
 
 `app/useCapabilities.ts` wires workspace, terminal/editor operations, panel activation and palette rows into the host context. Capabilities receive operations rather than tab-store access. `modules/tabs/lib/useTabs.ts`, tab persistence and terminal pane-tree utilities remain the single tab/split owners; `app/useSidebarState.ts` remains the sidebar width/view persistence owner. These established implementations have not been duplicated.
 
-Web Tools, Atlas, and Benchmark are declarative panels. Atlas and Benchmark also declare their focused companion windows, so the titlebar and window shell consume capability metadata instead of maintaining parallel tool lists. Their domain stores remain capability-owned, and Benchmark's module-scoped event listeners keep outliving panel mounts.
+Web Tools, Atlas, Benchmark, and Source Control are declarative panels. Atlas and Benchmark also declare their focused companion windows, so the titlebar and window shell consume capability metadata instead of maintaining parallel tool lists. Source Control keeps its existing shell-owned rail row for the live changed-file badge while capability code owns rendering and command activation. Benchmark's module-scoped event listeners keep outliving panel mounts.
 
 Tests: `workbench/hosts.test.tsx` covers retained/unmounted state, focus, disabled-pack teardown, StrictMode registration cleanup, latest host callbacks and input isolation. `e2e/specs/workbench.test.ts` exercises real lazy panels, saved-view restoration and command admission.
 

@@ -12,19 +12,11 @@
  * Uses the `git_worktree_*` Tauri commands added in v1.10.0.
  */
 import { Icon } from "@/components/icon";
+import { git } from "@/capabilities/git/api";
 import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
-import { invoke } from "@tauri-apps/api/core";
+import type { GitWorktreeEntry } from "@/domain/native-types";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-type GitWorktreeEntry = {
-  path: string;
-  sha: string;
-  branch: string;
-  isMain: boolean;
-  isDetached: boolean;
-  isPrunable: boolean;
-};
 
 type Props = {
   repoRoot: string;
@@ -49,7 +41,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const list = await invoke<GitWorktreeEntry[]>("git_worktree_list", { repoRoot });
+      const list = await git.gitWorktreeList(repoRoot);
       setWorktrees(list);
     } catch (e) {
       setError(String(e));
@@ -65,7 +57,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
   const handleRemove = useCallback(
     async (path: string) => {
       try {
-        await invoke("git_worktree_remove", { repoRoot, path });
+        await git.gitWorktreeRemove(repoRoot, path);
         await load();
       } catch (e) {
         setError(String(e));
@@ -80,12 +72,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
     if (!path || !branch) return;
     setAddBusy(true);
     try {
-      await invoke("git_worktree_add", {
-        repoRoot,
-        path,
-        branch,
-        newBranch: addNewBranch,
-      });
+      await git.gitWorktreeAdd(repoRoot, path, branch, addNewBranch);
       setAdding(false);
       setAddPath("");
       setAddBranch("");

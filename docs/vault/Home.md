@@ -44,6 +44,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[art-pack]] — the SVG playground: icon-scale preview, the in-house optimizer, and why the preview is sanitized
 - [[atlas]] — every git repo on the machine, as a status list and an isometric map: one libgit2 scan, two views, and why it stays host-scoped under WSL
 - [[benchmark]] — measuring local ONNX/GGUF models across inference backends: the `Engine` trait, the streaming matrix runner, and the engine it shares with ML Lab
+- [[source-control]] — workspace Git status, writes, history, worktrees, and why the CLI remains authoritative
 
 ## Flows (`flows/`)
 

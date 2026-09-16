@@ -64,7 +64,7 @@ import { SecretScanSection } from "./SecretScanSection";
 import { WorktreeSection } from "./WorktreeSection";
 import { basename, displayDirname as dirname } from "@/lib/path";
 
-type Props = {
+export type SourceControlPanelProps = {
   open: boolean;
   sourceControl: SourceControlSummary;
   onOpenGitGraph?: () => void;
@@ -140,7 +140,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
   onOpenGitGraph,
   onOpenDiff,
   onOpenWorktree,
-}: Props) {
+}: SourceControlPanelProps) {
   const scm = useSourceControlPanel(open, sourceControl, onOpenDiff);
 
   // Identity of the staged set, for the secret scan. Staging is what changes

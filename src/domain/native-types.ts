@@ -198,6 +198,15 @@ export type GitBranchEntry = {
   current: boolean;
 };
 
+export type GitWorktreeEntry = {
+  path: string;
+  sha: string;
+  branch: string;
+  isMain: boolean;
+  isDetached: boolean;
+  isPrunable: boolean;
+};
+
 export type GitSubmoduleEntry = {
   path: string;
   name: string;
