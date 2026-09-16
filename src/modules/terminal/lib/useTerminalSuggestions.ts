@@ -4,9 +4,10 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePreferencesStore } from "@/modules/settings/preferences";
+import { defineCommand } from "@/platform/ipc";
+import { hostIpc } from "@/platform/tauri";
 import { clearActiveSuggestion, setActiveSuggestion } from "./rendererPool";
 
 export type SuggestionState = {
@@ -14,6 +15,11 @@ export type SuggestionState = {
   x: number;
   y: number;
 } | null;
+
+const readShellHistory = defineCommand<Record<string, never>, string[]>(
+  "read_shell_history",
+  "host",
+);
 
 function findHistoryMatch(input: string, history: string[]): string | null {
   if (!input) return null;
@@ -35,7 +41,7 @@ export function useTerminalSuggestions(leafId: number) {
   const enabled = usePreferencesStore((s) => s.terminalSuggestionsEnabled);
 
   useEffect(() => {
-    invoke<string[]>("read_shell_history")
+    hostIpc.call(readShellHistory, {})
       .then((h) => {
         history.current = h;
       })

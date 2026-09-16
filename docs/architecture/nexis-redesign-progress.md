@@ -87,3 +87,13 @@ Verification for this slice: TypeScript and the production frontend build pass; 
 - Agent orchestration, approval policy, reasoning pruning, compaction, checkpoints, shell-session rejection eviction, and subagent history behavior are unchanged.
 
 Verification for this slice: TypeScript and the production frontend build pass; all 1,204 frontend tests in 87 files pass (coverage statements/lines 90.65%, branches 89.97%, functions 83.51%); focused AI/platform/capability/workbench tests and `git diff --check` pass. Changed-scope React Doctor reports the same 19 accumulated-branch findings as Slice 3, all outside the new AI capability and native adapters. Remaining Phase 4 order: terminal; integrations.
+
+### Slice 5: Terminal
+
+- `pty-bridge.ts` remains the only `pty_open` and `pty_write` caller and still owns both Tauri channels. Its commands now use typed scope descriptors: authorization/open are workspace-scoped, while cwd/write/resize/close are host session operations.
+- Terminal open captures one workspace environment before authorization and reuses it for spawn. Switching the active environment during that await can no longer authorize in one distro and open in another.
+- Shell-history suggestions, asciinema recording saves, and relaunch scrollback snapshots use typed host command descriptors. Snapshot trimming, recording redaction, stale-cwd fallback, FIFO input ordering, channel release, and renderer lifetime are unchanged.
+- Terminal hyperlinks use the platform opener. The `terminal.aiCommand` palette entry is declared by `capabilities/terminal`; the existing global shortcut path remains in App.
+- No Rust PTY implementation, ConPTY locking, PowerShell launch, writer queue, backpressure, watchdog, or WSL shell-integration behavior changed.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,208 frontend tests in 89 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused PTY, snapshot, capability, and pitfall-guard tests plus `git diff --check` pass. Changed-scope React Doctor remains at the same 19 accumulated-branch findings. Remaining Phase 4 order: integrations.

@@ -8,7 +8,7 @@ import { detectMonoFontFamily } from "@/lib/fonts";
 import { IS_MAC } from "@/lib/platform";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { buildTerminalTheme } from "@/styles/terminalTheme";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openHostUrl } from "@/platform/opener";
 import { FitAddon } from "@xterm/addon-fit";
 import { ImageAddon } from "@xterm/addon-image";
 import { SearchAddon } from "@xterm/addon-search";
@@ -276,7 +276,7 @@ function createSlot(): Slot {
   term.loadAddon(serializeAddon);
   term.loadAddon(imageAddon);
   term.loadAddon(
-    new WebLinksAddon((_e, uri) => openUrl(uri).catch(console.error)),
+    new WebLinksAddon((_e, uri) => openHostUrl(uri).catch(console.error)),
   );
 
   const id = nextSlotId++;

@@ -14,7 +14,11 @@ export interface CapabilityContext {
   overlays: { toggle(id: string): void };
   commands: { execute(id: string): Promise<boolean> };
   notify(message: string, detail?: string): void;
-  terminal: { open(cwd: string): void; write(text: string): void };
+  terminal: {
+    open(cwd: string): void;
+    write(text: string): void;
+    requestAiCommand(): void;
+  };
   editor: { open(path: string): void };
   openWorkspace(path: string): void;
 }

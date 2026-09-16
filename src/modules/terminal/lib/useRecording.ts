@@ -10,9 +10,10 @@
  * Produces asciinema v2 `.cast` files saved to ~/nexis-recordings/ via the
  * Rust `save_cast_recording` command.
  */
-import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useRef, useState } from "react";
 import { redactSensitive } from "@/modules/ai/lib/redact";
+import { defineCommand } from "@/platform/ipc";
+import { hostIpc } from "@/platform/tauri";
 import { getSessionDimensions, registerRecordingHandler } from "./useTerminalSession";
 
 type CastEvent = [number, "o", string];
@@ -27,6 +28,10 @@ type RecordingState = {
 };
 
 const decoder = new TextDecoder("utf-8", { fatal: false });
+const saveCastRecording = defineCommand<{ content: string }, string>(
+  "save_cast_recording",
+  "host",
+);
 
 // Ceiling on accumulated recording text (IDEAS A5 buffer-cap sweep). A recorder
 // left running indefinitely would otherwise grow `events` without bound and
@@ -117,7 +122,7 @@ export function useRecording(leafId: number) {
     const content = lines.join("\n") + "\n";
 
     try {
-      const savedPath = await invoke<string>("save_cast_recording", { content });
+      const savedPath = await hostIpc.call(saveCastRecording, { content });
       setLastSavedPath(savedPath);
       return savedPath;
     } catch (e) {

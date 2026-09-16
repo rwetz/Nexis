@@ -8,7 +8,13 @@
 // relaunch"). Files live under ~/.cache/nexis/session-snapshots/, keyed by
 // the stable snapshot id each terminal tab carries in its persisted state.
 
-import { invoke } from "@tauri-apps/api/core";
+import { defineCommand } from "@/platform/ipc";
+import { hostIpc } from "@/platform/tauri";
+
+const saveSnapshot = defineCommand<{ id: string; data: string }, void>("session_snapshot_save", "host");
+const loadSnapshot = defineCommand<{ id: string }, string | null>("session_snapshot_load", "host");
+const deleteSnapshot = defineCommand<{ id: string }, void>("session_snapshot_delete", "host");
+const gcSnapshots = defineCommand<{ keep: string[] }, void>("session_snapshot_gc", "host");
 
 /**
  * Replay cap, in UTF-16 units. Serialized scrollback beyond this is trimmed
@@ -23,18 +29,18 @@ export async function saveSessionSnapshot(
 ): Promise<void> {
   const trimmed =
     data.length > MAX_SNAPSHOT_CHARS ? data.slice(-MAX_SNAPSHOT_CHARS) : data;
-  return invoke("session_snapshot_save", { id, data: trimmed });
+  return hostIpc.call(saveSnapshot, { id, data: trimmed });
 }
 
 export async function loadSessionSnapshot(id: string): Promise<string | null> {
-  return invoke<string | null>("session_snapshot_load", { id });
+  return hostIpc.call(loadSnapshot, { id });
 }
 
 export async function deleteSessionSnapshot(id: string): Promise<void> {
-  return invoke("session_snapshot_delete", { id });
+  return hostIpc.call(deleteSnapshot, { id });
 }
 
 /** Delete every snapshot file whose id is not in `keep`. */
 export async function gcSessionSnapshots(keep: string[]): Promise<void> {
-  return invoke("session_snapshot_gc", { keep });
+  return hostIpc.call(gcSnapshots, { keep });
 }

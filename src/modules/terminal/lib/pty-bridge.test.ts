@@ -8,8 +8,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { openPty } from "./pty-bridge";
 import { currentWorkspaceEnv } from "@/platform/workspaces";
 
+const mocks = vi.hoisted(() => ({ invoke: vi.fn() }));
+
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn(),
+  invoke: mocks.invoke,
   // Channel must work as a constructor (`new Channel<T>()`) and expose
   // a settable `onmessage` property (used by openPty for data/exit routing).
   Channel: vi.fn().mockImplementation(() => ({ onmessage: null })),
@@ -17,6 +19,13 @@ vi.mock("@tauri-apps/api/core", () => ({
 
 vi.mock("@/platform/workspaces", () => ({
   currentWorkspaceEnv: vi.fn(() => ({ kind: "local" })),
+  ipcForEnvironment: vi.fn((environment) => ({
+    call: (command: { name: string; scope: "host" | "workspace" }, args: object) =>
+      mocks.invoke(
+        command.name,
+        command.scope === "workspace" ? { ...args, workspace: environment } : args,
+      ),
+  })),
 }));
 
 describe("pty-bridge — pitfall 1C: workspace_authorize before pty_open", () => {
@@ -26,6 +35,7 @@ describe("pty-bridge — pitfall 1C: workspace_authorize before pty_open", () =>
     const core = await import("@tauri-apps/api/core");
     invokeMock = vi.mocked(core.invoke);
     invokeMock.mockReset();
+    vi.mocked(currentWorkspaceEnv).mockReturnValue({ kind: "local" });
   });
 
   it("forwards cwd, shell and extraEnv to pty_open verbatim", async () => {
@@ -101,6 +111,38 @@ describe("pty-bridge — pitfall 1C: workspace_authorize before pty_open", () =>
     }
   });
 
+  it("captures one environment across authorization and spawn", async () => {
+    vi.mocked(currentWorkspaceEnv).mockReturnValue({
+      kind: "wsl",
+      distro: "Ubuntu-22.04",
+    });
+    let releaseAuthorization!: () => void;
+    const calls: Array<{ cmd: string; args?: Record<string, unknown> }> = [];
+    invokeMock.mockImplementation(async (cmd: string, args?: Record<string, unknown>) => {
+      calls.push({ cmd, args });
+      if (cmd === "workspace_authorize") {
+        await new Promise<void>((resolve) => {
+          releaseAuthorization = resolve;
+        });
+        return "/canonical";
+      }
+      if (cmd === "pty_open") return 13;
+      return null;
+    });
+
+    const opening = openPty(80, 24, { onData: vi.fn() }, "/home/ryan/repo");
+    await vi.waitFor(() => expect(releaseAuthorization).toBeTypeOf("function"));
+    vi.mocked(currentWorkspaceEnv).mockReturnValue({ kind: "local" });
+    releaseAuthorization();
+    await opening;
+
+    const ptyOpen = calls.find((call) => call.cmd === "pty_open");
+    expect(ptyOpen?.args?.workspace).toEqual({
+      kind: "wsl",
+      distro: "Ubuntu-22.04",
+    });
+  });
+
   it("calls workspace_authorize BEFORE pty_open when a cwd is provided (pitfall 1C)", async () => {
     const callOrder: string[] = [];
     invokeMock.mockImplementation(async (cmd: string) => {
@@ -163,6 +205,7 @@ describe("pty-bridge — pitfall 23: inaccessible cwd falls back instead of bric
     const core = await import("@tauri-apps/api/core");
     invokeMock = vi.mocked(core.invoke);
     invokeMock.mockReset();
+    vi.mocked(currentWorkspaceEnv).mockReturnValue({ kind: "local" });
   });
 
   it("retries pty_open without a cwd when the spawn rejects with 'cwd not accessible'", async () => {

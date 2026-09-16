@@ -1433,7 +1433,6 @@ function MainApp() {
     { id: "settings.themes",     label: "Open theme settings",      category: "General", action: () => void openSettingsWindow("themes") },
     { id: "settings.shortcuts",  label: "Open keyboard shortcuts",  category: "General", action: () => setShortcutsOpen(true) },
     { id: "window.new",          label: "New window",               category: "General", action: () => void openNewWindow() },
-    { id: "terminal.aiCommand",  label: "AI command search",        category: "AI",      action: () => window.dispatchEvent(new CustomEvent("nexis:terminal-ai-command")), keywords: ["natural language", "generate command"] },
     { id: "view.zoomIn",         label: "Zoom in",                  category: "View",    action: zoomIn },
     { id: "view.zoomOut",        label: "Zoom out",                 category: "View",    action: zoomOut },
     { id: "view.zoomReset",      label: "Reset zoom",               category: "View",    action: zoomReset },
@@ -2007,7 +2006,11 @@ function MainApp() {
     view: sidebarView, root: explorerRoot, packs: enabledPacks, builtins: paletteCommands,
     activateView: persistSidebarView,
     toggleOverlay: (id) => { if (id === "ai") togglePanelAndFocus(); },
-    terminal: { open: cdInNewTab, write: (text) => { if (activeLeafId) terminalRefs.current.get(activeLeafId)?.write(text); } },
+    terminal: {
+      open: cdInNewTab,
+      write: (text) => { if (activeLeafId) terminalRefs.current.get(activeLeafId)?.write(text); },
+      requestAiCommand: () => window.dispatchEvent(new CustomEvent("nexis:terminal-ai-command")),
+    },
     editor: { open: (path) => { openFileTab(path, true); } },
     openWorkspace: (path) => { void switchWorkspacePath(path); },
   });

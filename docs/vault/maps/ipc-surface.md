@@ -11,10 +11,10 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 
 | Family | Commands (prefix) | Rust handler | Frontend seam |
 |---|---|---|---|
-| PTY | `pty_open/write/resize/close/cwd` | `modules/pty/mod.rs` | `terminal/lib/pty-bridge.ts` — see [[terminal-tab-open]] |
+| PTY | `pty_open/write/resize/close/cwd` | `modules/pty/mod.rs` | typed workspace/host descriptors plus channels in `terminal/lib/pty-bridge.ts` — see [[terminal-tab-open]] |
 | Filesystem | `fs_*`, `list_subdirs` | `modules/fs/{file,tree,mutate,search,grep}.rs` | `platform/filesystem.ts`; AI-only read policy in `ai/lib/filesystem.ts` |
 | Git | `git_*` (status, diff, stage, commit, stash, worktree…) | `modules/git/commands.rs` | `capabilities/git/api.ts` |
-| Shell one-shots & sessions | `shell_run_command`, `shell_session_*`, `shell_bg_*`, `*_shell_history` | `modules/shell/mod.rs` | `platform/processes.ts`, `ai/tools/shell.ts`; formatter/ports/SSH remain capability-local |
+| Shell one-shots & sessions | `shell_run_command`, `shell_session_*`, `shell_bg_*`, `*_shell_history` | `modules/shell/mod.rs` | `platform/processes.ts`, `ai/tools/shell.ts`; terminal suggestions use a typed host descriptor; ports/SSH remain on the integration queue |
 | Workspace / WSL | `workspace_authorize`, `workspace_current_dir`, `wsl_*`, `get_launch_dir` | `modules/workspace.rs`, `lib.rs` | `platform/workspace-state.ts`, `lib/launchDir.ts`, and every bridge that spawns with a cwd |
 | Secrets | `secrets_get/set/delete/get_all` | `modules/secrets.rs` (OS keychain) | `platform/secrets.ts` → `ai/lib/keyring.ts` |
 | LSP / DAP | `lsp_*`, `dap_*` | `modules/lsp/mod.rs`, `modules/dap/mod.rs` | `lsp/client.ts`, `debugger/debugSession.ts` |
@@ -22,8 +22,8 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | ML engine | `ml_*` | `modules/ml.rs` | `ml/lib/engine-bridge.ts` |
 | Python | `py_detect_envs` | `modules/python.rs` | `python/usePythonEnv.ts`, `ml/store.ts` |
 | Share server | `http_share_*` (start takes `bind` + `token`; `http_share_lan_ip` probes the primary LAN IP) | `modules/http_share.rs` | `share/useShareServer.ts` (global Zustand store — sharing survives panel close) |
-| Recording | `save_cast_recording` | `modules/recording.rs` | `terminal/lib/useRecording.ts` |
-| Session snapshots | `session_snapshot_save/load/delete/gc` | `modules/snapshots.rs` | `terminal/lib/snapshot-bridge.ts` |
+| Recording | `save_cast_recording` | `modules/recording.rs` | typed host descriptor in `terminal/lib/useRecording.ts` |
+| Session snapshots | `session_snapshot_save/load/delete/gc` | `modules/snapshots.rs` | typed host descriptors in `terminal/lib/snapshot-bridge.ts` |
 | AI checkpoints | `git_checkpoint_create/list/restore/delete` | `modules/git/commands.rs` adapters → `operations.rs` | `ai/lib/checkpoint.ts` (create, from edit tools) · `source-control/CheckpointSection.tsx` (list/restore) |
 | FS watching | `fs_watch_start`, `fs_watch_stop` + `nexis://fs-changed` event | `modules/fswatch.rs` | `platform/filesystem.ts` → `explorer/FileExplorer.tsx` |
 | System monitor | `sysmon_sample`, `sysmon_kill` | `modules/sysmon.rs` | `platform/system-resources.ts` → `sysmon/useSystemMonitor.ts` |
