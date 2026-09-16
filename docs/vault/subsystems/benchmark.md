@@ -28,13 +28,15 @@ The UI labels every result's provenance with a `real` / `sim` badge plus a per-r
 - `src-tauri/src/modules/benchmark/commands.rs` — the `bench_*` command surface
 - `src-tauri/src/modules/benchmark/{onnx,llama,ml_engine,simulate}.rs` — the four engines
 - `src-tauri/src/modules/benchmark/gguf.rs` — GGUF header reading, so a dropped file describes itself
+- `src/capabilities/benchmark/index.tsx` — declarative sidebar panel, palette command, and companion-window contribution
 - `src/modules/benchmark/BenchmarkPanel.tsx` — the panel shell
 - `src/modules/benchmark/store.ts` — persisted config/history plus live run state
-- `src/modules/benchmark/lib/api.ts` — the single IPC boundary
+- `src/modules/benchmark/lib/api.ts` — typed host-scoped harness commands, module-owned event scope, host-scoped exports, and native dialogs through `platform/dialogs.ts`
 
 ## Invariants / gotchas
 
-- **A run outlives the panel.** The engine keeps working when the sidebar view is switched away or the frontend hot-reloads. The store persists `jobId` and `init()` asks `bench_is_running` rather than assuming the run stopped — assuming would let a second job start on top of the first. The event listeners in `api.ts` are module-scoped for the same reason, not tied to a component lifecycle.
+- **A run outlives the panel.** The engine keeps working when the sidebar view is switched away or the frontend hot-reloads. The store persists `jobId` and `init()` asks `bench_is_running` rather than assuming the run stopped — assuming would let a second job start on top of the first. The typed `bench://progress` and `bench://result` event scope in `api.ts` is module-owned for the same reason, not tied to a component lifecycle.
+- **Benchmark is host-scoped even under a WSL workspace.** Model pickers, engine probing, runs, and export destinations refer to the desktop host. Exports use `hostFilesystem` and must not inherit the active workspace environment.
 - **The nexis-ml backend resolves ML Lab's managed engine before `PATH`.** `ml::managed_engine_exe` is `pub(crate)` for exactly this. A deliberate install through [[ml-lab]] is a stronger statement than whatever is on `PATH`, and the two panels disagreeing about which binary they measure makes every cross-panel comparison meaningless. The path is resolved once per job, not per cell.
 - **`BenchState`'s mutex recovers from poisoning** (`unwrap_or_else(|e| e.into_inner())`). In the standalone app a panic here killed an app that only benchmarked; here it lands on a Tauri worker thread and takes the terminal with it. Pitfall #8.
 - **`bench_list_backends`, `bench_scan_models` and `bench_probe_llama` must stay `async` + `heavy()`** — they walk `PATH`, read GGUF headers, and spawn binaries to read versions.

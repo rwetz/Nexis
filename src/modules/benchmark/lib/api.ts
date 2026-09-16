@@ -18,8 +18,10 @@
  * rename fallback every other write in Nexis gets (pitfall #17).
  */
 
-import { invoke } from "@tauri-apps/api/core";
 import { hostFilesystem } from "@/platform/filesystem";
+import { openFiles, saveFile } from "@/platform/dialogs";
+import { defineCommand, defineEvent } from "@/platform/ipc";
+import { hostIpc } from "@/platform/tauri";
 import { IS_WINDOWS } from "@/lib/platform";
 import {
   type BackendInfo,
@@ -39,6 +41,15 @@ type ResultCb = (r: BenchResult) => void;
 const progressCbs = new Set<ProgressCb>();
 const resultCbs = new Set<ResultCb>();
 
+const listBackendsCommand = defineCommand<Record<string, never>, BackendInfo[]>("bench_list_backends", "host");
+const scanModelsCommand = defineCommand<{ paths: string[] }, ModelInfo[]>("bench_scan_models", "host");
+const probeLlamaCommand = defineCommand<{ path: string | null }, LlamaProbe>("bench_probe_llama", "host");
+const runCommand = defineCommand<{ job: BenchJob }, void>("bench_run", "host");
+const cancelCommand = defineCommand<{ jobId: string }, void>("bench_cancel", "host");
+const isRunningCommand = defineCommand<{ jobId: string }, boolean>("bench_is_running", "host");
+const progressEvent = defineEvent<BenchProgress>("bench://progress");
+const resultEvent = defineEvent<BenchResult>("bench://result");
+
 export function onProgress(cb: ProgressCb): () => void {
   progressCbs.add(cb);
   return () => progressCbs.delete(cb);
@@ -53,26 +64,28 @@ const emitResult = (r: BenchResult) => resultCbs.forEach((cb) => cb(r));
 // Wire Tauri events → local dispatch, once per module load. A run outlives the
 // panel (the engine keeps working while the sidebar shows something else), so
 // these listeners are deliberately not tied to a component lifecycle.
-void import("@/platform/events").then(({ listen }) => {
-  void listen<BenchProgress>("bench://progress", (e) => emitProgress(e.payload));
-  void listen<BenchResult>("bench://result", (e) => emitResult(e.payload));
+const eventScope = hostIpc.events();
+void eventScope.listen(progressEvent, emitProgress).catch((error) => {
+  console.error("[nexis] benchmark progress listener failed:", error);
+});
+void eventScope.listen(resultEvent, emitResult).catch((error) => {
+  console.error("[nexis] benchmark result listener failed:", error);
 });
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
 export function listBackends(): Promise<BackendInfo[]> {
-  return invoke<BackendInfo[]>("bench_list_backends");
+  return hostIpc.call(listBackendsCommand, {});
 }
 
 /** Resolve dropped/added file paths into model entries. */
 export function scanModels(paths: string[]): Promise<ModelInfo[]> {
-  return invoke<ModelInfo[]>("bench_scan_models", { paths });
+  return hostIpc.call(scanModelsCommand, { paths });
 }
 
 /** Open the native file picker and return the chosen models. */
 export async function pickModels(): Promise<ModelInfo[]> {
-  const { open } = await import("@tauri-apps/plugin-dialog");
-  const selection = await open({
+  const selection = await openFiles({
     multiple: true,
     filters: [{ name: "Models", extensions: ["onnx", "gguf"] }],
   });
@@ -83,13 +96,12 @@ export async function pickModels(): Promise<ModelInfo[]> {
 
 /** Validate a llama-bench binary (or auto-detect on PATH when path is null). */
 export function probeLlama(path: string | null): Promise<LlamaProbe> {
-  return invoke<LlamaProbe>("bench_probe_llama", { path });
+  return hostIpc.call(probeLlamaCommand, { path });
 }
 
 /** Open a file picker to locate the llama-bench executable. */
 export async function pickLlamaBench(): Promise<string | null> {
-  const { open } = await import("@tauri-apps/plugin-dialog");
-  const sel = await open({
+  const sel = await openFiles({
     multiple: false,
     filters: IS_WINDOWS ? [{ name: "Executable", extensions: ["exe"] }] : undefined,
   });
@@ -97,17 +109,17 @@ export async function pickLlamaBench(): Promise<string | null> {
 }
 
 export function runBenchmark(job: BenchJob): Promise<void> {
-  return invoke("bench_run", { job });
+  return hostIpc.call(runCommand, { job });
 }
 
 export function cancelBenchmark(jobId: string): Promise<void> {
-  return invoke("bench_cancel", { jobId });
+  return hostIpc.call(cancelCommand, { jobId });
 }
 
 /** Whether the harness still has this job registered. The panel asks on mount
  *  because a run survives the view being unmounted. */
 export function isRunning(jobId: string): Promise<boolean> {
-  return invoke<boolean>("bench_is_running", { jobId });
+  return hostIpc.call(isRunningCommand, { jobId });
 }
 
 async function saveText(
@@ -115,8 +127,7 @@ async function saveText(
   filename: string,
   ext: string,
 ): Promise<void> {
-  const { save } = await import("@tauri-apps/plugin-dialog");
-  const path = await save({
+  const path = await saveFile({
     defaultPath: filename,
     filters: [{ name: ext.toUpperCase(), extensions: [ext] }],
   });

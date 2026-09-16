@@ -46,3 +46,16 @@ Remaining legacy paths: other built-in panel branches/commands and companion-win
 Verification: TypeScript, 1,196 frontend tests, all 294 Rust tests, clippy, rustfmt and Windows production/E2E release builds pass. React Doctor's full result is unchanged from Phase 2 at 180 existing warnings across 92 files. All ten desktop E2E tests in four specs pass under Node 22.23.2, including the real platform adapter checks. Evidence: `%TEMP%/nexis-phase3-*.log`.
 
 Remaining legacy paths: capability-local raw IPC and Tauri plugin calls, remaining central built-in panel/command branches, and companion-window composition. These move with their capability owners in Phase 4. PTY implementation, Rust process construction, workspace authorization and settings propagation guards remain unchanged.
+
+## Phase 4: capability migration in progress
+
+### Slice 1: Atlas and Benchmark
+
+- Atlas and Benchmark now declare their sidebar panels, commands, titlebar launchers, and focused companion windows from `capabilities/`. App no longer contains Benchmark's panel branch or palette command, and the generic companion shell no longer imports either capability.
+- Companion routes are admitted against the current declaration set. Opening remains singleton and keeps the existing `nexis-atlas` / `nexis-benchmark` labels, dimensions, platform chrome, and Atlas title-bar actions.
+- Benchmark's six harness calls now use typed host-scoped command descriptors. Its progress/result subscriptions use a module-owned platform event scope, preserving the deliberate run lifetime across panel unmounts. Native file dialogs and Atlas reveal operations cross small platform adapters; Benchmark exports remain on `hostFilesystem` and do not inherit a WSL workspace.
+- Focused tests cover declared companion-route admission and prove module-owned Benchmark listeners still update and finish a run without a mounted panel.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,198 frontend tests in 83 files pass (coverage statements/lines 90.65%, branches 89.97%, functions 83.51%); `git diff --check` passes. Changed-scope React Doctor reports 16 existing findings from the accumulated branch diff, none in this slice's new capability, window-routing, Benchmark, or platform files. Full Rust and desktop E2E phase gates remain due before Phase 4 is marked complete.
+
+Remaining Phase 4 order: source control/Git history; editor/explorer; AI; terminal; integrations. Raw IPC and central composition in those families remain legacy until their slice lands. Terminal and PTY behavior are untouched by this slice.

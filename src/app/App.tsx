@@ -1,6 +1,6 @@
 import { activeWorkspace, workspaceCurrentDir } from "@/platform/workspaces";
 import { git } from "@/capabilities/git/api";
-import { CAPABILITIES, CAPABILITY_VIEWS } from "@/capabilities";
+import { CAPABILITIES, CAPABILITY_TOOL_WINDOWS, CAPABILITY_VIEWS } from "@/capabilities";
 import { CapabilityHost } from "@/workbench/CapabilityHost";
 import { PanelHost } from "@/workbench/PanelHost";
 import { useCapabilities } from "./useCapabilities";
@@ -83,7 +83,7 @@ import {
 } from "@/modules/terminal/lib/ledger";
 import { openNewWindow } from "@/modules/window/openNewWindow";
 import { ToolWindowShell } from "@/modules/window/ToolWindowShell";
-import { currentToolWindowKind } from "@/modules/window/toolWindow";
+import { currentToolWindow } from "@/modules/window/toolWindow";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
@@ -247,19 +247,9 @@ const DebuggerPanelLazy = lazy(() =>
 const DebugToolbarLazy = lazy(() =>
   import("@/modules/debugger/DebugToolbar").then((m) => ({ default: m.DebugToolbar })),
 );
-// Both absorbed apps are lazy for the same reason ML Lab is: they are whole
-// applications' worth of UI, and Atlas additionally pulls in an isometric
-// canvas renderer that nobody who never opens the map should pay to parse.
-const BenchmarkPanelLazy = lazy(() =>
-  import("@/modules/benchmark/BenchmarkPanel").then((m) => ({
-    default: m.BenchmarkPanel,
-  })),
-);
-
-
 export default function App() {
-  const toolWindowKind = currentToolWindowKind();
-  if (toolWindowKind) return <ToolWindowShell kind={toolWindowKind} />;
+  const toolWindow = currentToolWindow(CAPABILITY_TOOL_WINDOWS);
+  if (toolWindow) return <ToolWindowShell tool={toolWindow} />;
 
   return <MainApp />;
 }
@@ -1467,7 +1457,6 @@ function MainApp() {
     { id: "sidebar.sc",          label: "Show source control",      category: "View",    action: () => persistSidebarView("source-control") },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
-    { id: "benchmark.open",      label: "Show Benchmark (compare local models)", category: "View", action: () => persistSidebarView("benchmark"), pack: "ml-lab", keywords: ["onnx", "gguf", "llama.cpp", "throughput", "latency", "tokens per second", "inference", "model"] },
   ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgPlaygroundTab, openMlLabTab]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
@@ -2225,10 +2214,6 @@ function MainApp() {
                             onOpenNetworkTab={openMlNetworkTab}
                           />
                         </Suspense>
-                    ) : sidebarView === "benchmark" ? (
-                      <Suspense fallback={null}>
-                        <BenchmarkPanelLazy />
-                      </Suspense>
                     ) : (
                       <SourceControlPanel
                         open

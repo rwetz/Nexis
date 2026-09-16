@@ -1,6 +1,6 @@
 ---
 type: subsystem
-description: Frontend platform policy for typed IPC, workspace scope, persistence, processes, files, windows and notifications.
+description: Frontend platform policy for typed IPC, workspace scope, persistence, processes, files, dialogs, windows and notifications.
 ---
 
 # Frontend platform
@@ -13,6 +13,7 @@ description: Frontend platform policy for typed IPC, workspace scope, persistenc
 - `workspace.ts`, `workspace-state.ts`, `workspaces.ts` — environment/root identity, authorization and the one workspace store
 - `storage.ts`, `persistence.ts` — one `LazyStore` handle per file and failure-recovering write queues
 - `filesystem.ts`, `process.ts`, `processes.ts` — host/workspace file scope and captured non-PTY session ownership
+- `dialogs.ts`, `opener.ts` — native file selection/save and host reveal operations without capability-owned Tauri plugin imports
 - `windows.ts`, `notifications.ts` — concurrent named-window coalescing and the shared notification contract
 - `ledger-storage.ts`, `system-resources.ts` — host-owned command-ledger and system-monitor adapters
 - `src/domain/native-types.ts` — shared IPC result types with no capability ownership

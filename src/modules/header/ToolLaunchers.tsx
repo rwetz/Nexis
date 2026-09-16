@@ -6,31 +6,22 @@
 
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
-import { openToolWindow, type ToolWindowKind } from "@/modules/window/toolWindow";
-
-const TOOLS: ReadonlyArray<{
-  kind: ToolWindowKind;
-  label: string;
-  icon: "globe" | "activity";
-  title: string;
-}> = [
-  { kind: "atlas", label: "Atlas", icon: "globe", title: "Open Atlas" },
-  { kind: "benchmark", label: "Benchmark", icon: "activity", title: "Open Benchmark" },
-];
+import { CAPABILITY_TOOL_WINDOWS } from "@/capabilities";
+import { openToolWindow } from "@/modules/window/toolWindow";
 
 /** Persistent launchers for the two companion-app windows. */
 export function ToolLaunchers({ compact }: { compact: boolean }) {
   return (
     <div className="flex shrink-0 items-center gap-0.5 border-l border-border pl-1">
-      {TOOLS.map((tool) => (
+      {CAPABILITY_TOOL_WINDOWS.map((tool) => (
         <Button
-          key={tool.kind}
+          key={tool.id}
           type="button"
           variant="ghost"
           size={compact ? "icon-sm" : "xs"}
-          title={tool.title}
-          aria-label={tool.title}
-          onClick={() => void openToolWindow(tool.kind)}
+          title={`Open ${tool.label}`}
+          aria-label={`Open ${tool.label}`}
+          onClick={() => void openToolWindow(tool)}
           className="rounded-md text-muted-foreground hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]"
         >
           <Icon name={tool.icon} size="sm" />

@@ -24,7 +24,7 @@
 
 import { defineCommand } from "@/platform/ipc";
 import { hostIpc } from "@/platform/tauri";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { revealPathInHost } from "@/platform/opener";
 import type { AtlasResult, RepoCity, RepoDetail } from "./types";
 
 const scan = defineCommand<Record<string, never>, AtlasResult>("atlas_scan_repos", "host");
@@ -51,7 +51,7 @@ export function fetchRepoCity(path: string): Promise<RepoCity> {
 
 /** Show a repo directory in the OS file manager. */
 export function revealPath(path: string): Promise<void> {
-  return revealItemInDir(path);
+  return revealPathInHost(path);
 }
 
 /** Absolute path of `atlas.toml`, created with the commented default if this

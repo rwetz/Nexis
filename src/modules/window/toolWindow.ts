@@ -6,51 +6,41 @@
 
 import { openOrFocusWindow } from "@/platform/windows";
 import { IS_MAC } from "@/lib/platform";
-
-/** Top-level Nexis tools that deserve their own focused window. */
-export const TOOL_WINDOW_KINDS = ["atlas", "benchmark"] as const;
-export type ToolWindowKind = (typeof TOOL_WINDOW_KINDS)[number];
-
-const TOOL_WINDOW_LABEL: Record<ToolWindowKind, string> = {
-  atlas: "nexis-atlas",
-  benchmark: "nexis-benchmark",
-};
-
-const TOOL_WINDOW_TITLE: Record<ToolWindowKind, string> = {
-  atlas: "Atlas — Nexis",
-  benchmark: "Benchmark — Nexis",
-};
+import type { ToolWindowContribution } from "@/workbench/capability";
 
 /** Read the dedicated-tool route without letting an arbitrary query open a view. */
-export function toolWindowKindFromSearch(search: string): ToolWindowKind | null {
+export function toolWindowFromSearch(
+  search: string,
+  contributions: readonly ToolWindowContribution[],
+): ToolWindowContribution | null {
   const value = new URLSearchParams(search).get("tool");
-  return TOOL_WINDOW_KINDS.includes(value as ToolWindowKind)
-    ? (value as ToolWindowKind)
-    : null;
+  return contributions.find((item) => item.id === value) ?? null;
 }
 
-export function currentToolWindowKind(): ToolWindowKind | null {
-  return typeof window === "undefined" ? null : toolWindowKindFromSearch(window.location.search);
+export function currentToolWindow(
+  contributions: readonly ToolWindowContribution[],
+): ToolWindowContribution | null {
+  return typeof window === "undefined"
+    ? null
+    : toolWindowFromSearch(window.location.search, contributions);
 }
 
 /**
  * Focus the existing tool window, or create it once. A tool is an app-level
  * destination, so repeated clicks should never create a pile of duplicates.
  */
-export async function openToolWindow(kind: ToolWindowKind): Promise<void> {
-  const label = TOOL_WINDOW_LABEL[kind];
+export async function openToolWindow(tool: ToolWindowContribution): Promise<void> {
   const platformOptions = IS_MAC
     ? { titleBarStyle: "overlay" as const, hiddenTitle: true }
     : { decorations: false, transparent: true, shadow: false };
 
-  await openOrFocusWindow(label, {
-    url: `/?tool=${kind}`,
-    title: TOOL_WINDOW_TITLE[kind],
-    width: kind === "atlas" ? 1440 : 1280,
-    height: 860,
-    minWidth: 720,
-    minHeight: 500,
+  await openOrFocusWindow(`nexis-${tool.id}`, {
+    url: `/?tool=${encodeURIComponent(tool.id)}`,
+    title: tool.title,
+    width: tool.width,
+    height: tool.height ?? 860,
+    minWidth: tool.minWidth ?? 720,
+    minHeight: tool.minHeight ?? 500,
     ...platformOptions,
   });
-
 }

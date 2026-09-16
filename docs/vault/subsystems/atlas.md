@@ -13,7 +13,7 @@ Distinct from [[source-control]] territory: that panel is *this workspace's* rep
 
 ## Key files
 
-- `src/capabilities/atlas/index.tsx` — declarative embedded panel and palette commands; `workbench/PanelHost` supplies activation focus and scoped refresh routing (see [[workbench]])
+- `src/capabilities/atlas/index.tsx` — declarative embedded panel, palette commands, and companion window; `workbench/PanelHost` supplies activation focus and scoped refresh routing (see [[workbench]])
 - `src-tauri/src/modules/atlas/mod.rs` — the four commands (`atlas_scan_repos`, `atlas_repo_city`, `atlas_repo_detail`, `atlas_config_path`) and the module's own scope note
 - `src-tauri/src/modules/atlas/config.rs` — `atlas.toml` loading, legacy-config adoption, repo discovery under `scan_root`
 - `src-tauri/src/modules/atlas/scan.rs` — one walk + one `Repository::open` + one status pass per repo, fanned out with rayon
@@ -38,7 +38,7 @@ Distinct from [[source-control]] territory: that panel is *this workspace's* rep
 - **A new city assembles once, but interaction stays immediate.** `CityCanvas` rises non-terrace blocks in a short deterministic wave after a new scene is fitted, while the terrain is drawn in full from the first frame. The renderer schedules only those 420ms of frames, then returns to on-demand drawing; it bypasses the effect under `prefers-reduced-motion`. Keep its scalar easing aligned with the house entry curve in [[icon-and-motion-system]].
 - **LOC is measured only in a city view.** The machine-wide scan intentionally stays cheap and records bytes/files; opening one repo builds its tree and counts readable text lines. `projectStats.ts` derives the Inspector's clearly-labelled size signals from that real count, excluding binary and oversized files. Its solo-build, typing, and coffee numbers are perspective, never schedules.
 - **The keymap is scoped to the panel subtree, not `window`.** The standalone app could claim bare `r`/`t`/`v`/`j`/`k` because the whole window was Atlas. Here the terminal is one pane away.
-- **The companion window keeps Atlas's own title-bar controls; the embedded panel keeps its toolbar.** `ToolWindowShell` passes `standalone` to Atlas so controls do not appear twice. The map rails are proportional to their container, matching the standalone composition without hardcoding screen-width breakpoints.
+- **The companion window keeps Atlas's own title-bar controls; the embedded panel keeps its toolbar.** The capability declaration gives `ToolWindowShell` the standalone panel and title-bar actions, so the shell does not import Atlas. The map rails are proportional to their container, matching the standalone composition without hardcoding screen-width breakpoints.
 - **The scoped keymap updates its host ref in an effect.** Do not assign `hostRef.current` during render: React may discard that render while the stable key handler survives.
 - **Deep links are gone.** `nexis-atlas://focus?path=…` had nothing to link to once the two processes became one. If Nexis registers a URL scheme later, the old grammar is in this repo's history under `src-tauri/src/links.rs`.
 - **"Show this repo in Atlas" refreshes before it opens.** The palette action switches to Atlas and calls `showRepo(explorerRoot)`, which opens only an exact path from the current configured scan. Do not bypass that check with a direct `enterRepo` call: the city command accepts a path and must stay reachable only through Atlas's admitted repository set.
