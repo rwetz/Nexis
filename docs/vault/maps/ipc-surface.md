@@ -17,7 +17,7 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | Shell one-shots & sessions | `shell_run_command`, `shell_session_*`, `shell_bg_*`, `*_shell_history` | `modules/shell/mod.rs` | `platform/processes.ts`, `ai/tools/shell.ts`; terminal suggestions use a typed host descriptor; ports/SSH remain on the integration queue |
 | Workspace / WSL | `workspace_authorize`, `workspace_current_dir`, `wsl_*`, `get_launch_dir` | `modules/workspace.rs`, `lib.rs` | `platform/workspace-state.ts`, `lib/launchDir.ts`, and every bridge that spawns with a cwd |
 | Secrets | `secrets_get/set/delete/get_all` | `modules/secrets.rs` (OS keychain) | `platform/secrets.ts` → `ai/lib/keyring.ts` |
-| LSP / DAP | `lsp_*`, `dap_*` | `modules/lsp/mod.rs`, `modules/dap/mod.rs` | `lsp/client.ts`, `debugger/debugSession.ts` |
+| LSP / DAP | `lsp_*`, `dap_*` | `modules/lsp/mod.rs`, `modules/dap/mod.rs` | `capabilities/lsp/api.ts` → `lsp/client.ts`; DAP remains in `debugger/debugSession.ts` on the integration queue |
 | HTTP | `ai_http_request`, `ai_http_stream`, `lm_ping`, `http_send` | `modules/net.rs` | `platform/http-stream.ts` → `ai/lib/proxyFetch.ts`; Web Dev remains on the integration migration queue — see [[ai]], [[web-dev-pack]] |
 | ML engine | `ml_*` | `modules/ml.rs` | `ml/lib/engine-bridge.ts` |
 | Python | `py_detect_envs` | `modules/python.rs` | `python/usePythonEnv.ts`, `ml/store.ts` |

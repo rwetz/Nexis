@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { invoke } from "@tauri-apps/api/core";
+import { lsp } from "@/capabilities/lsp/api";
 import { clearMissingTool, reportMissingTool } from "@/lib/missingTools";
 import { listen, type UnlistenFn } from "@/platform/events";
 import {
@@ -98,7 +98,7 @@ class LspClientManager {
     if (!serverConfig) return null;
 
     try {
-      const sessionId = await invoke<number>("lsp_start", {
+      const sessionId = await lsp.start({
         serverCmd: serverConfig.cmd,
         serverArgs: serverConfig.args,
         workspaceRoot,
@@ -154,17 +154,13 @@ class LspClientManager {
     const uri = pathToUri(path);
     if (entry.docVersions.has(uri)) return; // already open
     entry.docVersions.set(uri, 1);
-    await invoke("lsp_notify", {
-      sessionId: entry.sessionId,
-      method: "textDocument/didOpen",
-      params: {
+    await lsp.notify(entry.sessionId, "textDocument/didOpen", {
         textDocument: {
           uri,
           languageId,
           version: 1,
           text: content,
         },
-      },
     }).catch(() => {});
   }
 
@@ -176,24 +172,20 @@ class LspClientManager {
     const uri = pathToUri(path);
     const version = (entry.docVersions.get(uri) ?? 0) + 1;
     entry.docVersions.set(uri, version);
-    await invoke("lsp_notify", {
-      sessionId: entry.sessionId,
-      method: "textDocument/didChange",
-      params: {
+    await lsp.notify(entry.sessionId, "textDocument/didChange", {
         textDocument: { uri, version },
         contentChanges: [{ text: content }],
-      },
     }).catch(() => {});
   }
 
   async closeDocument(entry: SessionEntry, path: string): Promise<void> {
     const uri = pathToUri(path);
     entry.docVersions.delete(uri);
-    await invoke("lsp_notify", {
-      sessionId: entry.sessionId,
-      method: "textDocument/didClose",
-      params: { textDocument: { uri } },
-    }).catch(() => {});
+    await lsp
+      .notify(entry.sessionId, "textDocument/didClose", {
+        textDocument: { uri },
+      })
+      .catch(() => {});
   }
 
   async hover(
@@ -203,14 +195,14 @@ class LspClientManager {
     character: number,
   ): Promise<LspHover | null> {
     try {
-      const result = await invoke<LspHover | null>("lsp_request", {
-        sessionId: entry.sessionId,
-        method: "textDocument/hover",
-        params: {
+      const result = await lsp.request<LspHover | null>(
+        entry.sessionId,
+        "textDocument/hover",
+        {
           textDocument: { uri: pathToUri(path) },
           position: { line, character },
         },
-      });
+      );
       return result;
     } catch {
       return null;
@@ -225,18 +217,15 @@ class LspClientManager {
     triggerCharacter?: string,
   ): Promise<LspCompletionItem[]> {
     try {
-      const result = await invoke<LspCompletionList | LspCompletionItem[] | null>(
-        "lsp_request",
+      const result = await lsp.request<LspCompletionList | LspCompletionItem[] | null>(
+        entry.sessionId,
+        "textDocument/completion",
         {
-          sessionId: entry.sessionId,
-          method: "textDocument/completion",
-          params: {
             textDocument: { uri: pathToUri(path) },
             position: { line, character },
             context: triggerCharacter
               ? { triggerKind: 2, triggerCharacter }
               : { triggerKind: 1 },
-          },
         },
       );
       if (!result) return [];
@@ -254,14 +243,14 @@ class LspClientManager {
     character: number,
   ): Promise<LspLocation[]> {
     try {
-      const result = await invoke<LspLocation | LspLocation[] | null>("lsp_request", {
-        sessionId: entry.sessionId,
-        method: "textDocument/definition",
-        params: {
+      const result = await lsp.request<LspLocation | LspLocation[] | null>(
+        entry.sessionId,
+        "textDocument/definition",
+        {
           textDocument: { uri: pathToUri(path) },
           position: { line, character },
         },
-      });
+      );
       if (!result) return [];
       if (Array.isArray(result)) return result as LspLocation[];
       return [result as LspLocation];
@@ -278,15 +267,15 @@ class LspClientManager {
     newName: string,
   ): Promise<LspWorkspaceEdit | null> {
     try {
-      return await invoke<LspWorkspaceEdit | null>("lsp_request", {
-        sessionId: entry.sessionId,
-        method: "textDocument/rename",
-        params: {
+      return await lsp.request<LspWorkspaceEdit | null>(
+        entry.sessionId,
+        "textDocument/rename",
+        {
           textDocument: { uri: pathToUri(path) },
           position: { line, character },
           newName,
         },
-      });
+      );
     } catch {
       return null;
     }
@@ -299,16 +288,13 @@ class LspClientManager {
     only?: string[],
   ): Promise<LspCodeAction[]> {
     try {
-      const result = await invoke<Array<LspCodeAction | null> | null>(
-        "lsp_request",
+      const result = await lsp.request<Array<LspCodeAction | null> | null>(
+        entry.sessionId,
+        "textDocument/codeAction",
         {
-          sessionId: entry.sessionId,
-          method: "textDocument/codeAction",
-          params: {
             textDocument: { uri: pathToUri(path) },
             range,
             context: only ? { diagnostics: [], only } : { diagnostics: [] },
-          },
         },
       );
       if (!Array.isArray(result)) return [];
@@ -342,11 +328,11 @@ class LspClientManager {
     action: LspCodeAction,
   ): Promise<LspCodeAction | null> {
     try {
-      return await invoke<LspCodeAction | null>("lsp_request", {
-        sessionId: entry.sessionId,
-        method: "codeAction/resolve",
-        params: action,
-      });
+      return await lsp.request<LspCodeAction | null>(
+        entry.sessionId,
+        "codeAction/resolve",
+        action,
+      );
     } catch {
       return null;
     }
@@ -363,11 +349,11 @@ class LspClientManager {
     args?: unknown[],
   ): Promise<boolean> {
     try {
-      await invoke("lsp_request", {
-        sessionId: entry.sessionId,
-        method: "workspace/executeCommand",
-        params: { command, arguments: args ?? [] },
-      });
+      await lsp.request(
+        entry.sessionId,
+        "workspace/executeCommand",
+        { command, arguments: args ?? [] },
+      );
       return true;
     } catch {
       return false;
@@ -387,14 +373,14 @@ class LspClientManager {
     const entry = this.sessions.get(key);
     if (!entry) return;
     entry.unlisten?.();
-    void invoke("lsp_stop", { sessionId: entry.sessionId }).catch(() => {});
+    void lsp.stop(entry.sessionId).catch(() => {});
     this.sessions.delete(key);
   }
 
   stopAll(): void {
     for (const entry of this.sessions.values()) {
       entry.unlisten?.();
-      void invoke("lsp_stop", { sessionId: entry.sessionId }).catch(() => {});
+      void lsp.stop(entry.sessionId).catch(() => {});
     }
     this.sessions.clear();
   }

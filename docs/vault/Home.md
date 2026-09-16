@@ -33,6 +33,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[ai]] — agent loop, providers, tools, subagents, compaction
 - [[settings-sync]] — preferences storage and cross-window sync
 - [[editor]] — CodeMirror panes, shared extensions, autocomplete, zoom interplay
+- [[lsp]] — language-server session ownership, host scope, diagnostics and server-initiated edits
 - [[explorer]] — workspace file tree, search, mutations, reveal actions, and workbench hosting
 - [[theming]] — theme data → CSS variables, the generated Nexis ramp, community and custom sets
 - [[window-chrome]] — borderless chrome: decorations config, drag region, window controls, Linux edge resize

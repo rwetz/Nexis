@@ -97,3 +97,11 @@ Verification for this slice: TypeScript and the production frontend build pass; 
 - No Rust PTY implementation, ConPTY locking, PowerShell launch, writer queue, backpressure, watchdog, or WSL shell-integration behavior changed.
 
 Verification for this slice: TypeScript and the production frontend build pass; all 1,208 frontend tests in 89 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused PTY, snapshot, capability, and pitfall-guard tests plus `git diff --check` pass. Changed-scope React Doctor remains at the same 19 accumulated-branch findings. Remaining Phase 4 order: integrations.
+
+### Slice 6: LSP integration
+
+- LSP now has an `editor.lsp` capability entry point and a typed API for start, request, notification, and stop. `modules/lsp/client.ts` retains session deduplication, document versions, diagnostics subscribers, missing-tool reporting, and shutdown ownership without raw Tauri calls.
+- Rust's current LSP protocol is explicitly host-scoped: `lsp_start` accepts a host workspace path and does not accept `WorkspaceEnv`. This slice preserves that behavior rather than falsely stamping WSL scope onto a backend that cannot honor it; WSL-native language servers remain unproven.
+- Existing disposable platform-event adapters continue to own diagnostics and `workspace/applyEdit` subscriptions.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,210 frontend tests in 90 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused LSP protocol/apply-edit/API tests and `git diff --check` pass. Remaining Phase 4 integration families include DAP/debugger, ML/Python, SSH/ports/share, Web Dev HTTP, theme/settings native access, and smaller filesystem/window consumers.
