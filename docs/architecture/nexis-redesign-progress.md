@@ -128,3 +128,11 @@ Verification for this slice: TypeScript and the production frontend build pass; 
 - Detection memo rejection eviction, project authorization failure fallback, managed-engine host-only visibility, Rust executable/subcommand validation, and store/event behavior remain unchanged.
 
 Verification for this slice: TypeScript and the production frontend build pass; all 1,218 frontend tests in 93 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused ML bridge/capability/store tests and `git diff --check` pass. Remaining Phase 4 integration families include SSH/ports/share, Web Dev HTTP, settings native access, and smaller window/shell consumers.
+
+### Slice 10: Network and remote integrations
+
+- `share.http` owns typed host contracts for LAN IP discovery and share-server start/update/stream/stop. The existing module-level Zustand state, CSPRNG view token, constant-time backend enforcement, redaction, and live terminal subscription lifetime remain intact.
+- Web Dev's human-authored REST client uses a typed `http_send` capability contract. It remains deliberately separate from AI egress, preserving localhost access for the user-facing client and the shared metadata/header/DNS-rebinding guards.
+- Port detection and SSH-key commands use `hostProcesses`. They intentionally retain host-machine and host-home scope when the active editor workspace is WSL instead of inheriting a distro environment.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,221 frontend tests in 95 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused share, Web Dev, and platform-process tests plus `git diff --check` pass. Changed-scope React Doctor reports 21 accumulated-branch findings; the newly listed HTTP Client finding is pre-existing function complexity in the panel touched only at its native call seam. Remaining Phase 4 work includes settings native access and smaller window/shell consumers.

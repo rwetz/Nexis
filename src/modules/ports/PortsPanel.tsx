@@ -12,21 +12,13 @@
 import { Icon } from "@/components/icon";
 import { IS_WINDOWS } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { invoke } from "@tauri-apps/api/core";
+import { hostProcesses } from "@/platform/processes";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type ListeningPort = {
   port: number;
   address: string;
   process: string;
-};
-
-type CommandOutput = {
-  stdout: string;
-  stderr: string;
-  exit_code: number | null;
-  timed_out: boolean;
-  truncated: boolean;
 };
 
 // Ports that are unlikely to be developer web servers (skip in the UI badge count).
@@ -39,11 +31,7 @@ async function detectPorts(): Promise<ListeningPort[]> {
     let stdout = "";
     if (IS_WINDOWS) {
       // netstat -ano lists all TCP listeners with PID
-      const out = await invoke<CommandOutput>("shell_run_command", {
-        command: "netstat -ano -p TCP",
-        cwd: null,
-        timeoutSecs: 10,
-      });
+      const out = await hostProcesses.runCommand("netstat -ano -p TCP", null, 10);
       stdout = out.stdout;
       for (const line of stdout.split(/\r?\n/)) {
         // LISTENING lines look like:  TCP  0.0.0.0:3000  0.0.0.0:0  LISTENING  1234
@@ -54,11 +42,11 @@ async function detectPorts(): Promise<ListeningPort[]> {
       }
     } else {
       // Try ss first (Linux), fall back to lsof (macOS/Linux)
-      const ssOut = await invoke<CommandOutput>("shell_run_command", {
-        command: "ss -tlnp 2>/dev/null || lsof -iTCP -sTCP:LISTEN -nP 2>/dev/null",
-        cwd: null,
-        timeoutSecs: 10,
-      });
+      const ssOut = await hostProcesses.runCommand(
+        "ss -tlnp 2>/dev/null || lsof -iTCP -sTCP:LISTEN -nP 2>/dev/null",
+        null,
+        10,
+      );
       stdout = ssOut.stdout;
 
       if (stdout.includes("LISTEN")) {

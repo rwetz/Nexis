@@ -11,6 +11,8 @@ Three panels, added 2026-09-03, under the `web-dev` pack. Views: `http-client`, 
 
 Pure logic in `modules/webdev/lib/httpClient.ts`; the request goes out through **`net::http_send`**, not the webview's `fetch`.
 
+`capabilities/web-tools/api.ts` owns the typed host command. The panel supplies only request data and cannot select the AI egress path or weaken its policy.
+
 Three reasons, in order: `fetch` would apply CORS to a request that has nothing to do with a browser page and fail most of them; `http_send` carries the SSRF guards; and it reports wall-clock timing and the post-redirect URL, which `fetch` will not hand back.
 
 **`http_send` is deliberately separate from `ai_http_request`** even though they share every validation helper in `net.rs`. Different threat models that must be able to diverge:

@@ -29,7 +29,7 @@ vi.mock("@tauri-apps/api/webviewWindow", () => ({
 }));
 
 import { filesystem, hostFilesystem } from "./filesystem";
-import { shellSessions } from "./processes";
+import { hostProcesses, shellSessions } from "./processes";
 import { useWorkspaceEnvStore } from "./workspaces";
 import { ensureWindow } from "./windows";
 
@@ -78,6 +78,12 @@ it("file writes preserve caller paths and source while host exports reject WSL i
   await hostFilesystem.stat("C:/Users/me/AppData/Roaming/nexis/themes");
   expect(mocks.invoke).toHaveBeenLastCalledWith("fs_stat", {
     path: "C:/Users/me/AppData/Roaming/nexis/themes",
+  });
+  await hostProcesses.runCommand("netstat -ano", null, 10);
+  expect(mocks.invoke).toHaveBeenLastCalledWith("shell_run_command", {
+    command: "netstat -ano",
+    cwd: null,
+    timeoutSecs: 10,
   });
 });
 

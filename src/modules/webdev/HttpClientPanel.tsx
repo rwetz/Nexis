@@ -21,7 +21,7 @@
 
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { invoke } from "@tauri-apps/api/core";
+import { webHttp, type ClientHttpResponse } from "@/capabilities/web-tools/api";
 import { useCallback, useMemo, useState } from "react";
 import {
   contentTypeOf,
@@ -37,15 +37,6 @@ import {
   type HttpMethod,
   type SavedRequest,
 } from "./lib/httpClient";
-
-type ClientHttpResponse = {
-  status: number;
-  statusText: string;
-  headers: Record<string, string>;
-  body: number[];
-  elapsedMs: number;
-  finalUrl: string;
-};
 
 type Props = {
   /** Scopes saved requests and variables to the open workspace. */
@@ -147,7 +138,7 @@ export function HttpClientPanel({ workspaceKey }: Props) {
         method === "GET" || method === "HEAD" || !body
           ? null
           : Array.from(new TextEncoder().encode(substituteVars(body, vars)));
-      const res = await invoke<ClientHttpResponse>("http_send", {
+      const res = await webHttp.send({
         url: resolvedUrl,
         method,
         headers: parsedHeaders,

@@ -10,6 +10,14 @@ import { createProcessService } from "./process";
 import type { CommandOutput } from "@/domain/native-types";
 
 export type ShellRunResult = CommandOutput & { cwd_after: string };
+const runCommand = defineCommand<
+  { command: string; cwd: string | null; timeoutSecs: number | null },
+  CommandOutput
+>("shell_run_command", "workspace");
+const runHostCommand = defineCommand<
+  { command: string; cwd: string | null; timeoutSecs: number | null },
+  CommandOutput
+>("shell_run_command", "host");
 const openSession = defineCommand<{ cwd: string | null }, number>(
   "shell_session_open",
   "workspace",
@@ -48,13 +56,11 @@ export const shellSessions = createProcessService<ShellRunResult>(
 
 export const processes = {
   runCommand: (command: string, cwd?: string | null, timeoutSecs?: number) =>
-    workspaceIpc.call(
-      defineCommand<
-        { command: string; cwd: string | null; timeoutSecs: number | null },
-        CommandOutput
-      >("shell_run_command", "workspace"),
-      { command, cwd: cwd ?? null, timeoutSecs: timeoutSecs ?? null },
-    ),
+    workspaceIpc.call(runCommand, {
+      command,
+      cwd: cwd ?? null,
+      timeoutSecs: timeoutSecs ?? null,
+    }),
   shellBgSpawn: (command: string, cwd?: string | null) =>
     workspaceIpc.call(
       defineCommand<{ command: string; cwd: string | null }, number>(
@@ -97,4 +103,14 @@ export const processes = {
       >("shell_bg_list", "host"),
       {},
     ),
+};
+
+/** Machine tools and host-home operations must not inherit a WSL workspace. */
+export const hostProcesses = {
+  runCommand: (command: string, cwd?: string | null, timeoutSecs?: number) =>
+    hostIpc.call(runHostCommand, {
+      command,
+      cwd: cwd ?? null,
+      timeoutSecs: timeoutSecs ?? null,
+    }),
 };

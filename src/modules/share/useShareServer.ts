@@ -17,8 +17,8 @@
  * generated here (crypto CSPRNG), enforced Rust-side with a constant-time
  * compare, and embedded into the live page's /ws + /stream URLs.
  */
-import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
+import { shareServer } from "@/capabilities/share/api";
 import { redactSensitive } from "@/modules/ai/lib/redact";
 import { onTerminalOutput } from "@/modules/terminal/lib/useTerminalSession";
 
@@ -125,7 +125,7 @@ function resolveBind(choice: ShareBindChoice, lanIp: string | null): string {
 /** Ask Rust for the primary LAN IP (display + "lan" bind). Call on panel open. */
 export async function refreshShareLanIp(): Promise<void> {
   try {
-    const ip = await invoke<string | null>("http_share_lan_ip");
+    const ip = await shareServer.lanIp();
     useShareStore.setState({ lanIp: ip ?? null });
   } catch {
     // Leave the placeholder; purely cosmetic.
@@ -150,7 +150,7 @@ export async function startShare(opts: StartShareOptions): Promise<number | null
     // The initial HTML takes the same redaction pass as every later update —
     // it is the first thing a viewer downloads.
     const html = redactSensitive(opts.buildHtml(token));
-    const port = await invoke<number>("http_share_start", {
+    const port = await shareServer.start({
       html,
       port: 0, // auto-assign
       bind: resolveBind(bindChoice, lanIp),
@@ -177,7 +177,7 @@ export async function startShare(opts: StartShareOptions): Promise<number | null
 export async function updateShare(html: string): Promise<void> {
   if (useShareStore.getState().status !== "running") return;
   try {
-    await invoke("http_share_update", { html: redactSensitive(html) });
+    await shareServer.update(redactSensitive(html));
   } catch {
     // Non-fatal — server might have been stopped externally
   }
@@ -185,7 +185,7 @@ export async function updateShare(html: string): Promise<void> {
 
 export async function pushShareStream(data: string): Promise<void> {
   try {
-    await invoke("http_share_push_stream", { data: redactSensitive(data) });
+    await shareServer.pushStream(redactSensitive(data));
   } catch {
     // Ignore — server may be stopped
   }
@@ -194,7 +194,7 @@ export async function pushShareStream(data: string): Promise<void> {
 export async function stopShare(): Promise<void> {
   stopLivePush();
   try {
-    await invoke("http_share_stop");
+    await shareServer.stop();
   } catch {
     // Ignore — server may already be stopped
   }

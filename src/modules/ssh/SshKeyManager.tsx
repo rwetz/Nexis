@@ -15,17 +15,9 @@ import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { invoke } from "@tauri-apps/api/core";
 import { IS_WINDOWS } from "@/lib/platform";
+import { hostProcesses } from "@/platform/processes";
 import { useCallback, useEffect, useState } from "react";
-
-type CommandOutput = {
-  stdout: string;
-  stderr: string;
-  exit_code: number | null;
-  timed_out: boolean;
-  truncated: boolean;
-};
 
 type SshKey = {
   filename: string;   // e.g. id_ed25519.pub
@@ -34,8 +26,8 @@ type SshKey = {
   comment: string;    // last field of key line
 };
 
-async function runCmd(command: string): Promise<CommandOutput> {
-  return invoke<CommandOutput>("shell_run_command", { command, cwd: null, timeoutSecs: 15 });
+function runCmd(command: string) {
+  return hostProcesses.runCommand(command, null, 15);
 }
 
 async function listKeys(os: string): Promise<SshKey[]> {

@@ -14,14 +14,14 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | PTY | `pty_open/write/resize/close/cwd` | `modules/pty/mod.rs` | typed workspace/host descriptors plus channels in `terminal/lib/pty-bridge.ts` — see [[terminal-tab-open]] |
 | Filesystem | `fs_*`, `list_subdirs` | `modules/fs/{file,tree,mutate,search,grep}.rs` | `platform/filesystem.ts`; AI-only read policy in `ai/lib/filesystem.ts` |
 | Git | `git_*` (status, diff, stage, commit, stash, worktree…) | `modules/git/commands.rs` | `capabilities/git/api.ts` |
-| Shell one-shots & sessions | `shell_run_command`, `shell_session_*`, `shell_bg_*`, `*_shell_history` | `modules/shell/mod.rs` | `platform/processes.ts`, `ai/tools/shell.ts`; terminal suggestions use a typed host descriptor; ports/SSH remain on the integration queue |
+| Shell one-shots & sessions | `shell_run_command`, `shell_session_*`, `shell_bg_*`, `*_shell_history` | `modules/shell/mod.rs` | `platform/processes.ts`, `ai/tools/shell.ts`; terminal suggestions use a typed host descriptor; ports/SSH use the explicit host process service |
 | Workspace / WSL | `workspace_authorize`, `workspace_current_dir`, `wsl_*`, `get_launch_dir` | `modules/workspace.rs`, `lib.rs` | `platform/workspace-state.ts`, `lib/launchDir.ts`, and every bridge that spawns with a cwd |
 | Secrets | `secrets_get/set/delete/get_all` | `modules/secrets.rs` (OS keychain) | `platform/secrets.ts` → `ai/lib/keyring.ts` |
 | LSP / DAP | `lsp_*`, `dap_*` | `modules/lsp/mod.rs`, `modules/dap/mod.rs` | `capabilities/lsp/api.ts` → `lsp/client.ts`; `capabilities/debugger/api.ts` → `debugger/debugSession.ts` |
-| HTTP | `ai_http_request`, `ai_http_stream`, `lm_ping`, `http_send` | `modules/net.rs` | `platform/http-stream.ts` → `ai/lib/proxyFetch.ts`; Web Dev remains on the integration migration queue — see [[ai]], [[web-dev-pack]] |
+| HTTP | `ai_http_request`, `ai_http_stream`, `lm_ping`, `http_send` | `modules/net.rs` | `platform/http-stream.ts` → `ai/lib/proxyFetch.ts`; `capabilities/web-tools/api.ts` → `webdev/HttpClientPanel.tsx` — see [[ai]], [[web-dev-pack]] |
 | ML engine | `ml_*` | `modules/ml.rs` | `capabilities/ml/api.ts` → `ml/lib/engine-bridge.ts` |
 | Python | `py_detect_envs` | `modules/python.rs` | `capabilities/python/api.ts` → `python/usePythonEnv.ts`, `ml/store.ts` |
-| Share server | `http_share_*` (start takes `bind` + `token`; `http_share_lan_ip` probes the primary LAN IP) | `modules/http_share.rs` | `share/useShareServer.ts` (global Zustand store — sharing survives panel close) |
+| Share server | `http_share_*` (start takes `bind` + `token`; `http_share_lan_ip` probes the primary LAN IP) | `modules/http_share.rs` | `capabilities/share/api.ts` → `share/useShareServer.ts` (global Zustand store — sharing survives panel close) |
 | Recording | `save_cast_recording` | `modules/recording.rs` | typed host descriptor in `terminal/lib/useRecording.ts` |
 | Session snapshots | `session_snapshot_save/load/delete/gc` | `modules/snapshots.rs` | typed host descriptors in `terminal/lib/snapshot-bridge.ts` |
 | AI checkpoints | `git_checkpoint_create/list/restore/delete` | `modules/git/commands.rs` adapters → `operations.rs` | `ai/lib/checkpoint.ts` (create, from edit tools) · `source-control/CheckpointSection.tsx` (list/restore) |
