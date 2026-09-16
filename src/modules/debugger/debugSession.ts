@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { invoke } from "@tauri-apps/api/core";
+import { invokeDap } from "@/capabilities/debugger/api";
 import { listen, type UnlistenFn } from "@/platform/events";
 import { create } from "zustand";
 import type {
@@ -91,7 +91,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
       set({ status: "starting", output: [], stackFrames: [], scopes: [], variables: new Map() });
 
       try {
-        const sessionId = await invoke<number>("dap_start", {
+        const sessionId = await invokeDap("dap_start", {
           adapterCmd,
           adapterArgs,
           adapterId,
@@ -164,7 +164,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
 
         // Set breakpoints for each file
         for (const [path, lines] of breakpoints) {
-          await invoke("dap_request", {
+          await invokeDap("dap_request", {
             sessionId,
             command: "setBreakpoints",
             arguments: {
@@ -175,14 +175,14 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
         }
 
         // Launch
-        await invoke("dap_request", {
+        await invokeDap("dap_request", {
           sessionId,
           command: "launch",
           arguments: launchConfig,
         });
 
         // configurationDone
-        await invoke("dap_request", {
+        await invokeDap("dap_request", {
           sessionId,
           command: "configurationDone",
           arguments: {},
@@ -200,9 +200,9 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
       for (const u of unlisteners) u();
       if (sessionId != null) {
         try {
-          await invoke("dap_request", { sessionId, command: "disconnect", arguments: { terminateDebuggee: true } });
+          await invokeDap("dap_request", { sessionId, command: "disconnect", arguments: { terminateDebuggee: true } });
         } catch {}
-        await invoke("dap_stop", { sessionId }).catch(() => {});
+        await invokeDap("dap_stop", { sessionId }).catch(() => {});
       }
       set({ ...initialState });
     },
@@ -210,7 +210,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
     async continue() {
       const { sessionId, activeThreadId } = get();
       if (!sessionId || activeThreadId == null) return;
-      await invoke("dap_request", {
+      await invokeDap("dap_request", {
         sessionId,
         command: "continue",
         arguments: { threadId: activeThreadId },
@@ -221,7 +221,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
     async next() {
       const { sessionId, activeThreadId } = get();
       if (!sessionId || activeThreadId == null) return;
-      await invoke("dap_request", {
+      await invokeDap("dap_request", {
         sessionId,
         command: "next",
         arguments: { threadId: activeThreadId, granularity: "statement" },
@@ -232,7 +232,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
     async stepIn() {
       const { sessionId, activeThreadId } = get();
       if (!sessionId || activeThreadId == null) return;
-      await invoke("dap_request", {
+      await invokeDap("dap_request", {
         sessionId,
         command: "stepIn",
         arguments: { threadId: activeThreadId, granularity: "statement" },
@@ -243,7 +243,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
     async stepOut() {
       const { sessionId, activeThreadId } = get();
       if (!sessionId || activeThreadId == null) return;
-      await invoke("dap_request", {
+      await invokeDap("dap_request", {
         sessionId,
         command: "stepOut",
         arguments: { threadId: activeThreadId },
@@ -254,7 +254,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
     async pause() {
       const { sessionId, activeThreadId } = get();
       if (!sessionId || activeThreadId == null) return;
-      await invoke("dap_request", {
+      await invokeDap("dap_request", {
         sessionId,
         command: "pause",
         arguments: { threadId: activeThreadId },
@@ -268,7 +268,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
       // If frameId === -1, fetch stack trace first
       let frames = stackFrames;
       if (frameId === -1) {
-        const result = await invoke<{ stackFrames: DapStackFrame[] }>("dap_request", {
+        const result = await invokeDap<{ stackFrames: DapStackFrame[] }>("dap_request", {
           sessionId,
           command: "stackTrace",
           arguments: { threadId: activeThreadId },
@@ -293,7 +293,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
       if (frameId === -1) return;
 
       // Fetch scopes
-      const scopesResult = await invoke<{ scopes: DapScope[] }>("dap_request", {
+      const scopesResult = await invokeDap<{ scopes: DapScope[] }>("dap_request", {
         sessionId,
         command: "scopes",
         arguments: { frameId },
@@ -313,7 +313,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
     async expandVariables(variablesRef: number) {
       const { sessionId, variables } = get();
       if (!sessionId || variables.has(variablesRef)) return;
-      const result = await invoke<{ variables: DapVariable[] }>("dap_request", {
+      const result = await invokeDap<{ variables: DapVariable[] }>("dap_request", {
         sessionId,
         command: "variables",
         arguments: { variablesReference: variablesRef },
@@ -330,7 +330,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
       const { sessionId, activeFrameId } = get();
       if (!sessionId) return "No active session";
       try {
-        const result = await invoke<{ result: string }>("dap_request", {
+        const result = await invokeDap<{ result: string }>("dap_request", {
           sessionId,
           command: "evaluate",
           arguments: { expression, frameId: activeFrameId, context: "repl" },

@@ -105,3 +105,10 @@ Verification for this slice: TypeScript and the production frontend build pass; 
 - Existing disposable platform-event adapters continue to own diagnostics and `workspace/applyEdit` subscriptions.
 
 Verification for this slice: TypeScript and the production frontend build pass; all 1,210 frontend tests in 90 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused LSP protocol/apply-edit/API tests and `git diff --check` pass. Remaining Phase 4 integration families include DAP/debugger, ML/Python, SSH/ports/share, Web Dev HTTP, theme/settings native access, and smaller filesystem/window consumers.
+
+### Slice 7: DAP debugger integration
+
+- Debugger now has a `debugger.dap` capability entry point and typed host contracts for adapter start, request, and stop. The existing store retains session state, breakpoint sequencing, event subscriptions, stepping, scope expansion, evaluation, and cleanup.
+- Like LSP, the current Rust adapter protocol is host-scoped and accepts no `WorkspaceEnv`; this slice preserves that truth instead of claiming WSL-native debugging.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,212 frontend tests in 91 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused DAP API checks and `git diff --check` pass. Remaining Phase 4 integration families include ML/Python, SSH/ports/share, Web Dev HTTP, theme/settings native access, and smaller filesystem/window consumers.
