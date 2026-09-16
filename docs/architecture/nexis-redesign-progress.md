@@ -120,3 +120,11 @@ Verification for this slice: TypeScript and the production frontend build pass; 
 - Custom theme files are explicitly host-scoped because their paths come from the host app-config directory. This fixes create/save/delete under an active WSL workspace, which previously paired a Windows app-data path with a distro environment.
 
 Verification for this slice: TypeScript and the production frontend build pass; all 1,214 frontend tests in 92 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused ML/theme/filesystem/Python tests and `git diff --check` pass. Changed-scope React Doctor reports 20 accumulated-branch findings: the prior 19 plus the existing sequential DAP breakpoint setup now included because the debugger store changed in Slice 7. Remaining Phase 4 integration families include the ML engine protocol, SSH/ports/share, Web Dev HTTP, settings native access, and smaller window/shell consumers.
+
+### Slice 9: ML engine protocol
+
+- `ml.engine` owns typed workspace commands for detection, environment reports, install, and spawn; host commands for managed-engine operations and GPU probing; host session controls for stdin/cancel/kill; and a disposable scope for the protocol/stderr/exit event trio.
+- Training, scaffold, serve, and export launches now capture one environment before authorization and reuse it for spawn. An environment switch during the await can no longer authorize in one distro and launch in another.
+- Detection memo rejection eviction, project authorization failure fallback, managed-engine host-only visibility, Rust executable/subcommand validation, and store/event behavior remain unchanged.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,218 frontend tests in 93 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused ML bridge/capability/store tests and `git diff --check` pass. Remaining Phase 4 integration families include SSH/ports/share, Web Dev HTTP, settings native access, and smaller window/shell consumers.

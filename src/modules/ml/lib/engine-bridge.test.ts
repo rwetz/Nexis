@@ -36,17 +36,14 @@ vi.mock("@tauri-apps/api/event", () => ({
   listen: vi.fn(async () => () => {}),
 }));
 
-vi.mock("@/platform/workspaces", () => ({
-  currentWorkspaceEnv: () => ({ kind: "local" }),
-  currentWorkspaceScopeKey: () => "local",
-}));
-
 let invokeMock: ReturnType<typeof vi.fn>;
 
 beforeEach(async () => {
   const core = await import("@tauri-apps/api/core");
   invokeMock = vi.mocked(core.invoke);
   invokeMock.mockReset();
+  const { useWorkspaceEnvStore } = await import("@/platform/workspaces");
+  useWorkspaceEnvStore.setState({ env: { kind: "local" } });
   resetEngineDetection();
 });
 
@@ -144,6 +141,32 @@ describe("spawnTrain — pitfall #1C: authorize before spawn", () => {
       return null;
     });
     await expect(spawnTrain("nexis-ml", "E:\\proj")).resolves.toBe(3);
+  });
+
+  it("keeps authorization and spawn in the captured workspace", async () => {
+    const { useWorkspaceEnvStore } = await import("@/platform/workspaces");
+    useWorkspaceEnvStore.setState({ env: { kind: "wsl", distro: "Ubuntu" } });
+    let release!: () => void;
+    invokeMock.mockImplementation(async (cmd: string) => {
+      if (cmd === "workspace_authorize") {
+        await new Promise<void>((resolve) => { release = resolve; });
+        return "C:\\wsl-host-view\\proj";
+      }
+      if (cmd === "ml_spawn") return 8;
+      return null;
+    });
+
+    const pending = spawnTrain("nexis-ml", "/home/me/proj");
+    await vi.waitFor(() => expect(release).toBeTypeOf("function"));
+    useWorkspaceEnvStore.setState({ env: { kind: "local" } });
+    release();
+    await expect(pending).resolves.toBe(8);
+
+    const scoped = invokeMock.mock.calls.filter(([name]) =>
+      name === "workspace_authorize" || name === "ml_spawn"
+    );
+    expect(scoped).toHaveLength(2);
+    expect(scoped.every(([, args]) => args.workspace.distro === "Ubuntu")).toBe(true);
   });
 });
 
@@ -345,7 +368,7 @@ describe("serve bridge", () => {
 
     const res = await downloadEngine();
 
-    expect(args).toBeUndefined();
+    expect(args).toEqual({});
     expect(res).toEqual({
       exe: "C:\\data\\engine\\nexis-ml.exe",
       version: "0.8.0",

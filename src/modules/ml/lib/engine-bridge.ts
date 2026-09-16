@@ -18,18 +18,32 @@
  *    deletes the entry before re-throwing so a failed probe is retried
  *    on the next call instead of being cached forever.
  */
-import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@/platform/events";
 import {
+  createMlWorkspaceApi,
+  mlHost,
+  subscribeMlProtocol,
+  type EngineDetectResult,
+  type EnginePin,
+  type ExitPayload,
+  type ManagedEngineStatus,
+  type ProtoPayload,
+  type StderrPayload,
+} from "@/capabilities/ml/api";
+import {
+  activeWorkspace,
   currentWorkspaceEnv,
   currentWorkspaceScopeKey,
+  ipcForEnvironment,
 } from "@/platform/workspaces";
 
-export type EngineDetectResult = { exe: string; version: string };
-
-export type ProtoPayload = { sid: number; lines: string[] };
-export type StderrPayload = { sid: number; line: string };
-export type ExitPayload = { sid: number; code: number | null };
+export type {
+  EngineDetectResult,
+  EnginePin,
+  ExitPayload,
+  ManagedEngineStatus,
+  ProtoPayload,
+  StderrPayload,
+} from "@/capabilities/ml/api";
 
 export type PythonEnvLike = { python_path: string };
 
@@ -124,7 +138,7 @@ export function detectEngine(
   const key = `${currentWorkspaceScopeKey()}\u0000${candidates.join("|")}`;
   let p = detectCache.get(key);
   if (!p) {
-    p = invoke<EngineDetectResult>("ml_detect", { candidates, workspace }).catch(
+    p = createMlWorkspaceApi(ipcForEnvironment(workspace)).detect(candidates).catch(
       (err) => {
         // Pitfall #10: never leave a rejected promise in the cache.
         detectCache.delete(key);
@@ -165,20 +179,13 @@ export async function managedEngineCandidate(): Promise<string | null> {
 
 /** The compiled-in engine release pin: what the consent dialog shows and
  *  what the Rust side will enforce (exact tag + SHA-256, never "latest"). */
-export type EnginePin = {
-  version: string;
-  url: string;
-  sizeBytes: number;
-  sha256: string;
-};
-
 /**
  * The pinned engine release for this OS/arch, or null on a platform with no
  * prebuilt binary. Resolved by the Rust side (it owns the pin and knows the
  * target triple).
  */
 export function engineInstallPin(): Promise<EnginePin | null> {
-  return invoke<EnginePin | null>("ml_engine_pin").catch(() => null);
+  return mlHost.installPin().catch(() => null);
 }
 
 /**
@@ -189,7 +196,7 @@ export function engineInstallPin(): Promise<EnginePin | null> {
  * engine). Call only after the user consented (the panel's dialog).
  */
 export function downloadEngine(): Promise<EngineDetectResult> {
-  return invoke<EngineDetectResult>("ml_download");
+  return mlHost.download();
 }
 
 /**
@@ -198,39 +205,32 @@ export function downloadEngine(): Promise<EngineDetectResult> {
  * fails it — those stay usable via PATH/venv detection instead.
  */
 export function installLocalEngine(path: string): Promise<EngineDetectResult> {
-  return invoke<EngineDetectResult>("ml_install_local", { path });
+  return mlHost.installLocal(path);
 }
-
-export type ManagedEngineStatus = {
-  installed: boolean;
-  path: string;
-  sizeBytes: number;
-};
 
 /** Whether the managed (downloaded) engine exists and its disk footprint. */
 export function managedEngineStatus(): Promise<ManagedEngineStatus | null> {
-  return invoke<ManagedEngineStatus>("ml_engine_status").catch(() => null);
+  return mlHost.status().catch(() => null);
 }
 
 /** Delete the managed engine binary; resolves to the freed byte count. */
 export function uninstallEngine(): Promise<number> {
-  return invoke<number>("ml_uninstall");
+  return mlHost.uninstall();
 }
 
 // ── Spawning ──────────────────────────────────────────────────────────────────
 
-async function authorizeProjectDir(projectDir: string): Promise<void> {
+async function workspaceApiForProject(projectDir: string) {
+  const workspace = currentWorkspaceEnv();
   // Pitfall #1C: authorize before any spawn with a user-supplied cwd.
   // Failure is swallowed like pty-bridge does — if the dir is genuinely
   // inaccessible, ml_spawn returns its own descriptive error.
   try {
-    await invoke<string>("workspace_authorize", {
-      path: projectDir,
-      workspace: currentWorkspaceEnv(),
-    });
+    await activeWorkspace.authorize(projectDir, workspace);
   } catch (err) {
     console.warn("[nexis] ml workspace_authorize failed:", err);
   }
+  return createMlWorkspaceApi(ipcForEnvironment(workspace));
 }
 
 /** Spawn `nexis-ml train` in the project dir. Resolves to a session id. */
@@ -238,13 +238,8 @@ export async function spawnTrain(
   exe: string,
   projectDir: string,
 ): Promise<number> {
-  await authorizeProjectDir(projectDir);
-  return invoke<number>("ml_spawn", {
-    exe,
-    args: ["train", "."],
-    projectDir,
-    workspace: currentWorkspaceEnv(),
-  });
+  const ml = await workspaceApiForProject(projectDir);
+  return ml.spawn(exe, ["train", "."], projectDir);
 }
 
 /** Project templates the panel can scaffold. The engine validates the
@@ -261,13 +256,8 @@ export async function spawnNew(
   template: MlTemplate,
   name: string,
 ): Promise<number> {
-  await authorizeProjectDir(workspaceRoot);
-  return invoke<number>("ml_spawn", {
-    exe,
-    args: ["new", template, name],
-    projectDir: workspaceRoot,
-    workspace: currentWorkspaceEnv(),
-  });
+  const ml = await workspaceApiForProject(workspaceRoot);
+  return ml.spawn(exe, ["new", template, name], workspaceRoot);
 }
 
 export type InstallFlavor = "default" | "cuda-torch" | "git";
@@ -281,11 +271,8 @@ export function spawnInstall(
   python: string,
   flavor: InstallFlavor,
 ): Promise<number> {
-  return invoke<number>("ml_install", {
-    python,
-    flavor,
-    workspace: currentWorkspaceEnv(),
-  });
+  const workspace = currentWorkspaceEnv();
+  return createMlWorkspaceApi(ipcForEnvironment(workspace)).install(python, flavor);
 }
 
 export type MlEnvInfo = {
@@ -314,10 +301,8 @@ export type MlEnvInfo = {
  * without blocking UI. The Rust engine answers instantly.
  */
 export async function probeEnv(exe: string): Promise<MlEnvInfo> {
-  const raw = await invoke<string>("ml_env", {
-    exe,
-    workspace: currentWorkspaceEnv(),
-  });
+  const workspace = currentWorkspaceEnv();
+  const raw = await createMlWorkspaceApi(ipcForEnvironment(workspace)).environment(exe);
   const parsed = JSON.parse(raw) as Record<string, unknown>;
   return {
     python: typeof parsed.python === "string" ? parsed.python : null,
@@ -366,7 +351,7 @@ export function engineSupportsTemplate(
 
 /** NVIDIA GPU name from the driver (nvidia-smi), engine not required. */
 export function probeGpu(): Promise<string | null> {
-  return invoke<string | null>("ml_gpu_probe");
+  return mlHost.probeGpu();
 }
 
 /**
@@ -380,19 +365,14 @@ export async function spawnServe(
   runId: string,
   checkpoint: "best" | "last" = "best",
 ): Promise<number> {
-  await authorizeProjectDir(projectDir);
-  return invoke<number>("ml_spawn", {
-    exe,
-    args: ["serve", "--run", runId, "--checkpoint", checkpoint],
-    projectDir,
-    workspace: currentWorkspaceEnv(),
-  });
+  const ml = await workspaceApiForProject(projectDir);
+  return ml.spawn(exe, ["serve", "--run", runId, "--checkpoint", checkpoint], projectDir);
 }
 
 /** Send one inference request to a serve session (written as a single
  *  stdin line; the engine answers with a prediction/error event). */
 export function sendInfer(sid: number, request: unknown): Promise<void> {
-  return invoke("ml_stdin", { sid, line: JSON.stringify(request) });
+  return mlHost.stdin(sid, JSON.stringify(request));
 }
 
 /** Write a run's self-contained HTML report (`nexis-ml export --run`).
@@ -404,13 +384,8 @@ export async function spawnExport(
   projectDir: string,
   runId: string,
 ): Promise<number> {
-  await authorizeProjectDir(projectDir);
-  return invoke<number>("ml_spawn", {
-    exe,
-    args: ["export", "--run", runId],
-    projectDir,
-    workspace: currentWorkspaceEnv(),
-  });
+  const ml = await workspaceApiForProject(projectDir);
+  return ml.spawn(exe, ["export", "--run", runId], projectDir);
 }
 
 /** Export the project's tabular model to ONNX (`nexis-ml export --onnx .`).
@@ -421,29 +396,24 @@ export async function spawnExportOnnx(
   exe: string,
   projectDir: string,
 ): Promise<number> {
-  await authorizeProjectDir(projectDir);
-  return invoke<number>("ml_spawn", {
-    exe,
-    args: ["export", "--onnx", "."],
-    projectDir,
-    workspace: currentWorkspaceEnv(),
-  });
+  const ml = await workspaceApiForProject(projectDir);
+  return ml.spawn(exe, ["export", "--onnx", "."], projectDir);
 }
 
 /** Graceful stop: the engine checkpoints and finishes as "cancelled". */
 export function cancelRun(sid: number): Promise<void> {
-  return invoke("ml_cancel", { sid });
+  return mlHost.cancel(sid);
 }
 
 /** Pause/resume a training run — the harness honors it at the next epoch
  *  boundary. Sent as a control line on the child's stdin. */
 export function sendControl(sid: number, cmd: "pause" | "resume"): Promise<void> {
-  return invoke("ml_stdin", { sid, line: JSON.stringify({ cmd }) });
+  return mlHost.stdin(sid, JSON.stringify({ cmd }));
 }
 
 /** Hard kill, for when cancel doesn't take. */
 export function killRun(sid: number): Promise<void> {
-  return invoke("ml_kill", { sid });
+  return mlHost.kill(sid);
 }
 
 // ── Event subscription ────────────────────────────────────────────────────────
@@ -460,14 +430,5 @@ export type MlBridgeHandlers = {
  * even when training emits thousands of metric lines per second.
  */
 export function subscribeMlEvents(handlers: MlBridgeHandlers): () => void {
-  const unlisteners: Promise<UnlistenFn>[] = [
-    listen<ProtoPayload>("ml:proto", (e) => handlers.onProto(e.payload)),
-    listen<StderrPayload>("ml:stderr", (e) => handlers.onStderr(e.payload)),
-    listen<ExitPayload>("ml:exit", (e) => handlers.onExit(e.payload)),
-  ];
-  return () => {
-    for (const p of unlisteners) {
-      void p.then((un) => un()).catch(() => {});
-    }
-  };
+  return subscribeMlProtocol(handlers);
 }

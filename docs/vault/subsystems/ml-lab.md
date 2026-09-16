@@ -17,7 +17,8 @@ Two engines answer to the same name and have different feature sets — the Pyth
 
 - `src-tauri/src/modules/ml.rs` — every `ml_*` command: detect, env probe, spawn + reader/flusher threads, pip install, the pinned managed-engine download
 - `src/capabilities/python/api.ts` / `src-tauri/src/modules/python.rs:py_detect_envs` — typed workspace-scoped interpreter discovery, shared with the status-bar Python picker
-- `src/modules/ml/lib/engine-bridge.ts` — the IPC seam; candidate building, the detection memo, event subscription
+- `src/capabilities/ml/api.ts` — typed workspace/host command descriptors and event-scope ownership
+- `src/modules/ml/lib/engine-bridge.ts` — domain bridge; candidate building, detection memo, captured authorization/spawn, event subscription
 - `src/modules/ml/store.ts` — engine state, the live run, historical runs, compare, serve/playground
 - `src/modules/ml/MlPanel.tsx` — the whole panel (large; setup card, run browser, hyperparams, playground)
 - `src/modules/ml/MlLabStack.tsx` — the full-workspace `ml-lab` tab host; passes the same shared panel and network-tab action into the primary work area
@@ -33,6 +34,7 @@ Two engines answer to the same name and have different feature sets — the Pyth
 - **Caches of engine facts must carry the workspace scope.** `detectCache` keys on `currentWorkspaceScopeKey()`; `MlStore.engineScope` records who answered and discards everything on a mismatch.
 - **Metric buffers are NOT in the store** (pitfall #14) — they live in a module-level Map in `lib/series.ts`; components subscribe to the primitive `seriesTick` and read through `getSeriesMap()`.
 - **`workspace_authorize` runs before every `ml_spawn`** (pitfall #1C), same as `pty-bridge` does for `pty_open`.
+- **Authorization and spawn reuse one captured workspace environment.** Switching from WSL to local, or between distros, while authorization is pending must not stamp the later environment onto `ml_spawn`.
 - **The detection promise is memoized and its `.catch()` deletes the entry** (pitfall #10) — a rejected promise left in a Map is indistinguishable from a resolved one.
 - **The candidate list is speculative, so an absent candidate is not an error.** `ml.rs:Probe` is three-valued: `Missing` is silent, `Failed` is a diagnosis. Reporting the last candidate's ENOENT instead made every "no engine" state show the managed engine's path and `os error 3`. Absolute host paths are ruled out with `exists()` rather than a spawn — the panel re-detects on every open.
 - **`installSid` is recorded only after `spawnInstall` resolves.** An exit inside that window matches nothing, and nothing else clears `installing` — which disables the setup card's buttons. `_applyExit`/`_applyStderr` treat an unmatched event during an in-flight install as that install's.
