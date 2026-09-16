@@ -24,7 +24,7 @@ import {
 } from "react";
 import { Icon } from "@/components/icon";
 import { IS_WINDOWS } from "@/lib/platform";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { assetUrl } from "@/platform/desktop";
 import { cn } from "@/lib/utils";
 import {
   useMlStore,
@@ -61,7 +61,7 @@ import {
   type MlEnvInfo,
   type MlTemplate,
 } from "./lib/engine-bridge";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { revealPathInHost } from "@/platform/opener";
 import { readConfusionMatrix, type ConfusionMatrix } from "./lib/artifacts";
 import { readTrainToml, writeTrainToml } from "./lib/config";
 import {
@@ -351,7 +351,7 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
                       <button
                         type="button"
                         onClick={() =>
-                          void revealItemInDir(`${selectedProject}/model.onnx`).catch(
+                          void revealPathInHost(`${selectedProject}/model.onnx`).catch(
                             () => {},
                           )
                         }
@@ -1608,7 +1608,7 @@ function ImageGridView() {
   // Same asset:// path handling as the image viewer (convertFileSrc on
   // Windows needs forward slashes). The filename changes each epoch, so
   // the <img> reloads without cache-busting.
-  const src = convertFileSrc(artifact.path.replace(/\\/g, "/"));
+  const src = assetUrl(artifact.path.replace(/\\/g, "/"));
 
   return (
     <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">

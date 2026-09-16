@@ -52,8 +52,8 @@ import {
   setOpenaiCompatibleContextLimit,
   setOpenaiCompatibleModelId,
 } from "@/modules/settings/store";
-import { invoke } from "@tauri-apps/api/core";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openHostUrl } from "@/platform/opener";
+import { settingsNative } from "@/platform/settings-native";
 import { useEffect, useMemo, useState } from "react";
 import { ProviderIcon } from "../components/ProviderIcon";
 import { ProviderKeyCard } from "../components/ProviderKeyCard";
@@ -729,7 +729,7 @@ function LocalProviderCard({
   const test = async () => {
     setTestStatus("testing");
     try {
-      const status = await invoke<number>("lm_ping", { baseUrl: urlDraft });
+      const status = await settingsNative.pingLocalModel(urlDraft);
       setTestStatus(status > 0 ? "ok" : "fail");
     } catch {
       setTestStatus("fail");
@@ -752,7 +752,7 @@ function LocalProviderCard({
         ) : null}
         <button
           type="button"
-          onClick={() => void openUrl(provider.consoleUrl)}
+          onClick={() => void openHostUrl(provider.consoleUrl)}
           className="ml-auto inline-flex items-center gap-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground"
         >
           Docs

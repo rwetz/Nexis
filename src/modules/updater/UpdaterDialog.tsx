@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { formatBytes } from "@/lib/format";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openHostUrl } from "@/platform/opener";
 import { useState } from "react";
 import { useUpdater } from "./useUpdater";
 
@@ -166,7 +166,7 @@ export function UpdaterDialog() {
               </Button>
               <Button
                 size="sm"
-                onClick={() => void openUrl(manual.releaseUrl)}
+                onClick={() => void openHostUrl(manual.releaseUrl)}
               >
                 Download package
               </Button>

@@ -20,6 +20,14 @@ const readShellHistory = defineCommand<Record<string, never>, string[]>(
   "read_shell_history",
   "host",
 );
+const searchShellHistoryCommand = defineCommand<
+  { query: string; limit: number },
+  string[]
+>("search_shell_history", "host");
+
+export function searchShellHistory(query: string, limit: number) {
+  return hostIpc.call(searchShellHistoryCommand, { query, limit });
+}
 
 function findHistoryMatch(input: string, history: string[]): string | null {
   if (!input) return null;

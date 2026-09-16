@@ -187,8 +187,8 @@ import {
   workspaceProjectKey,
   type WorkspaceEnv,
 } from "@/platform/workspaces";
-import { homeDir } from "@tauri-apps/api/path";
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { hostHomeDir } from "@/platform/paths";
+import { desktopWebviewWindow } from "@/platform/desktop";
 import type { SearchAddon } from "@xterm/addon-search";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -417,7 +417,7 @@ function MainApp() {
     null,
   );
   useEffect(() => {
-    homeDir()
+    hostHomeDir()
       .then(async (p) => {
         // stripVerbatimPrefix: some path sources hand back `\\?\…`, and
         // slash-flipping that prefix yields the unspawnable "//?/…" hybrid
@@ -467,7 +467,7 @@ function MainApp() {
             return;
           }
         } else {
-          nextHome = (await homeDir()).replace(/\\/g, "/");
+          nextHome = (await hostHomeDir()).replace(/\\/g, "/");
         }
       } catch (e) {
         window.alert(String(e));
@@ -710,7 +710,7 @@ function MainApp() {
   // react-doctor-disable-next-line react-doctor/effect-needs-cleanup
   useEffect(() => {
     type FileWrittenPayload = { path: string; source?: string };
-    const unlistenPromise = getCurrentWebviewWindow().listen<FileWrittenPayload>(
+    const unlistenPromise = desktopWebviewWindow().listen<FileWrittenPayload>(
       "fs:file-written",
       (event) => {
         if (event.payload.source === "editor") return;

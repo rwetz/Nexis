@@ -29,11 +29,11 @@ import { cn } from "@/lib/utils";
 import { formatDuration, relativeTime } from "@/lib/format";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { writeToLeaf } from "@/modules/terminal";
+import { searchShellHistory } from "@/modules/terminal/lib/useTerminalSuggestions";
 import {
   currentLedgerWorkspaceRoot,
   queryLedger,
 } from "@/modules/terminal/lib/ledger";
-import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState, useCallback } from "react";
 
 const INITIAL_LIMIT = 200;   // entries shown before a search is typed
@@ -113,7 +113,7 @@ function useSearchHistory(source: Source, workspaceRoot: string | null) {
         return;
       }
 
-      void invoke<string[]>("search_shell_history", { query, limit })
+      void searchShellHistory(query, limit)
         .then((entries) =>
           settle(entries.map((command) => ({ command, meta: null }))),
         )

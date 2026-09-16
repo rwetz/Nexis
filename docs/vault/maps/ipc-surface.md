@@ -15,7 +15,7 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | Filesystem | `fs_*`, `list_subdirs` | `modules/fs/{file,tree,mutate,search,grep}.rs` | `platform/filesystem.ts`; AI-only read policy in `ai/lib/filesystem.ts` |
 | Git | `git_*` (status, diff, stage, commit, stash, worktree…) | `modules/git/commands.rs` | `capabilities/git/api.ts` |
 | Shell one-shots & sessions | `shell_run_command`, `shell_session_*`, `shell_bg_*`, `*_shell_history` | `modules/shell/mod.rs` | `platform/processes.ts`, `ai/tools/shell.ts`; terminal suggestions use a typed host descriptor; ports/SSH use the explicit host process service |
-| Workspace / WSL | `workspace_authorize`, `workspace_current_dir`, `wsl_*`, `get_launch_dir` | `modules/workspace.rs`, `lib.rs` | `platform/workspace-state.ts`, `lib/launchDir.ts`, and every bridge that spawns with a cwd |
+| Workspace / WSL | `workspace_authorize`, `workspace_current_dir`, `wsl_*`, `get_launch_dir` | `modules/workspace.rs`, `lib.rs` | `platform/workspace-state.ts`, typed host launch metadata in `lib/launchDir.ts`, and every bridge that spawns with a cwd |
 | Secrets | `secrets_get/set/delete/get_all` | `modules/secrets.rs` (OS keychain) | `platform/secrets.ts` → `ai/lib/keyring.ts` |
 | LSP / DAP | `lsp_*`, `dap_*` | `modules/lsp/mod.rs`, `modules/dap/mod.rs` | `capabilities/lsp/api.ts` → `lsp/client.ts`; `capabilities/debugger/api.ts` → `debugger/debugSession.ts` |
 | HTTP | `ai_http_request`, `ai_http_stream`, `lm_ping`, `http_send` | `modules/net.rs` | `platform/http-stream.ts` → `ai/lib/proxyFetch.ts`; `capabilities/web-tools/api.ts` → `webdev/HttpClientPanel.tsx` — see [[ai]], [[web-dev-pack]] |
@@ -34,7 +34,7 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | Benchmark | `bench_*` | `modules/benchmark/commands.rs` | `benchmark/lib/api.ts` — see [[benchmark]] |
 | Command ledger | `ledger_*` | `modules/ledger.rs` | `platform/ledger-storage.ts` → `terminal/lib/ledger.ts` — see [[command-ledger]] |
 | AI audit | `ai_audit_append`, `ai_audit_log_path` | `modules/ai_audit.rs` | typed host descriptor in `ai/lib/audit.ts`; settings log reveal remains on the integration queue |
-| Tool probing | `tool_probe` | `modules/tools.rs` | `lib/missingTools.ts` |
+| Tool probing | `tool_probe` | `modules/tools.rs` | typed environment-specific calls in `lib/missingTools.ts` |
 
 ## Streaming channels
 

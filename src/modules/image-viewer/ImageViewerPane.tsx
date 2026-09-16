@@ -6,7 +6,7 @@
 
 import { Icon, type IconName } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { assetUrl } from "@/platform/desktop";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const IMAGE_EXTS = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif|tiff?)$/i;
@@ -46,7 +46,7 @@ export function ImageViewerPane({ path, visible }: Props) {
 
   // Normalise to forward slashes — convertFileSrc on Windows does not handle
   // backslashes, producing a 404 from the asset:// protocol handler.
-  const src = convertFileSrc(path.replace(/\\/g, "/"));
+  const src = assetUrl(path.replace(/\\/g, "/"));
   const filename = path.split(/[\\/]/).pop() ?? path;
   const ext = (filename.split(".").pop() ?? "").toUpperCase();
 

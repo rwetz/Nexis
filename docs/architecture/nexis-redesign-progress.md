@@ -136,3 +136,11 @@ Verification for this slice: TypeScript and the production frontend build pass; 
 - Port detection and SSH-key commands use `hostProcesses`. They intentionally retain host-machine and host-home scope when the active editor workspace is WSL instead of inheriting a distro environment.
 
 Verification for this slice: TypeScript and the production frontend build pass; all 1,221 frontend tests in 95 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused share, Web Dev, and platform-process tests plus `git diff --check` pass. Changed-scope React Doctor reports 21 accumulated-branch findings; the newly listed HTTP Client finding is pre-existing function complexity in the panel touched only at its native call seam. Remaining Phase 4 work includes settings native access and smaller window/shell consumers.
+
+### Slice 11: Desktop shell and settings services
+
+- Shell-history search, environment-specific tool probes, launch-directory metadata, Markdown reads, and breadcrumb subdirectory listing now use typed host/workspace contracts rather than raw component IPC.
+- Settings diagnostics export, audit-log reveal, local-model probing, app metadata, autostart, external URLs, host paths, custom-theme window hiding, and updater operations cross platform-owned adapters.
+- App/window consumers use the desktop platform choke point for current-window events, controls, tab-close behavior, ML taskbar progress, asset URLs, OS identity, and app metadata. The remaining direct native imports are deliberate low-level adapters: PTY callback channels, Benchmark webview file-drop events, and quick-terminal window construction/global shortcut ownership.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,221 frontend tests in 95 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused settings/platform tests and `git diff --check` pass. Changed-scope React Doctor reports 25 accumulated-branch findings, with four additional pre-existing complexity findings exposed only because their components now consume platform adapters. Rust and desktop E2E phase gates remain due before Phase 4 is marked complete.

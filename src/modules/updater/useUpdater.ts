@@ -4,9 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { getVersion } from "@tauri-apps/api/app";
-import { relaunch } from "@tauri-apps/plugin-process";
-import { check, type Update } from "@tauri-apps/plugin-updater";
+import { desktopUpdater, type DesktopUpdate } from "@/platform/updater";
 import { useCallback, useEffect, useState } from "react";
 import { IS_LINUX } from "@/lib/platform";
 
@@ -26,7 +24,7 @@ export type UpdaterStatus =
   | { kind: "idle" }
   | { kind: "checking" }
   | { kind: "uptodate" }
-  | { kind: "available"; update: Update }
+  | { kind: "available"; update: DesktopUpdate }
   | { kind: "manual-available"; info: ManualUpdateInfo }
   | { kind: "downloading"; downloaded: number; contentLength: number | null }
   | { kind: "ready" }
@@ -54,7 +52,7 @@ function isNewer(remote: string, current: string): boolean {
 
 async function checkLinuxRelease(): Promise<ManualUpdateInfo | null> {
   const [current, res] = await Promise.all([
-    getVersion(),
+    desktopUpdater.currentVersion(),
     fetch(GITHUB_LATEST_RELEASE, {
       headers: { Accept: "application/vnd.github+json" },
     }),
@@ -107,7 +105,7 @@ export function useUpdater({ autoCheck = true }: HookOptions = {}) {
         }
         return;
       }
-      const update = await check();
+      const update = await desktopUpdater.check();
       if (update) {
         setStatus({ kind: "available", update });
       } else {
@@ -141,7 +139,7 @@ export function useUpdater({ autoCheck = true }: HookOptions = {}) {
           setStatus({ kind: "ready" });
         }
       });
-      await relaunch();
+      await desktopUpdater.relaunch();
     } catch (err) {
       setStatus({ kind: "error", message: String(err) });
     }

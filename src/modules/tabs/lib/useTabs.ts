@@ -20,7 +20,7 @@ import {
   updateLeaf,
   type SplitDir,
 } from "@/modules/terminal/lib/panes";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { desktopWindow } from "@/platform/desktop";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
   deleteSessionSnapshot,
@@ -189,7 +189,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   useEffect(() => {
     if (isFreshWindow()) return;
     let exiting = false;
-    const win = getCurrentWindow();
+    const win = desktopWindow();
     const unlisten = win.onCloseRequested((event) => {
       // Second close request while saving (or restore disabled): let the
       // window close normally.

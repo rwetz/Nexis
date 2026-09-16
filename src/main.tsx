@@ -11,7 +11,7 @@ import "@fontsource/jetbrains-mono/cyrillic-700.css";
 import "@xterm/xterm/css/xterm.css";
 import "./styles/globals.css";
 
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { desktopWindow } from "@/platform/desktop";
 import { QUICK_TERMINAL_LABEL } from "@/modules/window/quickTerminalConfig";
 import ReactDOM from "react-dom/client";
 import App from "./app/App";
@@ -58,9 +58,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 // monitor. Auto-showing here would both flash it at the default centred
 // position and re-summon it uninvited if the webview ever reloads while
 // hidden.
-if (getCurrentWindow().label !== QUICK_TERMINAL_LABEL) {
+if (desktopWindow().label !== QUICK_TERMINAL_LABEL) {
   const showWindow = () => {
-    getCurrentWindow()
+    desktopWindow()
       .show()
       .catch((e) => console.error("window.show failed:", e));
   };

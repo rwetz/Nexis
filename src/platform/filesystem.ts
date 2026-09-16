@@ -68,6 +68,14 @@ export function createFilesystem(
         ),
         { path, showHidden },
       ),
+    listSubdirs: (path: string, showHidden: boolean) =>
+      ipc.call(
+        defineCommand<{ path: string; showHidden: boolean }, string[]>(
+          "list_subdirs",
+          scope,
+        ),
+        { path, showHidden },
+      ),
     stat: (path: string) =>
       ipc.call(defineCommand<{ path: string }, FileStat>("fs_stat", scope), {
         path,

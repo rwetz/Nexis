@@ -6,11 +6,11 @@
 
 import { IS_LINUX } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
+import { desktopWindow } from "@/platform/desktop";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 
-type ResizeDirection = Parameters<Window["startResizeDragging"]>[0];
+type ResizeDirection = Parameters<ReturnType<typeof desktopWindow>["startResizeDragging"]>[0];
 
 // An undecorated GTK window has no resize borders: the invisible grab zone
 // around a normal window belongs to the client-side decoration shadow, and
@@ -54,7 +54,7 @@ export function WindowResizeEdges() {
 
   useEffect(() => {
     if (!IS_LINUX) return;
-    const w = getCurrentWindow();
+    const w = desktopWindow();
     let unlisten: (() => void) | undefined;
     const update = () => {
       void Promise.all([w.isMaximized(), w.isFullscreen()])
@@ -84,7 +84,7 @@ export function WindowResizeEdges() {
           onPointerDown={(e) => {
             if (e.button !== 0) return;
             e.preventDefault();
-            void getCurrentWindow()
+            void desktopWindow()
               .startResizeDragging(z.dir)
               .catch((err) =>
                 console.error("[nexis] startResizeDragging failed:", err),

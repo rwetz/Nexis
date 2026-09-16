@@ -7,9 +7,8 @@
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { useUpdater } from "@/modules/updater";
-import { getName, getVersion } from "@tauri-apps/api/app";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import { arch, platform } from "@tauri-apps/plugin-os";
+import { appName, appVersion, desktopArch, desktopPlatform } from "@/platform/desktop";
+import { openHostUrl } from "@/platform/opener";
 import { useEffect, useState } from "react";
 import { SectionHeader } from "../components/SectionHeader";
 
@@ -57,11 +56,11 @@ export function AboutSection() {
   };
 
   useEffect(() => {
-    void getVersion().then(setVersion);
-    void getName().then(setName);
+    void appVersion().then(setVersion);
+    void appName().then(setName);
     try {
-      const p = platform();
-      const a = arch();
+      const p = desktopPlatform();
+      const a = desktopArch();
       const platformLabel = PLATFORM_LABEL[p] ?? p;
       setBuild(`${platformLabel} · ${a}`);
     } catch {
@@ -104,7 +103,7 @@ export function AboutSection() {
         <dd>
           <button
             type="button"
-            onClick={() => void openUrl(REPO_URL)}
+            onClick={() => void openHostUrl(REPO_URL)}
             className="inline-flex items-center gap-1.5 rounded-md text-[12px] underline-offset-2 hover:text-foreground hover:underline"
           >
             <Icon name="brand-github" />
@@ -115,7 +114,7 @@ export function AboutSection() {
         <dd>
           <button
             type="button"
-            onClick={() => void openUrl(WEBSITE)}
+            onClick={() => void openHostUrl(WEBSITE)}
             className="inline-flex items-center gap-1.5 rounded-md text-[12px] underline-offset-2 hover:text-foreground hover:underline"
           >
             <Icon name="globe" />
@@ -136,7 +135,7 @@ export function AboutSection() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => void openUrl(REPO_URL)}
+            onClick={() => void openHostUrl(REPO_URL)}
             className="gap-1.5"
           >
             <Icon name="brand-github" />
@@ -145,7 +144,7 @@ export function AboutSection() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => void openUrl(`${REPO_URL}/issues/new`)}
+            onClick={() => void openHostUrl(`${REPO_URL}/issues/new`)}
           >
             Report an issue
           </Button>

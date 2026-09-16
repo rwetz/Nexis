@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import type { ProviderInfo } from "@/modules/ai/config";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openHostUrl } from "@/platform/opener";
 import { useEffect, useState } from "react";
 import { ProviderIcon } from "./ProviderIcon";
 
@@ -84,7 +84,7 @@ export function ProviderKeyCard({
         ) : null}
         <button
           type="button"
-          onClick={() => void openUrl(provider.consoleUrl)}
+          onClick={() => void openHostUrl(provider.consoleUrl)}
           className="ml-auto inline-flex items-center gap-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground"
         >
           Get key

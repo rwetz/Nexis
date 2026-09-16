@@ -14,8 +14,9 @@
  * Reporting on use means the notice appears exactly when it is relevant.
  */
 
-import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
+import { defineCommand } from "@/platform/ipc";
+import { ipcForEnvironment } from "@/platform/workspaces";
 import { toolById, type ExternalTool } from "./externalTools";
 
 /**
@@ -120,10 +121,10 @@ async function probeTools(
 ): Promise<{ found: string[]; error: string | null }> {
   if (tools.length === 0) return { found: [], error: null };
   try {
-    const found = await invoke<string[]>("tool_probe", {
-      binaries: tools.map((t) => t.binary),
-      workspace,
-    });
+    const found = await ipcForEnvironment(workspace).call(
+      defineCommand<{ binaries: string[] }, string[]>("tool_probe", "workspace"),
+      { binaries: tools.map((t) => t.binary) },
+    );
     const resolved = new Set(found);
     return {
       found: tools.filter((t) => resolved.has(t.binary)).map((t) => t.id),

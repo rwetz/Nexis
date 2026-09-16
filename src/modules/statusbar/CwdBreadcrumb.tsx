@@ -20,9 +20,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { invoke } from "@tauri-apps/api/core";
+import { filesystem } from "@/platform/filesystem";
 import { useEffect, useState } from "react";
-import { currentWorkspaceEnv } from "@/platform/workspaces";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { absoluteDirname as dirname, basename } from "@/lib/path";
 import { segmentsFromCwd } from "./lib/pathUtils";
@@ -174,11 +173,7 @@ function CurrentSegmentDropdown({
     if (!open) return;
     let cancelled = false;
     setError(null);
-    invoke<string[]>("list_subdirs", {
-      path,
-      showHidden,
-      workspace: currentWorkspaceEnv(),
-    })
+    filesystem.listSubdirs(path, showHidden)
       .then((dirs) => { if (!cancelled) setChildren(dirs); })
       .catch((e) => { if (!cancelled) { setError(String(e)); setChildren([]); } });
     return () => { cancelled = true; };

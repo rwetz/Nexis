@@ -4,11 +4,11 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { platform } from "@tauri-apps/plugin-os";
+import { desktopPlatform } from "@/platform/desktop";
 
 const PLATFORM = (() => {
   try {
-    return platform();
+    return desktopPlatform();
   } catch {
     return "";
   }

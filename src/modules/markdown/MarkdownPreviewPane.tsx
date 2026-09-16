@@ -7,15 +7,9 @@
 import { Icon, type IconName } from "@/components/icon";
 import { MarkdownCode } from "@/components/ai-elements/markdown-code";
 import { cn } from "@/lib/utils";
-import { currentWorkspaceEnv } from "@/platform/workspaces";
-import { invoke } from "@tauri-apps/api/core";
+import { filesystem } from "@/platform/filesystem";
 import { useEffect, useState } from "react";
 import { Streamdown } from "streamdown";
-
-type ReadResult =
-  | { kind: "text"; content: string; size: number }
-  | { kind: "binary"; size: number }
-  | { kind: "toolarge"; size: number; limit: number };
 
 type Status =
   | { kind: "loading" }
@@ -65,10 +59,7 @@ export function MarkdownPreviewPane({ path, visible }: Props) {
   useEffect(() => {
     let cancelled = false;
     setStatus({ kind: "loading" });
-    invoke<ReadResult>("fs_read_file", {
-      path,
-      workspace: currentWorkspaceEnv(),
-    })
+    filesystem.readFile(path)
       .then((res) => {
         if (cancelled) return;
         if (res.kind === "text") {

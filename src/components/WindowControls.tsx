@@ -7,7 +7,7 @@
 import { Icon } from "@/components/icon";
 import { USE_CUSTOM_WINDOW_CONTROLS } from "@/lib/platform";
 import { cn } from "@/lib/utils";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { desktopWindow } from "@/platform/desktop";
 import { useEffect, useState } from "react";
 
 type Props = {
@@ -20,7 +20,7 @@ export function WindowControls({ closeOnly = false }: Props) {
 
   useEffect(() => {
     if (!USE_CUSTOM_WINDOW_CONTROLS || closeOnly) return;
-    const w = getCurrentWindow();
+    const w = desktopWindow();
     let unlisten: (() => void) | undefined;
     void w.isMaximized().then(setMaximized);
     void w
@@ -35,7 +35,7 @@ export function WindowControls({ closeOnly = false }: Props) {
 
   if (!USE_CUSTOM_WINDOW_CONTROLS) return null;
 
-  const w = getCurrentWindow();
+  const w = desktopWindow();
 
   return (
     <div className="flex h-full shrink-0 items-center gap-0.5 pr-1">

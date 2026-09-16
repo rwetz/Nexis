@@ -9,7 +9,7 @@
  * Click opens the ML sidebar panel.
  */
 import { useEffect } from "react";
-import { getCurrentWindow, ProgressBarStatus } from "@tauri-apps/api/window";
+import { desktopProgress, desktopWindow } from "@/platform/desktop";
 import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { useMlStore } from "./store";
@@ -41,20 +41,20 @@ export function MlStatusPill() {
   const totalEpochs = activeRun?.totalEpochs ?? 0;
   const paused = activeRun?.paused ?? false;
   useEffect(() => {
-    const w = getCurrentWindow();
+    const w = desktopWindow();
     const training =
       status === "running" || status === "starting" || status === "cancelling";
     if (!training) {
-      void w.setProgressBar({ status: ProgressBarStatus.None });
+      void w.setProgressBar({ status: desktopProgress.None });
       return;
     }
     if (totalEpochs > 0) {
       void w.setProgressBar({
-        status: paused ? ProgressBarStatus.Paused : ProgressBarStatus.Normal,
+        status: paused ? desktopProgress.Paused : desktopProgress.Normal,
         progress: Math.min(100, Math.round((epoch / totalEpochs) * 100)),
       });
     } else {
-      void w.setProgressBar({ status: ProgressBarStatus.Indeterminate });
+      void w.setProgressBar({ status: desktopProgress.Indeterminate });
     }
   }, [status, epoch, totalEpochs, paused]);
 

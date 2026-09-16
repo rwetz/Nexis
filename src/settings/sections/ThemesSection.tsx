@@ -34,7 +34,7 @@ import {
 import { validateTheme } from "@/modules/theme/validateTheme";
 import { DEFAULT_THEME_ID } from "@/modules/theme/types";
 import type { Theme } from "@/modules/theme/types";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { desktopWindow } from "@/platform/desktop";
 import { useRef, useState } from "react";
 import { SectionHeader } from "../components/SectionHeader";
 import { SettingRow } from "../components/SettingRow";
@@ -86,12 +86,12 @@ function animBgPreview(id: AnimatedBgId, primary: string): string {
  *  component state. */
 const onCreateTheme = () => {
   void emitThemeEdit({ action: "create" });
-  void getCurrentWindow().hide();
+  void desktopWindow().hide();
 };
 
 const onEditTheme = (id: string) => {
   void emitThemeEdit({ action: "edit", id });
-  void getCurrentWindow().hide();
+  void desktopWindow().hide();
 };
 
 export function ThemesSection() {

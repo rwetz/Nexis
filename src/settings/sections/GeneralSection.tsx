@@ -60,9 +60,9 @@ import {
   setZoomLevel,
 } from "@/modules/settings/store";
 import { useTheme } from "@/modules/theme/ThemeProvider";
-import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { invoke } from "@tauri-apps/api/core";
+import { autostart as desktopAutostart } from "@/platform/desktop";
+import { revealPathInHost } from "@/platform/opener";
+import { settingsNative } from "@/platform/settings-native";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { redactSensitive } from "@/modules/ai/lib/redact";
@@ -90,8 +90,8 @@ const ZOOM_STEP = 0.05;
  *  from component state. */
 const onToggleAutostart = async (next: boolean) => {
   try {
-    if (next) await enable();
-    else await disable();
+    if (next) await desktopAutostart.enable();
+    else await desktopAutostart.disable();
     await setAutostart(next);
   } catch (e) {
     window.alert(`Could not ${next ? "enable" : "disable"} autostart: ${e}`);
@@ -143,9 +143,7 @@ export function GeneralSection() {
         ]),
       );
       const sanitizedConfig = redactSensitive(JSON.stringify(prefs, null, 2));
-      const path = await invoke<string>("diagnostics_export", {
-        sanitizedConfig,
-      });
+      const path = await settingsNative.exportDiagnostics(sanitizedConfig);
       setDiagResult(path);
     } catch (e) {
       setDiagResult(`Export failed: ${String(e)}`);
@@ -177,7 +175,7 @@ export function GeneralSection() {
   // Reconcile autostart pref with the actual OS state on mount.
   useEffect(() => {
     let alive = true;
-    void isEnabled()
+    void desktopAutostart.isEnabled()
       .then((on) => {
         if (!alive) return;
         if (on !== usePreferencesStore.getState().autostart) {
@@ -600,8 +598,8 @@ export function GeneralSection() {
             variant="outline"
             size="sm"
             onClick={() =>
-              void invoke<string>("ai_audit_log_path")
-                .then((p) => revealItemInDir(p))
+              void settingsNative.auditLogPath()
+                .then((p) => revealPathInHost(p))
                 .catch(() => {})
             }
           >

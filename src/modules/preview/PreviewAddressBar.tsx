@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openHostUrl } from "@/platform/opener";
 import {
   forwardRef,
   useImperativeHandle,
@@ -184,7 +184,7 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
           variant="ghost"
           size="icon"
           onClick={() => {
-            if (url) void openUrl(url).catch(console.error);
+            if (url) void openHostUrl(url).catch(console.error);
           }}
           title="Open in system browser"
           className="size-7 shrink-0 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
