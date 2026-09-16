@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { openStore } from "@/platform/storage";
 import { create } from "zustand";
 
 export type SshConnection = {
@@ -16,7 +16,7 @@ export type SshConnection = {
   identityFile?: string;
 };
 
-const store = new LazyStore("nexis-ssh-connections.json", { defaults: {}, autoSave: 200 });
+const store = openStore("nexis-ssh-connections.json");
 const KEY = "connections";
 
 async function loadConnections(): Promise<SshConnection[]> {

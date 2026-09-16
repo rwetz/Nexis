@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { LOCAL_WORKSPACE, workspaceEnvForPath, type WorkspaceEnv } from "./env";
+import { LOCAL_WORKSPACE, workspaceEnvForPath, type WorkspaceEnv } from "@/platform/workspace-state";
 
 const WSL: WorkspaceEnv = { kind: "wsl", distro: "Ubuntu" };
 

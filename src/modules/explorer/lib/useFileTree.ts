@@ -4,20 +4,16 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { invoke } from "@tauri-apps/api/core";
+import { filesystem } from "@/platform/filesystem";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { absoluteDirname as dirname } from "@/lib/path";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { basename } from "./dnd";
 
-export type DirEntry = {
-  name: string;
-  kind: "file" | "dir" | "symlink";
-  size: number;
-  mtime: number;
-};
+import type { DirEntry } from "@/domain/native-types";
+export type { DirEntry } from "@/domain/native-types";
 
 type ChildrenState =
   | { status: "idle" }
@@ -83,11 +79,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
         return { ...s, [path]: { status: "loading" } };
       });
       try {
-        const entries = await invoke<DirEntry[]>("fs_read_dir", {
-          path,
-          showHidden: showHiddenRef.current,
-          workspace: currentWorkspaceEnv(),
-        });
+        const entries = await filesystem.readDir(path, showHiddenRef.current);
         setNodes((s) => ({ ...s, [path]: { status: "loaded", entries } }));
       } catch (e) {
         setNodes((s) => ({
@@ -227,7 +219,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
       const cmd =
         pendingCreate.kind === "dir" ? "fs_create_dir" : "fs_create_file";
       try {
-        await invoke(cmd, { path, workspace: currentWorkspaceEnv() });
+        await (pendingCreate.kind === "dir" ? filesystem.createDir(path) : filesystem.createFile(path));
         await fetchChildren(pendingCreate.parentPath);
       } catch (e) {
         console.error(`${cmd} failed:`, e);
@@ -257,11 +249,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
       }
       const to = joinPath(parent, trimmed);
       try {
-        await invoke("fs_rename", {
-          from: renaming,
-          to,
-          workspace: currentWorkspaceEnv(),
-        });
+        await filesystem.rename(renaming, to);
         options?.onPathRenamed?.(renaming, to);
         await fetchChildren(parent);
       } catch (e) {
@@ -283,11 +271,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
       const to = joinPath(targetDir, basename(from));
       if (to === from) return;
       try {
-        await invoke("fs_rename", {
-          from,
-          to,
-          workspace: currentWorkspaceEnv(),
-        });
+        await filesystem.rename(from, to);
         options?.onPathRenamed?.(from, to);
         setExpanded((curr) => {
           if (curr.has(targetDir)) return curr;
@@ -309,7 +293,7 @@ export function useFileTree(rootPath: string | null, options?: Options) {
   const deletePath = useCallback(
     async (path: string) => {
       try {
-        await invoke("fs_delete", { path, workspace: currentWorkspaceEnv() });
+        await filesystem.delete(path);
         options?.onPathDeleted?.(path);
         await fetchChildren(dirname(path));
       } catch (e) {

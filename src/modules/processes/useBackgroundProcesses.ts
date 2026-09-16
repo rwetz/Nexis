@@ -1,10 +1,11 @@
+import { processes as processNative } from "@/platform/processes";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { native } from "@/modules/ai/lib/native";
+
 import { useEffect, useRef, useState } from "react";
 
 export type BgProcess = {
@@ -34,7 +35,7 @@ export function useBackgroundProcesses(pollMs = 2000) {
 
   const refresh = async () => {
     try {
-      const list = await native.shellBgList();
+      const list = await processNative.shellBgList();
       if (aliveRef.current) setProcesses(list);
     } catch {
       // backend not ready or no processes yet
@@ -55,7 +56,7 @@ export function useBackgroundProcesses(pollMs = 2000) {
   }, [pollMs]);
 
   const kill = async (handle: number) => {
-    await native.shellBgKill(handle);
+    await processNative.shellBgKill(handle);
     await refresh();
   };
 

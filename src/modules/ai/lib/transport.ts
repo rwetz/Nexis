@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -8,7 +9,7 @@ import type { UIMessage } from "@ai-sdk/react";
 import { type ModelId } from "../config";
 import { runAgentStream, type AgentUsageDelta } from "./agent";
 import type { ProviderKeys } from "./keyring";
-import { native } from "./native";
+
 import type { ToolContext } from "../tools/tools";
 
 const NEXIS_MD_MAX_BYTES = 32 * 1024;
@@ -21,7 +22,7 @@ async function readNexisMd(workspaceRoot: string | null): Promise<string | null>
   const cached = projectMemoryCache.get(workspaceRoot);
   if (cached && Date.now() - cached.mtime < 30_000) return cached.content;
   try {
-    const r = await native.readFile(path);
+    const r = await filesystem.readFile(path);
     if (r.kind !== "text") {
       projectMemoryCache.set(workspaceRoot, { content: null, mtime: Date.now() });
       return null;

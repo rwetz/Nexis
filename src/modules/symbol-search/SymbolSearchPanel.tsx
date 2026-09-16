@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -14,9 +15,9 @@
  * Falls back to plain regex when no structural prefix is detected.
  */
 import { Icon } from "@/components/icon";
-import { native } from "@/modules/ai/lib/native";
+
 import { cn } from "@/lib/utils";
-import type { GrepHit } from "@/modules/ai/lib/native";
+import type { GrepHit } from "@/domain/native-types";
 import { basename, displayDirname as dirname } from "@/lib/path";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -134,7 +135,7 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
         const { kind, term } = parseQuery(raw.trim());
         const pattern = toRegex(kind, term);
 
-        const resp = await native.grep({
+        const resp = await filesystem.grep({
           pattern,
           root: workspaceRoot,
           caseInsensitive: false,

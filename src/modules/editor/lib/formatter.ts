@@ -1,3 +1,4 @@
+
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -5,8 +6,8 @@
 // ╚══════════════════════════════════════╝
 
 import { invoke } from "@tauri-apps/api/core";
-import { currentWorkspaceEnv } from "@/modules/workspace";
-import type { CommandOutput } from "@/modules/ai/lib/native";
+import { currentWorkspaceEnv } from "@/platform/workspaces";
+import type { CommandOutput } from "@/domain/native-types";
 import type { FormatterConfig, FormatterLanguage } from "@/modules/settings/store";
 
 const EXT_TO_LANG: Record<string, FormatterLanguage> = {

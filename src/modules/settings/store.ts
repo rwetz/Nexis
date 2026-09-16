@@ -39,8 +39,9 @@ import {
   type LedgerMaxRecords,
 } from "@/modules/terminal/lib/ledgerRetention";
 import type { KeyBinding, ShortcutId } from "@/modules/shortcuts/shortcuts";
-import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { emit, listen, type UnlistenFn } from "@/platform/events";
+import { openStore } from "@/platform/storage";
+import { createWriteQueue } from "@/platform/persistence";
 
 export type ThemePref = "system" | "light" | "dark";
 
@@ -432,18 +433,21 @@ function mergeFormatters(
   return result;
 }
 
-const store = new LazyStore(STORE_PATH, { defaults: {}, autoSave: 200 });
+const store = openStore(STORE_PATH);
 
 // LazyStore.onChange only fires within the writing process. The settings
 // page lives in a separate webview, so writes there never reach the main
 // window's subscribers. Mirror every setter through a Tauri event so any
 // window can listen.
 const PREFS_CHANGED_EVENT = "nexis://prefs-changed";
+const queuePreferenceWrite = createWriteQueue();
 
 async function writePref<T>(key: string, value: T): Promise<void> {
-  await store.set(key, value);
-  await store.save();
-  await emit(PREFS_CHANGED_EVENT, { key, value });
+  await queuePreferenceWrite(async () => {
+    await store.set(key, value);
+    await store.save();
+    await emit(PREFS_CHANGED_EVENT, { key, value });
+  });
 }
 
 export async function loadPreferences(): Promise<Preferences> {

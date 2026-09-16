@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { emit, listen } from "@tauri-apps/api/event";
+import { emit, listen } from "@/platform/events";
 import { create } from "zustand";
 import {
   BUILT_IN_SNIPPETS,

@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -5,7 +6,7 @@
 // ╚══════════════════════════════════════╝
 
 import { Icon } from "@/components/icon";
-import { native, type GrepHit } from "@/modules/ai/lib/native";
+import type { GrepHit } from "@/domain/native-types";
 import { cn } from "@/lib/utils";
 import { lspClient } from "@/modules/lsp/client";
 import { languageIdForPath } from "@/modules/lsp/languages";
@@ -65,7 +66,7 @@ export function RenameDialog({
     setLoading(true);
     setError(null);
     const pattern = `\\b${escapeRegex(symbol)}\\b`;
-    native.grep({ pattern, root: workspaceRoot, maxResults: 500 })
+    filesystem.grep({ pattern, root: workspaceRoot, maxResults: 500 })
       .then((res) => {
         setHits(res.hits);
         const byFile = new Map<string, number>();
@@ -137,11 +138,11 @@ export function RenameDialog({
       const rewritten: string[] = [];
       for (const rel of uniquePaths) {
         const fullPath = `${workspaceRoot}/${rel}`;
-        const result = await native.readFile(fullPath);
+        const result = await filesystem.readFile(fullPath);
         if (result.kind === "text") {
           const updated = result.content.replace(pattern, newName.trim());
           if (updated !== result.content) {
-            await native.writeFile(fullPath, updated);
+            await filesystem.writeFile(fullPath, updated);
             rewritten.push(fullPath);
           }
         }

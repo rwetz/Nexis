@@ -17,7 +17,7 @@ import { expandSnippetTokens, type Snippet } from "../lib/snippets";
 import { tryRunSlashCommand, type SlashCommandMeta } from "./slashCommands";
 import { getOrCreateChat, useChatStore } from "../store/chatStore";
 import { useSnippetsStore } from "../store/snippetsStore";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import { currentWorkspaceEnv } from "@/platform/workspaces";
 
 export type FileAttachment = {
   id: string;

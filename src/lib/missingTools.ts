@@ -21,7 +21,7 @@ import { toolById, type ExternalTool } from "./externalTools";
 /**
  * The workspace to re-check `runsIn: "workspace"` tools in.
  *
- * Structurally identical to `WorkspaceEnv` in `modules/workspace/env`, but
+ * Structurally identical to `WorkspaceEnv` in `platform/workspace-state`, but
  * declared here rather than imported: this module is loaded by the LSP client
  * and by git error handling, and pulling the workspace store (and through it
  * the settings store, and through that the Tauri store plugin) into that graph

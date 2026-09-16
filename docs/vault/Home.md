@@ -27,6 +27,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 
 ## Subsystems (`subsystems/`)
 
+- [[platform]] — typed IPC, workspace scope, storage, process, filesystem, window and notification policy
 - [[workbench]] — contribution lifetime, scoped commands, lazy panels and shell state ownership
 - [[pty]] — terminal sessions end to end
 - [[ai]] — agent loop, providers, tools, subagents, compaction

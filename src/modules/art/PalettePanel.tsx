@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -26,7 +27,7 @@
 
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { native } from "@/modules/ai/lib/native";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   formatRatio,
@@ -198,7 +199,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
     try {
       const name = exportFileName("palette", PALETTE_FILE_EXTENSIONS[format]);
       const path = `${workspaceRoot.replace(/\/+$/, "")}/${name}`;
-      await native.writeFile(path, output);
+      await filesystem.writeFile(path, output);
       say(`Saved ${name}`);
     } catch (e) {
       say(`Save failed: ${String(e)}`);

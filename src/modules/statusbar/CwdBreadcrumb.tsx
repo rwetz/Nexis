@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import { currentWorkspaceEnv } from "@/platform/workspaces";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { absoluteDirname as dirname, basename } from "@/lib/path";
 import { segmentsFromCwd } from "./lib/pathUtils";

@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { Lifetime } from "./lifetime";
-import { createPlatformIpc, defineCommand, defineEvent, type PlatformTransport } from "./ipc";
+import {
+  createPlatformIpc,
+  defineCommand,
+  defineEvent,
+  type PlatformTransport,
+} from "./ipc";
 import { createWorkspaceContext, type WorkspaceEnvironment } from "./workspace";
 import { serializeWrites } from "./persistence";
 import { createProcessService } from "./process";
@@ -9,10 +14,28 @@ function fixture() {
   let environment: WorkspaceEnvironment = { kind: "wsl", distro: "Ubuntu" };
   let roots = ["/home/me/project"];
   const authorize = vi.fn(async (path: string) => path);
-  const workspace = createWorkspaceContext(() => ({ environment, roots }), authorize);
+  const workspace = createWorkspaceContext(
+    () => ({ environment, roots }),
+    authorize,
+  );
   const invoke = vi.fn(async () => 42);
-  const transport = { invoke, listen: vi.fn(), emit: vi.fn() } as unknown as PlatformTransport;
-  return { workspace, authorize, invoke, transport, switchRoot: (value: string[]) => { roots = value; }, switchEnv: (value: WorkspaceEnvironment) => { environment = value; } };
+  const transport = {
+    invoke,
+    listen: vi.fn(),
+    emit: vi.fn(),
+  } as unknown as PlatformTransport;
+  return {
+    workspace,
+    authorize,
+    invoke,
+    transport,
+    switchRoot: (value: string[]) => {
+      roots = value;
+    },
+    switchEnv: (value: WorkspaceEnvironment) => {
+      environment = value;
+    },
+  };
 }
 
 describe("platform contracts", () => {
@@ -20,13 +43,23 @@ describe("platform contracts", () => {
     const f = fixture();
     const ipc = createPlatformIpc(f.transport, f.workspace);
     const host = defineCommand<{ path: string }, number>("host_read", "host");
-    const scoped = defineCommand<{ path: string }, number>("workspace_read", "workspace");
+    const scoped = defineCommand<{ path: string }, number>(
+      "workspace_read",
+      "workspace",
+    );
     await expect(ipc.call(host, { path: "C:/repo" })).resolves.toBe(42);
     expect(f.invoke).toHaveBeenLastCalledWith("host_read", { path: "C:/repo" });
     await ipc.call(scoped, { path: "/home/me/project" });
-    expect(f.invoke).toHaveBeenLastCalledWith("workspace_read", { path: "/home/me/project", workspace: { kind: "wsl", distro: "Ubuntu" } });
-    expect(() => ipc.call(host, { path: "x", workspace: {} } as { path: string })).toThrow("scope");
-    expect(() => createPlatformIpc(f.transport).call(scoped, { path: "x" })).toThrow("requires");
+    expect(f.invoke).toHaveBeenLastCalledWith("workspace_read", {
+      path: "/home/me/project",
+      workspace: { kind: "wsl", distro: "Ubuntu" },
+    });
+    expect(() =>
+      ipc.call(host, { path: "x", workspace: {} } as { path: string }),
+    ).toThrow("scope");
+    expect(() =>
+      createPlatformIpc(f.transport).call(scoped, { path: "x" }),
+    ).toThrow("requires");
     // @ts-expect-error Command arguments cannot be inferred away from the descriptor.
     if (false) ipc.call(host, { path: 4 });
   });
@@ -46,7 +79,12 @@ describe("platform contracts", () => {
     const f = fixture();
     let resolve!: (cleanup: () => void) => void;
     let receive!: (value: unknown) => void;
-    f.transport.listen = vi.fn((_name, cb) => { receive = cb; return new Promise<() => void>((done) => { resolve = done; }); });
+    f.transport.listen = vi.fn((_name, cb) => {
+      receive = cb;
+      return new Promise<() => void>((done) => {
+        resolve = done;
+      });
+    });
     const events = createPlatformIpc(f.transport, f.workspace).events();
     const callback = vi.fn();
     const event = defineEvent<string>("event");
@@ -63,7 +101,9 @@ describe("platform contracts", () => {
 
   it("cleans up remaining resources even if one disposer throws", () => {
     const lifetime = new Lifetime();
-    lifetime.add(() => { throw new Error("failed"); });
+    lifetime.add(() => {
+      throw new Error("failed");
+    });
     const cleanup = vi.fn();
     lifetime.add(cleanup);
     expect(() => lifetime.dispose()).toThrow("cleanup");
@@ -76,7 +116,10 @@ describe("platform contracts", () => {
     const service = serializeWrites<{ value: number }>({
       read: async () => 0,
       subscribe: async () => ({ dispose() {} }),
-      write: async (_key, value) => { order.push(value); if (value === 1) throw new Error("disk full"); },
+      write: async (_key, value) => {
+        order.push(value);
+        if (value === 1) throw new Error("disk full");
+      },
     });
     const first = service.write("value", 1);
     const second = service.write("value", 2);
@@ -94,8 +137,14 @@ describe("platform contracts", () => {
     const pending = service.open("/home/me/project");
     f.switchEnv({ kind: "local" });
     const session = await pending;
-    expect(f.authorize).toHaveBeenCalledWith("/home/me/project", { kind: "wsl", distro: "Ubuntu" });
-    expect(open.mock.calls[0]).toEqual(["/home/me/project", expect.objectContaining({ environmentId: "wsl:Ubuntu" })]);
+    expect(f.authorize).toHaveBeenCalledWith("/home/me/project", {
+      kind: "wsl",
+      distro: "Ubuntu",
+    });
+    expect(open.mock.calls[0]).toEqual([
+      "/home/me/project",
+      expect.objectContaining({ environmentId: "wsl:Ubuntu" }),
+    ]);
     await session.close();
     await session.close();
     await expect(session.run("echo no")).rejects.toThrow("closed");

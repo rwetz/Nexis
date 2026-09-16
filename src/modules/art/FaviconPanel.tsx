@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -30,7 +31,7 @@
 
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { native } from "@/modules/ai/lib/native";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   buildHeadSnippet,
@@ -122,14 +123,14 @@ export function FaviconPanel({ workspaceRoot }: Props) {
       // The directory may not exist yet; creating it is idempotent on the
       // backend and cheaper than asking the user to make it first.
       try {
-        await native.createDir(targetDir);
+        await filesystem.createDir(targetDir);
       } catch {
         // Already there, which is the common case.
       }
 
       // The vector original goes first: it is the one browsers prefer, and
       // every PNG below is a fallback for the ones that cannot use it.
-      await native.writeFile(`${targetDir}/favicon.svg`, source);
+      await filesystem.writeFile(`${targetDir}/favicon.svg`, source);
 
       for (const target of FAVICON_TARGETS) {
         const bytes = await svgToPngBytes(source, {
@@ -139,10 +140,10 @@ export function FaviconPanel({ workspaceRoot }: Props) {
           // would put a coloured square in every browser tab.
           background: needsOpaqueBackground(target) ? background : null,
         });
-        await native.writeFileBytes(`${targetDir}/${target.name}`, bytes);
+        await filesystem.writeFileBytes(`${targetDir}/${target.name}`, bytes);
       }
 
-      await native.writeFile(
+      await filesystem.writeFile(
         `${targetDir}/site.webmanifest`,
         buildManifest({
           name: appName,

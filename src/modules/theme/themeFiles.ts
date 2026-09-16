@@ -4,9 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import { currentWorkspaceEnv } from "@/platform/workspaces";
 import { invoke } from "@tauri-apps/api/core";
-import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { emit, listen, type UnlistenFn } from "@/platform/events";
 import { appConfigDir, join } from "@tauri-apps/api/path";
 import type { Theme } from "./types";
 

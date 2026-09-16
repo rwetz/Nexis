@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -5,7 +6,7 @@
 // ╚══════════════════════════════════════╝
 
 import { create } from "zustand";
-import { native } from "../lib/native";
+
 
 export type QueuedEdit = {
   id: string;
@@ -57,9 +58,9 @@ export const usePlanStore = create<PlanState>((set, get) => ({
     for (const q of items) {
       try {
         if (q.kind === "create_directory") {
-          await native.createDir(q.path);
+          await filesystem.createDir(q.path);
         } else {
-          await native.writeFile(q.path, q.proposedContent);
+          await filesystem.writeFile(q.path, q.proposedContent);
         }
         results.push({ id: q.id, ok: true });
       } catch (e) {

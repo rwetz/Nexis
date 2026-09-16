@@ -7,11 +7,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildShellTools } from "./shell";
 import type { ToolContext } from "./context";
+const session = vi.hoisted(() => ({ run: vi.fn(), close: vi.fn() }));
 
-vi.mock("../lib/native", () => ({
-  native: {
-    shellSessionOpen: vi.fn(),
-    shellSessionRun: vi.fn(),
+vi.mock("@/platform/processes", () => ({
+  shellSessions: { open: vi.fn() },
+  processes: {
     shellBgSpawn: vi.fn(),
     shellBgLogs: vi.fn(),
     shellBgList: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock("../lib/native", () => ({
   },
 }));
 
-vi.mock("@/modules/workspace", () => ({
+vi.mock("@/platform/workspaces", () => ({
   currentWorkspaceEnv: () => ({ kind: "local" }),
   workspaceScopeKey: () => "local",
 }));
@@ -44,13 +44,13 @@ function makeCtx(sessionId: string): ToolContext {
 }
 
 describe("shell — pitfall 10: session retry after rejection", () => {
-  let nativeMod: typeof import("../lib/native");
+  let nativeMod: typeof import("@/platform/processes");
 
   beforeEach(async () => {
-    nativeMod = await import("../lib/native");
-    vi.mocked(nativeMod.native.shellSessionOpen).mockReset();
-    vi.mocked(nativeMod.native.shellSessionRun).mockReset();
-    vi.mocked(nativeMod.native.shellSessionRun).mockResolvedValue({
+    nativeMod = await import("@/platform/processes");
+    vi.mocked(nativeMod.shellSessions.open).mockReset();
+    session.run.mockReset();
+    session.run.mockResolvedValue({
       stdout: "hello",
       stderr: "",
       exit_code: 0,
@@ -62,10 +62,10 @@ describe("shell — pitfall 10: session retry after rejection", () => {
 
   it("retries shellSessionOpen after a rejection rather than replaying the cached failed promise (pitfall 10)", async () => {
     let callCount = 0;
-    vi.mocked(nativeMod.native.shellSessionOpen).mockImplementation(() => {
+    vi.mocked(nativeMod.shellSessions.open).mockImplementation(() => {
       callCount++;
       if (callCount === 1) return Promise.reject(new Error("connection refused"));
-      return Promise.resolve(99);
+      return Promise.resolve(session);
     });
 
     const sid = freshSessionId();
@@ -88,11 +88,11 @@ describe("shell — pitfall 10: session retry after rejection", () => {
     expect(r2).toHaveProperty("stdout", "hello");
 
     // shellSessionOpen was called twice: once on failure, once on retry.
-    expect(vi.mocked(nativeMod.native.shellSessionOpen)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(nativeMod.shellSessions.open)).toHaveBeenCalledTimes(2);
   });
 
   it("reuses a successfully opened session across multiple calls (not the pitfall, just a sanity check)", async () => {
-    vi.mocked(nativeMod.native.shellSessionOpen).mockResolvedValue(7);
+    vi.mocked(nativeMod.shellSessions.open).mockResolvedValue(session);
 
     const sid = freshSessionId();
     const tools = buildShellTools(makeCtx(sid));
@@ -101,6 +101,6 @@ describe("shell — pitfall 10: session retry after rejection", () => {
     await (tools.bash_run as any).execute({ command: "echo b" }, {});
 
     // Session was opened once; the second call should reuse it.
-    expect(vi.mocked(nativeMod.native.shellSessionOpen)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(nativeMod.shellSessions.open)).toHaveBeenCalledTimes(1);
   });
 });

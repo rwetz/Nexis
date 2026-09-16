@@ -94,7 +94,7 @@ An append-only store with tombstones was rejected for exactly this: a tombstoned
 
 ### 6. Workspace identity is a normalized path, with git as the re-association key
 
-Pitfall #23 is explicit that path strings are not stable identity, and `workspaceScopeKey()` in `src/modules/workspace/env.ts` does **not** help here — it returns only `local` or `wsl:<distro>`, which is an *environment* key, not a project key. Anything scoped with it is shared across every local project.
+Pitfall #23 is explicit that path strings are not stable identity, and `workspaceScopeKey()` in `src/platform/workspace-state.ts` does **not** help here — it returns only `local` or `wsl:<distro>`, which is an *environment* key, not a project key. Anything scoped with it is shared across every local project.
 
 So:
 

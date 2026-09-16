@@ -1,3 +1,4 @@
+import { git } from "@/capabilities/git/api";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -14,11 +15,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import {
-  native,
-  type GitCommitFileChange,
-  type GitLogEntry,
-} from "@/modules/ai/lib/native";
+import type { GitCommitFileChange, GitLogEntry } from "@/domain/native-types";
 import { FileTypeIcon } from "@/modules/explorer/lib/FileTypeIcon";
 import { sendMessage } from "@/modules/ai/store/chatStore";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -311,7 +308,7 @@ export function GitHistoryPane({
     setError(null);
     setEndReached(false);
     try {
-      const entries = await native.gitLog(repoRoot, { limit: PAGE_SIZE });
+      const entries = await git.gitLog(repoRoot, { limit: PAGE_SIZE });
       if (requestId !== requestIdRef.current) return;
       setCommits(entries);
       setLoadStatus("idle");
@@ -331,7 +328,7 @@ export function GitHistoryPane({
     inflightMoreRef.current = true;
     setLoadStatus("more");
     try {
-      const entries = await native.gitLog(repoRoot, {
+      const entries = await git.gitLog(repoRoot, {
         limit: PAGE_SIZE,
         beforeSha: last.sha,
       });
@@ -362,7 +359,7 @@ export function GitHistoryPane({
 
   useEffect(() => {
     let cancelled = false;
-    native
+    git
       .gitRemoteUrl(repoRoot)
       .then((url) => {
         if (cancelled) return;
@@ -423,7 +420,7 @@ export function GitHistoryPane({
       cache.set(sha, { state: "loading" });
       bumpFiles();
       try {
-        const files = await native.gitCommitFiles(repoRoot, sha);
+        const files = await git.gitCommitFiles(repoRoot, sha);
         cache.set(sha, { state: "loaded", files });
         while (cache.size > FILES_CACHE_LIMIT) {
           const oldest = cache.keys().next().value;
@@ -885,7 +882,7 @@ function CommitDetail({
               setExplaining(true);
               void (async () => {
                 try {
-                  const result = await native.gitShowCommit(repoRoot, commit.sha);
+                  const result = await git.gitShowCommit(repoRoot, commit.sha);
                   const diff = result.diffText.slice(0, 8000);
                   sendMessage(
                     `Explain this git commit:\n\n**${commit.subject}**\n` +

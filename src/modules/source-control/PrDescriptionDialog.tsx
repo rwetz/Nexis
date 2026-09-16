@@ -1,3 +1,4 @@
+import { git } from "@/capabilities/git/api";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -15,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ModelId } from "@/modules/ai/config";
-import { native } from "@/modules/ai/lib/native";
+
 import { useChatStore } from "@/modules/ai/store/chatStore";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { useState } from "react";
@@ -56,7 +57,7 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
         await Promise.all([
           import("@/modules/ai/lib/agent"),
           import("ai"),
-          native.gitLog(repoRoot, { limit: 20 }),
+          git.gitLog(repoRoot, { limit: 20 }),
         ]);
       const prefs = usePreferencesStore.getState();
       const chatState = useChatStore.getState();

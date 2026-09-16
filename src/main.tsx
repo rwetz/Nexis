@@ -17,6 +17,16 @@ import ReactDOM from "react-dom/client";
 import App from "./app/App";
 import { initLaunchDir } from "./lib/launchDir";
 import { IS_LINUX, USE_CUSTOM_WINDOW_CONTROLS } from "./lib/platform";
+import { useWorkspaceEnvStore } from "./platform/workspaces";
+import { setLastWslDistro } from "./modules/settings/store";
+
+// Remember the user's selection at the composition root. Workspace policy
+// does not depend on the application's preference schema.
+useWorkspaceEnvStore.subscribe((state, previous) => {
+  if (state.env !== previous.env && state.env.kind === "wsl") {
+    void setLastWslDistro(state.env.distro);
+  }
+});
 
 if (USE_CUSTOM_WINDOW_CONTROLS) {
   document.documentElement.dataset.chrome = "borderless";
@@ -30,6 +40,10 @@ if (IS_LINUX) {
 
 // Seed before first paint so default tab mounts at target cwd (no flicker).
 await initLaunchDir();
+
+if (import.meta.env.MODE === "e2e") {
+  await import("./test/desktop-api");
+}
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <App />,

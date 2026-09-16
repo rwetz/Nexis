@@ -1,4 +1,6 @@
-export type WorkspaceEnvironment = { kind: "local" } | { kind: "wsl"; distro: string };
+export type WorkspaceEnvironment =
+  | { kind: "local" }
+  | { kind: "wsl"; distro: string };
 
 export type WorkspaceSnapshot = {
   environment: WorkspaceEnvironment;
@@ -20,8 +22,14 @@ export function environmentIdentity(environment: WorkspaceEnvironment): string {
 }
 
 export function createWorkspaceContext(
-  current: () => { environment: WorkspaceEnvironment; roots: readonly string[] },
-  authorize: (path: string, environment: WorkspaceEnvironment) => Promise<string>,
+  current: () => {
+    environment: WorkspaceEnvironment;
+    roots: readonly string[];
+  },
+  authorize: (
+    path: string,
+    environment: WorkspaceEnvironment,
+  ) => Promise<string>,
 ): WorkspaceContext {
   return {
     snapshot() {
@@ -29,10 +37,16 @@ export function createWorkspaceContext(
       const environment = { ...currentValue.environment };
       const roots = [...new Set(currentValue.roots)].sort();
       const environmentId = environmentIdentity(environment);
-      return { environment, roots, environmentId, scopeId: JSON.stringify([environmentId, roots]) };
+      return {
+        environment,
+        roots,
+        environmentId,
+        scopeId: JSON.stringify([environmentId, roots]),
+      };
     },
     authorize(path, environment) {
-      if (!path.trim()) return Promise.reject(new Error("Workspace path must not be empty"));
+      if (!path.trim())
+        return Promise.reject(new Error("Workspace path must not be empty"));
       return authorize(path, environment ?? { ...current().environment });
     },
   };

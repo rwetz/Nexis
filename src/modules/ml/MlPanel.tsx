@@ -76,7 +76,7 @@ import { setMlAutoOpenOnTrain } from "@/modules/settings/store";
 import {
   useWorkspaceEnvStore,
   workspaceScopeKey,
-} from "@/modules/workspace";
+} from "@/platform/workspaces";
 
 /** Release feed for the standalone (Rust) engine — the WSL steps fetch the
  *  Linux build from here. The in-app download uses the Rust-side pin, not

@@ -1,3 +1,4 @@
+import { ledgerStorage } from "@/platform/ledger-storage";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -5,7 +6,7 @@
 // ╚══════════════════════════════════════╝
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { native } from "@/modules/ai/lib/native";
+
 import {
   forgetLedgerEntry,
   forgetLedgerSince,
@@ -22,8 +23,8 @@ import {
   workspaceLedgerId,
 } from "./ledger";
 
-vi.mock("@/modules/ai/lib/native", () => ({
-  native: {
+vi.mock("@/platform/ledger-storage", () => ({
+  ledgerStorage: {
     ledgerAppend: vi.fn(),
     ledgerWriteOutput: vi.fn(),
     ledgerReadOutput: vi.fn(),
@@ -39,23 +40,23 @@ vi.mock("@/modules/ai/lib/native", () => ({
 }));
 
 beforeEach(() => {
-  vi.mocked(native.ledgerStats).mockReset();
-  vi.mocked(native.ledgerForgetSince).mockReset();
-  vi.mocked(native.ledgerForgetWorkspace).mockReset();
-  vi.mocked(native.ledgerPrune).mockReset();
-  vi.mocked(native.ledgerAppend).mockReset();
-  vi.mocked(native.ledgerWriteOutput).mockReset();
-  vi.mocked(native.ledgerQuery).mockReset();
-  vi.mocked(native.ledgerSearchOutput).mockReset();
-  vi.mocked(native.ledgerForgetEntry).mockReset();
-  vi.mocked(native.ledgerReadOutput).mockReset();
+  vi.mocked(ledgerStorage.ledgerStats).mockReset();
+  vi.mocked(ledgerStorage.ledgerForgetSince).mockReset();
+  vi.mocked(ledgerStorage.ledgerForgetWorkspace).mockReset();
+  vi.mocked(ledgerStorage.ledgerPrune).mockReset();
+  vi.mocked(ledgerStorage.ledgerAppend).mockReset();
+  vi.mocked(ledgerStorage.ledgerWriteOutput).mockReset();
+  vi.mocked(ledgerStorage.ledgerQuery).mockReset();
+  vi.mocked(ledgerStorage.ledgerSearchOutput).mockReset();
+  vi.mocked(ledgerStorage.ledgerForgetEntry).mockReset();
+  vi.mocked(ledgerStorage.ledgerReadOutput).mockReset();
   setLedgerPrivacyResolver(() => false);
   setLedgerWorkspaceSource(() => "C:/ws");
 });
 
 /** The record `ledgerAppend` was called with, parsed back. */
 function appended() {
-  const calls = vi.mocked(native.ledgerAppend).mock.calls;
+  const calls = vi.mocked(ledgerStorage.ledgerAppend).mock.calls;
   const call = calls[calls.length - 1];
   return call ? parseRecord(call[1]) : null;
 }
@@ -79,7 +80,7 @@ describe("recordCommand", () => {
     const record = appended();
     expect(record).not.toBeNull();
     expect(record?.argv).not.toContain("SECRETVALUE12345");
-    const blobCalls = vi.mocked(native.ledgerWriteOutput).mock.calls;
+    const blobCalls = vi.mocked(ledgerStorage.ledgerWriteOutput).mock.calls;
     const output = blobCalls[blobCalls.length - 1]?.[2];
     expect(output).toBeDefined();
     expect(output).not.toContain("ANOTHERSECRET0987654321");
@@ -109,7 +110,7 @@ describe("recordCommand", () => {
       endedAt: 2,
       output: "   \n  ",
     });
-    expect(native.ledgerWriteOutput).not.toHaveBeenCalled();
+    expect(ledgerStorage.ledgerWriteOutput).not.toHaveBeenCalled();
     expect(appended()?.outputId).toBeUndefined();
   });
 
@@ -144,11 +145,11 @@ describe("recordCommand", () => {
         endedAt: 2,
       }),
     ).toBeNull();
-    expect(native.ledgerAppend).not.toHaveBeenCalled();
+    expect(ledgerStorage.ledgerAppend).not.toHaveBeenCalled();
   });
 
   it("never lets a failed write break the terminal it watches", async () => {
-    vi.mocked(native.ledgerAppend).mockRejectedValue(new Error("disk full"));
+    vi.mocked(ledgerStorage.ledgerAppend).mockRejectedValue(new Error("disk full"));
     await expect(
       recordCommand({
         leafId: 1,
@@ -197,7 +198,7 @@ describe("retention and forgetting", () => {
       maxAgeDays: 90,
       maxOutputMb: 256,
     });
-    expect(native.ledgerPrune).toHaveBeenCalledWith(
+    expect(ledgerStorage.ledgerPrune).toHaveBeenCalledWith(
       expect.objectContaining({ maxBlobBytes: 256 * 1024 * 1024 }),
     );
   });
@@ -207,15 +208,15 @@ describe("retention and forgetting", () => {
     expect(await ledgerStats(null)).toBeNull();
     expect(await forgetLedgerSince(null, 0)).toBe(0);
     await forgetLedgerWorkspace(null);
-    expect(native.ledgerPrune).not.toHaveBeenCalled();
-    expect(native.ledgerStats).not.toHaveBeenCalled();
-    expect(native.ledgerForgetSince).not.toHaveBeenCalled();
-    expect(native.ledgerForgetWorkspace).not.toHaveBeenCalled();
+    expect(ledgerStorage.ledgerPrune).not.toHaveBeenCalled();
+    expect(ledgerStorage.ledgerStats).not.toHaveBeenCalled();
+    expect(ledgerStorage.ledgerForgetSince).not.toHaveBeenCalled();
+    expect(ledgerStorage.ledgerForgetWorkspace).not.toHaveBeenCalled();
   });
 
   it("never lets housekeeping break opening a workspace", async () => {
-    vi.mocked(native.ledgerPrune).mockRejectedValue(new Error("disk full"));
-    vi.mocked(native.ledgerStats).mockRejectedValue(new Error("nope"));
+    vi.mocked(ledgerStorage.ledgerPrune).mockRejectedValue(new Error("disk full"));
+    vi.mocked(ledgerStorage.ledgerStats).mockRejectedValue(new Error("nope"));
     await expect(
       pruneLedger("C:/ws", { maxRecords: 1, maxAgeDays: 1, maxOutputMb: 1 }),
     ).resolves.toBeUndefined();
@@ -228,10 +229,10 @@ describe("retention and forgetting", () => {
    * unlike prune, a failure here must reach the user.
    */
   it("reports how many records a windowed forget removed", async () => {
-    vi.mocked(native.ledgerForgetSince).mockResolvedValue(7);
+    vi.mocked(ledgerStorage.ledgerForgetSince).mockResolvedValue(7);
     await expect(forgetLedgerSince("C:/ws", 1000)).resolves.toBe(7);
 
-    vi.mocked(native.ledgerForgetSince).mockRejectedValue(new Error("locked"));
+    vi.mocked(ledgerStorage.ledgerForgetSince).mockRejectedValue(new Error("locked"));
     await expect(forgetLedgerSince("C:/ws", 1000)).rejects.toThrow("locked");
   });
 });
@@ -248,9 +249,9 @@ describe("reading", () => {
   });
 
   it("fills in the query defaults the Rust side expects", async () => {
-    vi.mocked(native.ledgerQuery).mockResolvedValue([]);
+    vi.mocked(ledgerStorage.ledgerQuery).mockResolvedValue([]);
     await queryLedger("C:/ws", { limit: 10 });
-    expect(native.ledgerQuery).toHaveBeenCalledWith(
+    expect(ledgerStorage.ledgerQuery).toHaveBeenCalledWith(
       expect.objectContaining({
         query: { query: "", exit: null, dedupe: false, limit: 10 },
       }),
@@ -262,14 +263,14 @@ describe("reading", () => {
    * row in a history list is worse than one fewer row.
    */
   it("drops unparsable lines instead of rendering blanks", async () => {
-    vi.mocked(native.ledgerQuery).mockResolvedValue([line, "corrupt", "{}"]);
+    vi.mocked(ledgerStorage.ledgerQuery).mockResolvedValue([line, "corrupt", "{}"]);
     const records = await queryLedger("C:/ws", { limit: 10 });
     expect(records).toHaveLength(1);
     expect(records[0].argv).toBe("cargo build");
   });
 
   it("pairs each output hit with its record, and skips a hit it cannot", async () => {
-    vi.mocked(native.ledgerSearchOutput).mockResolvedValue([
+    vi.mocked(ledgerStorage.ledgerSearchOutput).mockResolvedValue([
       { line, snippet: "error: boom", matches: 3 },
       { line: "corrupt", snippet: "error: orphan", matches: 1 },
     ]);
@@ -281,11 +282,11 @@ describe("reading", () => {
 
   it("does not send an empty output search to the backend", async () => {
     expect(await searchLedgerOutput("C:/ws", "   ", 10)).toEqual([]);
-    expect(native.ledgerSearchOutput).not.toHaveBeenCalled();
+    expect(ledgerStorage.ledgerSearchOutput).not.toHaveBeenCalled();
   });
 
   it("treats a missing output blob as absent rather than as an error", async () => {
-    vi.mocked(native.ledgerReadOutput).mockRejectedValue(new Error("gone"));
+    vi.mocked(ledgerStorage.ledgerReadOutput).mockRejectedValue(new Error("gone"));
     await expect(readLedgerOutput("C:/ws", "out-1")).resolves.toBeNull();
   });
 
@@ -294,14 +295,14 @@ describe("reading", () => {
     expect(await searchLedgerOutput(null, "x", 10)).toEqual([]);
     expect(await readLedgerOutput(null, "out-1")).toBeNull();
     await forgetLedgerEntry(null, "cmd-1");
-    expect(native.ledgerQuery).not.toHaveBeenCalled();
-    expect(native.ledgerForgetEntry).not.toHaveBeenCalled();
+    expect(ledgerStorage.ledgerQuery).not.toHaveBeenCalled();
+    expect(ledgerStorage.ledgerForgetEntry).not.toHaveBeenCalled();
   });
 
   it("forgets one entry by id", async () => {
-    vi.mocked(native.ledgerForgetEntry).mockResolvedValue(undefined);
+    vi.mocked(ledgerStorage.ledgerForgetEntry).mockResolvedValue(undefined);
     await forgetLedgerEntry("C:/ws", "cmd-1");
-    expect(native.ledgerForgetEntry).toHaveBeenCalledWith(
+    expect(ledgerStorage.ledgerForgetEntry).toHaveBeenCalledWith(
       expect.stringMatching(/^ws-/),
       "cmd-1",
     );

@@ -34,3 +34,15 @@ The E2E overlay/harness now use `app.nexis.nexis.e2e` so repeated phase verifica
 Verification: TypeScript, 1,193 frontend tests in 80 files (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%), all 294 Rust tests, clippy, rustfmt and Windows production build pass. React Doctor remains 89; it reports existing large App/ML function complexity in the changed-file scope. All eight desktop E2E tests in three specs passed, including lazy Web Tools restoration after reload and Atlas command scope. Evidence: `%TEMP%/nexis-phase2-*.log`.
 
 Remaining legacy paths: other built-in panel branches/commands and companion-window composition, raw non-Atlas IPC, direct store/window APIs, shared AI-native utility imports. These are Phase 3/4 work. Terminal implementation and actual PTY behavior remain unchanged in this phase.
+
+## Phase 3: platform services complete
+
+- `platform/` now owns typed host/workspace IPC, event lifetimes, the workspace store and captured authorization, storage queues, shared filesystem/process access, named-window creation, notifications, command-ledger persistence and system-resource sampling.
+- The old `modules/workspace/{env,identity,index}.ts` implementation moved into the platform boundary. Remembering the last WSL distro now happens at the composition root, so workspace policy no longer imports the preference schema.
+- The cross-domain `ai/lib/native.ts` bridge was deleted. Shared native result types live in `domain/native-types.ts`; filesystem, process, git, ledger and system-monitor consumers use their owning seams. AI-only canonical-read policy remains in `ai/lib/filesystem.ts`.
+- Preference writes serialize the entire set/save/broadcast transaction and recover after rejection. Agent shell sessions capture one environment across authorization/open/run, serialize commands, close idempotently and still evict failed opens for retry.
+- The E2E-only desktop bridge is excluded from shipping builds. Its platform spec verifies PowerShell output and complete burst ordering, repeated close/reopen on `C:` and `G:`, non-PTY cwd capture, and WSL write/replace/rename/read plus cwd execution using Linux paths.
+
+Verification: TypeScript, 1,196 frontend tests, all 294 Rust tests, clippy, rustfmt and Windows production/E2E release builds pass. React Doctor's full result is unchanged from Phase 2 at 180 existing warnings across 92 files. All ten desktop E2E tests in four specs pass under Node 22.23.2, including the real platform adapter checks. Evidence: `%TEMP%/nexis-phase3-*.log`.
+
+Remaining legacy paths: capability-local raw IPC and Tauri plugin calls, remaining central built-in panel/command branches, and companion-window composition. These move with their capability owners in Phase 4. PTY implementation, Rust process construction, workspace authorization and settings propagation guards remain unchanged.

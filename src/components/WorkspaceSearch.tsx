@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -7,7 +8,7 @@
 import { Icon } from "@/components/icon";
 import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
-import { native, type GrepHit } from "@/modules/ai/lib/native";
+import type { GrepHit } from "@/domain/native-types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type FileGroup = {
@@ -60,7 +61,7 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
       setSearching(true);
       try {
         const pattern = isRegex ? q : escapeRegex(q);
-        const result = await native.grep({
+        const result = await filesystem.grep({
           pattern,
           root,
           caseInsensitive: !caseSensitive,
@@ -105,11 +106,11 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
       const regex = new RegExp(pattern, caseSensitive ? "g" : "gi");
       for (const g of groups) {
         try {
-          const r = await native.readFile(g.path);
+          const r = await filesystem.readFile(g.path);
           if (r.kind !== "text") continue;
           const updated = r.content.replace(regex, replace);
           if (updated === r.content) continue;
-          await native.writeFile(g.path, updated);
+          await filesystem.writeFile(g.path, updated);
           filesDone++;
         } catch {
           // skip files that fail

@@ -6,7 +6,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { clearMissingTool, reportMissingTool } from "@/lib/missingTools";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { listen, type UnlistenFn } from "@/platform/events";
 import {
   type LspCodeAction,
   type LspCompletionItem,

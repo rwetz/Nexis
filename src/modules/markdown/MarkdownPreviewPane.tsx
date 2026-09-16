@@ -7,7 +7,7 @@
 import { Icon, type IconName } from "@/components/icon";
 import { MarkdownCode } from "@/components/ai-elements/markdown-code";
 import { cn } from "@/lib/utils";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import { currentWorkspaceEnv } from "@/platform/workspaces";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { Streamdown } from "streamdown";

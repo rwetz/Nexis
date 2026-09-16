@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { listen, type UnlistenFn } from "@/platform/events";
 import { create } from "zustand";
 import type {
   DapOutputEvent,

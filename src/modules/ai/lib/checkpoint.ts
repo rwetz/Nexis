@@ -1,3 +1,4 @@
+import { git } from "@/capabilities/git/api";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -18,7 +19,7 @@
  * Every failure path in this module therefore resolves to `null`.
  */
 
-import { native } from "./native";
+
 import type { ToolContext } from "../tools/context";
 
 /**
@@ -35,7 +36,7 @@ export async function checkpointBeforeEdit(
   const root = ctx.getWorkspaceRoot();
   if (!root) return null;
   try {
-    const checkpoint = await native.gitCheckpointCreate(root, label);
+    const checkpoint = await git.gitCheckpointCreate(root, label);
     return checkpoint?.refName ?? null;
   } catch {
     // Not a repo, git missing, or the snapshot failed. Proceed unprotected

@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -15,7 +16,7 @@
  */
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { native } from "@/modules/ai/lib/native";
+
 import { invoke } from "@tauri-apps/api/core";
 import {
   useCallback,
@@ -58,7 +59,7 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
     const path = notesPath(workspaceRoot);
     (async () => {
       try {
-        const result = await native.readFile(path);
+        const result = await filesystem.readFile(path);
         if (cancelled) return;
         if (result.kind === "text") {
           setText(result.content);

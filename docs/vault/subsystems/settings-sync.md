@@ -5,11 +5,11 @@ description: Preferences storage and cross-window sync — writePref, onPreferen
 
 # Settings & cross-window sync (`src/modules/settings/`)
 
-Preferences persist via `@tauri-apps/plugin-store` (`LazyStore`, autoSave 200 ms) in `store.ts`. The Settings window is a **separate webview process**, so persistence alone doesn't propagate changes — sync is event-driven.
+Preferences persist through `platform/storage.ts`, which owns each webview's `LazyStore` handle and mutation queue. The Settings window is a **separate webview process**, so persistence alone doesn't propagate changes — sync is event-driven.
 
 ## The one rule
 
-Every user-facing preference write goes through `writePref(key, value)` (`store.ts`), which does `store.set()` **and** emits `nexis://prefs-changed`. A setter that calls `store.set()`/`store.save()` directly persists fine but silently breaks live sync — invisible in single-window testing (CLAUDE.md pitfall #2; enforced by `pitfall-guards.test.ts`).
+Every user-facing preference write goes through `writePref(key, value)` (`store.ts`), which queues the complete `set` → `save` → `nexis://prefs-changed` transaction through `platform/persistence.ts`. This keeps durable values and notifications in the same order and recovers the queue after a rejected write. A setter that writes the store directly persists fine but silently breaks live sync — invisible in single-window testing (CLAUDE.md pitfall #2; enforced by `pitfall-guards.test.ts`).
 
 ## Read/subscribe surface
 

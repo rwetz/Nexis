@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -7,7 +8,7 @@
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import type { ToolUIPart, UIMessagePart } from "ai";
 import { useEffect, useMemo, useRef } from "react";
-import { native } from "../lib/native";
+
 import { checkReadable } from "../lib/security";
 import { resolvePath } from "../tools/tools";
 import {
@@ -365,7 +366,7 @@ async function readOriginal(
   const safety = checkReadable(abs);
   if (!safety.ok) return { content: "", isNewFile: false };
   try {
-    const r = await native.readFile(abs);
+    const r = await filesystem.readFile(abs);
     if (r.kind === "text") return { content: r.content, isNewFile: false };
     // Binary or oversized — we can't render the original sensibly. Show the
     // proposed content as a "new" view; the user can still cancel.

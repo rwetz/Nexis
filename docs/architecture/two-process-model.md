@@ -63,9 +63,10 @@ pays to deserialize a message only one of them cares about.
 
 ### Convention: one bridge file per family
 
-Frontend `invoke()` calls are confined to a bridge module per command family — `pty-bridge.ts` for PTY,
-`ai/lib/native.ts` for fs/git/shell, `ai/lib/keyring.ts` for secrets, and so on. Components call the
-bridge, never `invoke("cmd_x")` directly.
+Frontend `invoke()` calls are confined to an owning seam per command family — `pty-bridge.ts` for PTY,
+`platform/filesystem.ts` for shared files, `platform/processes.ts` for shared shell execution,
+`capabilities/git/api.ts` for git, `ai/lib/keyring.ts` for secrets, and so on. Components call the
+seam, never `invoke("cmd_x")` directly. Capability-local legacy calls are being migrated in Phase 4.
 
 This isn't tidiness. Several invariants are enforced by *counting call sites* — the PTY input-ordering
 guarantee holds only because `pty_write` has exactly one caller, and there's a tripwire test that fails

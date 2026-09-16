@@ -19,6 +19,7 @@
  */
 
 import { invoke } from "@tauri-apps/api/core";
+import { hostFilesystem } from "@/platform/filesystem";
 import { IS_WINDOWS } from "@/lib/platform";
 import {
   type BackendInfo,
@@ -52,7 +53,7 @@ const emitResult = (r: BenchResult) => resultCbs.forEach((cb) => cb(r));
 // Wire Tauri events → local dispatch, once per module load. A run outlives the
 // panel (the engine keeps working while the sidebar shows something else), so
 // these listeners are deliberately not tied to a component lifecycle.
-void import("@tauri-apps/api/event").then(({ listen }) => {
+void import("@/platform/events").then(({ listen }) => {
   void listen<BenchProgress>("bench://progress", (e) => emitProgress(e.payload));
   void listen<BenchResult>("bench://result", (e) => emitResult(e.payload));
 });
@@ -122,7 +123,7 @@ async function saveText(
   if (!path) return;
   // `source` tags the write in the fs event stream so the editor does not
   // treat an export as an external edit to a file it has open.
-  await invoke("fs_write_file", { path, content: contents, source: "benchmark-export" });
+  await hostFilesystem.writeFile(path, contents, "benchmark-export");
 }
 
 export function exportRunCsv(run: BenchRun, models: ModelInfo[]): Promise<void> {

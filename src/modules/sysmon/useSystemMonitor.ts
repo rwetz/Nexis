@@ -1,10 +1,11 @@
+import { systemResources } from "@/platform/system-resources";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { native, type SysSample, type SysmonSort } from "@/modules/ai/lib/native";
+import type { SysSample, SysmonSort } from "@/domain/native-types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /** Samples retained per series — the chart width the panel can actually draw
@@ -94,7 +95,7 @@ export function useSystemMonitor({
 
   const sampleOnce = useCallback(async () => {
     const { includeProcesses: withProcs, sort: sortKey } = optsRef.current;
-    const next = await native.sysmonSample(sortKey, withProcs);
+    const next = await systemResources.sysmonSample(sortKey, withProcs);
     setSample(next);
     setError(null);
 
@@ -153,8 +154,8 @@ export function useSystemMonitor({
   }, [intervalMs, paused, sampleOnce]);
 
   const kill = useCallback(
-    async (pid: number, signal?: Parameters<typeof native.sysmonKill>[1]) => {
-      const killed = await native.sysmonKill(pid, signal);
+    async (pid: number, signal?: Parameters<typeof systemResources.sysmonKill>[1]) => {
+      const killed = await systemResources.sysmonKill(pid, signal);
       // Re-sample straight away so the row disappears on the click rather
       // than lingering until the next tick.
       await sampleOnce().catch(() => {});

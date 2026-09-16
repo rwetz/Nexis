@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { toast } from "sonner";
+import { notify } from "@/platform/notifications";
 import type { CommandDef } from "@/components/CommandPalette";
 import { createPluginAPI, usePluginRegistry } from "@/lib/plugins/registry";
 import { packEnabled, type PackId } from "@/lib/packs";
 import { findPluginPanel } from "@/modules/sidebar/pluginPanels";
 import { pluginPanelViewId, type SidebarView } from "@/modules/sidebar/types";
-import { currentWorkspaceEnv } from "@/modules/workspace/env";
-import { createWorkspaceContext } from "@/platform/workspace";
+import { workspaceWithRoots } from "@/platform/workspaces";
 import { createPlatformIpc } from "@/platform/ipc";
 import { tauriTransport } from "@/platform/tauri";
 import type { CapabilityContext } from "@/workbench/capability";
@@ -39,10 +39,7 @@ export function useCapabilities(options: {
       })),
     ];
   }, [builtins, packs, commands, selectedPanelId]);
-  const workspace = createWorkspaceContext(
-    () => ({ environment: currentWorkspaceEnv(), roots: options.root ? [options.root] : [] }),
-    (path, environment) => tauriTransport.invoke<string>("workspace_authorize", { path, workspace: environment }),
-  );
+  const workspace = workspaceWithRoots(() => options.root ? [options.root] : []);
   const context: CapabilityContext = {
     workspace,
     ipc: createPlatformIpc(tauriTransport, workspace),
@@ -53,7 +50,7 @@ export function useCapabilities(options: {
       options.activateView(panel.legacyView ?? pluginPanelViewId(id));
     } },
     commands: { execute: (id) => executeCommand(id, { activePanelId: selectedPanelId, inputFocused: false }) },
-    notify: (message, detail) => toast.error(message, { description: detail }),
+    notify: (message, detail) => notify({ message, detail, kind: "error" }),
     terminal: options.terminal,
     editor: options.editor,
     openWorkspace: options.openWorkspace,

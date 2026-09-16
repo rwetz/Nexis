@@ -25,7 +25,7 @@ All state stores, as of 2026-07 (enumerate fresh with `grep -rn "= create" src -
 
 ## Workspace & shell
 
-- `useWorkspaceEnvStore` (`workspace/env.ts`) — WSL distros, environment
+- `useWorkspaceEnvStore` (`platform/workspace-state.ts`) — WSL distros and environment; platform policy no longer imports settings persistence
 - `useRecentWorkspaces` · `useRecentFiles` · `useProfilesStore` (shell profiles) · `useAgentQueueStore` (queued agent runs)
 
 ## App-wide

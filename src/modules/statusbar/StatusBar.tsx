@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 import { CwdBreadcrumb } from "./CwdBreadcrumb";
 import { WorkspaceEnvSelector } from "./WorkspaceEnvSelector";
-import type { WorkspaceEnv } from "@/modules/workspace";
+import type { WorkspaceEnv } from "@/platform/workspaces";
 import { useDiagnosticsStore } from "@/modules/problems/diagnosticsStore";
 import { usePluginRegistry } from "@/lib/plugins/registry";
 import { usePreferencesStore } from "@/modules/settings/preferences";

@@ -1,10 +1,11 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { native } from "@/modules/ai/lib/native";
+
 import { useEffect, useState } from "react";
 
 export type ContainerKind = "devcontainer" | "compose" | "dockerfile" | null;
@@ -23,7 +24,7 @@ const DETECT_FILES: Array<{ files: string[]; kind: ContainerKind; label: string 
 async function detectContainer(root: string | null): Promise<ContainerEnv | null> {
   if (!root) return null;
   try {
-    const entries = await native.readDir(root);
+    const entries = await filesystem.readDir(root, false);
     const names = new Set(entries.map((e) => e.name));
 
     for (const spec of DETECT_FILES) {

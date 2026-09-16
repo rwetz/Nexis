@@ -19,11 +19,11 @@
  *    on the next call instead of being cached forever.
  */
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { listen, type UnlistenFn } from "@/platform/events";
 import {
   currentWorkspaceEnv,
   currentWorkspaceScopeKey,
-} from "@/modules/workspace";
+} from "@/platform/workspaces";
 
 export type EngineDetectResult = { exe: string; version: string };
 

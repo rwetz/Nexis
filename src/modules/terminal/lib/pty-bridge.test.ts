@@ -6,7 +6,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { openPty } from "./pty-bridge";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import { currentWorkspaceEnv } from "@/platform/workspaces";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock("@tauri-apps/api/core", () => ({
   Channel: vi.fn().mockImplementation(() => ({ onmessage: null })),
 }));
 
-vi.mock("@/modules/workspace", () => ({
+vi.mock("@/platform/workspaces", () => ({
   currentWorkspaceEnv: vi.fn(() => ({ kind: "local" })),
 }));
 

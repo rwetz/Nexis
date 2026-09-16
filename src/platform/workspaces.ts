@@ -14,6 +14,11 @@ export {
   workspaceScopeKey,
   type WorkspaceEnv,
   type WslDistro,
-} from "./env";
+  activeWorkspace,
+  workspaceCurrentDir,
+  workspaceWithRoots,
+  workspaceIpc,
+  ipcForEnvironment,
+} from "./workspace-state";
 
-export { sameProject, workspaceProjectKey } from "./identity";
+export { sameProject, workspaceProjectKey } from "./workspace-identity";

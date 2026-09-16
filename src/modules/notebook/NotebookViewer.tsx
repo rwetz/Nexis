@@ -1,10 +1,11 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { native } from "@/modules/ai/lib/native";
+
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
@@ -116,7 +117,7 @@ export function NotebookViewer({ path, visible }: Props) {
     if (!visible) return;
     let cancelled = false;
     void (async () => {
-      const result = await native.readFile(path);
+      const result = await filesystem.readFile(path);
       if (cancelled) return;
       if (result.kind !== "text") {
         setError("Cannot read notebook file.");

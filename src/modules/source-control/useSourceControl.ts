@@ -1,16 +1,13 @@
+import { git } from "@/capabilities/git/api";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import {
-  native,
-  type GitRepoInfo,
-  type GitStatusSnapshot,
-} from "@/modules/ai/lib/native";
+import type { GitRepoInfo, GitStatusSnapshot } from "@/domain/native-types";
 import { noteGitErrorIfMissing } from "@/lib/missingTools";
-import { useWorkspaceEnvStore, workspaceScopeKey } from "@/modules/workspace";
+import { useWorkspaceEnvStore, workspaceScopeKey } from "@/platform/workspaces";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const AUTO_FETCH_THROTTLE_MS = 5 * 60_000;
@@ -193,7 +190,7 @@ export function useSourceControl(
         if (reusableRoot) {
           try {
             repo = stateRef.current.repo ?? null;
-            status = await native.gitStatus(reusableRoot);
+            status = await git.gitStatus(reusableRoot);
             if (requestId !== requestIdRef.current) return;
             if (!repo || repo.repoRoot !== reusableRoot) {
               repo = {
@@ -204,7 +201,7 @@ export function useSourceControl(
               };
             }
           } catch {
-            const snapshot = await native.gitPanelSnapshot(contextPath);
+            const snapshot = await git.gitPanelSnapshot(contextPath);
             if (requestId !== requestIdRef.current) return;
             if (!snapshot.repo) {
               setState((current) => ({
@@ -221,7 +218,7 @@ export function useSourceControl(
             status = snapshot.status ?? null;
           }
         } else {
-          const snapshot = await native.gitPanelSnapshot(contextPath);
+          const snapshot = await git.gitPanelSnapshot(contextPath);
           if (requestId !== requestIdRef.current) return;
           if (!snapshot.repo) {
             setState((current) => ({
@@ -261,11 +258,11 @@ export function useSourceControl(
 
         if (shouldAutoFetch) {
           try {
-            await native.gitFetch(repo.repoRoot);
+            await git.gitFetch(repo.repoRoot);
             touchAutoFetch(autoFetchByRepoRef.current, repo.repoRoot);
             nextRemoteError = null;
             if (requestId !== requestIdRef.current) return;
-            status = await native.gitStatus(repo.repoRoot);
+            status = await git.gitStatus(repo.repoRoot);
             if (requestId !== requestIdRef.current) return;
           } catch (error) {
             nextRemoteError = normalizeError(error);
@@ -353,14 +350,14 @@ export function useSourceControl(
 
       try {
         if (action === "fetch") {
-          await native.gitFetch(repo.repoRoot);
+          await git.gitFetch(repo.repoRoot);
           touchAutoFetch(autoFetchByRepoRef.current, repo.repoRoot);
         } else if (action === "pull") {
-          await native.gitFetch(repo.repoRoot);
+          await git.gitFetch(repo.repoRoot);
           touchAutoFetch(autoFetchByRepoRef.current, repo.repoRoot);
-          await native.gitPullFfOnly(repo.repoRoot);
+          await git.gitPullFfOnly(repo.repoRoot);
         } else {
-          await native.gitPush(repo.repoRoot);
+          await git.gitPush(repo.repoRoot);
         }
         setState((current) => ({ ...current, lastRemoteError: null }));
         await refresh({ remote: "never" });

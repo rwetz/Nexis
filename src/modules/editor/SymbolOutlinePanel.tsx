@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -6,7 +7,7 @@
 
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { native } from "@/modules/ai/lib/native";
+
 import { useEffect, useState } from "react";
 
 type SymbolKind = "function" | "class" | "interface" | "type" | "variable" | "enum" | "method";
@@ -90,7 +91,7 @@ export function SymbolOutlinePanel({ filePath }: Props) {
     }
     let cancelled = false;
     setLoading(true);
-    void native.readFile(filePath).then((r) => {
+    void filesystem.readFile(filePath).then((r) => {
       if (cancelled) return;
       if (r.kind === "text") setSymbols(extractSymbols(r.content));
       else setSymbols([]);

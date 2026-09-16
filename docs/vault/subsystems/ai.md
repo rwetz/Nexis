@@ -21,7 +21,7 @@ The chat/agent feature. Built on the Vercel AI SDK (`ai` package); everything ru
 `tools/tools.ts:buildTools` composes seven families: fs, edit, search, shell, subagent, terminal, todo — all taking a shared `ToolContext` (`tools/context.ts`, owns `resolvePath`).
 
 - `tools/shell.ts` memoizes session shells in `sessionShells`; the rejection-eviction in its `.catch()` is load-bearing (pitfall #10)
-- Rust-side execution goes through `lib/native.ts` — the AI's bridge to `fs_*`, `git_*`, `shell_*`, `lsp_*`, `dap_*` commands (see [[ipc-surface]])
+- AI-only canonical read policy lives in `lib/filesystem.ts`; shared file, git and process access goes through `platform/filesystem.ts`, `capabilities/git/api.ts` and `platform/processes.ts` (see [[platform]], [[ipc-surface]])
 
 ## Tool approval
 

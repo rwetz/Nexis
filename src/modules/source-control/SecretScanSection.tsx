@@ -1,3 +1,4 @@
+import { git } from "@/capabilities/git/api";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -31,7 +32,7 @@ import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import { native } from "@/modules/ai/lib/native";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   describeKind,
@@ -99,7 +100,7 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
     if (!repoRoot) return;
     setLoading(true);
     try {
-      const diff = await native.gitDiff(repoRoot, null, true);
+      const diff = await git.gitDiff(repoRoot, null, true);
       setFindings(scanDiffForSecrets(diff.diffText));
       setTruncated(diff.truncated);
       setError(null);

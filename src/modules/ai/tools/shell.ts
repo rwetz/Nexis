@@ -1,3 +1,5 @@
+import { processes as processNative, shellSessions, type ShellRunResult } from "@/platform/processes";
+import type { ProcessSession } from "@/platform/process";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -7,10 +9,10 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { auditAgentCommand, type AuditEntry } from "../lib/audit";
-import { native } from "../lib/native";
+
 import { checkAutoApprove, checkShellCommand } from "../lib/security";
 import type { ToolContext } from "./context";
-import { currentWorkspaceEnv, workspaceScopeKey } from "@/modules/workspace";
+import { currentWorkspaceEnv, workspaceScopeKey } from "@/platform/workspaces";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 
 /**
@@ -45,15 +47,15 @@ function approvalMode(
  * Per-session lazy shell-session id. The agent gets one persistent shell per
  * chat session, so cwd survives across tool calls (cd, mkdir+cd, etc).
  */
-const sessionShells = new Map<string, Promise<number>>();
+const sessionShells = new Map<string, Promise<ProcessSession<ShellRunResult>>>();
 
 async function getSessionShell(
   sessionId: string,
   cwd: string | null,
-): Promise<number> {
+): Promise<ProcessSession<ShellRunResult>> {
   let p = sessionShells.get(sessionId);
   if (!p) {
-    p = native.shellSessionOpen(cwd).catch((err) => {
+    p = shellSessions.open(cwd).catch((err) => {
       // Remove the rejected promise so a future call can retry.
       sessionShells.delete(sessionId);
       throw err;
@@ -87,13 +89,8 @@ export function buildShellTools(ctx: ToolContext) {
         if (!sid) return { error: "no active chat session" };
         try {
           const cwd = ctx.getCwd();
-          const shellId = await getSessionShell(workspaceSessionKey(sid), cwd);
-          const r = await native.shellSessionRun(
-            shellId,
-            command,
-            cwd,
-            timeout_secs,
-          );
+          const shell = await getSessionShell(workspaceSessionKey(sid), cwd);
+          const r = await shell.run(command, { cwd, timeoutSecs: timeout_secs });
           auditAgentCommand({
             kind: "run",
             command,
@@ -134,7 +131,7 @@ export function buildShellTools(ctx: ToolContext) {
         }
         const effectiveCwd = cwd ?? ctx.getCwd();
         try {
-          const handle = await native.shellBgSpawn(command, effectiveCwd);
+          const handle = await processNative.shellBgSpawn(command, effectiveCwd);
           auditAgentCommand({
             kind: "background",
             command,
@@ -159,7 +156,7 @@ export function buildShellTools(ctx: ToolContext) {
       }),
       execute: async ({ handle, since_offset }) => {
         try {
-          const r = await native.shellBgLogs(handle, since_offset);
+          const r = await processNative.shellBgLogs(handle, since_offset);
           return r;
         } catch (e) {
           return { error: String(e) };
@@ -173,7 +170,7 @@ export function buildShellTools(ctx: ToolContext) {
       inputSchema: z.object({}),
       execute: async () => {
         try {
-          const list = await native.shellBgList();
+          const list = await processNative.shellBgList();
           return { processes: list };
         } catch (e) {
           return { error: String(e) };
@@ -187,7 +184,7 @@ export function buildShellTools(ctx: ToolContext) {
       inputSchema: z.object({ handle: z.number().int() }),
       execute: async ({ handle }) => {
         try {
-          await native.shellBgKill(handle);
+          await processNative.shellBgKill(handle);
           auditAgentCommand({ kind: "kill", handle });
           return { handle, ok: true };
         } catch (e) {

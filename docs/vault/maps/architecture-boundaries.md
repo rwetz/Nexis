@@ -9,18 +9,18 @@ The [redesign plan](../../architecture/nexis-architecture-redesign-plan.md) defi
 
 ## Where the boundaries currently live
 
-- **Platform policy:** `modules/workspace/env.ts`, `modules/settings/store.ts`, `lib/path.ts`, and Rust `modules/{workspace,proc}.rs` / `modules/fs/`. IPC transport is still distributed through capability bridges, especially `modules/ai/lib/native.ts`. See [[ipc-surface]] and [[settings-sync]].
+- **Platform policy:** `platform/` owns the typed IPC transport, workspace environment and authorization, event lifetimes, storage queues, shared filesystem/process access, named-window creation, notifications, command-ledger persistence and system-resource sampling. Rust policy remains in `modules/{workspace,proc}.rs` and `modules/fs/`. See [[platform]], [[ipc-surface]] and [[settings-sync]].
 - **Workbench:** `workbench/`, `app/App.tsx`, `app/useCapabilities.ts`, `app/useSidebarState.ts`, `modules/tabs/`, `modules/sidebar/`, `modules/shortcuts/`, `lib/packs.ts` and `lib/plugins/`. Web Tools and Atlas use declarative registration and `PanelHost`; App still renders remaining built-in sidebar panels with a central conditional chain. See [[workbench]].
 - **Capabilities:** `modules/atlas`, `benchmark`, `terminal`, `editor`, `ai`, source-control/git-history and integrations. The module directory is not itself an enforced boundary. See [[frontend-modules]] and [[rust-modules]].
 - **Design:** `components/icon.tsx`, `components/icon-art.tsx`, `styles/`, `modules/theme/` and explorer icon retint. Persistence and native theme-window access need platform seams even though theme definitions are design-owned. See [[icon-and-motion-system]] and [[theming]].
 
 ## Extraction traps
 
-- `ai/lib/native.ts` serves many non-AI consumers, but some helpers embed AI policy (`readDir` hides dotfiles). Moving the whole object would misclassify that policy.
+- AI filesystem policy remains in `ai/lib/filesystem.ts`; the old `ai/lib/native.ts` bridge was deleted after its shared filesystem, process, git, ledger and system-resource consumers moved to their owning seams.
 - `lib/plugins/types.ts` already owns panel/command contributions. Extend its policy rather than introducing a second registry. It currently depends on AI tool types; the generic contract and AI admission behavior have different owners.
 - `workspaceScopeKey` identifies the local host or a WSL distro. It does not identify a repository root. Environment-dependent caches and root-dependent state require distinct keys.
 - `modules/window/ToolWindowShell.tsx` imports Atlas and Benchmark. It is workbench composition despite its current platform-looking directory.
 - Atlas and Benchmark remain host-scoped. Benchmark jobs and listeners survive panel unmount; host export paths must not inherit the active WSL environment. See [[atlas]] and [[benchmark]].
 - The global shortcut hook is `modules/shortcuts/lib/useGlobalShortcuts.ts`; built-in handlers and the command list still live in App. Panel keymaps such as Atlas's have separate scope today.
 
-The inventory proposes Web Tools as the first low-risk contributed panel, followed by Atlas. Phase 1 adds policy contracts in `src/platform/` and `src/workbench/`; Atlas's four scanner calls are the first typed host-only IPC consumer. The existing plugin registry now rejects duplicate panel/command IDs. See the [phase progress](../../architecture/nexis-redesign-progress.md) for verification and remaining legacy paths. The root invariants remain authoritative.
+Web Tools and Atlas now use the contribution workbench. Phase 3 moved the shared platform policies and deleted the workspace and AI-native parallel implementations; capability-specific raw IPC remains a Phase 4 migration queue. See the [phase progress](../../architecture/nexis-redesign-progress.md) for verification and remaining legacy paths. The root invariants remain authoritative.

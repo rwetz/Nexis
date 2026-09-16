@@ -13,7 +13,7 @@ import { Icon } from "@/components/icon";
 import { installHint } from "@/lib/externalTools";
 import { useMissingTools, visibleMissingTools } from "@/lib/missingTools";
 import { cn } from "@/lib/utils";
-import { currentWorkspaceEnv } from "@/modules/workspace/env";
+import { currentWorkspaceEnv } from "@/platform/workspace-state";
 import { useState } from "react";
 
 /**

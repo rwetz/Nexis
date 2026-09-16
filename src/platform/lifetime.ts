@@ -5,7 +5,9 @@ export class Lifetime implements Disposable {
   private closed = false;
   private readonly cleanups = new Set<() => void>();
 
-  get disposed(): boolean { return this.closed; }
+  get disposed(): boolean {
+    return this.closed;
+  }
 
   add(cleanup: () => void): Disposable {
     let active = true;
@@ -29,9 +31,14 @@ export class Lifetime implements Disposable {
     this.closed = true;
     const errors: unknown[] = [];
     for (const cleanup of this.cleanups) {
-      try { cleanup(); } catch (error) { errors.push(error); }
+      try {
+        cleanup();
+      } catch (error) {
+        errors.push(error);
+      }
     }
     this.cleanups.clear();
-    if (errors.length) throw Object.assign(new Error("Resource cleanup failed"), { errors });
+    if (errors.length)
+      throw Object.assign(new Error("Resource cleanup failed"), { errors });
   }
 }

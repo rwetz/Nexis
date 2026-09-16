@@ -1,3 +1,4 @@
+import { git } from "@/capabilities/git/api";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -47,7 +48,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { native, type GitBranchEntry } from "@/modules/ai/lib/native";
+import type { GitBranchEntry } from "@/domain/native-types";
 import type { SourceControlSummary } from "./useSourceControl";
 import {
   useSourceControlPanel,
@@ -940,7 +941,7 @@ function BranchSwitcher({
     if (!next) return;
     setError(null);
     setBranches(null);
-    native
+    git
       .gitBranches(repoRoot)
       .then(setBranches)
       .catch((e) =>
@@ -953,7 +954,7 @@ function BranchSwitcher({
     setBusy(branch.name);
     setError(null);
     try {
-      await native.gitCheckoutBranch(repoRoot, branch.name);
+      await git.gitCheckoutBranch(repoRoot, branch.name);
       setBusy(null);
       setOpen(false);
       onSwitched();

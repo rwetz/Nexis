@@ -4,15 +4,15 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { emit, listen, type UnlistenFn } from "@/platform/events";
+import { openStore } from "@/platform/storage";
 import type { Theme } from "./types";
 
 const STORE_PATH = "nexis-custom-themes.json";
 const KEY = "themes";
 const CHANGED_EVENT = "nexis://custom-themes-changed";
 
-const store = new LazyStore(STORE_PATH, { defaults: {}, autoSave: 200 });
+const store = openStore(STORE_PATH);
 
 export async function listCustomThemes(): Promise<Theme[]> {
   const v = await store.get<Theme[]>(KEY);

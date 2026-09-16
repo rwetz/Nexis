@@ -1,3 +1,4 @@
+
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -7,7 +8,7 @@
 import { Icon, type IconName } from "@/components/icon";
 import { formatBytes, formatBytesPerSec, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { SysmonSignal, SysmonSort, SysProcessRow } from "@/modules/ai/lib/native";
+import type { SysmonSignal, SysmonSort, SysProcessRow } from "@/domain/native-types";
 import { setSysmonIntervalMs } from "@/modules/settings/store";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { useMemo, useState } from "react";

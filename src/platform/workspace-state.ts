@@ -4,10 +4,14 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
-import { environmentIdentity, type WorkspaceEnvironment } from "@/platform/workspace";
-import { setLastWslDistro } from "@/modules/settings/store";
+import {
+  createWorkspaceContext,
+  environmentIdentity,
+  type WorkspaceEnvironment,
+} from "./workspace";
+import { createPlatformIpc, defineCommand } from "./ipc";
+import { hostIpc, tauriTransport } from "./tauri";
 
 export type WorkspaceEnv = WorkspaceEnvironment;
 
@@ -35,12 +39,11 @@ export const useWorkspaceEnvStore = create<State>((set) => ({
   error: null,
   setEnv: (env) => {
     set({ env });
-    if (env.kind === "wsl") void setLastWslDistro(env.distro);
   },
   refreshDistros: async () => {
     set({ loading: true, error: null });
     try {
-      const distros = await invoke<WslDistro[]>("wsl_list_distros");
+      const distros = await hostIpc.call(listDistros, {});
       set({ distros, loading: false });
       return distros;
     } catch (e) {
@@ -92,5 +95,42 @@ export function currentWorkspaceScopeKey(): string {
 }
 
 export async function getWslHome(distro: string): Promise<string> {
-  return invoke<string>("wsl_home", { distro });
+  return hostIpc.call(wslHome, { distro });
+}
+
+const listDistros = defineCommand<Record<string, never>, WslDistro[]>(
+  "wsl_list_distros",
+  "host",
+);
+const wslHome = defineCommand<{ distro: string }, string>("wsl_home", "host");
+const authorizeWorkspace = defineCommand<{ path: string }, string>(
+  "workspace_authorize",
+  "workspace",
+);
+
+/** A captured environment keeps authorization and the subsequent operation
+ * in the same distro even if the active workspace changes while awaiting. */
+export function ipcForEnvironment(environment: WorkspaceEnvironment) {
+  const captured = { ...environment };
+  const context = createWorkspaceContext(
+    () => ({ environment: captured, roots: [] }),
+    (path, env) => ipcForEnvironment(env).call(authorizeWorkspace, { path }),
+  );
+  return createPlatformIpc(tauriTransport, context);
+}
+
+export function workspaceWithRoots(roots: () => readonly string[] = () => []) {
+  return createWorkspaceContext(
+    () => ({ environment: currentWorkspaceEnv(), roots: roots() }),
+    (path, environment) =>
+      ipcForEnvironment(environment).call(authorizeWorkspace, { path }),
+  );
+}
+
+export const activeWorkspace = workspaceWithRoots();
+export const workspaceIpc = createPlatformIpc(tauriTransport, activeWorkspace);
+
+const currentDirectory = defineCommand<Record<string, never>, string>("workspace_current_dir", "host");
+export function workspaceCurrentDir(): Promise<string> {
+  return hostIpc.call(currentDirectory, {});
 }

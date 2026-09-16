@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { openStore } from "@/platform/storage";
 
 export type Snippet = {
   id: string;
@@ -18,7 +18,7 @@ export type Snippet = {
 const STORE_PATH = "nexis-ai-snippets.json";
 const KEY_LIST = "snippets";
 
-const store = new LazyStore(STORE_PATH, { defaults: {}, autoSave: 200 });
+const store = openStore(STORE_PATH);
 
 export async function loadSnippets(): Promise<Snippet[]> {
   return (await store.get<Snippet[]>(KEY_LIST)) ?? [];

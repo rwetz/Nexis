@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -22,7 +23,7 @@
 import { Icon } from "@/components/icon";
 import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
-import { native } from "@/modules/ai/lib/native";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   auditIcons,
@@ -73,7 +74,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
     setState({ kind: "loading" });
     setSelected(null);
     try {
-      const listing = await native.readDir(root);
+      const listing = await filesystem.readDir(root, false);
       const all = listing.filter(
         (e) => e.kind === "file" && e.name.toLowerCase().endsWith(".svg"),
       );
@@ -87,7 +88,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
           source: "",
         });
         try {
-          const read = await native.readFile(`${base}/${file.name}`);
+          const read = await filesystem.readFile(`${base}/${file.name}`);
           if (read.kind !== "text") {
             // A binary or oversized "SVG" is a finding, not a crash — and it
             // is exactly the kind of thing a folder of exports collects.

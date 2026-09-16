@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -28,7 +29,7 @@
 
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { native } from "@/modules/ai/lib/native";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   EXPORT_LABELS,
@@ -136,14 +137,14 @@ export function ExportBar({ source, valid, workspaceRoot }: Props) {
       // second path helper would only be a second thing to keep in step.
       const path = `${workspaceRoot.replace(/\/+$/, "")}/${name}`;
       if (isPng) {
-        await native.writeFileBytes(
+        await filesystem.writeFileBytes(
           path,
           await svgToPngBytes(source, { scale, color }),
         );
       } else {
         // The raw source, never the JSX or data-URI form: those are for
         // pasting into code, and neither is a valid .svg file.
-        await native.writeFile(path, source);
+        await filesystem.writeFile(path, source);
       }
       say("ok", `Saved ${name}`);
     } catch (e) {

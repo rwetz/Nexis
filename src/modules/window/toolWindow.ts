@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { openOrFocusWindow } from "@/platform/windows";
 import { IS_MAC } from "@/lib/platform";
 
 /** Top-level Nexis tools that deserve their own focused window. */
@@ -39,18 +39,11 @@ export function currentToolWindowKind(): ToolWindowKind | null {
  */
 export async function openToolWindow(kind: ToolWindowKind): Promise<void> {
   const label = TOOL_WINDOW_LABEL[kind];
-  const existing = await WebviewWindow.getByLabel(label);
-  if (existing) {
-    await existing.show();
-    await existing.setFocus();
-    return;
-  }
-
   const platformOptions = IS_MAC
     ? { titleBarStyle: "overlay" as const, hiddenTitle: true }
     : { decorations: false, transparent: true, shadow: false };
 
-  const win = new WebviewWindow(label, {
+  await openOrFocusWindow(label, {
     url: `/?tool=${kind}`,
     title: TOOL_WINDOW_TITLE[kind],
     width: kind === "atlas" ? 1440 : 1280,
@@ -60,7 +53,4 @@ export async function openToolWindow(kind: ToolWindowKind): Promise<void> {
     ...platformOptions,
   });
 
-  win.once("tauri://error", (event) => {
-    console.error(`[nexis] Failed to open ${kind}:`, event);
-  });
 }

@@ -1,3 +1,4 @@
+import { git } from "@/capabilities/git/api";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -8,7 +9,7 @@ import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import { native, type GitCheckpoint } from "@/modules/ai/lib/native";
+import type { GitCheckpoint } from "@/domain/native-types";
 import { useCallback, useEffect, useState } from "react";
 
 type Props = {
@@ -43,7 +44,7 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
     if (!repoRoot) return;
     setLoading(true);
     try {
-      setCheckpoints(await native.gitCheckpointList(repoRoot));
+      setCheckpoints(await git.gitCheckpointList(repoRoot));
     } catch {
       // Not a repo, or git unavailable — an empty list is the right answer.
       setCheckpoints([]);
@@ -60,7 +61,7 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
     setBusy(cp.refName);
     setError(null);
     try {
-      await native.gitCheckpointRestore(repoRoot, cp.refName);
+      await git.gitCheckpointRestore(repoRoot, cp.refName);
       onRestored?.();
     } catch (e) {
       setError(typeof e === "string" ? e : "Failed to restore checkpoint");
@@ -73,7 +74,7 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
     setBusy(cp.refName);
     setError(null);
     try {
-      await native.gitCheckpointDelete(repoRoot, cp.refName);
+      await git.gitCheckpointDelete(repoRoot, cp.refName);
       await load();
     } catch (e) {
       setError(typeof e === "string" ? e : "Failed to delete checkpoint");

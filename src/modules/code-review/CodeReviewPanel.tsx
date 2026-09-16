@@ -1,3 +1,4 @@
+import { git } from "@/capabilities/git/api";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -19,7 +20,7 @@
  */
 import { Icon } from "@/components/icon";
 import { basename } from "@/lib/path";
-import { native } from "@/modules/ai/lib/native";
+
 import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -65,7 +66,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
     setLoadState("loading");
     setError(null);
     try {
-      const repo = await native.gitResolveRepo(workspaceRoot);
+      const repo = await git.gitResolveRepo(workspaceRoot);
       if (request !== requestRef.current) return;
       if (!repo) {
         setRepoRoot(null);
@@ -74,7 +75,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
         return;
       }
       setRepoRoot(repo.repoRoot);
-      const result = await native.gitDiff(repo.repoRoot, null, scope === "staged");
+      const result = await git.gitDiff(repo.repoRoot, null, scope === "staged");
       if (request !== requestRef.current) return;
       setDiff(result);
       setLoadState("ready");

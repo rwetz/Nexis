@@ -8,7 +8,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn(async () => () => {}) }));
-vi.mock("@/modules/workspace", () => ({
+vi.mock("@/platform/workspaces", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/platform/workspaces")>(),
   currentWorkspaceEnv: () => ({ kind: "local" }),
   currentWorkspaceScopeKey: () => "local",
 }));

@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import { currentWorkspaceEnv } from "@/platform/workspaces";
 
 type Props = {
   open: boolean;

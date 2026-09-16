@@ -1,3 +1,5 @@
+import { aiFilesystem } from "@/modules/ai/lib/filesystem";
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -6,7 +8,7 @@
 
 import { tool } from "ai";
 import { z } from "zod";
-import { native } from "../lib/native";
+
 import {
   checkReadable,
   checkReadableCanonical,
@@ -56,7 +58,7 @@ export function buildFsTools(ctx: ToolContext) {
         // Single IPC call: canonicalize + safety re-check + read.
         let r;
         try {
-          r = await native.readFileAi(reqPath);
+          r = await aiFilesystem.readFileAi(reqPath);
         } catch (e) {
           return { error: String(e), path: reqPath };
         }
@@ -134,11 +136,11 @@ export function buildFsTools(ctx: ToolContext) {
       }),
       execute: async ({ path }) => {
         const reqPath = resolvePath(path, ctx.getCwd());
-        const safety = await checkReadableCanonical(reqPath, native.canonicalize);
+        const safety = await checkReadableCanonical(reqPath, filesystem.canonicalize);
         if (!safety.ok) return { error: safety.reason, path: reqPath };
         const abs = safety.canonical;
         try {
-          const entries = await native.readDir(abs);
+          const entries = await filesystem.readDir(abs, false);
           return {
             path: abs,
             entries: entries.map((e) => ({ name: e.name, kind: e.kind })),
@@ -159,7 +161,7 @@ export function buildFsTools(ctx: ToolContext) {
       needsApproval: true,
       execute: async ({ path, content }) => {
         const reqPath = resolvePath(path, ctx.getCwd());
-        const safety = await checkWritableCanonical(reqPath, native.canonicalize);
+        const safety = await checkWritableCanonical(reqPath, filesystem.canonicalize);
         if (!safety.ok) return { error: safety.reason, path: reqPath };
         const abs = safety.canonical;
 
@@ -167,7 +169,7 @@ export function buildFsTools(ctx: ToolContext) {
           let original = "";
           let isNewFile = false;
           try {
-            const r = await native.readFile(abs);
+            const r = await filesystem.readFile(abs);
             if (r.kind === "text") original = r.content;
           } catch {
             isNewFile = true;
@@ -192,7 +194,7 @@ export function buildFsTools(ctx: ToolContext) {
           // enqueues rather than writing, so a checkpoint there would snapshot
           // a tree nothing is about to change.
           await checkpointBeforeEdit(ctx, "write_file");
-          await native.writeFile(abs, content);
+          await filesystem.writeFile(abs, content);
           ctx.readCache.set(abs, { size: content.length, hash: djb2(content) });
           return { path: abs, bytesWritten: content.length, ok: true };
         } catch (e) {
@@ -210,7 +212,7 @@ export function buildFsTools(ctx: ToolContext) {
       needsApproval: true,
       execute: async ({ path }) => {
         const reqPath = resolvePath(path, ctx.getCwd());
-        const safety = await checkWritableCanonical(reqPath, native.canonicalize);
+        const safety = await checkWritableCanonical(reqPath, filesystem.canonicalize);
         if (!safety.ok) return { error: safety.reason, path: reqPath };
         const abs = safety.canonical;
         if (usePlanStore.getState().active) {
@@ -226,7 +228,7 @@ export function buildFsTools(ctx: ToolContext) {
           return { path: abs, queued_for_plan_review: true, ok: true };
         }
         try {
-          await native.createDir(abs);
+          await filesystem.createDir(abs);
           return { path: abs, ok: true };
         } catch (e) {
           return { error: String(e), path: abs };

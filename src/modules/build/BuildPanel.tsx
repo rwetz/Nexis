@@ -1,5 +1,7 @@
+import { filesystem } from "@/platform/filesystem";
+import { processes as processNative } from "@/platform/processes";
 import { Icon } from "@/components/icon";
-import { native } from "@/modules/ai/lib/native";
+
 import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -84,7 +86,7 @@ export function BuildPanel({ workspaceRoot }: Props) {
   useEffect(() => {
     if (!workspaceRoot) return;
     setDetecting(true);
-    void native.readDir(workspaceRoot).then((entries) => {
+    void filesystem.readDir(workspaceRoot, false).then((entries) => {
       const names = entries.filter((e) => e.kind === "file").map((e) => e.name);
       const detected = detectBuildTool(names);
       setTool(detected);
@@ -97,7 +99,7 @@ export function BuildPanel({ workspaceRoot }: Props) {
     if (!workspaceRoot) return;
     stopPolling();
     if (handleRef.current !== null) {
-      await native.shellBgKill(handleRef.current).catch(() => {});
+      await processNative.shellBgKill(handleRef.current).catch(() => {});
       handleRef.current = null;
     }
 
@@ -108,14 +110,14 @@ export function BuildPanel({ workspaceRoot }: Props) {
     setResult({ tool: activeTool, status: "running", output: "", exitCode: null, startedAt: Date.now(), finishedAt: null });
 
     try {
-      const handle = await native.shellBgSpawn(command, workspaceRoot);
+      const handle = await processNative.shellBgSpawn(command, workspaceRoot);
       handleRef.current = handle;
       let offset = 0;
       let accumulated = "";
 
       pollRef.current = setInterval(async () => {
         try {
-          const logs = await native.shellBgLogs(handle, offset);
+          const logs = await processNative.shellBgLogs(handle, offset);
           accumulated += logs.bytes;
           offset = logs.next_offset;
 
@@ -146,7 +148,7 @@ export function BuildPanel({ workspaceRoot }: Props) {
   const stopBuild = useCallback(async () => {
     stopPolling();
     if (handleRef.current !== null) {
-      await native.shellBgKill(handleRef.current).catch(() => {});
+      await processNative.shellBgKill(handleRef.current).catch(() => {});
       handleRef.current = null;
     }
     setResult((prev) => prev ? { ...prev, status: "idle", finishedAt: Date.now() } : prev);

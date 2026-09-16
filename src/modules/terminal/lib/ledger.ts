@@ -1,3 +1,4 @@
+import { ledgerStorage } from "@/platform/ledger-storage";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -36,7 +37,7 @@
 
 import { redactSensitive } from "@/modules/ai/lib/redact";
 import { stripVerbatimPrefix } from "@/lib/path";
-import { native } from "@/modules/ai/lib/native";
+
 
 /**
  * Answers "is this leaf inside a private tab?".
@@ -180,13 +181,13 @@ export async function recordCommand(
     const output = input.output ? redactSensitive(input.output) : "";
     if (output.trim() !== "") {
       const outputId = mintId("out");
-      await native.ledgerWriteOutput(workspaceId, outputId, output);
+      await ledgerStorage.ledgerWriteOutput(workspaceId, outputId, output);
       record.outputId = outputId;
     }
     // JSON.stringify emits no raw newlines, which is what keeps one record on
     // one line — the Rust side rejects a multi-line record for exactly that
     // reason, since the reader treats every line as a record.
-    await native.ledgerAppend(workspaceId, JSON.stringify(record));
+    await ledgerStorage.ledgerAppend(workspaceId, JSON.stringify(record));
     return record;
   } catch {
     // A ledger that cannot write must not break the terminal it watches.
@@ -228,7 +229,7 @@ export async function queryLedger(
   query: LedgerQuery,
 ): Promise<CommandRecord[]> {
   if (!root) return [];
-  const lines = await native.ledgerQuery({
+  const lines = await ledgerStorage.ledgerQuery({
     workspaceId: workspaceLedgerId(root),
     query: {
       query: query.query ?? "",
@@ -260,7 +261,7 @@ export async function searchLedgerOutput(
   limit: number,
 ): Promise<OutputHit[]> {
   if (!root || query.trim() === "") return [];
-  const hits = await native.ledgerSearchOutput({
+  const hits = await ledgerStorage.ledgerSearchOutput({
     workspaceId: workspaceLedgerId(root),
     query,
     limit,
@@ -277,7 +278,7 @@ export async function forgetLedgerEntry(
   id: string,
 ): Promise<void> {
   if (!root) return;
-  await native.ledgerForgetEntry(workspaceLedgerId(root), id);
+  await ledgerStorage.ledgerForgetEntry(workspaceLedgerId(root), id);
 }
 
 /** Read one command's captured output, or null if the blob is gone. */
@@ -287,7 +288,7 @@ export async function readLedgerOutput(
 ): Promise<string | null> {
   if (!root) return null;
   try {
-    return await native.ledgerReadOutput(workspaceLedgerId(root), outputId);
+    return await ledgerStorage.ledgerReadOutput(workspaceLedgerId(root), outputId);
   } catch {
     return null;
   }
@@ -308,7 +309,7 @@ export async function ledgerStats(
 ): Promise<LedgerStats | null> {
   if (!root) return null;
   try {
-    return await native.ledgerStats(workspaceLedgerId(root));
+    return await ledgerStorage.ledgerStats(workspaceLedgerId(root));
   } catch {
     return null;
   }
@@ -328,7 +329,7 @@ export async function forgetLedgerSince(
   sinceMs: number,
 ): Promise<number> {
   if (!root) return 0;
-  return native.ledgerForgetSince(workspaceLedgerId(root), sinceMs);
+  return ledgerStorage.ledgerForgetSince(workspaceLedgerId(root), sinceMs);
 }
 
 /** Forget a workspace entirely — log, blobs, directory. */
@@ -336,7 +337,7 @@ export async function forgetLedgerWorkspace(
   root: string | null,
 ): Promise<void> {
   if (!root) return;
-  await native.ledgerForgetWorkspace(workspaceLedgerId(root));
+  await ledgerStorage.ledgerForgetWorkspace(workspaceLedgerId(root));
 }
 
 export type LedgerRetention = {
@@ -359,7 +360,7 @@ export async function pruneLedger(
 ): Promise<void> {
   if (!root) return;
   try {
-    await native.ledgerPrune({
+    await ledgerStorage.ledgerPrune({
       workspaceId: workspaceLedgerId(root),
       maxRecords: retention.maxRecords,
       maxAgeDays: retention.maxAgeDays,

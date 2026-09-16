@@ -17,7 +17,7 @@ import {
   LOCAL_WORKSPACE,
   useWorkspaceEnvStore,
   type WorkspaceEnv,
-} from "@/modules/workspace";
+} from "@/platform/workspaces";
 
 type Props = {
   onSelect: (env: WorkspaceEnv) => void;

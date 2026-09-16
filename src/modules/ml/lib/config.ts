@@ -10,7 +10,7 @@
  * can't leave a half-written config a concurrent `train` might read.
  */
 import { invoke } from "@tauri-apps/api/core";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import { currentWorkspaceEnv } from "@/platform/workspaces";
 import { readTextFile } from "./fs";
 
 export function readTrainToml(projectDir: string): Promise<string | null> {

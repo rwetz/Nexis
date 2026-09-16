@@ -1,10 +1,11 @@
+import { processes as processNative } from "@/platform/processes";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { native } from "@/modules/ai/lib/native";
+
 import type { DbConnection, DbType } from "./databaseStore";
 
 export type QueryResult =
@@ -54,7 +55,7 @@ export async function runQuery(conn: DbConnection, query: string): Promise<Query
   if (!command) return { kind: "error", message: "Unsupported database type" };
 
   try {
-    const result = await native.runCommand(command, null, 30);
+    const result = await processNative.runCommand(command, null, 30);
     if (result.exit_code !== 0) {
       return { kind: "error", message: result.stderr || result.stdout || "Query failed" };
     }

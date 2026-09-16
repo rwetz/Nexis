@@ -1,3 +1,4 @@
+import { git } from "@/capabilities/git/api";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -13,7 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { native, type GitStashEntry } from "@/modules/ai/lib/native";
+import type { GitStashEntry } from "@/domain/native-types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type Props = {
@@ -44,7 +45,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
     if (!repoRoot) return;
     setLoading(true);
     try {
-      const entries = await native.gitStashList(repoRoot);
+      const entries = await git.gitStashList(repoRoot);
       setStashes(entries);
       setError(null);
     } catch (e) {
@@ -70,7 +71,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
     setBusy("push");
     setError(null);
     try {
-      await native.gitStashPush(repoRoot, pushMessage.trim() || undefined);
+      await git.gitStashPush(repoRoot, pushMessage.trim() || undefined);
       setPushMessage("");
       setShowPushInput(false);
       await load();
@@ -86,7 +87,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
     setBusy(entry.refName);
     setError(null);
     try {
-      await native.gitStashApply(repoRoot, entry.refName);
+      await git.gitStashApply(repoRoot, entry.refName);
       onStashApplied?.();
     } catch (e) {
       setError(typeof e === "string" ? e : "Failed to apply stash");
@@ -99,7 +100,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
     setBusy(entry.refName);
     setError(null);
     try {
-      await native.gitStashPop(repoRoot, entry.refName);
+      await git.gitStashPop(repoRoot, entry.refName);
       await load();
       onStashApplied?.();
     } catch (e) {
@@ -113,7 +114,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
     setBusy(entry.refName);
     setError(null);
     try {
-      await native.gitStashDrop(repoRoot, entry.refName);
+      await git.gitStashDrop(repoRoot, entry.refName);
       await load();
     } catch (e) {
       setError(typeof e === "string" ? e : "Failed to drop stash");

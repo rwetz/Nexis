@@ -19,7 +19,7 @@ import { basename } from "@/lib/path";
 import {
   currentWorkspaceEnv,
   currentWorkspaceScopeKey,
-} from "@/modules/workspace";
+} from "@/platform/workspaces";
 import type { PythonEnv } from "@/modules/python/usePythonEnv";
 import {
   buildCandidates,
@@ -72,7 +72,8 @@ import {
 } from "./lib/protocol";
 import { appendPoint, createSeriesMap, type Series } from "./lib/series";
 import { readRunMeta, writeRunMeta, type RunMeta } from "./lib/notes";
-import { readTextFile, type ReadResult } from "./lib/fs";
+import { readTextFile } from "./lib/fs";
+import type { ReadResult } from "@/domain/native-types";
 import { readTrainToml, writeProjectBrief, writeTrainToml } from "./lib/config";
 import { tomlSet } from "./lib/toml-edit";
 import type { CreationOverride } from "./lib/model-blueprint";

@@ -1,3 +1,4 @@
+import { processes as processNative } from "@/platform/processes";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -6,7 +7,7 @@
 
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
-import { native } from "@/modules/ai/lib/native";
+
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -53,8 +54,8 @@ export function ReleasePanel({ workspaceRoot }: Props) {
     setLoading(true);
     try {
       const [pkgResult, tagResult] = await Promise.allSettled([
-        native.runCommand("node -e \"process.stdout.write(require('./package.json').version)\"", workspaceRoot, 5),
-        native.runCommand("git describe --tags --abbrev=0", workspaceRoot, 5),
+        processNative.runCommand("node -e \"process.stdout.write(require('./package.json').version)\"", workspaceRoot, 5),
+        processNative.runCommand("git describe --tags --abbrev=0", workspaceRoot, 5),
       ]);
 
       const ver = pkgResult.status === "fulfilled" ? pkgResult.value.stdout.trim() : null;
@@ -63,14 +64,14 @@ export function ReleasePanel({ workspaceRoot }: Props) {
       setLastTag(tag);
 
       if (tag) {
-        const logResult = await native.runCommand(
+        const logResult = await processNative.runCommand(
           `git log ${tag}..HEAD --pretty=format:"%s" --no-merges`,
           workspaceRoot,
           10,
         );
         setCommits(parseCommits(logResult.stdout));
       } else {
-        const logResult = await native.runCommand(
+        const logResult = await processNative.runCommand(
           `git log --pretty=format:"%s" --no-merges -20`,
           workspaceRoot,
           10,
@@ -122,7 +123,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
       setTagStatus("running");
       setTagError(null);
       try {
-        await native.runCommand(`git tag v${version} -m "Release v${version}"`, workspaceRoot, 10);
+        await processNative.runCommand(`git tag v${version} -m "Release v${version}"`, workspaceRoot, 10);
         setTagStatus("done");
         void refresh();
       } catch (err) {

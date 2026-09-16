@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -6,7 +7,7 @@
 
 import { tool } from "ai";
 import { z } from "zod";
-import { native } from "../lib/native";
+
 import { checkWritableCanonical } from "../lib/security";
 import { newQueuedEditId, usePlanStore } from "../store/planStore";
 import { checkpointBeforeEdit } from "../lib/checkpoint";
@@ -28,7 +29,7 @@ async function applyEdits(
   kind: "edit" | "multi_edit",
   readCache: Map<string, { size: number; hash: number }>,
 ): Promise<EditResult> {
-  const r = await native.readFile(abs);
+  const r = await filesystem.readFile(abs);
   if (r.kind === "binary")
     return { error: "binary file refused", path: abs };
   if (r.kind === "toolarge")
@@ -111,7 +112,7 @@ async function applyEdits(
   }
 
   try {
-    await native.writeFile(abs, content);
+    await filesystem.writeFile(abs, content);
     readCache.set(abs, { size: content.length, hash: djb2(content) });
     return {
       ok: true,
@@ -140,7 +141,7 @@ export function buildEditTools(ctx: ToolContext) {
       needsApproval: true,
       execute: async ({ path, old_string, new_string, replace_all }) => {
         const reqPath = resolvePath(path, ctx.getCwd());
-        const safety = await checkWritableCanonical(reqPath, native.canonicalize);
+        const safety = await checkWritableCanonical(reqPath, filesystem.canonicalize);
         if (!safety.ok) return { error: safety.reason, path: reqPath };
         const abs = safety.canonical;
         if (!ctx.readCache.has(abs)) {
@@ -180,7 +181,7 @@ export function buildEditTools(ctx: ToolContext) {
       needsApproval: true,
       execute: async ({ path, edits }) => {
         const reqPath = resolvePath(path, ctx.getCwd());
-        const safety = await checkWritableCanonical(reqPath, native.canonicalize);
+        const safety = await checkWritableCanonical(reqPath, filesystem.canonicalize);
         if (!safety.ok) return { error: safety.reason, path: reqPath };
         const abs = safety.canonical;
         if (!ctx.readCache.has(abs)) {

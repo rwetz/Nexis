@@ -1,14 +1,12 @@
+import { git } from "@/capabilities/git/api";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import {
-  native,
-  type GitDiffContentResult,
-} from "@/modules/ai/lib/native";
-import { currentWorkspaceScopeKey } from "@/modules/workspace";
+import type { GitDiffContentResult } from "@/domain/native-types";
+import { currentWorkspaceScopeKey } from "@/platform/workspaces";
 
 const DIFF_CACHE_LIMIT = 6;
 const inflight = new Map<string, Promise<GitDiffContentResult>>();
@@ -71,7 +69,7 @@ export async function fetchWorkingDiff(
   if (cached) return cached;
   const pending = inflight.get(key);
   if (pending) return pending;
-  const p = native
+  const p = git
     .gitDiffContent(repoRoot, path, mode === "+", originalPath)
     .then((res) => {
       touch(key, res);
@@ -95,7 +93,7 @@ export async function fetchCommitDiff(
   if (cached) return cached;
   const pending = inflight.get(key);
   if (pending) return pending;
-  const p = native
+  const p = git
     .gitCommitFileDiff(repoRoot, sha, path, originalPath)
     .then((res) => {
       touch(key, res);

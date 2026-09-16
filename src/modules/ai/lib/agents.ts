@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { openStore } from "@/platform/storage";
 
 export type AgentIconId =
   | "coder"
@@ -89,7 +89,7 @@ const STORE_PATH = "nexis-ai-agents.json";
 const KEY_CUSTOM = "customAgents";
 const KEY_ACTIVE = "activeAgentId";
 
-const store = new LazyStore(STORE_PATH, { defaults: {}, autoSave: 200 });
+const store = openStore(STORE_PATH);
 
 export type LoadedAgents = {
   custom: Agent[];

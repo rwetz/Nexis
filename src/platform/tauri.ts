@@ -5,7 +5,8 @@ import { createPlatformIpc, type PlatformTransport } from "./ipc";
 /** The native transport has no workspace or capability policy of its own. */
 export const tauriTransport: PlatformTransport = {
   invoke: (name, args) => invoke(name, args),
-  listen: <Payload>(name: string, receive: (payload: Payload) => void) => listen<Payload>(name, (event) => receive(event.payload)),
+  listen: <Payload>(name: string, receive: (payload: Payload) => void) =>
+    listen<Payload>(name, (event) => receive(event.payload)),
   emit: (name, payload) => emit(name, payload),
 };
 

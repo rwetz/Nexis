@@ -36,7 +36,7 @@ vi.mock("@tauri-apps/api/event", () => ({
   listen: vi.fn(async () => () => {}),
 }));
 
-vi.mock("@/modules/workspace", () => ({
+vi.mock("@/platform/workspaces", () => ({
   currentWorkspaceEnv: () => ({ kind: "local" }),
   currentWorkspaceScopeKey: () => "local",
 }));

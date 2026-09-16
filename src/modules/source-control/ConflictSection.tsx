@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -15,8 +16,8 @@ import { Icon } from "@/components/icon";
 import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
-import { native } from "@/modules/ai/lib/native";
-import type { GitChangedFile } from "@/modules/ai/lib/native";
+
+import type { GitChangedFile } from "@/domain/native-types";
 import { useCallback, useState } from "react";
 
 type Props = {
@@ -56,7 +57,7 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
       setResolvingId(f.path);
       try {
         const fullPath = `${repoRoot}/${f.path}`.replace(/\\/g, "/");
-        const readResult = await native.readFile(fullPath);
+        const readResult = await filesystem.readFile(fullPath);
 
         let content: string;
         if (readResult.kind === "text") {

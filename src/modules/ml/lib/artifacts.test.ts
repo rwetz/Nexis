@@ -11,7 +11,8 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
 }));
 
-vi.mock("@/modules/workspace", () => ({
+vi.mock("@/platform/workspaces", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/platform/workspaces")>(),
   currentWorkspaceEnv: () => ({ kind: "local" }),
 }));
 

@@ -1,3 +1,5 @@
+import { activeWorkspace, workspaceCurrentDir } from "@/platform/workspaces";
+import { git } from "@/capabilities/git/api";
 import { CAPABILITIES, CAPABILITY_VIEWS } from "@/capabilities";
 import { CapabilityHost } from "@/workbench/CapabilityHost";
 import { PanelHost } from "@/workbench/PanelHost";
@@ -49,7 +51,7 @@ import {
 } from "@/modules/ai";
 import { AiComposerProvider } from "@/modules/ai/lib/composer";
 import { redactSensitive } from "@/modules/ai/lib/redact";
-import { native } from "@/modules/ai/lib/native";
+
 import { useAgentsStore } from "@/modules/ai/store/agentsStore";
 import { useSnippetsStore } from "@/modules/ai/store/snippetsStore";
 import {
@@ -185,7 +187,7 @@ import {
   workspaceEnvForPath,
   workspaceProjectKey,
   type WorkspaceEnv,
-} from "@/modules/workspace";
+} from "@/platform/workspaces";
 import { homeDir } from "@tauri-apps/api/path";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { SearchAddon } from "@xterm/addon-search";
@@ -434,7 +436,7 @@ function MainApp() {
         const normalized = stripVerbatimPrefix(p).replace(/\\/g, "/");
         setHome(normalized);
         try {
-          await native.workspaceAuthorize(normalized);
+          await activeWorkspace.authorize(normalized);
         } catch {
           // Bootstrap already authorizes home from Rust; ignore.
         }
@@ -495,7 +497,7 @@ function MainApp() {
       setLaunchCwd(nextHome);
       if (nextHome) {
         try {
-          await native.workspaceAuthorize(nextHome);
+          await activeWorkspace.authorize(nextHome);
         } catch {
           // Non-fatal — git panel will surface "not authorized" if needed.
         }
@@ -505,8 +507,7 @@ function MainApp() {
     [workspaceEnv, setWorkspaceEnv, resetWorkspace],
   );
   useEffect(() => {
-    native
-      .workspaceCurrentDir()
+    workspaceCurrentDir()
       .then((dir) => {
         setLaunchCwd(dir);
         if (dir) pushRecentWorkspace(dir);
@@ -528,7 +529,7 @@ function MainApp() {
         return;
       }
       try {
-        await native.workspaceAuthorize(path);
+        await activeWorkspace.authorize(path);
       } catch {
         // Non-fatal — path may already be authorized.
       }
@@ -1356,7 +1357,7 @@ function MainApp() {
     }
     if (!sourceControlContextPath) return;
     try {
-      const repo = await native.gitResolveRepo(sourceControlContextPath);
+      const repo = await git.gitResolveRepo(sourceControlContextPath);
       if (!repo) return;
       openCommitHistoryTab({ repoRoot: repo.repoRoot, branch: repo.branch });
     } catch {

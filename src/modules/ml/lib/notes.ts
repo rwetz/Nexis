@@ -11,7 +11,7 @@
  * the run browser; written via the atomic fs_write_file.
  */
 import { invoke } from "@tauri-apps/api/core";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import { currentWorkspaceEnv } from "@/platform/workspaces";
 import { readTextFile } from "./fs";
 
 export type RunMeta = { note: string; tags: string[]; pinned: boolean };

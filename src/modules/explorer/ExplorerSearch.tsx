@@ -15,7 +15,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { invoke } from "@tauri-apps/api/core";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+import { currentWorkspaceEnv } from "@/platform/workspaces";
 import {
   forwardRef,
   useCallback,

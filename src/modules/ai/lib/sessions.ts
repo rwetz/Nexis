@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import type { UIMessage } from "@ai-sdk/react";
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { openStore } from "@/platform/storage";
 
 export type SessionMeta = {
   id: string;
@@ -19,7 +19,7 @@ const KEY_SESSIONS = "sessions";
 const KEY_ACTIVE = "activeId";
 const messagesKey = (id: string) => `messages:${id}`;
 
-const store = new LazyStore(STORE_PATH, { defaults: {}, autoSave: 200 });
+const store = openStore(STORE_PATH);
 
 export type LoadedSessions = {
   sessions: SessionMeta[];

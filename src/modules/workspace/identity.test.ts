@@ -5,8 +5,8 @@
 // ╚══════════════════════════════════════╝
 
 import { describe, expect, it } from "vitest";
-import { sameProject, workspaceProjectKey } from "./identity";
-import { workspaceScopeKey } from "./env";
+import { sameProject, workspaceProjectKey } from "@/platform/workspace-identity";
+import { workspaceScopeKey } from "@/platform/workspace-state";
 
 describe("workspaceProjectKey", () => {
   it("identifies the project, unlike workspaceScopeKey", () => {

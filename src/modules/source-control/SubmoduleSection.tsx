@@ -1,3 +1,5 @@
+import { git } from "@/capabilities/git/api";
+import { processes as processNative } from "@/platform/processes";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -13,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { native, type GitSubmoduleEntry } from "@/modules/ai/lib/native";
+import type { GitSubmoduleEntry } from "@/domain/native-types";
 import { useCallback, useEffect, useState } from "react";
 
 type Props = {
@@ -58,7 +60,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
     if (!repoRoot) return;
     setLoading(true);
     try {
-      const entries = await native.gitSubmoduleStatus(repoRoot);
+      const entries = await git.gitSubmoduleStatus(repoRoot);
       setSubmodules(entries);
     } catch (e) {
       // `submodule_status` already maps a missing .gitmodules to an empty list
@@ -182,7 +184,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
                                 onClick={() => {
                                   setBusyUpdate(entry.path);
                                   setError(null);
-                                  native
+                                  processNative
                                     .runCommand(
                                       "git submodule init -- " +
                                         JSON.stringify(entry.path),
@@ -214,7 +216,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
                                 onClick={() => {
                                   setBusyUpdate(entry.path);
                                   setError(null);
-                                  native
+                                  processNative
                                     .runCommand(
                                       "git submodule update -- " +
                                         JSON.stringify(entry.path),

@@ -4,9 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { invoke } from "@tauri-apps/api/core";
+import { filesystem } from "@/platform/filesystem";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { currentWorkspaceEnv } from "@/modules/workspace";
+
 import {
   AUTOSAVE_DEBOUNCE_MS,
   deleteEditorAutosave,
@@ -14,11 +14,6 @@ import {
   sweepEditorAutosavesOnce,
   writeEditorAutosave,
 } from "./autosave-bridge";
-
-type ReadResult =
-  | { kind: "text"; content: string; size: number }
-  | { kind: "binary"; size: number }
-  | { kind: "toolarge"; size: number; limit: number };
 
 export type DocumentState =
   | { status: "loading" }
@@ -73,7 +68,7 @@ export function useDocument({ path, onDirtyChange }: Options) {
     setDoc({ status: "loading" });
     setDirty(false);
 
-    invoke<ReadResult>("fs_read_file", { path, workspace: currentWorkspaceEnv() })
+    filesystem.readFile(path)
       .then(async (res) => {
         if (cancelled) return;
         if (res.kind === "text") {
@@ -166,12 +161,7 @@ export function useDocument({ path, onDirtyChange }: Options) {
   const save = useCallback(async () => {
     if (!dirty) return;
     const content = bufferRef.current;
-    await invoke("fs_write_file", {
-      path,
-      content,
-      workspace: currentWorkspaceEnv(),
-      source: "editor",
-    });
+    await filesystem.writeFile(path, content, "editor");
     savedRef.current = content;
     setDirty(false);
     // Saved — the recovery snapshot is now redundant.

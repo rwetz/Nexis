@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -5,8 +6,8 @@
 // ╚══════════════════════════════════════╝
 
 import { Icon } from "@/components/icon";
-import { listen } from "@tauri-apps/api/event";
-import { native } from "@/modules/ai/lib/native";
+import { listen } from "@/platform/events";
+
 import { AnimatedFolder } from "@/components/ui/AnimatedFolder";
 import { Button } from "@/components/ui/button";
 import {
@@ -514,11 +515,11 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
 
       void (async () => {
         try {
-          const watching = await native.fsWatchStart(rootPath);
+          const watching = await filesystem.fsWatchStart(rootPath);
           if (cancelled) {
             // The root changed while we were starting; the watch we just
             // established is for a stale path.
-            if (watching) void native.fsWatchStop().catch(() => {});
+            if (watching) void filesystem.fsWatchStop().catch(() => {});
             return;
           }
           if (!watching) {
@@ -544,7 +545,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, Props>(
         window.removeEventListener("blur", stopPolling);
         document.removeEventListener("visibilitychange", onVisChange);
         unlisten?.();
-        void native.fsWatchStop().catch(() => {});
+        void filesystem.fsWatchStop().catch(() => {});
       };
     }, [rootPath]);
 

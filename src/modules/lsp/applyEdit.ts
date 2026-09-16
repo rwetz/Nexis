@@ -1,3 +1,4 @@
+import { filesystem } from "@/platform/filesystem";
 // ╔══════════════════════════════════════╗
 // ║  Ryan Wetzstein                      ║
 // ║  Nexis                               ║
@@ -12,7 +13,7 @@
  * write back. Edits within a file are applied from the bottom up so earlier
  * offsets stay valid as the document shrinks/grows.
  */
-import { native } from "@/modules/ai/lib/native";
+
 import { uriToPath, type LspTextEdit, type LspWorkspaceEdit } from "./protocol";
 
 /** Convert a (line, character) position to a string offset within `text`. */
@@ -96,11 +97,11 @@ export async function applyWorkspaceEdit(
   for (const [uri, edits] of byUri) {
     if (edits.length === 0) continue;
     const path = uriToPath(uri);
-    const res = await native.readFile(path);
+    const res = await filesystem.readFile(path);
     if (res.kind !== "text") continue;
     const updated = applyEditsToText(res.content, edits);
     if (updated !== res.content) {
-      await native.writeFile(path, updated);
+      await filesystem.writeFile(path, updated);
       rewritten.push(path);
     }
   }
