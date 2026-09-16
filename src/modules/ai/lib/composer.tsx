@@ -4,7 +4,6 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { invoke } from "@tauri-apps/api/core";
 import {
   createContext,
   useContext,
@@ -17,7 +16,8 @@ import { expandSnippetTokens, type Snippet } from "../lib/snippets";
 import { tryRunSlashCommand, type SlashCommandMeta } from "./slashCommands";
 import { getOrCreateChat, useChatStore } from "../store/chatStore";
 import { useSnippetsStore } from "../store/snippetsStore";
-import { currentWorkspaceEnv } from "@/platform/workspaces";
+import { filesystem } from "@/platform/filesystem";
+import type { ReadResult } from "@/domain/native-types";
 
 export type FileAttachment = {
   id: string;
@@ -202,14 +202,7 @@ export function AiComposerProvider({ children }: ProviderProps) {
 
   const attachFileByPath = async (path: string) => {
     try {
-      type ReadResult =
-        | { kind: "text"; content: string; size: number }
-        | { kind: "binary"; size: number }
-        | { kind: "toolarge"; size: number; limit: number };
-      const result = await invoke<ReadResult>("fs_read_file", {
-        path,
-        workspace: currentWorkspaceEnv(),
-      });
+      const result: ReadResult = await filesystem.readFile(path);
       if (result.kind !== "text") {
         const name = path.split("/").pop() ?? path;
         const reason = result.kind === "binary" ? "binary file" : "file too large";

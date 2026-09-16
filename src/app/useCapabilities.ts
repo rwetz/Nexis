@@ -20,6 +20,7 @@ export function useCapabilities(options: {
   packs: readonly PackId[];
   builtins: CommandDef[];
   activateView(view: SidebarView): void;
+  toggleOverlay(id: string): void;
   terminal: CapabilityContext["terminal"];
   editor: CapabilityContext["editor"];
   openWorkspace(path: string): void;
@@ -49,6 +50,7 @@ export function useCapabilities(options: {
       if (!panel || !packEnabled(panel.pack, options.packs)) return;
       options.activateView(panel.legacyView ?? pluginPanelViewId(id));
     } },
+    overlays: { toggle: options.toggleOverlay },
     commands: { execute: (id) => executeCommand(id, { activePanelId: selectedPanelId, inputFocused: false }) },
     notify: (message, detail) => notify({ message, detail, kind: "error" }),
     terminal: options.terminal,

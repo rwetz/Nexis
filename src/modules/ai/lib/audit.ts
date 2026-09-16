@@ -10,7 +10,8 @@
 // tool call, and a lost line (app killed mid-write) is acceptable where a
 // blocked agent is not.
 
-import { invoke } from "@tauri-apps/api/core";
+import { defineCommand } from "@/platform/ipc";
+import { hostIpc } from "@/platform/tauri";
 
 export type AuditEntry = {
   kind: "run" | "background" | "kill" | "blocked";
@@ -26,11 +27,16 @@ export type AuditEntry = {
   approval?: "user" | "auto" | "auto-safe";
 };
 
+const appendAudit = defineCommand<{ entry: AuditEntry }, void>(
+  "ai_audit_append",
+  "host",
+);
+
 /** Best-effort, non-throwing append. Safe to call from any tool path. */
 export function auditAgentCommand(entry: AuditEntry): void {
   try {
-    void invoke("ai_audit_append", { entry }).catch(() => {});
+    void hostIpc.call(appendAudit, { entry }).catch(() => {});
   } catch {
-    // invoke itself can throw outside a Tauri webview (tests) — ignore.
+    // The native transport can throw outside a Tauri webview (tests) — ignore.
   }
 }

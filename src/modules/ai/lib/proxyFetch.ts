@@ -4,14 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { Channel, invoke } from "@tauri-apps/api/core";
-
-/** Streaming events emitted by the Rust `ai_http_stream` command. */
-type AiStreamEvent =
-  | { kind: "headers"; status: number; headers: Record<string, string> }
-  | { kind: "chunk"; bytes: number[] }
-  | { kind: "end" }
-  | { kind: "error"; message: string };
+import { startHttpStream, type HttpStreamEvent } from "@/platform/http-stream";
 
 type RequestHeaders = Record<string, string>;
 
@@ -97,8 +90,7 @@ async function proxyFetchImpl(
     };
     signal?.addEventListener("abort", onAbort, { once: true });
 
-    const channel = new Channel<AiStreamEvent>();
-    channel.onmessage = (event) => {
+    const receive = (event: HttpStreamEvent) => {
       if (cancelled) return;
       switch (event.kind) {
         case "headers": {
@@ -138,14 +130,10 @@ async function proxyFetchImpl(
       }
     };
 
-    invoke("ai_http_stream", {
-      url,
-      method,
-      headers,
-      body,
-      allowPrivateNetwork,
-      onEvent: channel,
-    }).catch((e) => {
+    startHttpStream(
+      { url, method, headers, body, allowPrivateNetwork },
+      receive,
+    ).catch((e) => {
       if (resolved) return; // headers already arrived; chunk-side error wins
       reject(e instanceof Error ? e : new Error(String(e)));
     });

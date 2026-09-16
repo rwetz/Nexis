@@ -63,6 +63,11 @@ it("file writes preserve caller paths and source while host exports reject WSL i
     showHidden: false,
     workspace: { kind: "wsl", distro: "Ubuntu" },
   });
+  await filesystem.listFiles("/home/me/project");
+  expect(mocks.invoke).toHaveBeenLastCalledWith("fs_list_files", {
+    root: "/home/me/project",
+    workspace: { kind: "wsl", distro: "Ubuntu" },
+  });
 });
 
 it("shell authorization, open and runs use the same captured environment across an await", async () => {

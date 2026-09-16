@@ -11,6 +11,7 @@ export interface CapabilityContext {
   ipc: PlatformIpc;
   contributions: PluginAPI;
   panels: { activate(id: string): void };
+  overlays: { toggle(id: string): void };
   commands: { execute(id: string): Promise<boolean> };
   notify(message: string, detail?: string): void;
   terminal: { open(cwd: string): void; write(text: string): void };

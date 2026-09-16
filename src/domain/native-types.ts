@@ -117,6 +117,11 @@ export type FileSearchResponse = {
   truncated: boolean;
 };
 
+export type ListFilesResult = {
+  files: string[];
+  truncated: boolean;
+};
+
 export type GitRepoInfo = {
   repoRoot: string;
   branch: string;

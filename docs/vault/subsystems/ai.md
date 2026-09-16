@@ -22,6 +22,7 @@ The chat/agent feature. Built on the Vercel AI SDK (`ai` package); everything ru
 
 - `tools/shell.ts` memoizes session shells in `sessionShells`; the rejection-eviction in its `.catch()` is load-bearing (pitfall #10)
 - AI-only canonical read policy lives in `lib/filesystem.ts`; shared file, git and process access goes through `platform/filesystem.ts`, `capabilities/git/api.ts` and `platform/processes.ts` (see [[platform]], [[ipc-surface]])
+- Workspace-file indexing and composer attachments also use `platform/filesystem.ts`; AI code does not construct workspace IPC payloads.
 
 ## Tool approval
 
@@ -33,8 +34,9 @@ Per-tool policies (`toolApprovalPolicies` pref, Settings → Agents): `prompt` (
 
 ## Supporting pieces
 
-- `lib/proxyFetch.ts` — routes provider HTTP through Rust `ai_http_request`/`ai_http_stream` (`net.rs`), avoiding CORS and keeping keys out of browser fetch
-- `lib/keyring.ts` — API keys in the OS keychain via `secrets_*`; cross-window change signal is `nexis://ai-keys-changed`
+- `lib/proxyFetch.ts` — turns provider HTTP events into a web `ReadableStream`; `platform/http-stream.ts` owns Tauri's callback channel and the host-scoped `ai_http_stream` invocation
+- `lib/keyring.ts` — API keys in the OS keychain via the host-scoped `platform/secrets.ts` adapter; cross-window change signal is `nexis://ai-keys-changed`
+- `lib/audit.ts` — best-effort typed host append; it must stay non-throwing and must not delay or reorder a tool call
 - `lib/security.ts` — hardened path checks; keeps a **deliberate private basename** (do not consolidate into `lib/path.ts` — pitfall #12 exception)
 - `lib/compact.ts`, `lib/redact.ts`, `lib/sessions.ts`, `lib/slashCommands.ts`, `lib/todos.ts` — compaction, secret redaction, session persistence, slash commands, todo state
 - `lib/nlCommand.ts` — natural-language → command for the terminal's AI command bar (`terminal/components/AiCommandBar.tsx`, opened via the `terminal.aiCommand` shortcut → `nexis:terminal-ai-command` event). Insert-only contract: the parser rejects multi-line/control-char suggestions because the result is written into the PTY input line, where a stray `\r` would self-execute — keep `sanitizeCommand` strict

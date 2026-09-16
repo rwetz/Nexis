@@ -1433,7 +1433,6 @@ function MainApp() {
     { id: "settings.themes",     label: "Open theme settings",      category: "General", action: () => void openSettingsWindow("themes") },
     { id: "settings.shortcuts",  label: "Open keyboard shortcuts",  category: "General", action: () => setShortcutsOpen(true) },
     { id: "window.new",          label: "New window",               category: "General", action: () => void openNewWindow() },
-    { id: "ai.toggle",           label: "Toggle AI panel",          category: "AI",      action: togglePanelAndFocus },
     { id: "terminal.aiCommand",  label: "AI command search",        category: "AI",      action: () => window.dispatchEvent(new CustomEvent("nexis:terminal-ai-command")), keywords: ["natural language", "generate command"] },
     { id: "view.zoomIn",         label: "Zoom in",                  category: "View",    action: zoomIn },
     { id: "view.zoomOut",        label: "Zoom out",                 category: "View",    action: zoomOut },
@@ -1454,7 +1453,7 @@ function MainApp() {
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
-  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, togglePanelAndFocus, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgPlaygroundTab, openMlLabTab]);
+  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgPlaygroundTab, openMlLabTab]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
   // mirroring how the rail hides their views (V2 gating; decision doc in
@@ -2007,6 +2006,7 @@ function MainApp() {
   const { context: capabilityContext, paletteCommands: visiblePaletteCommands } = useCapabilities({
     view: sidebarView, root: explorerRoot, packs: enabledPacks, builtins: paletteCommands,
     activateView: persistSidebarView,
+    toggleOverlay: (id) => { if (id === "ai") togglePanelAndFocus(); },
     terminal: { open: cdInNewTab, write: (text) => { if (activeLeafId) terminalRefs.current.get(activeLeafId)?.write(text); } },
     editor: { open: (path) => { openFileTab(path, true); } },
     openWorkspace: (path) => { void switchWorkspacePath(path); },

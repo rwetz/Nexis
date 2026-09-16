@@ -13,6 +13,7 @@ description: Frontend platform policy for typed IPC, workspace scope, persistenc
 - `workspace.ts`, `workspace-state.ts`, `workspaces.ts` — environment/root identity, authorization and the one workspace store
 - `storage.ts`, `persistence.ts` — one `LazyStore` handle per file and failure-recovering write queues
 - `filesystem.ts`, `process.ts`, `processes.ts` — host/workspace file scope and captured non-PTY session ownership
+- `secrets.ts`, `http-stream.ts` — host keychain scope and Tauri callback-channel ownership for provider streaming
 - `dialogs.ts`, `opener.ts` — native file selection/save and host reveal operations without capability-owned Tauri plugin imports
 - `windows.ts`, `notifications.ts` — concurrent named-window coalescing and the shared notification contract
 - `ledger-storage.ts`, `system-resources.ts` — host-owned command-ledger and system-monitor adapters
@@ -23,6 +24,7 @@ description: Frontend platform policy for typed IPC, workspace scope, persistenc
 - A descriptor chooses host or workspace scope. Callers cannot supply their own `workspace` field; `workspaceIpc` injects a snapshot.
 - Capture the workspace environment before an awaited authorization and reuse it for the operation. Otherwise a user switching environments can authorize in one distro and execute in another.
 - Host exports such as Benchmark output must use `hostFilesystem`; workspace editing uses `filesystem` and preserves caller-side Linux paths for WSL fallbacks.
+- Callback channels are transport objects, not ordinary serializable results. Construct them inside `platform/` and expose domain callbacks to capabilities.
 - Preference ordering covers the whole set/save/event transaction, not only individual store calls. See [[settings-sync]].
 - `createProcessService` is for non-PTY sessions. Rust construction still goes through `modules/proc.rs:command`; terminal PTYs keep their existing path and invariants.
 - A named window open is coalesced until native creation succeeds or fails. Failed creation must leave the label retryable.

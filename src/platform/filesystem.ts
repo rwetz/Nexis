@@ -8,6 +8,7 @@ import type {
   GrepResponse,
   GlobResponse,
   FileSearchResponse,
+  ListFilesResult,
 } from "@/domain/native-types";
 
 export function createFilesystem(
@@ -116,6 +117,11 @@ export function createFilesystem(
           FileSearchResponse
         >("fs_search", scope),
         params,
+      ),
+    listFiles: (root: string) =>
+      ipc.call(
+        defineCommand<{ root: string }, ListFilesResult>("fs_list_files", scope),
+        { root },
       ),
     fsWatchStart: (path: string) =>
       hostIpc.call(

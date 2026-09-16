@@ -7,18 +7,18 @@ description: The Tauri IPC seam — every command family, its Rust handler, and 
 
 The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/lib.rs` (145 commands verified 2026-09-14; that macro is the authoritative list). See [[architecture-boundaries]] for the reproducible call-site inventory and migration ownership.
 
-**Intended convention:** call through the family's frontend bridge rather than scattering raw `invoke("cmd_x")` through components. `platform/ipc.ts` owns typed scope injection and event lifetimes; `platform/tauri.ts` is the raw transport. Phase 3 deleted the cross-domain `ai/lib/native.ts` bridge. Capability-specific raw calls still exist and remain on the Phase 4 migration queue.
+**Intended convention:** call through the family's frontend bridge rather than scattering raw `invoke("cmd_x")` through components. `platform/ipc.ts` owns typed scope injection and event lifetimes; `platform/tauri.ts` is the raw transport. Phase 3 deleted the cross-domain `ai/lib/native.ts` bridge. Capability-specific raw calls still exist in the remaining Phase 4 terminal and integration queue.
 
 | Family | Commands (prefix) | Rust handler | Frontend seam |
 |---|---|---|---|
 | PTY | `pty_open/write/resize/close/cwd` | `modules/pty/mod.rs` | `terminal/lib/pty-bridge.ts` — see [[terminal-tab-open]] |
 | Filesystem | `fs_*`, `list_subdirs` | `modules/fs/{file,tree,mutate,search,grep}.rs` | `platform/filesystem.ts`; AI-only read policy in `ai/lib/filesystem.ts` |
-| Git | `git_*` (status, diff, stage, commit, stash, worktree…) | `modules/git/commands.rs` | `capabilities/git/api.ts`; worktree calls remain local to source control |
+| Git | `git_*` (status, diff, stage, commit, stash, worktree…) | `modules/git/commands.rs` | `capabilities/git/api.ts` |
 | Shell one-shots & sessions | `shell_run_command`, `shell_session_*`, `shell_bg_*`, `*_shell_history` | `modules/shell/mod.rs` | `platform/processes.ts`, `ai/tools/shell.ts`; formatter/ports/SSH remain capability-local |
 | Workspace / WSL | `workspace_authorize`, `workspace_current_dir`, `wsl_*`, `get_launch_dir` | `modules/workspace.rs`, `lib.rs` | `platform/workspace-state.ts`, `lib/launchDir.ts`, and every bridge that spawns with a cwd |
-| Secrets | `secrets_get/set/delete/get_all` | `modules/secrets.rs` (OS keychain) | `ai/lib/keyring.ts` |
+| Secrets | `secrets_get/set/delete/get_all` | `modules/secrets.rs` (OS keychain) | `platform/secrets.ts` → `ai/lib/keyring.ts` |
 | LSP / DAP | `lsp_*`, `dap_*` | `modules/lsp/mod.rs`, `modules/dap/mod.rs` | `lsp/client.ts`, `debugger/debugSession.ts` |
-| HTTP | `ai_http_request`, `ai_http_stream`, `lm_ping`, `http_send` | `modules/net.rs` | `ai/lib/proxyFetch.ts`, `webdev/HttpClientPanel.tsx` — see [[ai]], [[web-dev-pack]] |
+| HTTP | `ai_http_request`, `ai_http_stream`, `lm_ping`, `http_send` | `modules/net.rs` | `platform/http-stream.ts` → `ai/lib/proxyFetch.ts`; Web Dev remains on the integration migration queue — see [[ai]], [[web-dev-pack]] |
 | ML engine | `ml_*` | `modules/ml.rs` | `ml/lib/engine-bridge.ts` |
 | Python | `py_detect_envs` | `modules/python.rs` | `python/usePythonEnv.ts`, `ml/store.ts` |
 | Share server | `http_share_*` (start takes `bind` + `token`; `http_share_lan_ip` probes the primary LAN IP) | `modules/http_share.rs` | `share/useShareServer.ts` (global Zustand store — sharing survives panel close) |
@@ -33,7 +33,7 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | Atlas | `atlas_*` | `modules/atlas/mod.rs` | `atlas/repos/api.ts` — host-scoped; see [[atlas]] |
 | Benchmark | `bench_*` | `modules/benchmark/commands.rs` | `benchmark/lib/api.ts` — see [[benchmark]] |
 | Command ledger | `ledger_*` | `modules/ledger.rs` | `platform/ledger-storage.ts` → `terminal/lib/ledger.ts` — see [[command-ledger]] |
-| AI audit | `ai_audit_append`, `ai_audit_log_path` | `modules/ai_audit.rs` | `ai/lib/audit.ts`, `settings/sections/GeneralSection.tsx` |
+| AI audit | `ai_audit_append`, `ai_audit_log_path` | `modules/ai_audit.rs` | typed host descriptor in `ai/lib/audit.ts`; settings log reveal remains on the integration queue |
 | Tool probing | `tool_probe` | `modules/tools.rs` | `lib/missingTools.ts` |
 
 ## Streaming channels

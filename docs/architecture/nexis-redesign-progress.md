@@ -77,3 +77,13 @@ Verification for this slice: TypeScript and the production frontend build pass; 
 - Focused tests lock Explorer declaration/lifetime/activation and cover the existing editor/explorer logic. CodeMirror composition, stable extension identity, tab ownership, WSL rename behavior, and zoom exemption are unchanged.
 
 Verification for this slice: TypeScript and the production frontend build pass; all 1,200 frontend tests in 85 files pass with the existing coverage floors; focused editor/explorer/capability/workbench tests and `git diff --check` pass. Changed-scope React Doctor reports 19 accumulated-branch findings, all existing complexity/size or the Phase 2 `PanelHost` lookup warning; the temporary mixed-export warning was removed. Remaining Phase 4 order: AI; terminal; integrations.
+
+### Slice 4: AI
+
+- AI workspace indexing and composer file attachments now use `platform/filesystem.ts`; callers no longer construct workspace payloads or call Tauri directly.
+- Provider credentials use the host-scoped `platform/secrets.ts` adapter. Agent command auditing keeps its deliberate non-throwing, fire-and-forget behavior behind a typed host command descriptor.
+- Provider streaming keeps Tauri's callback-channel semantics, but channel construction and native invocation now live in `platform/http-stream.ts`. `proxyFetch` owns HTTP-to-`ReadableStream` behavior without importing Tauri.
+- The `ai.toggle` palette command is declared by `capabilities/ai`. A generic overlay callback preserves App's existing model-setup gate, onboarding signal, floating-panel lifetime, and global shortcut path instead of misrepresenting AI as a sidebar panel.
+- Agent orchestration, approval policy, reasoning pruning, compaction, checkpoints, shell-session rejection eviction, and subagent history behavior are unchanged.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,204 frontend tests in 87 files pass (coverage statements/lines 90.65%, branches 89.97%, functions 83.51%); focused AI/platform/capability/workbench tests and `git diff --check` pass. Changed-scope React Doctor reports the same 19 accumulated-branch findings as Slice 3, all outside the new AI capability and native adapters. Remaining Phase 4 order: terminal; integrations.

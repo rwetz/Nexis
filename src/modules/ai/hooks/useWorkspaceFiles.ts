@@ -4,17 +4,14 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
-import { currentWorkspaceEnv } from "@/platform/workspaces";
+import { filesystem } from "@/platform/filesystem";
 
 export type WorkspaceFilesState = {
   files: string[];
   indexing: boolean;
   truncated: boolean;
 };
-
-type ListFilesResult = { files: string[]; truncated: boolean };
 
 type CacheEntry = {
   files: string[];
@@ -33,10 +30,7 @@ function isFresh(entry: CacheEntry): boolean {
 function fetchFiles(root: string): Promise<CacheEntry> {
   const existing = inflight.get(root);
   if (existing) return existing;
-  const promise = invoke<ListFilesResult>("fs_list_files", {
-    root,
-    workspace: currentWorkspaceEnv(),
-  })
+  const promise = filesystem.listFiles(root)
     .then((res) => {
       const entry: CacheEntry = {
         files: res.files,
