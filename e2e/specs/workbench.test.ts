@@ -30,6 +30,16 @@ describe("Contributed workbench panels", () => {
     await panel.$("textarea").waitForExist();
   });
 
+  it("mounts a migrated integration panel through its capability host", async () => {
+    await $('button[aria-label="More panels"]').click();
+    const httpClient = $("button=HTTP Client");
+    await httpClient.waitForDisplayed();
+    await httpClient.click();
+    const panel = $('[data-panel-id="webdev:http-client"]');
+    await panel.waitForDisplayed();
+    await panel.$("span*=HTTP Client").waitForDisplayed();
+  });
+
   it("admits the Atlas refresh command only while Atlas is selected", async () => {
     await runCommand("Show Atlas (every");
     await $('[data-panel-id="atlas:main"]').waitForDisplayed();

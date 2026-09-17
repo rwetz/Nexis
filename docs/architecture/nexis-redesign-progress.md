@@ -151,7 +151,7 @@ Verification for this slice: TypeScript and the production frontend build pass; 
 - A narrow integration host supplies only the callbacks that belong to application composition: opening a preview tab, creating an SSH terminal, opening an ML network tab, and the current workspace root. It exposes neither App nor tab-store state.
 - The desktop WSL spec now requires both bounded distro discovery and a bounded real command before enabling the WSL case. A registered but unusable distro can no longer hang Webdriver and masquerade as a renderer timeout; a usable distro still executes the complete real file and process scenario.
 
-Verification for this slice: TypeScript and the production frontend build pass; all 1,222 frontend tests in 96 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused integration declaration/API tests and `git diff --check` pass. Changed-scope React Doctor remains at 25 accumulated-branch findings, with no new finding from this slice. The final isolated release build and desktop E2E rerun remain due before Phase 4 is marked complete.
+Verification for this slice: TypeScript and the production frontend build pass; all 1,222 frontend tests in 96 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused integration declaration/API tests and `git diff --check` pass. Changed-scope React Doctor remains at 25 accumulated-branch findings, with no new finding from this slice. The final isolated release and desktop evidence are recorded below.
 
 ### Phase 4 completion
 
@@ -166,7 +166,7 @@ Final phase verification on 2026-09-17:
 - Changed-scope React Doctor reports 25 accumulated findings: 21 existing complexity warnings, two existing sequential-await warnings, the existing `FileExplorer` size warning, and the existing `PanelHost` lookup warning. The Phase 4 closing slice introduced no new finding.
 - `cargo fmt --check`, all 282 Rust unit tests, all 12 Rust pitfall tests, and `cargo clippy --all-targets -- -D warnings` pass.
 - The isolated Windows release build succeeds and produces both MSI and NSIS bundles. NSIS still emits the known installer-header image-format warning.
-- All 10 desktop E2E tests in four specs pass under Node 22.23.2 against WebView2 153.0.4234.32. The real platform spec proves PowerShell rapid input, repeated close/reopen across `C:` and `G:`, non-PTY cwd, and WSL write/replace/rename/read plus cwd execution through caller-side Linux paths.
+- All 11 desktop E2E tests in four specs pass under Node 22.23.2 against WebView2 153.0.4234.32. The real platform spec proves PowerShell rapid input, repeated close/reopen across `C:` and `G:`, non-PTY cwd, and WSL write/replace/rename/read plus cwd execution through caller-side Linux paths. The workbench spec mounts the migrated HTTP Client through its capability host and waits for the lazy panel body.
 - Dirty-worktree review leaves only the pre-existing user edit in `test/scripting/test.py`; it was never staged or committed.
 
 Phase 5 is the remaining architecture work: enforce the stabilized dependency rules with automated boundary checks and ratchets. It is not part of this completed migration phase.
