@@ -82,33 +82,12 @@ and stop. Don't batch them.
   fresh Windows VM. Largely external/account work — the blocking step is the SignPath approval, so start
   that early.
 
-- [ ] **macOS release builds** — `release.yml` builds Windows and Linux (amd64 + arm64); there is no
-  macOS job, so no release has ever carried a macOS artifact. This is the same gap the Linux job closed,
-  and it is smaller than it looks: `tauri.conf.json` already sets `bundle.targets: "all"` with
-  `macOS.minimumSystemVersion: "13.0"`, and CI's `test-rust-macos` job already compiles and tests the Rust
-  side on `macos-latest` every run — so portability is largely answered and what is missing is the
-  artifact. Design principle 4 currently claims "Same experience on macOS, Linux, Windows, and WSL" while
-  shipping nothing for macOS; this is what closes that.
-  - **Decide the architecture story first.** `macos-latest` is Apple Silicon, so the cheap version is an
-    arm64-only `.dmg`. Intel Macs need either a second `macos-13` runner or a universal build
-    (`--target universal-apple-darwin`, both Rust targets installed, one fat binary). Pick before writing
-    the job — it changes the matrix, the artifact names, and what the download page has to explain.
-  - **Signing and notarization is the blocking, external half**, and it is the same species as the
-    SignPath item above: an Apple Developer Program membership (paid, annual), a Developer ID Application
-    certificate, and the `APPLE_*` secrets Tauri's bundler reads (`APPLE_CERTIFICATE`,
-    `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD` as an
-    app-specific password, `APPLE_TEAM_ID`). Unsigned is technically shippable and practically bad —
-    Gatekeeper refuses the app and the workaround is right-click-Open or stripping the quarantine
-    attribute by hand, which is exactly the first-run experience SignPath exists to fix on Windows.
-    **Start the Apple enrolment early**: the approval is the long pole, and wiring the workflow is an
-    afternoon once the secrets exist.
-  - **No size tripwire on this job**, matching Linux — that ceiling is about `nexis.exe`.
-  - **Verify on real hardware before calling it done.** A green build is not the deliverable. The
-    platform-specific surface has never run on a Mac: the `MOD_KEY` / `src/lib/platform.ts` keybinding
-    split, zsh as the default shell, the login-shell and `ZDOTDIR` integration, the quick-terminal global
-    shortcut, and keychain storage. Expect a punch list, and budget for it as part of the item.
-  - Unblocks the iOS half of the **Mobile pack** below — Xcode, and therefore the iOS Simulator, require
-    macOS, and today there is no build of Nexis that could host that pane.
+- [ ] **Developer ID signing and notarization for macOS** — Intel and Apple Silicon DMGs now ship from
+  native GitHub-hosted runners, but they use an ad-hoc signature until the Apple Developer account work is
+  complete. Add the Developer ID Application certificate and notarization credentials documented in the
+  release runbook, confirm stapling on both DMGs, and perform the first-launch, zsh integration, global
+  shortcut, and keychain checks on real Intel and Apple Silicon hardware. The workflow already fails a
+  partial secret setup instead of quietly publishing a signed but unnotarized build.
 
 - [ ] **Ongoing: visual differentiation from terax** — a standing item, not a one-shot. Nexis should not
   read as a reskin. Sweep the UI surface for inherited layout, spacing, motion, and component idioms and
@@ -164,11 +143,10 @@ and stop. Don't batch them.
   code; streamed **device logs** (`adb logcat` filtered to the app, plus Metro's own output); an **`adb`
   device list** with connect/disconnect; and an **Android screen mirror pane** — `adb exec-out screencap`
   for a still, or an embedded scrcpy-class stream for live, with input forwarding as a later step. All of
-  it works on Windows, which is the machine this gets built on. **iOS Simulator is out of scope**: it
-  requires Xcode and therefore macOS, and `release.yml` has no macOS job today, so there is no build of
-  Nexis that could host it. The **macOS release builds** item above is the prerequisite; once that ships,
-  the Simulator pane is the first thing to revisit here. Until then the iOS half of an Expo workflow stays
-  in Expo Go on a physical device.
+  it works on Windows, which is the machine this gets built on. **The iOS Simulator pane remains deferred**:
+  Nexis now ships Intel and Apple Silicon DMGs, but the pane still requires Xcode-backed implementation and
+  validation on real Mac hardware. Until then the iOS half of an Expo workflow stays in Expo Go on a
+  physical device.
 
 - [ ] **Command ledger — the substrate under the terminal-native backlog** — **the design gate is closed**:
   the decision record is written at `docs/vault/decisions/command-ledger.md`, so implementation can start.

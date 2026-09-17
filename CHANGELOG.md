@@ -4,6 +4,8 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.28.0] — 2026-09-17
+
 ### Fixed
 - **ML launches can no longer change environments between authorization and spawn.** Training, scaffolding, serving, and export now capture the active local/WSL environment once, authorize the project in that environment, and reuse the same typed IPC scope for launch even if the user switches workspaces during the await.
 - **Custom theme files no longer inherit the active WSL workspace.** Theme JSON lives in the host app-config directory, so create, save, and delete now use the host filesystem contract even when the editor is attached to a distro. Workspace notes, quick file picking, and ML project files remain deliberately workspace-scoped.
