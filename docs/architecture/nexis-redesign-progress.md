@@ -47,7 +47,7 @@ Verification: TypeScript, 1,196 frontend tests, all 294 Rust tests, clippy, rust
 
 Remaining legacy paths: capability-local raw IPC and Tauri plugin calls, remaining central built-in panel/command branches, and companion-window composition. These move with their capability owners in Phase 4. PTY implementation, Rust process construction, workspace authorization and settings propagation guards remain unchanged.
 
-## Phase 4: capability migration in progress
+## Phase 4: capability migration complete
 
 ### Slice 1: Atlas and Benchmark
 
@@ -152,3 +152,21 @@ Verification for this slice: TypeScript and the production frontend build pass; 
 - The desktop WSL spec now requires both bounded distro discovery and a bounded real command before enabling the WSL case. A registered but unusable distro can no longer hang Webdriver and masquerade as a renderer timeout; a usable distro still executes the complete real file and process scenario.
 
 Verification for this slice: TypeScript and the production frontend build pass; all 1,222 frontend tests in 96 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); focused integration declaration/API tests and `git diff --check` pass. Changed-scope React Doctor remains at 25 accumulated-branch findings, with no new finding from this slice. The final isolated release build and desktop E2E rerun remain due before Phase 4 is marked complete.
+
+### Phase 4 completion
+
+All migration families named by the plan now cross the new boundaries: Atlas/Benchmark, Source Control/Git History, Editor/Explorer, AI, Terminal, LSP, Debugger, workspace files/Python, ML, network/remote tools, desktop shell/settings services, and the remaining integration panels. Capability-owned UI enters through contribution declarations; host/workspace IPC scope is explicit; App supplies composition callbacks without exposing its stores; obsolete render branches and duplicate native helpers were deleted.
+
+Direct native frontend access is confined to the sanctioned platform adapters and three implementation-level owners whose APIs require native objects: PTY callback channels, Benchmark webview file-drop listening, and quick-terminal window/global-shortcut construction. LSP and DAP remain truthfully host-scoped because their Rust protocols do not yet accept a workspace environment. Non-integration utility panels still render through PanelHost's legacy fallback, but they do not own raw platform policy or duplicate the migrated capability services.
+
+Final phase verification on 2026-09-17:
+
+- TypeScript and the production Vite build pass.
+- All 1,222 frontend tests in 96 files pass. Coverage is 90.66% statements/lines, 89.97% branches, and 83.51% functions.
+- Changed-scope React Doctor reports 25 accumulated findings: 21 existing complexity warnings, two existing sequential-await warnings, the existing `FileExplorer` size warning, and the existing `PanelHost` lookup warning. The Phase 4 closing slice introduced no new finding.
+- `cargo fmt --check`, all 282 Rust unit tests, all 12 Rust pitfall tests, and `cargo clippy --all-targets -- -D warnings` pass.
+- The isolated Windows release build succeeds and produces both MSI and NSIS bundles. NSIS still emits the known installer-header image-format warning.
+- All 10 desktop E2E tests in four specs pass under Node 22.23.2 against WebView2 153.0.4234.32. The real platform spec proves PowerShell rapid input, repeated close/reopen across `C:` and `G:`, non-PTY cwd, and WSL write/replace/rename/read plus cwd execution through caller-side Linux paths.
+- Dirty-worktree review leaves only the pre-existing user edit in `test/scripting/test.py`; it was never staged or committed.
+
+Phase 5 is the remaining architecture work: enforce the stabilized dependency rules with automated boundary checks and ratchets. It is not part of this completed migration phase.
