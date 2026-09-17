@@ -170,3 +170,39 @@ Final phase verification on 2026-09-17:
 - Dirty-worktree review leaves only the pre-existing user edit in `test/scripting/test.py`; it was never staged or committed.
 
 Phase 5 is the remaining architecture work: enforce the stabilized dependency rules with automated boundary checks and ratchets. It is not part of this completed migration phase.
+
+## Phase 5: architecture enforcement complete
+
+### Slice 1: Frontend dependency direction and native-access ratchet
+
+- A source-level boundary suite now prevents `platform/` from importing workbench, capability entry points, or legacy feature modules. Shared code must move down to a neutral domain/library seam or cross an inverted typed contract instead.
+- Workbench code cannot import Tauri packages or the concrete `platform/tauri` transport. Native behavior must enter through a platform-owned service.
+- Direct production imports from `@tauri-apps/*` are confined to `platform/` and an exact file/package allowlist for the three native-object ownership cases retained at the end of Phase 4: PTY callback channels, Benchmark webview file-drop events, and quick-terminal window/global-shortcut ownership. The allowlist contains no directory or package wildcards.
+- Existing runtime contribution policy continues to reject non-namespaced and duplicate command/panel IDs. The existing icon and Rust subprocess tripwires remain the enforcement points for their already-stabilized rules.
+
+Verification for this slice: TypeScript and the production frontend build pass; all 1,225 frontend tests in 97 files pass (coverage statements/lines 90.66%, branches 89.97%, functions 83.51%); the focused architecture, contribution-policy, and pitfall suites pass; and `git diff --check` passes. Changed-scope React Doctor remains at the Phase 4 baseline of 25 accumulated findings and reports nothing in this slice's test or documentation files.
+
+This slice adds enforcement only; it does not move runtime code or change user behavior, so no CHANGELOG entry is required. Rust and desktop E2E gates were not rerun because no runtime or Rust source changed. Remaining Phase 5 work includes ratchets against duplicate preference/workspace implementations and any additional Rust dependency-direction checks that prove useful beyond the existing subprocess and pitfall suites.
+
+### Slice 2: Ownership and contribution identity ratchets
+
+- Preference ownership is pinned to `modules/settings/store.ts`: no other production file may claim the durable `nexis-settings.json` store or the `nexis://prefs-changed` propagation event. The existing settings pitfall guard continues to require every durable preference mutation to pass through `writePref`.
+- Workspace environment type/state, path inference, scope identity, WSL discovery, current-directory access, and authorization descriptors are pinned to `platform/workspace-state.ts`. The only duplicate command descriptor is the terminal bridge's captured-environment `workspace_authorize`, which is required to keep authorization and PTY spawn in the same environment.
+- The complete built-in capability manifest is evaluated in CI. Capability, panel, and command IDs must be namespaced and unique; persisted legacy panel routes and companion-window IDs must also be unique.
+- Existing guards remain authoritative for the rules that predate Phase 5: the semantic icon choke point, raw Rust subprocess confinement, contribution registration admission, PTY/security invariants, and no-emoji policy. Phase 5 composes those guards instead of duplicating or weakening them.
+
+### Phase 5 completion
+
+The stabilized dependency direction is now executable policy rather than prose. Platform cannot depend upward on workbench or capabilities; workbench cannot reach native transport details; capability code cannot introduce raw Tauri imports or `invoke` calls outside exact native-object ownership exceptions; settings and workspace policy have one implementation owner; contribution identities are namespaced and collision-free; and the existing icon/process tripwires cover the remaining plan requirements.
+
+Final phase verification on 2026-09-17:
+
+- TypeScript and both production and isolated E2E frontend builds pass.
+- All 1,230 frontend tests in 98 files pass. Coverage is 90.66% statements/lines, 89.97% branches, and 83.51% functions.
+- Changed-scope React Doctor remains at 75/100 with the same 25 accumulated findings recorded at the end of Phase 4; no Phase 5 file is reported.
+- `cargo fmt --check`, all 282 Rust unit tests, all 12 Rust pitfall tests, and `cargo clippy --all-targets -- -D warnings` pass.
+- The isolated Windows release build produces both MSI and NSIS bundles. NSIS still emits the known installer-header image-format warning.
+- All 11 desktop E2E tests in four specs pass under Node 22.23.2 against WebView2 153.0.4234.32. The locally cached EdgeDriver is version 152.0.4191.66 and warns that it is one runtime version behind, but all sessions and scenarios complete successfully.
+- `git diff --check` passes. Dirty-worktree review preserves the pre-existing user edit in `test/scripting/test.py`; it is excluded from the Phase 5 commit.
+
+Phase 5 has no runtime or user-facing behavior change, so it requires no CHANGELOG entry. The architecture redesign defined by the plan is complete.
