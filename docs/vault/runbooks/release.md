@@ -56,4 +56,17 @@ The subject line's theme is reused as the tag subject and reads as the release t
 
 ## What the tag triggers
 
-`.github/workflows/release.yml` runs on `push: tags: v*` — it builds the Windows and Linux (amd64 + arm64) artifacts — there is **no macOS job**, so no release carries a macOS build — runs the loose **150 MB binary-size tripwire** (a regression guard, not a budget — raised from 40 MB in v1.27.0 for the bundled ONNX Runtime; see ROADMAP's non-negotiables), and creates the GitHub release. Concurrency is one release build at a time, and it does **not** cancel in progress, so a mistaken tag can't be fixed by racing a second one — delete the tag remote-side and re-push.
+`.github/workflows/release.yml` runs on `push: tags: v*`. It builds Windows x64, Linux amd64/arm64, and macOS Intel/Apple Silicon artifacts, runs the loose **150 MB Windows binary-size tripwire** (a regression guard, not a budget; raised from 40 MB in v1.27.0 for the bundled ONNX Runtime; see ROADMAP's non-negotiables), and creates the GitHub release. Concurrency is one release build at a time, and it does **not** cancel in progress, so a mistaken tag can't be fixed by racing a second one. Delete the tag remote-side and re-push instead.
+
+The macOS matrix uses `macos-15-intel` for `x86_64-apple-darwin` and `macos-15` for `aarch64-apple-darwin`, producing one DMG per architecture. Without Apple credentials, both DMGs receive Tauri's ad-hoc signature. That keeps Apple Silicon from rejecting the download as damaged, but users may still have to approve the app in Privacy & Security.
+
+For normal Gatekeeper distribution, configure all six repository Actions secrets before cutting the tag:
+
+- `APPLE_CERTIFICATE`: base64-encoded Developer ID Application `.p12`
+- `APPLE_CERTIFICATE_PASSWORD`: export password for that `.p12`
+- `KEYCHAIN_PASSWORD`: temporary CI keychain password
+- `APPLE_ID`: Apple account email
+- `APPLE_PASSWORD`: app-specific password
+- `APPLE_TEAM_ID`: Apple Developer team ID
+
+When `APPLE_CERTIFICATE` exists, the workflow deliberately refuses a partial setup. It imports the Developer ID identity and requires the notarization credentials, allowing Tauri to sign, notarize, and staple each DMG instead of quietly publishing a signed but unnotarized build.

@@ -7,7 +7,7 @@
   <p>
     <a href="https://github.com/rwetz/Nexis/releases"><img src="https://img.shields.io/github/v/release/rwetz/Nexis" alt="latest release" /></a>
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license" />
-    <img src="https://img.shields.io/badge/releases-Windows%20%7C%20Linux-lightgrey" alt="release platforms" />
+    <img src="https://img.shields.io/badge/releases-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="release platforms" />
   </p>
 
   <p>
@@ -42,7 +42,7 @@ This README is the short version. The **[wiki](https://wiki.nexisdev.org)** has 
 
 ## Install
 
-Download prebuilt releases from **[Releases](https://github.com/rwetz/Nexis/releases)**. Release automation publishes Windows NSIS/MSI installers and Linux `.AppImage`, `.deb`, and `.rpm` bundles for amd64 and arm64. There is currently no macOS release job; macOS 13+ is supported for source builds.
+Download prebuilt releases from **[Releases](https://github.com/rwetz/Nexis/releases)**. Release automation publishes Windows x64 NSIS/MSI installers, Linux `.AppImage`, `.deb`, and `.rpm` bundles for amd64 and arm64, and macOS 13+ DMGs for Intel and Apple Silicon. macOS builds use an ad-hoc signature until the repository's Apple Developer signing and notarization secrets are configured, so Gatekeeper may require explicit approval in Privacy & Security.
 
 Per-platform notes (SmartScreen, FUSE, Wayland, WSL) live in the wiki: [Linux](https://wiki.nexisdev.org/installation/linux/) · [Windows](https://wiki.nexisdev.org/installation/windows/) · [macOS](https://wiki.nexisdev.org/installation/macos/).
 

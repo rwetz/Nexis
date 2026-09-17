@@ -13,6 +13,8 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ### Added
 
+- **Tagged releases now include macOS 13+ DMGs for Intel and Apple Silicon.** Each architecture builds natively on its matching GitHub-hosted runner and joins the existing Windows x64 and Linux amd64/arm64 assets. The workflow uses an ad-hoc signature when Apple credentials are absent, then automatically switches to Developer ID signing and notarization once the documented certificate and account secrets are configured.
+
 - **Capabilities can contribute lazy panels and scoped commands.** Web Tools and embedded Atlas now register their own panels and palette entries. Registered commands appear in the command palette with pack and panel-scope checks; Atlas refresh is available only while Atlas is selected, and its bare `r` binding stays inside the focused panel. Panel contributions declare whether state survives deactivation; retained panels become hidden and inert, and disabling their pack releases them. Existing saved sidebar selections and pinned view IDs continue to resolve.
 
 - **ML Lab's text generator can now be created as your own local GPT-style model.** Pick starter, balanced, or ambitious before creating a project; Nexis writes the matching context window, model width, attention heads, layer count, and training budget into the newly scaffolded `train.toml`. These are intentionally small character models for learning and focused corpora, not a misleading “build ChatGPT” button, and every generated setting stays editable before the first run.
