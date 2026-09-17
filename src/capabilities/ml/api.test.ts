@@ -19,8 +19,17 @@ beforeEach(() => {
   mocks.listen.mockClear();
 });
 
-it("declares the panel-less ML engine capability", () => {
-  expect(mlCapability).toMatchObject({ id: "ml.engine", panels: [] });
+it("owns the ML Lab integration panel", () => {
+  expect(mlCapability).toMatchObject({
+    id: "ml.engine",
+    panels: [{
+      id: "ml:lab",
+      legacyView: "ml",
+      pack: "ml-lab",
+      lifecycle: "unmount",
+      showInRail: false,
+    }],
+  });
 });
 
 it("separates workspace engine launches from host session control", async () => {

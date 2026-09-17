@@ -26,6 +26,8 @@ Reaching `localhost:3000` is the entire point of the client, and is exactly what
 
 Saved requests and variables are per workspace (`currentWorkspaceScopeKey()`), because a `baseUrl` belongs to the project, not the machine. Variables reuse the header box's `name: value` syntax rather than inventing a second one.
 
+The saved `http-client` sidebar route is declared beside Web Tools in `capabilities/web-tools/index.tsx`. The workbench owns its pack gate and unmount lifecycle; the integration host supplies only the current workspace root used to derive the persistence key.
+
 An unknown `{{variable}}` is left **verbatim** rather than emptied — emptying it yields `https:///users` or `Authorization: Bearer `, and the resulting 401 sends you looking at the server.
 
 ## Multi-viewport preview (`modules/preview/`)

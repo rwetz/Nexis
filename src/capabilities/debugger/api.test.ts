@@ -9,8 +9,17 @@ import { debuggerCapability } from ".";
 
 beforeEach(() => mocks.invoke.mockReset());
 
-it("declares the panel-less debugger integration capability", () => {
-  expect(debuggerCapability).toMatchObject({ id: "debugger.dap", panels: [] });
+it("owns the debugger integration panel", () => {
+  expect(debuggerCapability).toMatchObject({
+    id: "debugger.dap",
+    panels: [{
+      id: "debugger:panel",
+      legacyView: "debugger",
+      pack: "code-tools",
+      lifecycle: "unmount",
+      showInRail: false,
+    }],
+  });
 });
 
 it("routes the DAP protocol through typed host commands", async () => {

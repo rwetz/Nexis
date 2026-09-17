@@ -18,9 +18,10 @@ Two engines answer to the same name and have different feature sets — the Pyth
 - `src-tauri/src/modules/ml.rs` — every `ml_*` command: detect, env probe, spawn + reader/flusher threads, pip install, the pinned managed-engine download
 - `src/capabilities/python/api.ts` / `src-tauri/src/modules/python.rs:py_detect_envs` — typed workspace-scoped interpreter discovery, shared with the status-bar Python picker
 - `src/capabilities/ml/api.ts` — typed workspace/host command descriptors and event-scope ownership
+- `src/capabilities/ml/index.tsx` — the saved `ml` sidebar contribution; it receives only the current workspace root and network-tab action from the composition host
 - `src/modules/ml/lib/engine-bridge.ts` — domain bridge; candidate building, detection memo, captured authorization/spawn, event subscription
 - `src/modules/ml/store.ts` — engine state, the live run, historical runs, compare, serve/playground
-- `src/modules/ml/MlPanel.tsx` — the whole panel (large; setup card, run browser, hyperparams, playground)
+- `src/modules/ml/MlPanel.tsx` — the shared panel body (large; setup card, run browser, hyperparams, playground), lazy-loaded by the capability and reused by the full-workspace tab
 - `src/modules/ml/MlLabStack.tsx` — the full-workspace `ml-lab` tab host; passes the same shared panel and network-tab action into the primary work area
 - `src/modules/ml/NetworkGraph.tsx` — the architecture drawing, canvas; also the `ml-network` tab body via `MlNetworkStack.tsx`
 - `src/modules/ml/lib/protocol.ts` / `series.ts` / `artifacts.ts` — event parsing, metric buffers, on-disk artifacts

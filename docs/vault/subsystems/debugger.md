@@ -10,6 +10,7 @@ description: Debug Adapter Protocol integration, including adapter sessions, typ
 ## Boundaries
 
 - `src/capabilities/debugger/api.ts` owns typed `dap_start`, `dap_request`, and `dap_stop` calls.
+- `src/capabilities/debugger/index.tsx` owns the saved `debugger` sidebar route and composes its lazy toolbar/panel through the workbench contribution lifecycle.
 - `src/modules/debugger/debugSession.ts` owns domain lifecycle and listens through `platform/events.ts` for stopped, continued, output, terminated, and thread events.
 - `src-tauri/src/modules/dap/` owns adapter subprocesses and DAP framing. Adapter subprocess construction must stay on the sanctioned Rust process helper.
 

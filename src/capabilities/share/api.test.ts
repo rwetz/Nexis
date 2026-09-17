@@ -10,7 +10,16 @@ import { shareCapability } from ".";
 beforeEach(() => mocks.invoke.mockReset());
 
 it("declares the module-owned share server capability", () => {
-  expect(shareCapability).toMatchObject({ id: "share.http", panels: [] });
+  expect(shareCapability).toMatchObject({
+    id: "share.http",
+    panels: [{
+      id: "share:terminal",
+      legacyView: "share",
+      pack: "advanced",
+      lifecycle: "unmount",
+      showInRail: false,
+    }],
+  });
 });
 
 it("keeps share lifecycle calls host-scoped", async () => {

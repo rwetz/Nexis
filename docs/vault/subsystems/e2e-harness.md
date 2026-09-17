@@ -40,6 +40,8 @@ The seed **merges** into an existing test store rather than replacing it. Since 
 
 The Phase 3 platform spec uses the E2E-only `src/test/desktop-api.ts` bridge. It opens real PowerShell PTYs across two drives, verifies a complete input burst, closes/reopens sessions, checks non-PTY cwd capture, and exercises WSL write/replace/rename/read through caller-side Linux paths. The bridge answers PowerShell's `ESC[6n` cursor-position query because a headless callback has no xterm renderer to answer it. Keep the command as one input burst: separate concurrent `invoke` requests have no cross-request ordering guarantee, while `pty_write` guarantees byte order inside the enqueued burst.
 
+The WSL case is enabled only after a bounded `wsl.exe --list --quiet` and a bounded `wsl.exe -d <distro> --exec true` both succeed. A registered distro is not proof that `WslService` is usable: after a service crash, `wsl.exe` can hang and Webdriver reports the later async-script timeout as a renderer failure. The preflight skips only when the host cannot execute WSL at all; when it succeeds, the spec still performs the real atomic file and process cycle.
+
 ## The helper asserts clickability, not the absence of an overlay
 
 This is the correction to how it worked until 2026-09-03, and the reasoning matters more than the code.

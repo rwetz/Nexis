@@ -6,7 +6,26 @@ import { dismissStartupDialogs } from "../support/dialogs.js";
 
 function availableDistro(): string | null {
   try {
-    return execFileSync("wsl.exe", ["--list", "--quiet"], { encoding: "utf16le", windowsHide: true }).split(/\r?\n/).map((name) => name.trim()).find(Boolean) ?? null;
+    const distro = execFileSync("wsl.exe", ["--list", "--quiet"], {
+      encoding: "utf16le",
+      timeout: 15_000,
+      windowsHide: true,
+    })
+      .split(/\r?\n/)
+      .map((name) => name.trim())
+      .find(Boolean);
+    if (!distro) return null;
+
+    // A registered distro is not necessarily usable. WslService can be
+    // stopped or can terminate during startup, in which case wsl.exe hangs
+    // and WebDriver misreports the eventual script timeout as a renderer
+    // failure. Require one bounded command before enabling the real WSL case.
+    execFileSync("wsl.exe", ["-d", distro, "--exec", "true"], {
+      timeout: 15_000,
+      windowsHide: true,
+      stdio: "ignore",
+    });
+    return distro;
   } catch { return null; }
 }
 

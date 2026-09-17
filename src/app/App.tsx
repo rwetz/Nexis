@@ -2,6 +2,7 @@ import { activeWorkspace, workspaceCurrentDir } from "@/platform/workspaces";
 import { git } from "@/capabilities/git/api";
 import { GitCapabilityHostProvider } from "@/capabilities/git/context";
 import { ExplorerCapabilityHostProvider } from "@/capabilities/editor/context";
+import { IntegrationCapabilityHostProvider } from "@/capabilities/integration-context";
 import { CAPABILITIES, CAPABILITY_TOOL_WINDOWS, CAPABILITY_VIEWS } from "@/capabilities";
 import { CapabilityHost } from "@/workbench/CapabilityHost";
 import { PanelHost } from "@/workbench/PanelHost";
@@ -114,15 +115,13 @@ import { SnippetsPanel } from "@/modules/snippets";
 import { TestRunnerPanel } from "@/modules/testrunner";
 import { BuildPanel } from "@/modules/build/BuildPanel";
 import { CodeReviewPanel } from "@/modules/code-review";
-import { SharePanel, registerShareTerminalBufferProvider } from "@/modules/share";
+import { registerShareTerminalBufferProvider } from "@/modules/share";
 import { SymbolSearchPanel } from "@/modules/symbol-search";
 import { RefactorPanel, setRefactorCode } from "@/modules/refactor";
 import { PromptTemplatesPanel } from "@/modules/prompt-templates";
 import { BookmarksPanel, toggleBookmark } from "@/modules/bookmarks";
 import { WorkspaceNotesPanel } from "@/modules/workspace-notes";
 import { ShellSnippetsPanel, setShellSnippetSender } from "@/modules/shell-snippets";
-import { SshPanel } from "@/modules/ssh";
-import { PortsPanel } from "@/modules/ports";
 import { ProfilesPanel } from "@/modules/profiles";
 import { ReplPanel, sendToRepl } from "@/modules/repl";
 import { ReleasePanel } from "@/modules/release";
@@ -137,7 +136,6 @@ import { FaviconPanel } from "@/modules/art/FaviconPanel";
 import { IconSetPanel } from "@/modules/art/IconSetPanel";
 import { PalettePanel } from "@/modules/art/PalettePanel";
 import { SvgPlaygroundPanel } from "@/modules/art/SvgPlaygroundPanel";
-import { HttpClientPanel } from "@/modules/webdev/HttpClientPanel";
 import { OnboardingTour } from "@/modules/onboarding/OnboardingTour";
 import { useOnboardingSignals } from "@/modules/onboarding/useOnboardingSignals";
 import { signalOnboardingStep, type OnboardingAction } from "@/lib/onboarding";
@@ -184,7 +182,6 @@ import {
   LOCAL_WORKSPACE,
   useWorkspaceEnvStore,
   workspaceEnvForPath,
-  workspaceProjectKey,
   type WorkspaceEnv,
 } from "@/platform/workspaces";
 import { hostHomeDir } from "@/platform/paths";
@@ -206,9 +203,6 @@ const ImageStackLazy = lazy(() =>
 const SettingsDialogLazy = lazy(() =>
   import("@/settings/SettingsDialog").then((m) => ({ default: m.SettingsDialog })),
 );
-const MlPanelLazy = lazy(() =>
-  import("@/modules/ml/MlPanel").then((m) => ({ default: m.MlPanel })),
-);
 const MlLabStackLazy = lazy(() =>
   import("@/modules/ml/MlLabStack").then((m) => ({ default: m.MlLabStack })),
 );
@@ -225,9 +219,6 @@ const MlNetworkStackLazy = lazy(() =>
     default: m.MlNetworkStack,
   })),
 );
-const DatabasePanelLazy = lazy(() =>
-  import("@/modules/database/DatabasePanel").then((m) => ({ default: m.DatabasePanel })),
-);
 // Lazy: the resource analyzer is only mounted when its rail item is selected,
 // which also stops it polling the Rust sampler on every launch.
 const CommandHistoryPanelLazy = lazy(() =>
@@ -239,12 +230,6 @@ const SystemMonitorPanelLazy = lazy(() =>
   import("@/modules/sysmon/SystemMonitorPanel").then((m) => ({
     default: m.SystemMonitorPanel,
   })),
-);
-const DebuggerPanelLazy = lazy(() =>
-  import("@/modules/debugger/DebuggerPanel").then((m) => ({ default: m.DebuggerPanel })),
-);
-const DebugToolbarLazy = lazy(() =>
-  import("@/modules/debugger/DebugToolbar").then((m) => ({ default: m.DebugToolbar })),
 );
 export default function App() {
   const toolWindow = currentToolWindow(CAPABILITY_TOOL_WINDOWS);
@@ -2097,8 +2082,6 @@ function MainApp() {
                       <Suspense fallback={null}>
                         <CommandHistoryPanelLazy workspaceRoot={explorerRoot} />
                       </Suspense>
-                    ) : sidebarView === "http-client" ? (
-                      <HttpClientPanel workspaceKey={workspaceProjectKey(explorerRoot)} />
                     ) : sidebarView === "animator" ? (
                       <AnimatorPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "favicon" ? (
@@ -2117,8 +2100,6 @@ function MainApp() {
                       <ActivityPanel />
                     ) : sidebarView === "system-monitor" ? (
                       <Suspense fallback={null}><SystemMonitorPanelLazy /></Suspense>
-                    ) : sidebarView === "ports" ? (
-                      <PortsPanel onOpenPreview={openPreviewTab} />
                     ) : sidebarView === "repl" ? (
                       <ReplPanel />
                     ) : sidebarView === "profiles" ? (
@@ -2147,8 +2128,6 @@ function MainApp() {
                       <SnippetsPanel />
                     ) : sidebarView === "tests" ? (
                       <TestRunnerPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "database" ? (
-                      <Suspense fallback={null}><DatabasePanelLazy /></Suspense>
                     ) : sidebarView === "build" ? (
                       <BuildPanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "code-review" ? (
@@ -2164,8 +2143,6 @@ function MainApp() {
                       />
                     ) : sidebarView === "refactor" ? (
                       <RefactorPanel />
-                    ) : sidebarView === "share" ? (
-                      <SharePanel />
                     ) : sidebarView === "prompt-templates" ? (
                       <PromptTemplatesPanel />
                     ) : sidebarView === "bookmarks" ? (
@@ -2181,26 +2158,8 @@ function MainApp() {
                       <ShellSnippetsPanel />
                     ) : sidebarView === "notes" ? (
                       <WorkspaceNotesPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "ssh" ? (
-                      <SshPanel onConnect={handleOpenSshSession} />
-                    ) : sidebarView === "debugger" ? (
-                      <div className="flex h-full flex-col">
-                        <div className="flex shrink-0 items-center border-b border-border/40 px-1 py-1">
-                          <Suspense fallback={null}><DebugToolbarLazy /></Suspense>
-                        </div>
-                        <div className="min-h-0 flex-1 overflow-hidden">
-                          <Suspense fallback={null}><DebuggerPanelLazy /></Suspense>
-                        </div>
-                      </div>
                     ) : sidebarView === "release" ? (
                       <ReleasePanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "ml" ? (
-                      <Suspense fallback={null}>
-                          <MlPanelLazy
-                            workspaceRoot={explorerRoot}
-                            onOpenNetworkTab={openMlNetworkTab}
-                          />
-                        </Suspense>
                     ) : null} />
                     </ErrorBoundary>
                   </div>
@@ -2495,7 +2454,14 @@ function MainApp() {
           onOpenNotebook: openNotebookViewer,
           onOpenImage: openImageViewer,
         }}>
-          <AiComposerProvider>{shell}</AiComposerProvider>
+          <IntegrationCapabilityHostProvider value={{
+            workspaceRoot: explorerRoot,
+            openPreview: openPreviewTab,
+            openSshSession: handleOpenSshSession,
+            openMlNetwork: openMlNetworkTab,
+          }}>
+            <AiComposerProvider>{shell}</AiComposerProvider>
+          </IntegrationCapabilityHostProvider>
         </ExplorerCapabilityHostProvider>
       </GitCapabilityHostProvider>
     </CapabilityHost>
