@@ -46,6 +46,7 @@ pub mod domain;
 pub mod gguf;
 pub mod llama;
 pub mod ml_engine;
+#[cfg(not(any(target_os = "linux", all(target_os = "macos", target_arch = "x86_64"))))]
 pub mod onnx;
 pub mod scan;
 pub mod simulate;

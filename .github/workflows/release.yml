@@ -7,7 +7,7 @@ on:
 
 # Only one release build at a time.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release
   cancel-in-progress: false
 
 # Required so softprops/action-gh-release can create the release and upload assets.
@@ -272,6 +272,7 @@ jobs:
         run: |
           if [[ -z "$APPLE_CERTIFICATE" ]]; then
             echo "APPLE_SIGNING_IDENTITY=-" >> "$GITHUB_ENV"
+            echo "NEXIS_APPLE_SIGNING=adhoc" >> "$GITHUB_ENV"
             echo "Apple certificate secrets are absent; using an ad-hoc signature."
             exit 0
           fi
@@ -306,8 +307,19 @@ jobs:
             exit 1
           fi
           echo "APPLE_SIGNING_IDENTITY=$signing_identity" >> "$GITHUB_ENV"
+          echo "NEXIS_APPLE_SIGNING=developer-id" >> "$GITHUB_ENV"
 
-      - name: Build Tauri DMG
+      # Empty APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID variables still tell
+      # Tauri to notarize. Keep them out of the ad-hoc process entirely.
+      - name: Build ad-hoc Tauri DMG
+        if: env.NEXIS_APPLE_SIGNING == 'adhoc'
+        run: pnpm tauri build --target ${{ matrix.target }} --bundles dmg
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ""
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+
+      - name: Build signed and notarized Tauri DMG
+        if: env.NEXIS_APPLE_SIGNING == 'developer-id'
         run: pnpm tauri build --target ${{ matrix.target }} --bundles dmg
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}

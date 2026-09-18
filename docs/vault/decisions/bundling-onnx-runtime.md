@@ -37,9 +37,15 @@ experience is a simulation labelled `sim`.
 
 ## Decision
 
-**Link a prebuilt ONNX Runtime, CPU-only.** `ort = "2.0.0-rc.12"` with
-`download-binaries`, which fetches a prebuilt ORT at build time — no cmake, no
-vendored C++ toolchain, no per-platform build matrix in this repo.
+**Link a prebuilt ONNX Runtime, CPU-only, where upstream publishes a compatible
+one.** `ort = "2.0.0-rc.12"` with `download-binaries` fetches ORT at build time,
+with no cmake or vendored C++ toolchain. The first all-platform release exposed
+two limits: the Linux prebuilt requires newer glibc/libstdc++ symbols than the
+Ubuntu 22.04 release baseline, and there is no `x86_64-apple-darwin` prebuilt.
+Linux and Intel macOS therefore compile without `ort` and report the backend
+unavailable; Windows and Apple Silicon keep the real backend. Building ORT from
+source only for those targets was rejected as a hidden second build system for
+one optional backend.
 
 `default-features = false` drops exactly one thing: `copy-dylibs`. That feature
 copies whatever shared libraries the downloaded ORT ships next to the built
@@ -99,6 +105,10 @@ measurement is linked in.**
 - `download-binaries` fetches at **build** time, which makes a clean build
   network-dependent in a way it was not before. CI already has network; an
   offline `cargo build` from a cold cache does not.
+- Linux and Intel macOS are explicit platform exceptions. Their release builds
+  omit `ort` and expose the backend as unavailable rather than failing the
+  entire application build, raising the Linux runtime baseline, or substituting
+  simulated numbers.
 - **There is no GPU path, and adding one is real work rather than a flag.** It
   means the execution-provider feature, the dylibs it drags in, and per-platform
   `bundle.resources` config to ship them — which is precisely the support

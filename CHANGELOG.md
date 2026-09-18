@@ -4,6 +4,11 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.28.1] — 2026-09-18
+
+### Fixed
+- **The first all-platform release matrix now builds instead of failing on Linux and macOS.** Linux release binaries no longer link an upstream ONNX Runtime prebuilt that requires a newer glibc/libstdc++ than the supported Ubuntu 22.04 baseline, Intel macOS omits the unavailable x86_64 ORT prebuilt, and both targets clearly mark that backend unsupported. Apple Silicon and Windows retain real ONNX inference. Ad-hoc Mac builds also stop passing empty Apple account variables that accidentally trigger notarization, and release concurrency is now genuinely global instead of per tag.
+
 ## [1.28.0] — 2026-09-17
 
 ### Fixed

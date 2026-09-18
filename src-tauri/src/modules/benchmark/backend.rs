@@ -126,11 +126,23 @@ impl Engine for OnnxRuntime {
         BackendId::Onnx
     }
     fn info(&self) -> BackendInfo {
+        let available = !cfg!(any(
+            target_os = "linux",
+            all(target_os = "macos", target_arch = "x86_64")
+        ));
         BackendInfo {
             id: BackendId::Onnx,
             label: "ONNX Runtime".into(),
-            description: "Microsoft ONNX Runtime (via the ort crate). Real inference.".into(),
-            available: true,
+            description: if cfg!(target_os = "linux") {
+                "Unavailable on Linux: upstream ORT requires a newer system runtime than the supported release baseline."
+                    .into()
+            } else if cfg!(all(target_os = "macos", target_arch = "x86_64")) {
+                "Unavailable on Intel macOS: upstream ORT provides no x86_64 prebuilt runtime."
+                    .into()
+            } else {
+                "Microsoft ONNX Runtime (via the ort crate). Real inference.".into()
+            },
+            available,
             device: DeviceKind::Cpu,
             version: None,
             supports: vec![ModelFormat::Onnx],
@@ -144,13 +156,28 @@ impl Engine for OnnxRuntime {
         emit: &dyn Fn(BenchProgress),
         cancel: &AtomicBool,
     ) -> Result<BenchMetrics, String> {
-        crate::modules::benchmark::onnx::run(job_id, model, config, emit, cancel)
+        #[cfg(not(any(target_os = "linux", all(target_os = "macos", target_arch = "x86_64"))))]
+        {
+            crate::modules::benchmark::onnx::run(job_id, model, config, emit, cancel)
+        }
+        #[cfg(any(target_os = "linux", all(target_os = "macos", target_arch = "x86_64")))]
+        {
+            let _ = (job_id, model, config, emit, cancel);
+            Err("ONNX Runtime is unavailable on this release target".into())
+        }
     }
     fn simulated(&self) -> bool {
         false
     }
     fn note(&self) -> Option<String> {
-        Some(crate::modules::benchmark::onnx::ONNX_NOTE.to_string())
+        #[cfg(not(any(target_os = "linux", all(target_os = "macos", target_arch = "x86_64"))))]
+        {
+            Some(crate::modules::benchmark::onnx::ONNX_NOTE.to_string())
+        }
+        #[cfg(any(target_os = "linux", all(target_os = "macos", target_arch = "x86_64")))]
+        {
+            Some("Unavailable because no compatible upstream ORT prebuilt exists for this release target.".into())
+        }
     }
 }
 
