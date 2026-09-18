@@ -296,8 +296,8 @@ importers:
         specifier: ^9.0.0
         version: 9.27.2(supports-color@8.1.1)
       '@wdio/spec-reporter':
-        specifier: ^9.0.0
-        version: 9.27.2
+        specifier: ^9.31.2
+        version: 9.31.2
       '@wdio/types':
         specifier: ^9.31.2
         version: 9.31.2
@@ -3734,6 +3734,10 @@ packages:
     resolution: {integrity: sha512-HdzDrRs+ywAqbXGKqe1i/bLtCv47plz4TvsHFH3j729OooT5VH38ctFn5aLXgECmiAKDkmH/A6kOq2Zh5DIxww==}
     engines: {node: '>=18.20.0'}
 
+  '@wdio/logger@9.29.1':
+    resolution: {integrity: sha512-0ZAEIo6PNyMIJPlOGkIgyOJUjcd0pC8/QHlVAAe1c91/IcjZ1X+k0yidXHaboJdN7dq1XPUacmhRdtua0U5EZg==}
+    engines: {node: '>=18.20.0'}
+
   '@wdio/mocha-framework@9.27.2':
     resolution: {integrity: sha512-C3XbwffqbK4b80XcGp845FphPlz2VvCepvXfi8TI7uo1ZML/Ybcwjmb35nJeoB6F/jPp/Es60BVG7tFG1UW1iw==}
     engines: {node: '>=18.20.0'}
@@ -3749,6 +3753,10 @@ packages:
     resolution: {integrity: sha512-JDbBeSM8TMZ3CRTnF1fJqyUJEYDas6k1xjVZnrGrO8L/8xQ8dG2vaC5wGJz6uMSHazyks8pL3g/RS8dTbTUPbg==}
     engines: {node: '>=18.20.0'}
 
+  '@wdio/reporter@9.31.2':
+    resolution: {integrity: sha512-3cKE6vCOsro/Ep9dGTIbo3FBn3WNvJ++BIn32lFd9m19pFdjuwlVgLtPXHb9jWNCJs740h5AIUcVkcscqUYhAA==}
+    engines: {node: '>=18.20.0'}
+
   '@wdio/runner@9.27.2':
     resolution: {integrity: sha512-FLsJ/FKd5acsNOKMYWayVyyDBY1Zw91kgwZry9h+ghpbK8uzpkmgOPtGxljsABPrFpv02fk1ICUNjlKvzQBYNQ==}
     engines: {node: '>=18.20.0'}
@@ -3756,8 +3764,8 @@ packages:
       expect-webdriverio: ^5.6.5
       webdriverio: ^9.0.0
 
-  '@wdio/spec-reporter@9.27.2':
-    resolution: {integrity: sha512-CGd71d+fxa9UZUBI8frQucv6Iyq8JfdBzET98H1bBqhtFy8xf1f9AaveQ4VvRr0LQKZ6LwmXRfb/bZJcr0yfag==}
+  '@wdio/spec-reporter@9.31.2':
+    resolution: {integrity: sha512-lNLLPUk4y1Yp5pWwBFF+tjZIy7bOv0TPTk4HDWV4LnnHnkc24abI0nN+kb2y5/JV8ZgwLCCVKUFRdRUxfKsAaQ==}
     engines: {node: '>=18.20.0'}
 
   '@wdio/types@9.27.2':
@@ -6408,6 +6416,10 @@ packages:
 
   pretty-ms@9.3.0:
     resolution: {integrity: sha512-gjVS5hOP+M3wMm5nmNOucbIrqudzs9v/57bWRHQWLYklXqoXKrVfYW2W9+glfGsqtPgpiz5WwyEEB+ksXIx3gQ==}
+    engines: {node: '>=18'}
+
+  pretty-ms@9.3.1:
+    resolution: {integrity: sha512-HzMy3Geq23nVALD/M2LliU+F+M+gVNsvkQWWqeBZ8HDiCgzo6YPJ/Omrmtq24EFrIsk0a3EkQGEd7bDOo+IhGA==}
     engines: {node: '>=18'}
 
   process-nextick-args@2.0.1:
@@ -10960,6 +10972,14 @@ snapshots:
       safe-regex2: 5.1.1
       strip-ansi: 7.2.0
 
+  '@wdio/logger@9.29.1':
+    dependencies:
+      chalk: 5.6.2
+      loglevel: 1.9.2
+      loglevel-plugin-prefix: 0.8.4
+      safe-regex2: 5.1.1
+      strip-ansi: 7.2.0
+
   '@wdio/mocha-framework@9.27.2(supports-color@8.1.1)':
     dependencies:
       '@types/mocha': 10.0.10
@@ -10982,9 +11002,17 @@ snapshots:
 
   '@wdio/reporter@9.27.2':
     dependencies:
-      '@types/node': 20.19.41
+      '@types/node': 20.19.43
       '@wdio/logger': 9.18.0
       '@wdio/types': 9.27.2
+      diff: 8.0.4
+      object-inspect: 1.13.4
+
+  '@wdio/reporter@9.31.2':
+    dependencies:
+      '@types/node': 20.19.43
+      '@wdio/logger': 9.29.1
+      '@wdio/types': 9.31.2
       diff: 8.0.4
       object-inspect: 1.13.4
 
@@ -11009,13 +11037,13 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@wdio/spec-reporter@9.27.2':
+  '@wdio/spec-reporter@9.31.2':
     dependencies:
-      '@wdio/reporter': 9.27.2
-      '@wdio/types': 9.27.2
+      '@wdio/reporter': 9.31.2
+      '@wdio/types': 9.31.2
       chalk: 5.6.2
       easy-table: 1.2.0
-      pretty-ms: 9.3.0
+      pretty-ms: 9.3.1
 
   '@wdio/types@9.27.2':
     dependencies:
@@ -12513,7 +12541,7 @@ snapshots:
 
   geckodriver@6.1.0(supports-color@8.1.1):
     dependencies:
-      '@wdio/logger': 9.18.0
+      '@wdio/logger': 9.29.1
       '@zip.js/zip.js': 2.8.26
       decamelize: 6.0.1
       http-proxy-agent: 7.0.2(supports-color@8.1.1)
@@ -14130,6 +14158,10 @@ snapshots:
       react-is-19: react-is@19.2.8
 
   pretty-ms@9.3.0:
+    dependencies:
+      parse-ms: 4.0.0
+
+  pretty-ms@9.3.1:
     dependencies:
       parse-ms: 4.0.0
 
