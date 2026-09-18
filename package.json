@@ -126,7 +126,7 @@
     "typescript": "~7.0.2",
     "vite": "^7.0.4",
     "vitest": "^2.1.9",
-    "webdriverio": "^9.0.0"
+    "webdriverio": "^9.31.7"
   },
   "pnpm": {
     "ignoredBuiltDependencies": [
