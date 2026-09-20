@@ -23,6 +23,10 @@
      * --font-sans, because this face is not legible at the 9-12px the rest
      * of the UI lives at. */
     --font-heading: 'Space Grotesk Variable', 'Inter Variable', sans-serif;
+    /* The UI face. Cascadia has no proportional cut — the family is
+     * monospace only (Code with ligatures, Mono without) — so the body face
+     * cannot be "the non-mono Cascadia". Inter stays until a deliberate
+     * replacement is chosen; see the type specimen. */
     --font-sans: 'Inter Variable', sans-serif;
     /* Mirrors FALLBACK_CHAIN in src/lib/fonts.ts, which is what the terminal
      * and CodeMirror resolve through. Kept in sync by hand on purpose: this

@@ -170,7 +170,12 @@ export const useAtlasStore = create<AtlasState>((set, get) => ({
   select: (path) => {
     if (path === get().selectedPath) return;
     set({ selectedPath: path });
-    if (get().detailOpen) void get().openDetail();
+    // Selecting a repo in the list opens its detail, rather than requiring a
+    // double-click on top of the click that just selected it. The panel is
+    // where everything per-repo lives — changed files, stashes, the commit
+    // heatmap — and behind a second gesture it read as absent rather than
+    // as closed. The map keeps its own inspector, so this is list-only.
+    if (get().detailOpen || get().mode === "list") void get().openDetail();
   },
 
   moveSelection: (delta) => {

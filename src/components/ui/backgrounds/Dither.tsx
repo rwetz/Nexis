@@ -227,11 +227,21 @@ export function DitherBackground({
 
     const resize = () => {
       const { clientWidth, clientHeight } = container;
+      // Zero-sized container: nothing useful to draw, and setting a 0x0
+      // drawing buffer makes the GL context unusable afterwards.
+      if (clientWidth === 0 || clientHeight === 0) return;
       renderer.setSize(clientWidth, clientHeight);
       const res = uniforms.iResolution.value as Float32Array;
       res[0] = gl.canvas.width;
       res[1] = gl.canvas.height;
     };
+    // A ResizeObserver, not just `window.resize`. This component is lazily
+    // imported, so it can mount and measure BEFORE its container has been
+    // laid out — `clientWidth` is then 0, the canvas is 0x0, and nothing
+    // ever recovers because no window resize follows. That is what made the
+    // background render as nothing at all.
+    const observer = new ResizeObserver(resize);
+    observer.observe(container);
     window.addEventListener("resize", resize);
     resize();
 
@@ -263,13 +273,24 @@ export function DitherBackground({
 
     return () => {
       stopLoop();
+      observer.disconnect();
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", onPointerMove);
       if (container.contains(gl.canvas)) container.removeChild(gl.canvas);
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    color,
+    background,
+    waveSpeed,
+    waveFrequency,
+    waveAmplitude,
+    colorSteps,
+    pixelSize,
+    disableAnimation,
+    enableMouseInteraction,
+    mouseRadius,
+  ]);
 
   return (
     <div

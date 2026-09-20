@@ -16,7 +16,6 @@ const DotGridBackground = lazy(() =>
   import("@/components/ui/backgrounds/DotGrid").then((m) => ({ default: m.DotGridBackground })),
 );
 import { Button } from "@/components/ui/button";
-import { CursorAura } from "@/components/ui/CursorAura";
 import { ParticleText } from "@/components/ui/ParticleText";
 import { Icon } from "@/components/icon";
 import { fmtShortcut, MOD_KEY, SHIFT_KEY } from "@/lib/platform";
@@ -28,6 +27,8 @@ import {
   type WelcomeBgId,
 } from "@/modules/settings/store";
 import { getFolderColor, useTheme } from "@/modules/theme";
+import { RAINBOW_STOP_OFFSETS, RAINBOW_VARIANTS } from "@/modules/theme/rainbowAccent";
+import { DEFAULT_THEME_ID } from "@/modules/theme/types";
 
 type Props = {
   onNewTerminal: () => void;
@@ -51,6 +52,15 @@ function shiftHex(hex: string, amount: number): string {
   return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
 }
 
+/** Hex to a linear 0..1 RGB triple, which is what the GL backgrounds take. */
+function hexToRgbTuple(hex: string): [number, number, number] {
+  const h = hex.replace(/^#/, "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const n = parseInt(full, 16);
+  if (Number.isNaN(n)) return [1, 1, 1];
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+}
+
 /** Convert a hex color to its HSL hue in degrees (0–360). */
 function hexToHue(hex: string): number {
   const h = hex.replace("#", "");
@@ -68,6 +78,32 @@ function hexToHue(hex: string): number {
   return hue * 360;
 }
 
+/**
+ * The seven-stop spectrum the rainbow hover accent paints with, as hex.
+ *
+ * The accent itself emits `oklch()` into CSS, which the backgrounds cannot
+ * use: two of them are WebGL and want linear RGB, and the third fills a
+ * canvas. So the same stops are resolved to hex once here, through the
+ * browser's own colour parser rather than a hand-rolled OKLCH conversion —
+ * one implementation of the maths, and it is the one the page already uses.
+ */
+function rainbowStops(variant = 0): string[] {
+  const { hue } = RAINBOW_VARIANTS[variant % RAINBOW_VARIANTS.length];
+  const probe = document.createElement("span");
+  probe.style.display = "none";
+  document.body.appendChild(probe);
+  const out = RAINBOW_STOP_OFFSETS.map((offset) => {
+    probe.style.color = `oklch(0.72 0.19 ${(hue + offset) % 360})`;
+    const resolved = getComputedStyle(probe).color;
+    const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(resolved);
+    if (!m) return "#5227FF";
+    const hex = (v: string) => Number(v).toString(16).padStart(2, "0");
+    return `#${hex(m[1])}${hex(m[2])}${hex(m[3])}`;
+  });
+  probe.remove();
+  return out;
+}
+
 const SHORTCUTS = [
   { label: "Open AI agent",      keys: [MOD_KEY, "I"] },
   { label: "Quick open file",    keys: [MOD_KEY, "P"] },
@@ -79,109 +115,149 @@ const SHORTCUTS = [
 
 export function WelcomeScreen({ onNewTerminal }: Props) {
   const { themeId, resolvedMode } = useTheme();
+  const rainbowPref = usePreferencesStore((s) => s.rainbowAccent);
+  // The rainbow accent is the default theme's identity and no other theme's
+  // — a named theme's accent hue is the whole point of picking it, so a
+  // spectrum would erase it. Same gate the hover accent uses.
+  const rainbow = rainbowPref && themeId === DEFAULT_THEME_ID;
   const folderColor = getFolderColor(themeId, resolvedMode);
   const hueShift = useMemo(() => hexToHue(folderColor), [folderColor]);
+  // The dots have to sit ON the page, not vanish into it: the welcome screen
+  // paints no plate behind them, so a resting tone derived by darkening a
+  // dark accent came out near-black on near-black. This lightens on a dark
+  // theme and darkens on a light one — toward the viewer either way.
   const dotRest = useMemo(
-    () => shiftHex(folderColor, resolvedMode === "dark" ? -0.24 : 0.3),
+    () => shiftHex(folderColor, resolvedMode === "dark" ? 0.18 : -0.28),
     [folderColor, resolvedMode],
+  );
+  const rainbowHex = useMemo(
+    () => (rainbow ? rainbowStops(0) : []),
+    [rainbow],
   );
 
   const storedBg = usePreferencesStore((s) => s.welcomeBackgroundId);
   const cycle = usePreferencesStore((s) => s.welcomeBackgroundCycle);
 
-  // The background shown for THIS viewing, decided once on mount.
+  // The background shown for THIS viewing.
   //
-  // Held in state rather than read from the store on every render, because
-  // the rotation writes the next id back to preferences: reading the store
-  // directly would swap the background out from under the user the instant
-  // the write landed. So this viewing keeps what it started with, and the
-  // stored value is what the *next* viewing picks up.
+  // Held in state rather than read straight from the store, because the
+  // rotation writes the NEXT id back to preferences on mount: reading the
+  // store directly would swap the background out from under the viewer the
+  // instant that write landed. `rotatedTo` records what the rotation chose,
+  // so a later picker change can be told apart from the rotation's own echo.
   const [shown, setShown] = useState<WelcomeBgId>(storedBg);
   const rotatedRef = useRef(false);
+  const rotatedTo = useRef<WelcomeBgId | null>(null);
 
   useEffect(() => {
     if (rotatedRef.current) return;
     rotatedRef.current = true;
     if (!cycle) return;
     const current = usePreferencesStore.getState().welcomeBackgroundId;
+    const next = nextWelcomeBg(current);
     setShown(current);
-    void setWelcomeBackgroundId(nextWelcomeBg(current)).catch(() => {});
+    rotatedTo.current = next;
+    void setWelcomeBackgroundId(next).catch(() => {});
     // Mount only: cycling advances once per viewing, not on every preference
     // change. The ref, not the dep list, is what enforces that — an effect
     // with no deps still re-runs if the component remounts under StrictMode.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // A picker change while the screen is open should be visible immediately;
-  // that is a deliberate choice, not the rotation writing back.
+  // Picking a background in Settings takes effect immediately, even with
+  // cycling on. The one write this ignores is the rotation's own — that
+  // value is what the NEXT viewing should open with, not this one.
   useEffect(() => {
-    if (!cycle) setShown(storedBg);
-  }, [storedBg, cycle]);
+    if (storedBg === rotatedTo.current) return;
+    setShown(storedBg);
+  }, [storedBg]);
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-6 text-center select-none overflow-hidden">
       <Suspense fallback={null}>
         {shown === "darkveil" && (
           <DarkVeilBackground
-            hueShift={hueShift}
+            // With the rainbow on, the veil sweeps the whole spectrum
+            // instead of sitting on one hue.
+            hueShift={rainbow ? 0 : hueShift}
             speed={0.3}
             noiseIntensity={0.04}
-            warpAmount={0.5}
+            warpAmount={rainbow ? 1.1 : 0.5}
+            scanlineIntensity={rainbow ? 0.06 : 0}
           />
         )}
-        {/* Dither keeps the exact BG Studio settings — grey on black, which
-            is the look that was signed off. It is not theme-tinted for that
-            reason; the other two are. */}
-        {shown === "dither" && <DitherBackground />}
+        {/* Dither keeps the BG Studio settings — grey on black — unless the
+            rainbow is on, in which case its two tones become spectrum ends
+            and the posterised bands read as a gradient ramp. */}
+        {shown === "dither" && (
+          <DitherBackground
+            color={rainbow ? hexToRgbTuple(rainbowHex[5]) : undefined}
+            background={rainbow ? hexToRgbTuple(rainbowHex[0]) : undefined}
+          />
+        )}
         {shown === "dotgrid" && (
           <DotGridBackground
             baseColor={dotRest}
             activeColor={folderColor}
-            opacity={0.75}
+            rainbow={rainbow ? rainbowHex : undefined}
+            opacity={0.9}
           />
         )}
       </Suspense>
-
-      {/* Scoped to this screen only. See CursorAura's own note on why this
-          is not a global layer. */}
-      <CursorAura color={folderColor} size={460} opacity={0.32} />
 
       <div
         className="relative z-10 flex flex-col items-center gap-6"
         style={{ animation: "welcome-fadein 0.55s cubic-bezier(0.16,1,0.3,1) both" }}
       >
-        {/* Logo + radial glow */}
-        <div className="relative flex items-center justify-center">
-          <div
-            aria-hidden
-            className="absolute size-32 rounded-full"
-            style={{ background: `radial-gradient(ellipse at center, ${folderColor}33 0%, transparent 70%)` }}
-          />
-          <img
-            src="/nexis-logo.png"
-            alt="Nexis"
-            className="relative size-16 drop-shadow-lg"
-            draggable={false}
-          />
-        </div>
+        {/* The mark, unadorned. The radial glow behind it fought whichever
+            background was running — it was a second light source painted on
+            top of one the background already had. */}
+        <img
+          src="/nexis-logo.png"
+          alt="Nexis"
+          className="size-16 drop-shadow-lg"
+          draggable={false}
+        />
 
-        <div className="mt-4 space-y-2">
-          <p className="font-heading text-[22px] font-semibold tracking-tight">
-            <ParticleText text="Welcome to Nexis" fontSize={22} fontWeight={600} />
-          </p>
+        <div className="mt-2 flex flex-col items-center gap-2">
+          {/* The wordmark, at display scale. Settings match the BG Studio
+              pass; `highlight` is what the particles take as the pointer
+              pushes through them, which is the whole reason it reacts. */}
+          <h1 className="font-heading">
+            <ParticleText
+              text="Welcome to Nexis"
+              fontSize={72}
+              fontWeight={800}
+              color={rainbow ? rainbowHex[3] : "#f8fafc"}
+              highlight={rainbow ? rainbowHex[0] : "#8b5cf6"}
+              particleSize={2.2}
+              density={4}
+              scatter={190}
+              gather={1600}
+              stagger={420}
+              repelStrength={42}
+              repelRadius={120}
+              idleDrift={0.8}
+              glow
+            />
+          </h1>
           <p className="text-[14px] text-muted-foreground">
             Open a terminal or file to get started — or press {MOD_KEY}+I to ask the AI agent.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* The `arrow` variant: the fill wipes in from the leading edge and
+              the arrow steps forward on hover. This is the screen's one real
+              call to action, which is what that variant is for. */}
           <Button
             size="sm"
+            variant="arrow"
             onClick={onNewTerminal}
-            className="bg-brand text-brand-foreground hover:bg-brand/80"
           >
-            New Terminal
-            <span className="ml-1.5 opacity-50">{fmtShortcut(MOD_KEY, "T")}</span>
+            <span>New Terminal</span>
+            <span className="opacity-50">{fmtShortcut(MOD_KEY, "T")}</span>
+            <Icon name="arrow-right" size="sm" data-slot="button-arrow" />
           </Button>
 
           {/* Onboarding is a one-shot for anyone who dismissed it on day one
@@ -189,12 +265,12 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
               takeover the command palette opens. */}
           <Button
             size="sm"
-            variant="outline"
+            variant="arrow"
             onClick={openOnboarding}
-            className="bg-transparent"
           >
-            <Icon name="checklist" size="xs" className="mr-1.5" />
-            View onboarding
+            <Icon name="checklist" size="xs" />
+            <span>View onboarding</span>
+            <Icon name="arrow-right" size="sm" data-slot="button-arrow" />
           </Button>
         </div>
 

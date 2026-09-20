@@ -33,6 +33,8 @@ function hexToRgb(hex: string): Rgb {
 }
 
 type Dot = {
+  /** 0..1 along the grid diagonal, for the rainbow ramp. */
+  t: number;
   /** Grid position, in CSS pixels, of the dot's rest point. */
   cx: number;
   cy: number;
@@ -64,6 +66,10 @@ type Props = {
   speedTrigger?: number;
   shockRadius?: number;
   shockStrength?: number;
+  /** Seven-stop spectrum. When given, each dot takes its resting colour from
+   *  its position in the grid rather than from `baseColor`, so the lattice
+   *  reads as the rainbow accent rather than as one tinted field. */
+  rainbow?: string[];
   opacity?: number;
 };
 
@@ -76,6 +82,7 @@ export function DotGridBackground({
   speedTrigger = 100,
   shockRadius = 240,
   shockStrength = 22,
+  rainbow,
   opacity = 0.5,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -102,6 +109,9 @@ export function DotGridBackground({
 
     const base = hexToRgb(baseColor);
     const active = hexToRgb(activeColor);
+    // Resolved once: a per-dot hex parse every frame would be the most
+    // expensive thing in the loop.
+    const ramp = rainbow?.length ? rainbow.map(hexToRgb) : null;
 
     let dots: Dot[] = [];
     let width = 0;
@@ -113,6 +123,9 @@ export function DotGridBackground({
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       width = container.clientWidth;
       height = container.clientHeight;
+      // Lazily imported, so the first measure can land before layout. The
+      // ResizeObserver below re-runs this the moment the box has a size.
+      if (width === 0 || height === 0) return;
       canvas.width = Math.max(1, Math.round(width * dpr));
       canvas.height = Math.max(1, Math.round(height * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -130,6 +143,9 @@ export function DotGridBackground({
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
           dots.push({
+            // Diagonal position, 0..1, so a spectrum sweeps corner to corner
+            // rather than banding down one axis.
+            t: (col / Math.max(1, cols - 1) + row / Math.max(1, rows - 1)) / 2,
             cx: startX + col * pitch,
             cy: startY + row * pitch,
             ox: 0,
@@ -226,9 +242,24 @@ export function DotGridBackground({
           if (dSq < proxSq) t = 1 - Math.sqrt(dSq) / proximity;
         }
 
-        const r = Math.round(base.r + (active.r - base.r) * t);
-        const g = Math.round(base.g + (active.g - base.g) * t);
-        const b = Math.round(base.b + (active.b - base.b) * t);
+        // Resting colour: a stop from the spectrum when one was given,
+        // otherwise the flat base tone.
+        let rest = base;
+        if (ramp) {
+          const pos = dot.t * (ramp.length - 1);
+          const i = Math.min(ramp.length - 2, Math.floor(pos));
+          const f = pos - i;
+          const a = ramp[i];
+          const bb = ramp[i + 1];
+          rest = {
+            r: a.r + (bb.r - a.r) * f,
+            g: a.g + (bb.g - a.g) * f,
+            b: a.b + (bb.b - a.b) * f,
+          };
+        }
+        const r = Math.round(rest.r + (active.r - rest.r) * t);
+        const g = Math.round(rest.g + (active.g - rest.g) * t);
+        const b = Math.round(rest.b + (active.b - rest.b) * t);
         ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
         ctx.beginPath();
         ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -269,6 +300,7 @@ export function DotGridBackground({
     speedTrigger,
     shockRadius,
     shockStrength,
+    rainbow,
   ]);
 
   return (

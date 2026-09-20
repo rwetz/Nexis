@@ -224,21 +224,24 @@ export function Header({
         <div data-tauri-drag-region className="h-full min-w-2 flex-1" />
       </div>
 
-      {/* Spotlight opens the global finder; SearchInline beside it is
-          find-in-pane, which is a different job on a different scope — the
-          two look similar but one searches the workspace and the other
-          searches what is currently on screen. */}
+      {/* One search affordance in the title bar, and it is Spotlight. The
+          find-in-pane field used to sit here permanently, which put two
+          search boxes a few pixels apart answering different questions —
+          one searches the workspace, the other searches what is currently on
+          screen. Find-in-pane still exists and still answers its shortcut;
+          it just no longer occupies the bar when nobody asked for it, and
+          renders nothing until it does. */}
       <Button
         variant="ghost"
         size="icon-sm"
-        aria-label="Spotlight search"
-        title="Spotlight search"
+        aria-label="Search"
+        title="Search"
         onClick={onOpenSpotlight}
       >
         <Icon name="search" size="md" />
       </Button>
 
-      <SearchInline ref={searchRef} target={searchTarget} compact={compact} />
+      <SearchInline ref={searchRef} target={searchTarget} onDemand />
 
       <PermanentToolShelf
         compact={compact}

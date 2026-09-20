@@ -45,10 +45,20 @@ type Props = {
   target: SearchTarget;
   /** When true, collapse to an icon-only button until the user opens it. */
   compact?: boolean;
+  /**
+   * Render nothing at all until the shortcut opens it.
+   *
+   * Find-in-pane is a mode you enter, not a control you keep. Parked
+   * permanently in the title bar it sat beside Spotlight looking like the
+   * same thing while answering a different question — workspace vs. what is
+   * on screen. On demand it stays available on its binding and occupies no
+   * chrome otherwise.
+   */
+  onDemand?: boolean;
 };
 
 export const SearchInline = forwardRef<SearchInlineHandle, Props>(
-  function SearchInline({ target, compact }, ref) {
+  function SearchInline({ target, compact, onDemand }, ref) {
     const [q, setQ] = useState("");
     // In compact mode the field is hidden behind an icon until activated.
     // In normal mode the field is always present.
@@ -83,14 +93,17 @@ export const SearchInline = forwardRef<SearchInlineHandle, Props>(
       return shortcutText ? `${baseLabel} (${shortcutText})` : baseLabel;
     }, [baseLabel, shortcutText]);
 
-    const expanded = !compact || openInCompact;
+    // `onDemand` behaves like compact for opening, but renders nothing at
+    // all while closed rather than leaving an icon behind.
+    const collapsible = compact || onDemand;
+    const expanded = !collapsible || openInCompact;
 
     const focus = useCallback(() => {
       pendingFocusRef.current = true;
-      if (compact) setOpenInCompact(true);
+      if (compact || onDemand) setOpenInCompact(true);
       else inputRef.current?.focus();
       if (inputRef.current) pendingFocusRef.current = false;
-    }, [compact]);
+    }, [compact, onDemand]);
 
     useImperativeHandle(ref, () => ({ focus }), [focus]);
 
@@ -137,6 +150,10 @@ export const SearchInline = forwardRef<SearchInlineHandle, Props>(
       // git-history: the list filters live; Enter has no next/prev semantics.
     };
 
+    // Closed and on demand: occupy nothing. Not a zero-width box — an
+    // absent one, so it cannot collect a tab stop or a hit target.
+    if (onDemand && !expanded) return null;
+
     return (
       <div
         style={{ width: expanded ? 192 : 28 }}
@@ -162,7 +179,7 @@ export const SearchInline = forwardRef<SearchInlineHandle, Props>(
                   applyIncremental(next);
                 }}
                 onBlur={() => {
-                  if (compact && !q) setOpenInCompact(false);
+                  if (collapsible && !q) setOpenInCompact(false);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -172,7 +189,7 @@ export const SearchInline = forwardRef<SearchInlineHandle, Props>(
                     e.preventDefault();
                     clearTarget();
                     setQ("");
-                    if (compact) {
+                    if (collapsible) {
                       setOpenInCompact(false);
                     }
                     restoreTargetFocus();
