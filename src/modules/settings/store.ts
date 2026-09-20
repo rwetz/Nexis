@@ -58,22 +58,17 @@ export type AnimatedBgId = "aurora" | "particles" | "threads";
  * Deliberately separate from {@link AnimatedBgId}: the app-wide background
  * sits behind every pane at low opacity and has to stay out of the way of
  * work, while the welcome screen is the one place Nexis is allowed to be
- * scenery. DarkVeil was already hardcoded there; Dither and Dot Grid join it
- * rather than joining the app-wide set.
+ * scenery. DarkVeil was already hardcoded there; Dither joins it rather than
+ * joining the app-wide set.
  */
-export type WelcomeBgId = "darkveil" | "dither" | "dotgrid";
+export type WelcomeBgId = "darkveil" | "dither";
 
 /** Rotation order, and the order the picker lists them in. */
-export const WELCOME_BG_ORDER: readonly WelcomeBgId[] = [
-  "darkveil",
-  "dither",
-  "dotgrid",
-];
+export const WELCOME_BG_ORDER: readonly WelcomeBgId[] = ["darkveil", "dither"];
 
 export const WELCOME_BG_LABELS: Record<WelcomeBgId, string> = {
   darkveil: "Dark Veil",
   dither: "Dither",
-  dotgrid: "Dot Grid",
 };
 
 /** Advance one step through {@link WELCOME_BG_ORDER}. */
@@ -509,9 +504,14 @@ export async function loadPreferences(): Promise<Preferences> {
     backgroundAnimatedId:
       get<AnimatedBgId | null>(KEY_BG_ANIMATED_ID) ??
       DEFAULT_PREFERENCES.backgroundAnimatedId,
-    welcomeBackgroundId:
-      get<WelcomeBgId>(KEY_WELCOME_BG) ??
-      DEFAULT_PREFERENCES.welcomeBackgroundId,
+    // A value stored by an earlier build may name a background that no
+    // longer exists ("dotgrid"). Falling through to the default beats
+    // rendering nothing at all.
+    welcomeBackgroundId: WELCOME_BG_ORDER.includes(
+      get<WelcomeBgId>(KEY_WELCOME_BG) as WelcomeBgId,
+    )
+      ? (get<WelcomeBgId>(KEY_WELCOME_BG) as WelcomeBgId)
+      : DEFAULT_PREFERENCES.welcomeBackgroundId,
     welcomeBackgroundCycle:
       get<boolean>(KEY_WELCOME_BG_CYCLE) ??
       DEFAULT_PREFERENCES.welcomeBackgroundCycle,

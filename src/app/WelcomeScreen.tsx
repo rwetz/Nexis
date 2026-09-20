@@ -12,9 +12,6 @@ const DarkVeilBackground = lazy(() =>
 const DitherBackground = lazy(() =>
   import("@/components/ui/backgrounds/Dither").then((m) => ({ default: m.DitherBackground })),
 );
-const DotGridBackground = lazy(() =>
-  import("@/components/ui/backgrounds/DotGrid").then((m) => ({ default: m.DotGridBackground })),
-);
 import { Button } from "@/components/ui/button";
 import { ParticleText } from "@/components/ui/ParticleText";
 import { Icon } from "@/components/icon";
@@ -33,24 +30,6 @@ import { DEFAULT_THEME_ID } from "@/modules/theme/types";
 type Props = {
   onNewTerminal: () => void;
 };
-
-/** Shift every channel by `amount` (-1..1), clamped. Used for the dot grid's
- *  resting tone, which has to move away from the page: darker on a dark
- *  theme, lighter on a light one, or the dots vanish in one of the two. */
-function shiftHex(hex: string, amount: number): string {
-  const h = hex.replace(/^#/, "");
-  const n = parseInt(
-    h.length === 3 ? h.split("").map((c) => c + c).join("") : h,
-    16,
-  );
-  if (Number.isNaN(n)) return hex;
-  const bump = Math.round(amount * 255);
-  const clamp = (v: number) => Math.min(255, Math.max(0, v + bump));
-  const r = clamp((n >> 16) & 255);
-  const g = clamp((n >> 8) & 255);
-  const b = clamp(n & 255);
-  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
-}
 
 /** Hex to a linear 0..1 RGB triple, which is what the GL backgrounds take. */
 function hexToRgbTuple(hex: string): [number, number, number] {
@@ -122,14 +101,6 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
   const rainbow = rainbowPref && themeId === DEFAULT_THEME_ID;
   const folderColor = getFolderColor(themeId, resolvedMode);
   const hueShift = useMemo(() => hexToHue(folderColor), [folderColor]);
-  // The dots have to sit ON the page, not vanish into it: the welcome screen
-  // paints no plate behind them, so a resting tone derived by darkening a
-  // dark accent came out near-black on near-black. This lightens on a dark
-  // theme and darkens on a light one — toward the viewer either way.
-  const dotRest = useMemo(
-    () => shiftHex(folderColor, resolvedMode === "dark" ? 0.18 : -0.28),
-    [folderColor, resolvedMode],
-  );
   const rainbowHex = useMemo(
     () => (rainbow ? rainbowStops(0) : []),
     [rainbow],
@@ -178,12 +149,14 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
         {shown === "darkveil" && (
           <DarkVeilBackground
             // With the rainbow on, the veil sweeps the whole spectrum
-            // instead of sitting on one hue.
+            // instead of sitting on one hue. The warp stays modest: pushed
+            // hard it stops reading as a spectrum and collapses into one
+            // saturated field, which is how the first pass ended up purple
+            // from edge to edge.
             hueShift={rainbow ? 0 : hueShift}
             speed={0.3}
             noiseIntensity={0.04}
-            warpAmount={rainbow ? 1.1 : 0.5}
-            scanlineIntensity={rainbow ? 0.06 : 0}
+            warpAmount={rainbow ? 0.65 : 0.5}
           />
         )}
         {/* Dither keeps the BG Studio settings — grey on black — unless the
@@ -193,14 +166,6 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
           <DitherBackground
             color={rainbow ? hexToRgbTuple(rainbowHex[5]) : undefined}
             background={rainbow ? hexToRgbTuple(rainbowHex[0]) : undefined}
-          />
-        )}
-        {shown === "dotgrid" && (
-          <DotGridBackground
-            baseColor={dotRest}
-            activeColor={folderColor}
-            rainbow={rainbow ? rainbowHex : undefined}
-            opacity={0.9}
           />
         )}
       </Suspense>
@@ -228,8 +193,16 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
               text="Welcome to Nexis"
               fontSize={72}
               fontWeight={800}
-              color={rainbow ? rainbowHex[3] : "#f8fafc"}
-              highlight={rainbow ? rainbowHex[0] : "#8b5cf6"}
+              // The wordmark stays near-white in both modes. Painting it a
+              // single rainbow STOP was the bug behind "too much purple" —
+              // one arbitrary hue from the spectrum, over a background
+              // already carrying that spectrum. The rainbow reaches the
+              // wordmark through `spectrum`, which spreads the stops across
+              // the glyphs instead of flooding them with one of them.
+              color="#f8fafc"
+              highlight={rainbow ? undefined : "#8b5cf6"}
+              spectrum={rainbow ? rainbowHex : undefined}
+              glow={false}
               particleSize={2.2}
               density={4}
               scatter={190}
@@ -238,7 +211,6 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
               repelStrength={42}
               repelRadius={120}
               idleDrift={0.8}
-              glow
             />
           </h1>
           <p className="text-[14px] text-muted-foreground">

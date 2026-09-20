@@ -99,8 +99,15 @@ export function buildGrid(
 }
 
 type Props = {
-  /** Days with at least one commit, from `RepoDetail.activity`. */
-  days: ActivityDay[] | null;
+  /**
+   * Days with at least one commit, from `RepoDetail.activity`.
+   *
+   * `undefined` means the field was absent from the reply — a Rust binary
+   * older than the command that added it. That is a different situation
+   * from "this repo has no commits", and saying so beats drawing an empty
+   * grid that looks like a bug.
+   */
+  days: ActivityDay[] | null | undefined;
   className?: string;
 };
 
@@ -123,6 +130,15 @@ export function GitHubActivity({ days, className }: Props) {
     }
     return out;
   }, [grid.cells]);
+
+  if (days === undefined) {
+    return (
+      <div className={cn("text-[11px] text-muted-foreground", className)}>
+        Restart Nexis to load commit history — this view needs a newer build
+        of the backend than the one currently running.
+      </div>
+    );
+  }
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>

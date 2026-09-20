@@ -257,7 +257,16 @@ export function SettingsDialog() {
             "fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
             "flex overflow-hidden",
             "w-[min(920px,calc(100vw-2rem))] h-[min(700px,calc(100vh-4rem))]",
-            "rounded-2xl bg-popover text-popover-foreground",
+            // The blur lives on THIS element, which is the one that carries
+            // the radius — so it is clipped to the rounded rectangle rather
+            // than painting a square plate behind it. A backdrop-filter on a
+            // child, or on a sibling sized to the dialog, is not clipped by
+            // an ancestor's border-radius and shows its corners.
+            //
+            // `isolate` keeps the blur sampling the page behind the dialog
+            // rather than compositing with the overlay stacked above it.
+            "isolate rounded-2xl text-popover-foreground",
+            "bg-popover/85 supports-backdrop-filter:backdrop-blur-xl",
             "shadow-xl ring-1 ring-foreground/8",
             // entry/exit animation
             "duration-100 outline-none",

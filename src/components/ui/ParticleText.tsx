@@ -46,6 +46,8 @@ type Particle = {
   py: number;
   /** 0..1 proximity to the pointer on the last frame, for the highlight. */
   heat: number;
+  /** Resting colour, resolved once at build time. */
+  rest: string;
 };
 
 /** Spring pulling a particle home. Paired with DAMPING for a soft landing. */
@@ -60,8 +62,19 @@ type Props = {
   text: string;
   /** Resting particle colour. */
   color?: string;
-  /** Colour particles take as the pointer pushes them. */
+  /** Colour particles take as the pointer pushes them. Omit for no tint. */
   highlight?: string;
+  /**
+   * Stops spread left-to-right across the glyphs, replacing the flat
+   * `color`.
+   *
+   * This is how the rainbow accent reaches the wordmark. Handing the whole
+   * mark a single stop instead — which the first version did — just paints
+   * it one arbitrary hue, which is both less interesting and, over a
+   * background already carrying the same spectrum, far too much of one
+   * colour.
+   */
+  spectrum?: string[];
   /** Rendered cap height in CSS pixels. */
   fontSize?: number;
   fontWeight?: number;
@@ -89,7 +102,8 @@ type Props = {
 export function ParticleText({
   text,
   color = "#f8fafc",
-  highlight = "#8b5cf6",
+  highlight,
+  spectrum,
   fontSize = 64,
   fontWeight = 800,
   particleSize = 2.2,
@@ -145,13 +159,22 @@ export function ParticleText({
 
     const step = Math.max(1, Math.round(density));
     const particles: Particle[] = [];
+    // Resting colours resolved once. Per-particle, because a spectrum
+    // assigns by horizontal position; without a spectrum every particle
+    // shares the one string and no work is done per frame either way.
+    const spanStart = margin * dpr;
+    const spanWidth = Math.max(1, canvas.width - spanStart * 2);
     for (let y = 0; y < canvas.height; y += step) {
       for (let x = 0; x < canvas.width; x += step) {
         // Alpha channel of this sample. Anything mostly-opaque is ink.
         if (bitmap.data[(y * canvas.width + x) * 4 + 3] < 128) continue;
         const angle = Math.random() * Math.PI * 2;
         const dist = Math.random() * scatter * dpr;
+        const rest = spectrum?.length
+          ? sampleRamp(spectrum, (x - spanStart) / spanWidth)
+          : color;
         particles.push({
+          rest,
           x: reduceMotion ? x : x + Math.cos(angle) * dist,
           y: reduceMotion ? y : y + Math.sin(angle) * dist,
           tx: x,
@@ -249,7 +272,8 @@ export function ParticleText({
         p.x += p.vx * dt;
         p.y += p.vy * dt;
 
-        const fill = p.heat > 0.02 ? mix(color, highlight, p.heat) : color;
+        const fill =
+          highlight && p.heat > 0.02 ? mix(p.rest, highlight, p.heat) : p.rest;
         ctx.fillStyle = fill;
         if (glow) ctx.shadowColor = fill;
         ctx.beginPath();
@@ -267,6 +291,7 @@ export function ParticleText({
     text,
     color,
     highlight,
+    spectrum,
     fontSize,
     fontWeight,
     particleSize,
@@ -290,6 +315,14 @@ export function ParticleText({
       </span>
     </span>
   );
+}
+
+/** Sample a multi-stop ramp at `t` (0..1), clamped. */
+function sampleRamp(stops: string[], t: number): string {
+  if (stops.length === 1) return stops[0];
+  const pos = Math.min(1, Math.max(0, t)) * (stops.length - 1);
+  const i = Math.min(stops.length - 2, Math.floor(pos));
+  return mix(stops[i], stops[i + 1], pos - i);
 }
 
 /** Blend two hex colours. `t` 0 = `a`, 1 = `b`. */

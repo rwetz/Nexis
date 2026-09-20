@@ -144,9 +144,9 @@ void main() {
 
 type Props = {
   /** Wave colour, as linear 0..1 RGB. */
-  color?: [number, number, number];
+  color?: readonly [number, number, number];
   /** Ground the field is drawn over, as linear 0..1 RGB. */
-  background?: [number, number, number];
+  background?: readonly [number, number, number];
   waveSpeed?: number;
   waveFrequency?: number;
   waveAmplitude?: number;
@@ -166,9 +166,17 @@ type Props = {
  * wave #808080 on #000000, intensity 40, amplitude 0.08, frequency 10,
  * speed 0.1, mouse interaction on at radius 0.3.
  */
+// Module constants, NOT inline defaults. An inline `color = [0.5, 0.5, 0.5]`
+// allocates a fresh array on every render, and this component's effect
+// depends on its settings — so the identity change tore the GL context down
+// and rebuilt it every render, which is why the background rendered nothing
+// at all. The effect below depends on the channels, never on array identity.
+const DEFAULT_COLOR: readonly [number, number, number] = [0.502, 0.502, 0.502];
+const DEFAULT_BACKGROUND: readonly [number, number, number] = [0, 0, 0];
+
 export function DitherBackground({
-  color = [0.502, 0.502, 0.502],
-  background = [0, 0, 0],
+  color = DEFAULT_COLOR,
+  background = DEFAULT_BACKGROUND,
   waveSpeed = 0.1,
   waveFrequency = 10,
   waveAmplitude = 0.08,
@@ -209,8 +217,10 @@ export function DitherBackground({
         iResolution: {
           value: new Float32Array([gl.canvas.width, gl.canvas.height]),
         },
-        uWaveColor: { value: new Color(...color) },
-        uBackground: { value: new Color(...background) },
+        uWaveColor: { value: new Color(color[0], color[1], color[2]) },
+        uBackground: {
+          value: new Color(background[0], background[1], background[2]),
+        },
         uWaveSpeed: { value: waveSpeed },
         uWaveFrequency: { value: waveFrequency },
         uWaveAmplitude: { value: waveAmplitude },
@@ -279,9 +289,15 @@ export function DitherBackground({
       if (container.contains(gl.canvas)) container.removeChild(gl.canvas);
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
+    // Channels, not the arrays: see DEFAULT_COLOR above. Depending on the
+    // array identity re-created the renderer on every render.
   }, [
-    color,
-    background,
+    color[0],
+    color[1],
+    color[2],
+    background[0],
+    background[1],
+    background[2],
     waveSpeed,
     waveFrequency,
     waveAmplitude,

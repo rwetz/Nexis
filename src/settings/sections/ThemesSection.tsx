@@ -482,7 +482,7 @@ export function ThemesSection() {
           description="Shown when no tab is open."
         />
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {WELCOME_BG_ORDER.map((id) => (
             <button
               key={id}
@@ -535,16 +535,9 @@ export function ThemesSection() {
 function welcomeBgPreview(id: WelcomeBgId, primary: string): string {
   if (id === "darkveil")
     return `linear-gradient(135deg, #0a0a1a 0%, ${primary} 55%, #0a0a1a 100%)`;
-  if (id === "dither")
-    return (
-      `repeating-linear-gradient(115deg, #808080 0 2px, #4a4a4a 2px 4px, ` +
-      `#000 4px 8px)`
-    );
-  const dim = lightenHex(primary, -0.24);
   return (
-    `radial-gradient(${primary} 1.2px, transparent 1.3px) 0 0 / 9px 9px, ` +
-    `radial-gradient(${dim} 1.2px, transparent 1.3px) 4.5px 4.5px / 9px 9px, ` +
-    `#0a0a1a`
+    `repeating-linear-gradient(115deg, #808080 0 2px, #4a4a4a 2px 4px, ` +
+    `#000 4px 8px)`
   );
 }
 
