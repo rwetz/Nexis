@@ -1,0 +1,261 @@
+// ╔══════════════════════════════════════╗
+// ║  Ryan Wetzstein                      ║
+// ║  Nexis                               ║
+// ║  2026                                ║
+// ╚══════════════════════════════════════╝
+
+/**
+ * A contribution heatmap for one repo: 53 weeks of daily commit counts, laid
+ * out the way GitHub's is — weeks as columns, weekday as row.
+ *
+ * The data is local git history via `git_activity`, not the GitHub API: Atlas
+ * scans directories on disk, most of which have no remote at all, and a graph
+ * that only worked for repos that happen to be on github.com would be blank
+ * for exactly the private work this panel exists to show.
+ *
+ * Colour comes from `--terminal-ansi-green`, the same ramp the rest of the
+ * app uses for "something happened here", stepped by opacity rather than by
+ * five hardcoded greens — so it follows the active theme instead of pinning
+ * GitHub's palette into a Nexis panel.
+ */
+
+import { git } from "@/capabilities/git/api";
+import { cn } from "@/lib/utils";
+import type { GitActivityDay } from "@/domain/native-types";
+import { useEffect, useMemo, useState } from "react";
+
+/** Weeks drawn. GitHub shows 53; matching it keeps the shape familiar. */
+const WEEKS = 53;
+const DAYS_PER_WEEK = 7;
+
+/** Opacity per intensity step. Index 0 is "no commits". */
+const STEP_OPACITY = [0, 0.28, 0.5, 0.72, 1] as const;
+
+const WEEKDAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""] as const;
+
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+] as const;
+
+/** `YYYY-MM-DD` in local time — the same key space `git_activity` returns. */
+function localKey(d: Date): string {
+  const m = `${d.getMonth() + 1}`.padStart(2, "0");
+  const day = `${d.getDate()}`.padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+type Cell = { key: string; date: Date; count: number; step: number };
+
+/**
+ * Build the grid, newest week last.
+ *
+ * The grid ends on the Saturday of the current week and runs back
+ * `WEEKS * 7` days, so the last column is the week in progress and every
+ * column is a full Sunday-to-Saturday week. Days in the future (the rest of
+ * this week) are still emitted so the columns stay aligned; they simply have
+ * a count of zero.
+ */
+export function buildGrid(
+  days: GitActivityDay[],
+  today = new Date(),
+): { cells: Cell[]; max: number; total: number } {
+  const counts = new Map<string, number>();
+  let total = 0;
+  for (const d of days) {
+    counts.set(d.date, d.count);
+    total += d.count;
+  }
+
+  const end = new Date(today);
+  end.setHours(0, 0, 0, 0);
+  // Advance to Saturday so the final column is a complete week.
+  end.setDate(end.getDate() + (6 - end.getDay()));
+
+  const start = new Date(end);
+  start.setDate(start.getDate() - (WEEKS * DAYS_PER_WEEK - 1));
+
+  const max = Math.max(1, ...counts.values());
+  const cells: Cell[] = [];
+  for (let i = 0; i < WEEKS * DAYS_PER_WEEK; i++) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + i);
+    const key = localKey(date);
+    const count = counts.get(key) ?? 0;
+    // Four filled steps, scaled against the busiest day in the window. A
+    // relative ramp rather than fixed thresholds: a repo with two commits a
+    // week and one with forty both need to show contrast.
+    const step =
+      count === 0 ? 0 : Math.min(4, Math.ceil((count / max) * 4));
+    cells.push({ key, date, count, step });
+  }
+
+  return { cells, max, total };
+}
+
+type Props = {
+  /** Repo root. Null renders the empty state. */
+  repoPath: string | null;
+  className?: string;
+};
+
+export function GitHubActivity({ repoPath, className }: Props) {
+  const [days, setDays] = useState<GitActivityDay[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!repoPath) {
+      setDays(null);
+      return;
+    }
+    let alive = true;
+    setDays(null);
+    setError(null);
+    git
+      .gitActivity(repoPath, WEEKS * DAYS_PER_WEEK)
+      .then((res) => {
+        if (alive) setDays(res);
+      })
+      .catch((e: unknown) => {
+        if (alive) setError(e instanceof Error ? e.message : String(e));
+      });
+    return () => {
+      alive = false;
+    };
+  }, [repoPath]);
+
+  const grid = useMemo(() => buildGrid(days ?? []), [days]);
+
+  // Month labels sit above the first column whose week *starts* a new month,
+  // which is how GitHub places them — labelling every column would not fit.
+  const monthLabels = useMemo(() => {
+    const out: { col: number; label: string }[] = [];
+    let lastMonth = -1;
+    for (let col = 0; col < WEEKS; col++) {
+      const first = grid.cells[col * DAYS_PER_WEEK];
+      if (!first) continue;
+      const month = first.date.getMonth();
+      if (month !== lastMonth) {
+        lastMonth = month;
+        out.push({ col, label: MONTH_NAMES[month] });
+      }
+    }
+    return out;
+  }, [grid.cells]);
+
+  if (!repoPath) {
+    return (
+      <div className={cn("text-xs text-muted-foreground", className)}>
+        No repo selected
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={cn("text-xs text-destructive", className)}>
+        Could not read history: {error}
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Commit activity
+        </span>
+        <span className="text-[10.5px] tabular-nums text-muted-foreground">
+          {days === null
+            ? "Reading"
+            : `${grid.total} commit${grid.total === 1 ? "" : "s"} this year`}
+        </span>
+      </div>
+
+      {/* Horizontal scroll: 53 columns will not fit a 380px detail panel at
+          any legible cell size, and shrinking the cells to fit is what makes
+          these graphs unreadable. */}
+      <div className="overflow-x-auto overscroll-contain pb-1">
+        <div className="inline-flex flex-col gap-1">
+          <div
+            className="grid gap-[3px] pl-[26px] text-[9px] text-muted-foreground"
+            style={{
+              gridTemplateColumns: `repeat(${WEEKS}, 10px)`,
+            }}
+          >
+            {monthLabels.map(({ col, label }) => (
+              <span
+                key={`${col}-${label}`}
+                className="col-span-3 whitespace-nowrap"
+                style={{ gridColumnStart: col + 1 }}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+
+          <div className="flex gap-1">
+            <div
+              className="grid shrink-0 gap-[3px] text-[9px] leading-[10px] text-muted-foreground"
+              style={{ gridTemplateRows: `repeat(${DAYS_PER_WEEK}, 10px)` }}
+            >
+              {WEEKDAY_LABELS.map((label, i) => (
+                <span key={i} className="w-[22px] text-right">
+                  {label}
+                </span>
+              ))}
+            </div>
+
+            <div
+              className="grid grid-flow-col gap-[3px]"
+              style={{
+                gridTemplateRows: `repeat(${DAYS_PER_WEEK}, 10px)`,
+                gridTemplateColumns: `repeat(${WEEKS}, 10px)`,
+              }}
+            >
+              {grid.cells.map((cell) => (
+                <div
+                  key={cell.key}
+                  // `title` rather than a Tooltip: 371 cells would mean 371
+                  // Radix instances for a hover hint on a decorative grid.
+                  title={`${cell.count} commit${cell.count === 1 ? "" : "s"} on ${cell.key}`}
+                  className={cn(
+                    "size-[10px] rounded-[2px]",
+                    cell.step === 0 && "bg-muted",
+                  )}
+                  style={
+                    cell.step === 0
+                      ? undefined
+                      : {
+                          backgroundColor: "var(--terminal-ansi-green)",
+                          opacity: STEP_OPACITY[cell.step],
+                        }
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-1 text-[9.5px] text-muted-foreground">
+        <span>Less</span>
+        {STEP_OPACITY.map((op, i) => (
+          <div
+            key={i}
+            className={cn("size-[10px] rounded-[2px]", i === 0 && "bg-muted")}
+            style={
+              i === 0
+                ? undefined
+                : {
+                    backgroundColor: "var(--terminal-ansi-green)",
+                    opacity: op,
+                  }
+            }
+          />
+        ))}
+        <span>More</span>
+      </div>
+    </div>
+  );
+}

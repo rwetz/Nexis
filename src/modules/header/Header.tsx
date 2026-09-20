@@ -56,6 +56,8 @@ type Props = {
   onOpenMlLab: () => void;
   searchTarget: SearchTarget;
   searchRef: RefObject<SearchInlineHandle | null>;
+  /** Opens the Spotlight finder (files + commands). */
+  onOpenSpotlight: () => void;
 };
 
 const COMPACT_WIDTH = 720;
@@ -82,6 +84,7 @@ export function Header({
   onOpenMlLab,
   searchTarget,
   searchRef,
+  onOpenSpotlight,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [compact, setCompact] = useState(false);
@@ -220,6 +223,20 @@ export function Header({
         />
         <div data-tauri-drag-region className="h-full min-w-2 flex-1" />
       </div>
+
+      {/* Spotlight opens the global finder; SearchInline beside it is
+          find-in-pane, which is a different job on a different scope — the
+          two look similar but one searches the workspace and the other
+          searches what is currently on screen. */}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Spotlight search"
+        title="Spotlight search"
+        onClick={onOpenSpotlight}
+      >
+        <Icon name="search" size="md" />
+      </Button>
 
       <SearchInline ref={searchRef} target={searchTarget} compact={compact} />
 

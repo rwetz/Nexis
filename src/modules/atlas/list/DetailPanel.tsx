@@ -13,6 +13,7 @@ import {
   type RepoSummary,
 } from "@/modules/atlas/repos/types";
 import { toast } from "sonner";
+import { GitHubActivity } from "./GitHubActivity";
 
 export function DetailPanel() {
   const detailOpen = useAtlasStore((s) => s.detailOpen);
@@ -132,6 +133,17 @@ function DetailBody({
             </div>
           </section>
         )}
+
+        {/* Activity sits between "last commit" and "changed files" on
+            purpose: the panel reads newest-first, and the heatmap is the
+            longest-range view of the same question the two around it answer
+            at a point in time. */}
+        <section className="mt-4">
+          <SectionTitle icon="activity">Activity</SectionTitle>
+          <div className="mt-1.5 rounded-xl border border-border/60 bg-background/60 p-3">
+            <GitHubActivity repoPath={summary.path} />
+          </div>
+        </section>
 
         <section className="mt-4">
           <SectionTitle icon="git-branch">

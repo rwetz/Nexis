@@ -49,13 +49,24 @@ Two utility classes replace the stock Tailwind animations on the app's most-seen
 - `.nexis-spin` — indeterminate progress, stepped through four quarter-turns rather than swept. A terminal spinner is a character cycling in its cell and can only ever be discrete.
 - `.nexis-blink` — live/pending indicators, a near-square wave at caret cadence rather than `animate-pulse`'s sine-eased breathe.
 
+`.nexis-thought-head` travels the rail in `ThoughtLine` at `calc(--blink-cadence * 1.6)`, so a reasoning stream in progress pulses on the same clock as the caret rather than introducing a fourth tempo.
+
 `animate-pulse` deliberately survives on `Skeleton` and on indeterminate progress *bars* — a content placeholder is a different idiom from a status caret, and blinking a large filled surface is visually heavy.
 
 `.nexis-scene-enter`, `.nexis-stagger`, `.nexis-result-arrival`, and `.nexis-run-live` are the opt-in data-motion primitives. They are not general decoration: companion windows and result canvases enter once, setup cards stagger once, a finished benchmark cell gets one accent flash, and a running plan gets a slow live scan. The shared reduced-motion rule disables all four. Canvas scenes cannot consume CSS animation, so Atlas's renderer has the same 420ms budget in `CityCanvas.tsx`; it schedules only the short assembly run and draws the complete city in its first frame under reduced motion.
 
+### The `motion` exception
+
+As of 2026-09, `motion` is a runtime dependency. It is for interruptible, spring-driven movement that CSS transitions genuinely cannot express — a rail that must retarget mid-flight, a layout that must animate from wherever it currently is. `use-gliding-rail.ts` (the sidebar and Settings rails), `AppleSpotlight`, and `FolderPreview` are the intended users.
+
+Everything already satisfied by a CSS transition stays on CSS and the tokens above. This is not an invitation to animate in JS by default — note that `atlas/list/DetailPanel.tsx` still carries a comment about having *removed* `motion/react` for exactly that reason, and it was right to.
+
+Every `motion` call site reads `useReducedMotion()` and collapses its spring to `{ duration: 0 }`. The CSS half is covered by the shared reduced-motion rule; the JS half has to opt in per component, which is the cost of this exception.
+
 ## Key files
 
 - `src/components/icon.tsx` — the registry, the size scale, the `Icon` component. The only module allowed to import the icon vendor.
+- `src/components/ui/use-gliding-rail.ts` — the shared measure-and-travel hook behind both navs' rails
 - `src/settings/components/providerMarks.ts` — embedded CC0 provider brand marks
 - `src/settings/components/ProviderIcon.tsx` — mark-or-glyph selection per `ProviderId`
 - `src/modules/explorer/lib/iconResolver.ts` — file/folder art resolution and the theme retint

@@ -72,6 +72,38 @@ function SelectContent({
   align = "center",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
+  const viewportRef = React.useRef<HTMLDivElement>(null)
+  const [glide, setGlide] = React.useState<{
+    top: number
+    height: number
+  } | null>(null)
+
+  // Radix owns the highlight: it writes `data-highlighted` onto whichever
+  // item has roving focus, for pointer and keyboard alike. Observing that
+  // attribute is what keeps the rail correct for both without duplicating
+  // Radix's own notion of which item is active — there is no callback that
+  // reports it.
+  React.useEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport) return
+    const sync = () => {
+      const el = viewport.querySelector<HTMLElement>(
+        '[data-slot="select-item"][data-highlighted]',
+      )
+      // offsetTop is relative to the viewport because it is the nearest
+      // positioned ancestor, so this stays correct as the list scrolls.
+      setGlide(el ? { top: el.offsetTop, height: el.offsetHeight } : null)
+    }
+    const observer = new MutationObserver(sync)
+    observer.observe(viewport, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ["data-highlighted"],
+    })
+    sync()
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
@@ -84,12 +116,32 @@ function SelectContent({
       >
         <SelectScrollUpButton />
         <SelectPrimitive.Viewport
+          ref={viewportRef}
           data-position={position}
           className={cn(
-            "data-[position=popper]:h-(--radix-select-trigger-height) data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width)",
+            "relative data-[position=popper]:h-(--radix-select-trigger-height) data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width)",
             position === "popper" && ""
           )}
         >
+          {/* The glide rail. One element for the whole list, moved between
+            * items, rather than each item painting its own background — that
+            * is the entire difference between a highlight that jumps and one
+            * that travels. Hidden until the first highlight so it does not
+            * slide in from the top edge on open. */}
+          <div
+            aria-hidden
+            data-slot="select-glide"
+            className={cn(
+              "pointer-events-none absolute inset-x-1 z-0 rounded-2xl bg-accent transition-[translate,height,opacity]",
+              glide ? "opacity-100" : "opacity-0",
+            )}
+            style={{
+              height: glide?.height ?? 0,
+              translate: `0 ${glide?.top ?? 0}px`,
+              transitionDuration: "var(--dur-panel)",
+              transitionTimingFunction: "var(--ease-enter)",
+            }}
+          />
           {children}
         </SelectPrimitive.Viewport>
         <SelectScrollDownButton />
@@ -120,7 +172,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-2.5 rounded-2xl py-2 pr-8 pl-3 text-sm font-medium outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative z-10 flex w-full cursor-default items-center gap-2.5 rounded-2xl py-2 pr-8 pl-3 text-sm font-medium outline-hidden select-none focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
       )}
       {...props}

@@ -14,6 +14,8 @@ import {
 import { Icon, type IconName } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useGlidingRail } from "@/components/ui/use-gliding-rail";
+import { motion } from "motion/react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import {
   JSX,
@@ -212,6 +214,15 @@ export function SettingsDialog() {
 
   const firstMatch = visibleGroups[0]?.tabs[0];
 
+  // The nav's own line rail. `visibleTabCount` is the revision: filtering by
+  // the search query changes which rows exist and therefore where every row
+  // sits, and the rail has to re-measure when it does.
+  const visibleTabCount = visibleGroups.reduce(
+    (n, g) => n + g.tabs.length,
+    0,
+  );
+  const rail = useGlidingRail<SettingsTab>(activeTab, "vertical", visibleTabCount);
+
   // Enter jumps to the top hit so search is a keyboard-only path: open, type,
   // Enter. Selecting does not clear the query — the filtered nav stays put so
   // you can Enter again on a near-miss without retyping.
@@ -283,7 +294,38 @@ export function SettingsDialog() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {/* A single hairline runs the height of the nav, with one solid
+              * segment marking the active row — the row itself carries no
+              * fill. The line is what makes a filtered list still read as
+              * one column: with per-row backgrounds, a nav that loses half
+              * its rows to a search query loses its spine too. */}
+            <div
+              ref={rail.containerRef}
+              className="relative min-h-0 flex-1 overflow-y-auto px-2 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              onPointerLeave={() => rail.setHoverId(null)}
+            >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-2 left-1 w-px bg-border/60"
+              />
+              {rail.hoverRect && rail.hoverId !== activeTab && (
+                <motion.span
+                  aria-hidden
+                  className="pointer-events-none absolute left-1 w-px rounded-full bg-foreground/25"
+                  initial={false}
+                  animate={{ y: rail.hoverRect.offset, height: rail.hoverRect.extent }}
+                  transition={rail.transition}
+                />
+              )}
+              {rail.activeRect && (
+                <motion.span
+                  aria-hidden
+                  className="pointer-events-none absolute left-[2px] w-[2px] rounded-full bg-primary"
+                  initial={false}
+                  animate={{ y: rail.activeRect.offset, height: rail.activeRect.extent }}
+                  transition={rail.transition}
+                />
+              )}
               {visibleGroups.map((group, gi) => (
                 <div
                   key={group.label ?? "ungrouped"}
@@ -302,15 +344,18 @@ export function SettingsDialog() {
                       <button
                         key={t.id}
                         type="button"
+                        ref={(el) => rail.registerItem(t.id, el)}
                         onClick={() => setActiveTab(t.id)}
+                        onPointerEnter={() => rail.setHoverId(t.id)}
+                        onFocus={() => rail.setHoverId(t.id)}
                         aria-current={isActive ? "page" : undefined}
                         className={[
                           "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px]",
                           "transition-colors outline-none",
                           "focus-visible:ring-2 focus-visible:ring-ring/40",
                           isActive
-                            ? "bg-muted/70 font-medium text-foreground"
-                            : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                            ? "font-medium text-foreground"
+                            : "text-muted-foreground hover:text-foreground",
                         ].join(" ")}
                       >
                         <Icon name={t.icon} className="shrink-0" />

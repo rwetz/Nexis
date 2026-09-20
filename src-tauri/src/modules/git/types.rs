@@ -103,6 +103,19 @@ pub struct GitCommitFileChange {
     pub is_binary: bool,
 }
 
+/// One day's commit count, for the contribution heatmap.
+///
+/// `date` is `YYYY-MM-DD` in the *machine's local timezone*, because git
+/// formats it that way and because that is what makes a contribution graph
+/// agree with the user's sense of which day they worked. Only days with at
+/// least one commit are emitted; the caller fills the gaps.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitActivityDay {
+    pub date: String,
+    pub count: u32,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GitLogEntry {

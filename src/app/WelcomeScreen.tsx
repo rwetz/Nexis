@@ -10,6 +10,8 @@ const DarkVeilBackground = lazy(() =>
   import("@/components/ui/backgrounds/DarkVeil").then((m) => ({ default: m.DarkVeilBackground })),
 );
 import { Button } from "@/components/ui/button";
+import { CursorAura } from "@/components/ui/CursorAura";
+import { ParticleText } from "@/components/ui/ParticleText";
 import { Icon } from "@/components/icon";
 import { fmtShortcut, MOD_KEY, SHIFT_KEY } from "@/lib/platform";
 import { openOnboarding } from "@/modules/onboarding/onboardingDialogStore";
@@ -61,6 +63,10 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
         />
       </Suspense>
 
+      {/* Scoped to this screen only. See CursorAura's own note on why this
+          is not a global layer. */}
+      <CursorAura color={folderColor} size={460} opacity={0.32} />
+
       <div
         className="relative z-10 flex flex-col items-center gap-6"
         style={{ animation: "welcome-fadein 0.55s cubic-bezier(0.16,1,0.3,1) both" }}
@@ -82,7 +88,7 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
 
         <div className="mt-4 space-y-2">
           <p className="text-[22px] font-semibold tracking-tight">
-            Welcome to Nexis
+            <ParticleText text="Welcome to Nexis" fontSize={22} fontWeight={600} />
           </p>
           <p className="text-[14px] text-muted-foreground">
             Open a terminal or file to get started — or press {MOD_KEY}+I to ask the AI agent.

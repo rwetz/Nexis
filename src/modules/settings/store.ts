@@ -49,7 +49,25 @@ export const DEFAULT_THEME_ID = "nexis-default";
 
 export type BackgroundKind = "none" | "image" | "animated";
 
-export type AnimatedBgId = "aurora" | "particles" | "threads";
+export type AnimatedBgId =
+  | "aurora"
+  | "particles"
+  | "threads"
+  | "dotgrid"
+  | "dither";
+
+/**
+ * Rotation order for the startup cycle, and the order the picker lists them
+ * in. Declared here rather than in the picker because `cycleAnimatedBackground`
+ * advances through it at startup, before any UI has mounted.
+ */
+export const ANIMATED_BG_ORDER: readonly AnimatedBgId[] = [
+  "aurora",
+  "particles",
+  "threads",
+  "dotgrid",
+  "dither",
+];
 
 export const EDITOR_THEMES = [
   "atomone",
@@ -133,6 +151,9 @@ export type Preferences = {
   backgroundKind: BackgroundKind;
   backgroundImageId: string | null;
   backgroundAnimatedId: AnimatedBgId | null;
+  /** Advance `backgroundAnimatedId` one step through ANIMATED_BG_ORDER on
+   * each app launch, so the animated background rotates over time. */
+  backgroundCycleOnStartup: boolean;
   backgroundOpacity: number;
   backgroundBlur: number;
   defaultModelId: ModelId;
@@ -250,6 +271,7 @@ const KEY_RAINBOW_ACCENT = "rainbowAccent";
 const KEY_BG_KIND = "backgroundKind";
 const KEY_BG_IMAGE_ID = "backgroundImageId";
 const KEY_BG_ANIMATED_ID = "backgroundAnimatedId";
+const KEY_BG_CYCLE = "backgroundCycleOnStartup";
 const KEY_BG_OPACITY = "backgroundOpacity";
 const KEY_BG_BLUR = "backgroundBlur";
 const KEY_DEFAULT_MODEL = "defaultModelId";
@@ -351,6 +373,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   backgroundKind: "none",
   backgroundImageId: null,
   backgroundAnimatedId: null,
+  backgroundCycleOnStartup: false,
   backgroundOpacity: 0.5,
   backgroundBlur: 0,
   defaultModelId: DEFAULT_MODEL_ID,
@@ -469,6 +492,9 @@ export async function loadPreferences(): Promise<Preferences> {
     backgroundAnimatedId:
       get<AnimatedBgId | null>(KEY_BG_ANIMATED_ID) ??
       DEFAULT_PREFERENCES.backgroundAnimatedId,
+    backgroundCycleOnStartup:
+      get<boolean>(KEY_BG_CYCLE) ??
+      DEFAULT_PREFERENCES.backgroundCycleOnStartup,
     backgroundOpacity: clampBgOpacity(
       get<number>(KEY_BG_OPACITY) ?? DEFAULT_PREFERENCES.backgroundOpacity,
     ),
@@ -693,6 +719,26 @@ export async function setBackgroundImageId(value: string | null): Promise<void> 
 
 export async function setBackgroundAnimatedId(value: AnimatedBgId | null): Promise<void> {
   await writePref(KEY_BG_ANIMATED_ID, value);
+}
+
+export async function setBackgroundCycleOnStartup(value: boolean): Promise<void> {
+  await writePref(KEY_BG_CYCLE, value);
+}
+
+/**
+ * Advance the animated background one step through {@link ANIMATED_BG_ORDER}.
+ *
+ * Called once per launch from the main window, and only when the current
+ * background is already animated: cycling is a rotation through the animated
+ * set, not a way to switch a user who chose "none" or a wallpaper image onto
+ * one. An unrecognised stored id (a background removed in a later version)
+ * lands on index 0 rather than dropping the user to no background at all.
+ *
+ * Returns the id it moved to, or null when it did not act.
+ */
+export function nextAnimatedBg(current: AnimatedBgId): AnimatedBgId {
+  const idx = ANIMATED_BG_ORDER.indexOf(current);
+  return ANIMATED_BG_ORDER[(idx + 1) % ANIMATED_BG_ORDER.length];
 }
 
 export async function setBackgroundOpacity(value: number): Promise<void> {
@@ -1023,6 +1069,7 @@ export async function onPreferencesChange(
     [KEY_BG_KIND]: "backgroundKind",
     [KEY_BG_IMAGE_ID]: "backgroundImageId",
     [KEY_BG_ANIMATED_ID]: "backgroundAnimatedId",
+    [KEY_BG_CYCLE]: "backgroundCycleOnStartup",
     [KEY_BG_OPACITY]: "backgroundOpacity",
     [KEY_BG_BLUR]: "backgroundBlur",
     [KEY_DEFAULT_MODEL]: "defaultModelId",

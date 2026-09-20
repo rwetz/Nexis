@@ -19,6 +19,12 @@
 
     --font-heading: var(--font-sans);
     --font-sans: 'Inter Variable', sans-serif;
+    /* Mirrors FALLBACK_CHAIN in src/lib/fonts.ts, which is what the terminal
+     * and CodeMirror resolve through. Kept in sync by hand on purpose: this
+     * one is a static CSS value, that one probes installed Nerd Fonts at
+     * runtime, and they cannot share a source without shipping the chain
+     * through a style property on every paint. */
+    --font-mono: 'Cascadia Code', 'Cascadia Mono', 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -449,6 +455,24 @@ html *::-webkit-scrollbar {
   animation: nexis-caret-blink var(--blink-cadence) linear infinite;
 }
 
+/* The travelling head of <ThoughtLine>. Runs at the caret cadence so a
+ * thought in progress pulses at the same rhythm as the terminal cursor
+ * rather than introducing a fourth tempo. `translate` (not `left`) because
+ * this runs continuously and must stay off the layout path. */
+@keyframes nexis-thought-travel {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 300% 0;
+  }
+}
+
+.nexis-thought-head {
+  animation: nexis-thought-travel calc(var(--blink-cadence) * 1.6) var(--ease-enter)
+    infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* Both indicators still have to signal "busy" without moving. The spinner
    * holds a static glyph; the blink settles at a dimmed-but-visible opacity so
@@ -459,6 +483,12 @@ html *::-webkit-scrollbar {
   .nexis-blink {
     animation: none;
     opacity: 0.62;
+  }
+  /* Parked mid-track: the line still reads as active, it just stops
+   * travelling. */
+  .nexis-thought-head {
+    animation: none;
+    translate: 100% 0;
   }
 }
 
@@ -989,4 +1019,32 @@ html[data-rainbow-accent] .aurora-border::before {
 html[data-os="linux"] [class*="backdrop-blur"] {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* ── Switch thumb squish ─────────────────────────────────────────────────────
+ * The thumb deforms while the control is held, then springs back as it
+ * travels. Written here rather than as utilities on the component because the
+ * CSS `scale` property composes with whatever `transform` the thumb's
+ * `translate-x-*` utility emits — they are separate properties, applied in a
+ * fixed order — so the squish and the travel do not have to know about each
+ * other. Doing both through `transform` would mean one class overwriting the
+ * other depending on source order.
+ *
+ * `--dur-tap` because this is an in-place state change on a control the user
+ * is physically holding; anything slower reads as lag rather than as give.
+ */
+[data-slot="switch-thumb"] {
+  transition-property: transform, translate, scale, background-color;
+  transition-duration: var(--dur-tap);
+  transition-timing-function: var(--ease-enter);
+}
+[data-slot="switch"]:active:not([data-disabled]) [data-slot="switch-thumb"] {
+  scale: 1.22 0.82;
+}
+/* Users who asked the OS for less motion get the state change without the
+ * deformation — the squish is decoration, the translate is the state. */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="switch"]:active:not([data-disabled]) [data-slot="switch-thumb"] {
+    scale: 1 1;
+  }
 }

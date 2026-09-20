@@ -15,8 +15,20 @@ A theme is a data object (`Theme` in `src/modules/theme/types.ts`), not a styles
 
 Custom theme files live under the host app-config directory. `themeFiles.ts` must use `hostFilesystem`, never the active workspace environment; otherwise a WSL workspace incorrectly routes a Windows app-data path into the distro.
 
+## Animated backgrounds
+
+`SurfaceLayer` picks one of five by `backgroundAnimatedId` and hands it the active theme's `primary`, re-keying on theme/mode change so colours refresh. All five live in `src/components/ui/backgrounds/` and all five gate their rAF through `rafLoop.ts` (hidden documents must not keep rendering — WebKitGTK does not reliably throttle them).
+
+Four are `ogl` fragment shaders on a full-screen triangle (Aurora, Particles, Threads, DarkVeil); **Dot Grid is canvas 2D**, deliberately, so there is one background that still works with no usable WebGL context. **Dither** is a port *onto* `ogl` from the reference three.js + `@react-three/fiber` + `@react-three/postprocessing` stack — its two passes collapse into one fragment shader because the "post" pass has no scene to read back, only the luminance the first pass just computed.
+
+`ANIMATED_BG_ORDER` in `settings/store.ts` is both the picker order and the startup rotation; `nextAnimatedBg` advances it and `App.tsx` calls it once per launch behind a ref.
+
+DarkVeil is **not** in `AnimatedBgId` — it is hardcoded into `WelcomeScreen`, not user-selectable.
+
 ## Key files
 
+- `src/modules/theme/SurfaceLayer.tsx` — background dispatch, theme-colour derivation, the image fast path
+- `src/components/ui/backgrounds/` — the five backgrounds plus the shared `rafLoop` visibility gate
 - `src/modules/theme/types.ts` — `Theme`, `ThemeColors`, `TerminalPalette`, `DEFAULT_THEME_ID`
 - `src/modules/theme/themes/index.ts` — the three lists, `getBuiltinTheme`, and `migrateThemeId` (retired ids → survivors)
 - `src/modules/theme/applyTheme.ts` — the only writer of theme CSS variables; also derives `--brand` from `ring ?? primary`

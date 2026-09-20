@@ -13,6 +13,7 @@ import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
   setBackgroundAnimatedId,
   setBackgroundBlur,
+  setBackgroundCycleOnStartup,
   setBackgroundImageId,
   setBackgroundKind,
   setBackgroundOpacity,
@@ -45,6 +46,8 @@ const ANIMATED_BG_DEFS: { id: AnimatedBgId; label: string; description: string }
   { id: "aurora",    label: "Aurora",    description: "Northern lights" },
   { id: "particles", label: "Particles", description: "Floating orbs"   },
   { id: "threads",   label: "Threads",   description: "Flowing lines"   },
+  { id: "dotgrid",   label: "Dot Grid",  description: "Reactive lattice" },
+  { id: "dither",    label: "Dither",    description: "Ordered noise"   },
 ];
 
 function lightenHex(hex: string, amount: number): string {
@@ -77,8 +80,25 @@ function animBgPreview(id: AnimatedBgId, primary: string): string {
     return `linear-gradient(135deg, ${primary} 0%, ${mid} 50%, ${primary} 100%)`;
   if (id === "particles")
     return `radial-gradient(ellipse at 40% 40%, ${mid} 0%, ${primary} 60%, #0a0a1a 100%)`;
-  // threads
-  return `linear-gradient(to bottom, #0a0a1a 0%, ${primary} 50%, #0a0a1a 100%)`;
+  if (id === "threads")
+    return `linear-gradient(to bottom, #0a0a1a 0%, ${primary} 50%, #0a0a1a 100%)`;
+  if (id === "dotgrid") {
+    // The swatch is a real dot lattice rather than a gradient standing in for
+    // one — a radial-gradient tile repeated on the same pitch the background
+    // uses, so the preview reads as what it will actually draw.
+    const dim = lightenHex(primary, -0.22);
+    return (
+      `radial-gradient(${primary} 1.2px, transparent 1.3px) 0 0 / 9px 9px, ` +
+      `radial-gradient(${dim} 1.2px, transparent 1.3px) 4.5px 4.5px / 9px 9px, ` +
+      `#0a0a1a`
+    );
+  }
+  // dither: hard-edged bands, which is what posterising to a few levels of a
+  // smooth field looks like.
+  return (
+    `repeating-linear-gradient(115deg, ${primary} 0 3px, ${mid} 3px 5px, ` +
+    `#0a0a1a 5px 9px)`
+  );
 }
 
 
@@ -106,6 +126,9 @@ export function ThemesSection() {
 
   const rainbowAccent = usePreferencesStore((s) => s.rainbowAccent);
   const backgroundKind = usePreferencesStore((s) => s.backgroundKind);
+  const backgroundCycle = usePreferencesStore(
+    (s) => s.backgroundCycleOnStartup,
+  );
   const backgroundImageId = usePreferencesStore((s) => s.backgroundImageId);
   const backgroundAnimatedId = usePreferencesStore((s) => s.backgroundAnimatedId);
   const backgroundOpacity = usePreferencesStore((s) => s.backgroundOpacity);
@@ -442,6 +465,18 @@ export function ThemesSection() {
                   </button>
                 );
               })}
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[11.5px]">Cycle on startup</span>
+                <span className="text-[10.5px] leading-tight text-muted-foreground">
+                  Move to the next background each time Nexis launches.
+                </span>
+              </div>
+              <Switch
+                checked={backgroundCycle}
+                onCheckedChange={(v) => void setBackgroundCycleOnStartup(v)}
+              />
             </div>
             <div className="flex flex-col gap-3 rounded-lg border border-border/60 p-3">
               <div className="flex items-center justify-between gap-3">

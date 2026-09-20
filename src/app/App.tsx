@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/resizable";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WindowResizeEdges } from "@/components/WindowResizeEdges";
-import { QuickFilePicker } from "@/components/QuickFilePicker";
+import { AppleSpotlight } from "@/components/AppleSpotlight";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { WorkspaceSearch } from "@/components/WorkspaceSearch";
 import { CommandPalette, type CommandDef } from "@/components/CommandPalette";
@@ -94,7 +94,12 @@ import {
   useQuickTerminalHotkey,
 } from "@/modules/window/useQuickTerminal";
 import { useSettingsDialogStore } from "@/modules/settings/settingsDialogStore";
-import { onKeysChanged, setTerminalEnvVars } from "@/modules/settings/store";
+import {
+  nextAnimatedBg,
+  onKeysChanged,
+  setBackgroundAnimatedId,
+  setTerminalEnvVars,
+} from "@/modules/settings/store";
 import {
   ShortcutsDialog,
   useGlobalShortcuts,
@@ -606,6 +611,28 @@ function MainApp() {
     if (!prefsHydrated) return;
     setSelectedModelId(prefDefaultModel);
   }, [prefsHydrated, prefDefaultModel, setSelectedModelId]);
+  // Rotate the animated background one step per launch, when the user asked
+  // for it. Deliberately fires exactly once, after hydration, from the main
+  // window only: it is a *startup* rotation, so re-running it on every
+  // preference change would make the background flip while Settings is open,
+  // and running it from a second webview would advance the rotation twice
+  // per launch. The ref, not the effect's deps, is what enforces "once" —
+  // prefsHydrated can flip more than once across a store re-init.
+  const bgCycleOnStartup = usePreferencesStore((s) => s.backgroundCycleOnStartup);
+  const bgCycledRef = useRef(false);
+  useEffect(() => {
+    if (!prefsHydrated || bgCycledRef.current) return;
+    bgCycledRef.current = true;
+    if (!bgCycleOnStartup) return;
+    const s = usePreferencesStore.getState();
+    // Only rotates within the animated set — it must not switch a user who
+    // chose "none" or a wallpaper image onto an animated background.
+    if (s.backgroundKind !== "animated" || !s.backgroundAnimatedId) return;
+    void setBackgroundAnimatedId(nextAnimatedBg(s.backgroundAnimatedId)).catch(
+      () => {},
+    );
+  }, [prefsHydrated, bgCycleOnStartup]);
+
   // Keep the localStorage restore-tabs flag in sync with the Tauri preference.
   // When disabled, this also clears any saved tab state — and the scrollback
   // snapshots on disk, which are useless without tab restore and would
@@ -2037,6 +2064,7 @@ function MainApp() {
             onOpenMlLab={openMlLabTab}
             searchTarget={searchTarget}
             searchRef={searchInlineRef}
+            onOpenSpotlight={() => setQuickFilePickerOpen(true)}
           />
           </div>
 
@@ -2235,6 +2263,7 @@ function MainApp() {
             }
             problemsOpen={problemsOpen}
             onToggleProblems={() => setProblemsOpen((v) => !v)}
+            onOpenActivity={() => persistSidebarView("processes")}
           />
           </div>
 
@@ -2264,10 +2293,11 @@ function MainApp() {
           ) : null}
 
           {quickFilePickerOpen && (
-            <QuickFilePicker
+            <AppleSpotlight
               root={explorerRoot}
               onSelect={(path) => openFileTab(path)}
               onClose={() => setQuickFilePickerOpen(false)}
+              commands={visiblePaletteCommands}
             />
           )}
 

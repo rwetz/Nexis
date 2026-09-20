@@ -23,6 +23,7 @@ import { usePreferencesStore } from "@/modules/settings/preferences";
 import { SharingPill } from "@/modules/share";
 import { MemoryReportPill } from "./MemoryReportPill";
 import { MissingToolsPill } from "./MissingToolsPill";
+import { RunningProcessChip } from "./RunningProcessChip";
 import { FpsPill } from "./FpsPill";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,8 @@ type Props = {
   privateActive: boolean;
   problemsOpen?: boolean;
   onToggleProblems?: () => void;
+  /** Reveals the Activity panel, which owns the full background-process list. */
+  onOpenActivity?: () => void;
 };
 
 export function StatusBar({
@@ -51,6 +54,7 @@ export function StatusBar({
   privateActive,
   problemsOpen = false,
   onToggleProblems,
+  onOpenActivity,
 }: Props) {
   const toggleMini = useChatStore((s) => s.toggleMini);
   const errorCount = useDiagnosticsStore((s) => s.errorCount);
@@ -118,6 +122,7 @@ export function StatusBar({
         {/* Always mounted while sharing runs — not gated by pack or panel */}
         <SharingPill />
         <MissingToolsPill />
+        <RunningProcessChip onOpenActivity={onOpenActivity} />
 
         {privateActive ? (
           <Tooltip>

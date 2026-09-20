@@ -5,7 +5,10 @@
 // ╚══════════════════════════════════════╝
 
 import { Icon, type IconName } from "@/components/icon";
-import { useState, useCallback } from "react";
+import { BranchedGroup, BranchedItem } from "@/components/ui/BranchedMenu";
+import { useGlidingRail } from "@/components/ui/use-gliding-rail";
+import { motion } from "motion/react";
+import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -211,19 +214,66 @@ export function SidebarRail({
     [pinned],
   );
 
+  const {
+    containerRef: stripRef,
+    registerItem,
+    activeRect,
+    hoverRect,
+    hoverId,
+    setHoverId,
+    transition: railSpring,
+  } = useGlidingRail<SidebarView>(activeView, "horizontal", pinnedItems.length);
+
   return (
     <div
       style={{ height: SIDEBAR_RAIL_HEIGHT }}
       className="flex shrink-0 items-center border-t border-border/50 bg-card px-1.5"
     >
-      {/* Pinned icon strip */}
-      <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Pinned icon strip.
+        *
+        * One accent rail for the whole strip, animated between items, rather
+        * than each button drawing its own indicator and the mark blinking
+        * from one place to another. `hoverRect` draws a dimmer second rail
+        * under whatever the pointer or keyboard is currently on, so the
+        * strip previews where the accent is about to go. */}
+      <div
+        ref={stripRef}
+        className="relative flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        onPointerLeave={() => setHoverId(null)}
+      >
+        {hoverRect && hoverId !== activeView && (
+          <motion.span
+            aria-hidden
+            className="pointer-events-none absolute bottom-0 h-[2px] rounded-full bg-primary/30"
+            initial={false}
+            animate={{ x: hoverRect.offset, width: hoverRect.extent }}
+            transition={railSpring}
+          />
+        )}
+        {activeRect && (
+          <motion.span
+            aria-hidden
+            // Dashed, so the active rail is distinguishable from the hover
+            // rail by shape and not only by opacity — the two are the same
+            // colour family and can sit a few pixels apart.
+            className="pointer-events-none absolute bottom-0 h-[2px] rounded-full"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(to right, var(--primary) 0 4px, transparent 4px 7px)",
+            }}
+            initial={false}
+            animate={{ x: activeRect.offset, width: activeRect.extent }}
+            transition={railSpring}
+          />
+        )}
         {pinnedItems.map((item) => (
           <RailButton
             key={item.id}
             item={item}
             isActive={item.id === activeView}
             onClick={() => onSelectView(item.id)}
+            onHover={() => setHoverId(item.id)}
+            registerRef={registerItem}
           />
         ))}
       </div>
@@ -266,27 +316,26 @@ export function SidebarRail({
               const items = visibleItems.filter((item) => item.group === group);
               if (items.length === 0) return null;
               return (
-                <div key={group}>
-                  {i > 0 && <div className="my-1.5 h-px bg-border/40" />}
-                  <p className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                    {group}
-                  </p>
-                  <div className="flex flex-col gap-0.5">
-                    {items.map((item) => {
-                      const isPinned = pinnedSet.has(item.id);
-                      return (
+                <BranchedGroup
+                  key={group}
+                  label={group}
+                  className={i > 0 ? "mt-2" : undefined}
+                >
+                  {items.map((item) => {
+                    const isPinned = pinnedSet.has(item.id);
+                    return (
+                      <BranchedItem key={item.id}>
                         <OverflowRow
-                          key={item.id}
                           item={item}
                           isActive={item.id === activeView}
                           isPinned={isPinned}
                           onSelect={() => { onSelectView(item.id); setPopoverOpen(false); }}
                           onTogglePin={() => isPinned ? unpin(item.id) : pin(item.id)}
                         />
-                      );
-                    })}
-                  </div>
-                </div>
+                      </BranchedItem>
+                    );
+                  })}
+                </BranchedGroup>
               );
             })}
           </PopoverContent>
@@ -326,10 +375,14 @@ function RailButton({
   item,
   isActive,
   onClick,
+  onHover,
+  registerRef,
 }: {
   item: RailItemDef;
   isActive: boolean;
   onClick: () => void;
+  onHover: () => void;
+  registerRef: (id: SidebarView, el: HTMLElement | null) => void;
 }) {
   const badge = item.badge && item.badge > 0 ? item.badge : null;
   return (
@@ -341,7 +394,10 @@ function RailButton({
           aria-pressed={isActive}
           // Anchors the onboarding tour's coach-mark (src/lib/onboarding.ts).
           data-tour={`sidebar-${item.id}`}
+          ref={(el) => registerRef(item.id, el)}
           onClick={onClick}
+          onPointerEnter={onHover}
+          onFocus={onHover}
           className={cn(
             "relative flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md outline-none transition-all duration-150",
             "focus-visible:ring-2 focus-visible:ring-primary/40",
@@ -365,9 +421,6 @@ function RailButton({
             )}>
               {badge > 99 ? "99+" : badge}
             </span>
-          ) : null}
-          {isActive ? (
-            <span className="absolute inset-y-1.5 left-0 w-[2px] rounded-full bg-primary/70" />
           ) : null}
         </button>
       </TooltipTrigger>

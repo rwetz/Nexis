@@ -4,6 +4,13 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+// Cascadia Code is the default code face (see src/lib/fonts.ts). JetBrains
+// Mono stays bundled as the fallback link in the chain — it covers Cyrillic,
+// which Cascadia's latin subsets do not, and it is what every pre-existing
+// profile that pinned a family by name resolves against.
+import "@fontsource/cascadia-code/latin-400.css";
+import "@fontsource/cascadia-code/latin-700.css";
+import "@fontsource/cascadia-code/latin-400-italic.css";
 import "@fontsource/jetbrains-mono/latin-400.css";
 import "@fontsource/jetbrains-mono/latin-700.css";
 import "@fontsource/jetbrains-mono/cyrillic-400.css";

@@ -8,7 +8,7 @@ import { filesystem } from "@/platform/filesystem";
 import { Icon } from "@/components/icon";
 import { listen } from "@/platform/events";
 
-import { AnimatedFolder } from "@/components/ui/AnimatedFolder";
+import { FolderPreview } from "@/components/ui/FolderPreview";
 import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
@@ -553,7 +553,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, FileExplorerProps>(
       const folderColor = getFolderColor(themeId, resolvedMode);
       return (
         <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-          <AnimatedFolder color={folderColor} size={1.6} />
+          <FolderPreview color={folderColor} size={1.6} />
           <div className="text-xs text-muted-foreground">
             No current directory
           </div>

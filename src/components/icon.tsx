@@ -50,6 +50,7 @@ import {
   ArrowLineUpRightIcon,
   ArrowSquareOutIcon,
   ArrowUUpLeftIcon,
+  ArrowRightIcon,
   ArrowUpRightIcon,
   ArrowsClockwiseIcon,
   ArrowsInIcon,
@@ -232,6 +233,9 @@ const REGISTRY = {
   "alert-circle": WarningCircleIcon,
   "architect": CompassIcon,
   "archive": ArchiveIcon,
+  // Directional travel ("continue", "go"), distinct from "chevron-right",
+  // which is disclosure — a thing that opens, not a thing you move toward.
+  "arrow-right": ArrowRightIcon,
   "bookmark-add": BookmarkSimpleIcon,
   "bookmark-remove": BookmarksIcon,
   "brain": BrainIcon,
