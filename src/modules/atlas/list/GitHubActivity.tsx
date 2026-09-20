@@ -27,7 +27,7 @@
 
 import { cn } from "@/lib/utils";
 import type { ActivityDay } from "@/modules/atlas/repos/types";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 /** Weeks drawn. GitHub shows 53; matching it keeps the shape familiar. */
 const WEEKS = 53;
@@ -113,6 +113,20 @@ type Props = {
 
 export function GitHubActivity({ days, className }: Props) {
   const grid = useMemo(() => buildGrid(days ?? []), [days]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Start at the NEWEST week, not the oldest.
+  //
+  // 53 columns cannot fit a 380px panel, so the strip scrolls — and left-
+  // aligned it opens on a year ago, which for any repo whose work is recent
+  // is a screen of empty cells. It reads as "the graph is broken" rather
+  // than "scroll right", and the count in the header saying 213 commits
+  // while every visible cell is blank makes that worse, not better.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollLeft = el.scrollWidth;
+  }, [grid.cells]);
 
   // Month labels sit above the first column whose week *starts* a new month,
   // which is how GitHub places them — labelling every column would not fit.
@@ -156,7 +170,7 @@ export function GitHubActivity({ days, className }: Props) {
       {/* Horizontal scroll: 53 columns will not fit a 380px detail panel at
           any legible cell size, and shrinking the cells to fit is what makes
           these graphs unreadable. */}
-      <div className="overflow-x-auto overscroll-contain pb-1">
+      <div ref={scrollRef} className="overflow-x-auto overscroll-contain pb-1">
         <div className="inline-flex flex-col gap-1">
           <div
             className="grid gap-[3px] pl-[26px] text-[9px] text-muted-foreground"

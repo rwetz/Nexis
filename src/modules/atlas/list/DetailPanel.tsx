@@ -19,7 +19,6 @@ export function DetailPanel() {
   const detailOpen = useAtlasStore((s) => s.detailOpen);
   const detail = useAtlasStore((s) => s.detail);
   const detailLoading = useAtlasStore((s) => s.detailLoading);
-  const closeDetail = useAtlasStore((s) => s.closeDetail);
   // The summary is already in the store from the scan — the backend does not
   // send it a second time with the detail.
   const summary = useAtlasStore(
@@ -36,7 +35,7 @@ export function DetailPanel() {
   return (
     <aside className="nexis-slide-in-right flex h-full w-[380px] shrink-0 flex-col border-l border-border/60 bg-card">
       {summary && detail ? (
-        <DetailBody summary={summary} detail={detail} onClose={closeDetail} />
+        <DetailBody summary={summary} detail={detail} />
       ) : (
         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
           {detailLoading ? "Loading…" : "No repo selected"}
@@ -49,11 +48,9 @@ export function DetailPanel() {
 function DetailBody({
   summary,
   detail,
-  onClose,
 }: {
   summary: RepoSummary;
   detail: RepoDetail;
-  onClose: () => void;
 }) {
   const { files, stashes } = detail;
   const enterRepo = useAtlasStore((s) => s.enterRepo);
@@ -86,9 +83,6 @@ function DetailBody({
             {summary.path}
           </p>
         </div>
-        <Button variant="ghost" size="icon-xs" aria-label="Close details" onClick={onClose}>
-          <Icon name="close" size="sm" />
-        </Button>
       </header>
 
       <div className="nexis-scrollbar min-h-0 flex-1 overflow-y-auto p-4 pt-3">

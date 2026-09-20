@@ -194,12 +194,26 @@ export function ParticleText({
     // converts — otherwise the wordmark would only react when the pointer
     // was literally over the glyphs, which is not what "reacts to the
     // cursor" means for a piece of scenery.
+    //
+    // The scale is the RATIO of the backing buffer to the element's measured
+    // box, never `dpr`. This canvas lives under `.zoom-content`, whose CSS
+    // `zoom` scales the element's rendered size but not its backing buffer —
+    // so at zoom 1.3 the two disagree by exactly that factor. Multiplying by
+    // `dpr` instead put the repulsion off by a distance proportional to how
+    // far the pointer was from the canvas's left edge: correct at the edge,
+    // drifting further right the further right you moved, and the mirror of
+    // that to the left. Taking the ratio makes zoom, device pixel ratio and
+    // any future transform cancel, since all three are in both terms.
+    // Same class of bug as CLAUDE.md pitfall #15.
     let pointerX = Number.NEGATIVE_INFINITY;
     let pointerY = Number.NEGATIVE_INFINITY;
     const onPointerMove = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
-      pointerX = (e.clientX - rect.left) * dpr;
-      pointerY = (e.clientY - rect.top) * dpr;
+      if (rect.width === 0 || rect.height === 0) return;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      pointerX = (e.clientX - rect.left) * scaleX;
+      pointerY = (e.clientY - rect.top) * scaleY;
     };
     if (!reduceMotion) {
       window.addEventListener("pointermove", onPointerMove, { passive: true });

@@ -82,6 +82,15 @@ void main(){
 
 type Props = {
   hueShift?: number;
+  /**
+   * Degrees per second to advance the hue by, on top of `hueShift`.
+   *
+   * `uHueShift` rotates the whole frame by one angle, so a static value can
+   * only ever pick ONE hue — which is why "rainbow" DarkVeil came out a flat
+   * purple. Sweeping the angle over time is what makes it a spectrum rather
+   * than a tint. 0 keeps the original fixed-hue behaviour.
+   */
+  hueCycleSpeed?: number;
   noiseIntensity?: number;
   scanlineIntensity?: number;
   speed?: number;
@@ -92,6 +101,7 @@ type Props = {
 
 export const DarkVeilBackground = memo(function DarkVeilBackground({
   hueShift = 0,
+  hueCycleSpeed = 0,
   noiseIntensity = 0,
   scanlineIntensity = 0,
   speed = 0.5,
@@ -104,10 +114,10 @@ export const DarkVeilBackground = memo(function DarkVeilBackground({
   // restart when a prop changes. Written after commit rather than during
   // render: React can discard a render, and the loop only reads this on the
   // next frame anyway.
-  const propsRef = useRef({ hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale });
+  const propsRef = useRef({ hueShift, hueCycleSpeed, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale });
   useEffect(() => {
-    propsRef.current = { hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale };
-  }, [hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale]);
+    propsRef.current = { hueShift, hueCycleSpeed, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale };
+  }, [hueShift, hueCycleSpeed, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -158,8 +168,13 @@ export const DarkVeilBackground = memo(function DarkVeilBackground({
 
     const stopLoop = runRafLoopWhileVisible(() => {
       const p = propsRef.current;
-      program.uniforms.uTime.value  = ((performance.now() - start) / 1000) * p.speed;
-      program.uniforms.uHueShift.value  = p.hueShift;
+      const elapsed = (performance.now() - start) / 1000;
+      program.uniforms.uTime.value  = elapsed * p.speed;
+      // Wrapped at 360 so the accumulator stays small over a long session.
+      program.uniforms.uHueShift.value  =
+        p.hueCycleSpeed === 0
+          ? p.hueShift
+          : (p.hueShift + elapsed * p.hueCycleSpeed) % 360;
       program.uniforms.uNoise.value     = p.noiseIntensity;
       program.uniforms.uScan.value      = p.scanlineIntensity;
       program.uniforms.uScanFreq.value  = p.scanlineFrequency;

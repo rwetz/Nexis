@@ -4,25 +4,21 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-// Cascadia Code is the default code face (see src/lib/fonts.ts).
+// One type family across the whole app: Geist for the interface, Geist Mono
+// for code and the terminal. They are drawn as siblings by one designer, so
+// the chrome and the content share a skeleton, x-height and rhythm instead
+// of being two unrelated faces sharing a window.
 //
-// The VARIABLE build, not the static weights, because Settings offers five
-// terminal font weights (300/400/500/600/700) and static 400+700 would leave
-// Light, Medium and Semibold to be synthesized by the rasterizer — which on a
-// monospace grid is exactly where faux weights look worst. One axis file per
-// style covers all five for ~12 KB more than three static files.
-//
-// These sheets declare every subset, but each @font-face carries a
-// unicode-range, so a file is only fetched when something on screen needs it.
-// That matters here beyond latin: Cascadia covers U+2800 braille, which is
-// what the system-monitor sparklines (modules/sysmon/braille.ts) draw with.
-// Space Grotesk is the display face, wired to --font-heading. It is
-// deliberately NOT the body face: its wide mechanical counters close up
-// below ~13px, and Nexis sets over a thousand call sites under 12px. It
-// earns its place only at the handful of moments the app introduces itself.
+// Variable builds, not static weights: Settings offers five terminal weights
+// (300-700), and static 400+700 would leave Light, Medium and Semibold to
+// rasterizer synthesis — which on a monospace grid is where faux weights
+// look worst.
+import "@fontsource-variable/geist/wght.css";
+import "@fontsource-variable/geist-mono/wght.css";
+// The display voice, for the handful of places Nexis introduces itself.
 import "@fontsource-variable/space-grotesk/wght.css";
-import "@fontsource-variable/cascadia-code/wght.css";
-import "@fontsource-variable/cascadia-code/wght-italic.css";
+// Kept as the fallback link in the mono chain: its bundled subsets cover
+// Cyrillic, which Geist Mono's do not.
 import "@fontsource/jetbrains-mono/latin-400.css";
 import "@fontsource/jetbrains-mono/latin-700.css";
 import "@fontsource/jetbrains-mono/cyrillic-400.css";

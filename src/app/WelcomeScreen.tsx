@@ -154,6 +154,10 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
             // saturated field, which is how the first pass ended up purple
             // from edge to edge.
             hueShift={rainbow ? 0 : hueShift}
+            // The veil sweeps the spectrum rather than sitting on one hue.
+            // Slow on purpose: this is ambient, and a fast cycle on a
+            // full-screen field is nauseating rather than lively.
+            hueCycleSpeed={rainbow ? 14 : 0}
             speed={0.3}
             noiseIntensity={0.04}
             warpAmount={rainbow ? 0.65 : 0.5}

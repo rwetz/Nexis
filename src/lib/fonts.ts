@@ -9,12 +9,11 @@
 // powerline prompts (starship, oh-my-posh, p10k) draw with — an unpatched
 // family renders those as tofu no matter how good it looks otherwise.
 //
-// The two Cascadia patches lead: Cascadia Code is the default code face, so
-// when the user has the patched build installed that is the one to use.
+// The Geist Mono patch leads: Geist Mono is the default code face, so when
+// the user has the patched build installed that is the one to use.
 const NERD_FONT_CANDIDATES = [
-  "CaskaydiaCove Nerd Font",
-  "CaskaydiaCove Nerd Font Mono",
-  "CaskaydiaMono Nerd Font",
+  "GeistMono Nerd Font",
+  "GeistMono Nerd Font Mono",
   "JetBrainsMono Nerd Font",
   "JetBrainsMono Nerd Font Mono",
   "JetBrainsMonoNL Nerd Font",
@@ -33,30 +32,21 @@ const NERD_FONT_CANDIDATES = [
 /**
  * The bundled chain, used when no Nerd Font is installed.
  *
- * Cascadia Code (Microsoft, SIL OFL) is the default: it is the Windows
- * Terminal / VS Code face, so it is the one most likely to already be
- * installed system-wide, and its programming ligatures and tall x-height
- * hold up at the 13-14px this app renders code at.
- *
- * "Cascadia Mono" follows deliberately — it is the same design with
- * ligatures removed, which is what Windows ships preinstalled under that
- * name. JetBrains Mono stays last of the bundled faces as a second opinion
- * on any glyph Cascadia's subsets miss.
- */
-const FALLBACK_CHAIN =
-  '"Cascadia Code Variable", "Cascadia Code", "Cascadia Mono", "JetBrains Mono", SFMono-Regular, Menlo, monospace';
-
-/**
- * The bundled default code family, by name.
+ * Geist Mono is the default: it is the mono half of the family the interface
+ * is set in, so code and chrome share a skeleton and an x-height rather than
+ * being two unrelated faces sharing a window. JetBrains Mono follows because
+ * its bundled subsets cover Cyrillic and Geist Mono's do not.
  *
  * Fontsource names its variable builds `<Family> Variable` so they can sit
  * alongside a static install of the same face without colliding. The chain
  * therefore lists the bundled variable build FIRST and the plain name second:
- * the second entry is not redundant, it is the user's own system install of
- * Cascadia Code, which should still win over the further fallbacks if the
- * bundled sheet somehow fails to load.
+ * the second entry is not redundant, it is the user's own system install.
  */
-export const DEFAULT_CODE_FONT_FAMILY = "Cascadia Code Variable";
+const FALLBACK_CHAIN =
+  '"Geist Mono Variable", "Geist Mono", "JetBrains Mono", SFMono-Regular, Menlo, monospace';
+
+/** The bundled default code family, by name. */
+export const DEFAULT_CODE_FONT_FAMILY = "Geist Mono Variable";
 
 let detected: string | null = null;
 let monoReady: Promise<void> | null = null;
@@ -68,9 +58,8 @@ export function ensureMonoFontsLoaded(): Promise<void> {
     return monoReady;
   }
   monoReady = Promise.allSettled([
-    document.fonts.load('400 14px "Cascadia Code Variable"'),
-    document.fonts.load('700 14px "Cascadia Code Variable"'),
-    document.fonts.load('italic 400 14px "Cascadia Code Variable"'),
+    document.fonts.load('400 14px "Geist Mono Variable"'),
+    document.fonts.load('700 14px "Geist Mono Variable"'),
     document.fonts.load('400 14px "JetBrains Mono"'),
     document.fonts.load('700 14px "JetBrains Mono"'),
   ]).then(() => undefined);

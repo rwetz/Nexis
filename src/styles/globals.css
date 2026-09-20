@@ -22,18 +22,17 @@
      * welcome wordmark, Settings section headers. Everything else stays on
      * --font-sans, because this face is not legible at the 9-12px the rest
      * of the UI lives at. */
-    --font-heading: 'Space Grotesk Variable', 'Inter Variable', sans-serif;
-    /* The UI face. Cascadia has no proportional cut — the family is
-     * monospace only (Code with ligatures, Mono without) — so the body face
-     * cannot be "the non-mono Cascadia". Inter stays until a deliberate
-     * replacement is chosen; see the type specimen. */
-    --font-sans: 'Inter Variable', sans-serif;
+    --font-heading: 'Space Grotesk Variable', 'Geist Variable', sans-serif;
+    /* The UI face, paired with --font-mono below: Geist and Geist Mono are
+     * one designer's sans and mono, so the interface and the code share a
+     * skeleton instead of being two families that happen to co-exist. */
+    --font-sans: 'Geist Variable', 'Geist', 'Inter Variable', sans-serif;
     /* Mirrors FALLBACK_CHAIN in src/lib/fonts.ts, which is what the terminal
      * and CodeMirror resolve through. Kept in sync by hand on purpose: this
      * one is a static CSS value, that one probes installed Nerd Fonts at
      * runtime, and they cannot share a source without shipping the chain
      * through a style property on every paint. */
-    --font-mono: 'Cascadia Code Variable', 'Cascadia Code', 'Cascadia Mono', 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
+    --font-mono: 'Geist Mono Variable', 'Geist Mono', 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -303,6 +302,17 @@ html[data-chrome="borderless"] #settings-root {
   background: var(--background);
 }
 html[data-chrome="borderless"] .nexis-bg-surface {
+  border-radius: 12px;
+}
+/* Radix portals every overlay to <body>, which is a SIBLING of #root — so
+ * the rounded-corner mask above, which lives on #root, does not clip them.
+ * A full-screen dim+blur therefore painted square corners over the window
+ * whenever a dialog was open, while an in-tree overlay (Spotlight, rendered
+ * inside #root) stayed correctly rounded. Giving the portal layers the same
+ * radius restores the window silhouette for both. */
+html[data-chrome="borderless"] [data-slot="dialog-overlay"],
+html[data-chrome="borderless"] [data-slot="alert-dialog-overlay"],
+html[data-chrome="borderless"] [data-slot="sheet-overlay"] {
   border-radius: 12px;
 }
 
