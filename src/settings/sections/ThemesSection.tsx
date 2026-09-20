@@ -13,13 +13,16 @@ import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
   setBackgroundAnimatedId,
   setBackgroundBlur,
-  setBackgroundCycleOnStartup,
+  setWelcomeBackgroundCycle,
+  setWelcomeBackgroundId,
+  WELCOME_BG_LABELS,
+  WELCOME_BG_ORDER,
   setBackgroundImageId,
   setBackgroundKind,
   setBackgroundOpacity,
   setRainbowAccent,
 } from "@/modules/settings/store";
-import type { AnimatedBgId } from "@/modules/settings/store";
+import type { AnimatedBgId, WelcomeBgId } from "@/modules/settings/store";
 import { useTheme } from "@/modules/theme/ThemeProvider";
 import {
   deleteBgImage,
@@ -46,8 +49,6 @@ const ANIMATED_BG_DEFS: { id: AnimatedBgId; label: string; description: string }
   { id: "aurora",    label: "Aurora",    description: "Northern lights" },
   { id: "particles", label: "Particles", description: "Floating orbs"   },
   { id: "threads",   label: "Threads",   description: "Flowing lines"   },
-  { id: "dotgrid",   label: "Dot Grid",  description: "Reactive lattice" },
-  { id: "dither",    label: "Dither",    description: "Ordered noise"   },
 ];
 
 function lightenHex(hex: string, amount: number): string {
@@ -80,25 +81,8 @@ function animBgPreview(id: AnimatedBgId, primary: string): string {
     return `linear-gradient(135deg, ${primary} 0%, ${mid} 50%, ${primary} 100%)`;
   if (id === "particles")
     return `radial-gradient(ellipse at 40% 40%, ${mid} 0%, ${primary} 60%, #0a0a1a 100%)`;
-  if (id === "threads")
-    return `linear-gradient(to bottom, #0a0a1a 0%, ${primary} 50%, #0a0a1a 100%)`;
-  if (id === "dotgrid") {
-    // The swatch is a real dot lattice rather than a gradient standing in for
-    // one — a radial-gradient tile repeated on the same pitch the background
-    // uses, so the preview reads as what it will actually draw.
-    const dim = lightenHex(primary, -0.22);
-    return (
-      `radial-gradient(${primary} 1.2px, transparent 1.3px) 0 0 / 9px 9px, ` +
-      `radial-gradient(${dim} 1.2px, transparent 1.3px) 4.5px 4.5px / 9px 9px, ` +
-      `#0a0a1a`
-    );
-  }
-  // dither: hard-edged bands, which is what posterising to a few levels of a
-  // smooth field looks like.
-  return (
-    `repeating-linear-gradient(115deg, ${primary} 0 3px, ${mid} 3px 5px, ` +
-    `#0a0a1a 5px 9px)`
-  );
+  // threads
+  return `linear-gradient(to bottom, #0a0a1a 0%, ${primary} 50%, #0a0a1a 100%)`;
 }
 
 
@@ -126,9 +110,8 @@ export function ThemesSection() {
 
   const rainbowAccent = usePreferencesStore((s) => s.rainbowAccent);
   const backgroundKind = usePreferencesStore((s) => s.backgroundKind);
-  const backgroundCycle = usePreferencesStore(
-    (s) => s.backgroundCycleOnStartup,
-  );
+  const welcomeBgId = usePreferencesStore((s) => s.welcomeBackgroundId);
+  const welcomeCycle = usePreferencesStore((s) => s.welcomeBackgroundCycle);
   const backgroundImageId = usePreferencesStore((s) => s.backgroundImageId);
   const backgroundAnimatedId = usePreferencesStore((s) => s.backgroundAnimatedId);
   const backgroundOpacity = usePreferencesStore((s) => s.backgroundOpacity);
@@ -466,18 +449,6 @@ export function ThemesSection() {
                 );
               })}
             </div>
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11.5px]">Cycle on startup</span>
-                <span className="text-[10.5px] leading-tight text-muted-foreground">
-                  Move to the next background each time Nexis launches.
-                </span>
-              </div>
-              <Switch
-                checked={backgroundCycle}
-                onCheckedChange={(v) => void setBackgroundCycleOnStartup(v)}
-              />
-            </div>
             <div className="flex flex-col gap-3 rounded-lg border border-border/60 p-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-[11.5px] text-muted-foreground">
@@ -498,7 +469,82 @@ export function ThemesSection() {
           </div>
         )}
       </div>
+
+      {/* ── Welcome screen ───────────────────────────────────────────────
+        * Its own control group, not a fourth option in the picker above.
+        * The app-wide background sits behind every pane at low opacity and
+        * has to stay out of the way of work; the welcome screen is the one
+        * surface in Nexis that is allowed to be scenery, so it gets its own
+        * set and its own rotation. */}
+      <div className="flex flex-col gap-3">
+        <SectionHeader
+          title="Welcome screen"
+          description="Shown when no tab is open."
+        />
+
+        <div className="grid grid-cols-3 gap-2">
+          {WELCOME_BG_ORDER.map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => void setWelcomeBackgroundId(id)}
+              aria-pressed={welcomeBgId === id}
+              className={cn(
+                "flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border p-2.5 text-left transition-all",
+                welcomeBgId === id
+                  ? "border-foreground/60 ring-1 ring-foreground/20"
+                  : "border-border/60 hover:border-border hover:bg-muted/30",
+              )}
+            >
+              <div
+                className="h-9 w-full rounded-md"
+                style={{
+                  background: welcomeBgPreview(
+                    id,
+                    getThemePrimary(themeId, resolvedMode, customThemes),
+                  ),
+                }}
+              />
+              <span className="w-full text-center text-[11.5px] font-medium">
+                {WELCOME_BG_LABELS[id]}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[11.5px]">Cycle backgrounds</span>
+            <span className="text-[10.5px] leading-tight text-muted-foreground">
+              Show the next background each time the welcome screen appears.
+            </span>
+          </div>
+          <Switch
+            checked={welcomeCycle}
+            onCheckedChange={(v) => void setWelcomeBackgroundCycle(v)}
+          />
+        </div>
+      </div>
     </div>
+  );
+}
+
+/** Swatch for one welcome background. Dither is grey-on-black by design, so
+ *  its swatch does not take the theme accent — showing it tinted would
+ *  promise something the background does not do. */
+function welcomeBgPreview(id: WelcomeBgId, primary: string): string {
+  if (id === "darkveil")
+    return `linear-gradient(135deg, #0a0a1a 0%, ${primary} 55%, #0a0a1a 100%)`;
+  if (id === "dither")
+    return (
+      `repeating-linear-gradient(115deg, #808080 0 2px, #4a4a4a 2px 4px, ` +
+      `#000 4px 8px)`
+    );
+  const dim = lightenHex(primary, -0.24);
+  return (
+    `radial-gradient(${primary} 1.2px, transparent 1.3px) 0 0 / 9px 9px, ` +
+    `radial-gradient(${dim} 1.2px, transparent 1.3px) 4.5px 4.5px / 9px 9px, ` +
+    `#0a0a1a`
   );
 }
 

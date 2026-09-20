@@ -8,10 +8,16 @@
  * A contribution heatmap for one repo: 53 weeks of daily commit counts, laid
  * out the way GitHub's is — weeks as columns, weekday as row.
  *
- * The data is local git history via `git_activity`, not the GitHub API: Atlas
- * scans directories on disk, most of which have no remote at all, and a graph
- * that only worked for repos that happen to be on github.com would be blank
- * for exactly the private work this panel exists to show.
+ * The data is local git history, not the GitHub API: Atlas scans directories
+ * on disk, most of which have no remote at all, and a graph that only worked
+ * for repos that happen to be on github.com would be blank for exactly the
+ * private work this panel exists to show.
+ *
+ * It arrives with `atlas_repo_detail` rather than being fetched here. Atlas is
+ * host-scoped and deliberately unauthorized -- its repos are arbitrary paths
+ * found under `scan_root`, never entries in the workspace registry -- so the
+ * workspace-scoped `git` CLI commands cannot serve it. That is also why this
+ * component takes `days` as a prop: one drill-in, one round trip.
  *
  * Colour comes from `--terminal-ansi-green`, the same ramp the rest of the
  * app uses for "something happened here", stepped by opacity rather than by
@@ -19,10 +25,9 @@
  * GitHub's palette into a Nexis panel.
  */
 
-import { git } from "@/capabilities/git/api";
 import { cn } from "@/lib/utils";
-import type { GitActivityDay } from "@/domain/native-types";
-import { useEffect, useMemo, useState } from "react";
+import type { ActivityDay } from "@/modules/atlas/repos/types";
+import { useMemo } from "react";
 
 /** Weeks drawn. GitHub shows 53; matching it keeps the shape familiar. */
 const WEEKS = 53;
@@ -38,7 +43,7 @@ const MONTH_NAMES = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ] as const;
 
-/** `YYYY-MM-DD` in local time — the same key space `git_activity` returns. */
+/** `YYYY-MM-DD` in local time — the same key space the backend returns. */
 function localKey(d: Date): string {
   const m = `${d.getMonth() + 1}`.padStart(2, "0");
   const day = `${d.getDate()}`.padStart(2, "0");
@@ -57,7 +62,7 @@ type Cell = { key: string; date: Date; count: number; step: number };
  * a count of zero.
  */
 export function buildGrid(
-  days: GitActivityDay[],
+  days: ActivityDay[],
   today = new Date(),
 ): { cells: Cell[]; max: number; total: number } {
   const counts = new Map<string, number>();
@@ -94,36 +99,12 @@ export function buildGrid(
 }
 
 type Props = {
-  /** Repo root. Null renders the empty state. */
-  repoPath: string | null;
+  /** Days with at least one commit, from `RepoDetail.activity`. */
+  days: ActivityDay[] | null;
   className?: string;
 };
 
-export function GitHubActivity({ repoPath, className }: Props) {
-  const [days, setDays] = useState<GitActivityDay[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!repoPath) {
-      setDays(null);
-      return;
-    }
-    let alive = true;
-    setDays(null);
-    setError(null);
-    git
-      .gitActivity(repoPath, WEEKS * DAYS_PER_WEEK)
-      .then((res) => {
-        if (alive) setDays(res);
-      })
-      .catch((e: unknown) => {
-        if (alive) setError(e instanceof Error ? e.message : String(e));
-      });
-    return () => {
-      alive = false;
-    };
-  }, [repoPath]);
-
+export function GitHubActivity({ days, className }: Props) {
   const grid = useMemo(() => buildGrid(days ?? []), [days]);
 
   // Month labels sit above the first column whose week *starts* a new month,
@@ -142,22 +123,6 @@ export function GitHubActivity({ repoPath, className }: Props) {
     }
     return out;
   }, [grid.cells]);
-
-  if (!repoPath) {
-    return (
-      <div className={cn("text-xs text-muted-foreground", className)}>
-        No repo selected
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={cn("text-xs text-destructive", className)}>
-        Could not read history: {error}
-      </div>
-    );
-  }
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>

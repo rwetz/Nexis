@@ -181,13 +181,6 @@ export type GitPushResult = {
   pushed: boolean;
 };
 
-/** One day's commit count, from `git_activity`. `date` is `YYYY-MM-DD` in
- * the machine's local timezone. Days with no commits are absent. */
-export type GitActivityDay = {
-  date: string;
-  count: number;
-};
-
 export type GitLogEntry = {
   sha: string;
   shortSha: string;

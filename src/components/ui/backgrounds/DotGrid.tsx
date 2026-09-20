@@ -275,13 +275,16 @@ export function DotGridBackground({
     <div
       aria-hidden
       ref={containerRef}
+      // `absolute`, not `fixed`: this fills the welcome screen, which is a
+      // pane inside the layout, not an overlay across the window. Matches
+      // DarkVeil, the background it sits beside in the rotation.
       style={{
-        position: "fixed",
+        position: "absolute",
         inset: 0,
+        overflow: "hidden",
         pointerEvents: "none",
         opacity,
         transition: "opacity 200ms ease-out",
-        zIndex: 2147483646,
       }}
     />
   );

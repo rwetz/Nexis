@@ -19,10 +19,10 @@ use crate::modules::git::process::{
     read_text_file, run_git,
 };
 use crate::modules::git::types::{
-    DiscardEntry, GitActivityDay, GitCheckpoint, GitCommitFileChange, GitCommitResult,
-    GitDiffContentResult, GitDiffResult, GitLogEntry, GitOutput, GitPanelSnapshot, GitPushResult,
-    GitRepoInfo, GitStatusSnapshot, GitSubmoduleEntry, GitWorktreeEntry, TextSource,
-    DEFAULT_TIMEOUT_SECS, NETWORK_TIMEOUT_SECS,
+    DiscardEntry, GitCheckpoint, GitCommitFileChange, GitCommitResult, GitDiffContentResult,
+    GitDiffResult, GitLogEntry, GitOutput, GitPanelSnapshot, GitPushResult, GitRepoInfo,
+    GitStatusSnapshot, GitSubmoduleEntry, GitWorktreeEntry, TextSource, DEFAULT_TIMEOUT_SECS,
+    NETWORK_TIMEOUT_SECS,
 };
 use crate::modules::git::utils::{
     authorized_repo_root, canonical_dir, resolve_within_repo, split_upstream, ResolvedGitDirectory,
@@ -489,80 +489,6 @@ pub fn push(
 
 const LOG_FORMAT: &str = "%H%x1f%an%x1f%ae%x1f%at%x1f%P%x1f%s";
 const MAX_LOG_LIMIT: u32 = 200;
-
-/// Upper bound on the contribution heatmap's window. 53 weeks is what the
-/// graph draws; the cap is a little past that so a caller asking for "a year"
-/// in round numbers is not silently trimmed.
-const MAX_ACTIVITY_DAYS: u32 = 400;
-
-/// Daily commit counts over the last `days` days, for the contribution
-/// heatmap.
-///
-/// Asks git to do the bucketing work it is already good at: `--date=format:`
-/// renders each commit's author date in the machine's local timezone, so the
-/// counts land on the day the user actually worked rather than on a UTC day
-/// boundary. Only the date is requested — no subject, no numstat — which is
-/// what keeps a year of history cheap enough to fetch on selection.
-///
-/// Note the format carries no NUL separator: one field per line needs none,
-/// and a literal NUL in a CLI argument would stop git from spawning at all
-/// (CLAUDE.md pitfall #16).
-pub fn activity(
-    registry: &WorkspaceRegistry,
-    repo_root: &str,
-    days: u32,
-    workspace: &WorkspaceEnv,
-) -> Result<Vec<GitActivityDay>> {
-    let repo_root = authorized_repo_root(registry, repo_root, workspace)?;
-    ensure_git_available(&repo_root.workspace)?;
-    let bounded = days.clamp(1, MAX_ACTIVITY_DAYS);
-    let since_arg = format!("--since={bounded} days ago");
-    let args: Vec<&OsStr> = vec![
-        OsStr::new("log"),
-        OsStr::new("--no-color"),
-        OsStr::new("--no-merges"),
-        OsStr::new(&since_arg),
-        OsStr::new("--date=format:%Y-%m-%d"),
-        OsStr::new("--format=%ad"),
-    ];
-    let output = run_git(
-        &repo_root.workspace,
-        Some(&repo_root.git_path),
-        args,
-        DEFAULT_TIMEOUT_SECS,
-    )?;
-    if output.timed_out {
-        return Err(GitError::TimedOut("git log"));
-    }
-    if output.exit_code != Some(0) {
-        // An empty repository has no HEAD to walk. That is not an error for
-        // this view — it is a repo with no activity, which is a thing the
-        // heatmap can render perfectly well.
-        let stderr = String::from_utf8_lossy(&output.stderr).to_ascii_lowercase();
-        if stderr.contains("does not have any commits yet")
-            || stderr.contains("bad default revision")
-            || stderr.contains("unknown revision")
-            || stderr.contains("ambiguous argument 'head'")
-        {
-            return Ok(Vec::new());
-        }
-        return Err(GitError::command("git log", "failed to read activity"));
-    }
-
-    // BTreeMap so the result comes back ordered by date without a sort.
-    let mut counts: std::collections::BTreeMap<String, u32> = std::collections::BTreeMap::new();
-    for line in String::from_utf8_lossy(&output.stdout).lines() {
-        let date = line.trim();
-        if date.is_empty() {
-            continue;
-        }
-        *counts.entry(date.to_string()).or_insert(0) += 1;
-    }
-    Ok(counts
-        .into_iter()
-        .map(|(date, count)| GitActivityDay { date, count })
-        .collect())
-}
 
 pub fn log(
     registry: &WorkspaceRegistry,

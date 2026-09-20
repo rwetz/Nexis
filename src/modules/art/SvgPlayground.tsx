@@ -25,7 +25,9 @@ import { ExportBar } from "./ExportBar";
 import { PresetGallery } from "./PresetGallery";
 import { ShapeGenerator } from "./ShapeGenerator";
 import { SvgCanvas } from "./SvgCanvas";
+import { useGlidingRail } from "@/components/ui/use-gliding-rail";
 import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
 import {
   getCachedEditorTheme,
   loadEditorTheme,
@@ -93,6 +95,7 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
   const [source, setSource] = useState<string>(loadSource);
   const [showGrid, setShowGrid] = useState(true);
   const [leftPane, setLeftPane] = useState<LeftPane>("source");
+  const paneRail = useGlidingRail<LeftPane>(leftPane, "horizontal", LEFT_PANES.length);
   const [optimized, setOptimized] = useState<OptimizeResult | null>(null);
 
   const editorThemeId = usePreferencesStore((s) => s.editorTheme);
@@ -161,18 +164,39 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
             : "flex-1 border-b border-border/60",
         )}
       >
-        <div className="flex shrink-0 items-center gap-1.5 border-b border-border/50 px-3 py-1.5">
+        {/* Four panes the user flips between constantly while drawing, so the
+            selection travels rather than cutting — same rail as the sidebar,
+            Settings and Atlas. */}
+        <div
+          ref={paneRail.containerRef}
+          className="relative flex shrink-0 items-center gap-1.5 border-b border-border/50 px-3 py-1.5"
+          onPointerLeave={() => paneRail.setHoverId(null)}
+        >
+          {paneRail.activeRect && (
+            <motion.span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-1.5 left-0 rounded-md bg-primary/15"
+              initial={false}
+              animate={{
+                x: paneRail.activeRect.offset,
+                width: paneRail.activeRect.extent,
+              }}
+              transition={paneRail.transition}
+            />
+          )}
           {LEFT_PANES.map(([id, icon, label]) => (
             <button
               key={id}
               type="button"
+              ref={(el) => paneRail.registerItem(id, el)}
               aria-pressed={leftPane === id}
               onClick={() => setLeftPane(id)}
+              onPointerEnter={() => paneRail.setHoverId(id)}
               className={cn(
-                "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
+                "relative z-10 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 leftPane === id
-                  ? "bg-primary/15 text-primary"
+                  ? "text-primary"
                   : "text-muted-foreground/70 hover:text-foreground",
               )}
             >

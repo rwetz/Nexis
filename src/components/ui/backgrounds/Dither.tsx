@@ -6,7 +6,7 @@
 
 /**
  * A slow Perlin wave field, pixelated and posterised through an ordered
- * (Bayer) dither — the retro 1-bit look, in the theme's own accent.
+ * (Bayer) dither — the retro 1-bit look.
  *
  * The reference implementation is three.js + @react-three/fiber +
  * @react-three/postprocessing + postprocessing: a render target for the wave
@@ -25,8 +25,10 @@
  *   - the dither by offsetting luminance with a Bayer threshold and then
  *     quantising to uColorSteps levels.
  *
- * Alpha carries the same luminance as the colour, so the field composites
- * over the app's own background instead of painting a black plate behind it.
+ * The field is opaque and carries its own ground: luminance mixes between
+ * `background` and `color` rather than becoming alpha. Using luminance as
+ * alpha (the first version) dissolved every dark band into the page, so the
+ * dither read as haze rather than as an image.
  */
 
 import { Color, Mesh, Program, Renderer, Triangle } from "ogl";
@@ -49,6 +51,7 @@ precision highp float;
 uniform float iTime;
 uniform vec2 iResolution;
 uniform vec3 uWaveColor;
+uniform vec3 uBackground;
 uniform float uWaveSpeed;
 uniform float uWaveFrequency;
 uniform float uWaveAmplitude;
@@ -131,13 +134,19 @@ void main() {
     lum = clamp(lum + threshold / uColorSteps, 0.0, 1.0);
     lum = floor(lum * uColorSteps + 0.5) / uColorSteps;
 
-    gl_FragColor = vec4(uWaveColor * lum, lum);
+    // Mix toward the wave colour over the plate, rather than multiplying the
+    // colour by luminance and using that as alpha. The old form made every
+    // dark band transparent, so the field dissolved into the page instead of
+    // reading as an image with its own ground.
+    gl_FragColor = vec4(mix(uBackground, uWaveColor, lum), 1.0);
 }
 `;
 
 type Props = {
   /** Wave colour, as linear 0..1 RGB. */
   color?: [number, number, number];
+  /** Ground the field is drawn over, as linear 0..1 RGB. */
+  background?: [number, number, number];
   waveSpeed?: number;
   waveFrequency?: number;
   waveAmplitude?: number;
@@ -145,21 +154,30 @@ type Props = {
   colorSteps?: number;
   /** Side of one output pixel, in device pixels. */
   pixelSize?: number;
+  disableAnimation?: boolean;
   enableMouseInteraction?: boolean;
   mouseRadius?: number;
   opacity?: number;
 };
 
+/**
+ * Defaults are the settings dialled in in BG Studio, kept verbatim so the
+ * shipped look matches what was signed off:
+ * wave #808080 on #000000, intensity 40, amplitude 0.08, frequency 10,
+ * speed 0.1, mouse interaction on at radius 0.3.
+ */
 export function DitherBackground({
-  color = [1, 1, 1],
-  waveSpeed = 0.04,
-  waveFrequency = 2.6,
-  waveAmplitude = 0.4,
-  colorSteps = 4,
+  color = [0.502, 0.502, 0.502],
+  background = [0, 0, 0],
+  waveSpeed = 0.1,
+  waveFrequency = 10,
+  waveAmplitude = 0.08,
+  colorSteps = 40,
   pixelSize = 3,
+  disableAnimation = false,
   enableMouseInteraction = true,
-  mouseRadius = 0.45,
-  opacity = 0.5,
+  mouseRadius = 0.3,
+  opacity = 1,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -192,6 +210,7 @@ export function DitherBackground({
           value: new Float32Array([gl.canvas.width, gl.canvas.height]),
         },
         uWaveColor: { value: new Color(...color) },
+        uBackground: { value: new Color(...background) },
         uWaveSpeed: { value: waveSpeed },
         uWaveFrequency: { value: waveFrequency },
         uWaveAmplitude: { value: waveAmplitude },
@@ -230,10 +249,17 @@ export function DitherBackground({
       window.addEventListener("pointermove", onPointerMove, { passive: true });
     }
 
-    const stopLoop = runRafLoopWhileVisible((t) => {
-      uniforms.iTime.value = t * 0.001;
+    // A frozen field still has to be drawn once; `disableAnimation` stops the
+    // clock, it does not mean "render nothing".
+    if (disableAnimation) {
       renderer.render({ scene: mesh });
-    });
+    }
+    const stopLoop = disableAnimation
+      ? () => {}
+      : runRafLoopWhileVisible((t) => {
+          uniforms.iTime.value = t * 0.001;
+          renderer.render({ scene: mesh });
+        });
 
     return () => {
       stopLoop();
@@ -249,13 +275,16 @@ export function DitherBackground({
     <div
       aria-hidden
       ref={containerRef}
+      // `absolute`, not `fixed`: this fills the welcome screen, which is a
+      // pane inside the layout, not an overlay across the window. Matches
+      // DarkVeil, the background it sits beside in the rotation.
       style={{
-        position: "fixed",
+        position: "absolute",
         inset: 0,
+        overflow: "hidden",
         pointerEvents: "none",
         opacity,
         transition: "opacity 200ms ease-out",
-        zIndex: 2147483646,
       }}
     />
   );

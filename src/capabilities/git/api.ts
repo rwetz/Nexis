@@ -10,7 +10,6 @@ import type {
   GitCommitResult,
   GitPushResult,
   GitLogEntry,
-  GitActivityDay,
   GitCommitFileChange,
   GitPanelSnapshot,
   GitStashEntry,
@@ -171,14 +170,6 @@ export const git = {
         "workspace",
       ),
       { repoRoot },
-    ),
-  gitActivity: (repoRoot: string, days?: number) =>
-    workspaceIpc.call(
-      defineCommand<
-        { repoRoot: string; days: number | null },
-        GitActivityDay[]
-      >("git_activity", "workspace"),
-      { repoRoot, days: days ?? null },
     ),
   gitLog: (
     repoRoot: string,

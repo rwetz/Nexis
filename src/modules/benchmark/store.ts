@@ -43,6 +43,8 @@ interface BenchState {
   llamaBenchPath: string | null;
 
   running: boolean;
+  /** Epoch ms the current run started, for the elapsed clock. Null when idle. */
+  runStartedAtMs: number | null;
   jobId: string | null;
   run: BenchRun | null;
   history: BenchRun[];
@@ -84,6 +86,7 @@ export const useBenchStore = create<BenchState>()(
       llamaBenchPath: null,
 
       running: false,
+      runStartedAtMs: null,
       jobId: null,
       run: null,
       history: [],
@@ -249,7 +252,7 @@ export const useBenchStore = create<BenchState>()(
           matrix,
           results: [],
         };
-        set({ running: true, jobId, run, progress: {} });
+        set({ running: true, runStartedAtMs: Date.now(), jobId, run, progress: {} });
 
         const job: BenchJob = {
           jobId,
@@ -264,7 +267,7 @@ export const useBenchStore = create<BenchState>()(
       cancelRun: async () => {
         const { jobId } = get();
         if (jobId) await cancelBenchmark(jobId);
-        set({ running: false });
+        set({ running: false, runStartedAtMs: null });
       },
     }),
     {

@@ -141,7 +141,7 @@ function DetailBody({
         <section className="mt-4">
           <SectionTitle icon="activity">Activity</SectionTitle>
           <div className="mt-1.5 rounded-xl border border-border/60 bg-background/60 p-3">
-            <GitHubActivity repoPath={summary.path} />
+            <GitHubActivity days={detail.activity} />
           </div>
         </section>
 

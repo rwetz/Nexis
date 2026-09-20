@@ -21,9 +21,13 @@ Custom theme files live under the host app-config directory. `themeFiles.ts` mus
 
 Four are `ogl` fragment shaders on a full-screen triangle (Aurora, Particles, Threads, DarkVeil); **Dot Grid is canvas 2D**, deliberately, so there is one background that still works with no usable WebGL context. **Dither** is a port *onto* `ogl` from the reference three.js + `@react-three/fiber` + `@react-three/postprocessing` stack — its two passes collapse into one fragment shader because the "post" pass has no scene to read back, only the luminance the first pass just computed.
 
-`ANIMATED_BG_ORDER` in `settings/store.ts` is both the picker order and the startup rotation; `nextAnimatedBg` advances it and `App.tsx` calls it once per launch behind a ref.
+### Two background sets, deliberately separate
 
-DarkVeil is **not** in `AnimatedBgId` — it is hardcoded into `WelcomeScreen`, not user-selectable.
+`AnimatedBgId` (Aurora / Particles / Threads) is the **app-wide** background: it sits behind every pane at low opacity via `SurfaceLayer`, and its job is to stay out of the way of work.
+
+`WelcomeBgId` (DarkVeil / Dither / Dot Grid) is the **welcome screen's own** set, owned by `WelcomeScreen`. That surface is the one place in Nexis allowed to be scenery, so its backgrounds are opaque, full-strength and `position: absolute` (they fill a pane, they are not a window overlay). `WELCOME_BG_ORDER` + `nextWelcomeBg` rotate it **once per viewing** when `welcomeBackgroundCycle` is on — the rotation writes the *next* id back to preferences, so the screen holds what it started with and the next viewing picks up the write.
+
+Dither alone is not theme-tinted: it ships the grey-on-black BG Studio settings verbatim, and its swatch in Settings is drawn un-tinted to match rather than promising a colour it will not use.
 
 ## Key files
 

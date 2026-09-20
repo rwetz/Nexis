@@ -26,8 +26,16 @@ import { Icon, type IconName } from "@/components/icon";
 import { basename, displayDirname as dirname } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { filesystem } from "@/platform/filesystem";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import {
+  memo,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { CommandDef } from "./CommandPalette";
 
 /** Max results rendered. Beyond this the list stops being scannable. */
@@ -53,6 +61,23 @@ type Result =
       run: () => void;
       score: number;
     };
+
+/**
+ * Is `query` a subsequence of `text`? Case-insensitive.
+ *
+ * The gate in front of `fuzzyScore`. Scoring allocates and branches per
+ * character; this is one indexOf walk that bails on the first miss, and on a
+ * short query it rejects most of the file list before any of that runs.
+ */
+export function isSubsequence(text: string, query: string): boolean {
+  let ti = 0;
+  for (let qi = 0; qi < query.length; qi++) {
+    ti = text.indexOf(query[qi], ti);
+    if (ti === -1) return false;
+    ti++;
+  }
+  return true;
+}
 
 /**
  * Subsequence match with contiguity and word-boundary bonuses.
@@ -95,6 +120,61 @@ export function fuzzyScore(text: string, query: string): number {
   return score - Math.min(20, Math.floor(hay.length / 12));
 }
 
+/**
+ * One result row.
+ *
+ * Memoized because `onMouseEnter` moves the selection, which re-renders the
+ * list: without this, sweeping the pointer down forty rows re-rendered forty
+ * rows on every step. `onCommit`/`onHover` are stable identities from the
+ * parent, so only the two rows whose `selected` actually changed repaint.
+ */
+const SpotlightRow = memo(function SpotlightRow({
+  hit,
+  idx,
+  selected,
+  onCommit,
+  onHover,
+}: {
+  hit: Result;
+  idx: number;
+  selected: boolean;
+  onCommit: (idx: number) => void;
+  onHover: (idx: number) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="option"
+      aria-selected={selected}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        onCommit(idx);
+      }}
+      onMouseEnter={() => onHover(idx)}
+      className={cn(
+        "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left",
+        selected ? "bg-accent text-accent-foreground" : "text-foreground",
+      )}
+    >
+      <Icon
+        name={hit.kind === "command" ? hit.icon : "file"}
+        size="sm"
+        className="shrink-0 text-muted-foreground"
+      />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[12.5px] font-medium">
+          {hit.title}
+        </span>
+        {hit.subtitle && (
+          <span className="block truncate text-[10.5px] text-muted-foreground">
+            {hit.subtitle}
+          </span>
+        )}
+      </span>
+    </button>
+  );
+});
+
 type Props = {
   root: string | null;
   onSelect: (path: string) => void;
@@ -105,6 +185,10 @@ type Props = {
 
 export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
   const [query, setQuery] = useState("");
+  // The field updates on every keystroke; the list is allowed to lag behind
+  // it. Without this, ranking several thousand paths runs synchronously
+  // inside the keystroke and the caret visibly stutters on a large workspace.
+  const deferredQuery = useDeferredValue(query);
   const [allFiles, setAllFiles] = useState<string[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -129,7 +213,7 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
   }, [root]);
 
   const results = useMemo<Result[]>(() => {
-    const q = query.trim();
+    const q = deferredQuery.trim();
 
     // Empty query: the recent shape of the workspace, not a ranked list.
     if (!q) {
@@ -143,50 +227,84 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
       }));
     }
 
-    const out: Result[] = [];
+    const needle = q.toLowerCase();
+
+    // Keep only the best MAX_RESULTS as we go, rather than building an object
+    // per match and sorting the lot. On a one-character query nearly every
+    // path matches, so the naive form allocated thousands of objects and
+    // sorted them to throw all but forty away — on every keystroke.
+    const best: Result[] = [];
+    let worst = -Infinity;
+
+    const offer = (make: () => Result, score: number) => {
+      if (best.length >= MAX_RESULTS && score <= worst) return;
+      best.push(make());
+      // Only re-sort once the pool is over capacity; below that the list is
+      // short and the final sort handles ordering anyway.
+      if (best.length > MAX_RESULTS) {
+        best.sort((a, b) => b.score - a.score);
+        best.length = MAX_RESULTS;
+        worst = best[best.length - 1].score;
+      }
+    };
 
     if (root) {
       for (const rel of allFiles) {
-        // Score the basename and the full path separately and keep the
-        // better of the two: a query that names a file should not be
-        // penalised for the directories above it, but a query that names a
-        // directory should still find its contents.
-        const score = Math.max(
-          fuzzyScore(basename(rel), q) + 12,
-          fuzzyScore(rel, q),
-        );
+        const lower = rel.toLowerCase();
+        // One cheap walk rejects the whole path before any scoring. If the
+        // query is not even a subsequence of the full path, it cannot be one
+        // of the basename either.
+        if (!isSubsequence(lower, needle)) continue;
+
+        const name = basename(rel);
+        // Score the basename first and only fall back to the full path: a
+        // query that names a file should not be penalised for the
+        // directories above it, and the second scan is skipped whenever the
+        // first already matched.
+        const nameScore = isSubsequence(name.toLowerCase(), needle)
+          ? fuzzyScore(name, q) + 12
+          : -1;
+        const score = nameScore >= 0 ? nameScore : fuzzyScore(rel, q);
         if (score < 0) continue;
-        out.push({
-          kind: "file",
-          id: rel,
-          title: basename(rel),
-          subtitle: dirname(rel),
-          path: `${root}/${rel}`,
+
+        offer(
+          () => ({
+            kind: "file",
+            id: rel,
+            title: name,
+            subtitle: dirname(rel),
+            path: `${root}/${rel}`,
+            score,
+          }),
           score,
-        });
+        );
       }
     }
 
     for (const cmd of commands ?? []) {
       const haystack = [cmd.label, cmd.category, ...(cmd.keywords ?? [])].join(" ");
+      if (!isSubsequence(haystack.toLowerCase(), needle)) continue;
       const score = fuzzyScore(haystack, q);
       if (score < 0) continue;
-      out.push({
-        kind: "command",
-        id: cmd.id,
-        title: cmd.label,
-        subtitle: cmd.description ?? cmd.category,
-        icon: cmd.icon ?? "keyboard",
-        // Commands outrank files on an equal score: when the user types
-        // something that reads like an instruction, they meant the action.
-        score: score + 10,
-        run: cmd.action,
-      });
+      offer(
+        () => ({
+          kind: "command",
+          id: cmd.id,
+          title: cmd.label,
+          subtitle: cmd.description ?? cmd.category,
+          icon: cmd.icon ?? "keyboard",
+          // Commands outrank files on an equal score: when the user types
+          // something that reads like an instruction, they meant the action.
+          score: score + 10,
+          run: cmd.action,
+        }),
+        score + 10,
+      );
     }
 
-    out.sort((a, b) => b.score - a.score || a.title.length - b.title.length);
-    return out.slice(0, MAX_RESULTS);
-  }, [query, allFiles, root, commands]);
+    best.sort((a, b) => b.score - a.score || a.title.length - b.title.length);
+    return best.slice(0, MAX_RESULTS);
+  }, [deferredQuery, allFiles, root, commands]);
 
   // Reconciled during render: the highlight belongs to the current list, so
   // rebuilding the list resets it with no intermediate painted frame.
@@ -203,13 +321,18 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
 
   const active = results[activeIdx];
 
-  const commit = (idx: number) => {
-    const hit = results[idx];
-    if (!hit) return;
-    if (hit.kind === "file") onSelect(hit.path);
-    else hit.run();
-    onClose();
-  };
+  // Stable identity, so the memoized rows actually skip re-rendering — a
+  // fresh closure here would defeat SpotlightRow's memo on every keystroke.
+  const commit = useCallback(
+    (idx: number) => {
+      const hit = results[idx];
+      if (!hit) return;
+      if (hit.kind === "file") onSelect(hit.path);
+      else hit.run();
+      onClose();
+    },
+    [results, onSelect, onClose],
+  );
 
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -295,73 +418,45 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
               className="max-h-[42vh] min-w-0 flex-1 overflow-y-auto overscroll-contain p-1.5"
             >
               {results.map((hit, idx) => (
-                <button
+                <SpotlightRow
                   key={`${hit.kind}:${hit.id}`}
-                  type="button"
-                  role="option"
-                  aria-selected={idx === activeIdx}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    commit(idx);
-                  }}
-                  onMouseEnter={() => setActiveIdx(idx)}
-                  className={cn(
-                    "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left transition-colors",
-                    idx === activeIdx
-                      ? "bg-accent text-accent-foreground"
-                      : "text-foreground",
-                  )}
-                >
-                  <Icon
-                    name={hit.kind === "command" ? hit.icon : "file"}
-                    size="sm"
-                    className="shrink-0 text-muted-foreground"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[12.5px] font-medium">
-                      {hit.title}
-                    </span>
-                    {hit.subtitle && (
-                      <span className="block truncate text-[10.5px] text-muted-foreground">
-                        {hit.subtitle}
-                      </span>
-                    )}
-                  </span>
-                </button>
+                  hit={hit}
+                  idx={idx}
+                  selected={idx === activeIdx}
+                  onCommit={commit}
+                  onHover={setActiveIdx}
+                />
               ))}
             </div>
 
             {/* Preview. Spotlight's defining half: the list answers "which
-                one", this answers "is it the one". */}
-            <AnimatePresence mode="wait">
-              {active && (
-                <motion.div
-                  key={`${active.kind}:${active.id}`}
-                  className="hidden w-[240px] shrink-0 flex-col items-center justify-center gap-3 border-l border-border/60 p-5 text-center sm:flex"
-                  initial={reduceMotion ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: reduceMotion ? 0 : 0.1 }}
-                >
-                  <Icon
-                    name={active.kind === "command" ? active.icon : "file-code"}
-                    size="xl"
-                    className="text-muted-foreground"
-                  />
-                  <span className="w-full truncate text-[12.5px] font-medium">
-                    {active.title}
-                  </span>
-                  <span className="w-full text-[10.5px] leading-snug break-words text-muted-foreground">
-                    {active.kind === "command"
-                      ? active.subtitle
-                      : active.path}
-                  </span>
-                  <span className="text-[10px] tracking-wide text-muted-foreground/70 uppercase">
-                    {active.kind === "command" ? "Command" : "File"}
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                one", this answers "is it the one".
+
+                Deliberately NOT animated. The first version keyed a
+                motion.div on the active result inside `AnimatePresence
+                mode="wait"`, which waits for the outgoing panel's exit to
+                finish before the incoming one starts — so dragging the
+                pointer down the list left the preview visibly chasing the
+                cursor, one result behind. A pane that answers "what am I
+                hovering" has to be synchronous with the hover. */}
+            {active && (
+              <div className="hidden w-[240px] shrink-0 flex-col items-center justify-center gap-3 border-l border-border/60 p-5 text-center sm:flex">
+                <Icon
+                  name={active.kind === "command" ? active.icon : "file-code"}
+                  size="xl"
+                  className="text-muted-foreground"
+                />
+                <span className="w-full truncate text-[12.5px] font-medium">
+                  {active.title}
+                </span>
+                <span className="w-full text-[10.5px] leading-snug break-words text-muted-foreground">
+                  {active.kind === "command" ? active.subtitle : active.path}
+                </span>
+                <span className="text-[10px] tracking-wide text-muted-foreground/70 uppercase">
+                  {active.kind === "command" ? "Command" : "File"}
+                </span>
+              </div>
+            )}
           </div>
         )}
 

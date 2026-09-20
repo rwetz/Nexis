@@ -18,22 +18,15 @@
  * duration is derived from `startedAtMs` on every tick rather than stored and
  * incremented — a stored counter drifts whenever the tab is throttled, and
  * this one is correct the instant it becomes visible again.
+ *
+ * Formatting comes from `lib/duration.ts`, shared with ML Lab, so a run shown
+ * in two places never reads two different durations.
  */
 
 import { Icon } from "@/components/icon";
+import { formatElapsed } from "@/lib/duration";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-
-/** `m:ss`, or `h:mm:ss` once it runs past an hour. */
-export function formatElapsed(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const s = total % 60;
-  const m = Math.floor(total / 60) % 60;
-  const h = Math.floor(total / 3600);
-  const ss = `${s}`.padStart(2, "0");
-  if (h > 0) return `${h}:${`${m}`.padStart(2, "0")}:${ss}`;
-  return `${m}:${ss}`;
-}
 
 type Props = {
   label: string;

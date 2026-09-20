@@ -16,6 +16,11 @@
 // unicode-range, so a file is only fetched when something on screen needs it.
 // That matters here beyond latin: Cascadia covers U+2800 braille, which is
 // what the system-monitor sparklines (modules/sysmon/braille.ts) draw with.
+// Space Grotesk is the display face, wired to --font-heading. It is
+// deliberately NOT the body face: its wide mechanical counters close up
+// below ~13px, and Nexis sets over a thousand call sites under 12px. It
+// earns its place only at the handful of moments the app introduces itself.
+import "@fontsource-variable/space-grotesk/wght.css";
 import "@fontsource-variable/cascadia-code/wght.css";
 import "@fontsource-variable/cascadia-code/wght-italic.css";
 import "@fontsource/jetbrains-mono/latin-400.css";

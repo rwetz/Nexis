@@ -27,12 +27,6 @@ const ParticlesBackground = lazy(() =>
 const ThreadsBackground = lazy(() =>
   import("@/components/ui/backgrounds/Threads").then((m) => ({ default: m.ThreadsBackground })),
 );
-const DotGridBackground = lazy(() =>
-  import("@/components/ui/backgrounds/DotGrid").then((m) => ({ default: m.DotGridBackground })),
-);
-const DitherBackground = lazy(() =>
-  import("@/components/ui/backgrounds/Dither").then((m) => ({ default: m.DitherBackground })),
-);
 
 const OVERLAY_Z = 2147483646;
 const RESIZE_IDLE_MS = 280;
@@ -114,7 +108,6 @@ export function SurfaceLayer() {
         key={`${backgroundAnimatedId}-${themeId}-${resolvedMode}`}
         id={backgroundAnimatedId}
         primaryHex={primary}
-        resolvedMode={resolvedMode}
         opacity={backgroundOpacity * BG_OPACITY_RENDER_FACTOR}
       />
     );
@@ -130,24 +123,13 @@ export function SurfaceLayer() {
 type AnimBgProps = {
   id: AnimatedBgId;
   primaryHex: string;
-  resolvedMode: "dark" | "light";
   opacity: number;
 };
 
-function AnimatedBackground({
-  id,
-  primaryHex,
-  resolvedMode,
-  opacity,
-}: AnimBgProps) {
+function AnimatedBackground({ id, primaryHex, opacity }: AnimBgProps) {
   // Derive three tonal variants from the primary for richer visuals
   const mid = lightenHex(primaryHex, 0.28);
   const bright = lightenHex(primaryHex, 0.48);
-  // A resting tone for marks that are drawn even when nothing is happening
-  // (the dot grid away from the pointer). It has to move AWAY from the page,
-  // so it darkens on a dark theme and lightens on a light one — a single
-  // fixed offset would make the dots invisible in one mode or the other.
-  const resting = lightenHex(primaryHex, resolvedMode === "dark" ? -0.22 : 0.3);
 
   if (id === "aurora") {
     return (
@@ -174,27 +156,6 @@ function AnimatedBackground({
       <Suspense fallback={null}>
         <ThreadsBackground
           color={hexToRgbTuple(primaryHex)}
-          opacity={opacity}
-        />
-      </Suspense>
-    );
-  }
-  if (id === "dotgrid") {
-    return (
-      <Suspense fallback={null}>
-        <DotGridBackground
-          baseColor={resting}
-          activeColor={bright}
-          opacity={opacity}
-        />
-      </Suspense>
-    );
-  }
-  if (id === "dither") {
-    return (
-      <Suspense fallback={null}>
-        <DitherBackground
-          color={hexToRgbTuple(mid)}
           opacity={opacity}
         />
       </Suspense>

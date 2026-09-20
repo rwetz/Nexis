@@ -17,7 +17,12 @@
     --default-transition-duration: var(--dur-tap);
     --default-transition-timing-function: var(--ease-enter);
 
-    --font-heading: var(--font-sans);
+    /* The display face. Used only where Nexis speaks in its own voice —
+     * dialog and sheet titles, empty states, Atlas panel headers, the
+     * welcome wordmark, Settings section headers. Everything else stays on
+     * --font-sans, because this face is not legible at the 9-12px the rest
+     * of the UI lives at. */
+    --font-heading: 'Space Grotesk Variable', 'Inter Variable', sans-serif;
     --font-sans: 'Inter Variable', sans-serif;
     /* Mirrors FALLBACK_CHAIN in src/lib/fonts.ts, which is what the terminal
      * and CodeMirror resolve through. Kept in sync by hand on purpose: this

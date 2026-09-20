@@ -63,10 +63,38 @@ Everything already satisfied by a CSS transition stays on CSS and the tokens abo
 
 Every `motion` call site reads `useReducedMotion()` and collapses its spring to `{ duration: 0 }`. The CSS half is covered by the shared reduced-motion rule; the JS half has to opt in per component, which is the cost of this exception.
 
+## The shared interaction primitives
+
+Six components exist so a recurring idea has one implementation and one
+behaviour everywhere. **Reach for these before writing a bespoke version** —
+that is the whole point, and a second hand-rolled variant is the drift
+pitfall #18 describes arriving through a different door.
+
+| Primitive | The idea it owns | Already used by |
+|---|---|---|
+| `use-gliding-rail.ts` | A selection that *travels* between the items of a nav instead of cutting | sidebar rail, Settings nav, Atlas List/Map, SVG Studio panes |
+| `CallChip` | Long-lived work the user started, can time, and can stop | status-bar process chip, ML Lab training, Benchmark sweeps |
+| `ThoughtLine` | A stream that is still arriving (live only — never from stored state) | AI reasoning trigger |
+| `BranchedMenu` | Grouped menu whose grouping is *drawn*, not inferred from whitespace | sidebar overflow menu |
+| `FolderPreview` / `CursorAura` / `ParticleText` | Scenery, for surfaces that are allowed to be scenery | explorer empty state, welcome screen |
+
+Two rules that keep this from rotting:
+
+- **A new long-running operation gets a `CallChip`**, not a spinner. A spinner
+  says "busy", which the app says in four other places; the chip says how long
+  and offers the stop. Elapsed formatting comes from `lib/duration.ts` — one
+  implementation, shared, so a run shown in two places never reads two
+  different durations.
+- **A new tab strip, mode switch or section nav gets `useGlidingRail`.** It
+  measures with `offsetLeft`/`offsetTop`, so the app's ancestor CSS `zoom`
+  cancels instead of needing to be divided out (the pitfall #15 family).
+
 ## Key files
 
 - `src/components/icon.tsx` — the registry, the size scale, the `Icon` component. The only module allowed to import the icon vendor.
-- `src/components/ui/use-gliding-rail.ts` — the shared measure-and-travel hook behind both navs' rails
+- `src/components/ui/use-gliding-rail.ts` — the shared measure-and-travel hook behind every nav rail
+- `src/components/ui/CallChip.tsx`, `ThoughtLine.tsx`, `BranchedMenu.tsx` — the other shared primitives
+- `src/lib/duration.ts` — the one `formatElapsed`
 - `src/settings/components/providerMarks.ts` — embedded CC0 provider brand marks
 - `src/settings/components/ProviderIcon.tsx` — mark-or-glyph selection per `ProviderId`
 - `src/modules/explorer/lib/iconResolver.ts` — file/folder art resolution and the theme retint

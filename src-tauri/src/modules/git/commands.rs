@@ -13,10 +13,9 @@ use tauri::{AppHandle, Manager};
 
 use crate::modules::git::operations;
 use crate::modules::git::types::{
-    DiscardEntry, GitActivityDay, GitBranchEntry, GitCheckpoint, GitCommitFileChange,
-    GitCommitResult, GitDiffContentResult, GitDiffResult, GitLogEntry, GitPanelSnapshot,
-    GitPushResult, GitRepoInfo, GitStashEntry, GitStatusSnapshot, GitSubmoduleEntry,
-    GitWorktreeEntry,
+    DiscardEntry, GitBranchEntry, GitCheckpoint, GitCommitFileChange, GitCommitResult,
+    GitDiffContentResult, GitDiffResult, GitLogEntry, GitPanelSnapshot, GitPushResult, GitRepoInfo,
+    GitStashEntry, GitStatusSnapshot, GitSubmoduleEntry, GitWorktreeEntry,
 };
 use crate::modules::workspace::{WorkspaceEnv, WorkspaceRegistry};
 
@@ -229,20 +228,6 @@ pub async fn git_push(
     let workspace = WorkspaceEnv::from_option(workspace);
     blocking(app, move |r| {
         operations::push(r, &repo_root, &workspace).map_err(Into::into)
-    })
-    .await
-}
-
-#[tauri::command]
-pub async fn git_activity(
-    repo_root: String,
-    days: Option<u32>,
-    workspace: Option<WorkspaceEnv>,
-    app: AppHandle,
-) -> Result<Vec<GitActivityDay>, String> {
-    let workspace = WorkspaceEnv::from_option(workspace);
-    blocking(app, move |r| {
-        operations::activity(r, &repo_root, days.unwrap_or(365), &workspace).map_err(Into::into)
     })
     .await
 }
