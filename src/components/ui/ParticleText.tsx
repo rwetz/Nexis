@@ -138,9 +138,17 @@ export function ParticleText({
     // sized to the glyphs alone would clip the entrance.
     ctx.font = font;
     const metrics = ctx.measureText(text);
-    const margin = Math.max(scatter * 0.5, 24);
-    const wCss = Math.ceil(metrics.width / dpr) + margin * 2;
-    const hCss = Math.ceil(fontSize * 1.6) + margin * 2;
+    // Asymmetric padding. The horizontal margin has to clear the full
+    // scatter radius or the entrance is clipped at the ends of the line,
+    // where there is nothing else on the row to hide it. Vertically the
+    // same margin was pure dead space — it more than doubled the element's
+    // height for a 72px wordmark and pushed everything around it apart —
+    // and a particle that starts above the box simply flies in from off
+    // its edge, which is indistinguishable from flying in from inside it.
+    const marginX = Math.max(scatter * 0.5, 24);
+    const marginY = Math.max(scatter * 0.16, 16);
+    const wCss = Math.ceil(metrics.width / dpr) + marginX * 2;
+    const hCss = Math.ceil(fontSize * 1.45) + marginY * 2;
 
     canvas.width = Math.max(1, Math.round(wCss * dpr));
     canvas.height = Math.max(1, Math.round(hCss * dpr));
@@ -152,7 +160,7 @@ export function ParticleText({
     ctx.font = font;
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#fff";
-    ctx.fillText(text, margin * dpr, canvas.height / 2);
+    ctx.fillText(text, marginX * dpr, canvas.height / 2);
 
     const bitmap = ctx.getImageData(0, 0, canvas.width, canvas.height);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -162,7 +170,7 @@ export function ParticleText({
     // Resting colours resolved once. Per-particle, because a spectrum
     // assigns by horizontal position; without a spectrum every particle
     // shares the one string and no work is done per frame either way.
-    const spanStart = margin * dpr;
+    const spanStart = marginX * dpr;
     const spanWidth = Math.max(1, canvas.width - spanStart * 2);
     for (let y = 0; y < canvas.height; y += step) {
       for (let x = 0; x < canvas.width; x += step) {
@@ -341,16 +349,27 @@ function sampleRamp(stops: string[], t: number): string {
 
 /** Blend two hex colours. `t` 0 = `a`, 1 = `b`. */
 function mix(a: string, b: string, t: number): string {
-  const pa = parseHex(a);
-  const pb = parseHex(b);
+  const pa = parseColor(a);
+  const pb = parseColor(b);
   const r = Math.round(pa[0] + (pb[0] - pa[0]) * t);
   const g = Math.round(pa[1] + (pb[1] - pa[1]) * t);
   const bl = Math.round(pa[2] + (pb[2] - pa[2]) * t);
   return `rgb(${r},${g},${bl})`;
 }
 
-function parseHex(hex: string): [number, number, number] {
-  const h = hex.replace(/^#/, "");
+/**
+ * Parse `#rgb`, `#rrggbb` or `rgb(r, g, b)` into channels.
+ *
+ * Both forms turn up: a literal in the call site is hex, while a colour that
+ * came through `resolveCssColor` is `rgb()` — that helper round-trips
+ * through a canvas pixel precisely because a computed `oklch()` cannot be
+ * trusted to serialize as anything else.
+ */
+function parseColor(value: string): [number, number, number] {
+  const rgb = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/.exec(value);
+  if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+
+  const h = value.replace(/^#/, "");
   const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
   const n = parseInt(full, 16);
   if (Number.isNaN(n)) return [255, 255, 255];

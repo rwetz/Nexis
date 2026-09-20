@@ -470,75 +470,70 @@ export function ThemesSection() {
         )}
       </div>
 
-      {/* ── Welcome screen ───────────────────────────────────────────────
-        * Its own control group, not a fourth option in the picker above.
-        * The app-wide background sits behind every pane at low opacity and
-        * has to stay out of the way of work; the welcome screen is the one
-        * surface in Nexis that is allowed to be scenery, so it gets its own
-        * set and its own rotation. */}
-      <div className="flex flex-col gap-3">
-        <SectionHeader
-          title="Welcome screen"
-          description="Shown when no tab is open."
-        />
-
-        <div className="grid grid-cols-2 gap-2">
-          {WELCOME_BG_ORDER.map((id) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => void setWelcomeBackgroundId(id)}
-              aria-pressed={welcomeBgId === id}
-              className={cn(
-                "flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border p-2.5 text-left transition-all",
-                welcomeBgId === id
-                  ? "border-foreground/60 ring-1 ring-foreground/20"
-                  : "border-border/60 hover:border-border hover:bg-muted/30",
-              )}
-            >
-              <div
-                className="h-9 w-full rounded-md"
-                style={{
-                  background: welcomeBgPreview(
-                    id,
-                    getThemePrimary(themeId, resolvedMode, customThemes),
-                  ),
-                }}
-              />
-              <span className="w-full text-center text-[11.5px] font-medium">
-                {WELCOME_BG_LABELS[id]}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[11.5px]">Cycle backgrounds</span>
-            <span className="text-[10.5px] leading-tight text-muted-foreground">
-              Show the next background each time the welcome screen appears.
-            </span>
-          </div>
-          <Switch
-            checked={welcomeCycle}
-            onCheckedChange={(v) => void setWelcomeBackgroundCycle(v)}
+      {/* The welcome-screen picker and its cycle toggle render only when
+        * there is more than one background to choose between. With a single
+        * option a picker is a control that cannot do anything and a rotation
+        * is a rotation of one — both come back on their own when a second
+        * background lands. */}
+      {WELCOME_BG_ORDER.length > 1 && (
+        <div className="flex flex-col gap-3">
+          <SectionHeader
+            title="Welcome screen"
+            description="Shown when no tab is open."
           />
+
+          <div className="grid grid-cols-2 gap-2">
+            {WELCOME_BG_ORDER.map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => void setWelcomeBackgroundId(id)}
+                aria-pressed={welcomeBgId === id}
+                className={cn(
+                  "flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border p-2.5 text-left transition-all",
+                  welcomeBgId === id
+                    ? "border-foreground/60 ring-1 ring-foreground/20"
+                    : "border-border/60 hover:border-border hover:bg-muted/30",
+                )}
+              >
+                <div
+                  className="h-9 w-full rounded-md"
+                  style={{
+                    background: welcomeBgPreview(
+                      id,
+                      getThemePrimary(themeId, resolvedMode, customThemes),
+                    ),
+                  }}
+                />
+                <span className="w-full text-center text-[11.5px] font-medium">
+                  {WELCOME_BG_LABELS[id]}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[11.5px]">Cycle backgrounds</span>
+              <span className="text-[10.5px] leading-tight text-muted-foreground">
+                Show the next background each time the welcome screen appears.
+              </span>
+            </div>
+            <Switch
+              checked={welcomeCycle}
+              onCheckedChange={(v) => void setWelcomeBackgroundCycle(v)}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-/** Swatch for one welcome background. Dither is grey-on-black by design, so
- *  its swatch does not take the theme accent — showing it tinted would
- *  promise something the background does not do. */
+/** Swatch for one welcome background. */
 function welcomeBgPreview(id: WelcomeBgId, primary: string): string {
-  if (id === "darkveil")
-    return `linear-gradient(135deg, #0a0a1a 0%, ${primary} 55%, #0a0a1a 100%)`;
-  return (
-    `repeating-linear-gradient(115deg, #808080 0 2px, #4a4a4a 2px 4px, ` +
-    `#000 4px 8px)`
-  );
+  void id;
+  return `linear-gradient(135deg, #0a0a1a 0%, ${primary} 55%, #0a0a1a 100%)`;
 }
 
 function ThemeGroup({

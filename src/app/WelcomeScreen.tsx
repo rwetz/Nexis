@@ -9,9 +9,6 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 const DarkVeilBackground = lazy(() =>
   import("@/components/ui/backgrounds/DarkVeil").then((m) => ({ default: m.DarkVeilBackground })),
 );
-const DitherBackground = lazy(() =>
-  import("@/components/ui/backgrounds/Dither").then((m) => ({ default: m.DitherBackground })),
-);
 import { Button } from "@/components/ui/button";
 import { ParticleText } from "@/components/ui/ParticleText";
 import { Icon } from "@/components/icon";
@@ -26,19 +23,11 @@ import {
 import { getFolderColor, useTheme } from "@/modules/theme";
 import { RAINBOW_STOP_OFFSETS, RAINBOW_VARIANTS } from "@/modules/theme/rainbowAccent";
 import { DEFAULT_THEME_ID } from "@/modules/theme/types";
+import { resolveCssColor } from "@/styles/tokens";
 
 type Props = {
   onNewTerminal: () => void;
 };
-
-/** Hex to a linear 0..1 RGB triple, which is what the GL backgrounds take. */
-function hexToRgbTuple(hex: string): [number, number, number] {
-  const h = hex.replace(/^#/, "");
-  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
-  const n = parseInt(full, 16);
-  if (Number.isNaN(n)) return [1, 1, 1];
-  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
-}
 
 /** Convert a hex color to its HSL hue in degrees (0–360). */
 function hexToHue(hex: string): number {
@@ -58,29 +47,22 @@ function hexToHue(hex: string): number {
 }
 
 /**
- * The seven-stop spectrum the rainbow hover accent paints with, as hex.
+ * The seven-stop spectrum the rainbow hover accent paints with, as sRGB.
  *
- * The accent itself emits `oklch()` into CSS, which the backgrounds cannot
- * use: two of them are WebGL and want linear RGB, and the third fills a
- * canvas. So the same stops are resolved to hex once here, through the
- * browser's own colour parser rather than a hand-rolled OKLCH conversion —
- * one implementation of the maths, and it is the one the page already uses.
+ * The accent emits `oklch()` into CSS, which a canvas cannot consume. The
+ * conversion goes through `resolveCssColor`, NOT through reading
+ * `getComputedStyle().color` and parsing it: WebView2 can serialize a
+ * computed colour back as `oklch(...)` rather than `rgb(...)`, so a regex
+ * expecting `rgb()` silently fails and every stop collapses to the fallback
+ * — which is exactly why the wordmark came out one flat indigo instead of a
+ * spectrum. `resolveCssColor` round-trips through a canvas pixel, whose
+ * bytes are always sRGB. Same trap CLAUDE.md records for Atlas's renderer.
  */
 function rainbowStops(variant = 0): string[] {
   const { hue } = RAINBOW_VARIANTS[variant % RAINBOW_VARIANTS.length];
-  const probe = document.createElement("span");
-  probe.style.display = "none";
-  document.body.appendChild(probe);
-  const out = RAINBOW_STOP_OFFSETS.map((offset) => {
-    probe.style.color = `oklch(0.72 0.19 ${(hue + offset) % 360})`;
-    const resolved = getComputedStyle(probe).color;
-    const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(resolved);
-    if (!m) return "#5227FF";
-    const hex = (v: string) => Number(v).toString(16).padStart(2, "0");
-    return `#${hex(m[1])}${hex(m[2])}${hex(m[3])}`;
-  });
-  probe.remove();
-  return out;
+  return RAINBOW_STOP_OFFSETS.map((offset) =>
+    resolveCssColor(`oklch(0.72 0.19 ${(hue + offset) % 360})`),
+  );
 }
 
 const SHORTCUTS = [
@@ -163,19 +145,10 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
             warpAmount={rainbow ? 0.65 : 0.5}
           />
         )}
-        {/* Dither keeps the BG Studio settings — grey on black — unless the
-            rainbow is on, in which case its two tones become spectrum ends
-            and the posterised bands read as a gradient ramp. */}
-        {shown === "dither" && (
-          <DitherBackground
-            color={rainbow ? hexToRgbTuple(rainbowHex[5]) : undefined}
-            background={rainbow ? hexToRgbTuple(rainbowHex[0]) : undefined}
-          />
-        )}
       </Suspense>
 
       <div
-        className="relative z-10 flex flex-col items-center gap-6"
+        className="relative z-10 flex flex-col items-center gap-3"
         style={{ animation: "welcome-fadein 0.55s cubic-bezier(0.16,1,0.3,1) both" }}
       >
         {/* The mark, unadorned. The radial glow behind it fought whichever
@@ -184,11 +157,11 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
         <img
           src="/nexis-logo.png"
           alt="Nexis"
-          className="size-16 drop-shadow-lg"
+          className="size-24 drop-shadow-lg"
           draggable={false}
         />
 
-        <div className="mt-2 flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-3">
           {/* The wordmark, at display scale. Settings match the BG Studio
               pass; `highlight` is what the particles take as the pointer
               pushes through them, which is the whole reason it reacts. */}
@@ -197,13 +170,13 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
               text="Welcome to Nexis"
               fontSize={72}
               fontWeight={800}
-              // The wordmark stays near-white in both modes. Painting it a
-              // single rainbow STOP was the bug behind "too much purple" —
-              // one arbitrary hue from the spectrum, over a background
-              // already carrying that spectrum. The rainbow reaches the
-              // wordmark through `spectrum`, which spreads the stops across
-              // the glyphs instead of flooding them with one of them.
-              color="#f8fafc"
+              // Follows the theme like every other coloured mark in the
+              // app: the theme's own accent normally, and the full rainbow
+              // spread across the glyphs when the default theme's spectrum
+              // is on. Painting it a single rainbow STOP — one arbitrary
+              // hue over a background already carrying that spectrum — is
+              // what made the first pass a wall of purple.
+              color={folderColor}
               highlight={rainbow ? undefined : "#8b5cf6"}
               spectrum={rainbow ? rainbowHex : undefined}
               glow={false}

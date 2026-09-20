@@ -52,23 +52,24 @@ export type BackgroundKind = "none" | "image" | "animated";
 export type AnimatedBgId = "aurora" | "particles" | "threads";
 
 /**
- * Backgrounds for the welcome screen, which is its own surface with its own
- * preference.
+ * Backgrounds for the welcome screen.
  *
  * Deliberately separate from {@link AnimatedBgId}: the app-wide background
  * sits behind every pane at low opacity and has to stay out of the way of
  * work, while the welcome screen is the one place Nexis is allowed to be
- * scenery. DarkVeil was already hardcoded there; Dither joins it rather than
- * joining the app-wide set.
+ * scenery.
+ *
+ * Only DarkVeil ships today. Dither was here and is withdrawn — see the
+ * CHANGELOG; the union and the preference stay because the picker and the
+ * per-viewing rotation come back for free the moment a second one lands.
  */
-export type WelcomeBgId = "darkveil" | "dither";
+export type WelcomeBgId = "darkveil";
 
 /** Rotation order, and the order the picker lists them in. */
-export const WELCOME_BG_ORDER: readonly WelcomeBgId[] = ["darkveil", "dither"];
+export const WELCOME_BG_ORDER: readonly WelcomeBgId[] = ["darkveil"];
 
 export const WELCOME_BG_LABELS: Record<WelcomeBgId, string> = {
   darkveil: "Dark Veil",
-  dither: "Dither",
 };
 
 /** Advance one step through {@link WELCOME_BG_ORDER}. */
