@@ -40,14 +40,23 @@ const NERD_FONT_CANDIDATES = [
  *
  * "Cascadia Mono" follows deliberately — it is the same design with
  * ligatures removed, which is what Windows ships preinstalled under that
- * name. JetBrains Mono stays third because the bundled subsets cover
- * Cyrillic and Cascadia's do not.
+ * name. JetBrains Mono stays last of the bundled faces as a second opinion
+ * on any glyph Cascadia's subsets miss.
  */
 const FALLBACK_CHAIN =
-  '"Cascadia Code", "Cascadia Mono", "JetBrains Mono", SFMono-Regular, Menlo, monospace';
+  '"Cascadia Code Variable", "Cascadia Code", "Cascadia Mono", "JetBrains Mono", SFMono-Regular, Menlo, monospace';
 
-/** The bundled default code family, by name. */
-export const DEFAULT_CODE_FONT_FAMILY = "Cascadia Code";
+/**
+ * The bundled default code family, by name.
+ *
+ * Fontsource names its variable builds `<Family> Variable` so they can sit
+ * alongside a static install of the same face without colliding. The chain
+ * therefore lists the bundled variable build FIRST and the plain name second:
+ * the second entry is not redundant, it is the user's own system install of
+ * Cascadia Code, which should still win over the further fallbacks if the
+ * bundled sheet somehow fails to load.
+ */
+export const DEFAULT_CODE_FONT_FAMILY = "Cascadia Code Variable";
 
 let detected: string | null = null;
 let monoReady: Promise<void> | null = null;
@@ -59,9 +68,9 @@ export function ensureMonoFontsLoaded(): Promise<void> {
     return monoReady;
   }
   monoReady = Promise.allSettled([
-    document.fonts.load('400 14px "Cascadia Code"'),
-    document.fonts.load('700 14px "Cascadia Code"'),
-    document.fonts.load('italic 400 14px "Cascadia Code"'),
+    document.fonts.load('400 14px "Cascadia Code Variable"'),
+    document.fonts.load('700 14px "Cascadia Code Variable"'),
+    document.fonts.load('italic 400 14px "Cascadia Code Variable"'),
     document.fonts.load('400 14px "JetBrains Mono"'),
     document.fonts.load('700 14px "JetBrains Mono"'),
   ]).then(() => undefined);
