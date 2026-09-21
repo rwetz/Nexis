@@ -61,6 +61,8 @@ Dither alone is not theme-tinted: it ships the grey-on-black BG Studio settings 
 - Theme switching runs inside a View Transition **except on Linux**, where WebKitGTK's snapshot path kills the web process on the NVIDIA driver — see the comment on `withViewTransition`.
 - Cross-window propagation is the ordinary preferences path — see [[settings-sync]] and CLAUDE.md pitfall #2.
 
+- **High contrast overrides tokens on `<body>`, never on `:root`.** `applyTheme` writes each palette as inline custom properties on `<html>`, and an inline declaration beats any stylesheet rule on the same element. Custom properties inherit, so the `html[data-contrast="high"] body { … }` block in `globals.css` wins for the whole app. It only reaches Tailwind utilities because `@theme inline` makes them read `var(--border)` at the element. A test in `components/ui/gliding-tabs.test.tsx` fails if the tokens move up. The attribute comes from `ThemeProvider` (`contrast` preference, or the OS under "system"), which also turns off the rainbow and exposes `highContrast`. `SurfaceLayer` renders nothing under it, and `rendererPool` sets `minimumContrastRatio: 7` from the same attribute.
+
 ## Debugging entry points
 
 - Colours don't change on switch → is `applyTheme` writing, or did the id fall through `resolveTheme` to the default? (an unknown id silently resolves to default)

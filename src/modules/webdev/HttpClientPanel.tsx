@@ -19,6 +19,7 @@
  * property of the project you have open, not of the machine.
  */
 
+import { GlidingTabs, type GlidingTab } from "@/components/ui/gliding-tabs";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { webHttp, type ClientHttpResponse } from "@/capabilities/web-tools/api";
@@ -69,12 +70,20 @@ function loadJson<T>(key: string, fallback: T): T {
   }
 }
 
+
+type RequestTab = "headers" | "body" | "vars";
+const REQUEST_TABS: readonly GlidingTab<RequestTab>[] = [
+  { id: "headers", label: "Headers" },
+  { id: "body", label: "Body" },
+  { id: "vars", label: "Vars" },
+];
+
 export function HttpClientPanel({ workspaceKey }: Props) {
   const [method, setMethod] = useState<HttpMethod>("GET");
   const [url, setUrl] = useState("");
   const [headerText, setHeaderText] = useState("");
   const [body, setBody] = useState("");
-  const [tab, setTab] = useState<"headers" | "body" | "vars">("headers");
+  const [tab, setTab] = useState<RequestTab>("headers");
 
   const [saved, setSaved] = useState<SavedRequest[]>(() =>
     loadJson<SavedRequest[]>(storageKey(workspaceKey, "requests"), []),
@@ -254,24 +263,7 @@ export function HttpClientPanel({ workspaceKey }: Props) {
         )}
 
         {/* ── Request tabs ──────────────────────────────────────────────── */}
-        <div className="flex items-center gap-1">
-          {(["headers", "body", "vars"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              aria-pressed={tab === t}
-              onClick={() => setTab(t)}
-              className={cn(
-                "rounded-md px-1.5 py-0.5 text-[10.5px] capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                tab === t
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        <GlidingTabs tabs={REQUEST_TABS} value={tab} onChange={setTab} label="Request" />
 
         {tab === "headers" && (
           <>

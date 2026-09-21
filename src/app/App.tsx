@@ -1,4 +1,5 @@
 import { activeWorkspace, workspaceCurrentDir } from "@/platform/workspaces";
+import { setContrast } from "@/modules/settings/store";
 import { git } from "@/capabilities/git/api";
 import { GitCapabilityHostProvider } from "@/capabilities/git/context";
 import { ExplorerCapabilityHostProvider } from "@/capabilities/editor/context";
@@ -1472,6 +1473,7 @@ function MainApp() {
     { id: "files.quickOpen",     label: "Quick file open",          category: "Files",   action: () => { signalOnboardingStep("files.quickOpen"); setQuickFilePickerOpen(true); }, keywords: ["cmd+p", "go to file"] },
     { id: "search.workspace",    label: "Find & replace in project",category: "Search",  action: () => setWorkspaceSearchOpen(true), keywords: ["grep", "search"] },
     { id: "sidebar.toggle",      label: "Toggle sidebar",           category: "View",    action: toggleSidebar },
+    { id: "view.highContrast",   label: "Toggle high contrast",     category: "View",    action: () => { const high = document.documentElement.getAttribute("data-contrast") === "high"; void setContrast(high ? "standard" : "high"); }, keywords: ["accessibility", "a11y", "contrast", "readability", "vision"] },
     { id: "panel.toggle",        label: "Toggle bottom panel",      category: "View",    action: () => useBottomPanelStore.getState().toggle(), keywords: ["problems", "build", "tests", "sessions", "output"] },
     { id: "panel.maximize",      label: "Maximize bottom panel",    category: "View",    action: () => useBottomPanelStore.getState().toggleMaximized() },
     { id: "settings.open",       label: "Open settings",            category: "General", action: () => void openSettingsWindow() },

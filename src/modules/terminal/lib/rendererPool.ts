@@ -249,9 +249,20 @@ function getRecycler(): HTMLDivElement {
   return el;
 }
 
+/**
+ * xterm's own contrast floor. Under high contrast it lifts any cell whose
+ * foreground/background pair falls below WCAG AAA (7:1) — which reaches the
+ * 256-colour and true-colour output that no theme palette can. Read from the
+ * attribute ThemeProvider stamps, so the pool needs no React context.
+ */
+function minimumContrastRatio(): number {
+  return document.documentElement.getAttribute("data-contrast") === "high" ? 7 : 1;
+}
+
 function termOptions() {
   const prefs = usePreferencesStore.getState();
   return {
+    minimumContrastRatio: minimumContrastRatio(),
     fontFamily: prefs.terminalFontFamily || detectMonoFontFamily(),
     letterSpacing: prefs.terminalLetterSpacing,
     fontSize: Math.max(4, Math.round(prefs.terminalFontSize * prefs.zoomLevel)),
@@ -1068,8 +1079,12 @@ export function applyCursorBlink(blink: boolean): void {
 
 export function applyTheme(): void {
   const theme = buildTerminalTheme();
+  const ratio = minimumContrastRatio();
   for (const slot of slots) {
     slot.term.options.theme = theme;
+    if (slot.term.options.minimumContrastRatio !== ratio) {
+      slot.term.options.minimumContrastRatio = ratio;
+    }
   }
 }
 

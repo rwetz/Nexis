@@ -85,7 +85,7 @@ Two rules that keep this from rotting:
   and offers the stop. Elapsed formatting comes from `lib/duration.ts` — one
   implementation, shared, so a run shown in two places never reads two
   different durations.
-- **A new tab strip, mode switch or section nav gets `useGlidingRail`.** It
+- **A new tab strip, mode switch or section nav gets `useGlidingRail`** — for a small strip inside a panel, use `GlidingTabs` (`components/ui/gliding-tabs.tsx`), which is that hook as a component. It
   measures with `offsetLeft`/`offsetTop`, so the app's ancestor CSS `zoom`
   cancels instead of needing to be divided out (the pitfall #15 family).
 
@@ -122,3 +122,8 @@ Two rules that keep this from rotting:
 ## Related
 
 [[theming]] · [[frontend-modules]] · [[window-chrome]] · [[editor]]
+
+## `active` and glyphs whose fill is another drawing
+
+`active` swaps to Phosphor's `fill` weight. For most marks that reads as "selected". For a globe it reads as a different icon (a solid disc). `FILL_CHANGES_SHAPE` in `icon.tsx` lists the glyphs that keep their resting weight when active. Add a name there, rather than dropping `active` at a call site, when a fill turns out to change the shape.
+

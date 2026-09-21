@@ -1067,3 +1067,56 @@ html[data-os="linux"] [class*="backdrop-blur"] {
     scale: 1 1;
   }
 }
+
+/* ── High contrast ────────────────────────────────────────────────────────────
+ * On top of whatever theme is active, never instead of it. ThemeProvider sets
+ * `html[data-contrast="high"]` from the Contrast preference (or the OS, under
+ * "system": prefers-contrast: more / forced-colors: active).
+ *
+ * Declared on <body>, not :root, and that is load-bearing: `applyTheme` writes
+ * each palette as *inline* custom properties on <html>, which no stylesheet
+ * rule on :root can beat. Custom properties inherit, and every element —
+ * portals included — lives under <body>, so re-declaring the tokens there
+ * wins for the whole app. `@theme inline` above is what makes this reach the
+ * Tailwind utilities: they read `var(--border)` at the element, not a value
+ * frozen at :root.
+ *
+ * The tokens are derived from the theme's own foreground and background
+ * rather than fixed to black and white, so Aurelian stays warm and Halcyon
+ * stays violet — only the gaps between them close. Mixed at these ratios the
+ * muted text clears WCAG AAA against the background in every shipped theme,
+ * and even a `/50` border still clears the 3:1 non-text floor. */
+html[data-contrast="high"] body {
+  --muted-foreground: color-mix(in oklab, var(--foreground) 88%, var(--background));
+  --border: color-mix(in oklab, var(--foreground) 72%, var(--background));
+  --input: color-mix(in oklab, var(--foreground) 78%, var(--background));
+  --sidebar-border: var(--border);
+  --ring: var(--foreground);
+  --muted: color-mix(in oklab, var(--foreground) 12%, var(--background));
+  --accent: color-mix(in oklab, var(--foreground) 18%, var(--background));
+  --accent-foreground: var(--foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--foreground);
+}
+
+/* Focus is always visible, in the foreground colour, whatever the component
+ * asked for. Unlayered + !important so it beats `outline-none` utilities. */
+html[data-contrast="high"] :focus-visible {
+  outline: 2px solid var(--foreground) !important;
+  outline-offset: 2px;
+}
+
+/* Decoration goes: the animated/image background behind every pane and the
+ * frosted-glass blur both put moving or blurred colour under text. */
+html[data-contrast="high"] .nexis-bg-surface {
+  display: none !important;
+}
+html[data-contrast="high"] [class*="backdrop-blur"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-contrast="high"] ::placeholder {
+  color: var(--muted-foreground);
+  opacity: 1;
+}

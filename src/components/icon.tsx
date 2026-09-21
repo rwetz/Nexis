@@ -173,6 +173,7 @@ import {
   WifiHighIcon,
   WrenchIcon,
   SquareHalfBottomIcon,
+  CircleHalfIcon,
   XIcon,
   XLogoIcon,
 } from "@phosphor-icons/react";
@@ -320,6 +321,7 @@ const REGISTRY = {
   "note": NoteIcon,
   "notification": BellIcon,
   "outline": ListBulletsIcon,
+  "contrast": CircleHalfIcon,
   "panel-bottom": SquareHalfBottomIcon,
   "pause": PauseIcon,
   "pin": PushPinIcon,
@@ -377,6 +379,17 @@ const REGISTRY = {
 
 export type IconName = keyof typeof REGISTRY;
 
+/**
+ * Glyphs whose `fill` weight is a different drawing, not a heavier one.
+ *
+ * `active` works by swapping to Phosphor's fill weight, which for most marks
+ * reads as "the same thing, selected". A globe is the exception: its fill is
+ * a solid disc with the meridians knocked out, so selecting a tab turned the
+ * outlined sphere into what looks like another icon. These keep their resting
+ * weight when active; the control around them carries the selected state.
+ */
+const FILL_CHANGES_SHAPE: ReadonlySet<IconName> = new Set(["globe", "search-global"]);
+
 export type IconProps = Omit<
   React.SVGProps<SVGSVGElement>,
   "ref" | "name" | "weight"
@@ -410,7 +423,7 @@ export function Icon({
   return (
     <Glyph
       size={px}
-      weight={weight ?? (active ? "fill" : "regular")}
+      weight={weight ?? (active && !FILL_CHANGES_SHAPE.has(name) ? "fill" : "regular")}
       aria-hidden={labelled ? undefined : true}
       focusable={false}
       {...rest}

@@ -17,6 +17,7 @@
  * that is half-typed by definition, which is why nothing here needs try/catch.
  */
 
+import { GlidingTabs } from "@/components/ui/gliding-tabs";
 import { Icon, type IconName } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
@@ -116,25 +117,8 @@ export function WebToolsPanel() {
         </span>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1 border-b border-border/50 px-2 py-1.5">
-        {TOOLS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            aria-pressed={tool === t.id}
-            onClick={() => setTool(t.id)}
-            className={cn(
-              "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10.5px] transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-              tool === t.id
-                ? "bg-primary/15 text-primary"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Icon name={t.icon} size="xs" active={tool === t.id} />
-            {t.label}
-          </button>
-        ))}
+      <div className="flex shrink-0 items-center border-b border-border/50 px-2 py-1.5">
+        <GlidingTabs tabs={TOOLS} value={tool} onChange={setTool} label="Web tools" />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2.5">
