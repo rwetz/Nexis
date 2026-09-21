@@ -162,13 +162,6 @@ export function HttpClientPanel({ workspaceKey }: Props) {
     }
   }, [resolvedUrl, sending, method, body, vars, parsedHeaders]);
 
-  const decoded = useMemo(() => {
-    if (!response) return null;
-    const text = new TextDecoder().decode(new Uint8Array(response.body));
-    const type = contentTypeOf(response.headers);
-    return { ...formatResponseBody(text, type), type, bytes: response.body.length };
-  }, [response]);
-
   const saveCurrent = () => {
     const name = url.trim() || "Untitled";
     persist([
@@ -321,42 +314,7 @@ export function HttpClientPanel({ workspaceKey }: Props) {
           </p>
         )}
 
-        {response && decoded && (
-          <div className="flex flex-col gap-1.5 border-t border-border/50 pt-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
-                  STATUS_TONE[statusClass(response.status)],
-                )}
-              >
-                {response.status} {response.statusText}
-              </span>
-              <span className="text-[10px] tabular-nums text-muted-foreground">
-                {formatElapsed(response.elapsedMs)} · {formatSize(decoded.bytes)}
-                {decoded.type ? ` · ${decoded.type}` : ""}
-              </span>
-            </div>
-            {response.finalUrl !== resolvedUrl && (
-              <p className="truncate font-mono text-[9.5px] text-muted-foreground/60">
-                redirected to {response.finalUrl}
-              </p>
-            )}
-            <pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-[10.5px] leading-relaxed whitespace-pre-wrap break-all">
-              {decoded.text || "(empty body)"}
-            </pre>
-            <details>
-              <summary className="cursor-pointer text-[10px] text-muted-foreground/70">
-                {Object.keys(response.headers).length} response headers
-              </summary>
-              <pre className="mt-1 max-h-40 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-[10px] leading-relaxed">
-                {Object.entries(response.headers)
-                  .map(([k, v]) => `${k}: ${v}`)
-                  .join("\n")}
-              </pre>
-            </details>
-          </div>
-        )}
+        {response && <ResponseView response={response} requestedUrl={resolvedUrl} />}
 
         {/* ── Saved ─────────────────────────────────────────────────────── */}
         {saved.length > 0 && (
@@ -391,6 +349,63 @@ export function HttpClientPanel({ workspaceKey }: Props) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * One response: status, timing, redirect, body, headers. Its own component
+ * because it depends on nothing but the response and the URL it was asked
+ * for, and keeping its branches (and the decode) out of the panel is most of
+ * what keeps the panel's own control flow readable.
+ */
+function ResponseView({
+  response,
+  requestedUrl,
+}: {
+  response: ClientHttpResponse;
+  requestedUrl: string;
+}) {
+  const decoded = useMemo(() => {
+    const text = new TextDecoder().decode(new Uint8Array(response.body));
+    const type = contentTypeOf(response.headers);
+    return { ...formatResponseBody(text, type), type, bytes: response.body.length };
+  }, [response]);
+
+  return (
+    <div className="flex flex-col gap-1.5 border-t border-border/50 pt-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span
+          className={cn(
+            "rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+            STATUS_TONE[statusClass(response.status)],
+          )}
+        >
+          {response.status} {response.statusText}
+        </span>
+        <span className="text-[10px] tabular-nums text-muted-foreground">
+          {formatElapsed(response.elapsedMs)} · {formatSize(decoded.bytes)}
+          {decoded.type ? ` · ${decoded.type}` : ""}
+        </span>
+      </div>
+      {response.finalUrl !== requestedUrl && (
+        <p className="truncate font-mono text-[9.5px] text-muted-foreground/60">
+          redirected to {response.finalUrl}
+        </p>
+      )}
+      <pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-[10.5px] leading-relaxed whitespace-pre-wrap break-all">
+        {decoded.text || "(empty body)"}
+      </pre>
+      <details>
+        <summary className="cursor-pointer text-[10px] text-muted-foreground/70">
+          {Object.keys(response.headers).length} response headers
+        </summary>
+        <pre className="mt-1 max-h-40 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-[10px] leading-relaxed">
+          {Object.entries(response.headers)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("\n")}
+        </pre>
+      </details>
     </div>
   );
 }
