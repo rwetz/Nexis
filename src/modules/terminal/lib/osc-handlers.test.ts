@@ -189,7 +189,8 @@ describe("OSC 7 cwd handler — gated by OSC 133 in-command state", () => {
 describe("OSC 133 failed-command Explain chip", () => {
   type FakeMarker = { line: number; isDisposed: boolean; dispose: () => void };
   type FakeDecoration = {
-    options: { anchor?: string; x?: number };
+    options: { anchor?: string; x?: number; marker?: FakeMarker };
+    marker: FakeMarker;
     disposed: boolean;
     render: ((el: HTMLElement) => void) | null;
     dispose: () => void;
@@ -208,11 +209,17 @@ describe("OSC 133 failed-command Explain chip", () => {
     const wrapped = new Set(wrappedRows);
     const cursor = { x: 0, y: 0 };
     const decorations: FakeDecoration[] = [];
+    const csi: { erase?: (params: (number | number[])[]) => boolean } = {};
+    const screen = { baseY: 0, type: "normal" as "normal" | "alternate" };
     const term = {
       parser: {
         registerOscHandler(code: number, handler: OscHandler) {
           handlers.set(code, handler);
           return { dispose: () => handlers.delete(code) };
+        },
+        registerCsiHandler(_id: { final: string }, handler: (params: (number | number[])[]) => boolean) {
+          csi.erase = handler;
+          return { dispose: () => (csi.erase = undefined) };
         },
       },
       registerMarker(): FakeMarker {
@@ -225,9 +232,10 @@ describe("OSC 133 failed-command Explain chip", () => {
         };
         return m;
       },
-      registerDecoration(options: { anchor?: string; x?: number }): FakeDecoration {
+      registerDecoration(options: { anchor?: string; x?: number; marker: FakeMarker }): FakeDecoration {
         const dec: FakeDecoration = {
           options,
+          marker: options.marker,
           disposed: false,
           render: null,
           dispose: () => {
@@ -243,7 +251,12 @@ describe("OSC 133 failed-command Explain chip", () => {
       },
       buffer: {
         active: {
-          baseY: 0,
+          get baseY() {
+            return screen.baseY;
+          },
+          get type() {
+            return screen.type;
+          },
           get cursorY() {
             return cursor.y;
           },
@@ -261,7 +274,7 @@ describe("OSC 133 failed-command Explain chip", () => {
         },
       },
     } as unknown as Terminal;
-    return { term, handlers, cursor, decorations };
+    return { term, handlers, cursor, decorations, csi, screen };
   }
 
   /** Minimal stand-in for the decoration element the chip styles. */
@@ -533,6 +546,56 @@ describe("OSC 133 failed-command Explain chip", () => {
       gutterOf(t)[0].render?.(el as unknown as HTMLElement);
       expect(el.style.pointerEvents).toBe("none");
       expect(el.onclick).toBeNull();
+    });
+
+    it("draws no bar for a bare Enter on an empty prompt", () => {
+      // The shell marked where input began (B) and nothing was typed there:
+      // D re-sends the previous $?, which is not a command's result.
+      const t = setup(["~/dev ❯ ", ""]);
+      runCommand(t, { promptLine: 0, promptLen: 8, exit: "0", endLine: 1 });
+      expect(gutterOf(t)).toHaveLength(0);
+    });
+
+    it("cls drops the bars on erased lines and never bars the clearing prompt", () => {
+      const t = setup(["❯ ls", "a", "❯ pwd", "/x", "❯ cls", ""]);
+      runCommand(t, { promptLine: 0, promptLen: 2, cLine: 1, exit: "0", endLine: 2 });
+      runCommand(t, { promptLine: 2, promptLen: 2, cLine: 3, exit: "1", endLine: 4 });
+      expect(gutterOf(t).filter((d) => !d.disposed)).toHaveLength(2);
+
+      // `cls`: A/B on line 4, then the shell erases the display and the
+      // scrollback before its D arrives.
+      const h = t.handlers.get(133);
+      t.cursor.y = 4;
+      t.cursor.x = 0;
+      h?.("A");
+      t.cursor.x = 2;
+      h?.("B");
+      t.csi.erase?.([2]);
+      t.csi.erase?.([3]);
+      t.cursor.y = 0;
+      h?.("D;0");
+
+      expect(gutterOf(t).every((d) => d.disposed)).toBe(true);
+      expect(gutterOf(t)).toHaveLength(2);
+    });
+
+    it("leaves bars alone when a full-screen app clears the alternate screen", () => {
+      const t = setup(["❯ ls", "a", ""]);
+      runCommand(t, { promptLine: 0, promptLen: 2, cLine: 1, exit: "0", endLine: 2 });
+      t.screen.type = "alternate";
+      t.csi.erase?.([2]);
+      expect(gutterOf(t)[0].disposed).toBe(false);
+    });
+
+    it("clearing only the scrollback keeps the bars still on screen", () => {
+      const t = setup(["❯ ls", "a", "❯ pwd", "/x", ""]);
+      runCommand(t, { promptLine: 0, promptLen: 2, cLine: 1, exit: "0", endLine: 2 });
+      runCommand(t, { promptLine: 2, promptLen: 2, cLine: 3, exit: "0", endLine: 4 });
+      t.screen.baseY = 2; // lines 0-1 are scrollback, 2+ the viewport
+      t.csi.erase?.([3]);
+      const [first, second] = gutterOf(t);
+      expect(first.disposed).toBe(true);
+      expect(second.disposed).toBe(false);
     });
 
     it("re-rendering does not stack handlers (xterm repaints call onRender again)", () => {

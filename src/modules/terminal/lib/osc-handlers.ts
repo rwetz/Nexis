@@ -264,13 +264,16 @@ export function registerPromptTracker(
       if (marker && !marker.isDisposed) {
         const code = parseExitCode(data);
         // Read the command now, while the buffer still holds this block.
-        addExitDecoration(
-          term,
-          marker,
-          code,
-          decorations,
-          readCommandText(term, cmdMarker, cmdStartX, outMarker),
-        );
+        const command = readCommandText(term, cmdMarker, cmdStartX, outMarker);
+        // Only a command that ran gets a bar. A bare Enter on an empty prompt
+        // re-emits D with the previous $?, and barring it stacked a green (or
+        // red) bar on every empty prompt line. PowerShell sends no C, so
+        // "ran" is a C marker *or* typed command text. An integration that
+        // never marks input (no B at all) cannot tell the two apart, so it
+        // keeps the old behaviour rather than losing every bar.
+        if (sawExec || command !== "" || cmdMarker === null) {
+          addExitDecoration(term, marker, code, decorations, command);
+        }
         // A finished command with a real exit status is the signal that the
         // "run a command" onboarding step has actually happened. This is a
         // bare dispatchEvent -- the listener owns the preference write, so
@@ -318,10 +321,44 @@ export function registerPromptTracker(
     }
     return true;
   });
+  // Erase in Display (CSI J). `cls` / `clear` blank the screen (mode 2) and
+  // the scrollback (mode 3), but the lines themselves survive, and so do the
+  // markers on them: every exit bar and Explain chip stayed painted on blank
+  // rows, stacking into a solid green stripe down the gutter under the fresh
+  // prompt. Drop everything anchored in the erased region. The prompt marker
+  // for the command that did the clearing goes too, or its D would bar a
+  // blank line. Returns false so xterm still performs the erase; runs before
+  // it, so marker lines are still the pre-erase positions.
+  const ed =
+    typeof term.parser.registerCsiHandler === "function"
+      ? term.parser.registerCsiHandler({ final: "J" }, (params) => {
+          const mode = typeof params[0] === "number" ? params[0] : 0;
+          const buf = term.buffer.active;
+          // The alternate screen (vim, less) has no markers of ours.
+          if ((mode !== 2 && mode !== 3) || buf.type === "alternate") return false;
+          const top = buf.baseY;
+          const erased = (line: number) => (mode === 2 ? line >= top : line < top);
+          for (const dec of decorations.slice()) {
+            if (dec.marker.isDisposed || erased(dec.marker.line)) dec.dispose();
+          }
+          const prompts = promptMarkers.get(term);
+          if (prompts) {
+            const kept = prompts.filter((m) => !m.isDisposed && !erased(m.line));
+            for (const m of prompts) if (!kept.includes(m)) m.dispose();
+            promptMarkers.set(term, kept);
+          }
+          if (marker && (marker.isDisposed || erased(marker.line))) {
+            marker.dispose();
+            marker = null;
+          }
+          return false;
+        })
+      : null;
   return {
     getMarker: () => (marker && !marker.isDisposed ? marker : null),
     dispose: () => {
       d.dispose();
+      ed?.dispose();
       for (const dec of decorations.slice()) dec.dispose();
       decorations.length = 0;
       // Only drop our navigation index — the markers themselves belong to the
