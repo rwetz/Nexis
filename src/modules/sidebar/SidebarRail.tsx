@@ -20,9 +20,9 @@
  * sat open above it, and there would be no mark for where you are.
  */
 
+import { RailIndicator } from "@/components/ui/rail-indicator";
 import { Icon, type IconName } from "@/components/icon";
 import { useGlidingRail } from "@/components/ui/use-gliding-rail";
-import { motion } from "motion/react";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -97,19 +97,12 @@ export function SidebarRail({
     ? null
     : describeView(activeView, registryPanels);
 
-  const {
-    containerRef: stripRef,
-    registerItem,
-    activeRect,
-    hoverRect,
-    hoverId,
-    setHoverId,
-    transition: railSpring,
-  } = useGlidingRail<SidebarView>(
+  const rail = useGlidingRail<SidebarView>(
     activeView,
     "horizontal",
     railItems.length + (transient ? 1 : 0),
   );
+  const { containerRef: stripRef, registerItem, hoverId, setHoverId } = rail;
 
   return (
     <div
@@ -129,26 +122,22 @@ export function SidebarRail({
         className="relative flex min-w-0 flex-1 items-center gap-0.5"
         onPointerLeave={() => setHoverId(null)}
       >
-        {hoverRect && hoverId !== activeView && (
-          <motion.span
-            aria-hidden
-            className="pointer-events-none absolute bottom-0 h-[2px] rounded-full bg-primary/30"
-            initial={false}
-            animate={{ x: hoverRect.offset, width: hoverRect.extent }}
-            transition={railSpring}
+        {hoverId !== activeView && (
+          <RailIndicator
+            rail={rail}
+            rect={rail.hoverRect}
+            radius={1}
+            className="bottom-0 h-[2px] bg-primary/30"
           />
         )}
-        {activeRect && (
-          <motion.span
-            aria-hidden
-            // Solid: at 2px tall a dashed rail reads as a rendering artefact;
-            // opacity already tells it apart from the hover rail.
-            className="pointer-events-none absolute bottom-0 h-[2px] rounded-full bg-primary"
-            initial={false}
-            animate={{ x: activeRect.offset, width: activeRect.extent }}
-            transition={railSpring}
-          />
-        )}
+        {/* Solid: at 2px tall a dashed rail reads as a rendering artefact;
+            opacity already tells it apart from the hover rail. */}
+        <RailIndicator
+          rail={rail}
+          rect={rail.activeRect}
+          radius={1}
+          className="bottom-0 h-[2px] bg-primary"
+        />
         {railItems.map((item) => (
           <RailButton
             key={item.id}

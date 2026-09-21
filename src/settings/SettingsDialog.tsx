@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { RailIndicator } from "@/components/ui/rail-indicator";
 import {
   Dialog,
   DialogClose,
@@ -15,7 +16,6 @@ import { Icon, type IconName } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useGlidingRail } from "@/components/ui/use-gliding-rail";
-import { motion } from "motion/react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import {
   JSX,
@@ -317,24 +317,20 @@ export function SettingsDialog() {
                 aria-hidden
                 className="pointer-events-none absolute inset-y-2 left-1 w-px bg-border/60"
               />
-              {rail.hoverRect && rail.hoverId !== activeTab && (
-                <motion.span
-                  aria-hidden
-                  className="pointer-events-none absolute left-1 w-px rounded-full bg-foreground/25"
-                  initial={false}
-                  animate={{ y: rail.hoverRect.offset, height: rail.hoverRect.extent }}
-                  transition={rail.transition}
+              {rail.hoverId !== activeTab && (
+                <RailIndicator
+                  rail={rail}
+                  rect={rail.hoverRect}
+                  radius={1}
+                  className="left-1 w-px bg-foreground/25"
                 />
               )}
-              {rail.activeRect && (
-                <motion.span
-                  aria-hidden
-                  className="pointer-events-none absolute left-[2px] w-[2px] rounded-full bg-primary"
-                  initial={false}
-                  animate={{ y: rail.activeRect.offset, height: rail.activeRect.extent }}
-                  transition={rail.transition}
-                />
-              )}
+              <RailIndicator
+                rail={rail}
+                rect={rail.activeRect}
+                radius={1}
+                className="left-[2px] w-[2px] bg-primary"
+              />
               {visibleGroups.map((group, gi) => (
                 <div
                   key={group.label ?? "ungrouped"}

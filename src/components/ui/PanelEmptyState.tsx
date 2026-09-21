@@ -93,16 +93,19 @@ export function PanelEmptyGlyph({ icon }: { icon: IconName }) {
   );
 }
 
+/** Indent and length of each bar, as [x, width]: the shape of an outline. */
+const OUTLINE_ROWS: readonly (readonly [number, number])[] = [
+  [0, 70],
+  [8, 52],
+  [8, 60],
+  [16, 38],
+  [0, 64],
+  [8, 44],
+];
+
 /** Indented bars: the shape of a symbol outline. */
 function OutlineSheet({ seed }: { seed: number }) {
-  const rows = [
-    [0, 70],
-    [8, 52],
-    [8, 60],
-    [16, 38],
-    [0, 64],
-    [8, 44],
-  ];
+  const rows = OUTLINE_ROWS;
   return (
     <svg viewBox="0 0 100 80" className="size-full" aria-hidden>
       {rows.map(([x, w], i) => (

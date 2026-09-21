@@ -28,7 +28,7 @@
 
 import { Icon, type IconName } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { motion, useReducedMotion } from "motion/react";
+import { m, useReducedMotion } from "motion/react";
 import * as React from "react";
 
 /** Preview sheets drawn inside the folder. More than three stops reading. */
@@ -90,10 +90,13 @@ type Props = {
   className?: string;
 };
 
+
+/** Module-scope default: a fresh `[]` per render would re-run the memo below. */
+const NO_ITEMS: React.ReactNode[] = [];
 export function FolderPreview({
   color = "#5227FF",
   size = 1,
-  items = [],
+  items = NO_ITEMS,
   label,
   className,
 }: Props) {
@@ -140,7 +143,7 @@ export function FolderPreview({
         onPointerLeave={() => setOpen(false)}
       >
         {/* Back panel, plus the tab that makes the silhouette a folder. */}
-        <motion.div
+        <m.div
           className="absolute inset-0 rounded-[10px] rounded-tl-none"
           style={{ backgroundColor: back }}
           animate={{ y: open ? -6 * size : 0 }}
@@ -154,11 +157,11 @@ export function FolderPreview({
               width: 30 * size,
             }}
           />
-        </motion.div>
+        </m.div>
 
         {/* Sheets. Tucked inside when closed, fanned above when open. */}
         {sheets.map((item, i) => (
-          <motion.div
+          <m.div
             key={i}
             className="absolute bottom-[10%] left-1/2 z-20 overflow-hidden rounded-[8px] shadow-sm"
             style={{
@@ -188,12 +191,12 @@ export function FolderPreview({
             }
           >
             {item}
-          </motion.div>
+          </m.div>
         ))}
 
         {/* Cover. Rotates about its bottom edge, which is what makes this a
             lid rather than a skew. */}
-        <motion.div
+        <m.div
           className="absolute inset-0 z-30 flex items-end gap-1.5 rounded-[10px] rounded-tl-[5px] p-2"
           style={{
             backgroundColor: color,
@@ -213,7 +216,7 @@ export function FolderPreview({
               style={{ color: towardWhite(color, 0.05) }}
             />
           ))}
-        </motion.div>
+        </m.div>
       </div>
 
       {label && (

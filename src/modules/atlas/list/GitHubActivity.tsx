@@ -195,6 +195,10 @@ export function GitHubActivity({ days, className }: Props) {
               style={{ gridTemplateRows: `repeat(${DAYS_PER_WEEK}, 10px)` }}
             >
               {WEEKDAY_LABELS.map((label, i) => (
+                // A fixed seven-row column that never reorders or filters;
+                // the index *is* the weekday, and most labels are "" so no
+                // value is unique.
+                // react-doctor-disable-next-line react-doctor/no-array-index-as-key
                 <span key={i} className="w-[22px] text-right">
                   {label}
                 </span>

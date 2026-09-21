@@ -20,6 +20,7 @@
  * not wrap this in anything that re-introduces a CSS `zoom`.
  */
 
+import { RailIndicator } from "@/components/ui/rail-indicator";
 import { Icon, type IconName } from "@/components/icon";
 import { ExportBar } from "./ExportBar";
 import { PresetGallery } from "./PresetGallery";
@@ -34,7 +35,6 @@ import {
 } from "./lib/svgCompose";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
 import {
   getCachedEditorTheme,
   loadEditorTheme,
@@ -214,18 +214,12 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
           className="relative flex shrink-0 items-center gap-1.5 border-b border-border/50 px-3 py-1.5"
           onPointerLeave={() => paneRail.setHoverId(null)}
         >
-          {paneRail.activeRect && (
-            <motion.span
-              aria-hidden
-              className="pointer-events-none absolute inset-y-1.5 left-0 rounded-md bg-primary/15"
-              initial={false}
-              animate={{
-                x: paneRail.activeRect.offset,
-                width: paneRail.activeRect.extent,
-              }}
-              transition={paneRail.transition}
-            />
-          )}
+          <RailIndicator
+            rail={paneRail}
+            rect={paneRail.activeRect}
+            radius={8}
+            className="inset-y-1.5 bg-primary/15"
+          />
           {LEFT_PANES.map(([id, icon, label]) => (
             <button
               key={id}

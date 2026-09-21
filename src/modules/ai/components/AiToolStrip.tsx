@@ -18,6 +18,7 @@
  * because you glanced at the queue. The other tools mount on demand.
  */
 
+import { RailIndicator } from "@/components/ui/rail-indicator";
 import { Icon } from "@/components/icon";
 import { useGlidingRail } from "@/components/ui/use-gliding-rail";
 import { packEnabled, packForView } from "@/lib/packs";
@@ -27,7 +28,6 @@ import { CodeReviewPanel } from "@/modules/code-review";
 import { PromptTemplatesPanel } from "@/modules/prompt-templates";
 import { RefactorPanel } from "@/modules/refactor";
 import { usePreferencesStore } from "@/modules/settings/preferences";
-import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { AI_TOOLS, useAiToolStore, type AiTool } from "../store/aiToolStore";
 
@@ -55,15 +55,12 @@ export function AiToolStrip() {
       className="relative flex shrink-0 items-center gap-0.5 border-b border-border/40 px-2.5 py-1"
       onPointerLeave={() => rail.setHoverId(null)}
     >
-      {rail.activeRect && (
-        <motion.span
-          aria-hidden
-          className="pointer-events-none absolute inset-y-1 left-0 rounded-md bg-primary/12"
-          initial={false}
-          animate={{ x: rail.activeRect.offset, width: rail.activeRect.extent }}
-          transition={rail.transition}
-        />
-      )}
+      <RailIndicator
+        rail={rail}
+        rect={rail.activeRect}
+        radius={8}
+        className="inset-y-1 bg-primary/12"
+      />
       {tools.map((t) => (
         <button
           key={t.id}

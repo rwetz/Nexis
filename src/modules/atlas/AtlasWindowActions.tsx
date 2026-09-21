@@ -2,7 +2,7 @@ import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { useGlidingRail } from "@/components/ui/use-gliding-rail";
 import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { useAtlasStore, type Mode } from "@/modules/atlas/repos/store";
 
 /** Controls shared by Atlas's panel toolbar and its dedicated window title bar. */
@@ -64,11 +64,16 @@ export function AtlasModeSwitch() {
       className="relative flex items-center gap-0.5 rounded-xl border border-border/60 bg-background/70 p-0.5"
     >
       {rail.activeRect && (
-        <motion.span
+        // Glides by transform alone: the width is set, not animated (a size
+        // is a layout property). Not RailIndicator's clip, because this thumb
+        // is a raised card whose shadow and ring a clip would cut away; with
+        // two options the width change on a switch is a few pixels.
+        <m.span
           aria-hidden
           className="pointer-events-none absolute inset-y-0.5 left-0 rounded-lg bg-card shadow-sm ring-1 ring-foreground/10"
+          style={{ width: rail.activeRect.extent }}
           initial={false}
-          animate={{ x: rail.activeRect.offset, width: rail.activeRect.extent }}
+          animate={{ x: rail.activeRect.offset }}
           transition={rail.transition}
         />
       )}

@@ -26,7 +26,7 @@ import { Icon, type IconName } from "@/components/icon";
 import { basename, displayDirname as dirname } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { filesystem } from "@/platform/filesystem";
-import { motion, useReducedMotion } from "motion/react";
+import { m, useReducedMotion } from "motion/react";
 import {
   memo,
   useCallback,
@@ -366,7 +366,7 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <motion.div
+      <m.div
         aria-hidden="true"
         className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
         initial={{ opacity: 0 }}
@@ -375,7 +375,7 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
         onClick={onClose}
       />
 
-      <motion.div
+      <m.div
         role="dialog"
         aria-modal="true"
         aria-label="Spotlight"
@@ -465,7 +465,7 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
             {root ? "No results" : "No workspace open"}
           </div>
         )}
-      </motion.div>
+      </m.div>
     </div>
   );
 }

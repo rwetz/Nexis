@@ -34,7 +34,9 @@ export const PROBLEMS_TAB = "problems";
 /** What a session tab's dot says. Idle draws nothing. */
 export type SessionStatus = "idle" | "running" | "failed";
 
-const STORAGE_KEY = "nexis.bottom-panel";
+/** Versioned in the key: bump the suffix when the stored shape changes, and
+ *  an old shape is simply never read rather than half-parsed. */
+const STORAGE_KEY = "nexis.bottom-panel:v1";
 
 export const BOTTOM_PANEL_DEFAULT_HEIGHT = 240;
 export const BOTTOM_PANEL_MIN_HEIGHT = 96;

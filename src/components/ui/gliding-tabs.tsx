@@ -16,10 +16,10 @@
  * one pill that moves, the same spring, one line at the call site.
  */
 
+import { RailIndicator } from "@/components/ui/rail-indicator";
 import { Icon, type IconName } from "@/components/icon";
 import { useGlidingRail } from "@/components/ui/use-gliding-rail";
 import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
 
 export type GlidingTab<Id extends string> = {
   id: Id;
@@ -50,15 +50,12 @@ export function GlidingTabs<Id extends string>({
       className={cn("relative flex items-center gap-1", className)}
       onPointerLeave={() => rail.setHoverId(null)}
     >
-      {rail.activeRect && (
-        <motion.span
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 rounded-md bg-primary/15"
-          initial={false}
-          animate={{ x: rail.activeRect.offset, width: rail.activeRect.extent }}
-          transition={rail.transition}
-        />
-      )}
+      <RailIndicator
+        rail={rail}
+        rect={rail.activeRect}
+        radius={8}
+        className="inset-y-0 bg-primary/15"
+      />
       {tabs.map((t) => {
         const selected = t.id === value;
         return (

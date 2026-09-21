@@ -70,12 +70,17 @@ export function CursorAura({
       if (!visible) {
         visible = true;
         aura.style.opacity = String(opacity);
+        // Promote only while the aura is actually tracking the pointer, and
+        // name the property that moves: it is animated with `translate`,
+        // which `will-change: transform` does not cover.
+        aura.style.willChange = "translate";
       }
     };
 
     const onPointerLeave = () => {
       visible = false;
       aura.style.opacity = "0";
+      aura.style.willChange = "auto";
     };
 
     // Listening on the window rather than the host: the host is
@@ -114,7 +119,7 @@ export function CursorAura({
     >
       <div
         ref={auraRef}
-        className="absolute top-0 left-0 rounded-full opacity-0 transition-opacity duration-(--dur-window) will-change-transform"
+        className="absolute top-0 left-0 rounded-full opacity-0 transition-opacity duration-(--dur-window)"
         style={{
           width: size,
           height: size,

@@ -33,6 +33,10 @@ export type GlidingRail<Id> = {
   registerItem: (id: Id, el: HTMLElement | null) => void;
   activeRect: RailRect | null;
   hoverRect: RailRect | null;
+  /** Length the indicator spans along the axis (items' far edge, at least the
+   *  visible box). `RailIndicator` clips it down to the selected item. */
+  containerExtent: number;
+  axis: "horizontal" | "vertical";
   hoverId: Id | null;
   setHoverId: (id: Id | null) => void;
   /** Spring for the travel; collapses to an instant move under reduced motion. */
@@ -55,6 +59,7 @@ export function useGlidingRail<Id>(
   const [activeRect, setActiveRect] = useState<RailRect | null>(null);
   const [hoverId, setHoverId] = useState<Id | null>(null);
   const [hoverRect, setHoverRect] = useState<RailRect | null>(null);
+  const [containerExtent, setContainerExtent] = useState(0);
   const reduceMotion = useReducedMotion();
 
   const registerItem = useCallback((id: Id, el: HTMLElement | null) => {
@@ -76,9 +81,29 @@ export function useGlidingRail<Id>(
 
   // Layout effects, so the rail never paints a frame at a stale position
   // after the item set or the selection changes.
+  const measureContainer = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    // The far edge of the last item, or the visible box if that is larger.
+    // Not `scrollWidth`: the indicator is itself an absolutely positioned
+    // child sized to this value, and abs-pos children count toward scroll
+    // overflow, so a strip would stay as wide as it ever was after shrinking.
+    let end = axis === "horizontal" ? el.clientWidth : el.clientHeight;
+    for (const item of itemRefs.current.values()) {
+      end = Math.max(
+        end,
+        axis === "horizontal"
+          ? item.offsetLeft + item.offsetWidth
+          : item.offsetTop + item.offsetHeight,
+      );
+    }
+    setContainerExtent(end);
+  }, [axis]);
+
   useLayoutEffect(() => {
     setActiveRect(measure(activeId));
-  }, [activeId, revision, measure]);
+    measureContainer();
+  }, [activeId, revision, measure, measureContainer]);
 
   useLayoutEffect(() => {
     setHoverRect(measure(hoverId));
@@ -89,16 +114,21 @@ export function useGlidingRail<Id>(
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const observer = new ResizeObserver(() => setActiveRect(measure(activeId)));
+    const observer = new ResizeObserver(() => {
+      setActiveRect(measure(activeId));
+      measureContainer();
+    });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [activeId, measure]);
+  }, [activeId, measure, measureContainer]);
 
   return {
     containerRef,
     registerItem,
     activeRect,
     hoverRect,
+    containerExtent,
+    axis,
     hoverId,
     setHoverId,
     transition: reduceMotion

@@ -343,8 +343,11 @@ export function registerPromptTracker(
           }
           const prompts = promptMarkers.get(term);
           if (prompts) {
-            const kept = prompts.filter((m) => !m.isDisposed && !erased(m.line));
-            for (const m of prompts) if (!kept.includes(m)) m.dispose();
+            const kept: IMarker[] = [];
+            for (const m of prompts) {
+              if (!m.isDisposed && !erased(m.line)) kept.push(m);
+              else m.dispose();
+            }
             promptMarkers.set(term, kept);
           }
           if (marker && (marker.isDisposed || erased(marker.line))) {

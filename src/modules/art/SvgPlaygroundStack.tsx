@@ -32,11 +32,11 @@
  * collapsing is just a close.
  */
 
+import { RailIndicator } from "@/components/ui/rail-indicator";
 import { Icon } from "@/components/icon";
 import { useGlidingRail } from "@/components/ui/use-gliding-rail";
 import { cn } from "@/lib/utils";
 import type { Tab } from "@/modules/tabs/lib/tabTypes";
-import { motion } from "motion/react";
 import { AnimatorPanel } from "./AnimatorPanel";
 import { BackdropPanel } from "./BackdropPanel";
 import { FaviconPanel } from "./FaviconPanel";
@@ -82,15 +82,12 @@ export function SvgPlaygroundStack({
           className="relative flex min-w-0 items-center gap-1 overflow-x-auto"
           onPointerLeave={() => rail.setHoverId(null)}
         >
-          {rail.activeRect && (
-            <motion.span
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 left-0 rounded-md bg-primary/15"
-              initial={false}
-              animate={{ x: rail.activeRect.offset, width: rail.activeRect.extent }}
-              transition={rail.transition}
-            />
-          )}
+          <RailIndicator
+            rail={rail}
+            rect={rail.activeRect}
+            radius={8}
+            className="inset-y-0 bg-primary/15"
+          />
           {STUDIO_TOOLS.map(({ id, label, icon }) => (
             <button
               key={id}

@@ -127,3 +127,8 @@ Two rules that keep this from rotting:
 
 `active` swaps to Phosphor's `fill` weight. For most marks that reads as "selected". For a globe it reads as a different icon (a solid disc). `FILL_CHANGES_SHAPE` in `icon.tsx` lists the glyphs that keep their resting weight when active. Add a name there, rather than dropping `active` at a call site, when a fill turns out to change the shape.
 
+## Rail marks move by clip-path, and motion is `m` only
+
+- **Never animate a rail mark's `width`/`height`.** Use `RailIndicator` (`components/ui/rail-indicator.tsx`) with the rail from `useGlidingRail`. It spans the strip once and animates `clip-path: inset(... round r)`, which is paint-only and keeps corners true. The hook reports `containerExtent` as the items' far edge. It is not `scrollWidth`, because an absolutely positioned indicator counts toward scroll overflow and would pin a strip at its widest. The exception is a mark with a shadow or ring (Atlas's List/Map thumb), which a clip would cut: glide it with `x` only and set the width without animating it.
+- **Import `m`, never `motion`, from `motion/react`.** `main.tsx` wraps the app in `LazyMotion features={domAnimation} strict`, so a `motion.*` component throws in development. Layout or drag animations would need `domMax` there.
+

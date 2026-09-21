@@ -23,6 +23,7 @@
  * contribution directly.
  */
 
+import { RailIndicator } from "@/components/ui/rail-indicator";
 import { Icon } from "@/components/icon";
 import { useGlidingRail } from "@/components/ui/use-gliding-rail";
 import { packEnabled } from "@/lib/packs";
@@ -32,7 +33,6 @@ import { useDiagnosticsStore } from "@/modules/problems/diagnosticsStore";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { PackGatePlaceholder } from "@/modules/sidebar/PackGatePlaceholder";
 import { pluginPanelViewId } from "@/modules/sidebar/types";
-import { motion } from "motion/react";
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { PROBLEMS_TAB, useBottomPanelStore, type BottomTab } from "./store";
 import { bottomTabs, findBottomContribution } from "./tabs";
@@ -83,24 +83,20 @@ export function BottomPanel({ renderBuiltin }: Props) {
           className="relative flex h-full min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           onPointerLeave={() => rail.setHoverId(null)}
         >
-          {rail.hoverRect && rail.hoverId !== active && (
-            <motion.span
-              aria-hidden
-              className="pointer-events-none absolute bottom-0 h-[2px] rounded-full bg-primary/30"
-              initial={false}
-              animate={{ x: rail.hoverRect.offset, width: rail.hoverRect.extent }}
-              transition={rail.transition}
+          {rail.hoverId !== active && (
+            <RailIndicator
+              rail={rail}
+              rect={rail.hoverRect}
+              radius={1}
+              className="bottom-0 h-[2px] bg-primary/30"
             />
           )}
-          {rail.activeRect && (
-            <motion.span
-              aria-hidden
-              className="pointer-events-none absolute bottom-0 h-[2px] rounded-full bg-primary"
-              initial={false}
-              animate={{ x: rail.activeRect.offset, width: rail.activeRect.extent }}
-              transition={rail.transition}
-            />
-          )}
+          <RailIndicator
+            rail={rail}
+            rect={rail.activeRect}
+            radius={1}
+            className="bottom-0 h-[2px] bg-primary"
+          />
           {tabs.map((t) => {
             const isActive = t.id === active;
             const state = status[t.id] ?? "idle";

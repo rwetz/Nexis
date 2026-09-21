@@ -245,12 +245,15 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
   // "Increase contrast" (prefers-contrast: more) and Windows high contrast
   // themes (forced-colors: active).
   useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const queries = [SYSTEM_CONTRAST_QUERY, SYSTEM_FORCED_QUERY].map((q) => window.matchMedia(q));
+    if (typeof window === "undefined" || !window.matchMedia) return undefined;
+    const contrastQuery = window.matchMedia(SYSTEM_CONTRAST_QUERY);
+    const forcedQuery = window.matchMedia(SYSTEM_FORCED_QUERY);
     const update = () => setSystemHighContrast(readSystemHighContrast());
-    for (const q of queries) q.addEventListener("change", update);
+    contrastQuery.addEventListener("change", update);
+    forcedQuery.addEventListener("change", update);
     return () => {
-      for (const q of queries) q.removeEventListener("change", update);
+      contrastQuery.removeEventListener("change", update);
+      forcedQuery.removeEventListener("change", update);
     };
   }, []);
 
@@ -261,9 +264,10 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
   // element (portals included) inherits from, so they win over any theme.
   const highContrast = contrast === "high" || (contrast === "system" && systemHighContrast);
   useEffect(() => {
+    if (!highContrast) return;
     const root = document.documentElement;
-    if (highContrast) root.setAttribute("data-contrast", "high");
-    else root.removeAttribute("data-contrast");
+    root.setAttribute("data-contrast", "high");
+    return () => root.removeAttribute("data-contrast");
   }, [highContrast]);
 
   // Only the default theme has a rainbow accent, and only when the preference

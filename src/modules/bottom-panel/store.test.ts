@@ -38,7 +38,7 @@ it("persists open, tab and height but not maximized", () => {
   useBottomPanelStore.getState().show("repl");
   useBottomPanelStore.getState().setHeight(300);
   useBottomPanelStore.getState().toggleMaximized();
-  expect(JSON.parse(localStorage.getItem("nexis.bottom-panel")!)).toEqual({ open: true, tab: "repl", height: 300 });
+  expect(JSON.parse(localStorage.getItem("nexis.bottom-panel:v1")!)).toEqual({ open: true, tab: "repl", height: 300 });
 });
 
 it("ignores heights below the floor", () => {
