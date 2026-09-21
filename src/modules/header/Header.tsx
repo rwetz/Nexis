@@ -233,6 +233,7 @@ export function Header({
         variant="ghost"
         size="icon-sm"
         aria-label="Search"
+        data-tour="spotlight"
         title="Search"
         onClick={onOpenSpotlight}
       >

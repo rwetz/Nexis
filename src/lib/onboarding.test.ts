@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { RAIL_VIEWS } from "@/modules/sidebar/viewCatalog";
 import { describe, expect, it } from "vitest";
 import { PACK_IDS, PACKS, PRESETS } from "./packs";
 import {
@@ -85,6 +86,16 @@ describe("onboarding tour", () => {
   it("gives every tour step an anchor to point at", () => {
     for (const step of tourFor(PACK_IDS)) {
       expect(step.tourTarget).toBeTruthy();
+    }
+  });
+
+  // A "sidebar-<view>" anchor exists only for views on the rail; pointing a
+  // coach-mark at any other view leaves it pointing at nothing.
+  it("points sidebar coach-marks only at views on the rail", () => {
+    for (const step of tourFor(PACK_IDS)) {
+      const target = step.tourTarget ?? "";
+      if (!target.startsWith("sidebar-")) continue;
+      expect(RAIL_VIEWS).toContain(target.slice("sidebar-".length));
     }
   });
 

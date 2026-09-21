@@ -4,101 +4,48 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+/**
+ * The sidebar's rail: the contextual views, and nothing else.
+ *
+ * It used to be a pinned strip over 34 views with an overflow menu, pin
+ * toggles and one-time promotions — three ways to reach a panel, all there to
+ * manage a list that did not fit. The list was the problem: most of it was
+ * not sidebar material at all. `viewCatalog.ts` says what each view is; the
+ * rail shows the `contextual` ones in a fixed order and the palette reaches
+ * the rest.
+ *
+ * A view opened from the palette that is not on the rail still renders in the
+ * sidebar, so it appears here too — after a divider, for as long as it is the
+ * active view. Otherwise the rail would show nothing selected while a panel
+ * sat open above it, and there would be no mark for where you are.
+ */
+
 import { Icon, type IconName } from "@/components/icon";
-import { BranchedGroup, BranchedItem } from "@/components/ui/BranchedMenu";
 import { useGlidingRail } from "@/components/ui/use-gliding-rail";
 import { motion } from "motion/react";
-import { useCallback, useState } from "react";
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { viewEnabled } from "@/lib/packs";
-import { isPermanentToolView } from "@/modules/header/permanentTools";
 import { usePluginRegistry } from "@/lib/plugins/registry";
 import { usePreferencesStore } from "@/modules/settings/preferences";
-import { visiblePluginPanels } from "./pluginPanels";
+import { findPluginPanel, visiblePluginPanels } from "./pluginPanels";
 import { isSidebarViewId, pluginPanelViewId, type SidebarView } from "./types";
+import { RAIL_VIEWS, VIEW_CATALOG } from "./viewCatalog";
 
 export const SIDEBAR_RAIL_HEIGHT = 40;
 
-const STORAGE_KEY = "nexis:pinned-rail-items";
-
-const DEFAULT_PINNED: SidebarView[] = [
-  "explorer",
-  "recent-files",
-  "source-control",
-  "processes",
-  "outline",
-  "debugger",
-  "tests",
-  "build",
-  "ml",
-];
-
-/** One-time promotions of new views into existing users' pinned rails.
- *  Each runs once (tracked by the marker key) and respects a user who
- *  later unpins the item. */
-const PIN_PROMOTIONS: { id: SidebarView; marker: string }[] = [
-  { id: "ml", marker: "nexis:rail-promoted:ml" },
-];
-
-/** Views that were once pinnable and are not any more. A saved rail from an
- *  older build still names them, and an id that no longer exists in
- *  `SIDEBAR_VIEW_IDS` renders as a gap with no label — so they are stripped on
- *  read rather than left to rot. `getting-started` became the full-window
- *  onboarding takeover (`OnboardingDialog`) and is no longer a sidebar view.
- *  The five art tools moved inside SVG Studio's tool strip. */
-const RETIRED_VIEWS: readonly string[] = [
-  "getting-started",
-  "palette",
-  "backdrop",
-  "icon-set",
-  "favicon",
-  "animator",
-];
-
-function loadPinned(): SidebarView[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const saved = JSON.parse(raw) as SidebarView[];
-      let pinned = saved.filter((id) => !RETIRED_VIEWS.includes(id));
-      if (pinned.length !== saved.length) savePinned(pinned);
-      for (const promo of PIN_PROMOTIONS) {
-        if (localStorage.getItem(promo.marker)) continue;
-        localStorage.setItem(promo.marker, "1");
-        if (!pinned.includes(promo.id)) {
-          pinned = [...pinned, promo.id];
-          savePinned(pinned);
-        }
-      }
-      return pinned;
-    }
-  } catch {}
-  return DEFAULT_PINNED;
-}
-
-function savePinned(ids: SidebarView[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-}
-
-type RailGroup = "Navigation" | "Code" | "AI" | "Dev Tools" | "Advanced";
-
-const RAIL_GROUPS: RailGroup[] = ["Navigation", "Code", "AI", "Dev Tools", "Advanced"];
+/** Storage left behind by the pin model. Cleared once, on first render. */
+const RETIRED_STORAGE_KEYS = ["nexis:pinned-rail-items", "nexis:rail-promoted:ml"];
 
 type RailItemDef = {
   id: SidebarView;
   label: string;
   icon: IconName;
-  group: RailGroup;
   badge?: number;
 };
 
@@ -106,7 +53,6 @@ type Props = {
   activeView: SidebarView;
   onSelectView: (view: SidebarView) => void;
   changedCount: number;
-  runningProcessCount?: number;
   onOpenHistory?: () => void;
 };
 
@@ -114,108 +60,42 @@ export function SidebarRail({
   activeView,
   onSelectView,
   changedCount,
-  runningProcessCount,
   onOpenHistory,
 }: Props) {
-  const [pinned, setPinned] = useState<SidebarView[]>(loadPinned);
-  const [popoverOpen, setPopoverOpen] = useState(false);
-
-  const builtinItems: RailItemDef[] = [
-    { id: "explorer",        label: "Files",            icon: "explorer",    group: "Navigation" },
-    { id: "recent-files",   label: "Recent Files",     icon: "clock",       group: "Navigation" },
-    { id: "outline",        label: "Outline",          icon: "outline",      group: "Navigation" },
-    { id: "bookmarks",      label: "Bookmarks",        icon: "bookmark-add", group: "Navigation" },
-    { id: "source-control", label: "Source Control",   icon: "folder-git",  group: "Code", badge: changedCount },
-    { id: "build",          label: "Build",            icon: "wrench",      group: "Code" },
-    { id: "tests",          label: "Tests",            icon: "test",    group: "Code" },
-    { id: "debugger",       label: "Debugger",         icon: "debug",         group: "Code" },
-    { id: "symbol-search",  label: "Symbol Search",    icon: "search-code",    group: "Code" },
-    { id: "code-review",    label: "Code Review",      icon: "code-box",    group: "Code" },
-    { id: "refactor",       label: "AI Refactor",      icon: "magic",   group: "AI" },
-    { id: "prompt-templates", label: "Prompt Templates", icon: "flash",       group: "AI" },
-    { id: "processes",      label: "Activity",         icon: "tasks",     group: "Dev Tools", badge: runningProcessCount },
-    { id: "system-monitor", label: "System Monitor",   icon: "cpu",           group: "Dev Tools" },
-    { id: "ports",          label: "Ports",            icon: "network",      group: "Dev Tools" },
-    { id: "repl",           label: "REPL",             icon: "terminal", group: "Dev Tools" },
-    { id: "database",       label: "Database",         icon: "database",    group: "Dev Tools" },
-    { id: "command-history", label: "Command History", icon: "clock",       group: "Dev Tools" },
-    { id: "ml",             label: "ML Lab",           icon: "brain",     group: "Dev Tools" },
-    { id: "profiles",       label: "Profiles",         icon: "layers",        group: "Dev Tools" },
-    { id: "ssh",            label: "SSH",              icon: "terminal",      group: "Dev Tools" },
-    { id: "http-client",    label: "HTTP Client",      icon: "network",     group: "Dev Tools" },
-    { id: "svg-playground", label: "SVG Studio",       icon: "brush",       group: "Dev Tools" },
-    { id: "share",          label: "Share",            icon: "globe",       group: "Advanced" },
-    { id: "notes",          label: "Workspace Notes",  icon: "note",        group: "Advanced" },
-    { id: "shell-snippets", label: "Shell Snippets",   icon: "terminal", group: "Advanced" },
-    { id: "snippets",       label: "Snippets",         icon: "file-code",      group: "Advanced" },
-    { id: "release",        label: "Release",          icon: "rocket",        group: "Advanced" },
-  ];
-
-  // Views whose expansion pack is off disappear from the rail and the
-  // overflow popover. Pinned ids stay in storage so re-enabling a pack
-  // restores the user's pins. (Selectors return the stores' own arrays —
-  // filtering happens locally; see CLAUDE.md pitfall #14.)
+  // Selectors return the stores' own arrays — filtering happens locally
+  // (CLAUDE.md pitfall #14).
   const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
   const registryPanels = usePluginRegistry((s) => s.panels);
 
-  // Registry-contributed sidebar panels (expansion packs V2) appear beside
-  // the built-ins and are gated by their own declared pack. They're resolved
-  // here rather than merged into `builtinItems`. First-party migrations keep
-  // their saved view IDs; new plugins use the plugin: namespace.
-  const pluginItems: RailItemDef[] = visiblePluginPanels(
-    registryPanels,
-    enabledPacks,
-  ).filter((p) => p.showInRail !== false && (!p.legacyView || !isPermanentToolView(p.legacyView, enabledPacks))).map((p) => ({
-    id: p.legacyView ?? pluginPanelViewId(p.id),
-    label: p.title,
-    icon: p.icon ?? "layers",
-    group: p.group ?? "Advanced",
-  }));
+  useEffect(() => {
+    try {
+      for (const key of RETIRED_STORAGE_KEYS) localStorage.removeItem(key);
+    } catch {
+      // Storage unavailable: nothing to clean.
+    }
+  }, []);
 
-  const visibleItems = [
-    ...builtinItems.filter(
-      (i) =>
-        isSidebarViewId(i.id) &&
-        viewEnabled(i.id, enabledPacks) &&
-        !isPermanentToolView(i.id, enabledPacks),
-    ),
-    ...pluginItems,
+  const railItems: RailItemDef[] = [
+    ...RAIL_VIEWS.filter((id) => viewEnabled(id, enabledPacks)).map((id) => ({
+      id,
+      label: VIEW_CATALOG[id].label,
+      icon: VIEW_CATALOG[id].icon,
+      badge: id === "source-control" ? changedCount : undefined,
+    })),
+    // A contributed panel joins the rail only by declaring itself contextual
+    // with `showInRail: true`; everything else is reached from the palette.
+    ...visiblePluginPanels(registryPanels, enabledPacks)
+      .filter((p) => p.showInRail === true && !p.legacyView)
+      .map((p) => ({
+        id: pluginPanelViewId(p.id),
+        label: p.title,
+        icon: p.icon ?? "layers",
+      })),
   ];
 
-  const itemMap = new Map(visibleItems.map((i) => [i.id, i]));
-  // Membership is asked once per rail item and once per overflow row; a Set
-  // answers each in constant time instead of rescanning `pinned`.
-  const pinnedSet = new Set(pinned);
-
-  const pinnedItems = pinned
-    .map((id) => itemMap.get(id))
-    .filter((x): x is RailItemDef => x != null);
-
-  const overflowItems = visibleItems.filter((i) => !pinnedSet.has(i.id));
-
-  // The localStorage write stays outside the state updater: React may invoke
-  // an updater more than once for a single update, and a writer that runs
-  // twice is a writer that can run at the wrong time. `pinned` is current at
-  // event-handler time, so computing the next list from it is equivalent.
-  const pin = useCallback(
-    (id: SidebarView) => {
-      if (pinned.includes(id)) return;
-      const next = [...pinned, id];
-      savePinned(next);
-      setPinned(next);
-    },
-    [pinned],
-  );
-
-  const unpin = useCallback(
-    (id: SidebarView) => {
-      if (!pinned.includes(id)) return;
-      const next = pinned.filter((x) => x !== id);
-      savePinned(next);
-      setPinned(next);
-    },
-    [pinned],
-  );
+  const transient = railItems.some((i) => i.id === activeView)
+    ? null
+    : describeView(activeView, registryPanels);
 
   const {
     containerRef: stripRef,
@@ -225,20 +105,21 @@ export function SidebarRail({
     hoverId,
     setHoverId,
     transition: railSpring,
-  } = useGlidingRail<SidebarView>(activeView, "horizontal", pinnedItems.length);
+  } = useGlidingRail<SidebarView>(
+    activeView,
+    "horizontal",
+    railItems.length + (transient ? 1 : 0),
+  );
 
   return (
     <div
       style={{ height: SIDEBAR_RAIL_HEIGHT }}
       className="flex shrink-0 items-center border-t border-border/50 bg-card px-1.5"
     >
-      {/* Pinned icon strip.
-        *
-        * One accent rail for the whole strip, animated between items, rather
-        * than each button drawing its own indicator and the mark blinking
-        * from one place to another. `hoverRect` draws a dimmer second rail
-        * under whatever the pointer or keyboard is currently on, so the
-        * strip previews where the accent is about to go. */}
+      {/* One accent rail for the whole strip, animated between items, rather
+        * than each button drawing its own indicator. `hoverRect` draws a
+        * dimmer second rail under whatever the pointer or keyboard is on, so
+        * the strip previews where the accent is about to go. */}
       <div
         ref={stripRef}
         className="relative flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -256,17 +137,15 @@ export function SidebarRail({
         {activeRect && (
           <motion.span
             aria-hidden
-            // Solid. The dashed version separated the active rail from the
-            // hover rail by shape, but at 2px tall the dashes read as a
-            // rendering artefact rather than as a deliberate texture; the
-            // opacity difference already tells the two apart.
+            // Solid: at 2px tall a dashed rail reads as a rendering artefact;
+            // opacity already tells it apart from the hover rail.
             className="pointer-events-none absolute bottom-0 h-[2px] rounded-full bg-primary"
             initial={false}
             animate={{ x: activeRect.offset, width: activeRect.extent }}
             transition={railSpring}
           />
         )}
-        {pinnedItems.map((item) => (
+        {railItems.map((item) => (
           <RailButton
             key={item.id}
             item={item}
@@ -276,72 +155,20 @@ export function SidebarRail({
             registerRef={registerItem}
           />
         ))}
+        {transient && (
+          <>
+            <div className="mx-1 h-4 w-px shrink-0 bg-border/40" aria-hidden />
+            <RailButton
+              item={transient}
+              isActive
+              onClick={() => onSelectView(transient.id)}
+              onHover={() => setHoverId(transient.id)}
+              registerRef={registerItem}
+            />
+          </>
+        )}
       </div>
 
-      {/* Overflow ··· button — outside scrollable strip so it's always visible */}
-      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-          <Tooltip delayDuration={400}>
-            <TooltipTrigger asChild>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="More panels"
-                  data-tour="sidebar-overflow"
-                  className={cn(
-                    "relative flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md outline-none transition-all duration-150",
-                    "focus-visible:ring-2 focus-visible:ring-primary/40",
-                    popoverOpen
-                      ? "bg-primary/[0.07] text-foreground dark:bg-primary/[0.1]"
-                      : "text-muted-foreground hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]",
-                  )}
-                >
-                  <Icon name="more" size="md" />
-                  {/* Dot indicator if active view is in overflow */}
-                  {overflowItems.some((i) => i.id === activeView) && (
-                    <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
-                  )}
-                </button>
-              </PopoverTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">More panels</TooltipContent>
-          </Tooltip>
-
-          <PopoverContent
-            side="top"
-            align="start"
-            sideOffset={6}
-            className="w-56 gap-0 p-2"
-          >
-            {RAIL_GROUPS.map((group, i) => {
-              const items = visibleItems.filter((item) => item.group === group);
-              if (items.length === 0) return null;
-              return (
-                <BranchedGroup
-                  key={group}
-                  label={group}
-                  className={i > 0 ? "mt-2" : undefined}
-                >
-                  {items.map((item) => {
-                    const isPinned = pinnedSet.has(item.id);
-                    return (
-                      <BranchedItem key={item.id}>
-                        <OverflowRow
-                          item={item}
-                          isActive={item.id === activeView}
-                          isPinned={isPinned}
-                          onSelect={() => { onSelectView(item.id); setPopoverOpen(false); }}
-                          onTogglePin={() => isPinned ? unpin(item.id) : pin(item.id)}
-                        />
-                      </BranchedItem>
-                    );
-                  })}
-                </BranchedGroup>
-              );
-            })}
-          </PopoverContent>
-        </Popover>
-
-      {/* History button */}
       {onOpenHistory ? (
         <>
           <div className="mx-0.5 h-4 w-px shrink-0 bg-border/40" aria-hidden />
@@ -367,6 +194,20 @@ export function SidebarRail({
       ) : null}
     </div>
   );
+}
+
+/** Label and icon for any view — built-in from the catalogue, contributed
+ *  from its registration. Null for a plugin view not registered yet. */
+function describeView(
+  view: SidebarView,
+  panels: Parameters<typeof findPluginPanel>[1],
+): RailItemDef | null {
+  if (isSidebarViewId(view)) {
+    const entry = VIEW_CATALOG[view];
+    return { id: view, label: entry.label, icon: entry.icon };
+  }
+  const panel = findPluginPanel(view, panels);
+  return panel ? { id: view, label: panel.title, icon: panel.icon ?? "layers" } : null;
 }
 
 // ── Rail icon button ──────────────────────────────────────────────────────────
@@ -409,7 +250,7 @@ function RailButton({
           <Icon
             name={item.icon}
             size="md"
-            className={cn( "shrink-0 transition-[stroke-width,color] duration-150", isActive && "text-primary", )}
+            className={cn("shrink-0 transition-[stroke-width,color] duration-150", isActive && "text-primary")}
           />
           {badge ? (
             <span className={cn(
@@ -426,74 +267,5 @@ function RailButton({
       </TooltipTrigger>
       <TooltipContent side="top" className="text-xs">{item.label}</TooltipContent>
     </Tooltip>
-  );
-}
-
-// ── Overflow popover row ──────────────────────────────────────────────────────
-
-function OverflowRow({
-  item,
-  isActive,
-  isPinned,
-  onSelect,
-  onTogglePin,
-}: {
-  item: RailItemDef;
-  isActive: boolean;
-  isPinned: boolean;
-  onSelect: () => void;
-  onTogglePin: () => void;
-}) {
-  const badge = item.badge && item.badge > 0 ? item.badge : null;
-  return (
-    <div
-      className={cn(
-        "group flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors",
-        isActive ? "bg-primary/[0.07]" : "hover:bg-muted/50",
-      )}
-    >
-      <button
-        type="button"
-        onClick={onSelect}
-        className="flex min-w-0 flex-1 items-center gap-2 text-left"
-      >
-        <Icon
-          name={item.icon}
-          className={cn( "shrink-0", isActive ? "text-primary" : "text-muted-foreground", )}
-        />
-        <span className={cn(
-          "truncate text-[11px] font-medium",
-          isActive ? "text-foreground" : "text-foreground/80",
-        )}>
-          {item.label}
-        </span>
-        {badge ? (
-          <span className="ml-auto shrink-0 rounded-full bg-muted-foreground/60 px-1 text-[9px] font-bold text-background">
-            {badge > 99 ? "99+" : badge}
-          </span>
-        ) : null}
-      </button>
-
-      <Tooltip delayDuration={200}>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
-            aria-label={isPinned ? "Unpin from rail" : "Pin to rail"}
-            className={cn(
-              "flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors",
-              isPinned
-                ? "text-muted-foreground/60 hover:text-destructive opacity-0 group-hover:opacity-100"
-                : "text-muted-foreground/40 hover:text-primary opacity-0 group-hover:opacity-100",
-            )}
-          >
-            <Icon name={isPinned ? "close" : "pin"} size="xs" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="right" className="text-xs">
-          {isPinned ? "Unpin" : "Pin to rail"}
-        </TooltipContent>
-      </Tooltip>
-    </div>
   );
 }

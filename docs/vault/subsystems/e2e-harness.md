@@ -42,7 +42,7 @@ The Phase 3 platform spec uses the E2E-only `src/test/desktop-api.ts` bridge. It
 
 The WSL case is enabled only after a bounded `wsl.exe --list --quiet` and a bounded `wsl.exe -d <distro> --exec true` both succeed. A registered distro is not proof that `WslService` is usable: after a service crash, `wsl.exe` can hang and Webdriver reports the later async-script timeout as a renderer failure. The preflight skips only when the host cannot execute WSL at all; when it succeeds, the spec still performs the real atomic file and process cycle.
 
-`workbench.test.ts` also opens the migrated HTTP Client from the real rail overflow and waits for its lazy body inside `data-panel-id="webdev:http-client"`. Keep an assertion on rendered panel content, not only the contribution container: PanelHost can display the Suspense boundary before the chunk has mounted.
+`workbench.test.ts` also opens the migrated HTTP Client through the palette ("Show HTTP client" — it is a session view, not on the rail; see [[navigation-surfaces]]) and waits for its lazy body inside `data-panel-id="webdev:http-client"`. Keep an assertion on rendered panel content, not only the contribution container: PanelHost can display the Suspense boundary before the chunk has mounted.
 
 ## The helper asserts clickability, not the absence of an overlay
 

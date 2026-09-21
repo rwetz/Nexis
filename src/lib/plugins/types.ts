@@ -84,8 +84,11 @@ export type PanelContribution = {
   /** Only first-party migrations use old persisted view ids. New panels use
    * plugin:<namespaced id> and need no central view-union edit. */
   legacyView?: SidebarViewId;
-  /** First-party migrations may retain an existing shell-owned rail item while
-   * moving render/command ownership. New contributed panels default to true. */
+  /** Whether the panel sits on the sidebar rail. The rail holds only
+   * *contextual* views — ones you glance at while working on a file — so this
+   * defaults to false, and a panel off the rail is reached through a
+   * generated "Show <title>" palette command (`pluginPanelCommands`). Set
+   * true only for a panel that answers "what about the file I'm looking at". */
   showInRail?: boolean;
 
   // ── Sidebar presentation (expansion packs V2) ────────────────────────────
@@ -102,7 +105,9 @@ export type PanelContribution = {
    * an edit to the registry, not a break in this contract.
    */
   icon?: IconName;
-  /** Rail group. Defaults to "Advanced". */
+  /** Former rail group. The rail no longer groups (it holds only contextual
+   * views), so this is accepted and ignored; kept so existing contributions
+   * still typecheck. */
   group?: PanelGroup;
   /**
    * Expansion pack that owns this panel. `undefined` means core — always

@@ -108,10 +108,13 @@ import {
   isPluginPanelViewId,
   isSidebarViewId,
   PackGatePlaceholder,
+  pluginPanelCommands,
   PluginPanelSlot,
   SidebarRail,
+  viewPaletteCommands,
 } from "@/modules/sidebar";
-import { ActivityPanel, useBackgroundProcesses } from "@/modules/processes";
+import { ActivityPanel } from "@/modules/processes";
+import { usePluginRegistry } from "@/lib/plugins/registry";
 import { ProblemsPanel } from "@/modules/problems/ProblemsPanel";
 import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
 import { SnippetsPanel } from "@/modules/snippets";
@@ -1342,9 +1345,6 @@ function MainApp() {
     cycleSidebarView("source-control");
   }, [cycleSidebarView]);
 
-  const { processes: bgProcesses } = useBackgroundProcesses(5000);
-  const runningProcessCount = bgProcesses.filter((p) => !p.exited).length;
-
   const openGitGraphFromContext = useCallback(async () => {
     const known = sourceControl.hasRepo ? sourceControl.repo : null;
     if (known) {
@@ -1477,6 +1477,8 @@ function MainApp() {
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
+    // Every sidebar view off the rail is reached from here; see viewCatalog.ts.
+    ...viewPaletteCommands(persistSidebarView),
   ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgStudio, openMlLabTab]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
@@ -2027,8 +2029,18 @@ function MainApp() {
     </div>
   );
 
+  // Contributed panels off the rail get the same generated "Show …" command
+  // the built-in ones do (sidebar/pluginPanels.ts).
+  const registryPanels = usePluginRegistry((s) => s.panels);
+  const builtinPaletteCommands = useMemo(
+    () => [
+      ...paletteCommands,
+      ...pluginPanelCommands(registryPanels, enabledPacks, persistSidebarView),
+    ],
+    [paletteCommands, registryPanels, enabledPacks, persistSidebarView],
+  );
   const { context: capabilityContext, paletteCommands: visiblePaletteCommands } = useCapabilities({
-    view: sidebarView, root: explorerRoot, packs: enabledPacks, builtins: paletteCommands,
+    view: sidebarView, root: explorerRoot, packs: enabledPacks, builtins: builtinPaletteCommands,
     activateView: persistSidebarView,
     toggleOverlay: (id) => { if (id === "ai") togglePanelAndFocus(); },
     terminal: {
@@ -2198,7 +2210,6 @@ function MainApp() {
                     activeView={sidebarView}
                     onSelectView={persistSidebarView}
                     changedCount={sourceControl.changedCount}
-                    runningProcessCount={runningProcessCount || undefined}
                     onOpenHistory={openGitGraphFromContext}
                   />
                 </div>

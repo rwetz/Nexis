@@ -75,7 +75,7 @@ pitfall #18 describes arriving through a different door.
 | `use-gliding-rail.ts` | A selection that *travels* between the items of a nav instead of cutting | sidebar rail, Settings nav, Atlas List/Map, SVG Studio panes |
 | `CallChip` | Long-lived work the user started, can time, and can stop | status-bar process chip, ML Lab training, Benchmark sweeps |
 | `ThoughtLine` | A stream that is still arriving (live only — never from stored state) | AI reasoning trigger |
-| `BranchedMenu` | Grouped menu whose grouping is *drawn*, not inferred from whitespace | sidebar overflow menu |
+| `BranchedMenu` | Grouped menu whose grouping is *drawn*, not inferred from whitespace | unused since the rail lost its overflow menu ([[navigation-surfaces]]) |
 | `FolderPreview` / `CursorAura` / `ParticleText` | Scenery, for surfaces that are allowed to be scenery | explorer empty state, welcome screen |
 
 Two rules that keep this from rotting:

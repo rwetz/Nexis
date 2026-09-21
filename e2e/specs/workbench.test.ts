@@ -31,10 +31,9 @@ describe("Contributed workbench panels", () => {
   });
 
   it("mounts a migrated integration panel through its capability host", async () => {
-    await $('button[aria-label="More panels"]').click();
-    const httpClient = $("button=HTTP Client");
-    await httpClient.waitForDisplayed();
-    await httpClient.click();
+    // HTTP Client is a session, not a contextual view, so it is not on the
+    // rail; the palette is its way in (sidebar/viewCatalog.ts).
+    await runCommand("Show HTTP client");
     const panel = $('[data-panel-id="webdev:http-client"]');
     await panel.waitForDisplayed();
     await panel.$("span*=HTTP Client").waitForDisplayed();
