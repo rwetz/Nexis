@@ -6,6 +6,8 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ### Added
 
+- **SVG Studio can hold several pieces of art at once.** Presets and generated shapes now default to *adding* to the canvas rather than replacing it, with a Replace/Add switch on those two panes. Each piece arrives as its own labelled `<g>`, fitted uniformly into the next free slot on a grid so it neither lands on top of what is already there nor gets stretched. Incoming ids are namespaced in the same pass — two copies of art that both define `id="a"` would otherwise leave every `url(#a)` in the document pointing at whichever gradient came last, silently repainting the first piece in the second's colours.
+
 - **The welcome screen's DarkVeil follows the rainbow accent.** Under the Nexis Default theme with the rainbow on, the veil sweeps the spectrum instead of resting on one hue — its hue rotation is now animated, since a static rotation can only ever select a single colour. Slow on purpose: a fast cycle across a full-screen field is nauseating rather than lively.
 
   The welcome screen has its own background preference, separate from the app-wide animated background — that one sits behind every pane at low opacity and must stay out of the way of work, while this is the one surface allowed to be scenery. Only DarkVeil ships today, so the picker and its "cycle on each viewing" toggle stay hidden until there is more than one to choose between.
@@ -17,6 +19,9 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 - **`arrow` button variant.** An outlined button whose primary fill wipes in from the leading edge on hover. The wipe is a transform on a pseudo-element, so it composites instead of relayouting the button and its neighbours every frame, and the origin flips under `[dir=rtl]` so it still travels from the leading edge.
 
 ### Changed
+
+- **The nav rail's active underline is solid.** At 2px tall the dashed version read as a rendering artefact rather than a texture; the opacity difference already separates it from the hover rail.
+- **Decorative separators are gone from the title bar.** The pipes and left borders around the search button and the tool launchers were dividing groups that spacing already divides. The one separator kept is in the new-tab menu, above "New Window", where it marks a genuine change of scope from "new tab" to "new window".
 
 - **One type family, front to back: Geist and Geist Mono.** The interface is set in Geist and code, the terminal and `--font-mono` in Geist Mono — one designer's sans and mono, so chrome and content share a skeleton, x-height and rhythm instead of being two unrelated faces in the same window. Variable builds rather than static weights, because Settings offers five terminal weights (Light through Bold) and static 400+700 would leave Light, Medium and Semibold to rasterizer synthesis, which on a monospace grid is where faux weights look worst. JetBrains Mono stays bundled as the fallback link — its subsets cover Cyrillic and Geist Mono's do not — and `GeistMono Nerd Font` leads the Nerd Font probe list. Anyone who pinned a font family in Settings is unaffected.
 - **Every nav in the app now moves one rail instead of blinking an indicator.** Beyond the sidebar and Settings, this now covers Atlas's List/Map switch and SVG Studio's pane tabs, all through the same hook — so the four switches in Nexis move alike rather than each having its own idea of the transition.
@@ -34,6 +39,11 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 ## [1.28.1] — 2026-09-18
 
 ### Fixed
+
+- **Atlas's companion window had dead buttons.** "Open as workspace", "Terminal" and opening a file all fell through to a no-op host: the tool window is a separate Tauri window with no capability host, and deliberately no tabs or workspace of its own. Those three actions are now forwarded to the main window, which already has them wired, and it raises itself when it acts — an action whose whole effect lands in a window you cannot see has not visibly happened. "Show on map" and "Folder" were unaffected.
+- **The Git Graph menu item failed silently.** Every path out of it returned without a word, so from a window with no directory it simply did nothing. It now says why it declined.
+- **The commit graph no longer draws over the SHA column.** The rail reserved columns for six lanes but nothing clamped an edge on lane 11 to them, so a history with a dozen concurrent branches — a run of Dependabot merges will do it — marched its lanes straight across the SHA text. Lanes past the last column now fold onto it, the `+N` overflow badge has its own gutter instead of sitting on top of both the lane and the SHA, and the rail clips rather than overflowing.
+- **Atlas's Map icon stopped changing shape when selected.** The active state was switching the glyph to Phosphor's fill weight, which redraws the globe as a different picture — so selecting Map changed which icon Map *was*. The pill and the label colour carry the state instead.
 - **The first all-platform release matrix now builds instead of failing on Linux and macOS.** Linux release binaries no longer link an upstream ONNX Runtime prebuilt that requires a newer glibc/libstdc++ than the supported Ubuntu 22.04 baseline, Intel macOS omits the unavailable x86_64 ORT prebuilt, and both targets clearly mark that backend unsupported. Apple Silicon and Windows retain real ONNX inference. Ad-hoc Mac builds also stop passing empty Apple account variables that accidentally trigger notarization, and release concurrency is now genuinely global instead of per tag.
 
 ## [1.28.0] — 2026-09-17

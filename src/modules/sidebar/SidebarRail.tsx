@@ -253,14 +253,11 @@ export function SidebarRail({
         {activeRect && (
           <motion.span
             aria-hidden
-            // Dashed, so the active rail is distinguishable from the hover
-            // rail by shape and not only by opacity — the two are the same
-            // colour family and can sit a few pixels apart.
-            className="pointer-events-none absolute bottom-0 h-[2px] rounded-full"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(to right, var(--primary) 0 4px, transparent 4px 7px)",
-            }}
+            // Solid. The dashed version separated the active rail from the
+            // hover rail by shape, but at 2px tall the dashes read as a
+            // rendering artefact rather than as a deliberate texture; the
+            // opacity difference already tells the two apart.
+            className="pointer-events-none absolute bottom-0 h-[2px] rounded-full bg-primary"
             initial={false}
             animate={{ x: activeRect.offset, width: activeRect.extent }}
             transition={railSpring}

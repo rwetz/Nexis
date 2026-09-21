@@ -87,7 +87,11 @@ export function AtlasModeSwitch() {
               : "text-muted-foreground hover:text-foreground",
           )}
         >
-          <Icon name={option.icon} size="sm" active={mode === option.id} />
+          {/* No `active` weight here. Phosphor's fill weight redraws the
+              globe as a different picture, so selecting Map changed which
+              icon Map *was* — the pill and the label colour already carry
+              the state without the glyph moving underneath it. */}
+          <Icon name={option.icon} size="sm" />
           {option.label}
         </button>
       ))}

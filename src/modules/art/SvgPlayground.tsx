@@ -26,6 +26,13 @@ import { PresetGallery } from "./PresetGallery";
 import { ShapeGenerator } from "./ShapeGenerator";
 import { SvgCanvas } from "./SvgCanvas";
 import { useGlidingRail } from "@/components/ui/use-gliding-rail";
+import {
+  composeSvg,
+  countPieces,
+  nextSlot,
+  readViewBox,
+} from "./lib/svgCompose";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import {
@@ -97,6 +104,10 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
   const [leftPane, setLeftPane] = useState<LeftPane>("source");
   const paneRail = useGlidingRail<LeftPane>(leftPane, "horizontal", LEFT_PANES.length);
   const [optimized, setOptimized] = useState<OptimizeResult | null>(null);
+  // Whether picking a preset or a generated shape replaces the document or
+  // joins it. Session state, not a preference: it is a mode you are in while
+  // building one drawing, not a standing choice about the app.
+  const [placeMode, setPlaceMode] = useState<"replace" | "add">("add");
 
   const editorThemeId = usePreferencesStore((s) => s.editorTheme);
   const [themeExt, setThemeExt] = useState(() =>
@@ -139,6 +150,37 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
    */
   const replaceSource = (next: string) => {
     setSource(next);
+    setOptimized(null);
+  };
+
+  /**
+   * Place a piece ON the canvas instead of instead of it.
+   *
+   * Picking a second preset used to discard the first, which made this a
+   * viewer for one thing at a time rather than a canvas. In `add` mode the
+   * incoming art is merged as its own group — id-namespaced and fitted into
+   * the next free slot, so it neither repaints the existing piece through a
+   * colliding gradient id nor lands invisibly on top of it.
+   *
+   * Falls back to replacing when there is nothing to merge into: on an empty
+   * or invalid canvas, "add" and "replace" are the same action, and refusing
+   * would be pedantry.
+   */
+  const insertSource = (next: string, label?: string) => {
+    if (placeMode === "replace" || !valid) {
+      replaceSource(next);
+      return;
+    }
+    const doc = new DOMParser().parseFromString(source, "image/svg+xml");
+    const box = readViewBox(doc.documentElement);
+    const result = composeSvg(source, next, nextSlot(box, countPieces(source)), label);
+    if (!result.ok) {
+      toast.error("Could not add that to the canvas", {
+        description: result.reason,
+      });
+      return;
+    }
+    setSource(result.svg);
     setOptimized(null);
   };
 
@@ -204,6 +246,35 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
               {label}
             </button>
           ))}
+          {/* Replace / Add. Only shown on the two panes that hand art to the
+              canvas — on the Source and Canvas panes there is nothing to
+              place, so the control would be a mode with no trigger. */}
+          {(leftPane === "presets" || leftPane === "shapes") && (
+            <div className="relative z-10 ml-auto flex items-center gap-0.5 rounded-md bg-muted/40 p-0.5">
+              {(["add", "replace"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  aria-pressed={placeMode === m}
+                  title={
+                    m === "add"
+                      ? "Add to the canvas, keeping what is already there"
+                      : "Replace everything on the canvas"
+                  }
+                  onClick={() => setPlaceMode(m)}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                    placeMode === m
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground/70 hover:text-foreground",
+                  )}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          )}
           {leftPane === "source" && !valid && (
             <span className="ml-auto flex items-center gap-1 text-[10px] text-amber-500">
               <Icon name="alert" size="xs" />
@@ -217,14 +288,14 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
           ) : leftPane === "shapes" ? (
             <ShapeGenerator
               onInsert={(generated) => {
-                replaceSource(generated);
-                setLeftPane("source");
+                insertSource(generated, "shape");
+                setLeftPane("canvas");
               }}
             />
           ) : leftPane === "presets" ? (
             <PresetGallery
               onInsert={(generated) => {
-                replaceSource(generated);
+                insertSource(generated, "preset");
                 setLeftPane("canvas");
               }}
             />

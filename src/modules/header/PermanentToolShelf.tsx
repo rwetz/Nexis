@@ -31,7 +31,7 @@ export function PermanentToolShelf({
   if (tools.length === 0) return null;
 
   return (
-    <div className="flex shrink-0 items-center gap-0.5 border-l border-border pl-1">
+    <div className="flex shrink-0 items-center gap-0.5 pl-1">
       {tools.map((tool) => (
         <Button
           key={tool.id}

@@ -87,6 +87,9 @@ import {
 import { openNewWindow } from "@/modules/window/openNewWindow";
 import { ToolWindowShell } from "@/modules/window/ToolWindowShell";
 import { currentToolWindow } from "@/modules/window/toolWindow";
+import { onAtlasHostAction } from "@/modules/atlas/repos/hostBridge";
+import { desktopWindow } from "@/platform/desktop";
+import { toast } from "sonner";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
@@ -1136,6 +1139,22 @@ function MainApp() {
     [newTab],
   );
 
+  // Atlas's companion window forwards the three actions it cannot perform
+  // itself. Handled here because this is the window that owns tabs and the
+  // workspace; the window is raised too, since an action whose whole effect
+  // lands somewhere the user cannot see has not visibly happened.
+  useEffect(() => {
+    const unlistenP = onAtlasHostAction((action) => {
+      if (action.kind === "workspace") void switchWorkspacePath(action.path);
+      else if (action.kind === "terminal") cdInNewTab(action.path);
+      else openFileTab(action.path, true);
+      void desktopWindow().setFocus().catch(() => {});
+    });
+    return () => {
+      void unlistenP.then((fn) => fn());
+    };
+  }, [switchWorkspacePath, cdInNewTab, openFileTab]);
+
   const handleRunFile = useCallback(
     (_path: string, cwd: string, command: string) => {
       const tabId = newTab(cwd);
@@ -1329,13 +1348,28 @@ function MainApp() {
       });
       return;
     }
-    if (!sourceControlContextPath) return;
+    // Every path out of here used to `return` in silence, so from a window
+    // with no directory — the welcome screen, most obviously — the menu item
+    // simply did nothing and gave no reason. A menu entry that can decline
+    // has to say so; "nothing happened" is indistinguishable from "broken".
+    const notRepo = () =>
+      toast.error("No git repository here", {
+        description:
+          "Open a folder that is inside a repository, then try again.",
+      });
+    if (!sourceControlContextPath) {
+      notRepo();
+      return;
+    }
     try {
       const repo = await git.gitResolveRepo(sourceControlContextPath);
-      if (!repo) return;
+      if (!repo) {
+        notRepo();
+        return;
+      }
       openCommitHistoryTab({ repoRoot: repo.repoRoot, branch: repo.branch });
-    } catch {
-      /* noop */
+    } catch (e) {
+      toast.error("Could not open the git graph", { description: String(e) });
     }
   }, [
     openCommitHistoryTab,
