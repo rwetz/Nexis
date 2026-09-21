@@ -179,9 +179,18 @@ export function serializeSessionForExit(leafId: number): string | null {
  * integration — without prompt markers this is always false, so closing
  * stays silent (fail-open by design; we can't tell busy from idle).
  */
+/**
+ * Is a command actually executing in this session?
+ *
+ * Reads `executing` (OSC 133 C..D), not `inCommand` (B..D). `inCommand` is a
+ * provenance flag that is true whenever output could be untrusted — which
+ * includes an idle prompt, because B is the last marker a resting shell
+ * emits. Asking it "is something running" answered yes every time, so the
+ * close-confirmation fired on every terminal tab and meant nothing.
+ */
 export function sessionHasRunningCommand(leafId: number): boolean {
   const s = sessions.get(leafId);
-  return !!s && !s.disposed && !s.shellExited && s.shellState.inCommand;
+  return !!s && !s.disposed && !s.shellExited && s.shellState.executing;
 }
 
 configureRendererPool({

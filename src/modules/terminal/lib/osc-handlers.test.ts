@@ -111,6 +111,60 @@ describe("OSC 7 cwd handler — gated by OSC 133 in-command state", () => {
     expect(fresh.markersSeen).toBe(true);
   });
 
+  /**
+   * The regression this separation exists for.
+   *
+   * `inCommand` is a provenance flag (is output untrusted) and is true from B
+   * onward — which at a resting prompt is *always*, because B is the last
+   * marker a shell emits before waiting for input. `sessionHasRunningCommand`
+   * read it as liveness, so every terminal tab claimed a live process and the
+   * close confirmation fired every single time.
+   */
+  it("an idle prompt is not executing, though its output is untrusted", () => {
+    const { term, handlers } = makeFakeTerm();
+    const state = createShellIntegrationState();
+    registerPromptTracker(term, state);
+
+    // A resting prompt: previous command exited, new prompt drawn, awaiting
+    // input. This is the exact byte order PowerShell's profile emits.
+    handlers.get(133)?.("D;0");
+    handlers.get(133)?.("A");
+    handlers.get(133)?.("B");
+
+    expect(state.inCommand).toBe(true); // output could be anything
+    expect(state.executing).toBe(false); // but nothing is running
+  });
+
+  it("tracks execution across C and D", () => {
+    const { term, handlers } = makeFakeTerm();
+    const state = createShellIntegrationState();
+    registerPromptTracker(term, state);
+
+    handlers.get(133)?.("A");
+    handlers.get(133)?.("B");
+    expect(state.executing).toBe(false);
+
+    handlers.get(133)?.("C");
+    expect(state.executing).toBe(true);
+
+    handlers.get(133)?.("D;0");
+    expect(state.executing).toBe(false);
+  });
+
+  it("a new prompt clears execution even if D was lost", () => {
+    const { term, handlers } = makeFakeTerm();
+    const state = createShellIntegrationState();
+    registerPromptTracker(term, state);
+
+    handlers.get(133)?.("C");
+    expect(state.executing).toBe(true);
+    // No D — a dropped or mangled exit marker must not strand the session
+    // as permanently busy, which is the failure mode this whole change is
+    // about. The next prompt is proof the command is over.
+    handlers.get(133)?.("A");
+    expect(state.executing).toBe(false);
+  });
+
   it("works without state for backwards compatibility (legacy callers)", () => {
     // The state parameter is optional — when omitted, OSC 7 is always
     // honored (legacy behavior). Tests must confirm we didn't break this.
