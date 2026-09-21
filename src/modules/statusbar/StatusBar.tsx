@@ -25,6 +25,7 @@ import { MemoryReportPill } from "./MemoryReportPill";
 import { MissingToolsPill } from "./MissingToolsPill";
 import { RunningProcessChip } from "./RunningProcessChip";
 import { FpsPill } from "./FpsPill";
+import { PanelToggle } from "./PanelToggle";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -140,6 +141,7 @@ export function StatusBar({
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
+        <PanelToggle />
         {debugFpsMeter ? <FpsPill /> : null}
         {debugMemoryReport ? <MemoryReportPill /> : null}
         {/* Plugin-contributed right items (e.g. Python env pill) */}

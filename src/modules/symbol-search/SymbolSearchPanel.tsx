@@ -14,6 +14,7 @@ import { filesystem } from "@/platform/filesystem";
  *
  * Falls back to plain regex when no structural prefix is detected.
  */
+import { PanelEmptyGlyph, PanelEmptyState } from "@/components/ui/PanelEmptyState";
 import { Icon } from "@/components/icon";
 
 import { cn } from "@/lib/utils";
@@ -245,17 +246,34 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
       {/* Results */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {!workspaceRoot ? (
-          <Empty>No workspace open</Empty>
+          <PanelEmptyState
+            art={<PanelEmptyGlyph icon="search-code" />}
+            title="No workspace open"
+            description="Open a folder to search the symbols in it."
+          />
         ) : error ? (
-          <Empty>{error}</Empty>
+          <PanelEmptyState
+            art={<PanelEmptyGlyph icon="alert" />}
+            title="Search failed"
+            description={error}
+          />
         ) : !searched && !searching ? (
-          <Empty>
-            Type a symbol name to search.{" "}
-            <br />
-            Prefix with <code className="text-primary">fn:</code> <code className="text-primary">class:</code> <code className="text-primary">import:</code> <code className="text-primary">type:</code> for structural search.
-          </Empty>
+          <PanelEmptyState
+            art={<PanelEmptyGlyph icon="search-code" />}
+            title="Find a symbol"
+            description="Type a name to find where it is defined."
+            hint={
+              <>
+                Prefix with <code className="text-primary">fn:</code> <code className="text-primary">class:</code> <code className="text-primary">import:</code> or <code className="text-primary">type:</code> for a structural search.
+              </>
+            }
+          />
         ) : searched && results.length === 0 ? (
-          <Empty>No matches found</Empty>
+          <PanelEmptyState
+            art={<PanelEmptyGlyph icon="search-code" />}
+            title="No matches"
+            description="Try a shorter name, or drop the prefix."
+          />
         ) : (
           <>
             {truncated && (
@@ -307,14 +325,6 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
           </>
         )}
       </div>
-    </div>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex flex-1 items-center justify-center px-4 py-8 text-center">
-      <p className="text-[11px] leading-relaxed text-muted-foreground/60">{children}</p>
     </div>
   );
 }

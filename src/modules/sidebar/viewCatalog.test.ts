@@ -53,11 +53,12 @@ describe("contributed panel commands", () => {
         panel({ id: "acme:rail", title: "Rail", showInRail: true }),
         panel({ id: "acme:legacy", title: "Legacy", legacyView: "ports" }),
         panel({ id: "acme:gated", title: "Gated", pack: "ml-lab" }),
+        panel({ id: "acme:log", title: "Log", location: "bottom" }),
       ],
       [],
       open,
     );
-    expect(cmds.map((c) => c.label)).toEqual(["Show Thing"]);
+    expect(cmds.map((c) => c.label)).toEqual(["Show Thing", "Show Log"]);
     cmds[0].action();
     expect(open).toHaveBeenCalledWith("plugin:acme:thing");
   });

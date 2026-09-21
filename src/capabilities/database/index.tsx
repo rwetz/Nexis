@@ -13,7 +13,7 @@ export const databaseCapability: CapabilityDefinition = {
     id: "database:client",
     legacyView: "database",
     title: "Database",
-    location: "sidebar",
+    location: "bottom",
     icon: "database",
     group: "Dev Tools",
     pack: "dev-tools",

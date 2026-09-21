@@ -3,13 +3,18 @@ import { PRESETS } from "@/lib/packs";
 import { isPermanentToolView, visiblePermanentTools } from "./permanentTools";
 
 describe("permanent titlebar tools", () => {
+  it("promotes the Web workbench for the Web Dev pack only", () => {
+    expect(visiblePermanentTools(PRESETS["web-dev"].packs).map((tool) => tool.id)).toEqual(["web"]);
+    expect(visiblePermanentTools(PRESETS.standard.packs)).toEqual([]);
+  });
+
   it("promotes SVG Studio for Art and both workbenches for Everything", () => {
     expect(visiblePermanentTools(PRESETS.art.packs).map((tool) => tool.id)).toEqual([
       "svg-playground",
     ]);
     expect(
       visiblePermanentTools(PRESETS.everything.packs).map((tool) => tool.id),
-    ).toEqual(["svg-playground", "ml-lab"]);
+    ).toEqual(["svg-playground", "ml-lab", "web"]);
   });
 
   it("does not promote SVG Studio for configurations without the Art pack", () => {

@@ -21,6 +21,9 @@ All state stores, as of 2026-07 (enumerate fresh with `grep -rn "= create" src -
 
 - `useDebugStore` (`debugger/debugSession.ts`) + `useBreakpointStore` — DAP session and breakpoints
 - `useDiagnosticsStore` (`problems/`) — LSP diagnostics
+- `useBottomPanelStore` (`bottom-panel/store.ts`) — bottom panel open/tab/height (persisted), maximized, and the per-tab session status dots (see [[navigation-surfaces]])
+- `useAiToolStore` (`ai/store/aiToolStore.ts`) — the AI window's tool in front (Chat, Queue, Refactor, Templates, Review)
+- `useWebWorkbenchStore` (`web-workbench/store.ts`) — the Web workbench's tool in front
 - `useSvgStudioStore` (`art/studioStore.ts`) — which SVG Studio tool is in front; session-only (see [[art-pack]])
 - `useDatabaseStore` (`database/`) · `useMlStore` (`ml/store.ts`, largest single store file) · `useSshStore` (`ssh/`)
 

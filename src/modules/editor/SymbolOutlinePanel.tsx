@@ -5,6 +5,7 @@ import { filesystem } from "@/platform/filesystem";
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { PanelEmptyFolder, PanelEmptyGlyph, PanelEmptyState } from "@/components/ui/PanelEmptyState";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 
@@ -103,9 +104,11 @@ export function SymbolOutlinePanel({ filePath }: Props) {
 
   if (!filePath) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-[11px] text-muted-foreground">No file open</p>
-      </div>
+      <PanelEmptyState
+        art={<PanelEmptyFolder sheets="outline" />}
+        title="No file open"
+        description="Open a file and its functions, classes and headings appear here."
+      />
     );
   }
 
@@ -121,9 +124,11 @@ export function SymbolOutlinePanel({ filePath }: Props) {
       </div>
       <div className="flex-1 overflow-y-auto">
         {symbols.length === 0 && !loading ? (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-[11px] text-muted-foreground/60">No symbols found</p>
-          </div>
+          <PanelEmptyState
+            art={<PanelEmptyGlyph icon="outline" />}
+            title="Nothing to outline"
+            description="This file has no functions, classes or headings to list."
+          />
         ) : (
           symbols.map((s) => (
             <div

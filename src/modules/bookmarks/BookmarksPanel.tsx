@@ -11,6 +11,7 @@
  * current cursor position.  Bookmarks are grouped by file and stored in
  * localStorage — they persist across restarts.
  */
+import { PanelEmptyGlyph, PanelEmptyState } from "@/components/ui/PanelEmptyState";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { useCallback, useRef, useState } from "react";
@@ -89,16 +90,16 @@ export function BookmarksPanel({ onNavigate }: Props) {
       {/* List */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {bookmarks.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-            <Icon name="bookmark-add" size="xl" className="text-muted-foreground/30" />
-            <p className="text-[11px] leading-relaxed text-muted-foreground/60">
-              No bookmarks yet.
-              <br />
-              Press <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">Alt+D</kbd> in the editor
-              <br />
-              to bookmark the current line.
-            </p>
-          </div>
+          <PanelEmptyState
+            art={<PanelEmptyGlyph icon="bookmark-add" />}
+            title="No bookmarks yet"
+            description="Bookmark a line to jump straight back to it later."
+            hint={
+              <>
+                Press <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">Alt+D</kbd> in the editor.
+              </>
+            }
+          />
         ) : (
           <div>
             {Object.entries(byFile).map(([filePath, bms]) => (

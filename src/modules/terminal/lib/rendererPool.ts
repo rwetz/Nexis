@@ -631,6 +631,10 @@ function setupResizeObserver(slot: Slot, p: AcquireParams): void {
       if (slot.currentLeafId !== p.leafId) return;
       const w = container.clientWidth;
       const h = container.clientHeight;
+      // A collapsed container (the bottom panel maximized over the workspace)
+      // is not a new size. Fitting it would shrink the PTY to one row, and a
+      // TUI in it would redraw mangled when the space comes back.
+      if (w === 0 || h === 0) return;
       if (w === slot.lastW && h === slot.lastH) return;
       slot.lastW = w;
       slot.lastH = h;

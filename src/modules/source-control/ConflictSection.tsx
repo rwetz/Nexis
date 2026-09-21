@@ -15,7 +15,8 @@ import { filesystem } from "@/platform/filesystem";
 import { Icon } from "@/components/icon";
 import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
-import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
+import { sendMessage } from "@/modules/ai/store/chatStore";
+import { showAiChat } from "@/modules/ai/store/aiToolStore";
 
 import type { GitChangedFile } from "@/domain/native-types";
 import { useCallback, useState } from "react";
@@ -48,7 +49,6 @@ function conflictTypeLabel(f: GitChangedFile): string {
 export function ConflictSection({ repoRoot, changedFiles }: Props) {
   const [expanded, setExpanded] = useState(true);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
-  const openAiPanel = useChatStore((s) => s.openPanel);
 
   const conflicts = changedFiles.filter(isConflict);
 
@@ -71,11 +71,11 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
         const type = conflictTypeLabel(f);
         const prompt = `I have a merge conflict in \`${f.path}\` (${type}). Here is the file content with conflict markers:\n\n\`\`\`\n${content.slice(0, 10_000)}\n\`\`\`\n\nPlease:\n1. Explain what each side of the conflict contains\n2. Propose a resolved version of the file\n3. Highlight any tradeoffs in your chosen resolution`;
 
-        openAiPanel();
+        showAiChat();
         await sendMessage(prompt);
       } catch {
         // Fallback: open AI with a simpler prompt
-        openAiPanel();
+        showAiChat();
         await sendMessage(
           `Help me resolve the merge conflict in \`${f.path}\` (${conflictTypeLabel(f)}). The repo root is \`${repoRoot}\`.`,
         );
@@ -83,7 +83,7 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
         setResolvingId(null);
       }
     },
-    [repoRoot, openAiPanel],
+    [repoRoot],
   );
 
   if (conflicts.length === 0) return null;

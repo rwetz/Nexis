@@ -116,13 +116,17 @@ export function SidebarRail({
       style={{ height: SIDEBAR_RAIL_HEIGHT }}
       className="flex shrink-0 items-center border-t border-border/50 bg-card px-1.5"
     >
-      {/* One accent rail for the whole strip, animated between items, rather
+      {/* Not a scroll container: six fixed views always fit, and overflow on
+        * either axis clips the other too — the Source Control count badge,
+        * which sits above its button, was cut off by exactly that.
+        *
+        * One accent rail for the whole strip, animated between items, rather
         * than each button drawing its own indicator. `hoverRect` draws a
         * dimmer second rail under whatever the pointer or keyboard is on, so
         * the strip previews where the accent is about to go. */}
       <div
         ref={stripRef}
-        className="relative flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative flex min-w-0 flex-1 items-center gap-0.5"
         onPointerLeave={() => setHoverId(null)}
       >
         {hoverRect && hoverId !== activeView && (
@@ -185,7 +189,9 @@ export function SidebarRail({
                   "focus-visible:ring-2 focus-visible:ring-primary/40",
                 )}
               >
-                <Icon name="clock" size="md" />
+                {/* Not "clock": Recent Files already uses it, and one mark
+                    naming two ideas is pitfall #18 from the other side. */}
+                <Icon name="git-commit" size="md" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="top" className="text-xs">Commit history</TooltipContent>

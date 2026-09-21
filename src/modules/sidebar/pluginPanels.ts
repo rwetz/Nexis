@@ -91,8 +91,12 @@ export function pluginPanelCommands(
   enabledPacks: readonly PackId[],
   open: (view: SidebarView) => void,
 ): CommandDef[] {
-  return visiblePluginPanels(panels, enabledPacks)
-    .filter((p) => !p.legacyView && p.showInRail !== true)
+  // Bottom-panel contributions count too: they have no rail button either.
+  const bottom = panels
+    .filter((p) => p.location === "bottom" && packEnabled(p.pack, enabledPacks))
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title));
+  return [...visiblePluginPanels(panels, enabledPacks), ...bottom]
+    .filter((p) => !p.legacyView && (p.location === "bottom" || p.showInRail !== true))
     .map((p) => {
       const view = pluginPanelViewId(p.id);
       return {

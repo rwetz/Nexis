@@ -18,7 +18,7 @@ As of 2026-07. One-liners are orientation, not spec — verify in code, and fix 
 
 ## Dev-tool integrations
 
-- `lsp` — language server client · `debugger` — DAP client · `problems` — diagnostics panel
+- `lsp` — language server client · `debugger` — DAP client · `problems` — diagnostics panel (the bottom panel's first tab) · `bottom-panel` — the session surface under the workspace · `web-workbench` — Ports, HTTP Client and Web Tools as one title-bar tab ([[navigation-surfaces]])
 - `testrunner` — test execution UI · `build` — build tasks · `repl` — language REPLs
 - `python` / `notebook` / `ml` — Python, Jupyter-style notebooks, ML Lab workbench
 - `database` — DB client · `containers` — container management · `ssh` — remote sessions · `ports` — port forwarding/monitor

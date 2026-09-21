@@ -172,6 +172,7 @@ import {
   WarningCircleIcon,
   WifiHighIcon,
   WrenchIcon,
+  SquareHalfBottomIcon,
   XIcon,
   XLogoIcon,
 } from "@phosphor-icons/react";
@@ -319,6 +320,7 @@ const REGISTRY = {
   "note": NoteIcon,
   "notification": BellIcon,
   "outline": ListBulletsIcon,
+  "panel-bottom": SquareHalfBottomIcon,
   "pause": PauseIcon,
   "pin": PushPinIcon,
   "play": PlayIcon,

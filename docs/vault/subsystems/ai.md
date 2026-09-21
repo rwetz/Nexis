@@ -45,6 +45,12 @@ Per-tool policies (`toolApprovalPolicies` pref, Settings → Agents): `prompt` (
 - `components/AiMiniWindow.tsx` — floating chat's empty state is a context-aware launchpad. Its starter tiles only pre-fill the shared composer and focus it; keep that single submit path rather than creating a separate quick-action execution flow.
 - `src/components/ai-elements/context.tsx` — token-cost rows; with AI SDK 7, reasoning lives at `usage.outputTokenDetails.reasoningTokens` and cache reads at `usage.inputTokenDetails.cacheReadTokens`, not the removed flat fields.
 
+## The window and its tools
+
+The AI surface people actually see is `AiMiniWindow` (the floating card opened by `toggleMini`), not `AiPanel`. Its tool strip (`AiToolStrip`, store `ai/store/aiToolStore.ts`) holds Chat, Queue, Refactor, Templates and Review. The last four were sidebar views and are now `kind: "ai"` in the view catalogue. To show the chat from anywhere, including a store, call `showAiChat()`.
+
+**`useChatStore.openPanel()` shows nothing.** It sets docked mode for `DockedAiPanel`, which is exported but never mounted. Refactor, Code Review, the agent queue, Build's "ask AI" action and the merge-conflict helper all called it until 2026-09-21, so they sent the agent work and never surfaced it. See [[navigation-surfaces]].
+
 ## Related
 
 [[ipc-surface]] · [[settings-sync]] (model/provider prefs live there) · CLAUDE.md pitfalls #3, #5, #10, #11

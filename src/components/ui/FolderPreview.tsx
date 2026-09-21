@@ -120,18 +120,21 @@ export function FolderPreview({
     : ({ type: "spring", stiffness: 260, damping: 24 } as const);
 
   return (
-    <div
-      aria-hidden="true"
-      className={cn("select-none", className)}
-      style={{ perspective: 620 }}
-    >
+    <div aria-hidden="true" className={cn("select-none", className)}>
+      {/* Perspective lives here, on the pieces' own parent, and there is no
+          `preserve-3d`. With 3D sorting on, the browser orders the lid and the
+          sheets by depth rather than z-index, so any moment the lid sat even
+          slightly behind the sheets' plane (a spring overshooting past flat
+          on the way closed) painted the sheets over the cover. Flattened,
+          z-index decides: the lid always covers the sheets, and it still
+          swings in perspective. */}
       <div
         role="presentation"
         className="relative"
         style={{
           width: 100 * size,
           height: 80 * size,
-          transformStyle: "preserve-3d",
+          perspective: 620,
         }}
         onPointerEnter={() => setOpen(true)}
         onPointerLeave={() => setOpen(false)}
@@ -195,10 +198,11 @@ export function FolderPreview({
           style={{
             backgroundColor: color,
             transformOrigin: "bottom center",
-            transformStyle: "preserve-3d",
           }}
           animate={{ rotateX: open ? -42 : 0, y: open ? -6 * size : 0 }}
-          transition={spring}
+          // Critically damped: a lid that overshoots "closed" swings through
+          // the folder for a frame. The sheets keep their bouncier spring.
+          transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 34 }}
         >
           {COVER_MARKS.map((name) => (
             <Icon

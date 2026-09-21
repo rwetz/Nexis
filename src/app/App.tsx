@@ -41,7 +41,6 @@ import { cn } from "@/lib/utils";
 import { viewEnabled } from "@/lib/packs";
 import { dirname, stripVerbatimPrefix } from "@/lib/path";
 import { useSidebarState, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "./useSidebarState";
-import type { PanelImperativeHandle } from "react-resizable-panels";
 import { useDialogCoordinator } from "./useDialogCoordinator";
 import {
   AgentRunBridge,
@@ -116,15 +115,21 @@ import {
 import { ActivityPanel } from "@/modules/processes";
 import { usePluginRegistry } from "@/lib/plugins/registry";
 import { ProblemsPanel } from "@/modules/problems/ProblemsPanel";
+import { OPEN_WEB_WORKBENCH_EVENT, WebWorkbench } from "@/modules/web-workbench";
+import {
+  PanelDock,
+  PROBLEMS_TAB,
+  useBottomPanelStore,
+  useSessionAutoReveal,
+  type BottomTab,
+} from "@/modules/bottom-panel";
 import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
 import { SnippetsPanel } from "@/modules/snippets";
 import { TestRunnerPanel } from "@/modules/testrunner";
 import { BuildPanel } from "@/modules/build/BuildPanel";
-import { CodeReviewPanel } from "@/modules/code-review";
 import { registerShareTerminalBufferProvider } from "@/modules/share";
 import { SymbolSearchPanel } from "@/modules/symbol-search";
-import { RefactorPanel, setRefactorCode } from "@/modules/refactor";
-import { PromptTemplatesPanel } from "@/modules/prompt-templates";
+import { setRefactorCode } from "@/modules/refactor";
 import { BookmarksPanel, toggleBookmark } from "@/modules/bookmarks";
 import { WorkspaceNotesPanel } from "@/modules/workspace-notes";
 import { ShellSnippetsPanel, setShellSnippetSender } from "@/modules/shell-snippets";
@@ -189,7 +194,7 @@ import {
 import { hostHomeDir } from "@/platform/paths";
 import { desktopWebviewWindow } from "@/platform/desktop";
 import type { SearchAddon } from "@xterm/addon-search";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 const MarkdownStackLazy = lazy(() =>
   import("@/modules/markdown").then((m) => ({ default: m.MarkdownStack })),
@@ -261,6 +266,7 @@ function MainApp() {
     openMlLabTab,
     openMlNetworkTab,
     openSvgPlaygroundTab,
+    openWebTab,
     closeTab,
     updateTab,
     selectByIndex,
@@ -291,6 +297,14 @@ function MainApp() {
   useEffect(() => {
     tabsRef.current = tabs;
   }, [tabs]);
+
+  // The Web workbench is opened by `requestWebWorkbench` (palette commands,
+  // persistSidebarView), which can't reach tab state — hence the event.
+  useEffect(() => {
+    const open = () => openWebTab();
+    window.addEventListener(OPEN_WEB_WORKBENCH_EVENT, open);
+    return () => window.removeEventListener(OPEN_WEB_WORKBENCH_EVENT, open);
+  }, [openWebTab]);
 
   /** Open SVG Studio with a specific tool in front — the palette, backdrop,
    *  icon set, favicon set and animator live inside it, not in the sidebar. */
@@ -551,8 +565,11 @@ function MainApp() {
   const focusInput = useChatStore((s) => s.focusInput);
   const panelOpen = useChatStore((s) => s.panelOpen);
   const panelMode = useChatStore((s) => s.panelMode);
-  const problemsPanelRef = useRef<PanelImperativeHandle | null>(null);
-  const [problemsOpen, setProblemsOpen] = useState(false);
+  // The bottom panel (sessions + Problems): state lives in its store so the
+  // status bar, palette and persistSidebarView can all open it.
+  const bottomOpen = useBottomPanelStore((s) => s.open);
+  const bottomTab = useBottomPanelStore((s) => s.tab);
+  useSessionAutoReveal();
   const apiKeys = useChatStore((s) => s.apiKeys);
   const setApiKeys = useChatStore((s) => s.setApiKeys);
   const setSelectedModelId = useChatStore((s) => s.setSelectedModelId);
@@ -679,6 +696,7 @@ function MainApp() {
   const isMlLabTab = activeTab?.kind === "ml-lab";
   const isMlNetworkTab = activeTab?.kind === "ml-network";
   const isSvgPlaygroundTab = activeTab?.kind === "svg-playground";
+  const isWebTab = activeTab?.kind === "web";
 
   // When an AI diff is approved (write_file applied to disk), reload any
   // open editor tabs for that path so the user sees the new content. We
@@ -1454,6 +1472,8 @@ function MainApp() {
     { id: "files.quickOpen",     label: "Quick file open",          category: "Files",   action: () => { signalOnboardingStep("files.quickOpen"); setQuickFilePickerOpen(true); }, keywords: ["cmd+p", "go to file"] },
     { id: "search.workspace",    label: "Find & replace in project",category: "Search",  action: () => setWorkspaceSearchOpen(true), keywords: ["grep", "search"] },
     { id: "sidebar.toggle",      label: "Toggle sidebar",           category: "View",    action: toggleSidebar },
+    { id: "panel.toggle",        label: "Toggle bottom panel",      category: "View",    action: () => useBottomPanelStore.getState().toggle(), keywords: ["problems", "build", "tests", "sessions", "output"] },
+    { id: "panel.maximize",      label: "Maximize bottom panel",    category: "View",    action: () => useBottomPanelStore.getState().toggleMaximized() },
     { id: "settings.open",       label: "Open settings",            category: "General", action: () => void openSettingsWindow() },
     { id: "settings.themes",     label: "Open theme settings",      category: "General", action: () => void openSettingsWindow("themes") },
     { id: "settings.shortcuts",  label: "Open keyboard shortcuts",  category: "General", action: () => setShortcutsOpen(true) },
@@ -1561,6 +1581,7 @@ function MainApp() {
       "window.new": () => void openNewWindow(),
       "settings.open": () => void openSettingsWindow(),
       "sidebar.toggle": toggleSidebar,
+      "panel.toggle": () => useBottomPanelStore.getState().toggle(),
       "explorer.focus": toggleExplorerFocus,
       "view.zoomIn": zoomIn,
       "view.zoomOut": zoomOut,
@@ -1857,6 +1878,48 @@ function MainApp() {
     });
   }, [setLive, activeId, tabs, explorerRoot, launchCwd, home, openPreviewTab]);
 
+  // Bodies for the bottom panel's built-in tabs. Contributed sessions
+  // (Debugger, Ports, Database, SSH, HTTP Client) render from their
+  // `location: "bottom"` contribution inside BottomPanel instead.
+  const renderBottomTab = (tab: BottomTab): ReactNode => {
+    switch (tab) {
+      case PROBLEMS_TAB:
+        return (
+          <ProblemsPanel
+            onNavigate={(path, line, character) => {
+              openFileTab(path, true);
+              // Brief delay so the editor has time to mount
+              setTimeout(() => {
+                window.dispatchEvent(
+                  new CustomEvent("nexis:goto-location", {
+                    detail: { path, line, character },
+                  }),
+                );
+              }, 80);
+            }}
+          />
+        );
+      case "build":
+        return <BuildPanel workspaceRoot={explorerRoot} />;
+      case "tests":
+        return <TestRunnerPanel workspaceRoot={explorerRoot} />;
+      case "processes":
+        return <ActivityPanel />;
+      case "repl":
+        return <ReplPanel />;
+      case "system-monitor":
+        return <Suspense fallback={null}><SystemMonitorPanelLazy /></Suspense>;
+      case "command-history":
+        return (
+          <Suspense fallback={null}>
+            <CommandHistoryPanelLazy workspaceRoot={explorerRoot} />
+          </Suspense>
+        );
+      default:
+        return null;
+    }
+  };
+
   const workspaceSurface = tabs.length === 0 ? (
     <WelcomeScreen onNewTerminal={openNewTab} />
   ) : (
@@ -2026,6 +2089,13 @@ function MainApp() {
           />
         </Suspense>
       </div>
+      <div
+        className={cn("absolute inset-0", !isWebTab && "invisible pointer-events-none")}
+        aria-hidden={!isWebTab}
+        inert={!isWebTab}
+      >
+        <WebWorkbench tabs={tabs} activeId={activeId} onClose={closeTab} />
+      </div>
     </div>
   );
 
@@ -2087,6 +2157,7 @@ function MainApp() {
             onOpenSettings={() => void openSettingsWindow()}
             onOpenSvgStudio={openSvgPlaygroundTab}
             onOpenMlLab={openMlLabTab}
+            onOpenWeb={openWebTab}
             searchTarget={searchTarget}
             searchRef={searchInlineRef}
             onOpenSpotlight={() => setQuickFilePickerOpen(true)}
@@ -2131,20 +2202,10 @@ function MainApp() {
                         view={sidebarView}
                         onShowExplorer={() => persistSidebarView("explorer")}
                       />
-                    ) : sidebarView === "command-history" ? (
-                      <Suspense fallback={null}>
-                        <CommandHistoryPanelLazy workspaceRoot={explorerRoot} />
-                      </Suspense>
                     ) : sidebarView === "svg-playground" ? (
                       <SvgPlaygroundPanel onExpand={openSvgPlaygroundTab} workspaceRoot={explorerRoot} />
                     ) : sidebarView === "recent-files" ? (
                       <RecentFilesPanel onOpenFile={handleOpenFile} />
-                    ) : sidebarView === "processes" ? (
-                      <ActivityPanel />
-                    ) : sidebarView === "system-monitor" ? (
-                      <Suspense fallback={null}><SystemMonitorPanelLazy /></Suspense>
-                    ) : sidebarView === "repl" ? (
-                      <ReplPanel />
                     ) : sidebarView === "profiles" ? (
                       <ProfilesPanel
                         currentPath={launchCwd}
@@ -2169,14 +2230,6 @@ function MainApp() {
                       <SymbolOutlinePanel filePath={activeEditorTab ? editorActivePath(activeEditorTab) : null} />
                     ) : sidebarView === "snippets" ? (
                       <SnippetsPanel />
-                    ) : sidebarView === "tests" ? (
-                      <TestRunnerPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "build" ? (
-                      <BuildPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "code-review" ? (
-                      <CodeReviewPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "agent-queue" ? (
-                      <ActivityPanel />
                     ) : sidebarView === "symbol-search" ? (
                       <SymbolSearchPanel
                         workspaceRoot={explorerRoot}
@@ -2184,10 +2237,6 @@ function MainApp() {
                           openFileTab(path, true);
                         }}
                       />
-                    ) : sidebarView === "refactor" ? (
-                      <RefactorPanel />
-                    ) : sidebarView === "prompt-templates" ? (
-                      <PromptTemplatesPanel />
                     ) : sidebarView === "bookmarks" ? (
                       <BookmarksPanel
                         onNavigate={(path, line) => {
@@ -2216,44 +2265,11 @@ function MainApp() {
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel id="workspace" defaultSize="78%" minSize="30%">
-                <ResizablePanelGroup orientation="vertical" className="h-full">
-                  <ResizablePanel id="workspace-main" minSize="20%">
-                    <ErrorBoundary>{workspaceSurface}</ErrorBoundary>
-                  </ResizablePanel>
-
-                  {problemsOpen && (
-                    <>
-                      <ResizableHandle withHandle />
-                      <ResizablePanel
-                        id="problems-panel"
-                        panelRef={problemsPanelRef}
-                        collapsible
-                        collapsedSize={0}
-                        defaultSize="180px"
-                        minSize="80px"
-                        maxSize="50%"
-                        onResize={(size) => {
-                          if (size.inPixels === 0) setProblemsOpen(false);
-                        }}
-                      >
-                        <ProblemsPanel
-                          onNavigate={(path, line, character) => {
-                            openFileTab(path, true);
-                            // Brief delay so the editor has time to mount
-                            setTimeout(() => {
-                              window.dispatchEvent(
-                                new CustomEvent("nexis:goto-location", {
-                                  detail: { path, line, character },
-                                }),
-                              );
-                            }, 80);
-                          }}
-                        />
-                      </ResizablePanel>
-                    </>
-                  )}
-
-                </ResizablePanelGroup>
+                <PanelDock
+                  workspace={<ErrorBoundary>{workspaceSurface}</ErrorBoundary>}
+                  renderBuiltin={renderBottomTab}
+                  suppressed={zenMode}
+                />
 
                 {/* Floating panel overlay — rendered when panelMode === "floating" */}
                 {keysLoaded && panelOpen && panelMode === "floating" && hasComposer && (
@@ -2275,8 +2291,8 @@ function MainApp() {
             privateActive={
               activeTab?.kind === "terminal" && activeTab.private === true
             }
-            problemsOpen={problemsOpen}
-            onToggleProblems={() => setProblemsOpen((v) => !v)}
+            problemsOpen={bottomOpen && bottomTab === PROBLEMS_TAB}
+            onToggleProblems={() => useBottomPanelStore.getState().toggleTab(PROBLEMS_TAB)}
             onOpenActivity={() => persistSidebarView("processes")}
           />
           </div>
@@ -2294,7 +2310,7 @@ function MainApp() {
           {/* One-time expansion-pack preset picker (Settings → Features later) */}
           <PackOnboardingDialog />
 
-          {miniOpen && hasComposer ? <AiMiniWindow key="ai-mini" /> : null}
+          {miniOpen && hasComposer ? <AiMiniWindow key="ai-mini" workspaceRoot={explorerRoot} /> : null}
           {askPopup ? (
             <SelectionAskAi
               key="ask-ai-popup"

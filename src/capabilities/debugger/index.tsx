@@ -31,7 +31,7 @@ export const debuggerCapability: CapabilityDefinition = {
     id: "debugger:panel",
     legacyView: "debugger",
     title: "Debugger",
-    location: "sidebar",
+    location: "bottom",
     icon: "debug",
     group: "Code",
     pack: "code-tools",

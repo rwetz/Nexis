@@ -5,6 +5,7 @@ import { git } from "@/capabilities/git/api";
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { PanelEmptyGlyph, PanelEmptyState } from "@/components/ui/PanelEmptyState";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -573,15 +574,11 @@ export const SourceControlPanel = memo(function SourceControlPanel({
         ) : null}
 
         {scm.panelState === "no-repo" ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-            <Icon name="folder-git" size="xl" className="text-muted-foreground/30" />
-            <div className="space-y-1">
-              <div className="text-[12px] font-medium text-foreground/70">No repository</div>
-              <div className="max-w-56 text-[11px] leading-relaxed text-muted-foreground/60">
-                The active workspace is not inside a Git repository.
-              </div>
-            </div>
-          </div>
+          <PanelEmptyState
+            art={<PanelEmptyGlyph icon="folder-git" />}
+            title="No repository"
+            description="The active workspace is not inside a Git repository."
+          />
         ) : null}
 
         {scm.panelState === "error" ? (

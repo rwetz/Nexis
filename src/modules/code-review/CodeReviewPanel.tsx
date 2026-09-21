@@ -21,7 +21,8 @@ import { git } from "@/capabilities/git/api";
 import { Icon } from "@/components/icon";
 import { basename } from "@/lib/path";
 
-import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
+import { sendMessage } from "@/modules/ai/store/chatStore";
+import { showAiChat } from "@/modules/ai/store/aiToolStore";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -55,7 +56,6 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
   const [repoRoot, setRepoRoot] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-  const openAiPanel = useChatStore((s) => s.openPanel);
   // Guards against a slow load landing after a newer one — switching scope or
   // workspace while a diff is in flight would otherwise show the stale answer.
   const requestRef = useRef(0);
@@ -105,12 +105,12 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
         ? "\n\n> (diff truncated to 12k chars — some files may be missing)"
         : "";
       const prompt = `Please review the following ${scopeLabel} git diff:\n\n\`\`\`diff\n${text}\n\`\`\`${truncNote}\n\nFocus on:\n- Potential bugs or logic errors\n- Missing error handling or edge cases\n- Code style / readability improvements\n- Performance considerations\n\nProvide specific, actionable feedback with line references where possible.`;
-      openAiPanel();
+      showAiChat();
       await sendMessage(prompt);
     } finally {
       setSending(false);
     }
-  }, [diff, stats, scope, openAiPanel]);
+  }, [diff, stats, scope]);
 
   const hasChanges = stats && stats.files > 0;
 

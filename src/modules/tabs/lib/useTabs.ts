@@ -43,6 +43,7 @@ import {
   type MlLabTab,
   type MlNetworkTab,
   type SvgPlaygroundTab,
+  type WebWorkbenchTab,
   type Tab,
   type TabPatch,
   type TerminalTab,
@@ -705,6 +706,25 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     return id;
   }, []);
 
+  /** Open (or focus) the Web workbench tab. Deduped: one workbench. */
+  const openWebTab = useCallback(() => {
+    const curr = tabsRef.current;
+    const existing = curr.find((t) => t.kind === "web");
+    if (existing) {
+      setActiveId(existing.id);
+      return existing.id;
+    }
+    const id = nextIdRef.current++;
+    const nextTabs = [
+      ...curr,
+      { id, kind: "web", title: "Web" } satisfies WebWorkbenchTab,
+    ];
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+    setActiveId(id);
+    return id;
+  }, []);
+
   const openCommitFileDiffTab = useCallback(
     (input: {
       repoRoot: string;
@@ -1253,6 +1273,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     openMlLabTab,
     openMlNetworkTab,
     openSvgPlaygroundTab,
+    openWebTab,
     setAiDiffStatus,
     closeAiDiffTab,
     closeTab,
