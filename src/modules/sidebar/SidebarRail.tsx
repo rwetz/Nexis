@@ -54,8 +54,16 @@ const PIN_PROMOTIONS: { id: SidebarView; marker: string }[] = [
  *  older build still names them, and an id that no longer exists in
  *  `SIDEBAR_VIEW_IDS` renders as a gap with no label — so they are stripped on
  *  read rather than left to rot. `getting-started` became the full-window
- *  onboarding takeover (`OnboardingDialog`) and is no longer a sidebar view. */
-const RETIRED_VIEWS: readonly string[] = ["getting-started"];
+ *  onboarding takeover (`OnboardingDialog`) and is no longer a sidebar view.
+ *  The five art tools moved inside SVG Studio's tool strip. */
+const RETIRED_VIEWS: readonly string[] = [
+  "getting-started",
+  "palette",
+  "backdrop",
+  "icon-set",
+  "favicon",
+  "animator",
+];
 
 function loadPinned(): SidebarView[] {
   try {
@@ -135,12 +143,7 @@ export function SidebarRail({
     { id: "profiles",       label: "Profiles",         icon: "layers",        group: "Dev Tools" },
     { id: "ssh",            label: "SSH",              icon: "terminal",      group: "Dev Tools" },
     { id: "http-client",    label: "HTTP Client",      icon: "network",     group: "Dev Tools" },
-    { id: "svg-playground", label: "SVG Playground",   icon: "brush",       group: "Dev Tools" },
-    { id: "palette",        label: "Palette",         icon: "theme",       group: "Dev Tools" },
-    { id: "backdrop",       label: "Backdrop",        icon: "image",       group: "Dev Tools" },
-    { id: "icon-set",       label: "Icon Set",        icon: "grid",        group: "Dev Tools" },
-    { id: "favicon",        label: "Favicon Set",     icon: "rocket",      group: "Dev Tools" },
-    { id: "animator",       label: "Animator",        icon: "play",        group: "Dev Tools" },
+    { id: "svg-playground", label: "SVG Studio",       icon: "brush",       group: "Dev Tools" },
     { id: "share",          label: "Share",            icon: "globe",       group: "Advanced" },
     { id: "notes",          label: "Workspace Notes",  icon: "note",        group: "Advanced" },
     { id: "shell-snippets", label: "Shell Snippets",   icon: "terminal", group: "Advanced" },

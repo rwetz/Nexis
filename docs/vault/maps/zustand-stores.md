@@ -21,6 +21,7 @@ All state stores, as of 2026-07 (enumerate fresh with `grep -rn "= create" src -
 
 - `useDebugStore` (`debugger/debugSession.ts`) + `useBreakpointStore` — DAP session and breakpoints
 - `useDiagnosticsStore` (`problems/`) — LSP diagnostics
+- `useSvgStudioStore` (`art/studioStore.ts`) — which SVG Studio tool is in front; session-only (see [[art-pack]])
 - `useDatabaseStore` (`database/`) · `useMlStore` (`ml/store.ts`, largest single store file) · `useSshStore` (`ssh/`)
 
 ## Workspace & shell

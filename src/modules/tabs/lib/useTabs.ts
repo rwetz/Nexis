@@ -697,7 +697,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     const id = nextIdRef.current++;
     const nextTabs = [
       ...curr,
-      { id, kind: "svg-playground", title: "SVG Playground" } satisfies SvgPlaygroundTab,
+      { id, kind: "svg-playground", title: "SVG Studio" } satisfies SvgPlaygroundTab,
     ];
     tabsRef.current = nextTabs;
     setTabs(nextTabs);

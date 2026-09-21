@@ -133,12 +133,8 @@ import { StatusBar } from "@/modules/statusbar";
 import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
 import { OnboardingDialog } from "@/modules/onboarding/OnboardingDialog";
 import { openOnboarding } from "@/modules/onboarding/onboardingDialogStore";
-import { AnimatorPanel } from "@/modules/art/AnimatorPanel";
-import { BackdropPanel } from "@/modules/art/BackdropPanel";
-import { FaviconPanel } from "@/modules/art/FaviconPanel";
-import { IconSetPanel } from "@/modules/art/IconSetPanel";
-import { PalettePanel } from "@/modules/art/PalettePanel";
 import { SvgPlaygroundPanel } from "@/modules/art/SvgPlaygroundPanel";
+import { useSvgStudioStore, type StudioTool } from "@/modules/art/studioStore";
 import { OnboardingTour } from "@/modules/onboarding/OnboardingTour";
 import { useOnboardingSignals } from "@/modules/onboarding/useOnboardingSignals";
 import { signalOnboardingStep, type OnboardingAction } from "@/lib/onboarding";
@@ -292,6 +288,16 @@ function MainApp() {
   useEffect(() => {
     tabsRef.current = tabs;
   }, [tabs]);
+
+  /** Open SVG Studio with a specific tool in front — the palette, backdrop,
+   *  icon set, favicon set and animator live inside it, not in the sidebar. */
+  const openSvgStudio = useCallback(
+    (tool: StudioTool) => {
+      useSvgStudioStore.getState().setTool(tool);
+      openSvgPlaygroundTab();
+    },
+    [openSvgPlaygroundTab],
+  );
 
   const activeTerminalTab = useMemo(() => {
     const t = tabs.find((x) => x.id === activeId);
@@ -1460,18 +1466,18 @@ function MainApp() {
     { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
     { id: "ledger.history",      label: "Show command history",     category: "View",    action: () => persistSidebarView("command-history"), pack: "dev-tools", keywords: ["ledger", "recorded", "commands", "trends", "journal", "output", "build time"] },
     { id: "webdev.http",         label: "Show HTTP client",         category: "View",    action: () => persistSidebarView("http-client"), pack: "web-dev", keywords: ["rest", "request", "curl", "api"] },
-    { id: "art.svgPlayground",   label: "Open the SVG playground",  category: "View",    action: () => { openSvgPlaygroundTab(); }, pack: "art", keywords: ["svg", "icon", "vector", "art"] },
+    { id: "art.svgPlayground",   label: "Open SVG Studio",          category: "View",    action: () => openSvgStudio("draw"), pack: "art", keywords: ["svg", "icon", "vector", "art", "playground", "studio"] },
     { id: "ml.open",             label: "Open ML Lab",              category: "View",    action: () => { openMlLabTab(); }, pack: "ml-lab", keywords: ["model", "training", "inference", "onnx", "benchmark"] },
-    { id: "art.palette",         label: "Open the palette",         category: "View",    action: () => persistSidebarView("palette"), pack: "art", keywords: ["colour", "color", "contrast", "wcag", "swatch", "theme"] },
-    { id: "art.backdrop",        label: "Open the backdrop generator", category: "View",  action: () => persistSidebarView("backdrop"), pack: "art", keywords: ["wallpaper", "background", "gradient", "waves", "generative"] },
-    { id: "art.iconSet",         label: "Open the icon set review", category: "View",    action: () => persistSidebarView("icon-set"), pack: "art", keywords: ["icons", "audit", "consistency", "stroke", "svg"] },
-    { id: "art.favicon",         label: "Open the favicon exporter", category: "View",   action: () => persistSidebarView("favicon"), pack: "art", keywords: ["favicon", "app icon", "manifest", "apple touch", "pwa"] },
-    { id: "art.animator",        label: "Open the SVG animator",    category: "View",    action: () => persistSidebarView("animator"), pack: "art", keywords: ["animate", "keyframe", "smil", "motion", "timeline"] },
+    { id: "art.palette",         label: "Open the palette",         category: "View",    action: () => openSvgStudio("palette"), pack: "art", keywords: ["colour", "color", "contrast", "wcag", "swatch", "theme"] },
+    { id: "art.backdrop",        label: "Open the backdrop generator", category: "View",  action: () => openSvgStudio("backdrop"), pack: "art", keywords: ["wallpaper", "background", "gradient", "waves", "generative"] },
+    { id: "art.iconSet",         label: "Open the icon set review", category: "View",    action: () => openSvgStudio("icon-set"), pack: "art", keywords: ["icons", "audit", "consistency", "stroke", "svg"] },
+    { id: "art.favicon",         label: "Open the favicon exporter", category: "View",   action: () => openSvgStudio("favicon"), pack: "art", keywords: ["favicon", "app icon", "manifest", "apple touch", "pwa"] },
+    { id: "art.animator",        label: "Open the SVG animator",    category: "View",    action: () => openSvgStudio("animator"), pack: "art", keywords: ["animate", "keyframe", "smil", "motion", "timeline"] },
     { id: "help.gettingStarted", label: "Open Getting Started",       category: "General", action: () => openOnboarding(), keywords: ["onboarding", "tour", "help", "first run", "checklist"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
-  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgPlaygroundTab, openMlLabTab]);
+  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgStudio, openMlLabTab]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
   // mirroring how the rail hides their views (V2 gating; decision doc in
@@ -2117,16 +2123,6 @@ function MainApp() {
                       <Suspense fallback={null}>
                         <CommandHistoryPanelLazy workspaceRoot={explorerRoot} />
                       </Suspense>
-                    ) : sidebarView === "animator" ? (
-                      <AnimatorPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "favicon" ? (
-                      <FaviconPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "icon-set" ? (
-                      <IconSetPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "backdrop" ? (
-                      <BackdropPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "palette" ? (
-                      <PalettePanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "svg-playground" ? (
                       <SvgPlaygroundPanel onExpand={openSvgPlaygroundTab} workspaceRoot={explorerRoot} />
                     ) : sidebarView === "recent-files" ? (

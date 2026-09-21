@@ -149,14 +149,9 @@ export const PACKS: Record<PackId, PackDef> = {
     description:
       "SVG work: an icon-scale playground, generative backdrops, and a palette with contrast checks.",
     icon: "brush",
-    views: [
-      "svg-playground",
-      "palette",
-      "backdrop",
-      "icon-set",
-      "favicon",
-      "animator",
-    ],
+    // One view: palette, backdrop, icon set, favicon set and animator are
+    // tools inside SVG Studio (`art/studioStore.ts`), not sidebar views.
+    views: ["svg-playground"],
   },
 };
 
