@@ -316,38 +316,12 @@ export function HttpClientPanel({ workspaceKey }: Props) {
 
         {response && <ResponseView response={response} requestedUrl={resolvedUrl} />}
 
-        {/* ── Saved ─────────────────────────────────────────────────────── */}
-        {saved.length > 0 && (
-          <div className="flex flex-col gap-1 border-t border-border/50 pt-2">
-            <span className="text-[9.5px] font-medium uppercase tracking-wide text-muted-foreground/60">
-              Saved in this workspace
-            </span>
-            {saved.map((r) => (
-              <div key={r.id} className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => load(r)}
-                  className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-primary/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                >
-                  <span className="shrink-0 font-mono text-[9.5px] text-muted-foreground/70">
-                    {r.method}
-                  </span>
-                  <span className="truncate font-mono text-[10.5px]">
-                    {r.name}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Delete saved request ${r.name}`}
-                  onClick={() => persist(saved.filter((x) => x.id !== r.id))}
-                  className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                >
-                  <Icon name="close" size="xs" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <SavedRequests
+          saved={saved}
+          onLoad={load}
+          onDelete={(id) => persist(saved.filter((x) => x.id !== id))}
+        />
+
       </div>
     </div>
   );
@@ -406,6 +380,52 @@ function ResponseView({
             .join("\n")}
         </pre>
       </details>
+    </div>
+  );
+}
+
+/**
+ * The workspace's saved requests. Its own component for the same reason as
+ * `ResponseView`: it needs the list and two callbacks, nothing else, and its
+ * rows and empty case are branches the panel does not need to carry.
+ */
+function SavedRequests({
+  saved,
+  onLoad,
+  onDelete,
+}: {
+  saved: SavedRequest[];
+  onLoad: (request: SavedRequest) => void;
+  onDelete: (id: string) => void;
+}) {
+  if (saved.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1 border-t border-border/50 pt-2">
+      <span className="text-[9.5px] font-medium uppercase tracking-wide text-muted-foreground/60">
+        Saved in this workspace
+      </span>
+      {saved.map((r) => (
+        <div key={r.id} className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onLoad(r)}
+            className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-primary/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <span className="shrink-0 font-mono text-[9.5px] text-muted-foreground/70">
+              {r.method}
+            </span>
+            <span className="truncate font-mono text-[10.5px]">{r.name}</span>
+          </button>
+          <button
+            type="button"
+            aria-label={`Delete saved request ${r.name}`}
+            onClick={() => onDelete(r.id)}
+            className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <Icon name="close" size="xs" />
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
