@@ -69,7 +69,7 @@ type Result =
  * character; this is one indexOf walk that bails on the first miss, and on a
  * short query it rejects most of the file list before any of that runs.
  */
-export function isSubsequence(text: string, query: string): boolean {
+function isSubsequence(text: string, query: string): boolean {
   let ti = 0;
   for (let qi = 0; qi < query.length; qi++) {
     ti = text.indexOf(query[qi], ti);
@@ -88,7 +88,7 @@ export function isSubsequence(text: string, query: string): boolean {
  * results order by path length, which buries the file whose *name* matched
  * under every short path that happened to contain the letters.
  */
-export function fuzzyScore(text: string, query: string): number {
+function fuzzyScore(text: string, query: string): number {
   if (!query) return 0;
   const hay = text.toLowerCase();
   const needle = query.toLowerCase();

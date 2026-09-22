@@ -61,7 +61,7 @@ type Cell = { key: string; date: Date; count: number; step: number };
  * this week) are still emitted so the columns stay aligned; they simply have
  * a count of zero.
  */
-export function buildGrid(
+function buildGrid(
   days: ActivityDay[],
   today = new Date(),
 ): { cells: Cell[]; max: number; total: number } {
