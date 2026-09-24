@@ -22,7 +22,7 @@ import {
  * Those tokens resolve here for the same reason the file-tree retint works: the
  * defs are inlined into the document, so the page's custom properties cascade
  * into them. Moving this into a `data:` URL or a standalone .svg would silently
- * render every gradient invalid — see CLAUDE.md pitfall #18.
+ * render every gradient invalid — see AGENTS.md pitfall #18.
  */
 export function RainbowDefs() {
   return (

@@ -26,7 +26,7 @@ The tab holds **no document of its own**. The source lives in the playground's o
 
 The itch is that browser-based SVG editors are bad at icon-scale art, and the preview is why: showing a mark at 300px answers none of the questions you have about it. So the same source renders at **16, 24, 32 and 64px at once**, over a pixel grid with centre guides. The question being answered is "does this 1.5-unit stroke land on a pixel boundary at 16px", and it is answerable by looking.
 
-The editor is CodeMirror, so **CLAUDE.md pitfall #15 applies**: the `.zoom-content .cm-editor` exemption in `globals.css` is what keeps clicks landing on the right line under app zoom. It is inherited by being an ordinary `.cm-editor` — do not wrap this in anything that re-introduces a CSS `zoom`.
+The editor is CodeMirror, so **AGENTS.md pitfall #15 applies**: the `.zoom-content .cm-editor` exemption in `globals.css` is what keeps clicks landing on the right line under app zoom. It is inherited by being an ordinary `.cm-editor` — do not wrap this in anything that re-introduces a CSS `zoom`.
 
 ## The optimizer is deliberately not SVGO
 

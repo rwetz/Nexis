@@ -85,7 +85,7 @@ This is the constraint that chose the storage shape.
 
 - **Per entry** — from the block's gutter context menu. Rewrites the NDJSON file without that line (atomic write, then rename) and unlinks the blob.
 - **Per workspace** — removes the whole `<workspaceId>/` directory.
-- **Globally** — a preference to stop recording, routed through `writePref()` so it syncs across windows (CLAUDE.md pitfall #2).
+- **Globally** — a preference to stop recording, routed through `writePref()` so it syncs across windows (AGENTS.md pitfall #2).
 - **"Forget the last N minutes"** — the escape hatch for a redaction miss. Redaction is a pattern list; it will miss something, and when it does the user needs a gesture that does not require finding every affected entry.
 
 An append-only store with tombstones was rejected for exactly this: a tombstoned secret is still on disk until a compaction you cannot promise ran. If the contract says forget, the bytes go now. Rewriting a few tens of MB is sub-second and complete.
@@ -134,4 +134,4 @@ Blobs dominate the footprint and are the least valuable per byte, so they are ca
 
 **Known follow-up, unrelated to the ledger itself:** the HTTP client (`src/modules/webdev/HttpClientPanel.tsx`) scopes its saved requests with `currentWorkspaceScopeKey()` and therefore shares them across all local projects. It should use the §6 workspace id. Tracked as a fix, not a design change.
 
-Related: [[e2e-harness]] (for the tripwire style), [[settings-sync]], [[pty]], and CLAUDE.md pitfalls #17, #23.
+Related: [[e2e-harness]] (for the tripwire style), [[settings-sync]], [[pty]], and AGENTS.md pitfalls #17, #23.

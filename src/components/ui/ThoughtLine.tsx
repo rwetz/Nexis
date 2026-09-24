@@ -9,7 +9,7 @@
  * progress, and it is still moving".
  *
  * This is a *live-stream-only* affordance and must stay one. Reasoning blocks
- * are pruned out of model history before compaction (CLAUDE.md pitfall #3),
+ * are pruned out of model history before compaction (AGENTS.md pitfall #3),
  * so a stored assistant turn has no reasoning to be in progress — rendering
  * this from persisted state would animate something that is not happening.
  * Mount it while `isStreaming` is true and unmount it when that flips.

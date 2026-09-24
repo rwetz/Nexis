@@ -31,11 +31,11 @@ flowchart TD
 history is measured or trimmed. Two reasons: Cerebras *rejects* messages containing them outright, and
 every other provider silently counts them against the context budget — so leaving them in makes
 compaction discard real conversation to make room for text the model won't use. This is
-[pitfall #3](../../CLAUDE.md).
+[pitfall #3](../../AGENTS.md).
 
 **Compaction is defensive about tool output.** Byte estimation goes through `safeJsonLength` rather than
 raw `JSON.stringify`, because tool results are untrusted objects that can contain circular references. An
-unhandled `TypeError` here kills the turn and every subsequent one ([pitfall #11](../../CLAUDE.md)).
+unhandled `TypeError` here kills the turn and every subsequent one ([pitfall #11](../../AGENTS.md)).
 
 **Cache breakpoints go on last**, after the system prompt is assembled, so the stable prefix is actually
 stable across turns and providers can serve it from cache.
@@ -64,7 +64,7 @@ One implementation detail with a history: `tools/shell.ts` memoizes per-session 
 Its `.catch()` handler deletes the map entry before re-throwing, and that eviction is load-bearing. A
 rejected promise cached in a `Map` is indistinguishable from a resolved one until awaited — without the
 eviction, one failed `bash_run` (a cwd that didn't exist yet, say) poisons every subsequent shell call for
-the rest of the session, long after the cause is gone ([pitfall #10](../../CLAUDE.md)).
+the rest of the session, long after the cause is gone ([pitfall #10](../../AGENTS.md)).
 
 ## Tool approval
 
@@ -107,7 +107,7 @@ applies to them immediately and that call has to be added.
   `nexis://ai-keys-changed`.
 - `lib/security.ts` — hardened path checks. It keeps a **deliberately private `basename`** implementation;
   do not consolidate it into `src/lib/path.ts`. It's a hardened comparison surface and the explicit
-  exception to [pitfall #12](../../CLAUDE.md)'s no-local-path-helpers rule.
+  exception to [pitfall #12](../../AGENTS.md)'s no-local-path-helpers rule.
 - `lib/redact.ts` — secret redaction · `lib/sessions.ts` — chat persistence · `lib/todos.ts` — agent todo
   state · `lib/slashCommands.ts`.
 - `lib/nlCommand.ts` — natural language → shell command for the terminal's AI command bar
@@ -123,16 +123,16 @@ applies to them immediately and that call has to be added.
 re-rendering the element as disabled fires a blur, and on Windows that steals keyboard focus the moment an
 agent turn starts — the user loses their cursor mid-sentence. The Enter-to-submit path already guards
 against double-submit via `c.isBusy`. Indicate busy state with CSS, not `disabled`
-([pitfall #5](../../CLAUDE.md), tripwired).
+([pitfall #5](../../AGENTS.md), tripwired).
 
 **Zustand selectors must return stable references.** This applies app-wide but bites hardest around the AI
 stores, which update frequently. A selector containing an inline `.filter()`, `.map()`, or object spread
 returns a new reference every call, `Object.is` fails, and `useSyncExternalStore` loops forever — blank
 screen, "Maximum update depth exceeded". Select the stable reference and derive in the render body, or use
-`useShallow` ([pitfall #14](../../CLAUDE.md)).
+`useShallow` ([pitfall #14](../../AGENTS.md)).
 
 ## Related
 
 - Vault: [ai](../vault/subsystems/ai.md) · [ipc-surface](../vault/maps/ipc-surface.md) · [zustand-stores](../vault/maps/zustand-stores.md)
 - Guides: [security-model.md](security-model.md) · [two-process-model.md](two-process-model.md)
-- Invariants: [CLAUDE.md](../../CLAUDE.md) pitfalls #3, #5, #10, #11, #12, #14
+- Invariants: [AGENTS.md](../../AGENTS.md) pitfalls #3, #5, #10, #11, #12, #14

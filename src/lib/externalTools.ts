@@ -47,7 +47,7 @@ export type ExternalTool = {
    * one the workspace lives on. The LSP client spawns servers host-side
    * regardless of workspace; git follows the workspace into WSL. Re-checking a
    * tool in the wrong environment answers for a machine it will never run on
-   * (CLAUDE.md pitfall #20) — telling a WSL user their host `rust-analyzer`
+   * (AGENTS.md pitfall #20) — telling a WSL user their host `rust-analyzer`
    * is fine when the one that matters is the host one, or worse, the reverse.
    */
   runsIn: "host" | "workspace";

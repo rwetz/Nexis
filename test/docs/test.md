@@ -313,7 +313,7 @@ classDiagram
 
 > [!WARNING]
 > Calling `pty_close` without the lifecycle lock will silently blank active
-> terminal sessions on Windows (see CLAUDE.md root cause D).
+> terminal sessions on Windows (see AGENTS.md root cause D).
 
 > [!CAUTION]
 > Force-pushing to `main` is blocked by branch protection rules.

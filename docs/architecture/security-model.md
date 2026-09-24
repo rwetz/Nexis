@@ -73,7 +73,7 @@ the spawn rather than letting a stale positive persist. The cache is capped at 2
 expired entries before clearing wholesale.
 
 The frontend consequence is that any code path opening a PTY with a user-supplied cwd must call
-`workspace_authorize` *first* — see [pitfall #1C](../../CLAUDE.md) and
+`workspace_authorize` *first* — see [pitfall #1C](../../AGENTS.md) and
 [pty-shell-integration.md](pty-shell-integration.md#opening-a-session).
 
 There's a test (`authorize_spawn_cwd_blocks_symlink_escape`) that verifies the symlink case. It fails on

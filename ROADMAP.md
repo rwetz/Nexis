@@ -512,7 +512,7 @@ Structure ideas taken from zed.dev/docs (July 2026 sidebar survey — full notes
 - ✅ "Coming from…" migration guides — Warp, iTerm2, Windows Terminal, kitty/alacritty, VS Code terminal; highest-leverage docs addition.
 - ✅ Top-level Privacy & Security section — no-telemetry stance, per-provider AI data flow, tool approval, path guards; it's a differentiator, currently undocumented publicly.
 - 🟡 Generated Reference section — all-settings page generated from the settings store schema, keybindings table, CLI flags; hand-written reference pages rot.
-- 🟡 Per-platform troubleshooting pages seeded from the internal pitfall checklists (e.g. public "blank terminal on Windows" walkthrough of CLAUDE.md pitfall #1, in user language).
+- 🟡 Per-platform troubleshooting pages seeded from the internal pitfall checklists (e.g. public "blank terminal on Windows" walkthrough of AGENTS.md pitfall #1, in user language).
 - 🟡 "Developing Nexis" section — build from source, architecture front door linking to the repo, profiling guide.
 
 **Stretch features**

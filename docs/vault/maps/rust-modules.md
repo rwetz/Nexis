@@ -7,8 +7,8 @@ description: Inventory of Rust backend modules under src-tauri/src/modules/ with
 
 As of 2026-07. One-liners are orientation, not spec — verify in code, and fix here if wrong.
 
-- `pty/` — the heart of the terminal. `session.rs` (session lifecycle, `CONPTY_LIFECYCLE_LOCK`, `MAX_PENDING` 4 MiB buffer), `shell_init.rs` (profile injection, `write_if_changed` cache), `job.rs`, `da_filter.rs`, `scripts/`. Dense with invariants — read [[pty]] and CLAUDE.md pitfalls #1, #6–#9 before touching.
-- `proc.rs` — **the only sanctioned way to build a subprocess**: `proc::command()` pre-applies `CREATE_NO_WINDOW`. Raw `Command::new` is banned by clippy + tripwire (CLAUDE.md pitfall #4).
+- `pty/` — the heart of the terminal. `session.rs` (session lifecycle, `CONPTY_LIFECYCLE_LOCK`, `MAX_PENDING` 4 MiB buffer), `shell_init.rs` (profile injection, `write_if_changed` cache), `job.rs`, `da_filter.rs`, `scripts/`. Dense with invariants — read [[pty]] and AGENTS.md pitfalls #1, #6–#9 before touching.
+- `proc.rs` — **the only sanctioned way to build a subprocess**: `proc::command()` pre-applies `CREATE_NO_WINDOW`. Raw `Command::new` is banned by clippy + tripwire (AGENTS.md pitfall #4).
 - `workspace.rs` — workspace root authorization (`authorize_spawn_cwd`); gates every user-supplied cwd (pitfall #1C)
 - `git/` — git operations; output parsing must use `from_utf8_lossy` (pitfall #13)
 - `fs/` — file I/O commands

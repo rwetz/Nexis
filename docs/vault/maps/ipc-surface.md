@@ -62,7 +62,7 @@ sync on purpose too: a `/proc` readlink is a single non-blocking syscall, not di
 
 ## Adding a command — checklist
 
-1. `#[tauri::command]` fn in the right `modules/` file; subprocesses via `proc::command()` only (CLAUDE.md pitfall #4)
+1. `#[tauri::command]` fn in the right `modules/` file; subprocesses via `proc::command()` only (AGENTS.md pitfall #4)
 2. If it does I/O, walks dirs, or spawns anything: `async fn` + `modules::heavy()` (see "Sync vs async" above)
 3. Register it in `generate_handler![]` in `lib.rs` (forgetting this = runtime "command not found")
 4. Call it from the family's bridge file; if it takes a user-supplied cwd, call `workspace_authorize` first (pitfall #1C)

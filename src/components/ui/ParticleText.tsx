@@ -212,7 +212,7 @@ export function ParticleText({
     // drifting further right the further right you moved, and the mirror of
     // that to the left. Taking the ratio makes zoom, device pixel ratio and
     // any future transform cancel, since all three are in both terms.
-    // Same class of bug as CLAUDE.md pitfall #15.
+    // Same class of bug as AGENTS.md pitfall #15.
     let pointerX = Number.NEGATIVE_INFINITY;
     let pointerY = Number.NEGATIVE_INFINITY;
     const onPointerMove = (e: PointerEvent) => {

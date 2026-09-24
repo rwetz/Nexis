@@ -56,7 +56,7 @@ export function buildSharedExtensions(): Extension[] {
         fontFamily: detectMonoFontFamily(),
         // App zoom must reach the editor via font-size, never via an ancestor
         // CSS zoom — .cm-editor is zoom-exempt in globals.css because zoomed
-        // clicks land on the wrong line in WebKitGTK (CLAUDE.md pitfall #15).
+        // clicks land on the wrong line in WebKitGTK (AGENTS.md pitfall #15).
         fontSize: "calc(13px * var(--app-zoom, 1))",
         lineHeight: "1.55",
         backgroundColor: "transparent !important",

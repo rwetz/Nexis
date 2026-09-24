@@ -13,6 +13,10 @@ export function openFiles(options: {
   return open(options);
 }
 
+export function openDirectory(): Promise<string | null> {
+  return open({ directory: true, multiple: false });
+}
+
 export function saveFile(options: {
   defaultPath: string;
   filters?: FileDialogFilter[];

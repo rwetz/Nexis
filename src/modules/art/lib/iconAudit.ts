@@ -9,7 +9,7 @@
  * assembled rather than designed.
  *
  * This panel exists because Nexis had exactly this problem and wrote it down:
- * CLAUDE.md pitfall #18 is the story of 160 icon imports expressing 136 ideas
+ * AGENTS.md pitfall #18 is the story of 160 icon imports expressing 136 ideas
  * across **13 pixel sizes and 12 stroke weights**, accumulated a little at a
  * time until the UI stopped reading as one product. Nothing caught it, because
  * every individual addition looked fine. This is the thing that would have.

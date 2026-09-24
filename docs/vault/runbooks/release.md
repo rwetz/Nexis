@@ -9,7 +9,7 @@ A release is one commit that bumps the version and renames the CHANGELOG's `[Unr
 
 ## Before anything else
 
-Run the **pre-push checklist in CLAUDE.md** in full. A release tag that fails CI has already published a broken build by the time you find out, because `.github/workflows/release.yml` fires on the tag, not on a green check.
+Run the **pre-push checklist in AGENTS.md** in full. A release tag that fails CI has already published a broken build by the time you find out, because `.github/workflows/release.yml` fires on the tag, not on a green check.
 
 ## 1. Version — four files, one number
 
@@ -42,7 +42,7 @@ This is the step that gets skipped. `ROADMAP.md` and the vault both cite shipped
 grep -rn 'CHANGELOG `\[Unreleased\]`\|`\[Unreleased\]` CHANGELOG' ROADMAP.md docs/
 ```
 
-Also prune `ROADMAP.md` of anything this release landed — it tracks only what's planned, never what shipped (see [[Home]] and the record-keeping rule in CLAUDE.md).
+Also prune `ROADMAP.md` of anything this release landed — it tracks only what's planned, never what shipped (see [[Home]] and the record-keeping rule in AGENTS.md).
 
 ## 4. Commit and tag
 

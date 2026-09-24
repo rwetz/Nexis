@@ -9,7 +9,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 
 **Division of labor (do not duplicate):**
 
-- `CLAUDE.md` (repo root) — invariants, pitfalls, pre-push checklist. Authoritative.
+- `AGENTS.md` (repo root) — invariants, pitfalls, pre-push checklist. Authoritative.
 - `CHANGELOG.md` — the record of what shipped. Authoritative.
 - **This vault** — architecture maps, subsystem guides, cross-cutting flows, decision records, runbooks.
 

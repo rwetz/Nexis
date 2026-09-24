@@ -12,7 +12,7 @@ The chat/agent feature. Built on the Vercel AI SDK (`ai` package); everything ru
 `lib/agent.ts:runAgentStream` is the single entry point for a chat turn. Order matters:
 
 1. `buildConfiguredLanguageModel` — resolves provider + model (cloud keys or local endpoints: LM Studio, Ollama, vLLM, MLX, SGLang, xLLM, OpenAI-compatible)
-2. `convertToModelMessages` → `pruneMessages({reasoning: "all", emptyMessages: "remove"})` — **must stay before compaction** (CLAUDE.md pitfall #3; Cerebras rejects reasoning blocks in history)
+2. `convertToModelMessages` → `pruneMessages({reasoning: "all", emptyMessages: "remove"})` — **must stay before compaction** (AGENTS.md pitfall #3; Cerebras rejects reasoning blocks in history)
 3. `compactModelMessagesDetailed` (`lib/compact.ts`) — context-limit compaction; byte estimation goes through `safeJsonLength` (pitfall #11 — tool outputs are untrusted, may be circular)
 4. system prompt assembly (`buildStableSystem` + optional plan-mode prompt) → `applyCacheBreakpoints` → `streamText` with `buildTools`, capped at `MAX_AGENT_STEPS`
 
@@ -53,4 +53,4 @@ The AI surface people actually see is `AiMiniWindow` (the floating card opened b
 
 ## Related
 
-[[ipc-surface]] · [[settings-sync]] (model/provider prefs live there) · CLAUDE.md pitfalls #3, #5, #10, #11
+[[ipc-surface]] · [[settings-sync]] (model/provider prefs live there) · AGENTS.md pitfalls #3, #5, #10, #11

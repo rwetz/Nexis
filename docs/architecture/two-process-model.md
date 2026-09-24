@@ -105,7 +105,7 @@ The main window is not the only webview. The Settings window and any secondary w
 `window/openNewWindow.ts` are **separate webview processes** with their own JS heap, their own Zustand
 stores, and their own copy of every hydrated preference.
 
-The consequence bites often enough that it's [pitfall #2](../../CLAUDE.md) in the invariants doc: writing
+The consequence bites often enough that it's [pitfall #2](../../AGENTS.md) in the invariants doc: writing
 a preference to disk does *not* update the other window. `LazyStore.onChange` only fires in the process
 that wrote. Live sync requires an explicit broadcast, which is why every preference setter routes through
 `writePref()` — it persists *and* emits `nexis://prefs-changed`.
@@ -149,4 +149,4 @@ repeat their platform chrome options explicitly — they do not inherit the `tau
 ## Related
 
 - Vault: [ipc-surface](../vault/maps/ipc-surface.md) · [rust-modules](../vault/maps/rust-modules.md) · [frontend-modules](../vault/maps/frontend-modules.md) · [window-chrome](../vault/subsystems/window-chrome.md)
-- Invariants: [CLAUDE.md](../../CLAUDE.md) pitfalls #2 (cross-window sync), #4 (subprocess construction)
+- Invariants: [AGENTS.md](../../AGENTS.md) pitfalls #2 (cross-window sync), #4 (subprocess construction)

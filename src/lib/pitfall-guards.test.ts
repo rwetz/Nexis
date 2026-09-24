@@ -4,13 +4,13 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 //
-// Tripwire tests for the frontend pitfalls documented in CLAUDE.md.
+// Tripwire tests for the frontend pitfalls documented in AGENTS.md.
 //
 // These scan the source tree because the invariants they protect are
 // architectural (which file is allowed to call what), not behavioral —
 // a unit test on today's code can't see tomorrow's new call site.
 //
-// If a test here fails: do NOT weaken or delete the test. Open CLAUDE.md,
+// If a test here fails: do NOT weaken or delete the test. Open AGENTS.md,
 // read the pitfall named in the failure message, and restore the invariant.
 // Every one of these guards a bug that shipped once.
 
@@ -46,7 +46,7 @@ function sourceFiles(): Array<[string, string]> {
   return out;
 }
 
-describe("CLAUDE.md pitfall tripwires (frontend)", () => {
+describe("AGENTS.md pitfall tripwires (frontend)", () => {
   // Pitfall #1C: pty_open on a cwd outside the authorized workspace roots
   // fails silently and leaves a blank terminal. openPty() in pty-bridge.ts
   // calls workspace_authorize first; any new caller that invokes pty_open
@@ -61,7 +61,7 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
       `these files invoke pty_open directly — route new PTY opens through openPty() ` +
         `in src/modules/terminal/lib/pty-bridge.ts, which pre-authorizes the cwd via ` +
         `workspace_authorize; a direct pty_open on an unauthorized cwd silently ` +
-        `produces a blank terminal (CLAUDE.md pitfall #1C)`,
+        `produces a blank terminal (AGENTS.md pitfall #1C)`,
     ).toEqual([]);
   });
 
@@ -100,7 +100,7 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
     expect(
       body.includes("emit(PREFS_CHANGED_EVENT"),
       "writePref() must emit PREFS_CHANGED_EVENT so other windows see the change " +
-        "(CLAUDE.md pitfall #2)",
+        "(AGENTS.md pitfall #2)",
     ).toBe(true);
 
     for (const match of store.matchAll(/store\.(set|save)\(/g)) {
@@ -109,7 +109,7 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
         inWritePref,
         `store.${match[1]}() called outside writePref() — raw writes never reach ` +
           `other windows; always route preference writes through writePref() ` +
-          `(CLAUDE.md pitfall #2)`,
+          `(AGENTS.md pitfall #2)`,
       ).toBe(true);
     }
   });
@@ -126,7 +126,7 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
       /\bdisabled\s*[={]/.test(jsx),
       "do not put `disabled` on the composer textarea — it blurs the input and " +
         "steals keyboard focus on Windows while the agent streams; indicate busy " +
-        "state with CSS instead (CLAUDE.md pitfall #5)",
+        "state with CSS instead (AGENTS.md pitfall #5)",
     ).toBe(false);
   });
 
@@ -138,7 +138,7 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
       agent.includes("pruneMessages") && agent.includes('reasoning: "all"'),
       'agent.ts must call pruneMessages({ reasoning: "all", ... }) on history ' +
         "before compaction — some providers reject prior-turn reasoning blocks " +
-        "(CLAUDE.md pitfall #3)",
+        "(AGENTS.md pitfall #3)",
     ).toBe(true);
   });
 
@@ -163,7 +163,7 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
       `selector returns a new reference on every call — React re-renders forever ` +
         `("Maximum update depth exceeded", blank screen). Select the stable store ` +
         `reference and derive in the render body, or wrap the selector in useShallow ` +
-        `(CLAUDE.md pitfall #14):\n${offenders.join("\n")}`,
+        `(AGENTS.md pitfall #14):\n${offenders.join("\n")}`,
     ).toEqual([]);
   });
 
@@ -179,7 +179,7 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
       exemptRule.test(css),
       "globals.css must keep the `.zoom-content .cm-editor { zoom: calc(1 / " +
         "var(--app-zoom, 1)) }` exemption — without it, CSS zoom makes every " +
-        "editor click land on the wrong line on WebKitGTK (CLAUDE.md pitfall #15)",
+        "editor click land on the wrong line on WebKitGTK (AGENTS.md pitfall #15)",
     ).toBe(true);
 
     const theme = readSrc("modules/editor/lib/extensions.ts");
@@ -187,7 +187,7 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
       /fontSize:\s*"calc\([^"]*var\(--app-zoom/.test(theme),
       "the shared editor theme must scale .cm-scroller font-size by " +
         "var(--app-zoom) — the editor is zoom-exempt, so this is the only way " +
-        "app zoom reaches the code (CLAUDE.md pitfall #15)",
+        "app zoom reaches the code (AGENTS.md pitfall #15)",
     ).toBe(true);
   });
 
@@ -208,7 +208,7 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
       deps?.[0].includes("initialCwd"),
       "the terminal attach effect must not depend on initialCwd: it changes on " +
         "every directory change, and re-running the effect tears the leaf off " +
-        "its renderer slot and resets the buffer (CLAUDE.md pitfall #22)",
+        "its renderer slot and resets the buffer (AGENTS.md pitfall #22)",
     ).toBe(false);
 
     // The other half: the value still has to reach ensureSession.
@@ -516,7 +516,7 @@ describe("CLAUDE.md pitfall tripwires (frontend)", () => {
       /className="zoom-exempt/.test(src),
       "the SvgCanvas viewport must stay `zoom-exempt` — under an ancestor CSS " +
         "zoom, getScreenCTM/clientWidth and pointer clientX stop agreeing, " +
-        "which is the same class of bug as CLAUDE.md pitfall #15",
+        "which is the same class of bug as AGENTS.md pitfall #15",
     ).toBe(true);
 
     expect(

@@ -5,7 +5,7 @@ description: End-to-end sequence when a terminal tab opens — from tab UI throu
 
 # Flow: terminal tab opens
 
-The highest-stakes flow in the app — four distinct root causes for "blank terminal" live along it (CLAUDE.md pitfall #1).
+The highest-stakes flow in the app — four distinct root causes for "blank terminal" live along it (AGENTS.md pitfall #1).
 
 1. **Tab created.** `tabs/lib/useWorkspaceCwd.ts` decides the cwd (inherits from the active tab's shell cwd).
 2. **Session hook.** `terminal/lib/useTerminalSession.ts` drives the xterm.js lifecycle and calls `openPty`.
@@ -15,7 +15,7 @@ The highest-stakes flow in the app — four distinct root causes for "blank term
 6. **Output flows** through the data Channel → `handlers.onData` → xterm.js write.
 7. **Close.** `pty_close` drops the session on a **detached thread** via `session::drop_session` (never inline `drop` — #1A), killer-lock failures tolerated (pitfall #9).
 
-**Failure diagnosis:** any `pty_open` error is logged as `[nexis] openPty failed:` in the devtools console; then follow the 5-step checklist in CLAUDE.md pitfall #1.
+**Failure diagnosis:** any `pty_open` error is logged as `[nexis] openPty failed:` in the devtools console; then follow the 5-step checklist in AGENTS.md pitfall #1.
 
 ## Related
 

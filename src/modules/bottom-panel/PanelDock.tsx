@@ -23,7 +23,7 @@
  *   terminal underneath keeps its size, so no PTY is resized at all.
  * - **Dragging** measures in CSS pixels: this sits under `.zoom-content`, so
  *   a pointer delta in client pixels is divided by the rendered-to-layout
- *   ratio (the same zoom trap as CLAUDE.md pitfall #15).
+ *   ratio (the same zoom trap as AGENTS.md pitfall #15).
  */
 
 import { cn } from "@/lib/utils";

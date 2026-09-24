@@ -8,7 +8,7 @@
  * Bridge to the external `nexis-ml` engine (see ML_SUITE.md).
  *
  * Spawning goes through the Rust `ml_*` commands which stream protocol
- * events back as Tauri events. Two CLAUDE.md pitfalls are load-bearing
+ * events back as Tauri events. Two AGENTS.md pitfalls are load-bearing
  * here:
  *
  *  - #1C: `workspace_authorize` is called on the project dir BEFORE

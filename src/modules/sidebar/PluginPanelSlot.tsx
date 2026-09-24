@@ -29,7 +29,7 @@ type Props = {
  */
 export function PluginPanelSlot({ view, onShowExplorer }: Props) {
   // Both selectors return their store's own reference; deriving happens
-  // below, outside the selector (CLAUDE.md pitfall #14).
+  // below, outside the selector (AGENTS.md pitfall #14).
   const panels = usePluginRegistry((s) => s.panels);
   const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
 

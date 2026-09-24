@@ -9,12 +9,12 @@ As of 2026-07. One-liners are orientation, not spec — verify in code, and fix 
 
 ## Core surfaces
 
-- `terminal` — xterm.js terminal UI; `lib/pty-bridge.ts` is the IPC seam to the Rust PTY (see [[pty]] and CLAUDE.md pitfall #1)
+- `terminal` — xterm.js terminal UI; `lib/pty-bridge.ts` is the IPC seam to the Rust PTY (see [[pty]] and AGENTS.md pitfall #1)
 - `editor` — code editor surface
 - `ai` — AI chat/agent: `lib/agent.ts` (agent loop, reasoning pruning), `lib/compact.ts` (context compaction), `tools/` (tool impls incl. `shell.ts` session shells), `agents/`, `store/`
 - `explorer` — file tree / workspace browser
 - `tabs` — tab management (interacts with PTY open/close lifecycle)
-- `settings` — preferences UI + `store.ts`; **all setters must route through `writePref()`** (CLAUDE.md pitfall #2)
+- `settings` — preferences UI + `store.ts`; **all setters must route through `writePref()`** (AGENTS.md pitfall #2)
 
 ## Dev-tool integrations
 
@@ -30,7 +30,7 @@ As of 2026-07. One-liners are orientation, not spec — verify in code, and fix 
 ## Workspace & navigation
 
 - `workspace` — workspace roots/authorization (frontend side of `workspace.rs`)
-- `sidebar` · `header` · `statusbar` (see CLAUDE.md pitfall #14 — Zustand selector rule) · `window` · `shortcuts` · `symbol-search` · `recent-files` · `bookmarks` · `workspace-notes`
+- `sidebar` · `header` · `statusbar` (see AGENTS.md pitfall #14 — Zustand selector rule) · `window` · `shortcuts` · `symbol-search` · `recent-files` · `bookmarks` · `workspace-notes`
 
 ## Content & misc
 
@@ -40,7 +40,7 @@ As of 2026-07. One-liners are orientation, not spec — verify in code, and fix 
 
 ## Shared (outside modules/)
 
-- `src/lib/path.ts` — canonical `dirname`/`basename` helpers; **never write a local copy** (CLAUDE.md pitfall #12)
+- `src/lib/path.ts` — canonical `dirname`/`basename` helpers; **never write a local copy** (AGENTS.md pitfall #12)
 - `src/lib/pitfall-guards.test.ts` — frontend tripwire suite; never weaken
 - `src/lib/plugins/` — contribution contracts, registry (`usePluginRegistry`) and activation host; `src/plugins/` contains first-party plugin implementations
 - `src/app/App.tsx` — workbench composition and the built-in sidebar render chain; see [[architecture-boundaries]] for extraction seams

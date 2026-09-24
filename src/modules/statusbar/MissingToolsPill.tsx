@@ -46,7 +46,7 @@ export function MissingToolsPill() {
   const [note, setNote] = useState<string | null>(null);
 
   // Both selectors return the store's own arrays; the derived list is built
-  // here in the render body (CLAUDE.md pitfall #14).
+  // here in the render body (AGENTS.md pitfall #14).
   const tools = visibleMissingTools(missing, dismissed);
   if (tools.length === 0) return null;
 
