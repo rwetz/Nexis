@@ -44,7 +44,7 @@ The seam is a DOM event: `signalOnboardingStep(id)` is a bare `dispatchEvent`, a
 
 Current emitters: `App.tsx` (`ai.open`, `workspace.open`, `files.quickOpen`) and `modules/terminal/lib/osc-handlers.ts` (`terminal.run`, on a finished command with a real exit status). Steps the app cannot observe from a distance keep a manual checkbox.
 
-Progress goes through `writePref()`, so it syncs across windows — see [[settings-sync]] and CLAUDE.md pitfall #2.
+Progress goes through `writePref()`, so it syncs across windows — see [[settings-sync]] and AGENTS.md pitfall #2.
 
 ## Adding a step
 

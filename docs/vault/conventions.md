@@ -22,7 +22,7 @@ Nexis is large (~45 frontend modules, ~15 Rust modules). An agent starting cold 
    ```
 4. **Link liberally with `[[wiki-links]]`.** A link to a note that doesn't exist yet is fine — it marks something worth writing.
 5. **Reference code as `path/to/file.rs:symbol`**, not by pasting code. Pasted code goes stale silently; paths get checked when followed.
-6. **Point at authority, don't copy it.** If CLAUDE.md or CHANGELOG covers something, link/mention it — never restate it here where it can drift.
+6. **Point at authority, don't copy it.** If AGENTS.md or CHANGELOG covers something, link/mention it — never restate it here where it can drift.
 7. **Convert relative dates to absolute** ("as of 2026-07", not "recently").
 
 ## Maintenance protocol (agents)

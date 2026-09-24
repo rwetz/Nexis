@@ -42,7 +42,6 @@ wdio-*.json
 docs/vault/.obsidian/
 .claude/settings.local.json
 
-# Per-assistant duplicates of CLAUDE.md (AGENTS.md is a Codex-facing copy).
-# CLAUDE.md is the one tracked copy of the invariants -- a second one in git
-# is a second thing to keep in sync, and the pitfall numbering drifts first.
-AGENTS.md
+# Local generated output and fixture scratch files
+/brag-output/
+/test/

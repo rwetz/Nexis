@@ -28,7 +28,7 @@ Two engines answer to the same name and have different feature sets — the Pyth
 
 ## Invariants / gotchas
 
-- **Every engine command is workspace-scoped.** `ml_detect` / `ml_env` / `ml_spawn` / `ml_install` / `py_detect_envs` take `workspace` and build their child through `ml.rs:env_command`, which routes a WSL workspace through `wsl.exe`. `ml_spawn` authorizes the *host* view of the project dir but hands the child the *Linux* path. See CLAUDE.md pitfall #20 before adding a command here.
+- **Every engine command is workspace-scoped.** `ml_detect` / `ml_env` / `ml_spawn` / `ml_install` / `py_detect_envs` take `workspace` and build their child through `ml.rs:env_command`, which routes a WSL workspace through `wsl.exe`. `ml_spawn` authorizes the *host* view of the project dir but hands the child the *Linux* path. See AGENTS.md pitfall #20 before adding a command here.
 - ML project discovery, `train.toml`, `PROJECT.md`, run metadata, and metrics reads go through `platform/filesystem.ts`. Do not reconstruct `WorkspaceEnv` payloads in the store or UI.
 - **Anything host-scoped is hidden, not silently offered, in a WSL workspace** — the pinned download, the managed binary, its uninstall row. A Windows `.exe` in the host's app-data dir is unreachable from inside a distro. Hiding alone left WSL with no path at all, so `WslEngineSteps` gives the commands instead.
 - **`lib/pythonSupport.ts` only ever warns.** Its torch version bounds are a heuristic that goes stale in one direction (a new CPython gains wheels later), so a stale bound must never block an environment that already works.

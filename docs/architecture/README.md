@@ -2,7 +2,7 @@
 
 How Nexis works, subsystem by subsystem. These are narrative guides — read them to build a mental model
 before changing something. For "where does X live", use the [vault](../vault/Home.md) instead; for
-invariants you must not break, [CLAUDE.md](../../CLAUDE.md) is authoritative.
+invariants you must not break, [AGENTS.md](../../AGENTS.md) is authoritative.
 
 ## Reading order
 

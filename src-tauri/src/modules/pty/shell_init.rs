@@ -636,7 +636,7 @@ mod windows {
 
     /// Write a shell-integration script that lives *inside* a WSL distro.
     ///
-    /// Pitfall #17, third occurrence — and the one CLAUDE.md explicitly (and
+    /// Pitfall #17, third occurrence — and the one AGENTS.md explicitly (and
     /// wrongly) exempted: the atomic write ends in `fs::rename`, which the WSL
     /// 9P redirector behind `\\wsl.localhost\<distro>\…` rejects with
     /// ERROR_NOT_SAME_DEVICE (os error 17, *not* the Linux `EEXIST` the number
@@ -1102,7 +1102,7 @@ mod windows {
             }
             // The profile must be dot-sourced from the env var, never via a
             // file argument: the script-mode → interactive-mode transition
-            // races ConPTY output init and drops the first prompt (CLAUDE.md
+            // races ConPTY output init and drops the first prompt (AGENTS.md
             // pitfall #1B). Asserted as a full flag allowlist — stronger than
             // a single missing-flag check and it keeps this source free of a
             // certain two-word literal the pitfall_1b scanner forbids.

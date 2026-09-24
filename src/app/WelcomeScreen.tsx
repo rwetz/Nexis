@@ -56,7 +56,7 @@ function hexToHue(hex: string): number {
  * expecting `rgb()` silently fails and every stop collapses to the fallback
  * — which is exactly why the wordmark came out one flat indigo instead of a
  * spectrum. `resolveCssColor` round-trips through a canvas pixel, whose
- * bytes are always sRGB. Same trap CLAUDE.md records for Atlas's renderer.
+ * bytes are always sRGB. Same trap AGENTS.md records for Atlas's renderer.
  */
 function rainbowStops(variant = 0): string[] {
   const { hue } = RAINBOW_VARIANTS[variant % RAINBOW_VARIANTS.length];

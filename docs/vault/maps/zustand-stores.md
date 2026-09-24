@@ -5,7 +5,7 @@ description: Inventory of all Zustand stores — what state each owns and where 
 
 # Zustand stores
 
-All state stores, as of 2026-07 (enumerate fresh with `grep -rn "= create" src --include="*.ts*"`). **Selector rule from CLAUDE.md pitfall #14 applies to every one:** selectors must return stable references — no inline `.filter()`/`.map()`/spread, or you get the infinite `getSnapshot` loop / blank screen. Use `useShallow` for derived selections.
+All state stores, as of 2026-07 (enumerate fresh with `grep -rn "= create" src --include="*.ts*"`). **Selector rule from AGENTS.md pitfall #14 applies to every one:** selectors must return stable references — no inline `.filter()`/`.map()`/spread, or you get the infinite `getSnapshot` loop / blank screen. Use `useShallow` for derived selections.
 
 ## AI (`src/modules/ai/store/`)
 

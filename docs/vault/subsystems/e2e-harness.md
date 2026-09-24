@@ -76,7 +76,7 @@ As of 2026-09-03 `e2e.yml` also runs on pull requests to `main`, **path-scoped**
 - `e2e/specs/terminal.test.ts` has 3 pre-existing type errors (WDIO's `ChainablePromiseArray.length` resolving as `Promise<number>`). Runtime is unaffected. Nothing typechecks `e2e/` in CI — `pnpm exec tsc --noEmit` uses the root tsconfig, which does not include it; check it by hand with `-p e2e/tsconfig.json`.
 - msedgedriver is pinned to the installed **WebView2 Runtime** version, deliberately not the Edge browser version (`webview2RuntimeVersion()`). That pin is still right even though it was not the bug.
 
-Related: [[release]], and the pitfall list in CLAUDE.md.
+Related: [[release]], and the pitfall list in AGENTS.md.
 
 ## Temp paths on the Windows runner are 8.3 short names
 

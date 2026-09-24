@@ -63,7 +63,7 @@ export function SidebarRail({
   onOpenHistory,
 }: Props) {
   // Selectors return the stores' own arrays — filtering happens locally
-  // (CLAUDE.md pitfall #14).
+  // (AGENTS.md pitfall #14).
   const enabledPacks = usePreferencesStore((s) => s.enabledPacks);
   const registryPanels = usePluginRegistry((s) => s.panels);
 

@@ -212,7 +212,7 @@ A `burn`-based (or `ort`-based, for ONNX inference) single-binary engine impleme
 
 ---
 
-## Pitfalls to carry over (from CLAUDE.md)
+## Pitfalls to carry over (from AGENTS.md)
 
 - **#4 / #1D — `hide_console`:** every engine spawn (`probe --version`, `train`, `serve`) is a new `Command::new()` on Windows and **must** go through `crate::modules::proc::hide_console`, or it can blank an active terminal. If the spawn path reuses `shell/background.rs`, this is already handled — prefer that.
 - **#1C — `workspace_authorize`:** if the engine is ever spawned with a user-picked project dir as cwd, authorize it first or the spawn fails silently.

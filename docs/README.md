@@ -9,8 +9,9 @@ Two audiences, two shapes of documentation. Pick the one that matches what you'r
 | **Navigate** the codebase — where does X live, what calls what | **[vault/](vault/Home.md)** — a linked map, best in Obsidian |
 | Know **what shipped** | [CHANGELOG.md](../CHANGELOG.md) — the record |
 | Know **what's planned** | [ROADMAP.md](../ROADMAP.md) — a to-do list, not a record |
-| Avoid a **known landmine** | [CLAUDE.md](../CLAUDE.md) — invariants and pitfalls, authoritative |
+| Avoid a **known landmine** | [AGENTS.md](../AGENTS.md) — invariants and pitfalls, authoritative |
 | Add your own **AI agent tool** | [architecture/custom-ai-tools.md](architecture/custom-ai-tools.md) |
+| Exchange **Lumen palettes, scenes, and workspace handoffs** | [interop/lumen.md](interop/lumen.md) |
 | Use or extend the **ML Lab** | [ML_LAB_GUIDE.md](ML_LAB_GUIDE.md) (user guide) · [ML_SUITE.md](ML_SUITE.md) (protocol + design record) |
 
 ## architecture/ vs vault/
@@ -37,7 +38,7 @@ text, so it's meant to be opened in a linking editor rather than browsed here. S
 [Reading the vault in Obsidian](#reading-the-vault-in-obsidian) below.
 
 The rule between them: architecture guides link *down* into the vault for file paths, and the vault links
-*out* to `CLAUDE.md` for invariants. Nothing restates its source of truth — if you find a claim here that
+*out* to `AGENTS.md` for invariants. Nothing restates its source of truth — if you find a claim here that
 contradicts the code, fix it or delete it. A stale map is worse than no map.
 
 ## Reading the vault in Obsidian
@@ -63,4 +64,4 @@ wiki-link extensions that resolve `[[links]]` the same way.
   GitHub), and link to vault notes for file-level detail rather than inlining paths that will drift.
 - Adding a vault note: read [vault/conventions.md](vault/conventions.md) first. Frontmatter is required,
   filenames are kebab-case, notes stay under ~100 lines.
-- Changing behavior: the [CHANGELOG entry](../CLAUDE.md) is part of the change, not a follow-up.
+- Changing behavior: the [CHANGELOG entry](../CHANGELOG.md) is part of the change, not a follow-up.

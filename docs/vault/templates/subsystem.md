@@ -14,7 +14,7 @@ description: <one line — what this subsystem is; used to judge relevance witho
 
 ## Invariants / gotchas
 
-- <Things that must stay true; link to CLAUDE.md pitfalls instead of restating them>
+- <Things that must stay true; link to AGENTS.md pitfalls instead of restating them>
 
 ## Debugging entry points
 

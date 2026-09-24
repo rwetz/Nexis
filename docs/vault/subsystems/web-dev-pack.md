@@ -38,7 +38,7 @@ Three things that are easy to get wrong and are already decided:
 
 - **Widths are CSS pixels, not physical device pixels.** An iPhone 15 panel is 1179 physical px and every media query reads it as 393.
 - **One scale for all frames, never one each.** Per-frame fitting would render a 390px phone and a 1440px desktop at the same on-screen width, destroying the only thing side-by-side is for.
-- **`transform: scale()`, never CSS `zoom`.** Both shrink the box; only transform keeps hit-testing correct. A `zoom` here reproduces CLAUDE.md pitfall #15 *inside the previewed page*, where it gets blamed on the user's own app. There is a test.
+- **`transform: scale()`, never CSS `zoom`.** Both shrink the box; only transform keeps hit-testing correct. A `zoom` here reproduces AGENTS.md pitfall #15 *inside the previewed page*, where it gets blamed on the user's own app. There is a test.
 
 The iframe `sandbox` is a single shared constant (`PREVIEW_SANDBOX`) so the frames cannot drift apart. `PreviewPane.test.ts` asserts there is exactly **one** definition, that every iframe routes through it, and that no inline `sandbox="…"` literal exists — the previous version matched only the first `<iframe>` and could not have caught a second frame declaring a weaker sandbox.
 

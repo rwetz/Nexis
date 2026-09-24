@@ -41,7 +41,7 @@ export function SystemMonitorPanel() {
   const coreCount = sample?.cpu_per_core.length ?? 0;
 
   // Filtering is local to the render body — a Zustand-style derived value in
-  // a memo is fine here, but see CLAUDE.md pitfall #14 before moving any of
+  // a memo is fine here, but see AGENTS.md pitfall #14 before moving any of
   // this into a store selector.
   const rows = useMemo(() => {
     const list = sample?.processes ?? [];

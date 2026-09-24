@@ -29,6 +29,8 @@ import {
   importBgImageFromFile,
 } from "@/modules/theme/bgImageStore";
 import { deleteCustomTheme, saveCustomTheme } from "@/modules/theme/customThemes";
+import { exportLumenPalette, importLumenPalette } from "@/modules/theme/lumenExchange";
+import { parseLumenWorkspaceHandoff } from "@/modules/theme/lumenWorkspace";
 import { deleteThemeFile, emitThemeEdit } from "@/modules/theme/themeFiles";
 import {
   getBuiltinTheme,
@@ -39,6 +41,9 @@ import { validateTheme } from "@/modules/theme/validateTheme";
 import { DEFAULT_THEME_ID } from "@/modules/theme/types";
 import type { Theme } from "@/modules/theme/types";
 import { desktopWindow } from "@/platform/desktop";
+import { openDirectory, saveFile } from "@/platform/dialogs";
+import { hostFilesystem } from "@/platform/filesystem";
+import { joinHostPath } from "@/platform/paths";
 import { useRef, useState } from "react";
 import { SectionHeader } from "../components/SectionHeader";
 import { SettingRow } from "../components/SettingRow";
@@ -104,8 +109,10 @@ export function ThemesSection() {
   const communityThemes = listCommunityThemes();
 
   const [importError, setImportError] = useState<string | null>(null);
+  const [workspaceStatus, setWorkspaceStatus] = useState<string | null>(null);
   const [bgError, setBgError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const workspaceInputRef = useRef<HTMLInputElement | null>(null);
   const bgInputRef = useRef<HTMLInputElement | null>(null);
 
   const rainbowAccent = usePreferencesStore((s) => s.rainbowAccent);
@@ -124,6 +131,12 @@ export function ThemesSection() {
       try {
         const text = await file.text();
         const parsed = JSON.parse(text);
+        if (parsed?.format === "nexis-lumen-palette" || parsed?.format === "nexis-lumen-scene") {
+          const theme = importLumenPalette(parsed);
+          await saveCustomTheme(theme);
+          setThemeId(theme.id);
+          continue;
+        }
         const result = validateTheme(parsed);
         if (!result.ok) {
           setImportError(`${file.name}: ${result.error}`);
@@ -141,6 +154,48 @@ export function ThemesSection() {
   };
 
   const onPickThemeFile = () => fileInputRef.current?.click();
+
+  const handleWorkspaceHandoff = async (file: File | undefined) => {
+    setImportError(null);
+    setWorkspaceStatus(null);
+    if (!file) return;
+    try {
+      if (file.size > 64_000) throw new Error("Handoff file is too large");
+      const handoff = parseLumenWorkspaceHandoff(JSON.parse(await file.text()));
+      const root = await openDirectory();
+      if (!root) return;
+      if ((await hostFilesystem.stat(root)).kind !== "dir") throw new Error("Choose a local folder");
+      const [folder, filename] = handoff.scenePath.split("/");
+      const destinationDir = await joinHostPath(root, folder);
+      const directory = await hostFilesystem.stat(destinationDir).catch(() => null);
+      if (directory && directory.kind !== "dir") throw new Error("The Lumen destination is not a folder");
+      if (!directory) await hostFilesystem.createDir(destinationDir);
+      const destination = await joinHostPath(destinationDir, filename);
+      const existing = await hostFilesystem.stat(destination).catch(() => null);
+      if (existing) throw new Error("Scene already exists in this folder; choose another folder or rename the existing file");
+      await hostFilesystem.writeFile(destination, JSON.stringify(handoff.scene, null, 2), "lumen-workspace-handoff");
+      await saveCustomTheme(handoff.theme);
+      setThemeId(handoff.theme.id);
+      setWorkspaceStatus(`Scene saved to ${destination}`);
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "Could not import workspace handoff");
+    }
+  };
+
+  const onExportLumenPalette = async () => {
+    setImportError(null);
+    try {
+      const name = customThemes.find((theme) => theme.id === themeId)?.name ?? getBuiltinTheme(themeId)?.name ?? "Nexis Default";
+      const payload = exportLumenPalette(name);
+      const path = await saveFile({
+        defaultPath: `${themeId}.nexis-lumen.json`,
+        filters: [{ name: "JSON", extensions: ["json"] }],
+      });
+      if (path) await hostFilesystem.writeFile(path, JSON.stringify(payload, null, 2), "lumen-palette-export");
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "Could not export palette");
+    }
+  };
 
   const onRemoveCustomTheme = async (id: string) => {
     if (themeId === id) setThemeId(DEFAULT_THEME_ID);
@@ -220,9 +275,9 @@ export function ThemesSection() {
           void handleThemeFiles(e.dataTransfer.files);
         }}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Label>Theme</Label>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <Button
               variant="outline"
               size="sm"
@@ -238,25 +293,34 @@ export function ThemesSection() {
               className="h-7 px-2 text-[11px]"
               onClick={onPickThemeFile}
             >
-              Import .nexis-theme
+              Import theme / Lumen palette
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 px-2 text-[11px]" onClick={() => void onExportLumenPalette()}>
+              Export for Lumen
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 px-2 text-[11px]" onClick={() => workspaceInputRef.current?.click()}>
+              Import Lumen handoff
             </Button>
           </div>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".nexis-theme,.json,application/json"
+            accept=".nexis-theme,.nexis-lumen.json,.json,application/json"
             className="hidden"
             onChange={(e) => {
               void handleThemeFiles(e.target.files);
               e.target.value = "";
             }}
           />
+          <input ref={workspaceInputRef} type="file" accept=".json,application/json" className="hidden"
+            onChange={(e) => { void handleWorkspaceHandoff(e.target.files?.[0]); e.target.value = ""; }} />
         </div>
         {importError ? (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-1.5 text-[11.5px] text-destructive">
             {importError}
           </div>
         ) : null}
+        {workspaceStatus ? <div className="text-[11.5px] text-muted-foreground">{workspaceStatus}</div> : null}
         <ThemeGroup
           label="Nexis"
           hint="Designed as a set — one contrast ramp across six hue families."

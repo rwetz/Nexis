@@ -8,7 +8,7 @@ import { filesystem } from "@/platform/filesystem";
 /**
  * A folder of SVGs, seen as a set rather than as files.
  *
- * The panel this codebase needed and did not have. CLAUDE.md pitfall #18 is
+ * The panel this codebase needed and did not have. AGENTS.md pitfall #18 is
  * the story of an icon surface that drifted to 136 distinct ideas across 13
  * pixel sizes and 12 stroke weights, one harmless-looking addition at a time,
  * because nothing ever looked at them together. Two things here are the

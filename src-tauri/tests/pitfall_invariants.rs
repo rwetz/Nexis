@@ -1,4 +1,4 @@
-//! Tripwire tests for the terminal-corruption pitfalls documented in CLAUDE.md.
+//! Tripwire tests for the terminal-corruption pitfalls documented in AGENTS.md.
 //!
 //! These deliberately scan the source tree: the invariants they protect are
 //! lifecycle/ordering properties (ConPTY create/close serialization, console
@@ -7,7 +7,7 @@
 //! by refactors that looked harmless.
 //!
 //! If a test in this file fails: do NOT weaken or delete the test. Open
-//! CLAUDE.md, read the pitfall named in the failure message, and restore the
+//! AGENTS.md, read the pitfall named in the failure message, and restore the
 //! invariant in the code. Every one of these guards a bug that shipped once.
 
 use std::fs;
@@ -46,7 +46,7 @@ fn fn_body<'a>(source: &'a str, fn_sig_start: &str, file: &str) -> &'a str {
         panic!(
             "{file}: `{fn_sig_start}` not found — if the function was renamed, update \
              tests/pitfall_invariants.rs to track it; if it was removed, re-read the \
-             matching pitfall in CLAUDE.md first"
+             matching pitfall in AGENTS.md first"
         )
     });
     let rest = &source[start..];
@@ -54,7 +54,7 @@ fn fn_body<'a>(source: &'a str, fn_sig_start: &str, file: &str) -> &'a str {
     &rest[..end]
 }
 
-/// CLAUDE.md pitfalls #1D / #4 — every non-PTY subprocess must be built via
+/// AGENTS.md pitfalls #1D / #4 — every non-PTY subprocess must be built via
 /// `crate::modules::proc::command()`, which pre-applies CREATE_NO_WINDOW.
 /// A raw `Command::new` makes Windows pop a console that can corrupt an
 /// active ConPTY and blank open terminal tabs. (clippy `disallowed-methods`
@@ -79,13 +79,13 @@ fn pitfall_1d_command_new_only_in_proc_rs() {
         offenders.is_empty(),
         "raw Command::new outside modules/proc.rs — spawning without CREATE_NO_WINDOW \
          flashes a console and can corrupt an active ConPTY, blanking open terminals \
-         (CLAUDE.md pitfalls #1D/#4). Build the command with \
+         (AGENTS.md pitfalls #1D/#4). Build the command with \
          crate::modules::proc::command() instead:\n{}",
         offenders.join("\n")
     );
 }
 
-/// CLAUDE.md pitfall #1A — ConPTY create and close must both hold
+/// AGENTS.md pitfall #1A — ConPTY create and close must both hold
 /// CONPTY_LIFECYCLE_LOCK. An overlapping CreatePseudoConsole/ClosePseudoConsole
 /// corrupts the new console so its shell never prints output.
 #[test]
@@ -94,14 +94,14 @@ fn pitfall_1a_conpty_lifecycle_lock_guards_create_and_close() {
     assert!(
         session.contains("static CONPTY_LIFECYCLE_LOCK"),
         "CONPTY_LIFECYCLE_LOCK is gone from pty/session.rs — removing it reintroduces \
-         the blank-terminal race (CLAUDE.md pitfall #1A)"
+         the blank-terminal race (AGENTS.md pitfall #1A)"
     );
 
     let spawn = fn_body(&session, "pub fn spawn(", "pty/session.rs");
     let lock_idx = spawn.find("CONPTY_LIFECYCLE_LOCK").unwrap_or_else(|| {
         panic!(
             "session::spawn() no longer takes CONPTY_LIFECYCLE_LOCK — the create side of \
-             the ConPTY race is unguarded (CLAUDE.md pitfall #1A)"
+             the ConPTY race is unguarded (AGENTS.md pitfall #1A)"
         )
     });
     let openpty_idx = spawn
@@ -111,18 +111,18 @@ fn pitfall_1a_conpty_lifecycle_lock_guards_create_and_close() {
         lock_idx < openpty_idx,
         "session::spawn() must acquire CONPTY_LIFECYCLE_LOCK BEFORE openpty() — \
          creating the pseudoconsole outside the lock reintroduces the blank-terminal \
-         race (CLAUDE.md pitfall #1A)"
+         race (AGENTS.md pitfall #1A)"
     );
 
     let drop_fn = fn_body(&session, "pub(super) fn drop_session", "pty/session.rs");
     assert!(
         drop_fn.contains("CONPTY_LIFECYCLE_LOCK"),
         "drop_session() no longer holds CONPTY_LIFECYCLE_LOCK — the close side of the \
-         ConPTY race is unguarded (CLAUDE.md pitfall #1A)"
+         ConPTY race is unguarded (AGENTS.md pitfall #1A)"
     );
 }
 
-/// CLAUDE.md pitfalls #1A + #9 — pty_close must (a) route the drop through
+/// AGENTS.md pitfalls #1A + #9 — pty_close must (a) route the drop through
 /// session::drop_session (which holds the lifecycle lock), (b) do it on a
 /// detached thread (ClosePseudoConsole can block until conhost drains, which
 /// would freeze the Tauri worker thread), and (c) never panic.
@@ -134,22 +134,22 @@ fn pitfall_1a_pty_close_drops_via_detached_drop_session() {
         body.contains("session::drop_session"),
         "pty_close must drop the session via session::drop_session so the drop holds \
          CONPTY_LIFECYCLE_LOCK — a direct drop(s) reintroduces the blank-terminal race \
-         (CLAUDE.md pitfall #1A)"
+         (AGENTS.md pitfall #1A)"
     );
     assert!(
         body.contains("thread::Builder"),
         "pty_close must drop the session on a detached thread — ClosePseudoConsole can \
-         block until conhost drains, freezing the Tauri worker thread (CLAUDE.md \
+         block until conhost drains, freezing the Tauri worker thread (AGENTS.md \
          pitfall #1A)"
     );
     assert!(
         !body.contains(".unwrap()") && !body.contains(".expect("),
         "pty_close runs on a Tauri worker thread: a panic there crashes the whole app \
-         (CLAUDE.md pitfall #9). Handle the error instead of unwrapping."
+         (AGENTS.md pitfall #9). Handle the error instead of unwrapping."
     );
 }
 
-/// CLAUDE.md pitfall #1C — pty_open must gate the requested cwd through
+/// AGENTS.md pitfall #1C — pty_open must gate the requested cwd through
 /// authorize_spawn_cwd; skipping it silently yields a blank terminal for any
 /// path outside the authorized workspace roots.
 #[test]
@@ -158,12 +158,12 @@ fn pitfall_1c_pty_open_authorizes_spawn_cwd() {
     let body = fn_body(&module, "pub async fn pty_open(", "pty/mod.rs");
     assert!(
         body.contains("authorize_spawn_cwd("),
-        "pty_open must call authorize_spawn_cwd on the requested cwd (CLAUDE.md \
+        "pty_open must call authorize_spawn_cwd on the requested cwd (AGENTS.md \
          pitfall #1C)"
     );
 }
 
-/// CLAUDE.md pitfall #1B — PowerShell must be launched with `-Command` (and
+/// AGENTS.md pitfall #1B — PowerShell must be launched with `-Command` (and
 /// the profile path in NEXIS_PWSH_PROFILE), never `-File profile.ps1`. The
 /// -File script→interactive transition races ConPTY output initialization and
 /// silently drops the first prompt.
@@ -172,18 +172,18 @@ fn pitfall_1b_powershell_launches_with_command_not_file() {
     let init = read_src("modules/pty/shell_init.rs");
     assert!(
         init.contains(r#"cmd.arg("-Command");"#),
-        "PowerShell must be launched via -Command (CLAUDE.md pitfall #1B)"
+        "PowerShell must be launched via -Command (AGENTS.md pitfall #1B)"
     );
     assert!(
         init.contains(r#"cmd.env("NEXIS_PWSH_PROFILE""#),
         "the PowerShell profile path must be passed via the NEXIS_PWSH_PROFILE env var, \
-         not interpolated into the command string (CLAUDE.md pitfall #1B)"
+         not interpolated into the command string (AGENTS.md pitfall #1B)"
     );
     assert!(
         !init.contains(r#""-File""#),
         "PowerShell must never be launched with -File — the script-mode → interactive \
          transition races ConPTY output initialization and eats the first prompt \
-         (CLAUDE.md pitfall #1B)"
+         (AGENTS.md pitfall #1B)"
     );
 }
 
@@ -315,7 +315,7 @@ fn pty_write_stays_sync_and_enqueue_only() {
     }
 }
 
-/// CLAUDE.md pitfall #8 — these subsystems share mutexes/RwLocks between
+/// AGENTS.md pitfall #8 — these subsystems share mutexes/RwLocks between
 /// reader threads and Tauri command handlers; a bare `.unwrap()` on a lock
 /// turns one panicked thread into a permanently dead subsystem (silent
 /// terminal, bricked shell tools, dead LSP/DAP) via poison cascade.
@@ -340,7 +340,7 @@ fn pitfall_8_no_lock_unwrap_in_shared_thread_modules() {
                     !line.contains(pat),
                     "{rel}:{}: use {}_or_else(|e| e.into_inner()) — a poisoned lock in \
                      this module must be recovered, not cascaded into a permanently \
-                     dead subsystem (CLAUDE.md pitfall #8)",
+                     dead subsystem (AGENTS.md pitfall #8)",
                     i + 1,
                     pat.trim_end_matches("()")
                 );
@@ -349,7 +349,7 @@ fn pitfall_8_no_lock_unwrap_in_shared_thread_modules() {
     }
 }
 
-/// CLAUDE.md pitfall #16 — a NUL separator inside a git `--format`/`--pretty`
+/// AGENTS.md pitfall #16 — a NUL separator inside a git `--format`/`--pretty`
 /// argument must be git's own escape (`%x00` for pretty formats, `%00` for
 /// for-each-ref), never a literal `\x00` in the Rust string.
 ///
@@ -383,13 +383,13 @@ fn pitfall_16_no_literal_nul_in_git_cli_args() {
         offenders.is_empty(),
         "literal NUL inside a git CLI argument — Command::spawn rejects interior nul \
          bytes, so git never runs and the feature silently returns nothing \
-         (CLAUDE.md pitfall #16). Use git's escape instead: `%x00` in a \
+         (AGENTS.md pitfall #16). Use git's escape instead: `%x00` in a \
          --format/--pretty log format, `%00` in a for-each-ref format:\n{}",
         offenders.join("\n")
     );
 }
 
-/// CLAUDE.md pitfall #19 — no emoji in the product.
+/// AGENTS.md pitfall #19 — no emoji in the product.
 ///
 /// Emoji render from the OS emoji font: wrong colour, wrong weight, a
 /// different glyph on every platform, and entirely outside the icon system
@@ -437,7 +437,7 @@ fn pitfall_19_no_emoji_in_rust_source() {
     }
     assert!(
         offenders.is_empty(),
-        "CLAUDE.md pitfall #19: emoji are banned in Nexis source — they ignore \
+        "AGENTS.md pitfall #19: emoji are banned in Nexis source — they ignore \
          the theme, differ per platform, and render as tofu in terminals with \
          no emoji font. Offenders: {offenders:?}"
     );
@@ -477,7 +477,7 @@ fn call_exprs<'a>(source: &'a str, name: &str) -> Vec<&'a str> {
     out
 }
 
-/// CLAUDE.md pitfall #21 — a WSL probe must read its answer from the sentinels,
+/// AGENTS.md pitfall #21 — a WSL probe must read its answer from the sentinels,
 /// never from the shape of the output.
 ///
 /// On a cold distro, the probe is the `wsl.exe` call that boots the VM, and
@@ -510,7 +510,7 @@ fn pitfall_21_wsl_probes_parse_by_sentinel() {
                 call.contains("wsl_probe_script("),
                 "{}: this `run_wsl_sh` call does not build its script with `wsl_probe_script`, \
                  so its answer cannot be told apart from a relayed WSL boot log \
-                 (CLAUDE.md pitfall #21). Call was: {call}",
+                 (AGENTS.md pitfall #21). Call was: {call}",
                 file.display()
             );
         }
@@ -521,14 +521,14 @@ fn pitfall_21_wsl_probes_parse_by_sentinel() {
             assert!(
                 prod.contains("parse_wsl_probe"),
                 "{}: builds a sentinel-wrapped WSL probe but never reads it back with \
-                 `parse_wsl_probe` / `parse_wsl_probe_path` (CLAUDE.md pitfall #21).",
+                 `parse_wsl_probe` / `parse_wsl_probe_path` (AGENTS.md pitfall #21).",
                 file.display()
             );
         }
     }
 }
 
-/// CLAUDE.md pitfall #23 - never slash-flip a canonicalized Windows path into
+/// AGENTS.md pitfall #23 - never slash-flip a canonicalized Windows path into
 /// a frontend string without stripping its verbatim prefix first.
 ///
 /// `fs::canonicalize` returns `\\?\C:\...` verbatim paths; `.replace('\\', "/")`
@@ -604,7 +604,7 @@ fn pitfall_23_no_verbatim_prefix_leaks_into_frontend_paths() {
         "slash-flipping a path outside the two audited helpers — \
          fs::canonicalize returns \\\\?\\-prefixed paths, and flipping their \
          slashes yields '//?/C:/…', an unspawnable UNC-looking hybrid that \
-         bricks terminal cwds with os error 3 (CLAUDE.md pitfall #23). Route \
+         bricks terminal cwds with os error 3 (AGENTS.md pitfall #23). Route \
          the conversion through canonical_to_frontend (frontend-bound paths) \
          or relative_slashes (git CLI arguments):\n{}",
         offenders.join("\n")

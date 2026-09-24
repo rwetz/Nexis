@@ -142,7 +142,7 @@ async function probeTools(
  * The tools to actually show: reported missing, not dismissed, and known to
  * the matrix. Derived OUTSIDE the store so callers can use it in a render
  * body — a selector returning this array would allocate a new reference on
- * every call and spin `useSyncExternalStore` (CLAUDE.md pitfall #14).
+ * every call and spin `useSyncExternalStore` (AGENTS.md pitfall #14).
  */
 export function visibleMissingTools(
   missing: readonly string[],

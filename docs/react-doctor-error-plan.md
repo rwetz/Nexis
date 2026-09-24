@@ -28,7 +28,7 @@ Baseline captured 2026-07-29. Warnings (463 of them) are out of scope here.
 1. `pnpm doctor --category Bugs --verbose` (or `pnpm doctor why <file>:<line>`) to read the finding in context.
 2. Read the actual code first — treat each finding as a hypothesis, not a fact. The lazy-init `if (!ref.current) ref.current = …` pattern is explicitly *allowed*, so some `no-ref-current-in-render` hits may be false positives to suppress with a comment, not fixes.
 3. Fix root cause, don't relax config. Run `pnpm doctor --scope changed --base main` + relevant tests after each file.
-4. `pnpm exec tsc --noEmit` and `pnpm test:coverage` before pushing (per CLAUDE.md pre-push checklist).
+4. `pnpm exec tsc --noEmit` and `pnpm test:coverage` before pushing (per AGENTS.md pre-push checklist).
 
 Order below is smallest/lowest-risk → largest, so momentum builds and the core files come last.
 

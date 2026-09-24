@@ -1,4 +1,4 @@
-# Nexis — project notes for Claude Code
+# Nexis — project notes for agents
 
 ## Architecture in one line
 Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessions, git, file I/O, and AI tool execution.
@@ -8,6 +8,8 @@ Tauri 2 desktop app: React + xterm.js frontend, Rust backend handling PTY sessio
 ## Knowledge vault — `docs/vault/`
 
 `docs/vault/` is an Obsidian-compatible knowledge base mapping this codebase (module maps, subsystem guides, flows, decisions, runbooks). **Before working on an unfamiliar subsystem, read `docs/vault/Home.md` and the relevant `subsystems/` note** — it's cheaper than rediscovering structure by grepping. **After non-trivial work, update the touched note**: fix stale claims, add what you had to discover the hard way; create a note from `templates/` if real discovery happened and none exists. Rules in `docs/vault/conventions.md`. The vault is a map, not a record — CHANGELOG.md stays the record of what shipped, and this file stays authoritative for invariants/pitfalls; the vault links to them, never restates them.
+
+The public user documentation lives in the separate `nexis-wiki` repository. **Whenever an agent updates that wiki, it must also update the visible “Last reviewed” date on the wiki home page (`src/content/docs/index.mdx`) to the actual date of the review.** Do not change the date for formatting-only edits; it certifies that the public documentation was checked against the current Nexis source and `CHANGELOG.md`.
 
 ---
 

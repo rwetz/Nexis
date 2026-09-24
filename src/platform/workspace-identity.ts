@@ -18,7 +18,7 @@
  * `docs/vault/decisions/command-ledger.md` §6, so the ledger and every other
  * per-project store agree on what "the same workspace" means:
  *
- * - a mangled verbatim prefix is healed first (CLAUDE.md pitfall #23);
+ * - a mangled verbatim prefix is healed first (AGENTS.md pitfall #23);
  * - separators are flipped to `/`;
  * - a trailing separator is dropped, so `C:/p` and `C:/p/` are one project;
  * - Windows and WSL-UNC paths are case-folded, because their filesystems are

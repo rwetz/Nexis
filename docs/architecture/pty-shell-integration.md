@@ -36,7 +36,7 @@ rejects any cwd not under an authorized workspace root. A user who `cd`s to anot
 tab hands `pty_open` a path it will refuse — so `openPty` pre-authorizes. Skip that call and you get a
 terminal that renders a cursor and nothing else, with the error swallowed in a `.catch()`. Any *new* code
 path that opens a PTY with a user-supplied cwd — tab restore, split pane, deep link — has to do the same.
-This is [pitfall #1C](../../CLAUDE.md).
+This is [pitfall #1C](../../AGENTS.md).
 
 ## Thread topology
 
@@ -65,13 +65,13 @@ bigfile` and a stuttering one.
 a slow renderer, a firehose of output — the buffer fills and is *discarded* with a visible
 `[nexis: dropped output due to backpressure]` notice. This is intentional: the alternative is unbounded
 growth and an OOM. If a user reports missing output from a long-running command, this is the cause, and
-the fix is a tradeoff (more memory) rather than a bug ([pitfall #7](../../CLAUDE.md)).
+the fix is a tradeoff (more memory) rather than a bug ([pitfall #7](../../AGENTS.md)).
 
 **Poison recovery.** All four threads share `pending`. If any one panics while holding the lock, the mutex
 is poisoned, and a plain `.lock().unwrap()` in the others panics too — cascading into a permanently silent
 terminal with no error shown. Every lock on `pending` therefore uses
 `.unwrap_or_else(|e| e.into_inner())`, which recovers the data instead. Same for the `Condvar` wait. Any
-new code sharing that `Arc` must do the same ([pitfall #8](../../CLAUDE.md)).
+new code sharing that `Arc` must do the same ([pitfall #8](../../AGENTS.md)).
 
 **A watchdog catches the rest.** Drop-guard sentinels on the reader and flusher flag thread death
 (including panics), and a single global `nexis-pty-watchdog` thread reports a red in-terminal notice when
@@ -125,7 +125,7 @@ subprocess** — it pre-applies the flag. Raw `std::process::Command::new` fails
 PTY sessions are the exception; `portable_pty` sets the flag internally, so don't route them through
 `proc::command`.
 
-When a blank terminal is reported, [CLAUDE.md pitfall #1](../../CLAUDE.md) has the five-step
+When a blank terminal is reported, [AGENTS.md pitfall #1](../../AGENTS.md) has the five-step
 differential-diagnosis checklist. Always check the devtools console first — `[nexis] openPty failed:` is
 logged on every `pty_open` error.
 
@@ -177,7 +177,7 @@ back to.
 write when identical. During development, that means editing something *other* than the script content —
 or expecting a rebuild alone to refresh it — leaves the old profile in place. Delete the cached file
 manually. Don't bypass `write_if_changed` with a direct write: the atomic tmp+rename it performs is what
-stops a shell starting in parallel from sourcing a half-written file ([pitfall #6](../../CLAUDE.md)).
+stops a shell starting in parallel from sourcing a half-written file ([pitfall #6](../../AGENTS.md)).
 
 ## Scrollback across restarts
 
@@ -199,4 +199,4 @@ Private terminals are excluded by design — they aren't serialized at all.
 
 - Vault: [pty](../vault/subsystems/pty.md) · [terminal-tab-open flow](../vault/flows/terminal-tab-open.md)
 - Guides: [terminal-renderer-pool.md](terminal-renderer-pool.md) · [security-model.md](security-model.md)
-- Invariants: [CLAUDE.md](../../CLAUDE.md) pitfalls #1, #4, #6, #7, #8, #9
+- Invariants: [AGENTS.md](../../AGENTS.md) pitfalls #1, #4, #6, #7, #8, #9

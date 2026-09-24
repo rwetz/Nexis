@@ -18,7 +18,7 @@ use std::process::Command;
 /// already applied. A raw `std::process::Command::new` in a GUI app makes
 /// Windows create a temporary console for the child: it flashes on screen
 /// and — if a terminal tab is open — races ConPTY I/O and can silence the
-/// active pseudoconsole (CLAUDE.md pitfalls #1D / #4). Constructing through
+/// active pseudoconsole (AGENTS.md pitfalls #1D / #4). Constructing through
 /// this function makes that mistake unrepresentable; clippy's
 /// `disallowed-methods` (clippy.toml) rejects direct `Command::new` calls.
 ///

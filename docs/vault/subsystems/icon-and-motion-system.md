@@ -7,7 +7,7 @@ description: The semantic icon choke point, the house size scale, and the termin
 
 Two surfaces that used to be per-call-site decisions and are now systems. **Icons** resolve through one module that maps app vocabulary onto a vendor's glyphs, so the vendor is swappable and one idea renders as one glyph. **Motion** resolves through CSS tokens wired into Tailwind's transition defaults, so timing is a property of the app rather than of whichever utility a component happened to type.
 
-Both exist for the same reason, recorded as CLAUDE.md pitfall #18: a UI assembled from library defaults is indistinguishable from every other UI assembled from the same defaults. The design brief was to stop inheriting and start deciding.
+Both exist for the same reason, recorded as AGENTS.md pitfall #18: a UI assembled from library defaults is indistinguishable from every other UI assembled from the same defaults. The design brief was to stop inheriting and start deciding.
 
 ## Icons
 
@@ -105,7 +105,7 @@ Two rules that keep this from rotting:
 
 ## Invariants / gotchas
 
-- **Only `icon.tsx` may import the icon vendor**, and **the file tree must not go back to `data:` URLs**. Both are CLAUDE.md pitfall #18 and both are tripwired.
+- **Only `icon.tsx` may import the icon vendor**, and **the file tree must not go back to `data:` URLs**. Both are AGENTS.md pitfall #18 and both are tripwired.
 - **The plugin API names icons by string.** `PanelContribution.icon` is an `IconName`, deliberately not a vendor icon object — a plugin must not have to depend on whichever icon package Nexis ships. See [[frontend-modules]].
 - **The vscode-icons fallback art is not retinted.** Those entries are brand marks; a recoloured logo is a wrong logo.
 - **`FileTypeIcon` renders an empty box, not `null`, while the sets load.** Returning `null` would reflow every row when the JSON resolves.

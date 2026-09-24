@@ -20,7 +20,7 @@ CodeMirror 6 via `@uiw/react-codemirror`. Three pane types render CM instances �
 
 ## Invariants / gotchas
 
-- **CM must never sit under an effective CSS `zoom` ≠ 1** — clicks map to the wrong line on WebKitGTK. `.zoom-content .cm-editor` carries an inverse zoom, and app zoom reaches the code via `fontSize: calc(13px * var(--app-zoom, 1))` in the shared theme. See CLAUDE.md pitfall #15 (tripwired in `src/lib/pitfall-guards.test.ts`).
+- **CM must never sit under an effective CSS `zoom` ≠ 1** — clicks map to the wrong line on WebKitGTK. `.zoom-content .cm-editor` carries an inverse zoom, and app zoom reaches the code via `fontSize: calc(13px * var(--app-zoom, 1))` in the shared theme. See AGENTS.md pitfall #15 (tripwired in `src/lib/pitfall-guards.test.ts`).
 - The `extensions` array passed to `<CodeMirror>` must keep a stable identity (memoized once, callbacks via refs) — a new identity makes `@uiw/react-codemirror` rebuild state and wipes the language compartment (comment at `EditorPane.tsx:167`).
 - **Large-file mode** (2026-07): files over `LARGE_FILE_BYTES` (2 MiB, `EditorPane.tsx`) open with LSP/lint/folding/minimap/AI-completion off and a banner offering "Enable anyway" (per-path session override in `largeFileOverrides`). Lint toggles through `lintCompartment` precisely because of the stable-identity invariant above — don't switch it by rebuilding the extensions array. Distinct from the hard `fs_read_file` size cap (Rust), which refuses the file entirely.
 - Runtime reconfiguration goes through the exported Compartments (`languageCompartment`, `vimCompartment`, `wrapCompartment`), not by changing the extensions array.

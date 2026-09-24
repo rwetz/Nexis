@@ -15,6 +15,8 @@ A theme is a data object (`Theme` in `src/modules/theme/types.ts`), not a styles
 
 Custom theme files live under the host app-config directory. `themeFiles.ts` must use `hostFilesystem`, never the active workspace environment; otherwise a WSL workspace incorrectly routes a Windows app-data path into the distro.
 
+Settings → Themes accepts the versioned Lumen palette and scene JSON described in `docs/interop/lumen.md`. `lumenExchange.ts` converts their palette to a new custom theme and exports the active theme's resolved colors to Lumen. `lumenWorkspace.ts` validates the separate workspace handoff; the UI asks for a local host folder before writing its scene there. These paths do not consume live Lumen runtime state or silently authorize a Nexis workspace.
+
 ## Animated backgrounds
 
 `SurfaceLayer` picks one of five by `backgroundAnimatedId` and hands it the active theme's `primary`, re-keying on theme/mode change so colours refresh. All five live in `src/components/ui/backgrounds/` and all five gate their rAF through `rafLoop.ts` (hidden documents must not keep rendering — WebKitGTK does not reliably throttle them).
@@ -59,7 +61,7 @@ Dither alone is not theme-tinted: it ships the grey-on-black BG Studio settings 
 - **A theme's `editorTheme` only nudges a global preference.** It is written through `setEditorTheme`, so it overwrites whatever the user picked in Settings → Editor, and only if the id is in `EDITOR_THEMES`. It is not scoped to the theme.
 - **Removing a builtin id strands anyone using it.** Add it to `RETIRED` in `themes/index.ts` — the migration has to cover the localStorage fast path, the initial `loadPreferences`, and the cross-window `prefs-changed` listener, or one of the three will resurrect the dead id.
 - Theme switching runs inside a View Transition **except on Linux**, where WebKitGTK's snapshot path kills the web process on the NVIDIA driver — see the comment on `withViewTransition`.
-- Cross-window propagation is the ordinary preferences path — see [[settings-sync]] and CLAUDE.md pitfall #2.
+- Cross-window propagation is the ordinary preferences path — see [[settings-sync]] and AGENTS.md pitfall #2.
 
 - **High contrast overrides tokens on `<body>`, never on `:root`.** `applyTheme` writes each palette as inline custom properties on `<html>`, and an inline declaration beats any stylesheet rule on the same element. Custom properties inherit, so the `html[data-contrast="high"] body { … }` block in `globals.css` wins for the whole app. It only reaches Tailwind utilities because `@theme inline` makes them read `var(--border)` at the element. A test in `components/ui/gliding-tabs.test.tsx` fails if the tokens move up. The attribute comes from `ThemeProvider` (`contrast` preference, or the OS under "system"), which also turns off the rainbow and exposes `highContrast`. `SurfaceLayer` renders nothing under it, and `rendererPool` sets `minimumContrastRatio: 7` from the same attribute.
 
@@ -69,7 +71,7 @@ Dither alone is not theme-tinted: it ships the grey-on-black BG Studio settings 
 - Terminal colours stale after a switch → `buildTerminalTheme()` reads *computed* styles; it must run after `applyTheme`
 - A theme looks right but its folder icon doesn't → `folderColor.ts`, not the theme file
 - File-tree icons keep Catppuccin's colours under a Nexis theme → the retint map in `iconResolver.ts`, or the art regressed to a `data:` URL
-- Blank screen after touching the picker → a selector returning a fresh array (CLAUDE.md pitfall #14)
+- Blank screen after touching the picker → a selector returning a fresh array (AGENTS.md pitfall #14)
 - Rainbow shows up under a non-default theme, or not at all under the default → the `data-rainbow-accent` flag in `ThemeProvider`, which needs both the theme and the preference
 - Terminal colours look generic, or ANSI white is invisible in light mode → the palette in `globals.css`, not a theme file; check `.dark` has its own block
 - A control that should get a rainbow doesn't → `isRainbowTarget` in `rainbowAccent.ts`: it needs to be a button/tab/link **and** carry a neutral-highlight hover utility. A primary or destructive variant is excluded on purpose

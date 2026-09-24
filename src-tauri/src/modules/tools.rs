@@ -29,7 +29,7 @@ use std::path::{Path, PathBuf};
 ///
 /// `workspace` selects *where* to look, and the caller decides per tool: the
 /// LSP client spawns servers on the host regardless of workspace, while git
-/// follows the workspace into WSL. Probing the wrong side is CLAUDE.md pitfall
+/// follows the workspace into WSL. Probing the wrong side is AGENTS.md pitfall
 /// #20 — an answer that is true of a machine the tool will not run on.
 #[tauri::command]
 pub async fn tool_probe(

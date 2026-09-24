@@ -5,7 +5,7 @@ description: End-to-end sequence when a preference changes in the Settings windo
 
 # Flow: a preference changes
 
-Why this is a flow at all: the Settings window is a separate Tauri webview process, so a change there must cross a process boundary to reach the main window (CLAUDE.md pitfall #2).
+Why this is a flow at all: the Settings window is a separate Tauri webview process, so a change there must cross a process boundary to reach the main window (AGENTS.md pitfall #2).
 
 1. **User toggles a setting** in the Settings window UI (`src/settings/sections/*`).
 2. **Setter fires** — e.g. `setTheme(value)` in `settings/store.ts` — which calls `writePref(key, value)`.

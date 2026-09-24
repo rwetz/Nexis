@@ -19,7 +19,7 @@
  * coordinate space an absolutely-positioned rail draws in. Client rects would
  * additionally carry the app's ancestor CSS `zoom` and any scroll offset,
  * both of which would then have to be divided back out — the same class of
- * mistake as CLAUDE.md pitfall #15.
+ * mistake as AGENTS.md pitfall #15.
  */
 
 import { useReducedMotion } from "motion/react";
