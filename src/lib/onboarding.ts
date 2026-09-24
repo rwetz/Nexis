@@ -132,12 +132,14 @@ const STEPS: readonly OnboardingStep[] = [
   {
     id: "build.run",
     label: "Run a build or test task",
-    why: "Nexis detects the project's runner, so the task list is not something you configure first.",
+    why: "Nexis detects the project's runner, so the task list is not something you configure first. Search \"Show Build\" to open it.",
     icon: "tools",
     action: { kind: "sidebar", view: "build" },
     pack: "code-tools",
     tour: true,
-    tourTarget: "sidebar-build",
+    // Build is not on the rail (it is a session, not a contextual view), so
+    // the coach-mark points at where you reach it: the title-bar search.
+    tourTarget: "spotlight",
   },
   {
     id: "sysmon.open",
@@ -168,9 +170,9 @@ const STEPS: readonly OnboardingStep[] = [
     label: "Tune which panels you see",
     why: "Your preset was only a starting point — every pack is a switch you can flip later.",
     icon: "settings",
+    // No coach-mark: it pointed at the rail's overflow menu, which no longer
+    // exists. The checklist row opens Settings -> Features directly.
     action: { kind: "settings", section: "features" },
-    tour: true,
-    tourTarget: "sidebar-overflow",
   },
 ];
 

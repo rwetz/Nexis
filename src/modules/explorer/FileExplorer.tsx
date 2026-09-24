@@ -5,10 +5,11 @@ import { filesystem } from "@/platform/filesystem";
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { PanelEmptyState } from "@/components/ui/PanelEmptyState";
 import { Icon } from "@/components/icon";
 import { listen } from "@/platform/events";
 
-import { AnimatedFolder } from "@/components/ui/AnimatedFolder";
+import { FolderPreview } from "@/components/ui/FolderPreview";
 import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
@@ -552,12 +553,11 @@ export const FileExplorer = forwardRef<FileExplorerHandle, FileExplorerProps>(
     if (!rootPath) {
       const folderColor = getFolderColor(themeId, resolvedMode);
       return (
-        <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-          <AnimatedFolder color={folderColor} size={1.6} />
-          <div className="text-xs text-muted-foreground">
-            No current directory
-          </div>
-        </div>
+        <PanelEmptyState
+          art={<FolderPreview color={folderColor} size={1.6} />}
+          title="No folder open"
+          description="Open a folder, or cd into one in a terminal, to browse its files."
+        />
       );
     }
 

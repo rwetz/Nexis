@@ -62,6 +62,23 @@ function Shell({ standalone }: { standalone: boolean }) {
     void refresh();
   }, [refresh]);
 
+  // Self-healing open for the list view's detail pane.
+  //
+  // It used to be reachable only by a gesture — first a double-click, then a
+  // single click once `select` opened it. Either way, a user who arrived at
+  // the list with a repo already selected (a restored selection, a scan that
+  // auto-selects, the companion window) saw no pane at all, and everything
+  // in it — changed files, stashes, the commit heatmap — read as missing
+  // rather than as closed. Gating a whole pane on a gesture the user may
+  // never make is what kept the heatmap invisible.
+  const selectedPath = useAtlasStore((s) => s.selectedPath);
+  const detailOpen = useAtlasStore((s) => s.detailOpen);
+  const openDetail = useAtlasStore((s) => s.openDetail);
+  useEffect(() => {
+    if (mode !== "list" || !selectedPath || detailOpen) return;
+    void openDetail();
+  }, [mode, selectedPath, detailOpen, openDetail]);
+
   return (
     // tabIndex so the subtree can hold focus and the key handler below has
     // somewhere to fire from; the outline is suppressed because the visible

@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-/** Per-theme accent colors for the AnimatedFolder component. */
+/** Per-theme accent colors for the FolderPreview component. */
 const FOLDER_COLORS: Record<string, { dark: string; light: string }> = {
   // Nexis themes — each entry is the theme's own `primary`.
   "nexis-default": { dark: "#5227FF", light: "#4318D6" },

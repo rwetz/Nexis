@@ -123,7 +123,7 @@ export function OnboardingDialog({ onRunAction, onStartTour }: Props) {
           <header className="flex shrink-0 flex-col gap-3 border-b border-border/60 px-8 pt-6 pb-5">
             <div className="flex items-start gap-3">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <h2 className="text-[17px] font-semibold tracking-tight">
+                <h2 className="font-heading text-[17px] font-semibold tracking-tight">
                   {tourDone ? "Getting started" : "Welcome to Nexis"}
                 </h2>
                 <p className="text-[12px] text-muted-foreground">

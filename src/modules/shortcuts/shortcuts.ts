@@ -50,6 +50,7 @@ export type ShortcutId =
   | "shortcuts.open"
   | "settings.open"
   | "sidebar.toggle"
+  | "panel.toggle"
   | "editor.undo"
   | "editor.redo"
   | "editor.codeActions"
@@ -289,6 +290,12 @@ export const SHORTCUTS: Shortcut[] = [
     label: "Toggle file explorer",
     group: "View",
     defaultBindings: [{ [MOD_PROP]: true, key: "b" }],
+  },
+  {
+    id: "panel.toggle",
+    label: "Toggle bottom panel",
+    group: "View",
+    defaultBindings: [{ [MOD_PROP]: true, key: "j" }],
   },
   {
     id: "explorer.focus",

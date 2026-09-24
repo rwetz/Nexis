@@ -12,6 +12,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Icon } from "@/components/icon";
+import { ThoughtLine } from "@/components/ui/ThoughtLine";
 import { cn } from "@/lib/utils";
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import type { ComponentProps, ReactNode } from "react";
@@ -184,6 +185,11 @@ export const ReasoningTrigger = memo(
         {children ?? (
           <>
             {getThinkingMessage(isStreaming, duration)}
+            {/* Live-only: mounted while the reasoning stream is open and
+              * unmounted when it closes. See ThoughtLine's note — reasoning
+              * is pruned from stored history, so this must never render
+              * from persisted state. */}
+            {isStreaming && <ThoughtLine />}
             <Icon
               name="chevron-down"
               size="xs"

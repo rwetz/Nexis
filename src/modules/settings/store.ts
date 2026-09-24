@@ -45,11 +45,45 @@ import { createWriteQueue } from "@/platform/persistence";
 
 export type ThemePref = "system" | "light" | "dark";
 
+/** Contrast. "system" follows the OS (prefers-contrast / forced-colors). */
+export type ContrastPref = "system" | "standard" | "high";
+
+export function isContrastPref(value: unknown): value is ContrastPref {
+  return value === "system" || value === "standard" || value === "high";
+}
+
 export const DEFAULT_THEME_ID = "nexis-default";
 
 export type BackgroundKind = "none" | "image" | "animated";
 
 export type AnimatedBgId = "aurora" | "particles" | "threads";
+
+/**
+ * Backgrounds for the welcome screen.
+ *
+ * Deliberately separate from {@link AnimatedBgId}: the app-wide background
+ * sits behind every pane at low opacity and has to stay out of the way of
+ * work, while the welcome screen is the one place Nexis is allowed to be
+ * scenery.
+ *
+ * Only DarkVeil ships today. Dither was here and is withdrawn — see the
+ * CHANGELOG; the union and the preference stay because the picker and the
+ * per-viewing rotation come back for free the moment a second one lands.
+ */
+export type WelcomeBgId = "darkveil";
+
+/** Rotation order, and the order the picker lists them in. */
+export const WELCOME_BG_ORDER: readonly WelcomeBgId[] = ["darkveil"];
+
+export const WELCOME_BG_LABELS: Record<WelcomeBgId, string> = {
+  darkveil: "Dark Veil",
+};
+
+/** Advance one step through {@link WELCOME_BG_ORDER}. */
+export function nextWelcomeBg(current: WelcomeBgId): WelcomeBgId {
+  const idx = WELCOME_BG_ORDER.indexOf(current);
+  return WELCOME_BG_ORDER[(idx + 1) % WELCOME_BG_ORDER.length];
+}
 
 export const EDITOR_THEMES = [
   "atomone",
@@ -130,9 +164,17 @@ export type Preferences = {
   /** Rainbow hover accent. Only the Nexis Default theme reads it — every
    * other theme's accent hue is its own identity. */
   rainbowAccent: boolean;
+  /** High contrast: stronger text, borders and focus, no decorative layers.
+   * Applies on top of any theme. */
+  contrast: ContrastPref;
   backgroundKind: BackgroundKind;
   backgroundImageId: string | null;
   backgroundAnimatedId: AnimatedBgId | null;
+  /** Which background the welcome screen shows. */
+  welcomeBackgroundId: WelcomeBgId;
+  /** Advance `welcomeBackgroundId` one step through WELCOME_BG_ORDER each
+   * time the welcome screen is shown, so it rotates as you use the app. */
+  welcomeBackgroundCycle: boolean;
   backgroundOpacity: number;
   backgroundBlur: number;
   defaultModelId: ModelId;
@@ -247,9 +289,12 @@ const STORE_PATH = "nexis-settings.json";
 const KEY_THEME = "theme";
 const KEY_THEME_ID = "themeId";
 const KEY_RAINBOW_ACCENT = "rainbowAccent";
+const KEY_CONTRAST = "contrast";
 const KEY_BG_KIND = "backgroundKind";
 const KEY_BG_IMAGE_ID = "backgroundImageId";
 const KEY_BG_ANIMATED_ID = "backgroundAnimatedId";
+const KEY_WELCOME_BG = "welcomeBackgroundId";
+const KEY_WELCOME_BG_CYCLE = "welcomeBackgroundCycle";
 const KEY_BG_OPACITY = "backgroundOpacity";
 const KEY_BG_BLUR = "backgroundBlur";
 const KEY_DEFAULT_MODEL = "defaultModelId";
@@ -348,9 +393,12 @@ export const DEFAULT_PREFERENCES: Preferences = {
   theme: "system",
   themeId: DEFAULT_THEME_ID,
   rainbowAccent: true,
+  contrast: "system",
   backgroundKind: "none",
   backgroundImageId: null,
   backgroundAnimatedId: null,
+  welcomeBackgroundId: "darkveil",
+  welcomeBackgroundCycle: true,
   backgroundOpacity: 0.5,
   backgroundBlur: 0,
   defaultModelId: DEFAULT_MODEL_ID,
@@ -461,6 +509,9 @@ export async function loadPreferences(): Promise<Preferences> {
     themeId: get<string>(KEY_THEME_ID) ?? DEFAULT_PREFERENCES.themeId,
     rainbowAccent:
       get<boolean>(KEY_RAINBOW_ACCENT) ?? DEFAULT_PREFERENCES.rainbowAccent,
+    contrast: isContrastPref(get(KEY_CONTRAST))
+      ? (get(KEY_CONTRAST) as ContrastPref)
+      : DEFAULT_PREFERENCES.contrast,
     backgroundKind:
       get<BackgroundKind>(KEY_BG_KIND) ?? DEFAULT_PREFERENCES.backgroundKind,
     backgroundImageId:
@@ -469,6 +520,17 @@ export async function loadPreferences(): Promise<Preferences> {
     backgroundAnimatedId:
       get<AnimatedBgId | null>(KEY_BG_ANIMATED_ID) ??
       DEFAULT_PREFERENCES.backgroundAnimatedId,
+    // A value stored by an earlier build may name a background that no
+    // longer exists ("dotgrid"). Falling through to the default beats
+    // rendering nothing at all.
+    welcomeBackgroundId: WELCOME_BG_ORDER.includes(
+      get<WelcomeBgId>(KEY_WELCOME_BG) as WelcomeBgId,
+    )
+      ? (get<WelcomeBgId>(KEY_WELCOME_BG) as WelcomeBgId)
+      : DEFAULT_PREFERENCES.welcomeBackgroundId,
+    welcomeBackgroundCycle:
+      get<boolean>(KEY_WELCOME_BG_CYCLE) ??
+      DEFAULT_PREFERENCES.welcomeBackgroundCycle,
     backgroundOpacity: clampBgOpacity(
       get<number>(KEY_BG_OPACITY) ?? DEFAULT_PREFERENCES.backgroundOpacity,
     ),
@@ -683,6 +745,10 @@ export async function setRainbowAccent(value: boolean): Promise<void> {
   await writePref(KEY_RAINBOW_ACCENT, value);
 }
 
+export async function setContrast(value: ContrastPref): Promise<void> {
+  await writePref(KEY_CONTRAST, value);
+}
+
 export async function setBackgroundKind(value: BackgroundKind): Promise<void> {
   await writePref(KEY_BG_KIND, value);
 }
@@ -694,6 +760,16 @@ export async function setBackgroundImageId(value: string | null): Promise<void> 
 export async function setBackgroundAnimatedId(value: AnimatedBgId | null): Promise<void> {
   await writePref(KEY_BG_ANIMATED_ID, value);
 }
+
+export async function setWelcomeBackgroundId(value: WelcomeBgId): Promise<void> {
+  await writePref(KEY_WELCOME_BG, value);
+}
+
+export async function setWelcomeBackgroundCycle(value: boolean): Promise<void> {
+  await writePref(KEY_WELCOME_BG_CYCLE, value);
+}
+
+
 
 export async function setBackgroundOpacity(value: number): Promise<void> {
   await writePref(KEY_BG_OPACITY, clampBgOpacity(value));
@@ -1020,9 +1096,12 @@ export async function onPreferencesChange(
     [KEY_THEME]: "theme",
     [KEY_THEME_ID]: "themeId",
     [KEY_RAINBOW_ACCENT]: "rainbowAccent",
+    [KEY_CONTRAST]: "contrast",
     [KEY_BG_KIND]: "backgroundKind",
     [KEY_BG_IMAGE_ID]: "backgroundImageId",
     [KEY_BG_ANIMATED_ID]: "backgroundAnimatedId",
+    [KEY_WELCOME_BG]: "welcomeBackgroundId",
+    [KEY_WELCOME_BG_CYCLE]: "welcomeBackgroundCycle",
     [KEY_BG_OPACITY]: "backgroundOpacity",
     [KEY_BG_BLUR]: "backgroundBlur",
     [KEY_DEFAULT_MODEL]: "defaultModelId",

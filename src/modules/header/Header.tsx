@@ -54,8 +54,12 @@ type Props = {
   onOpenSettings: () => void;
   onOpenSvgStudio: () => void;
   onOpenMlLab: () => void;
+  /** Opens the Web workbench tab (Ports, HTTP Client, Web Tools). */
+  onOpenWeb: () => void;
   searchTarget: SearchTarget;
   searchRef: RefObject<SearchInlineHandle | null>;
+  /** Opens the Spotlight finder (files + commands). */
+  onOpenSpotlight: () => void;
 };
 
 const COMPACT_WIDTH = 720;
@@ -80,8 +84,10 @@ export function Header({
   onOpenSettings,
   onOpenSvgStudio,
   onOpenMlLab,
+  onOpenWeb,
   searchTarget,
   searchRef,
+  onOpenSpotlight,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [compact, setCompact] = useState(false);
@@ -195,9 +201,7 @@ export function Header({
         {!IS_MAC && shortcutsButton}
       </div>
 
-      {!IS_MAC && <span className="mx-1 h-5 w-px shrink-0 bg-border" />}
 
-      {IS_MAC && <span className="mr-1 h-full w-px shrink-0 bg-border" />}
 
       <div
         className="flex min-w-0 flex-1 items-center gap-2"
@@ -221,13 +225,32 @@ export function Header({
         <div data-tauri-drag-region className="h-full min-w-2 flex-1" />
       </div>
 
-      <SearchInline ref={searchRef} target={searchTarget} compact={compact} />
+      {/* One search affordance in the title bar, and it is Spotlight. The
+          find-in-pane field used to sit here permanently, which put two
+          search boxes a few pixels apart answering different questions —
+          one searches the workspace, the other searches what is currently on
+          screen. Find-in-pane still exists and still answers its shortcut;
+          it just no longer occupies the bar when nobody asked for it, and
+          renders nothing until it does. */}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Search"
+        data-tour="spotlight"
+        title="Search"
+        onClick={onOpenSpotlight}
+      >
+        <Icon name="search" size="md" />
+      </Button>
+
+      <SearchInline ref={searchRef} target={searchTarget} onDemand />
 
       <PermanentToolShelf
         compact={compact}
         onOpenTool={(tool) => {
           if (tool === "svg-playground") onOpenSvgStudio();
           if (tool === "ml-lab") onOpenMlLab();
+          if (tool === "web") onOpenWeb();
         }}
       />
 
@@ -244,7 +267,6 @@ export function Header({
 
       {USE_CUSTOM_WINDOW_CONTROLS && (
         <>
-          <span className="ml-1 h-5 w-px shrink-0 bg-border" />
           <WindowControls />
         </>
       )}

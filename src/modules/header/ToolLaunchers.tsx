@@ -12,7 +12,7 @@ import { openToolWindow } from "@/modules/window/toolWindow";
 /** Persistent launchers for the two companion-app windows. */
 export function ToolLaunchers({ compact }: { compact: boolean }) {
   return (
-    <div className="flex shrink-0 items-center gap-0.5 border-l border-border pl-1">
+    <div className="flex shrink-0 items-center gap-0.5 pl-1">
       {CAPABILITY_TOOL_WINDOWS.map((tool) => (
         <Button
           key={tool.id}

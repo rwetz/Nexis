@@ -48,10 +48,10 @@ export function AgentRunBridge(props: AgentRunBridgeProps) {
   );
 }
 
-export function AiMiniWindow() {
+export function AiMiniWindow(props: { workspaceRoot?: string | null }) {
   return (
     <Suspense fallback={null}>
-      <AiMiniWindowInner />
+      <AiMiniWindowInner {...props} />
     </Suspense>
   );
 }

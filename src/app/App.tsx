@@ -1,4 +1,5 @@
 import { activeWorkspace, workspaceCurrentDir } from "@/platform/workspaces";
+import { setContrast } from "@/modules/settings/store";
 import { git } from "@/capabilities/git/api";
 import { GitCapabilityHostProvider } from "@/capabilities/git/context";
 import { ExplorerCapabilityHostProvider } from "@/capabilities/editor/context";
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/resizable";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WindowResizeEdges } from "@/components/WindowResizeEdges";
-import { QuickFilePicker } from "@/components/QuickFilePicker";
+import { AppleSpotlight } from "@/components/AppleSpotlight";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 import { WorkspaceSearch } from "@/components/WorkspaceSearch";
 import { CommandPalette, type CommandDef } from "@/components/CommandPalette";
@@ -41,7 +42,6 @@ import { cn } from "@/lib/utils";
 import { viewEnabled } from "@/lib/packs";
 import { dirname, stripVerbatimPrefix } from "@/lib/path";
 import { useSidebarState, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "./useSidebarState";
-import type { PanelImperativeHandle } from "react-resizable-panels";
 import { useDialogCoordinator } from "./useDialogCoordinator";
 import {
   AgentRunBridge,
@@ -87,6 +87,9 @@ import {
 import { openNewWindow } from "@/modules/window/openNewWindow";
 import { ToolWindowShell } from "@/modules/window/ToolWindowShell";
 import { currentToolWindow } from "@/modules/window/toolWindow";
+import { onAtlasHostAction } from "@/modules/atlas/repos/hostBridge";
+import { desktopWindow } from "@/platform/desktop";
+import { toast } from "sonner";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
@@ -105,20 +108,29 @@ import {
   isPluginPanelViewId,
   isSidebarViewId,
   PackGatePlaceholder,
+  pluginPanelCommands,
   PluginPanelSlot,
   SidebarRail,
+  viewPaletteCommands,
 } from "@/modules/sidebar";
-import { ActivityPanel, useBackgroundProcesses } from "@/modules/processes";
+import { ActivityPanel } from "@/modules/processes";
+import { usePluginRegistry } from "@/lib/plugins/registry";
 import { ProblemsPanel } from "@/modules/problems/ProblemsPanel";
+import { OPEN_WEB_WORKBENCH_EVENT, WebWorkbench } from "@/modules/web-workbench";
+import {
+  PanelDock,
+  PROBLEMS_TAB,
+  useBottomPanelStore,
+  useSessionAutoReveal,
+  type BottomTab,
+} from "@/modules/bottom-panel";
 import { SymbolOutlinePanel } from "@/modules/editor/SymbolOutlinePanel";
 import { SnippetsPanel } from "@/modules/snippets";
 import { TestRunnerPanel } from "@/modules/testrunner";
 import { BuildPanel } from "@/modules/build/BuildPanel";
-import { CodeReviewPanel } from "@/modules/code-review";
 import { registerShareTerminalBufferProvider } from "@/modules/share";
 import { SymbolSearchPanel } from "@/modules/symbol-search";
-import { RefactorPanel, setRefactorCode } from "@/modules/refactor";
-import { PromptTemplatesPanel } from "@/modules/prompt-templates";
+import { setRefactorCode } from "@/modules/refactor";
 import { BookmarksPanel, toggleBookmark } from "@/modules/bookmarks";
 import { WorkspaceNotesPanel } from "@/modules/workspace-notes";
 import { ShellSnippetsPanel, setShellSnippetSender } from "@/modules/shell-snippets";
@@ -130,12 +142,8 @@ import { StatusBar } from "@/modules/statusbar";
 import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
 import { OnboardingDialog } from "@/modules/onboarding/OnboardingDialog";
 import { openOnboarding } from "@/modules/onboarding/onboardingDialogStore";
-import { AnimatorPanel } from "@/modules/art/AnimatorPanel";
-import { BackdropPanel } from "@/modules/art/BackdropPanel";
-import { FaviconPanel } from "@/modules/art/FaviconPanel";
-import { IconSetPanel } from "@/modules/art/IconSetPanel";
-import { PalettePanel } from "@/modules/art/PalettePanel";
 import { SvgPlaygroundPanel } from "@/modules/art/SvgPlaygroundPanel";
+import { useSvgStudioStore, type StudioTool } from "@/modules/art/studioStore";
 import { OnboardingTour } from "@/modules/onboarding/OnboardingTour";
 import { useOnboardingSignals } from "@/modules/onboarding/useOnboardingSignals";
 import { signalOnboardingStep, type OnboardingAction } from "@/lib/onboarding";
@@ -187,7 +195,7 @@ import {
 import { hostHomeDir } from "@/platform/paths";
 import { desktopWebviewWindow } from "@/platform/desktop";
 import type { SearchAddon } from "@xterm/addon-search";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 const MarkdownStackLazy = lazy(() =>
   import("@/modules/markdown").then((m) => ({ default: m.MarkdownStack })),
@@ -259,6 +267,7 @@ function MainApp() {
     openMlLabTab,
     openMlNetworkTab,
     openSvgPlaygroundTab,
+    openWebTab,
     closeTab,
     updateTab,
     selectByIndex,
@@ -289,6 +298,24 @@ function MainApp() {
   useEffect(() => {
     tabsRef.current = tabs;
   }, [tabs]);
+
+  // The Web workbench is opened by `requestWebWorkbench` (palette commands,
+  // persistSidebarView), which can't reach tab state — hence the event.
+  useEffect(() => {
+    const open = () => openWebTab();
+    window.addEventListener(OPEN_WEB_WORKBENCH_EVENT, open);
+    return () => window.removeEventListener(OPEN_WEB_WORKBENCH_EVENT, open);
+  }, [openWebTab]);
+
+  /** Open SVG Studio with a specific tool in front — the palette, backdrop,
+   *  icon set, favicon set and animator live inside it, not in the sidebar. */
+  const openSvgStudio = useCallback(
+    (tool: StudioTool) => {
+      useSvgStudioStore.getState().setTool(tool);
+      openSvgPlaygroundTab();
+    },
+    [openSvgPlaygroundTab],
+  );
 
   const activeTerminalTab = useMemo(() => {
     const t = tabs.find((x) => x.id === activeId);
@@ -539,8 +566,11 @@ function MainApp() {
   const focusInput = useChatStore((s) => s.focusInput);
   const panelOpen = useChatStore((s) => s.panelOpen);
   const panelMode = useChatStore((s) => s.panelMode);
-  const problemsPanelRef = useRef<PanelImperativeHandle | null>(null);
-  const [problemsOpen, setProblemsOpen] = useState(false);
+  // The bottom panel (sessions + Problems): state lives in its store so the
+  // status bar, palette and persistSidebarView can all open it.
+  const bottomOpen = useBottomPanelStore((s) => s.open);
+  const bottomTab = useBottomPanelStore((s) => s.tab);
+  useSessionAutoReveal();
   const apiKeys = useChatStore((s) => s.apiKeys);
   const setApiKeys = useChatStore((s) => s.setApiKeys);
   const setSelectedModelId = useChatStore((s) => s.setSelectedModelId);
@@ -667,6 +697,7 @@ function MainApp() {
   const isMlLabTab = activeTab?.kind === "ml-lab";
   const isMlNetworkTab = activeTab?.kind === "ml-network";
   const isSvgPlaygroundTab = activeTab?.kind === "svg-playground";
+  const isWebTab = activeTab?.kind === "web";
 
   // When an AI diff is approved (write_file applied to disk), reload any
   // open editor tabs for that path so the user sees the new content. We
@@ -1136,6 +1167,22 @@ function MainApp() {
     [newTab],
   );
 
+  // Atlas's companion window forwards the three actions it cannot perform
+  // itself. Handled here because this is the window that owns tabs and the
+  // workspace; the window is raised too, since an action whose whole effect
+  // lands somewhere the user cannot see has not visibly happened.
+  useEffect(() => {
+    const unlistenP = onAtlasHostAction((action) => {
+      if (action.kind === "workspace") void switchWorkspacePath(action.path);
+      else if (action.kind === "terminal") cdInNewTab(action.path);
+      else openFileTab(action.path, true);
+      void desktopWindow().setFocus().catch(() => {});
+    });
+    return () => {
+      void unlistenP.then((fn) => fn());
+    };
+  }, [switchWorkspacePath, cdInNewTab, openFileTab]);
+
   const handleRunFile = useCallback(
     (_path: string, cwd: string, command: string) => {
       const tabId = newTab(cwd);
@@ -1317,9 +1364,6 @@ function MainApp() {
     cycleSidebarView("source-control");
   }, [cycleSidebarView]);
 
-  const { processes: bgProcesses } = useBackgroundProcesses(5000);
-  const runningProcessCount = bgProcesses.filter((p) => !p.exited).length;
-
   const openGitGraphFromContext = useCallback(async () => {
     const known = sourceControl.hasRepo ? sourceControl.repo : null;
     if (known) {
@@ -1329,13 +1373,28 @@ function MainApp() {
       });
       return;
     }
-    if (!sourceControlContextPath) return;
+    // Every path out of here used to `return` in silence, so from a window
+    // with no directory — the welcome screen, most obviously — the menu item
+    // simply did nothing and gave no reason. A menu entry that can decline
+    // has to say so; "nothing happened" is indistinguishable from "broken".
+    const notRepo = () =>
+      toast.error("No git repository here", {
+        description:
+          "Open a folder that is inside a repository, then try again.",
+      });
+    if (!sourceControlContextPath) {
+      notRepo();
+      return;
+    }
     try {
       const repo = await git.gitResolveRepo(sourceControlContextPath);
-      if (!repo) return;
+      if (!repo) {
+        notRepo();
+        return;
+      }
       openCommitHistoryTab({ repoRoot: repo.repoRoot, branch: repo.branch });
-    } catch {
-      /* noop */
+    } catch (e) {
+      toast.error("Could not open the git graph", { description: String(e) });
     }
   }, [
     openCommitHistoryTab,
@@ -1414,6 +1473,9 @@ function MainApp() {
     { id: "files.quickOpen",     label: "Quick file open",          category: "Files",   action: () => { signalOnboardingStep("files.quickOpen"); setQuickFilePickerOpen(true); }, keywords: ["cmd+p", "go to file"] },
     { id: "search.workspace",    label: "Find & replace in project",category: "Search",  action: () => setWorkspaceSearchOpen(true), keywords: ["grep", "search"] },
     { id: "sidebar.toggle",      label: "Toggle sidebar",           category: "View",    action: toggleSidebar },
+    { id: "view.highContrast",   label: "Toggle high contrast",     category: "View",    action: () => { const high = document.documentElement.getAttribute("data-contrast") === "high"; void setContrast(high ? "standard" : "high"); }, keywords: ["accessibility", "a11y", "contrast", "readability", "vision"] },
+    { id: "panel.toggle",        label: "Toggle bottom panel",      category: "View",    action: () => useBottomPanelStore.getState().toggle(), keywords: ["problems", "build", "tests", "sessions", "output"] },
+    { id: "panel.maximize",      label: "Maximize bottom panel",    category: "View",    action: () => useBottomPanelStore.getState().toggleMaximized() },
     { id: "settings.open",       label: "Open settings",            category: "General", action: () => void openSettingsWindow() },
     { id: "settings.themes",     label: "Open theme settings",      category: "General", action: () => void openSettingsWindow("themes") },
     { id: "settings.shortcuts",  label: "Open keyboard shortcuts",  category: "General", action: () => setShortcutsOpen(true) },
@@ -1426,18 +1488,20 @@ function MainApp() {
     { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
     { id: "ledger.history",      label: "Show command history",     category: "View",    action: () => persistSidebarView("command-history"), pack: "dev-tools", keywords: ["ledger", "recorded", "commands", "trends", "journal", "output", "build time"] },
     { id: "webdev.http",         label: "Show HTTP client",         category: "View",    action: () => persistSidebarView("http-client"), pack: "web-dev", keywords: ["rest", "request", "curl", "api"] },
-    { id: "art.svgPlayground",   label: "Open the SVG playground",  category: "View",    action: () => { openSvgPlaygroundTab(); }, pack: "art", keywords: ["svg", "icon", "vector", "art"] },
+    { id: "art.svgPlayground",   label: "Open SVG Studio",          category: "View",    action: () => openSvgStudio("draw"), pack: "art", keywords: ["svg", "icon", "vector", "art", "playground", "studio"] },
     { id: "ml.open",             label: "Open ML Lab",              category: "View",    action: () => { openMlLabTab(); }, pack: "ml-lab", keywords: ["model", "training", "inference", "onnx", "benchmark"] },
-    { id: "art.palette",         label: "Open the palette",         category: "View",    action: () => persistSidebarView("palette"), pack: "art", keywords: ["colour", "color", "contrast", "wcag", "swatch", "theme"] },
-    { id: "art.backdrop",        label: "Open the backdrop generator", category: "View",  action: () => persistSidebarView("backdrop"), pack: "art", keywords: ["wallpaper", "background", "gradient", "waves", "generative"] },
-    { id: "art.iconSet",         label: "Open the icon set review", category: "View",    action: () => persistSidebarView("icon-set"), pack: "art", keywords: ["icons", "audit", "consistency", "stroke", "svg"] },
-    { id: "art.favicon",         label: "Open the favicon exporter", category: "View",   action: () => persistSidebarView("favicon"), pack: "art", keywords: ["favicon", "app icon", "manifest", "apple touch", "pwa"] },
-    { id: "art.animator",        label: "Open the SVG animator",    category: "View",    action: () => persistSidebarView("animator"), pack: "art", keywords: ["animate", "keyframe", "smil", "motion", "timeline"] },
+    { id: "art.palette",         label: "Open the palette",         category: "View",    action: () => openSvgStudio("palette"), pack: "art", keywords: ["colour", "color", "contrast", "wcag", "swatch", "theme"] },
+    { id: "art.backdrop",        label: "Open the backdrop generator", category: "View",  action: () => openSvgStudio("backdrop"), pack: "art", keywords: ["wallpaper", "background", "gradient", "waves", "generative"] },
+    { id: "art.iconSet",         label: "Open the icon set review", category: "View",    action: () => openSvgStudio("icon-set"), pack: "art", keywords: ["icons", "audit", "consistency", "stroke", "svg"] },
+    { id: "art.favicon",         label: "Open the favicon exporter", category: "View",   action: () => openSvgStudio("favicon"), pack: "art", keywords: ["favicon", "app icon", "manifest", "apple touch", "pwa"] },
+    { id: "art.animator",        label: "Open the SVG animator",    category: "View",    action: () => openSvgStudio("animator"), pack: "art", keywords: ["animate", "keyframe", "smil", "motion", "timeline"] },
     { id: "help.gettingStarted", label: "Open Getting Started",       category: "General", action: () => openOnboarding(), keywords: ["onboarding", "tour", "help", "first run", "checklist"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
-  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgPlaygroundTab, openMlLabTab]);
+    // Every sidebar view off the rail is reached from here; see viewCatalog.ts.
+    ...viewPaletteCommands(persistSidebarView),
+  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgStudio, openMlLabTab]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
   // mirroring how the rail hides their views (V2 gating; decision doc in
@@ -1519,6 +1583,7 @@ function MainApp() {
       "window.new": () => void openNewWindow(),
       "settings.open": () => void openSettingsWindow(),
       "sidebar.toggle": toggleSidebar,
+      "panel.toggle": () => useBottomPanelStore.getState().toggle(),
       "explorer.focus": toggleExplorerFocus,
       "view.zoomIn": zoomIn,
       "view.zoomOut": zoomOut,
@@ -1815,6 +1880,48 @@ function MainApp() {
     });
   }, [setLive, activeId, tabs, explorerRoot, launchCwd, home, openPreviewTab]);
 
+  // Bodies for the bottom panel's built-in tabs. Contributed sessions
+  // (Debugger, Ports, Database, SSH, HTTP Client) render from their
+  // `location: "bottom"` contribution inside BottomPanel instead.
+  const renderBottomTab = (tab: BottomTab): ReactNode => {
+    switch (tab) {
+      case PROBLEMS_TAB:
+        return (
+          <ProblemsPanel
+            onNavigate={(path, line, character) => {
+              openFileTab(path, true);
+              // Brief delay so the editor has time to mount
+              setTimeout(() => {
+                window.dispatchEvent(
+                  new CustomEvent("nexis:goto-location", {
+                    detail: { path, line, character },
+                  }),
+                );
+              }, 80);
+            }}
+          />
+        );
+      case "build":
+        return <BuildPanel workspaceRoot={explorerRoot} />;
+      case "tests":
+        return <TestRunnerPanel workspaceRoot={explorerRoot} />;
+      case "processes":
+        return <ActivityPanel />;
+      case "repl":
+        return <ReplPanel />;
+      case "system-monitor":
+        return <Suspense fallback={null}><SystemMonitorPanelLazy /></Suspense>;
+      case "command-history":
+        return (
+          <Suspense fallback={null}>
+            <CommandHistoryPanelLazy workspaceRoot={explorerRoot} />
+          </Suspense>
+        );
+      default:
+        return null;
+    }
+  };
+
   const workspaceSurface = tabs.length === 0 ? (
     <WelcomeScreen onNewTerminal={openNewTab} />
   ) : (
@@ -1984,11 +2091,28 @@ function MainApp() {
           />
         </Suspense>
       </div>
+      <div
+        className={cn("absolute inset-0", !isWebTab && "invisible pointer-events-none")}
+        aria-hidden={!isWebTab}
+        inert={!isWebTab}
+      >
+        <WebWorkbench tabs={tabs} activeId={activeId} onClose={closeTab} />
+      </div>
     </div>
   );
 
+  // Contributed panels off the rail get the same generated "Show …" command
+  // the built-in ones do (sidebar/pluginPanels.ts).
+  const registryPanels = usePluginRegistry((s) => s.panels);
+  const builtinPaletteCommands = useMemo(
+    () => [
+      ...paletteCommands,
+      ...pluginPanelCommands(registryPanels, enabledPacks, persistSidebarView),
+    ],
+    [paletteCommands, registryPanels, enabledPacks, persistSidebarView],
+  );
   const { context: capabilityContext, paletteCommands: visiblePaletteCommands } = useCapabilities({
-    view: sidebarView, root: explorerRoot, packs: enabledPacks, builtins: paletteCommands,
+    view: sidebarView, root: explorerRoot, packs: enabledPacks, builtins: builtinPaletteCommands,
     activateView: persistSidebarView,
     toggleOverlay: (id) => { if (id === "ai") togglePanelAndFocus(); },
     terminal: {
@@ -2035,8 +2159,10 @@ function MainApp() {
             onOpenSettings={() => void openSettingsWindow()}
             onOpenSvgStudio={openSvgPlaygroundTab}
             onOpenMlLab={openMlLabTab}
+            onOpenWeb={openWebTab}
             searchTarget={searchTarget}
             searchRef={searchInlineRef}
+            onOpenSpotlight={() => setQuickFilePickerOpen(true)}
           />
           </div>
 
@@ -2078,30 +2204,10 @@ function MainApp() {
                         view={sidebarView}
                         onShowExplorer={() => persistSidebarView("explorer")}
                       />
-                    ) : sidebarView === "command-history" ? (
-                      <Suspense fallback={null}>
-                        <CommandHistoryPanelLazy workspaceRoot={explorerRoot} />
-                      </Suspense>
-                    ) : sidebarView === "animator" ? (
-                      <AnimatorPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "favicon" ? (
-                      <FaviconPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "icon-set" ? (
-                      <IconSetPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "backdrop" ? (
-                      <BackdropPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "palette" ? (
-                      <PalettePanel workspaceRoot={explorerRoot} />
                     ) : sidebarView === "svg-playground" ? (
                       <SvgPlaygroundPanel onExpand={openSvgPlaygroundTab} workspaceRoot={explorerRoot} />
                     ) : sidebarView === "recent-files" ? (
                       <RecentFilesPanel onOpenFile={handleOpenFile} />
-                    ) : sidebarView === "processes" ? (
-                      <ActivityPanel />
-                    ) : sidebarView === "system-monitor" ? (
-                      <Suspense fallback={null}><SystemMonitorPanelLazy /></Suspense>
-                    ) : sidebarView === "repl" ? (
-                      <ReplPanel />
                     ) : sidebarView === "profiles" ? (
                       <ProfilesPanel
                         currentPath={launchCwd}
@@ -2126,14 +2232,6 @@ function MainApp() {
                       <SymbolOutlinePanel filePath={activeEditorTab ? editorActivePath(activeEditorTab) : null} />
                     ) : sidebarView === "snippets" ? (
                       <SnippetsPanel />
-                    ) : sidebarView === "tests" ? (
-                      <TestRunnerPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "build" ? (
-                      <BuildPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "code-review" ? (
-                      <CodeReviewPanel workspaceRoot={explorerRoot} />
-                    ) : sidebarView === "agent-queue" ? (
-                      <ActivityPanel />
                     ) : sidebarView === "symbol-search" ? (
                       <SymbolSearchPanel
                         workspaceRoot={explorerRoot}
@@ -2141,10 +2239,6 @@ function MainApp() {
                           openFileTab(path, true);
                         }}
                       />
-                    ) : sidebarView === "refactor" ? (
-                      <RefactorPanel />
-                    ) : sidebarView === "prompt-templates" ? (
-                      <PromptTemplatesPanel />
                     ) : sidebarView === "bookmarks" ? (
                       <BookmarksPanel
                         onNavigate={(path, line) => {
@@ -2167,51 +2261,17 @@ function MainApp() {
                     activeView={sidebarView}
                     onSelectView={persistSidebarView}
                     changedCount={sourceControl.changedCount}
-                    runningProcessCount={runningProcessCount || undefined}
                     onOpenHistory={openGitGraphFromContext}
                   />
                 </div>
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel id="workspace" defaultSize="78%" minSize="30%">
-                <ResizablePanelGroup orientation="vertical" className="h-full">
-                  <ResizablePanel id="workspace-main" minSize="20%">
-                    <ErrorBoundary>{workspaceSurface}</ErrorBoundary>
-                  </ResizablePanel>
-
-                  {problemsOpen && (
-                    <>
-                      <ResizableHandle withHandle />
-                      <ResizablePanel
-                        id="problems-panel"
-                        panelRef={problemsPanelRef}
-                        collapsible
-                        collapsedSize={0}
-                        defaultSize="180px"
-                        minSize="80px"
-                        maxSize="50%"
-                        onResize={(size) => {
-                          if (size.inPixels === 0) setProblemsOpen(false);
-                        }}
-                      >
-                        <ProblemsPanel
-                          onNavigate={(path, line, character) => {
-                            openFileTab(path, true);
-                            // Brief delay so the editor has time to mount
-                            setTimeout(() => {
-                              window.dispatchEvent(
-                                new CustomEvent("nexis:goto-location", {
-                                  detail: { path, line, character },
-                                }),
-                              );
-                            }, 80);
-                          }}
-                        />
-                      </ResizablePanel>
-                    </>
-                  )}
-
-                </ResizablePanelGroup>
+                <PanelDock
+                  workspace={<ErrorBoundary>{workspaceSurface}</ErrorBoundary>}
+                  renderBuiltin={renderBottomTab}
+                  suppressed={zenMode}
+                />
 
                 {/* Floating panel overlay — rendered when panelMode === "floating" */}
                 {keysLoaded && panelOpen && panelMode === "floating" && hasComposer && (
@@ -2233,8 +2293,9 @@ function MainApp() {
             privateActive={
               activeTab?.kind === "terminal" && activeTab.private === true
             }
-            problemsOpen={problemsOpen}
-            onToggleProblems={() => setProblemsOpen((v) => !v)}
+            problemsOpen={bottomOpen && bottomTab === PROBLEMS_TAB}
+            onToggleProblems={() => useBottomPanelStore.getState().toggleTab(PROBLEMS_TAB)}
+            onOpenActivity={() => persistSidebarView("processes")}
           />
           </div>
 
@@ -2251,7 +2312,7 @@ function MainApp() {
           {/* One-time expansion-pack preset picker (Settings → Features later) */}
           <PackOnboardingDialog />
 
-          {miniOpen && hasComposer ? <AiMiniWindow key="ai-mini" /> : null}
+          {miniOpen && hasComposer ? <AiMiniWindow key="ai-mini" workspaceRoot={explorerRoot} /> : null}
           {askPopup ? (
             <SelectionAskAi
               key="ask-ai-popup"
@@ -2264,10 +2325,11 @@ function MainApp() {
           ) : null}
 
           {quickFilePickerOpen && (
-            <QuickFilePicker
+            <AppleSpotlight
               root={explorerRoot}
               onSelect={(path) => openFileTab(path)}
               onClose={() => setQuickFilePickerOpen(false)}
+              commands={visiblePaletteCommands}
             />
           )}
 

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/modules/settings/preferences";
-import type { TerminalCursorStyle, ThemePref } from "@/modules/settings/store";
+import type { ContrastPref, TerminalCursorStyle, ThemePref } from "@/modules/settings/store";
 import {
   formatAccelerator,
   QUICK_TERMINAL_HEIGHTS,
@@ -46,6 +46,7 @@ import {
   setTerminalFontSize,
   setTerminalFontWeight,
   setDefaultShellPath,
+  setContrast,
   setDebugFpsMeter,
   setDebugMemoryReport,
   setTerminalRestoreScrollback,
@@ -80,6 +81,17 @@ const APPEARANCE: {
   { id: "dark", label: "Dark", icon: "theme-dark" },
 ];
 
+const CONTRAST: {
+  id: ContrastPref;
+  label: string;
+  icon: IconName;
+  active?: boolean;
+}[] = [
+  { id: "system", label: "System", icon: "computer" },
+  { id: "standard", label: "Standard", icon: "contrast" },
+  { id: "high", label: "High", icon: "contrast", active: true },
+];
+
 const LETTER_SPACINGS = [-4, -3, -2, -1, 0, 1, 2, 3, 4] as const;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 2.0;
@@ -101,6 +113,7 @@ const onToggleAutostart = async (next: boolean) => {
 export function GeneralSection() {
   const { mode, setMode } = useTheme();
 
+  const contrast = usePreferencesStore((s) => s.contrast);
   const autostart = usePreferencesStore((s) => s.autostart);
   const restoreWindowState = usePreferencesStore((s) => s.restoreWindowState);
   const restoreTabs = usePreferencesStore((s) => s.restoreTabs);
@@ -218,6 +231,35 @@ export function GeneralSection() {
         <p className="text-[11px] text-muted-foreground">
           For theme, background and customization, see the{" "}
           <strong className="font-medium text-foreground">Themes</strong> tab.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label>Contrast</Label>
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Contrast">
+          {CONTRAST.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="radio"
+              aria-checked={contrast === o.id}
+              onClick={() => void setContrast(o.id)}
+              className={cn(
+                "group flex h-20 flex-col items-center justify-center gap-1.5 rounded-lg border bg-card transition-all",
+                contrast === o.id
+                  ? "border-foreground/60 ring-1 ring-foreground/20"
+                  : "border-border/60 hover:border-border",
+              )}
+            >
+              <Icon name={o.icon} size="lg" active={o.active} />
+              <span className="text-[11.5px]">{o.label}</span>
+            </button>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          High contrast works with any theme: stronger text, borders and focus
+          rings, no animated background or frosted glass, and terminal colours
+          lifted to a 7:1 floor. System follows your OS accessibility setting.
         </p>
       </div>
 

@@ -24,12 +24,14 @@ Distinct from [[source-control]] territory: that panel is *this workspace's* rep
 - `src/modules/atlas/repos/host.tsx` — the callbacks Atlas asks Nexis for (open workspace / terminal / file)
 - `src/modules/atlas/repos/api.ts` — typed host-only command descriptors through `platform/ipc.ts`; scanner calls cannot acquire the active WSL scope
 - `src/modules/atlas/map/CityCanvas.tsx`, `iso.ts`, `layout.ts`, `palette.ts` — the isometric renderer
+- `src/modules/atlas/list/GitHubActivity.tsx` — the 53-week commit heatmap in the detail panel
 
 ## Invariants / gotchas
 
 - **This panel answers about the host machine, always — including under a WSL workspace.** That is a deliberate exception to pitfall #20, not an oversight of it: Atlas is a machine-wide inventory, not a capability reported *on behalf of* the workspace, and re-rooting the scan when a terminal tab switches env would make the map jump for reasons unrelated to the map. The requirement pitfall #20 actually imposes — don't let a host-scoped answer pass as a workspace-scoped one — is met by the panel's status line saying "this machine". Scanning inside a distro is tracked in ROADMAP.
 - **`git2` is linked for this panel and nothing else.** [[source-control]] drives the `git` CLI on purpose: a panel that writes must respect the user's config, credential helpers and hooks. A read-only sweep over every repo wants in-process reads and no process-per-repo. Do not "unify" these.
 - **`git2` is pinned `default-features = false`.** Atlas never talks to a remote, so the ssh/https transports are pure size.
+- **The activity heatmap is the one part of this panel that shells out to `git`.** It goes through `git_activity` in [[source-control]]'s command set, not through Atlas's `git2` scanner, because it wants `--date=format:` local-timezone bucketing that git already does well and the scanner has no reason to learn. It is also per-repo and on-demand (fetched when a repo is selected), so it never joins the all-repos sweep.
 - **Use the fallible `git2` 0.21 APIs deliberately.** `Commit::summary`, `Reference::symbolic_target`, and `StatusEntry::path` can now report a libgit2 decoding failure; `scan.rs` degrades those individual display fields safely rather than treating them as infallible.
 - **Config lives at `~/.config/nexis/atlas.toml`** (`%APPDATA%\nexis\atlas.toml`), deliberately a separate hand-edited file rather than keys in preferences — see the header comment in `config.rs`. `LEGACY_DIRS` adopts a config written by the standalone Atlas, Imagine, or Dev Dashboard on first open.
 - **`scan_repos` must stay `async` + `heavy()`.** It walks the filesystem for every repo on the machine; sync would stall the Tauri main thread and every queued `pty_write`.

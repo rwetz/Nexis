@@ -58,7 +58,7 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
     ref,
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const { resolvedMode, themeId, customThemes } = useTheme();
+    const { resolvedMode, themeId, customThemes, highContrast } = useTheme();
     const [isDragOver, setIsDragOver] = useState(false);
 
     const { suggestion } = useTerminalSuggestions(leafId);
@@ -86,7 +86,7 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
       // Defer one frame so CSS-variable token resolution sees the new class.
       const id = requestAnimationFrame(() => session.applyTheme());
       return () => cancelAnimationFrame(id);
-    }, [resolvedMode, themeId, customThemes, session]);
+    }, [resolvedMode, themeId, customThemes, highContrast, session]);
 
     // The natural-language command bar (App.tsx dispatches the event from
     // the "terminal.aiCommand" shortcut with no leaf targeting; the visible

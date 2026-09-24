@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, existsSync } from "node:fs";
+import { mkdtempSync, realpathSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -38,7 +38,12 @@ function removeTestDirectory(path: string, parent: string) {
 }
 
 describe("Real platform adapters", () => {
-  const local = mkdtempSync(join(tmpdir(), "nexis-e2e-"));
+  // Canonical long form. On the Windows runner `tmpdir()` is the 8.3 short
+  // name (`RUNNER~1`) while the app reports a process cwd in its long form
+  // (`runneradmin`): the same directory, spelled two ways, so the cwd
+  // comparison below failed on every run, main's nightly included.
+  const tmpRoot = realpathSync.native(tmpdir());
+  const local = mkdtempSync(join(tmpRoot, "nexis-e2e-"));
   const other = existsSync("G:/") ? mkdtempSync("G:/nexis-e2e-") : null;
   const distro = availableDistro();
   before(async () => {
@@ -46,7 +51,7 @@ describe("Real platform adapters", () => {
     await dismissStartupDialogs();
   });
   after(() => {
-    removeTestDirectory(local, tmpdir());
+    removeTestDirectory(local, tmpRoot);
     if (other) removeTestDirectory(other, "G:/");
   });
 

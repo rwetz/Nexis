@@ -20,11 +20,20 @@
  * not wrap this in anything that re-introduces a CSS `zoom`.
  */
 
+import { RailIndicator } from "@/components/ui/rail-indicator";
 import { Icon, type IconName } from "@/components/icon";
 import { ExportBar } from "./ExportBar";
 import { PresetGallery } from "./PresetGallery";
 import { ShapeGenerator } from "./ShapeGenerator";
 import { SvgCanvas } from "./SvgCanvas";
+import { useGlidingRail } from "@/components/ui/use-gliding-rail";
+import {
+  composeSvg,
+  countPieces,
+  nextSlot,
+  readViewBox,
+} from "./lib/svgCompose";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   getCachedEditorTheme,
@@ -93,7 +102,12 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
   const [source, setSource] = useState<string>(loadSource);
   const [showGrid, setShowGrid] = useState(true);
   const [leftPane, setLeftPane] = useState<LeftPane>("source");
+  const paneRail = useGlidingRail<LeftPane>(leftPane, "horizontal", LEFT_PANES.length);
   const [optimized, setOptimized] = useState<OptimizeResult | null>(null);
+  // Whether picking a preset or a generated shape replaces the document or
+  // joins it. Session state, not a preference: it is a mode you are in while
+  // building one drawing, not a standing choice about the app.
+  const [placeMode, setPlaceMode] = useState<"replace" | "add">("add");
 
   const editorThemeId = usePreferencesStore((s) => s.editorTheme);
   const [themeExt, setThemeExt] = useState(() =>
@@ -139,6 +153,37 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
     setOptimized(null);
   };
 
+  /**
+   * Place a piece ON the canvas instead of instead of it.
+   *
+   * Picking a second preset used to discard the first, which made this a
+   * viewer for one thing at a time rather than a canvas. In `add` mode the
+   * incoming art is merged as its own group — id-namespaced and fitted into
+   * the next free slot, so it neither repaints the existing piece through a
+   * colliding gradient id nor lands invisibly on top of it.
+   *
+   * Falls back to replacing when there is nothing to merge into: on an empty
+   * or invalid canvas, "add" and "replace" are the same action, and refusing
+   * would be pedantry.
+   */
+  const insertSource = (next: string, label?: string) => {
+    if (placeMode === "replace" || !valid) {
+      replaceSource(next);
+      return;
+    }
+    const doc = new DOMParser().parseFromString(source, "image/svg+xml");
+    const box = readViewBox(doc.documentElement);
+    const result = composeSvg(source, next, nextSlot(box, countPieces(source)), label);
+    if (!result.ok) {
+      toast.error("Could not add that to the canvas", {
+        description: result.reason,
+      });
+      return;
+    }
+    setSource(result.svg);
+    setOptimized(null);
+  };
+
   const runOptimize = () => {
     const result = optimizeSvg(source);
     setOptimized(result);
@@ -161,18 +206,33 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
             : "flex-1 border-b border-border/60",
         )}
       >
-        <div className="flex shrink-0 items-center gap-1.5 border-b border-border/50 px-3 py-1.5">
+        {/* Four panes the user flips between constantly while drawing, so the
+            selection travels rather than cutting — same rail as the sidebar,
+            Settings and Atlas. */}
+        <div
+          ref={paneRail.containerRef}
+          className="relative flex shrink-0 items-center gap-1.5 border-b border-border/50 px-3 py-1.5"
+          onPointerLeave={() => paneRail.setHoverId(null)}
+        >
+          <RailIndicator
+            rail={paneRail}
+            rect={paneRail.activeRect}
+            radius={8}
+            className="inset-y-1.5 bg-primary/15"
+          />
           {LEFT_PANES.map(([id, icon, label]) => (
             <button
               key={id}
               type="button"
+              ref={(el) => paneRail.registerItem(id, el)}
               aria-pressed={leftPane === id}
               onClick={() => setLeftPane(id)}
+              onPointerEnter={() => paneRail.setHoverId(id)}
               className={cn(
-                "flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
+                "relative z-10 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 leftPane === id
-                  ? "bg-primary/15 text-primary"
+                  ? "text-primary"
                   : "text-muted-foreground/70 hover:text-foreground",
               )}
             >
@@ -180,6 +240,35 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
               {label}
             </button>
           ))}
+          {/* Replace / Add. Only shown on the two panes that hand art to the
+              canvas — on the Source and Canvas panes there is nothing to
+              place, so the control would be a mode with no trigger. */}
+          {(leftPane === "presets" || leftPane === "shapes") && (
+            <div className="relative z-10 ml-auto flex items-center gap-0.5 rounded-md bg-muted/40 p-0.5">
+              {(["add", "replace"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  aria-pressed={placeMode === m}
+                  title={
+                    m === "add"
+                      ? "Add to the canvas, keeping what is already there"
+                      : "Replace everything on the canvas"
+                  }
+                  onClick={() => setPlaceMode(m)}
+                  className={cn(
+                    "rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                    placeMode === m
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground/70 hover:text-foreground",
+                  )}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          )}
           {leftPane === "source" && !valid && (
             <span className="ml-auto flex items-center gap-1 text-[10px] text-amber-500">
               <Icon name="alert" size="xs" />
@@ -193,14 +282,14 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
           ) : leftPane === "shapes" ? (
             <ShapeGenerator
               onInsert={(generated) => {
-                replaceSource(generated);
-                setLeftPane("source");
+                insertSource(generated, "shape");
+                setLeftPane("canvas");
               }}
             />
           ) : leftPane === "presets" ? (
             <PresetGallery
               onInsert={(generated) => {
-                replaceSource(generated);
+                insertSource(generated, "preset");
                 setLeftPane("canvas");
               }}
             />

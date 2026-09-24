@@ -16,7 +16,8 @@
  */
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
+import { sendMessage } from "@/modules/ai/store/chatStore";
+import { showAiChat } from "@/modules/ai/store/aiToolStore";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // ── Global entry-point (like sendToRepl) ─────────────────────────────────────
@@ -82,7 +83,6 @@ export function RefactorPanel() {
   const [code, setCode] = useState("");
   const [selectedOp, setSelectedOp] = useState(OPERATIONS[0].id);
   const [sending, setSending] = useState(false);
-  const openAiPanel = useChatStore((s) => s.openPanel);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Register global setter
@@ -109,12 +109,12 @@ export function RefactorPanel() {
     setSending(true);
     try {
       const prompt = op.prompt(c);
-      openAiPanel();
+      showAiChat();
       await sendMessage(prompt);
     } finally {
       setSending(false);
     }
-  }, [code, op, openAiPanel]);
+  }, [code, op]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">

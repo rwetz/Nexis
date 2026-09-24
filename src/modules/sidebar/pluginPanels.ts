@@ -17,7 +17,8 @@
 
 import { packEnabled, type PackId } from "@/lib/packs";
 import type { PanelContribution } from "@/lib/plugins/types";
-import { panelIdFromView, type SidebarView } from "./types";
+import type { CommandDef } from "@/components/CommandPalette";
+import { panelIdFromView, pluginPanelViewId, type SidebarView } from "./types";
 
 /** Only sidebar-located contributions are rail candidates. */
 export function sidebarPanels(
@@ -75,4 +76,36 @@ export function visiblePluginPanels(
     .sort(
       (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title),
     );
+}
+
+/**
+ * "Show …" palette commands for contributed panels that are not on the rail.
+ *
+ * A panel is on the rail only when it declares `showInRail: true` (the rail
+ * is for contextual views — see `viewCatalog.ts`). Every other one needs a way
+ * in, and this is it; a panel that already contributes its own command should
+ * set `legacyView` or `showInRail` as appropriate, or it will appear twice.
+ */
+export function pluginPanelCommands(
+  panels: readonly PanelContribution[],
+  enabledPacks: readonly PackId[],
+  open: (view: SidebarView) => void,
+): CommandDef[] {
+  // Bottom-panel contributions count too: they have no rail button either.
+  const bottom = panels
+    .filter((p) => p.location === "bottom" && packEnabled(p.pack, enabledPacks))
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.title.localeCompare(b.title));
+  return [...visiblePluginPanels(panels, enabledPacks), ...bottom]
+    .filter((p) => !p.legacyView && (p.location === "bottom" || p.showInRail !== true))
+    .map((p) => {
+      const view = pluginPanelViewId(p.id);
+      return {
+        id: `view.${view}`,
+        label: `Show ${p.title}`,
+        category: "View",
+        icon: p.icon,
+        keywords: [p.title.toLowerCase()],
+        action: () => open(view),
+      };
+    });
 }

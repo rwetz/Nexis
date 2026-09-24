@@ -97,7 +97,12 @@ export function SurfaceLayer() {
   );
   const imageActive = hydrated ? storeImageActive : fastPath.active;
 
-  const { themeId, resolvedMode, customThemes } = useTheme();
+  const { themeId, resolvedMode, customThemes, highContrast } = useTheme();
+
+  // High contrast drops the background entirely: moving or pictured colour
+  // under text is exactly what it is for removing. Returning here (not
+  // hiding with CSS) also means no WebGL context for an animated one.
+  if (highContrast) return null;
 
   // Animated backgrounds — only render after store hydration
   if (hydrated && backgroundKind === "animated" && backgroundAnimatedId) {

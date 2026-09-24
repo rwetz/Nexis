@@ -4,6 +4,22 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+// One type family across the whole app: Geist for the interface, Geist Mono
+// for code and the terminal. They are drawn as siblings by one designer, so
+// the chrome and the content share a skeleton, x-height and rhythm instead
+// of being two unrelated faces sharing a window.
+//
+// Variable builds, not static weights: Settings offers five terminal weights
+// (300-700), and static 400+700 would leave Light, Medium and Semibold to
+// rasterizer synthesis — which on a monospace grid is where faux weights
+// look worst.
+import { domAnimation, LazyMotion } from "motion/react";
+import "@fontsource-variable/geist/wght.css";
+import "@fontsource-variable/geist-mono/wght.css";
+// The display voice, for the handful of places Nexis introduces itself.
+import "@fontsource-variable/space-grotesk/wght.css";
+// Kept as the fallback link in the mono chain: its bundled subsets cover
+// Cyrillic, which Geist Mono's do not.
 import "@fontsource/jetbrains-mono/latin-400.css";
 import "@fontsource/jetbrains-mono/latin-700.css";
 import "@fontsource/jetbrains-mono/cyrillic-400.css";
@@ -45,8 +61,16 @@ if (import.meta.env.MODE === "e2e") {
   await import("./test/desktop-api");
 }
 
+// One motion feature set for the whole app. Components import the slim `m`
+// and the animation features load here once, instead of every `motion.*`
+// import carrying the full renderer (~30 kB). `strict` makes a stray
+// `motion.*` throw in development rather than quietly re-bloating the bundle.
+// `domAnimation` covers everything Nexis animates; layout and drag
+// animations would need `domMax`.
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <App />,
+  <LazyMotion features={domAnimation} strict>
+    <App />
+  </LazyMotion>,
 );
 
 // Window starts hidden (per tauri.conf.json) so users never see a transparent

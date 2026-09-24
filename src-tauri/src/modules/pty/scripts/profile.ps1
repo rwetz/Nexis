@@ -76,3 +76,46 @@ function global:prompt {
     $global:LASTEXITCODE = $lec
     "$oscD$oscA$osc7${original}${oscB}"
 }
+
+# ── OSC 133 C — command pre-execution ────────────────────────────────────────
+#
+# Every other shell Nexis integrates with emits C from a native pre-exec hook
+# (bash's PS0, zsh/fish preexec). PowerShell has no such hook, so without this
+# the sequence for a PS session is A, B, D — and B is the LAST marker a resting
+# prompt emits, which left the frontend unable to tell "a command is running"
+# from "sitting at the prompt". Everything that asked went on to get "running",
+# which is why closing an idle terminal tab always warned about a live process.
+#
+# Enter is the only moment PowerShell offers that means "this line is about to
+# run", so the marker is emitted from a PSReadLine key handler, which is the
+# same mechanism Windows Terminal's own shell integration uses.
+#
+# Guarded rather than assumed: PSReadLine ships with PowerShell 5.1+ and pwsh
+# but can be absent or blocked by policy, and a profile that throws here would
+# cost the user their prompt to buy a confirmation dialog. Failing quietly
+# leaves this one signal missing and nothing else worse.
+if (Get-Module -ListAvailable -Name PSReadLine -ErrorAction SilentlyContinue) {
+    try {
+        Import-Module PSReadLine -ErrorAction Stop
+
+        Set-PSReadLineKeyHandler -Chord Enter -BriefDescription 'NexisAcceptLine' `
+            -LongDescription 'Emit OSC 133;C, then accept the line.' -ScriptBlock {
+            # Only mark execution when the buffer actually holds something.
+            # A bare Enter redraws the prompt without running anything, and
+            # claiming otherwise would re-create the false positive this
+            # exists to remove.
+            $line = $null
+            $cursor = $null
+            [Microsoft.PowerShell.PSConsoleReadLine]::GetBufferState(
+                [ref]$line, [ref]$cursor)
+            if (-not [string]::IsNullOrWhiteSpace($line)) {
+                $esc = [char]27
+                [Console]::Write("$esc]133;C$esc\")
+            }
+            [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+        }
+    } catch {
+        # No pre-exec marker on this host. Liveness checks degrade to "not
+        # running", which is the safe direction.
+    }
+}

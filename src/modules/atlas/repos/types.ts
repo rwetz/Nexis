@@ -71,9 +71,18 @@ export type FileChange = {
 
 /** The list view's drill-in. Pairs with the `RepoSummary` already in the
  *  store — the backend deliberately does not send that twice. */
+/** One day's commit count. `date` is `YYYY-MM-DD` in the committing author's
+ *  own timezone, matching what `git log --format=%ad` reports. Only days with
+ *  at least one commit are present; the heatmap fills the gaps. */
+export type ActivityDay = {
+  date: string;
+  count: number;
+};
+
 export type RepoDetail = {
   files: FileChange[];
   stashes: string[];
+  activity: ActivityDay[];
 };
 
 export type RepoCity = {

@@ -3,6 +3,7 @@ import type { CapabilityDefinition } from "@/workbench/capability";
 import { useCapabilityContext } from "@/workbench/CapabilityHost";
 import { useAtlasStore } from "@/modules/atlas/repos/store";
 import { AtlasWindowActions } from "@/modules/atlas/AtlasWindowActions";
+import { requestAtlasHostAction } from "@/modules/atlas/repos/hostBridge";
 
 const Panel = lazy(() => import("@/modules/atlas/AtlasPanel").then((module) => ({ default: module.AtlasPanel })));
 function AtlasCapabilityPanel() {
@@ -16,7 +17,18 @@ export const atlasCapability: CapabilityDefinition = {
   toolWindows: [{
     id: "atlas", label: "Atlas", title: "Atlas — Nexis", icon: "globe",
     width: 1440, height: 860, minWidth: 720, minHeight: 500, header: "featured",
-    render: () => <Panel standalone />,
+    // The companion window has no tabs and no workspace of its own, so the
+    // three actions that need them are forwarded to the main window instead
+    // of falling through to the no-op host — which is what made "Open as
+    // workspace" and "Terminal" dead buttons here. See hostBridge.ts.
+    render: () => (
+      <Panel
+        standalone
+        openWorkspace={(path) => requestAtlasHostAction({ kind: "workspace", path })}
+        openTerminal={(path) => requestAtlasHostAction({ kind: "terminal", path })}
+        openFile={(path) => requestAtlasHostAction({ kind: "file", path })}
+      />
+    ),
     renderActions: () => <AtlasWindowActions />,
   }],
   commands: (context) => [

@@ -16,7 +16,30 @@ import type { IBuffer, IDecoration, IMarker, Terminal } from "@xterm/xterm";
  * local shell — which fires between commands — should be honored.
  */
 export type ShellIntegrationState = {
+  /**
+   * "Output from here is untrusted." Set at OSC 133 B — the prompt has been
+   * drawn and anything appearing afterwards may be command output rather
+   * than the shell speaking — and cleared at A and D.
+   *
+   * This is a *provenance* flag, not a liveness one, and the difference
+   * matters: at an idle prompt B is the last marker emitted, so this is
+   * TRUE while the shell sits there doing nothing. Use {@link executing} to
+   * ask whether a command is actually running. Conflating the two is what
+   * made the close-confirmation dialog fire on every terminal tab.
+   */
   inCommand: boolean;
+  /**
+   * "A command is actually running." Set at OSC 133 C (pre-execution),
+   * cleared at D (exit) and at A (a fresh prompt, in case a D was lost).
+   *
+   * Every shell Nexis installs integration for emits C — bash via PS0, zsh
+   * and fish via preexec, and PowerShell via a PSReadLine Enter handler
+   * added for exactly this. A shell with no integration never sets it, so
+   * the liveness checks that read it degrade to "not running", which is the
+   * safe direction: a spurious confirmation on every close trains the user
+   * to dismiss it, and then it protects nothing.
+   */
+  executing: boolean;
   /**
    * True once shell integration has proven itself: any OSC 133 prompt
    * marker, or an OSC 7 accepted outside a running command. While false,
@@ -29,7 +52,7 @@ export type ShellIntegrationState = {
 };
 
 export function createShellIntegrationState(): ShellIntegrationState {
-  return { inCommand: false, markersSeen: false };
+  return { inCommand: false, executing: false, markersSeen: false };
 }
 
 export function registerCwdHandler(
@@ -197,7 +220,12 @@ export function registerPromptTracker(
     if (state) state.markersSeen = true;
     // OSC 133 A — start of new prompt (between commands).
     if (data.startsWith("A")) {
-      if (state) state.inCommand = false;
+      if (state) {
+        state.inCommand = false;
+        // Also clears `executing`: a new prompt means the previous command
+        // is over whether or not its D survived the trip.
+        state.executing = false;
+      }
       // A fresh marker per prompt. We intentionally do NOT dispose the
       // previous one — its exit-status decoration (added at the matching D)
       // must persist down the scrollback. xterm disposes the marker for us
@@ -219,24 +247,33 @@ export function registerPromptTracker(
       cmdStartedAt = Date.now();
     } else if (data.startsWith("C")) {
       // OSC 133 C — command pre-execution marker; still inside command.
-      if (state) state.inCommand = true;
+      if (state) {
+        state.inCommand = true;
+        state.executing = true;
+      }
       outMarker?.dispose();
       outMarker = term.registerMarker(0);
       sawExec = true;
     } else if (data.startsWith("D")) {
       // OSC 133 D;<exitcode> — command ends. Accent the command's prompt line
       // green/red in the gutter so success/failure is scannable at a glance.
-      if (state) state.inCommand = false;
+      if (state) {
+        state.inCommand = false;
+        state.executing = false;
+      }
       if (marker && !marker.isDisposed) {
         const code = parseExitCode(data);
         // Read the command now, while the buffer still holds this block.
-        addExitDecoration(
-          term,
-          marker,
-          code,
-          decorations,
-          readCommandText(term, cmdMarker, cmdStartX, outMarker),
-        );
+        const command = readCommandText(term, cmdMarker, cmdStartX, outMarker);
+        // Only a command that ran gets a bar. A bare Enter on an empty prompt
+        // re-emits D with the previous $?, and barring it stacked a green (or
+        // red) bar on every empty prompt line. PowerShell sends no C, so
+        // "ran" is a C marker *or* typed command text. An integration that
+        // never marks input (no B at all) cannot tell the two apart, so it
+        // keeps the old behaviour rather than losing every bar.
+        if (sawExec || command !== "" || cmdMarker === null) {
+          addExitDecoration(term, marker, code, decorations, command);
+        }
         // A finished command with a real exit status is the signal that the
         // "run a command" onboarding step has actually happened. This is a
         // bare dispatchEvent -- the listener owns the preference write, so
@@ -284,10 +321,47 @@ export function registerPromptTracker(
     }
     return true;
   });
+  // Erase in Display (CSI J). `cls` / `clear` blank the screen (mode 2) and
+  // the scrollback (mode 3), but the lines themselves survive, and so do the
+  // markers on them: every exit bar and Explain chip stayed painted on blank
+  // rows, stacking into a solid green stripe down the gutter under the fresh
+  // prompt. Drop everything anchored in the erased region. The prompt marker
+  // for the command that did the clearing goes too, or its D would bar a
+  // blank line. Returns false so xterm still performs the erase; runs before
+  // it, so marker lines are still the pre-erase positions.
+  const ed =
+    typeof term.parser.registerCsiHandler === "function"
+      ? term.parser.registerCsiHandler({ final: "J" }, (params) => {
+          const mode = typeof params[0] === "number" ? params[0] : 0;
+          const buf = term.buffer.active;
+          // The alternate screen (vim, less) has no markers of ours.
+          if ((mode !== 2 && mode !== 3) || buf.type === "alternate") return false;
+          const top = buf.baseY;
+          const erased = (line: number) => (mode === 2 ? line >= top : line < top);
+          for (const dec of decorations.slice()) {
+            if (dec.marker.isDisposed || erased(dec.marker.line)) dec.dispose();
+          }
+          const prompts = promptMarkers.get(term);
+          if (prompts) {
+            const kept: IMarker[] = [];
+            for (const m of prompts) {
+              if (!m.isDisposed && !erased(m.line)) kept.push(m);
+              else m.dispose();
+            }
+            promptMarkers.set(term, kept);
+          }
+          if (marker && (marker.isDisposed || erased(marker.line))) {
+            marker.dispose();
+            marker = null;
+          }
+          return false;
+        })
+      : null;
   return {
     getMarker: () => (marker && !marker.isDisposed ? marker : null),
     dispose: () => {
       d.dispose();
+      ed?.dispose();
       for (const dec of decorations.slice()) dec.dispose();
       decorations.length = 0;
       // Only drop our navigation index — the markers themselves belong to the

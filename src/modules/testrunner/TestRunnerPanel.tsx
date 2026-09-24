@@ -9,6 +9,7 @@ import { processes as processNative } from "@/platform/processes";
 import { Icon } from "@/components/icon";
 
 import { cn } from "@/lib/utils";
+import { useReportSessionStatus } from "@/modules/bottom-panel/sessionStatus";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FRAMEWORKS, type TestFramework, type TestResult, type TestStatus } from "./testFramework";
 
@@ -177,6 +178,15 @@ export function TestRunnerPanel({ workspaceRoot }: Props) {
   }, [stopPolling]);
 
   const isRunning = result?.status === "running";
+  // The bottom panel's tab dot: running, or finished with failures.
+  useReportSessionStatus(
+    "tests",
+    isRunning
+      ? "running"
+      : result?.status === "failed" || result?.status === "error"
+        ? "failed"
+        : "idle",
+  );
   const summary = result ? parseTestSummary(result.output, result.status) : null;
 
   return (

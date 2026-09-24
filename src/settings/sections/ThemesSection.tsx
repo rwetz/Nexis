@@ -13,12 +13,16 @@ import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
   setBackgroundAnimatedId,
   setBackgroundBlur,
+  setWelcomeBackgroundCycle,
+  setWelcomeBackgroundId,
+  WELCOME_BG_LABELS,
+  WELCOME_BG_ORDER,
   setBackgroundImageId,
   setBackgroundKind,
   setBackgroundOpacity,
   setRainbowAccent,
 } from "@/modules/settings/store";
-import type { AnimatedBgId } from "@/modules/settings/store";
+import type { AnimatedBgId, WelcomeBgId } from "@/modules/settings/store";
 import { useTheme } from "@/modules/theme/ThemeProvider";
 import {
   deleteBgImage,
@@ -106,6 +110,8 @@ export function ThemesSection() {
 
   const rainbowAccent = usePreferencesStore((s) => s.rainbowAccent);
   const backgroundKind = usePreferencesStore((s) => s.backgroundKind);
+  const welcomeBgId = usePreferencesStore((s) => s.welcomeBackgroundId);
+  const welcomeCycle = usePreferencesStore((s) => s.welcomeBackgroundCycle);
   const backgroundImageId = usePreferencesStore((s) => s.backgroundImageId);
   const backgroundAnimatedId = usePreferencesStore((s) => s.backgroundAnimatedId);
   const backgroundOpacity = usePreferencesStore((s) => s.backgroundOpacity);
@@ -463,8 +469,71 @@ export function ThemesSection() {
           </div>
         )}
       </div>
+
+      {/* The welcome-screen picker and its cycle toggle render only when
+        * there is more than one background to choose between. With a single
+        * option a picker is a control that cannot do anything and a rotation
+        * is a rotation of one — both come back on their own when a second
+        * background lands. */}
+      {WELCOME_BG_ORDER.length > 1 && (
+        <div className="flex flex-col gap-3">
+          <SectionHeader
+            title="Welcome screen"
+            description="Shown when no tab is open."
+          />
+
+          <div className="grid grid-cols-2 gap-2">
+            {WELCOME_BG_ORDER.map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => void setWelcomeBackgroundId(id)}
+                aria-pressed={welcomeBgId === id}
+                className={cn(
+                  "flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border p-2.5 text-left transition-all",
+                  welcomeBgId === id
+                    ? "border-foreground/60 ring-1 ring-foreground/20"
+                    : "border-border/60 hover:border-border hover:bg-muted/30",
+                )}
+              >
+                <div
+                  className="h-9 w-full rounded-md"
+                  style={{
+                    background: welcomeBgPreview(
+                      id,
+                      getThemePrimary(themeId, resolvedMode, customThemes),
+                    ),
+                  }}
+                />
+                <span className="w-full text-center text-[11.5px] font-medium">
+                  {WELCOME_BG_LABELS[id]}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[11.5px]">Cycle backgrounds</span>
+              <span className="text-[10.5px] leading-tight text-muted-foreground">
+                Show the next background each time the welcome screen appears.
+              </span>
+            </div>
+            <Switch
+              checked={welcomeCycle}
+              onCheckedChange={(v) => void setWelcomeBackgroundCycle(v)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+/** Swatch for one welcome background. */
+function welcomeBgPreview(id: WelcomeBgId, primary: string): string {
+  void id;
+  return `linear-gradient(135deg, #0a0a1a 0%, ${primary} 55%, #0a0a1a 100%)`;
 }
 
 function ThemeGroup({

@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { RailIndicator } from "@/components/ui/rail-indicator";
 import {
   Dialog,
   DialogClose,
@@ -14,6 +15,7 @@ import {
 import { Icon, type IconName } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useGlidingRail } from "@/components/ui/use-gliding-rail";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import {
   JSX,
@@ -212,6 +214,15 @@ export function SettingsDialog() {
 
   const firstMatch = visibleGroups[0]?.tabs[0];
 
+  // The nav's own line rail. `visibleTabCount` is the revision: filtering by
+  // the search query changes which rows exist and therefore where every row
+  // sits, and the rail has to re-measure when it does.
+  const visibleTabCount = visibleGroups.reduce(
+    (n, g) => n + g.tabs.length,
+    0,
+  );
+  const rail = useGlidingRail<SettingsTab>(activeTab, "vertical", visibleTabCount);
+
   // Enter jumps to the top hit so search is a keyboard-only path: open, type,
   // Enter. Selecting does not clear the query — the filtered nav stays put so
   // you can Enter again on a near-miss without retyping.
@@ -246,7 +257,16 @@ export function SettingsDialog() {
             "fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
             "flex overflow-hidden",
             "w-[min(920px,calc(100vw-2rem))] h-[min(700px,calc(100vh-4rem))]",
-            "rounded-2xl bg-popover text-popover-foreground",
+            // The blur lives on THIS element, which is the one that carries
+            // the radius — so it is clipped to the rounded rectangle rather
+            // than painting a square plate behind it. A backdrop-filter on a
+            // child, or on a sibling sized to the dialog, is not clipped by
+            // an ancestor's border-radius and shows its corners.
+            //
+            // `isolate` keeps the blur sampling the page behind the dialog
+            // rather than compositing with the overlay stacked above it.
+            "isolate rounded-2xl text-popover-foreground",
+            "bg-popover/85 supports-backdrop-filter:backdrop-blur-xl",
             "shadow-xl ring-1 ring-foreground/8",
             // entry/exit animation
             "duration-100 outline-none",
@@ -283,7 +303,34 @@ export function SettingsDialog() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {/* A single hairline runs the height of the nav, with one solid
+              * segment marking the active row — the row itself carries no
+              * fill. The line is what makes a filtered list still read as
+              * one column: with per-row backgrounds, a nav that loses half
+              * its rows to a search query loses its spine too. */}
+            <div
+              ref={rail.containerRef}
+              className="relative min-h-0 flex-1 overflow-y-auto px-2 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              onPointerLeave={() => rail.setHoverId(null)}
+            >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-2 left-1 w-px bg-border/60"
+              />
+              {rail.hoverId !== activeTab && (
+                <RailIndicator
+                  rail={rail}
+                  rect={rail.hoverRect}
+                  radius={1}
+                  className="left-1 w-px bg-foreground/25"
+                />
+              )}
+              <RailIndicator
+                rail={rail}
+                rect={rail.activeRect}
+                radius={1}
+                className="left-[2px] w-[2px] bg-primary"
+              />
               {visibleGroups.map((group, gi) => (
                 <div
                   key={group.label ?? "ungrouped"}
@@ -302,15 +349,18 @@ export function SettingsDialog() {
                       <button
                         key={t.id}
                         type="button"
+                        ref={(el) => rail.registerItem(t.id, el)}
                         onClick={() => setActiveTab(t.id)}
+                        onPointerEnter={() => rail.setHoverId(t.id)}
+                        onFocus={() => rail.setHoverId(t.id)}
                         aria-current={isActive ? "page" : undefined}
                         className={[
                           "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px]",
                           "transition-colors outline-none",
                           "focus-visible:ring-2 focus-visible:ring-ring/40",
                           isActive
-                            ? "bg-muted/70 font-medium text-foreground"
-                            : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                            ? "font-medium text-foreground"
+                            : "text-muted-foreground hover:text-foreground",
                         ].join(" ")}
                       >
                         <Icon name={t.icon} className="shrink-0" />

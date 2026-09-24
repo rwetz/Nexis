@@ -15,8 +15,24 @@ A theme is a data object (`Theme` in `src/modules/theme/types.ts`), not a styles
 
 Custom theme files live under the host app-config directory. `themeFiles.ts` must use `hostFilesystem`, never the active workspace environment; otherwise a WSL workspace incorrectly routes a Windows app-data path into the distro.
 
+## Animated backgrounds
+
+`SurfaceLayer` picks one of five by `backgroundAnimatedId` and hands it the active theme's `primary`, re-keying on theme/mode change so colours refresh. All five live in `src/components/ui/backgrounds/` and all five gate their rAF through `rafLoop.ts` (hidden documents must not keep rendering — WebKitGTK does not reliably throttle them).
+
+Four are `ogl` fragment shaders on a full-screen triangle (Aurora, Particles, Threads, DarkVeil); **Dot Grid is canvas 2D**, deliberately, so there is one background that still works with no usable WebGL context. **Dither** is a port *onto* `ogl` from the reference three.js + `@react-three/fiber` + `@react-three/postprocessing` stack — its two passes collapse into one fragment shader because the "post" pass has no scene to read back, only the luminance the first pass just computed.
+
+### Two background sets, deliberately separate
+
+`AnimatedBgId` (Aurora / Particles / Threads) is the **app-wide** background: it sits behind every pane at low opacity via `SurfaceLayer`, and its job is to stay out of the way of work.
+
+`WelcomeBgId` (DarkVeil / Dither / Dot Grid) is the **welcome screen's own** set, owned by `WelcomeScreen`. That surface is the one place in Nexis allowed to be scenery, so its backgrounds are opaque, full-strength and `position: absolute` (they fill a pane, they are not a window overlay). `WELCOME_BG_ORDER` + `nextWelcomeBg` rotate it **once per viewing** when `welcomeBackgroundCycle` is on — the rotation writes the *next* id back to preferences, so the screen holds what it started with and the next viewing picks up the write.
+
+Dither alone is not theme-tinted: it ships the grey-on-black BG Studio settings verbatim, and its swatch in Settings is drawn un-tinted to match rather than promising a colour it will not use.
+
 ## Key files
 
+- `src/modules/theme/SurfaceLayer.tsx` — background dispatch, theme-colour derivation, the image fast path
+- `src/components/ui/backgrounds/` — the five backgrounds plus the shared `rafLoop` visibility gate
 - `src/modules/theme/types.ts` — `Theme`, `ThemeColors`, `TerminalPalette`, `DEFAULT_THEME_ID`
 - `src/modules/theme/themes/index.ts` — the three lists, `getBuiltinTheme`, and `migrateThemeId` (retired ids → survivors)
 - `src/modules/theme/applyTheme.ts` — the only writer of theme CSS variables; also derives `--brand` from `ring ?? primary`
@@ -44,6 +60,8 @@ Custom theme files live under the host app-config directory. `themeFiles.ts` mus
 - **Removing a builtin id strands anyone using it.** Add it to `RETIRED` in `themes/index.ts` — the migration has to cover the localStorage fast path, the initial `loadPreferences`, and the cross-window `prefs-changed` listener, or one of the three will resurrect the dead id.
 - Theme switching runs inside a View Transition **except on Linux**, where WebKitGTK's snapshot path kills the web process on the NVIDIA driver — see the comment on `withViewTransition`.
 - Cross-window propagation is the ordinary preferences path — see [[settings-sync]] and CLAUDE.md pitfall #2.
+
+- **High contrast overrides tokens on `<body>`, never on `:root`.** `applyTheme` writes each palette as inline custom properties on `<html>`, and an inline declaration beats any stylesheet rule on the same element. Custom properties inherit, so the `html[data-contrast="high"] body { … }` block in `globals.css` wins for the whole app. It only reaches Tailwind utilities because `@theme inline` makes them read `var(--border)` at the element. A test in `components/ui/gliding-tabs.test.tsx` fails if the tokens move up. The attribute comes from `ThemeProvider` (`contrast` preference, or the OS under "system"), which also turns off the rainbow and exposes `highContrast`. `SurfaceLayer` renders nothing under it, and `rendererPool` sets `minimumContrastRatio: 7` from the same attribute.
 
 ## Debugging entry points
 

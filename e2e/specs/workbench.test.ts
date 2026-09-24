@@ -20,21 +20,32 @@ describe("Contributed workbench panels", () => {
     await dismissStartupDialogs();
   });
 
-  it("opens lazy Web Tools through its registered command and restores its saved view", async () => {
+  it("opens lazy Web Tools through its registered command", async () => {
+    // Web Tools lives in the Web workbench tab now; its command still
+    // activates the contribution, which renders the lazy body there.
     await runCommand("Show web tools");
     const panel = $('[data-panel-id="webdev:tools"]');
     await panel.waitForDisplayed();
     await panel.$("textarea").waitForExist();
+  });
+
+  it("restores a lazy sidebar panel's saved view across a reload", async () => {
+    // Share is a contributed, lazily loaded panel that still lives in the
+    // sidebar; its selection is persisted, so a reload must bring it back.
+    // (Workbench tabs such as Web, SVG Studio and ML Lab are not restored.)
+    await runCommand("Show Share");
+    const panel = $('[data-panel-id="share:terminal"]');
+    await panel.waitForDisplayed();
+    await panel.$("button").waitForExist();
     await browser.refresh();
     await panel.waitForDisplayed({ timeout: 30_000 });
-    await panel.$("textarea").waitForExist();
+    await panel.$("button").waitForExist();
   });
 
   it("mounts a migrated integration panel through its capability host", async () => {
-    await $('button[aria-label="More panels"]').click();
-    const httpClient = $("button=HTTP Client");
-    await httpClient.waitForDisplayed();
-    await httpClient.click();
+    // HTTP Client lives in the Web workbench: the palette opens that tab on
+    // it, and the tool body carries the contribution's data-panel-id.
+    await runCommand("Show HTTP client");
     const panel = $('[data-panel-id="webdev:http-client"]');
     await panel.waitForDisplayed();
     await panel.$("span*=HTTP Client").waitForDisplayed();

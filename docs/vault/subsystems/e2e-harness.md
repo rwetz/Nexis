@@ -42,7 +42,7 @@ The Phase 3 platform spec uses the E2E-only `src/test/desktop-api.ts` bridge. It
 
 The WSL case is enabled only after a bounded `wsl.exe --list --quiet` and a bounded `wsl.exe -d <distro> --exec true` both succeed. A registered distro is not proof that `WslService` is usable: after a service crash, `wsl.exe` can hang and Webdriver reports the later async-script timeout as a renderer failure. The preflight skips only when the host cannot execute WSL at all; when it succeeds, the spec still performs the real atomic file and process cycle.
 
-`workbench.test.ts` also opens the migrated HTTP Client from the real rail overflow and waits for its lazy body inside `data-panel-id="webdev:http-client"`. Keep an assertion on rendered panel content, not only the contribution container: PanelHost can display the Suspense boundary before the chunk has mounted.
+`workbench.test.ts` opens Web Tools and the migrated HTTP Client through the palette, both of which now land in the Web workbench tab (see [[navigation-surfaces]]). It tests saved-view restore across a reload on **Share**, because a sidebar selection persists and a workbench tab does not. It then waits for its lazy body inside `data-panel-id="webdev:http-client"`. Keep an assertion on rendered panel content, not only the contribution container: PanelHost can display the Suspense boundary before the chunk has mounted.
 
 ## The helper asserts clickability, not the absence of an overlay
 
@@ -77,3 +77,8 @@ As of 2026-09-03 `e2e.yml` also runs on pull requests to `main`, **path-scoped**
 - msedgedriver is pinned to the installed **WebView2 Runtime** version, deliberately not the Edge browser version (`webview2RuntimeVersion()`). That pin is still right even though it was not the bug.
 
 Related: [[release]], and the pitfall list in CLAUDE.md.
+
+## Temp paths on the Windows runner are 8.3 short names
+
+`os.tmpdir()` on GitHub's Windows runner returns `C:\Users\RUNNER~1\...`, while the app reports a process cwd in its long form (`runneradmin`). They are the same directory, but a string comparison fails, and until 2026-09-21 it failed `platform.test.ts` on every run, `main`'s nightly included. Build test directories from `realpathSync.native(tmpdir())`, and pass that same root to the cleanup guard. Otherwise the guard refuses to delete its own directory.
+

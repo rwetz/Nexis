@@ -5,7 +5,18 @@ description: The Art pack's SVG playground — its four panes, the direct-manipu
 
 # Art pack
 
-Six panels. The SVG playground, added 2026-09-03, under the `art` pack (view `svg-playground`). When Art is enabled, **SVG Studio** is promoted into the top titlebar shelf and opens its reusable `svg-playground` tab directly; it deliberately has no duplicate rail row. This is based on `enabledPacks`, not a persisted preset label, so Art, Everything, and a custom configuration with Art enabled stay in sync. The tab lays its preview beside the code; the older rail host stacks them and survives only to heal an old persisted selection.
+One surface, six tools. The SVG playground, added 2026-09-03, under the `art` pack (view `svg-playground`). When Art is enabled, **SVG Studio** is promoted into the top titlebar shelf and opens its reusable `svg-playground` tab directly; it deliberately has no duplicate rail row. This is based on `enabledPacks`, not a persisted preset label, so Art, Everything, and a custom configuration with Art enabled stay in sync. The tab lays its preview beside the code; the older rail host stacks them and survives only to heal an old persisted selection.
+
+## The Studio's tool strip
+
+Palette, Backdrop, Icon Set, Favicon Set and Animator are **not sidebar views** (since 2026-09-20). They are tools in the SVG Studio tab's header strip — `Draw | Palette | Backdrop | Icon Set | Favicon | Animate` — hosted by `SvgPlaygroundStack.tsx`. Which one is in front lives in `studioStore.ts` (`useSvgStudioStore`), so any caller can open the Studio at a tool: App's `openSvgStudio(tool)` sets it, then opens the tab. The pack's `views` is just `["svg-playground"]`, and the five old ids sit in `SidebarRail`'s `RETIRED_VIEWS` so old saved pins are stripped.
+
+The rule behind the move: the sidebar is for panels you glance at while working, and these are somewhere you go and stay. Two decisions not to undo:
+
+- **The strip is in the Studio header, not the playground's left-pane strip.** Every tool carries its own preview and export; in the left pane they would sit beside the playground's preview column, which is about a different document.
+- **Draw stays mounted, hidden with `invisible`, never `display: none`.** The canvas measures `getScreenCTM`, and a box with no layout returns zeros. The other tools mount on demand. Favicon and Animate read the playground's document from storage *at mount*, so the remount is what picks up the latest drawing. Keeping them mounted would show stale art.
+
+The panels still carry their own title headers and were laid out for a ~280px rail. At tab width they stretch to fill. Giving them wide layouts is open work.
 
 The left half is **four tabs over one document**: Source (CodeMirror), Canvas (direct manipulation), Shapes (parametric generators) and Presets (ready-made art). They are tabs, not modes — every pane reads and writes the same `source` string, so a shape can be generated, dragged on the canvas and then hand-tuned in code without any pane owning a copy. The right half (preview, optimize, export) is shared by all four.
 
@@ -135,7 +146,7 @@ Only the root `<svg …>` start tag is searched, and an attribute name must be p
 
 ## Palette
 
-`PalettePanel.tsx` plus `lib/color.ts` (pure maths), `lib/themePalette.ts` (DOM), `lib/paletteExport.ts` (formats). View id `palette`, second panel in the pack.
+`PalettePanel.tsx` plus `lib/color.ts` (pure maths), `lib/themePalette.ts` (DOM), `lib/paletteExport.ts` (formats). Studio tool `palette` (formerly its own sidebar view).
 
 **Seeding from the live theme is the differentiator.** `applyTheme` puts every colour on the document root as a custom property, so the panel reads the *active* theme: Interface for the UI tokens, Terminal for the sixteen ANSI colours. No standalone palette tool can do this, because none of them know what Aurelian is. Same lever [[icon-and-motion-system]]'s file-tree retint pulls.
 
@@ -153,7 +164,7 @@ Harmony feedback is emitted by the click handler, never from the `setEntries` up
 
 ## Backdrop (scenes)
 
-`BackdropPanel.tsx` plus `lib/scenes.ts`. View id `backdrop`. Nine generators at four aspects, coloured from a palette, with Roll and a seed lock.
+`BackdropPanel.tsx` plus `lib/scenes.ts`. Studio tool `backdrop`. Nine generators at four aspects, coloured from a palette, with Roll and a seed lock.
 
 **`SceneDef` is a sibling to `ShapeDef`, never a replacement.** Three things a shape generator structurally cannot express, and they are the entire reason for the second type:
 
@@ -175,7 +186,7 @@ Everything else is unchanged and must stay so: pure function of its numbers, see
 
 ## Animator
 
-`AnimatorPanel.tsx` plus `lib/animate.ts`. View id `animator`. A keyframe timeline over the playground's document, emitted as SMIL or CSS.
+`AnimatorPanel.tsx` plus `lib/animate.ts`. Studio tool `animator`. A keyframe timeline over the playground's document, emitted as SMIL or CSS.
 
 **The hold paid off in a way that was not obvious in advance.** A timeline has to *address* elements, and the canvas's `data-nx-id` tagging already does that. Built before the canvas, this panel would have needed a second selection model — the genuinely large part.
 
@@ -197,7 +208,7 @@ The pack's output is a *file*, so the file-portable one wins by default. (Chromi
 
 ## Not built yet
 
-Nothing in the original plan. The pack owns six panels: playground, palette, backdrop, icon set, favicon set, animator.
+Nothing in the original plan. The pack owns one surface, SVG Studio, with six tools: Draw (the playground), palette, backdrop, icon set, favicon set, animator.
 
 The rest of the panel set is **decided and written down** in ROADMAP.md, against [haikei.com](https://haikei.com) as the reference. The framing that settles it: *the playground is a precision tool and Haikei is a generative one, and those are two jobs* — so the plan adds panels beside the playground rather than growing it. In build order: raster/file export (done), the palette panel (done), the Backdrop scene generator (done), the icon-set review panel (done), and the favicon exporter (done). The library change that gates the Backdrop is a `SceneDef` sibling to `ShapeDef` carrying colour, aspect and layers — the three things `shapes.ts` structurally cannot express.
 

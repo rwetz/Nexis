@@ -14,13 +14,33 @@ export const MAX_VISIBLE_LANES = 6;
 const STRAIGHT_WIDTH = 1.8;
 const CURVE_WIDTH = 1.8;
 
+/** Gutter reserved for the `+N` overflow badge, when one is shown. */
+const BADGE_GUTTER = 16;
+/** Last lane that gets its own column; everything beyond folds onto it. */
+const LAST_LANE = MAX_VISIBLE_LANES - 1;
+
+/**
+ * Horizontal centre of a lane.
+ *
+ * Clamped, which is the whole point. `railWidth` only ever reserves
+ * MAX_VISIBLE_LANES columns, but nothing previously stopped an edge on lane
+ * 11 from being drawn at its true offset — so on a history with a dozen
+ * concurrent branches (a run of Dependabot merges will do it) the lanes
+ * marched straight out of the rail and across the SHA column. Folding
+ * everything past the last column onto that column keeps the drawing inside
+ * the box it was measured for, and the `+N` badge is what tells the reader
+ * the fold happened.
+ */
 function laneX(lane: number): number {
-  return RAIL_PADDING_X + lane * LANE_WIDTH;
+  return RAIL_PADDING_X + Math.min(lane, LAST_LANE) * LANE_WIDTH;
 }
 
 export function railWidth(maxLane: number): number {
   const visible = Math.min(maxLane, MAX_VISIBLE_LANES);
-  return RAIL_PADDING_X * 2 + Math.max(0, visible - 1) * LANE_WIDTH + 6;
+  // The badge sits in its own gutter rather than on top of the last lane —
+  // overlaid, it collided with both the lane it sat on and the SHA beside it.
+  const gutter = maxLane > MAX_VISIBLE_LANES ? BADGE_GUTTER : 0;
+  return RAIL_PADDING_X * 2 + Math.max(0, visible - 1) * LANE_WIDTH + 6 + gutter;
 }
 
 type Props = {
@@ -121,7 +141,11 @@ export const GraphRail = memo(function GraphRail({
       height={rowHeight}
       viewBox={`0 0 ${width} ${rowHeight}`}
       aria-hidden
-      className="shrink-0 overflow-visible"
+      // Clipped, not `overflow-visible`. Visible overflow is what let the
+      // lanes and the badge paint over the SHA column; the padding and the
+      // badge gutter above are sized so nothing that belongs to the rail
+      // needs to escape it.
+      className="shrink-0"
     >
       {row.topEdges.map((e) => renderTopEdge(e, midY))}
       {row.bottomEdges.map((e) => renderBottomEdge(e, midY, rowHeight))}
@@ -147,7 +171,7 @@ export const GraphRail = memo(function GraphRail({
       ) : null}
       {overflow ? (
         <text
-          x={width - 4}
+          x={width - 3}
           y={midY + 3}
           textAnchor="end"
           className="fill-muted-foreground"

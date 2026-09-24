@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { PanelEmptyFolder, PanelEmptyGlyph, PanelEmptyState } from "@/components/ui/PanelEmptyState";
 import { Icon } from "@/components/icon";
 import { basename, displayDirname as dirpart } from "@/lib/path";
 import { cn } from "@/lib/utils";
@@ -252,9 +253,19 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
 
       {/* List */}
       {results.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center text-[11px] text-muted-foreground/60">
-          {query ? "No matching files" : "No recent files"}
-        </div>
+        query ? (
+          <PanelEmptyState
+            art={<PanelEmptyGlyph icon="search" />}
+            title="No matching files"
+            description="Nothing you have opened recently matches that."
+          />
+        ) : (
+          <PanelEmptyState
+            art={<PanelEmptyFolder sheets="lines" />}
+            title="No recent files"
+            description="Files you open show up here, newest first."
+          />
+        )
       ) : (
         <div className="nexis-scrollbar flex-1 overflow-y-auto">
           {results.map((f, idx) => {

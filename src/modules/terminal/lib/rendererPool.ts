@@ -249,9 +249,20 @@ function getRecycler(): HTMLDivElement {
   return el;
 }
 
+/**
+ * xterm's own contrast floor. Under high contrast it lifts any cell whose
+ * foreground/background pair falls below WCAG AAA (7:1) — which reaches the
+ * 256-colour and true-colour output that no theme palette can. Read from the
+ * attribute ThemeProvider stamps, so the pool needs no React context.
+ */
+function minimumContrastRatio(): number {
+  return document.documentElement.getAttribute("data-contrast") === "high" ? 7 : 1;
+}
+
 function termOptions() {
   const prefs = usePreferencesStore.getState();
   return {
+    minimumContrastRatio: minimumContrastRatio(),
     fontFamily: prefs.terminalFontFamily || detectMonoFontFamily(),
     letterSpacing: prefs.terminalLetterSpacing,
     fontSize: Math.max(4, Math.round(prefs.terminalFontSize * prefs.zoomLevel)),
@@ -631,6 +642,10 @@ function setupResizeObserver(slot: Slot, p: AcquireParams): void {
       if (slot.currentLeafId !== p.leafId) return;
       const w = container.clientWidth;
       const h = container.clientHeight;
+      // A collapsed container (the bottom panel maximized over the workspace)
+      // is not a new size. Fitting it would shrink the PTY to one row, and a
+      // TUI in it would redraw mangled when the space comes back.
+      if (w === 0 || h === 0) return;
       if (w === slot.lastW && h === slot.lastH) return;
       slot.lastW = w;
       slot.lastH = h;
@@ -1064,8 +1079,12 @@ export function applyCursorBlink(blink: boolean): void {
 
 export function applyTheme(): void {
   const theme = buildTerminalTheme();
+  const ratio = minimumContrastRatio();
   for (const slot of slots) {
     slot.term.options.theme = theme;
+    if (slot.term.options.minimumContrastRatio !== ratio) {
+      slot.term.options.minimumContrastRatio = ratio;
+    }
   }
 }
 

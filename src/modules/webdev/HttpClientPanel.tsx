@@ -19,6 +19,7 @@
  * property of the project you have open, not of the machine.
  */
 
+import { GlidingTabs, type GlidingTab } from "@/components/ui/gliding-tabs";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
 import { webHttp, type ClientHttpResponse } from "@/capabilities/web-tools/api";
@@ -69,12 +70,20 @@ function loadJson<T>(key: string, fallback: T): T {
   }
 }
 
+
+type RequestTab = "headers" | "body" | "vars";
+const REQUEST_TABS: readonly GlidingTab<RequestTab>[] = [
+  { id: "headers", label: "Headers" },
+  { id: "body", label: "Body" },
+  { id: "vars", label: "Vars" },
+];
+
 export function HttpClientPanel({ workspaceKey }: Props) {
   const [method, setMethod] = useState<HttpMethod>("GET");
   const [url, setUrl] = useState("");
   const [headerText, setHeaderText] = useState("");
   const [body, setBody] = useState("");
-  const [tab, setTab] = useState<"headers" | "body" | "vars">("headers");
+  const [tab, setTab] = useState<RequestTab>("headers");
 
   const [saved, setSaved] = useState<SavedRequest[]>(() =>
     loadJson<SavedRequest[]>(storageKey(workspaceKey, "requests"), []),
@@ -152,13 +161,6 @@ export function HttpClientPanel({ workspaceKey }: Props) {
       setSending(false);
     }
   }, [resolvedUrl, sending, method, body, vars, parsedHeaders]);
-
-  const decoded = useMemo(() => {
-    if (!response) return null;
-    const text = new TextDecoder().decode(new Uint8Array(response.body));
-    const type = contentTypeOf(response.headers);
-    return { ...formatResponseBody(text, type), type, bytes: response.body.length };
-  }, [response]);
 
   const saveCurrent = () => {
     const name = url.trim() || "Untitled";
@@ -240,86 +242,22 @@ export function HttpClientPanel({ workspaceKey }: Props) {
           </button>
         </div>
 
-        {resolvedUrl && resolvedUrl !== url && (
-          <p className="truncate font-mono text-[9.5px] text-muted-foreground/60">
-            {resolvedUrl}
-          </p>
-        )}
-        {unresolved.length > 0 && (
-          <p className="flex items-start gap-1.5 text-[10px] leading-relaxed text-amber-600 dark:text-amber-400">
-            <Icon name="alert" size="xs" className="mt-px shrink-0" />
-            Undefined {unresolved.length === 1 ? "variable" : "variables"}:{" "}
-            {unresolved.join(", ")} — left as written, define them under Vars.
-          </p>
-        )}
+        <RequestHints url={url} resolvedUrl={resolvedUrl} unresolved={unresolved} />
 
         {/* ── Request tabs ──────────────────────────────────────────────── */}
-        <div className="flex items-center gap-1">
-          {(["headers", "body", "vars"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              aria-pressed={tab === t}
-              onClick={() => setTab(t)}
-              className={cn(
-                "rounded-md px-1.5 py-0.5 text-[10.5px] capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                tab === t
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        <GlidingTabs tabs={REQUEST_TABS} value={tab} onChange={setTab} label="Request" />
 
-        {tab === "headers" && (
-          <>
-            <textarea
-              className={cn(FIELD, "h-20")}
-              placeholder={"Content-Type: application/json\n# Authorization: Bearer {{token}}"}
-              spellCheck={false}
-              value={headerText}
-              onChange={(e) => setHeaderText(e.target.value)}
-            />
-            {invalidHeaderLines.length > 0 && (
-              <p className="text-[10px] leading-relaxed text-amber-600 dark:text-amber-400">
-                Ignored (no colon): {invalidHeaderLines.join(" · ")}
-              </p>
-            )}
-          </>
-        )}
-
-        {tab === "body" && (
-          <textarea
-            className={cn(FIELD, "h-28")}
-            placeholder={
-              method === "GET" || method === "HEAD"
-                ? `${method} sends no body`
-                : '{ "name": "value" }'
-            }
-            spellCheck={false}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-          />
-        )}
-
-        {tab === "vars" && (
-          <>
-            <textarea
-              className={cn(FIELD, "h-20")}
-              placeholder={"baseUrl: http://localhost:3000\ntoken: dev-token"}
-              spellCheck={false}
-              value={varsText}
-              onChange={(e) => persistVars(e.target.value)}
-            />
-            <p className="text-[10px] leading-relaxed text-muted-foreground/70">
-              Per workspace, and referenced as <code>{"{{name}}"}</code> in the
-              URL, headers or body. Stored in plain text on this machine — fine
-              for a dev token, not for a production secret.
-            </p>
-          </>
-        )}
+        <RequestTabBody
+          tab={tab}
+          method={method}
+          headerText={headerText}
+          onHeaderText={setHeaderText}
+          invalidHeaderLines={invalidHeaderLines}
+          body={body}
+          onBody={setBody}
+          varsText={varsText}
+          onVarsText={persistVars}
+        />
 
         {/* ── Response ──────────────────────────────────────────────────── */}
         {error && (
@@ -329,76 +267,222 @@ export function HttpClientPanel({ workspaceKey }: Props) {
           </p>
         )}
 
-        {response && decoded && (
-          <div className="flex flex-col gap-1.5 border-t border-border/50 pt-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
-                  STATUS_TONE[statusClass(response.status)],
-                )}
-              >
-                {response.status} {response.statusText}
-              </span>
-              <span className="text-[10px] tabular-nums text-muted-foreground">
-                {formatElapsed(response.elapsedMs)} · {formatSize(decoded.bytes)}
-                {decoded.type ? ` · ${decoded.type}` : ""}
-              </span>
-            </div>
-            {response.finalUrl !== resolvedUrl && (
-              <p className="truncate font-mono text-[9.5px] text-muted-foreground/60">
-                redirected to {response.finalUrl}
-              </p>
-            )}
-            <pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-[10.5px] leading-relaxed whitespace-pre-wrap break-all">
-              {decoded.text || "(empty body)"}
-            </pre>
-            <details>
-              <summary className="cursor-pointer text-[10px] text-muted-foreground/70">
-                {Object.keys(response.headers).length} response headers
-              </summary>
-              <pre className="mt-1 max-h-40 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-[10px] leading-relaxed">
-                {Object.entries(response.headers)
-                  .map(([k, v]) => `${k}: ${v}`)
-                  .join("\n")}
-              </pre>
-            </details>
-          </div>
-        )}
+        {response && <ResponseView response={response} requestedUrl={resolvedUrl} />}
 
-        {/* ── Saved ─────────────────────────────────────────────────────── */}
-        {saved.length > 0 && (
-          <div className="flex flex-col gap-1 border-t border-border/50 pt-2">
-            <span className="text-[9.5px] font-medium uppercase tracking-wide text-muted-foreground/60">
-              Saved in this workspace
-            </span>
-            {saved.map((r) => (
-              <div key={r.id} className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => load(r)}
-                  className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-primary/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                >
-                  <span className="shrink-0 font-mono text-[9.5px] text-muted-foreground/70">
-                    {r.method}
-                  </span>
-                  <span className="truncate font-mono text-[10.5px]">
-                    {r.name}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Delete saved request ${r.name}`}
-                  onClick={() => persist(saved.filter((x) => x.id !== r.id))}
-                  className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                >
-                  <Icon name="close" size="xs" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <SavedRequests
+          saved={saved}
+          onLoad={load}
+          onDelete={(id) => persist(saved.filter((x) => x.id !== id))}
+        />
+
       </div>
     </div>
+  );
+}
+
+/**
+ * One response: status, timing, redirect, body, headers. Its own component
+ * because it depends on nothing but the response and the URL it was asked
+ * for, and keeping its branches (and the decode) out of the panel is most of
+ * what keeps the panel's own control flow readable.
+ */
+function ResponseView({
+  response,
+  requestedUrl,
+}: {
+  response: ClientHttpResponse;
+  requestedUrl: string;
+}) {
+  const decoded = useMemo(() => {
+    const text = new TextDecoder().decode(new Uint8Array(response.body));
+    const type = contentTypeOf(response.headers);
+    return { ...formatResponseBody(text, type), type, bytes: response.body.length };
+  }, [response]);
+
+  return (
+    <div className="flex flex-col gap-1.5 border-t border-border/50 pt-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span
+          className={cn(
+            "rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+            STATUS_TONE[statusClass(response.status)],
+          )}
+        >
+          {response.status} {response.statusText}
+        </span>
+        <span className="text-[10px] tabular-nums text-muted-foreground">
+          {formatElapsed(response.elapsedMs)} · {formatSize(decoded.bytes)}
+          {decoded.type ? ` · ${decoded.type}` : ""}
+        </span>
+      </div>
+      {response.finalUrl !== requestedUrl && (
+        <p className="truncate font-mono text-[9.5px] text-muted-foreground/60">
+          redirected to {response.finalUrl}
+        </p>
+      )}
+      <pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-[10.5px] leading-relaxed whitespace-pre-wrap break-all">
+        {decoded.text || "(empty body)"}
+      </pre>
+      <details>
+        <summary className="cursor-pointer text-[10px] text-muted-foreground/70">
+          {Object.keys(response.headers).length} response headers
+        </summary>
+        <pre className="mt-1 max-h-40 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-[10px] leading-relaxed">
+          {Object.entries(response.headers)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("\n")}
+        </pre>
+      </details>
+    </div>
+  );
+}
+
+/**
+ * The workspace's saved requests. Its own component for the same reason as
+ * `ResponseView`: it needs the list and two callbacks, nothing else, and its
+ * rows and empty case are branches the panel does not need to carry.
+ */
+function SavedRequests({
+  saved,
+  onLoad,
+  onDelete,
+}: {
+  saved: SavedRequest[];
+  onLoad: (request: SavedRequest) => void;
+  onDelete: (id: string) => void;
+}) {
+  if (saved.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1 border-t border-border/50 pt-2">
+      <span className="text-[9.5px] font-medium uppercase tracking-wide text-muted-foreground/60">
+        Saved in this workspace
+      </span>
+      {saved.map((r) => (
+        <div key={r.id} className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onLoad(r)}
+            className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-primary/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <span className="shrink-0 font-mono text-[9.5px] text-muted-foreground/70">
+              {r.method}
+            </span>
+            <span className="truncate font-mono text-[10.5px]">{r.name}</span>
+          </button>
+          <button
+            type="button"
+            aria-label={`Delete saved request ${r.name}`}
+            onClick={() => onDelete(r.id)}
+            className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <Icon name="close" size="xs" />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The notes under the request line: the URL as it will be sent, and any
+ *  `{{variables}}` with no definition. Pure display, so it lives apart. */
+function RequestHints({
+  url,
+  resolvedUrl,
+  unresolved,
+}: {
+  url: string;
+  resolvedUrl: string;
+  unresolved: string[];
+}) {
+  return (
+    <>
+      {resolvedUrl && resolvedUrl !== url && (
+        <p className="truncate font-mono text-[9.5px] text-muted-foreground/60">
+          {resolvedUrl}
+        </p>
+      )}
+      {unresolved.length > 0 && (
+        <p className="flex items-start gap-1.5 text-[10px] leading-relaxed text-amber-600 dark:text-amber-400">
+          <Icon name="alert" size="xs" className="mt-px shrink-0" />
+          Undefined {unresolved.length === 1 ? "variable" : "variables"}:{" "}
+          {unresolved.join(", ")} — left as written, define them under Vars.
+        </p>
+      )}
+    </>
+  );
+}
+
+/** The body of whichever request tab is open: headers, body or vars. */
+function RequestTabBody({
+  tab,
+  method,
+  headerText,
+  onHeaderText,
+  invalidHeaderLines,
+  body,
+  onBody,
+  varsText,
+  onVarsText,
+}: {
+  tab: RequestTab;
+  method: HttpMethod;
+  headerText: string;
+  onHeaderText: (value: string) => void;
+  invalidHeaderLines: string[];
+  body: string;
+  onBody: (value: string) => void;
+  varsText: string;
+  onVarsText: (value: string) => void;
+}) {
+  return (
+    <>
+    {tab === "headers" && (
+      <>
+        <textarea
+          className={cn(FIELD, "h-20")}
+          placeholder={"Content-Type: application/json\n# Authorization: Bearer {{token}}"}
+          spellCheck={false}
+          value={headerText}
+          onChange={(e) => onHeaderText(e.target.value)}
+        />
+        {invalidHeaderLines.length > 0 && (
+          <p className="text-[10px] leading-relaxed text-amber-600 dark:text-amber-400">
+            Ignored (no colon): {invalidHeaderLines.join(" · ")}
+          </p>
+        )}
+      </>
+    )}
+
+    {tab === "body" && (
+      <textarea
+        className={cn(FIELD, "h-28")}
+        placeholder={
+          method === "GET" || method === "HEAD"
+            ? `${method} sends no body`
+            : '{ "name": "value" }'
+        }
+        spellCheck={false}
+        value={body}
+        onChange={(e) => onBody(e.target.value)}
+      />
+    )}
+
+    {tab === "vars" && (
+      <>
+        <textarea
+          className={cn(FIELD, "h-20")}
+          placeholder={"baseUrl: http://localhost:3000\ntoken: dev-token"}
+          spellCheck={false}
+          value={varsText}
+          onChange={(e) => onVarsText(e.target.value)}
+        />
+        <p className="text-[10px] leading-relaxed text-muted-foreground/70">
+          Per workspace, and referenced as <code>{"{{name}}"}</code> in the
+          URL, headers or body. Stored in plain text on this machine — fine
+          for a dev token, not for a production secret.
+        </p>
+      </>
+    )}
+    </>
   );
 }

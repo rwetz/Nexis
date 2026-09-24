@@ -196,6 +196,14 @@ export type SvgPlaygroundTab = {
   title: string;
 };
 
+/** The Web workbench: Ports, HTTP Client and Web Tools. Stateless like SVG
+ *  Studio (the tools keep their own state), so there is only ever one. */
+export type WebWorkbenchTab = {
+  id: number;
+  kind: "web";
+  title: string;
+};
+
 export type Tab =
   | TerminalTab
   | EditorTab
@@ -209,7 +217,8 @@ export type Tab =
   | GitCommitFileDiffTab
   | MlLabTab
   | MlNetworkTab
-  | SvgPlaygroundTab;
+  | SvgPlaygroundTab
+  | WebWorkbenchTab;
 
 export type TabPatch = Partial<{
   title: string;

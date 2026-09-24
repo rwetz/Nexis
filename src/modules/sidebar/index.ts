@@ -18,8 +18,11 @@ export {
 export type { PluginPanelViewId, SidebarView, SidebarViewId } from "./types";
 export {
   findPluginPanel,
+  pluginPanelCommands,
   resolvePluginView,
   sidebarPanels,
   visiblePluginPanels,
 } from "./pluginPanels";
 export type { PluginViewState } from "./pluginPanels";
+export { RAIL_VIEWS, VIEW_CATALOG, viewPaletteCommands } from "./viewCatalog";
+export type { ViewEntry, ViewKind } from "./viewCatalog";

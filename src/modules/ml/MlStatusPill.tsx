@@ -10,7 +10,7 @@
  */
 import { useEffect } from "react";
 import { desktopProgress, desktopWindow } from "@/platform/desktop";
-import { cn } from "@/lib/utils";
+import { CallChip } from "@/components/ui/CallChip";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { useMlStore } from "./store";
 import { displayMetric, headlineMetric } from "./lib/friendly";
@@ -18,6 +18,7 @@ import { displayMetric, headlineMetric } from "./lib/friendly";
 export function MlStatusPill() {
   const activeRun = useMlStore((s) => s.activeRun);
   const lastValues = useMlStore((s) => s.lastValues);
+  const cancelActive = useMlStore((s) => s.cancelActive);
 
   // Auto-open the ML Lab when a run starts, if the user opted in. Lives
   // here (always mounted in the status bar) so it fires even when the
@@ -78,23 +79,29 @@ export function MlStatusPill() {
       ? "stopping…"
       : `training${pct !== null ? ` ${pct}%` : ""}${heroText}`;
 
+  // A CallChip rather than a bespoke pill: a training run is exactly what
+  // that component is for — long-lived work the user started, which they
+  // want to know the age of and be able to stop without first finding the
+  // panel that owns it. It also brings the elapsed clock, which this pill
+  // never had, sharing `lib/duration.ts` with ML Lab's own run header so the
+  // two never disagree about how long the run has been going.
   return (
-    <button
-      type="button"
+    <CallChip
+      label={label}
+      startedAtMs={activeRun.startedAtMs}
       onClick={() =>
         window.dispatchEvent(
           new CustomEvent("nexis:open-sidebar-view", { detail: "ml" }),
         )
       }
-      className={cn(
-        "flex cursor-pointer items-center gap-1.5 rounded px-2 py-0.5 text-[10.5px] font-medium transition-colors",
-        "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
-        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
-      )}
-      title="A model is training — open ML Lab"
-    >
-      <span className="size-1.5 shrink-0 nexis-blink rounded-full bg-emerald-500" />
-      <span className="max-w-56 truncate">{label}</span>
-    </button>
+      // Already stopping — offering "stop" again would do nothing.
+      onEnd={
+        activeRun.status === "cancelling"
+          ? undefined
+          : () => void cancelActive()
+      }
+      endLabel="Stop training"
+      className="max-w-64"
+    />
   );
 }

@@ -52,7 +52,7 @@ The V1 registry could *store* a `PanelContribution` but nothing rendered one: th
 2. **Persistence validates without the registry.** `isSidebarView` accepts the prefix shape alone, because sidebar state is restored from localStorage *before* any plugin registers. A persisted plugin view is therefore normally unresolved on first render.
 3. **Unresolved ≠ invalid.** `PluginPanelSlot` renders a neutral "isn't available" state for a `missing` contribution rather than redirecting to the explorer. A redirect would silently discard the user's view on every launch, and would do so more often on slower machines — the failure would look like a preference that won't stick.
 4. **The pack lives on the contribution.** `packForView()` only maps built-ins, so `PanelContribution.pack` is the gating source for contributed panels and `PackGatePlaceholder` takes an optional explicit `pack`. Same "enable this pack?" UI for both kinds.
-5. **Ungrouped panels land in Advanced**, and `order` (default 0, tie-broken by title) keeps the rail stable as plugins register in nondeterministic order.
+5. ~~Ungrouped panels land in Advanced~~ — superseded: the rail no longer groups, and a contributed panel is on it only with `showInRail: true` (see [[navigation-surfaces]]). `order` (default 0, tie-broken by title) still keeps rail and palette order stable as plugins register in nondeterministic order.
 
 Resolution logic is pure and unit-tested in `src/modules/sidebar/pluginPanels.ts` — the awkward states (missing / gated / ready, bottom-vs-sidebar, ordering) are exactly what a DOM test could not check cheaply here.
 

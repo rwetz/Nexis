@@ -2,8 +2,10 @@ import { filesystem } from "@/platform/filesystem";
 import { processes as processNative } from "@/platform/processes";
 import { Icon } from "@/components/icon";
 
-import { sendMessage, useChatStore } from "@/modules/ai/store/chatStore";
+import { sendMessage } from "@/modules/ai/store/chatStore";
+import { showAiChat } from "@/modules/ai/store/aiToolStore";
 import { cn } from "@/lib/utils";
+import { useReportSessionStatus } from "@/modules/bottom-panel/sessionStatus";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BUILD_TOOLS, type BuildTool, type BuildResult, type BuildStatus } from "./buildSystem";
 
@@ -155,17 +157,25 @@ export function BuildPanel({ workspaceRoot }: Props) {
   }, [stopPolling]);
 
   const isRunning = result?.status === "running";
+  // The bottom panel's tab dot: running, or finished with failures.
+  useReportSessionStatus(
+    "build",
+    isRunning
+      ? "running"
+      : result?.status === "failed" || result?.status === "error"
+        ? "failed"
+        : "idle",
+  );
   const summary = result ? parseSummary(result.output, result.status) : null;
-  const openAiPanel = useChatStore((s) => s.openPanel);
 
   const fixWithAi = useCallback(async () => {
     if (!result?.output) return;
     const command = customCommand.trim() || tool?.command || "build";
     const trimmed = result.output.slice(-8000); // cap to avoid token overflow
     const prompt = `Build command \`${command}\` failed. Here is the output:\n\n\`\`\`\n${trimmed}\n\`\`\`\n\nPlease diagnose the errors and suggest fixes.`;
-    openAiPanel();
+    showAiChat();
     await sendMessage(prompt);
-  }, [result, customCommand, tool, openAiPanel]);
+  }, [result, customCommand, tool]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">

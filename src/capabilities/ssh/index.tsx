@@ -19,7 +19,7 @@ export const sshCapability: CapabilityDefinition = {
     id: "remote:ssh",
     legacyView: "ssh",
     title: "SSH",
-    location: "sidebar",
+    location: "bottom",
     icon: "terminal",
     group: "Dev Tools",
     pack: "dev-tools",

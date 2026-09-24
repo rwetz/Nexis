@@ -6,6 +6,10 @@
 
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { isSidebarView, type SidebarView } from "@/modules/sidebar";
+import { isBottomView, useBottomPanelStore } from "@/modules/bottom-panel";
+import { isAiTool, showAiTool } from "@/modules/ai/store/aiToolStore";
+import { isWebTool, requestWebWorkbench } from "@/modules/web-workbench";
+import { usePluginRegistry } from "@/lib/plugins/registry";
 import type { FileExplorerHandle } from "@/modules/explorer";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 
@@ -55,6 +59,18 @@ function readSidebarView(): SidebarView {
       window.localStorage.setItem(SIDEBAR_VIEW_STORAGE_KEY, replacement);
       return replacement;
     }
+    // A session view saved by a build before the bottom panel existed: it
+    // lives there now, so reopen it there and give the sidebar back to Files.
+    // Only built-in ids can be judged here — plugins have not registered yet.
+    if (stored && (isAiTool(stored) || isWebTool(stored))) {
+      window.localStorage.setItem(SIDEBAR_VIEW_STORAGE_KEY, "explorer");
+      return "explorer";
+    }
+    if (stored && isSidebarView(stored) && isBottomView(stored, [])) {
+      useBottomPanelStore.getState().show(stored);
+      window.localStorage.setItem(SIDEBAR_VIEW_STORAGE_KEY, "explorer");
+      return "explorer";
+    }
     // Any valid view restores, including pack-owned ones: heavy panels are
     // lazy-loaded, and a view whose pack got disabled in the meantime lands
     // on the PackGatePlaceholder instead of a broken panel.
@@ -95,6 +111,24 @@ export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null
   }, []);
 
   const persistSidebarView = useCallback((view: SidebarView) => {
+    // The one funnel every "open this view" request goes through — palette
+    // commands, capability activation, the open-view event, onboarding, the
+    // rail. Sessions (build, tests, debugger, …) belong to the bottom panel,
+    // so they are routed there and the sidebar keeps what it was showing.
+    if (isBottomView(view, usePluginRegistry.getState().panels)) {
+      useBottomPanelStore.getState().show(view);
+      return;
+    }
+    // Tools that work through the agent live in the AI window.
+    if (isAiTool(view)) {
+      showAiTool(view);
+      return;
+    }
+    // Ports, HTTP Client and Web Tools are the Web workbench's tools.
+    if (isWebTool(view)) {
+      requestWebWorkbench(view);
+      return;
+    }
     setSidebarViewState(view);
     try {
       window.localStorage.setItem(SIDEBAR_VIEW_STORAGE_KEY, view);
@@ -127,7 +161,8 @@ export function useSidebarState(explorerRef: RefObject<FileExplorerHandle | null
       // the pack config — requests for gated views go through and land on
       // the PackGatePlaceholder ("enable X?") rather than being dropped.
       const panel = sidebarRef.current;
-      if (panel && panel.getSize().asPercentage <= 0) {
+      const toBottom = isBottomView(detail, usePluginRegistry.getState().panels);
+      if (!toBottom && panel && panel.getSize().asPercentage <= 0) {
         panel.resize(`${sidebarWidthRef.current}px`);
       }
       persistSidebarView(detail);

@@ -17,8 +17,22 @@
     --default-transition-duration: var(--dur-tap);
     --default-transition-timing-function: var(--ease-enter);
 
-    --font-heading: var(--font-sans);
-    --font-sans: 'Inter Variable', sans-serif;
+    /* The display face. Used only where Nexis speaks in its own voice —
+     * dialog and sheet titles, empty states, Atlas panel headers, the
+     * welcome wordmark, Settings section headers. Everything else stays on
+     * --font-sans, because this face is not legible at the 9-12px the rest
+     * of the UI lives at. */
+    --font-heading: 'Space Grotesk Variable', 'Geist Variable', sans-serif;
+    /* The UI face, paired with --font-mono below: Geist and Geist Mono are
+     * one designer's sans and mono, so the interface and the code share a
+     * skeleton instead of being two families that happen to co-exist. */
+    --font-sans: 'Geist Variable', 'Geist', 'Inter Variable', sans-serif;
+    /* Mirrors FALLBACK_CHAIN in src/lib/fonts.ts, which is what the terminal
+     * and CodeMirror resolve through. Kept in sync by hand on purpose: this
+     * one is a static CSS value, that one probes installed Nerd Fonts at
+     * runtime, and they cannot share a source without shipping the chain
+     * through a style property on every paint. */
+    --font-mono: 'Geist Mono Variable', 'Geist Mono', 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -290,6 +304,17 @@ html[data-chrome="borderless"] #settings-root {
 html[data-chrome="borderless"] .nexis-bg-surface {
   border-radius: 12px;
 }
+/* Radix portals every overlay to <body>, which is a SIBLING of #root — so
+ * the rounded-corner mask above, which lives on #root, does not clip them.
+ * A full-screen dim+blur therefore painted square corners over the window
+ * whenever a dialog was open, while an in-tree overlay (Spotlight, rendered
+ * inside #root) stayed correctly rounded. Giving the portal layers the same
+ * radius restores the window silhouette for both. */
+html[data-chrome="borderless"] [data-slot="dialog-overlay"],
+html[data-chrome="borderless"] [data-slot="alert-dialog-overlay"],
+html[data-chrome="borderless"] [data-slot="sheet-overlay"] {
+  border-radius: 12px;
+}
 
 /*
  * xterm.js overrides — kept outside @layer so they win against the addon's
@@ -449,6 +474,24 @@ html *::-webkit-scrollbar {
   animation: nexis-caret-blink var(--blink-cadence) linear infinite;
 }
 
+/* The travelling head of <ThoughtLine>. Runs at the caret cadence so a
+ * thought in progress pulses at the same rhythm as the terminal cursor
+ * rather than introducing a fourth tempo. `translate` (not `left`) because
+ * this runs continuously and must stay off the layout path. */
+@keyframes nexis-thought-travel {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 300% 0;
+  }
+}
+
+.nexis-thought-head {
+  animation: nexis-thought-travel calc(var(--blink-cadence) * 1.6) var(--ease-enter)
+    infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* Both indicators still have to signal "busy" without moving. The spinner
    * holds a static glyph; the blink settles at a dimmed-but-visible opacity so
@@ -459,6 +502,12 @@ html *::-webkit-scrollbar {
   .nexis-blink {
     animation: none;
     opacity: 0.62;
+  }
+  /* Parked mid-track: the line still reads as active, it just stops
+   * travelling. */
+  .nexis-thought-head {
+    animation: none;
+    translate: 100% 0;
   }
 }
 
@@ -989,4 +1038,85 @@ html[data-rainbow-accent] .aurora-border::before {
 html[data-os="linux"] [class*="backdrop-blur"] {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+/* ── Switch thumb squish ─────────────────────────────────────────────────────
+ * The thumb deforms while the control is held, then springs back as it
+ * travels. Written here rather than as utilities on the component because the
+ * CSS `scale` property composes with whatever `transform` the thumb's
+ * `translate-x-*` utility emits — they are separate properties, applied in a
+ * fixed order — so the squish and the travel do not have to know about each
+ * other. Doing both through `transform` would mean one class overwriting the
+ * other depending on source order.
+ *
+ * `--dur-tap` because this is an in-place state change on a control the user
+ * is physically holding; anything slower reads as lag rather than as give.
+ */
+[data-slot="switch-thumb"] {
+  transition-property: transform, translate, scale, background-color;
+  transition-duration: var(--dur-tap);
+  transition-timing-function: var(--ease-enter);
+}
+[data-slot="switch"]:active:not([data-disabled]) [data-slot="switch-thumb"] {
+  scale: 1.22 0.82;
+}
+/* Users who asked the OS for less motion get the state change without the
+ * deformation — the squish is decoration, the translate is the state. */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="switch"]:active:not([data-disabled]) [data-slot="switch-thumb"] {
+    scale: 1 1;
+  }
+}
+
+/* ── High contrast ────────────────────────────────────────────────────────────
+ * On top of whatever theme is active, never instead of it. ThemeProvider sets
+ * `html[data-contrast="high"]` from the Contrast preference (or the OS, under
+ * "system": prefers-contrast: more / forced-colors: active).
+ *
+ * Declared on <body>, not :root, and that is load-bearing: `applyTheme` writes
+ * each palette as *inline* custom properties on <html>, which no stylesheet
+ * rule on :root can beat. Custom properties inherit, and every element —
+ * portals included — lives under <body>, so re-declaring the tokens there
+ * wins for the whole app. `@theme inline` above is what makes this reach the
+ * Tailwind utilities: they read `var(--border)` at the element, not a value
+ * frozen at :root.
+ *
+ * The tokens are derived from the theme's own foreground and background
+ * rather than fixed to black and white, so Aurelian stays warm and Halcyon
+ * stays violet — only the gaps between them close. Mixed at these ratios the
+ * muted text clears WCAG AAA against the background in every shipped theme,
+ * and even a `/50` border still clears the 3:1 non-text floor. */
+html[data-contrast="high"] body {
+  --muted-foreground: color-mix(in oklab, var(--foreground) 88%, var(--background));
+  --border: color-mix(in oklab, var(--foreground) 72%, var(--background));
+  --input: color-mix(in oklab, var(--foreground) 78%, var(--background));
+  --sidebar-border: var(--border);
+  --ring: var(--foreground);
+  --muted: color-mix(in oklab, var(--foreground) 12%, var(--background));
+  --accent: color-mix(in oklab, var(--foreground) 18%, var(--background));
+  --accent-foreground: var(--foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--foreground);
+}
+
+/* Focus is always visible, in the foreground colour, whatever the component
+ * asked for. Unlayered + !important so it beats `outline-none` utilities. */
+html[data-contrast="high"] :focus-visible {
+  outline: 2px solid var(--foreground) !important;
+  outline-offset: 2px;
+}
+
+/* Decoration goes: the animated/image background behind every pane and the
+ * frosted-glass blur both put moving or blurred colour under text. */
+html[data-contrast="high"] .nexis-bg-surface {
+  display: none !important;
+}
+html[data-contrast="high"] [class*="backdrop-blur"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-contrast="high"] ::placeholder {
+  color: var(--muted-foreground);
+  opacity: 1;
 }

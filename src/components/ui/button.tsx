@@ -31,6 +31,19 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        // Arrow-fill: an outlined button whose primary fill wipes in from the
+        // leading edge on hover, carrying the label to the inverse colour.
+        //
+        // The fill is a ::before that scales on its own origin rather than an
+        // animated width or background-position — a transform is composited,
+        // so the wipe does not relayout the button or its neighbours on every
+        // frame. `overflow-hidden` clips it to the pill, and the label sits in
+        // a relative span above it (see `data-slot=button-label`).
+        //
+        // `[dir=rtl]` flips the origin so the wipe still travels from the
+        // leading edge, which is the side the arrow points away from.
+        arrow:
+          "relative overflow-hidden border-border bg-background text-foreground hover:text-primary-foreground dark:bg-transparent before:absolute before:inset-0 before:origin-left before:scale-x-0 before:bg-primary before:transition-transform before:duration-(--dur-panel) before:ease-(--ease-enter) hover:before:scale-x-100 rtl:before:origin-right [&>*]:relative [&_[data-slot=button-arrow]]:transition-transform [&_[data-slot=button-arrow]]:duration-(--dur-panel) hover:[&_[data-slot=button-arrow]]:translate-x-0.5",
       },
       size: {
         default:

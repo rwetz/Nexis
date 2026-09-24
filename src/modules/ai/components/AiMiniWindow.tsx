@@ -36,6 +36,7 @@ import { AiChatView } from "./AiChat";
 import { AiInputBar } from "./AiInputBar";
 import { PlanDiffReview } from "./PlanDiffReview";
 import { TodoStrip } from "./TodoStrip";
+import { AiToolStack, AiToolStrip } from "./AiToolStrip";
 import { useComposer } from "../lib/composer";
 
 const SUGGESTIONS: {
@@ -70,7 +71,12 @@ const SUGGESTIONS: {
   },
 ];
 
-export function AiMiniWindow() {
+export function AiMiniWindow({
+  workspaceRoot = null,
+}: {
+  /** For the Review tool, which diffs the workspace. */
+  workspaceRoot?: string | null;
+} = {}) {
   const closeMini = useChatStore((s) => s.closeMini);
   const sessionId = useChatStore((s) => s.activeSessionId);
   const openPanel = useChatStore((s) => s.openPanel);
@@ -113,6 +119,7 @@ export function AiMiniWindow() {
           sessionId={sessionId}
           onClose={closeMini}
           onExpand={expandToPanel}
+          workspaceRoot={workspaceRoot}
         />
       ) : (
         <EmptyShell onClose={closeMini} onExpand={expandToPanel} />
@@ -126,10 +133,12 @@ function Body({
   sessionId,
   onClose,
   onExpand,
+  workspaceRoot,
 }: {
   sessionId: string;
   onClose: () => void;
   onExpand: () => void;
+  workspaceRoot: string | null;
 }) {
   const step = useChatStore((s) => s.agentMeta.step);
   const composer = useComposer();
@@ -162,8 +171,13 @@ function Body({
         messages={helpers.messages}
       />
 
+      <AiToolStrip />
       <PlanModeStrip />
 
+      <AiToolStack
+        workspaceRoot={workspaceRoot}
+        chat={
+      <>
       <div className="flex min-h-0 flex-1 flex-col">
         {helpers.messages.length === 0 ? (
           <EmptyState onPick={onPick} />
@@ -183,6 +197,9 @@ function Body({
 
       <TodoStrip sessionId={sessionId} />
       <AiInputBar />
+      </>
+        }
+      />
     </>
   );
 }

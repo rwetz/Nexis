@@ -16,11 +16,13 @@ import {
 import {
   DEFAULT_THEME_ID,
   EDITOR_THEMES,
+  isContrastPref,
   loadPreferences,
   onPreferencesChange,
   setEditorTheme as persistEditorTheme,
   setTheme as persistTheme,
   setThemeId as persistThemeId,
+  type ContrastPref,
   type EditorThemeId,
   type ThemePref,
 } from "@/modules/settings/store";
@@ -74,6 +76,8 @@ type ThemeProviderProps = {
 type ThemeProviderState = {
   mode: ThemePref;
   resolvedMode: "dark" | "light";
+  /** High contrast is in effect (the preference, or the OS when "system"). */
+  highContrast: boolean;
   themeId: string;
   customThemes: Theme[];
   /**
@@ -119,6 +123,17 @@ function writeFastThemeId(id: string): void {
   try { window.localStorage.setItem(FAST_PATH_THEME_ID, id); } catch { /* ignore */ }
 }
 
+const SYSTEM_CONTRAST_QUERY = "(prefers-contrast: more)";
+const SYSTEM_FORCED_QUERY = "(forced-colors: active)";
+
+function readSystemHighContrast(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return (
+    window.matchMedia(SYSTEM_CONTRAST_QUERY).matches ||
+    window.matchMedia(SYSTEM_FORCED_QUERY).matches
+  );
+}
+
 function resolveTheme(id: string, custom: Theme[]): Theme {
   return custom.find((t) => t.id === id) ?? getBuiltinTheme(id) ?? getDefaultTheme();
 }
@@ -128,6 +143,8 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
   const [themeId, setThemeIdState] = useState<string>(() => readFastThemeId());
   const [customThemes, setCustomThemes] = useState<Theme[]>([]);
   const [rainbowAccent, setRainbowAccentState] = useState(true);
+  const [contrast, setContrastState] = useState<ContrastPref>("system");
+  const [systemHighContrast, setSystemHighContrast] = useState<boolean>(readSystemHighContrast);
   const [systemDark, setSystemDark] = useState<boolean>(() =>
     typeof window === "undefined"
       ? true
@@ -142,6 +159,7 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
       setModeState(p.theme);
       setThemeIdState(id);
       setRainbowAccentState(p.rainbowAccent);
+      setContrastState(p.contrast);
       writeFastMode(p.theme);
       writeFastThemeId(id);
       // Write the migration back so it happens once, not on every launch.
@@ -157,6 +175,8 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
         writeFastThemeId(id);
       } else if (key === "rainbowAccent" && typeof value === "boolean") {
         setRainbowAccentState(value);
+      } else if (key === "contrast" && isContrastPref(value)) {
+        setContrastState(value);
       }
     });
     return () => {
@@ -221,10 +241,41 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
     }
   }, [themeId, resolvedMode, customThemes]);
 
+  // Follow the OS contrast signals live, for the "system" preference: macOS
+  // "Increase contrast" (prefers-contrast: more) and Windows high contrast
+  // themes (forced-colors: active).
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return undefined;
+    const contrastQuery = window.matchMedia(SYSTEM_CONTRAST_QUERY);
+    const forcedQuery = window.matchMedia(SYSTEM_FORCED_QUERY);
+    const update = () => setSystemHighContrast(readSystemHighContrast());
+    contrastQuery.addEventListener("change", update);
+    forcedQuery.addEventListener("change", update);
+    return () => {
+      contrastQuery.removeEventListener("change", update);
+      forcedQuery.removeEventListener("change", update);
+    };
+  }, []);
+
+  // High contrast is an attribute on <html>, not variables: themes write
+  // their palette as *inline* custom properties on the root, which a
+  // stylesheet rule on :root cannot override. The `[data-contrast="high"]`
+  // rules in globals.css re-declare the tokens on <body>, which every
+  // element (portals included) inherits from, so they win over any theme.
+  const highContrast = contrast === "high" || (contrast === "system" && systemHighContrast);
+  useEffect(() => {
+    if (!highContrast) return;
+    const root = document.documentElement;
+    root.setAttribute("data-contrast", "high");
+    return () => root.removeAttribute("data-contrast");
+  }, [highContrast]);
+
   // Only the default theme has a rainbow accent, and only when the preference
   // is on. Gating the *install* rather than only the CSS means a disabled
   // setting costs nothing: no listener, no paint servers, no attributes.
-  const rainbowActive = rainbowAccent && themeId === DEFAULT_THEME_ID;
+  // High contrast turns it off: a gradient across a label is the opposite of
+  // what that mode is for.
+  const rainbowActive = rainbowAccent && themeId === DEFAULT_THEME_ID && !highContrast;
   useEffect(() => {
     const root = document.documentElement;
     if (!rainbowActive) {
@@ -257,13 +308,14 @@ export function ThemeProvider({ children, defaultMode = "system" }: ThemeProvide
     () => ({
       mode,
       resolvedMode,
+      highContrast,
       themeId,
       customThemes,
       paletteEpoch,
       setMode,
       setThemeId,
     }),
-    [mode, resolvedMode, themeId, customThemes, paletteEpoch, setMode, setThemeId],
+    [mode, resolvedMode, highContrast, themeId, customThemes, paletteEpoch, setMode, setThemeId],
   );
 
   return (

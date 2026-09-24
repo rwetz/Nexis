@@ -12,6 +12,7 @@
  * idle/error, we mark the task done and start the next one.
  */
 import { create } from "zustand";
+import { showAiChat } from "@/modules/ai/store/aiToolStore";
 import {
   sendMessage,
   stop as stopAgent,
@@ -152,7 +153,9 @@ async function processNext(get: () => QueueState) {
   }));
 
   // Open AI panel so the user can see output
-  useChatStore.getState().openPanel();
+  // Surface the conversation the task is running in (the docked panel
+  // `openPanel` targets is never mounted, so that call showed nothing).
+  showAiChat();
 
   try {
     // Subscribe BEFORE sending so we don't miss the status flip

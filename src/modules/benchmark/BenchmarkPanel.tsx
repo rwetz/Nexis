@@ -23,6 +23,7 @@
 
 import { useEffect } from "react";
 import { Icon } from "@/components/icon";
+import { CallChip } from "@/components/ui/CallChip";
 
 import { BackendSelector } from "@/modules/benchmark/backends/BackendSelector";
 import { ConfigPanel } from "@/modules/benchmark/config/ConfigPanel";
@@ -34,6 +35,8 @@ import { useBenchStore } from "@/modules/benchmark/store";
 export function BenchmarkPanel() {
   const init = useBenchStore((s) => s.init);
   const running = useBenchStore((s) => s.running);
+  const runStartedAtMs = useBenchStore((s) => s.runStartedAtMs);
+  const cancelRun = useBenchStore((s) => s.cancelRun);
   const models = useBenchStore((s) => s.models);
   const selectedModelIds = useBenchStore((s) => s.selectedModelIds);
   const selectedBackendIds = useBenchStore((s) => s.selectedBackendIds);
@@ -66,10 +69,16 @@ export function BenchmarkPanel() {
           </div>
           <div className="hidden items-center gap-2 text-xs text-muted-foreground @md:flex">
             {running ? (
-              <>
-                <Icon name="loading" size="sm" className="nexis-spin text-primary" />
-                <span>Benchmark running</span>
-              </>
+              // A benchmark sweep is long-lived work the user started and
+              // can stop -- the same shape as a training run or a background
+              // process, so it gets the same chip, elapsed clock included.
+              // The old spinner said "busy" and nothing else.
+              <CallChip
+                label="Benchmark"
+                startedAtMs={runStartedAtMs ?? Date.now()}
+                onEnd={() => void cancelRun()}
+                endLabel="Cancel"
+              />
             ) : (
               <>
                 <span className="font-mono tabular-nums">{selectedModelIds.length}</span>

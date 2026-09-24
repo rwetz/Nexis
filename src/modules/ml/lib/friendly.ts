@@ -163,16 +163,11 @@ export function statusSentence(args: {
   }
 }
 
-export function formatElapsed(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  if (m >= 60) {
-    const h = Math.floor(m / 60);
-    return `${h}h ${m % 60}m`;
-  }
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
+// Canonical implementation lives in `src/lib/duration.ts` — the status-bar
+// process chip needs the same formatting, and two copies is how the two
+// surfaces start disagreeing. Re-exported here so ML's callers and tests
+// keep their existing import.
+export { formatElapsed } from "@/lib/duration";
 
 /** Friendly one-liner for a finished historical run row. */
 export function runStatusWord(status: string): string {
