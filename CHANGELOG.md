@@ -4,6 +4,8 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.29.0] — 2026-09-24
+
 ### Added
 
 - **Two-way Lumen color and workspace handoff.** Settings → Themes can export the active theme's resolved background, primary, secondary, muted and foreground colors as a versioned Lumen palette file; Lumen's Open Shared Palette loads it without replacing a running scene's generator or controls. Lumen can also package a scene with a workspace label and safe relative `lumen/` destination. Nexis's Import Lumen handoff asks the user to choose a local host folder, writes the scene there without overwriting an existing file, and imports its palette as a custom theme. Lumen can reopen the package to restore the scene. The selected folder is explicit; no path in the package grants workspace access, and WSL destinations are not supported by this host-folder picker. The contract is in `docs/interop/lumen.md`.
