@@ -100,7 +100,7 @@ git2 = { version = "0.21", default-features = false }
 # including a full filesystem walk land in ~270 ms because of this.
 rayon = "1.10"
 # `atlas.toml`, the hand-edited repo list.
-toml = "0.8"
+toml = "1.1"
 
 # ── Benchmark panel (modules/benchmark) ──────────────────────────────────────
 # Result timestamps.
