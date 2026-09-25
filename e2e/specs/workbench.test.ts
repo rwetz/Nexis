@@ -42,6 +42,24 @@ describe("Contributed workbench panels", () => {
     await panel.$("button").waitForExist();
   });
 
+  it("migrates a legacy saved session view into the bottom panel", async () => {
+    await browser.execute(() => localStorage.setItem("nexis.sidebar.view", "build"));
+    await browser.refresh();
+
+    const panel = $("[data-bottom-panel]");
+    await panel.waitForDisplayed({ timeout: 30_000 });
+    const buildTab = panel.$('[role="tab"]*=Build');
+    await buildTab.waitForDisplayed();
+    expect(await buildTab.getAttribute("aria-selected")).toBe("true");
+    expect(await browser.execute(() => localStorage.getItem("nexis.sidebar.view"))).toBe("explorer");
+
+    await panel.$('button[aria-label="Maximize panel"]').click();
+    await panel.$('button[aria-label="Restore panel"]').waitForDisplayed();
+    await panel.$('button[aria-label="Restore panel"]').click();
+    await panel.$('button[aria-label="Close panel"]').click();
+    await panel.waitForDisplayed({ reverse: true });
+  });
+
   it("mounts a migrated integration panel through its capability host", async () => {
     // HTTP Client lives in the Web workbench: the palette opens that tab on
     // it, and the tool body carries the contribution's data-panel-id.

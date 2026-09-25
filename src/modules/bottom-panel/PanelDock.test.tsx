@@ -40,6 +40,28 @@ it("closing hides the panel without unmounting its sessions", () => {
   expect(screen.getByRole("button", { name: "build 1" })).toBeInTheDocument();
 });
 
+it("retains a session through tab changes, maximize/restore, and collapse/reopen", () => {
+  useBottomPanelStore.setState({ open: true, everOpened: true, tab: "build" });
+  render(dock());
+
+  fireEvent.click(screen.getByRole("button", { name: "build 0" }));
+  fireEvent.click(screen.getByRole("tab", { name: /Tests/ }));
+  expect(screen.getByRole("button", { name: "build 1", hidden: true })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Maximize panel" }));
+  expect(screen.getByRole("button", { name: "Restore panel" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.queryByRole("separator")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Restore panel" }));
+  expect(screen.getByRole("separator")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Close panel" }));
+  const hiddenPanel = document.querySelector("[data-bottom-panel]")?.closest("[aria-hidden='true'][inert]");
+  expect(hiddenPanel).toHaveAttribute("aria-hidden", "true");
+  act(() => useBottomPanelStore.getState().toggle());
+  fireEvent.click(screen.getByRole("tab", { name: /Build/ }));
+  expect(screen.getByRole("button", { name: "build 1" })).toBeInTheDocument();
+});
+
 it("steps aside in zen mode without closing", () => {
   useBottomPanelStore.setState({ open: true, everOpened: true });
   render(dock(true));
