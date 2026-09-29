@@ -8,13 +8,13 @@ describe("permanent titlebar tools", () => {
     expect(visiblePermanentTools(PRESETS.standard.packs)).toEqual([]);
   });
 
-  it("promotes SVG Studio for Art and both workbenches for Everything", () => {
+  it("promotes SVG Studio for Art and every workbench for Everything", () => {
     expect(visiblePermanentTools(PRESETS.art.packs).map((tool) => tool.id)).toEqual([
       "svg-playground",
     ]);
     expect(
       visiblePermanentTools(PRESETS.everything.packs).map((tool) => tool.id),
-    ).toEqual(["svg-playground", "ml-lab", "web"]);
+    ).toEqual(["svg-playground", "ml-lab", "web", "documents"]);
   });
 
   it("does not promote SVG Studio for configurations without the Art pack", () => {
@@ -31,5 +31,14 @@ describe("permanent titlebar tools", () => {
     ]);
     expect(isPermanentToolView("ml", PRESETS["ai-ml"].packs)).toBe(true);
     expect(isPermanentToolView("ml", PRESETS.standard.packs)).toBe(false);
+  });
+
+  it("promotes Documents only with its pack, and keeps its view out of the rail", () => {
+    expect(visiblePermanentTools(["documents"]).map((tool) => tool.id)).toEqual(["documents"]);
+    expect(isPermanentToolView("documents", ["documents"])).toBe(true);
+    // Pack off: the view is not a titlebar tool, so a .docx opened then lands
+    // on the sidebar's "enable this pack?" placeholder instead of being healed
+    // back to Files.
+    expect(isPermanentToolView("documents", PRESETS.standard.packs)).toBe(false);
   });
 });

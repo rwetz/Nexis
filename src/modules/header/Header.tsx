@@ -56,6 +56,7 @@ type Props = {
   onOpenMlLab: () => void;
   /** Opens the Web workbench tab (Ports, HTTP Client, Web Tools). */
   onOpenWeb: () => void;
+  onOpenDocuments: () => void;
   searchTarget: SearchTarget;
   searchRef: RefObject<SearchInlineHandle | null>;
   /** Opens the Spotlight finder (files + commands). */
@@ -85,6 +86,7 @@ export function Header({
   onOpenSvgStudio,
   onOpenMlLab,
   onOpenWeb,
+  onOpenDocuments,
   searchTarget,
   searchRef,
   onOpenSpotlight,
@@ -251,6 +253,7 @@ export function Header({
           if (tool === "svg-playground") onOpenSvgStudio();
           if (tool === "ml-lab") onOpenMlLab();
           if (tool === "web") onOpenWeb();
+          if (tool === "documents") onOpenDocuments();
         }}
       />
 

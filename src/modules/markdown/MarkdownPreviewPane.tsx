@@ -23,6 +23,8 @@ type ViewMode = "preview" | "raw" | "split";
 type Props = {
   path: string;
   visible: boolean;
+  /** Open this file in the rich editor. Absent when the Documents pack is off. */
+  onEdit?: (path: string) => void;
 };
 
 const components = { code: MarkdownCode };
@@ -47,7 +49,7 @@ function writeViewMode(mode: ViewMode): void {
   }
 }
 
-export function MarkdownPreviewPane({ path, visible }: Props) {
+export function MarkdownPreviewPane({ path, visible, onEdit }: Props) {
   const [status, setStatus] = useState<Status>({ kind: "loading" });
   const [mode, setModeState] = useState<ViewMode>(readViewMode);
 
@@ -115,6 +117,20 @@ export function MarkdownPreviewPane({ path, visible }: Props) {
             active={mode === "raw"}
             onClick={() => setMode("raw")}
           />
+          {onEdit ? (
+            <>
+              <span aria-hidden className="mx-1 h-3.5 w-px bg-border/70" />
+              <button
+                type="button"
+                onClick={() => onEdit(path)}
+                title="Edit in the rich-text editor"
+                className="flex h-6 cursor-pointer items-center gap-1 rounded px-1.5 text-[10.5px] text-muted-foreground outline-none transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-1 focus-visible:ring-primary/40"
+              >
+                <Icon name="edit" size="xs" />
+                Edit
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
 

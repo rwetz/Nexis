@@ -36,6 +36,7 @@ export const PACK_IDS = [
   "web-dev",
   "mobile",
   "art",
+  "documents",
 ] as const;
 
 export type PackId = (typeof PACK_IDS)[number];
@@ -152,6 +153,14 @@ export const PACKS: Record<PackId, PackDef> = {
     // One view: palette, backdrop, icon set, favicon set and animator are
     // tools inside SVG Studio (`art/studioStore.ts`), not sidebar views.
     views: ["svg-playground"],
+  },
+  documents: {
+    id: "documents",
+    label: "Documents",
+    description:
+      "Rich-text editing for markdown and Word (.docx) files, with PDF export.",
+    icon: "document",
+    views: ["documents"],
   },
 };
 

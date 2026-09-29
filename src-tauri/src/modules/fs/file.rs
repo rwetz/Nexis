@@ -419,6 +419,38 @@ pub async fn fs_write_file_bytes(
     .await
 }
 
+/// Reads `p` whole, refusing anything over `cap` before a byte is read, so a
+/// stray multi-gigabyte file cannot be pulled into memory by a document tab.
+fn read_bytes_capped(p: &Path, cap: u64) -> Result<Vec<u8>, String> {
+    let size = std::fs::metadata(p).map_err(|e| e.to_string())?.len();
+    if size > cap {
+        return Err(format!("file too large to open: {size} bytes (cap {cap})"));
+    }
+    std::fs::read(p).map_err(|e| e.to_string())
+}
+
+/// Binary counterpart of `fs_read_file`, for formats that are not text (a
+/// `.docx` is a zip). It shares `resolve_path` and `MAX_READ_BYTES` with the
+/// text read, and hands the bytes back as a raw IPC response rather than a
+/// JSON number array, which would be roughly four times the size in transit.
+#[tauri::command]
+pub async fn fs_read_file_bytes(
+    path: String,
+    workspace: Option<WorkspaceEnv>,
+) -> Result<tauri::ipc::Response, String> {
+    crate::modules::heavy(move || {
+        let workspace = WorkspaceEnv::from_option(workspace);
+        let p = resolve_path(&path, &workspace);
+        read_bytes_capped(&p, MAX_READ_BYTES)
+            .map(tauri::ipc::Response::new)
+            .map_err(|e| {
+                log::debug!("fs_read_file_bytes({}) failed: {e}", p.display());
+                e
+            })
+    })
+    .await
+}
+
 #[tauri::command]
 pub async fn fs_canonicalize(
     path: String,
@@ -598,6 +630,29 @@ mod tests {
         assert_eq!(std::fs::read(&target).unwrap(), b"payload");
         // The pre-staged symlink target must not have been written through.
         assert_eq!(std::fs::read(&outside).unwrap(), b"untouched");
+    }
+}
+
+#[cfg(test)]
+mod read_bytes_tests {
+    use super::*;
+
+    #[test]
+    fn returns_the_exact_bytes() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("a.docx");
+        let payload = [0x50, 0x4b, 0x03, 0x04, 0x00, 0xff];
+        std::fs::write(&p, payload).unwrap();
+        assert_eq!(read_bytes_capped(&p, 1024).unwrap(), payload);
+    }
+
+    #[test]
+    fn refuses_a_file_over_the_cap() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("big.bin");
+        std::fs::write(&p, vec![0u8; 11]).unwrap();
+        let err = read_bytes_capped(&p, 10).unwrap_err();
+        assert!(err.contains("too large"), "{err}");
     }
 }
 

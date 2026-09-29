@@ -207,6 +207,7 @@ fn heavy_commands_stay_async() {
         "fs_read_file",
         "fs_write_file",
         "fs_read_file_ai",
+        "fs_read_file_bytes",
         "fs_delete",
         "fs_create_file",
         "fs_create_dir",

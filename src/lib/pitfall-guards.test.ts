@@ -191,6 +191,26 @@ describe("AGENTS.md pitfall tripwires (frontend)", () => {
     ).toBe(true);
   });
 
+  // Same defect, second editor: ProseMirror (Documents pack) maps clicks
+  // through the same caret-from-point APIs as CodeMirror.
+  it("pitfall 15 (documents): ProseMirror is exempt from CSS zoom and scales via font-size", () => {
+    const css = readSrc("styles/globals.css");
+    expect(
+      /\.zoom-content \.ProseMirror\s*\{[^}]*zoom:\s*calc\(\s*1\s*\/\s*var\(--app-zoom/.test(css),
+      "globals.css must keep `.zoom-content .ProseMirror { zoom: calc(1 / " +
+        "var(--app-zoom, 1)) }` — without it, clicks in a document land on " +
+        "the wrong line at app zoom != 1 (AGENTS.md pitfall #15)",
+    ).toBe(true);
+
+    const docCss = readSrc("modules/documents/documents.css");
+    expect(
+      /\.nx-doc \.ProseMirror\s*\{[^}]*font-size:\s*calc\([^;]*var\(--app-zoom/.test(docCss),
+      "documents.css must scale the ProseMirror font-size by var(--app-zoom) — " +
+        "the editor is zoom-exempt, so this is the only way app zoom reaches " +
+        "document text (AGENTS.md pitfall #15)",
+    ).toBe(true);
+  });
+
   it("pitfall 22: the terminal session effect does not depend on initialCwd", () => {
     const src = readSrc("modules/terminal/lib/useTerminalSession.ts");
     // The pane-tree leaf's `cwd` is rewritten by setLeafCwd on every OSC 7, so

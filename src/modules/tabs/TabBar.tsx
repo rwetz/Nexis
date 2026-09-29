@@ -272,7 +272,8 @@ export function TabBar({
                     <span className={cn("truncate", isPreview && "italic")}>
                       {labelFor(t)}
                     </span>
-                    {t.kind === "editor" && editorAnyDirty(t) ? (
+                    {(t.kind === "editor" && editorAnyDirty(t)) ||
+                    (t.kind === "document" && t.dirty) ? (
                       <span
                         aria-label="Unsaved changes"
                         className="size-1.5 shrink-0 rounded-full bg-foreground/70"
@@ -374,7 +375,7 @@ export function TabBar({
 }
 
 export function TabIcon({ tab }: { tab: Tab }) {
-  if (tab.kind === "editor" || tab.kind === "markdown") {
+  if (tab.kind === "editor" || tab.kind === "markdown" || tab.kind === "document") {
     return <FileTypeIcon name={tab.title} className="size-3.5 shrink-0" />;
   }
   if (tab.kind === "image") {
@@ -418,6 +419,9 @@ export function TabIcon({ tab }: { tab: Tab }) {
   if (tab.kind === "web") {
     return <Icon name="globe" size="md" className="shrink-0" />;
   }
+  if (tab.kind === "documents-home") {
+    return <Icon name="document" size="md" className="shrink-0" />;
+  }
   if (tab.kind === "svg-playground") {
     return (
       <Icon name="brush" size="md" className="shrink-0" />
@@ -434,6 +438,8 @@ export function labelFor(t: Tab): string {
   if (t.kind === "markdown") return t.title;
   if (t.kind === "notebook") return t.title;
   if (t.kind === "image") return t.title;
+  if (t.kind === "document") return t.title;
+  if (t.kind === "documents-home") return t.title;
   if (t.kind === "ai-diff") return t.title;
   if (t.kind === "git-diff") return t.title;
   if (t.kind === "git-history") return t.title;

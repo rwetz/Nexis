@@ -1,0 +1,114 @@
+/* ╔══════════════════════════════════════╗
+   ║  Ryan Wetzstein                      ║
+   ║  Nexis                               ║
+   ║  2026                                ║
+   ╚══════════════════════════════════════╝
+
+   Rich-text document styling. Loaded with the editor chunk, and scoped to
+   `.nx-doc` so it can never restyle the markdown preview or chat output.
+
+   The ProseMirror root is zoom-exempt (globals.css, pitfall #15), so app zoom
+   reaches the text only through the font-size below. Keep the `--app-zoom`
+   factor on it: without it, zooming the app would silently stop scaling
+   documents. Every other size here is in `em`, so it follows. */
+
+.nx-doc .ProseMirror {
+  font-family: var(--font-sans);
+  font-size: calc(15px * var(--app-zoom, 1));
+  line-height: 1.65;
+  color: var(--foreground);
+  outline: none;
+  min-height: 100%;
+  padding: 2.5em 0 6em;
+  max-width: 46em;
+  margin: 0 auto;
+  caret-color: var(--brand);
+}
+
+.nx-doc .ProseMirror > * + * { margin-top: 0.75em; }
+
+.nx-doc .ProseMirror h1,
+.nx-doc .ProseMirror h2,
+.nx-doc .ProseMirror h3,
+.nx-doc .ProseMirror h4 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.25;
+  margin-top: 1.4em;
+}
+.nx-doc .ProseMirror h1 { font-size: 1.9em; }
+.nx-doc .ProseMirror h2 { font-size: 1.45em; }
+.nx-doc .ProseMirror h3 { font-size: 1.2em; }
+.nx-doc .ProseMirror h4 { font-size: 1.05em; }
+
+.nx-doc .ProseMirror ul { list-style: disc; padding-left: 1.5em; }
+.nx-doc .ProseMirror ol { list-style: decimal; padding-left: 1.5em; }
+.nx-doc .ProseMirror li > p { margin: 0.15em 0; }
+
+.nx-doc .ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0.25em; }
+.nx-doc .ProseMirror ul[data-type="taskList"] li { display: flex; gap: 0.5em; align-items: flex-start; }
+.nx-doc .ProseMirror ul[data-type="taskList"] li > label { margin-top: 0.3em; user-select: none; }
+.nx-doc .ProseMirror ul[data-type="taskList"] li > div { flex: 1; }
+.nx-doc .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+
+.nx-doc .ProseMirror a { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
+
+.nx-doc .ProseMirror blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+  color: var(--muted-foreground);
+}
+
+.nx-doc .ProseMirror code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--muted);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+}
+.nx-doc .ProseMirror pre {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--muted);
+  border-radius: 6px;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+}
+.nx-doc .ProseMirror pre code { background: none; padding: 0; font-size: 1em; }
+
+.nx-doc .ProseMirror hr { border: none; border-top: 1px solid var(--border); margin: 1.5em 0; }
+
+.nx-doc .ProseMirror mark { background: color-mix(in oklch, var(--brand) 28%, transparent); color: inherit; border-radius: 2px; }
+
+.nx-doc .ProseMirror img { max-width: 100%; height: auto; border-radius: 4px; }
+.nx-doc .ProseMirror img.ProseMirror-selectednode { outline: 2px solid var(--ring); }
+
+.nx-doc .ProseMirror table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+.nx-doc .ProseMirror th,
+.nx-doc .ProseMirror td {
+  border: 1px solid var(--border);
+  padding: 0.35em 0.6em;
+  vertical-align: top;
+  position: relative;
+}
+.nx-doc .ProseMirror th { background: var(--muted); font-weight: 600; text-align: left; }
+.nx-doc .ProseMirror .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklch, var(--ring) 18%, transparent);
+  pointer-events: none;
+}
+
+.nx-doc .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.nx-doc .ProseMirror[contenteditable="false"] { caret-color: transparent; }

@@ -36,6 +36,8 @@ import {
   basename,
   titleFromUrl,
   type AiDiffStatus,
+  type DocumentFormat,
+  type DocumentsHomeTab,
   type EditorTab,
   type GitCommitFileDiffTab,
   type GitDiffTab,
@@ -44,6 +46,7 @@ import {
   type MlNetworkTab,
   type SvgPlaygroundTab,
   type WebWorkbenchTab,
+  nextIdAfter,
   type Tab,
   type TabPatch,
   type TerminalTab,
@@ -111,18 +114,10 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     return 1;
   });
 
-  // Seeded through a lazy `useState`: this reads and re-parses the saved tab
-  // state, and as a plain `useRef(...)` argument it ran on every render of the
-  // hook that owns every tab, only for React to keep the first value.
-  const [initialNextId] = useState(() => {
-    // Count how many IDs were consumed during init.
-    if (isFreshWindow()) return 1; // no tabs created yet
-    if (!initial?.cwd && shouldRestoreTabs()) {
-      const saved = loadSavedTabState();
-      if (saved) return buildTabsFromSaved(saved, 1).nextId;
-    }
-    return 1; // no tabs created — welcome screen
-  });
+  // Past every id the initial tabs use, whichever way they were built
+  // (launch folder, restored session, or none); see `nextIdAfter`. A lazy
+  // `useState` so it is computed once rather than on every render.
+  const [initialNextId] = useState(() => nextIdAfter(tabs));
   const nextIdRef = useRef(initialNextId);
 
   const tabsRef = useRef(tabs);
@@ -519,6 +514,26 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     return id;
   }, []);
 
+  /** Opens (or focuses) the rich-text tab for `path`. A save-as that re-points
+   *  the tab goes through `updateTab({ path })`, so the dedupe is by path. */
+  const newDocumentTab = useCallback((path: string, format: DocumentFormat) => {
+    const curr = tabsRef.current;
+    const existing = curr.find((t) => t.kind === "document" && t.path === path);
+    if (existing) {
+      setActiveId(existing.id);
+      return existing.id;
+    }
+    const id = nextIdRef.current++;
+    const nextTabs: Tab[] = [
+      ...curr,
+      { id, kind: "document", title: basename(path), path, format },
+    ];
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+    setActiveId(id);
+    return id;
+  }, []);
+
   const newImageTab = useCallback((path: string) => {
     const curr = tabsRef.current;
     const existing = curr.find((t) => t.kind === "image" && t.path === path);
@@ -707,6 +722,24 @@ export function useTabs(initial?: Partial<TerminalTab>) {
   }, []);
 
   /** Open (or focus) the Web workbench tab. Deduped: one workbench. */
+  const openDocumentsHomeTab = useCallback(() => {
+    const curr = tabsRef.current;
+    const existing = curr.find((t) => t.kind === "documents-home");
+    if (existing) {
+      setActiveId(existing.id);
+      return existing.id;
+    }
+    const id = nextIdRef.current++;
+    const nextTabs = [
+      ...curr,
+      { id, kind: "documents-home", title: "Documents" } satisfies DocumentsHomeTab,
+    ];
+    tabsRef.current = nextTabs;
+    setTabs(nextTabs);
+    setActiveId(id);
+    return id;
+  }, []);
+
   const openWebTab = useCallback(() => {
     const curr = tabsRef.current;
     const existing = curr.find((t) => t.kind === "web");
@@ -830,6 +863,14 @@ export function useTabs(initial?: Partial<TerminalTab>) {
             ...x,
             ...(patch.title !== undefined && { title: patch.title }),
             ...(patch.path !== undefined && { path: patch.path }),
+          };
+        }
+        if (x.kind === "document") {
+          return {
+            ...x,
+            ...(patch.title !== undefined && { title: patch.title }),
+            ...(patch.path !== undefined && { path: patch.path }),
+            ...(patch.dirty !== undefined && { dirty: patch.dirty }),
           };
         }
         if (x.kind === "notebook" || x.kind === "image") {
@@ -1266,6 +1307,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     newMarkdownTab,
     newNotebookTab,
     newImageTab,
+    newDocumentTab,
     openAiDiffTab,
     openGitDiffTab,
     openCommitHistoryTab,
@@ -1274,6 +1316,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     openMlNetworkTab,
     openSvgPlaygroundTab,
     openWebTab,
+    openDocumentsHomeTab,
     setAiDiffStatus,
     closeAiDiffTab,
     closeTab,

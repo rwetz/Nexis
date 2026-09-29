@@ -39,8 +39,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { viewEnabled } from "@/lib/packs";
-import { dirname, stripVerbatimPrefix } from "@/lib/path";
+import { packEnabled, viewEnabled } from "@/lib/packs";
+import { documentFormatFor } from "@/modules/documents/lib/paths";
+import { basename, dirname, stripVerbatimPrefix } from "@/lib/path";
 import { useSidebarState, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "./useSidebarState";
 import { useDialogCoordinator } from "./useDialogCoordinator";
 import {
@@ -162,6 +163,7 @@ import {
   editorAnyDirty,
   editorLeaves,
   editorLeafPaths,
+  type DocumentFormat,
 } from "@/modules/tabs";
 import {
   disposeSession,
@@ -205,6 +207,13 @@ const NotebookStackLazy = lazy(() =>
 );
 const ImageStackLazy = lazy(() =>
   import("@/modules/image-viewer").then((m) => ({ default: m.ImageStack })),
+);
+// Tiptap, mammoth and docx only load once a document is opened.
+const DocumentStackLazy = lazy(() =>
+  import("@/modules/documents").then((m) => ({ default: m.DocumentStack })),
+);
+const DocumentsPanelLazy = lazy(() =>
+  import("@/modules/documents").then((m) => ({ default: m.DocumentsPanel })),
 );
 // Heavy, rarely-open panels: keep them out of the main chunk so app startup
 // doesn't pay their parse cost. Same pattern as the tab stacks above.
@@ -259,6 +268,8 @@ function MainApp() {
     newMarkdownTab,
     newNotebookTab,
     newImageTab,
+    newDocumentTab,
+    openDocumentsHomeTab,
     openAiDiffTab,
     closeAiDiffTab,
     openGitDiffTab,
@@ -690,6 +701,8 @@ function MainApp() {
   const isMarkdownTab = activeTab?.kind === "markdown";
   const isNotebookTab = activeTab?.kind === "notebook";
   const isImageTab = activeTab?.kind === "image";
+  const isDocumentTab = activeTab?.kind === "document";
+  const isDocumentsHomeTab = activeTab?.kind === "documents-home";
   const isAiDiffTab = activeTab?.kind === "ai-diff";
   const isGitDiffTab =
     activeTab?.kind === "git-diff" || activeTab?.kind === "git-commit-file";
@@ -814,7 +827,7 @@ function MainApp() {
   const handleClose = useCallback(
     (id: number) => {
       const t = tabs.find((x) => x.id === id);
-      if (t?.kind === "editor" && editorAnyDirty(t)) {
+      if ((t?.kind === "editor" && editorAnyDirty(t)) || (t?.kind === "document" && t.dirty)) {
         setPendingCloseTab(id);
         return;
       }
@@ -1229,11 +1242,22 @@ function MainApp() {
         newImageTab(path);
         return;
       }
+      // A .docx is binary, so the code editor could only show "binary file".
+      // With the Documents pack off, the request lands on the pack's gate
+      // placeholder (an offer to enable it) rather than on a dead editor.
+      if (documentFormatFor(path) === "docx") {
+        if (packEnabled("documents", usePreferencesStore.getState().enabledPacks)) {
+          newDocumentTab(path, "docx");
+        } else {
+          persistSidebarView("documents");
+        }
+        return;
+      }
       // Explorer defaults to preview (pin=false); explicit actions like
       // context-menu "Open" pass pin=true for a persistent tab.
       openFileTab(path, pin ?? false);
     },
-    [openFileTab, newMarkdownTab, newImageTab],
+    [openFileTab, newMarkdownTab, newImageTab, newDocumentTab, persistSidebarView],
   );
 
   const handlePathRenamed = useCallback(
@@ -1245,7 +1269,8 @@ function MainApp() {
         if (
           t.kind !== "image" &&
           t.kind !== "markdown" &&
-          t.kind !== "notebook"
+          t.kind !== "notebook" &&
+          t.kind !== "document"
         ) continue;
         if (t.path === from) {
           const i = to.lastIndexOf("/");
@@ -1284,6 +1309,13 @@ function MainApp() {
           if (t.path === path || t.path.startsWith(`${path}/`)) disposeTab(t.id);
           continue;
         }
+        if (t.kind === "document") {
+          if (t.path !== path && !t.path.startsWith(`${path}/`)) continue;
+          // Unsaved edits are the only copy left of a deleted document.
+          if (t.dirty) dirty.push(t.id);
+          else disposeTab(t.id);
+          continue;
+        }
         if (t.kind !== "editor") continue;
         // Any pane in this tab showing the deleted path (or something under it).
         const affected = editorLeafPaths(t).some(
@@ -1312,6 +1344,7 @@ function MainApp() {
     if (activeTab?.kind === "editor") return editorActivePath(activeTab);
     if (activeTab?.kind === "image") return activeTab.path;
     if (activeTab?.kind === "markdown") return activeTab.path;
+    if (activeTab?.kind === "document") return activeTab.path;
     if (activeTab?.kind === "notebook") return activeTab.path;
     if (activeTab?.kind === "git-diff") {
       if (/^([A-Za-z]:|\/|\\)/.test(activeTab.path)) return activeTab.path;
@@ -1430,6 +1463,32 @@ function MainApp() {
     [newNotebookTab],
   );
 
+  // ── Documents pack ──
+  const openDocument = useCallback(
+    (path: string, format: DocumentFormat) => {
+      pushRecentFile(path);
+      newDocumentTab(path, format);
+    },
+    [newDocumentTab],
+  );
+  const openMarkdownInDocuments = useCallback(
+    (path: string) => openDocument(path, "markdown"),
+    [openDocument],
+  );
+  const setDocumentDirty = useCallback(
+    (id: number, dirty: boolean) => updateTab(id, { dirty }),
+    [updateTab],
+  );
+  const repointDocument = useCallback(
+    (id: number, path: string) => updateTab(id, { path, title: basename(path) }),
+    [updateTab],
+  );
+  // "Edit raw" / "Open as source": the pinned code editor, never the preview.
+  const openDocumentSource = useCallback(
+    (path: string) => openFileTab(path, true),
+    [openFileTab],
+  );
+
   const openImageViewer = useCallback(
     (path: string) => {
       newImageTab(path);
@@ -1495,13 +1554,14 @@ function MainApp() {
     { id: "art.iconSet",         label: "Open the icon set review", category: "View",    action: () => openSvgStudio("icon-set"), pack: "art", keywords: ["icons", "audit", "consistency", "stroke", "svg"] },
     { id: "art.favicon",         label: "Open the favicon exporter", category: "View",   action: () => openSvgStudio("favicon"), pack: "art", keywords: ["favicon", "app icon", "manifest", "apple touch", "pwa"] },
     { id: "art.animator",        label: "Open the SVG animator",    category: "View",    action: () => openSvgStudio("animator"), pack: "art", keywords: ["animate", "keyframe", "smil", "motion", "timeline"] },
+    { id: "documents.open",      label: "Open Documents",           category: "View",    action: () => { openDocumentsHomeTab(); }, pack: "documents", keywords: ["docx", "word", "markdown", "rich text", "document", "pdf"] },
     { id: "help.gettingStarted", label: "Open Getting Started",       category: "General", action: () => openOnboarding(), keywords: ["onboarding", "tour", "help", "first run", "checklist"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
     // Every sidebar view off the rail is reached from here; see viewCatalog.ts.
     ...viewPaletteCommands(persistSidebarView),
-  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgStudio, openMlLabTab]);
+  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgStudio, openMlLabTab, openDocumentsHomeTab]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
   // mirroring how the rail hides their views (V2 gating; decision doc in
@@ -2003,7 +2063,13 @@ function MainApp() {
         )}
         aria-hidden={!isMarkdownTab}
       >
-        <Suspense fallback={null}><MarkdownStackLazy tabs={tabs} activeId={activeId} /></Suspense>
+        <Suspense fallback={null}>
+          <MarkdownStackLazy
+            tabs={tabs}
+            activeId={activeId}
+            onEdit={enabledPacks.includes("documents") ? openMarkdownInDocuments : undefined}
+          />
+        </Suspense>
       </div>
       <div
         className={cn(
@@ -2022,6 +2088,34 @@ function MainApp() {
         aria-hidden={!isImageTab}
       >
         <Suspense fallback={null}><ImageStackLazy tabs={tabs} activeId={activeId} /></Suspense>
+      </div>
+      <div
+        className={cn("absolute inset-0", !isDocumentTab && "invisible pointer-events-none")}
+        aria-hidden={!isDocumentTab}
+        inert={!isDocumentTab}
+      >
+        <Suspense fallback={null}>
+          <DocumentStackLazy
+            tabs={tabs}
+            activeId={activeId}
+            onDirtyChange={setDocumentDirty}
+            onRepoint={repointDocument}
+            onEditRaw={openDocumentSource}
+          />
+        </Suspense>
+      </div>
+      <div
+        className={cn("absolute inset-0", !isDocumentsHomeTab && "invisible pointer-events-none")}
+        aria-hidden={!isDocumentsHomeTab}
+        inert={!isDocumentsHomeTab}
+      >
+        {tabs.some((t) => t.kind === "documents-home") ? (
+          <Suspense fallback={null}>
+            <div className="mx-auto h-full max-w-3xl">
+              <DocumentsPanelLazy workspaceRoot={explorerRoot} onOpenDocument={openDocument} />
+            </div>
+          </Suspense>
+        ) : null}
       </div>
       <div
         className={cn(
@@ -2160,6 +2254,7 @@ function MainApp() {
             onOpenSvgStudio={openSvgPlaygroundTab}
             onOpenMlLab={openMlLabTab}
             onOpenWeb={openWebTab}
+            onOpenDocuments={openDocumentsHomeTab}
             searchTarget={searchTarget}
             searchRef={searchInlineRef}
             onOpenSpotlight={() => setQuickFilePickerOpen(true)}

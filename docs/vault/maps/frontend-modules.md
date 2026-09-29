@@ -35,6 +35,7 @@ As of 2026-07. One-liners are orientation, not spec — verify in code, and fix 
 ## Content & misc
 
 - `markdown` · `preview` · `image-viewer` — viewers/renderers
+- `documents` — rich-text markdown/.docx editor and PDF export, the Documents pack ([[documents-pack]])
 - `snippets` / `shell-snippets` / `prompt-templates` — reusable content
 - `profiles` — shell profiles · `theme` — theming · `notifications` · `processes` — Nexis's own background processes · `sysmon` — system resource analyzer ([[system-monitor]]) · `agent-queue` — queued agent runs · `refactor` · `share` — sharing (pairs with `http_share.rs`) · `updater` — app updates
 

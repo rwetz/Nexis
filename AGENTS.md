@@ -224,6 +224,8 @@ const leftItems = statusBarItems.filter((i) => i.side === "left");
 
 **Fix in place:** Two halves, both required: `.zoom-content .cm-editor { zoom: calc(1 / var(--app-zoom, 1)) }` in `globals.css` neutralizes the ancestor zoom (net scale 1.0, coordinates trustworthy), and the shared editor theme in `src/modules/editor/lib/extensions.ts` sets `.cm-scroller` `fontSize: calc(13px * var(--app-zoom, 1))` so zooming still visibly scales the code. Covers every CodeMirror instance (EditorPane, GitDiffPane, AiDiffPane) via the `.cm-editor` selector.
 
+**Second editor, same fix:** the Documents pack's rich-text editor is ProseMirror (Tiptap), which maps clicks through the same caret-from-point APIs. `.zoom-content .ProseMirror` carries the same exemption in `globals.css`, and `src/modules/documents/documents.css` scales its font-size by `--app-zoom`. Guarded by `pitfall 15 (documents)`.
+
 **Future danger:** Do not put a CodeMirror editor under a CSS-`zoom`ed ancestor without the exemption, and do not "simplify" the font-size back to a plain `13px` (that silently makes zoom a no-op for the editor). If a new pane renders CodeMirror *outside* `.zoom-content` or inside an already `zoom-exempt` container, the `.zoom-content .cm-editor` rule composes correctly (it only fires under `.zoom-content`) — but check click accuracy at zoom ≠ 1 anyway. Enforced by `pitfall 15` in `src/lib/pitfall-guards.test.ts`.
 
 ---

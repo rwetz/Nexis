@@ -115,6 +115,19 @@ export type ImageTab = {
   path: string;
 };
 
+/** A rich-text document (Documents pack). One tab per file; `format` is fixed
+ *  at open from the extension and decides how the file is read and written. */
+export type DocumentFormat = "markdown" | "docx";
+
+export type DocumentTab = {
+  id: number;
+  kind: "document";
+  title: string;
+  path: string;
+  format: DocumentFormat;
+  dirty?: boolean;
+};
+
 export type AiDiffStatus = "pending" | "approved" | "rejected";
 
 export type AiDiffTab = {
@@ -204,6 +217,14 @@ export type WebWorkbenchTab = {
   title: string;
 };
 
+/** The Documents pack's home: the workspace's documents plus New and Open.
+ *  Stateless, like the Web workbench, so there is only ever one. */
+export type DocumentsHomeTab = {
+  id: number;
+  kind: "documents-home";
+  title: string;
+};
+
 export type Tab =
   | TerminalTab
   | EditorTab
@@ -211,6 +232,8 @@ export type Tab =
   | MarkdownTab
   | NotebookTab
   | ImageTab
+  | DocumentTab
+  | DocumentsHomeTab
   | AiDiffTab
   | GitDiffTab
   | GitHistoryTab
@@ -219,6 +242,28 @@ export type Tab =
   | MlNetworkTab
   | SvgPlaygroundTab
   | WebWorkbenchTab;
+
+/**
+ * The first id no existing tab or pane node uses. Tabs and pane nodes share
+ * one id counter, so a new tab must start past all of them.
+ *
+ * Derived from the tabs rather than counted alongside them: a hand-kept
+ * count for the "launched with a folder argument" start (tab 1, leaf 2)
+ * came out as 1, so the first tab opened after it, typically a workbench,
+ * reused id 1. It then shared the terminal's id, `activeTab` resolved to the
+ * terminal, and the new tab could never be shown.
+ */
+export function nextIdAfter(tabs: readonly Tab[]): number {
+  // Split nodes carry ids too, so every node counts, not only the leaves.
+  const maxNode = (n: PaneNode<object>): number =>
+    n.kind === "split" ? Math.max(n.id, ...n.children.map(maxNode)) : n.id;
+  let max = 0;
+  for (const t of tabs) {
+    max = Math.max(max, t.id);
+    if (t.kind === "terminal" || t.kind === "editor") max = Math.max(max, maxNode(t.paneTree));
+  }
+  return max + 1;
+}
 
 export type TabPatch = Partial<{
   title: string;

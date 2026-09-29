@@ -38,6 +38,7 @@ export const SIDEBAR_VIEW_IDS = [
   "command-history",
   "atlas",
   "benchmark",
+  "documents",
 ] as const;
 
 export type SidebarViewId = (typeof SIDEBAR_VIEW_IDS)[number];

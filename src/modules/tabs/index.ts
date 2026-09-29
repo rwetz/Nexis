@@ -26,6 +26,8 @@ export type {
   MarkdownTab,
   NotebookTab,
   ImageTab,
+  DocumentTab,
+  DocumentFormat,
   AiDiffTab,
   GitDiffTab,
   GitHistoryTab,
