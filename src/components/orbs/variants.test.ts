@@ -46,15 +46,27 @@ describe.each(ORB_VARIANTS.map((v) => [v.key, v] as const))("orb %s", (_key, v) 
     }
   });
 
+  it("takes a theme colour exactly when it says it follows the theme", () => {
+    // The picker's "Theme" badge is read from `themed`, so it has to be accurate.
+    const usesTheme = v.colors.some((c) => c.default.startsWith("theme:"));
+    expect(usesTheme).toBe(v.themed);
+  });
+
   it("has no preprocessor directive of its own (the prelude owns #version)", () => {
     expect(v.fragment).not.toMatch(/#version|precision /);
   });
 });
 
 describe("orb registry", () => {
-  it("has six distinct ids", () => {
-    expect(ORB_IDS).toHaveLength(6);
-    expect(new Set(ORB_IDS).size).toBe(6);
+  it("has twenty-six distinct ids", () => {
+    expect(ORB_IDS).toHaveLength(26);
+    expect(new Set(ORB_IDS).size).toBe(26);
+  });
+
+  it("has a mix of themed and signature orbs", () => {
+    const themed = ORB_VARIANTS.filter((v) => v.themed).length;
+    expect(themed).toBeGreaterThan(0);
+    expect(themed).toBeLessThan(ORB_VARIANTS.length);
   });
 
   it("matches the startup-path id list exactly, in order", () => {

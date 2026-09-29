@@ -11,6 +11,7 @@ import { COMMON } from "./glsl";
 export const rings: OrbVariant = {
   key: "rings",
   label: "Rings",
+  themed: true,
   note: "Ripples moving outward from the centre, tighter and quicker while thinking.",
   params: [
     { key: "phase", label: "Speed", min: 0, max: 6, default: 1.0, integrate: true },

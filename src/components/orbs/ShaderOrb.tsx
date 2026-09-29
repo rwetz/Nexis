@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/modules/theme/ThemeProvider";
 import { createOrbDrive, type DriveInput } from "./drive";
 import { createOrbRenderer } from "./renderer";
+import { snapshotOrb } from "./snapshot";
 import { baseColorsFor } from "./themeColor";
 import type { OrbState } from "./types";
 import { orbVariant } from "./variants";
@@ -70,17 +71,40 @@ export function ShaderOrb({ variant, state = "idle", size, still = false, classN
   }, [state, baseColors]);
 
   const staticFrame = still || prefersReducedMotion();
+
+  // A still frame never gets a context of its own: it comes from the shared
+  // snapshot renderer as an image (see snapshot.ts for why).
+  const [stillSrc, setStillSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (!def || !staticFrame) return;
+    let cancelled = false;
+    setFailed(false);
+    const px = size * Math.min(window.devicePixelRatio || 1, 2);
+    snapshotOrb(def, state, baseColors, px).then(
+      (src) => {
+        if (!cancelled) setStillSrc(src);
+      },
+      (e: unknown) => {
+        console.warn("[nexis] orb still failed:", e);
+        if (!cancelled) setFailed(true);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [def, staticFrame, state, baseColors, size]);
+
   // Every renderer gets a brand-new <canvas>. A canvas has exactly one WebGL
   // context for its whole life, and `dispose` deliberately loses the old
   // renderer's context to stay under the webview's context cap, so a new
   // renderer on the same element would be handed that dead context. The
   // symptom was an orb dropping to its fallback the moment it was selected
   // in Settings (still to live is a new renderer).
-  const canvasKey = `${variant}:${staticFrame}:${generation}:${staticFrame ? JSON.stringify(baseColors) : ""}`;
+  const canvasKey = `${variant}:${generation}`;
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !def) return;
+    if (!canvas || !def || staticFrame) return;
     setPainted(false);
     setFailed(false);
     const renderer = createOrbRenderer({
@@ -88,7 +112,6 @@ export function ShaderOrb({ variant, state = "idle", size, still = false, classN
       variant: def,
       drive: createOrbDrive(def),
       input: () => input.current,
-      still: staticFrame,
       onFirstFrame: () => setPainted(true),
       onLost: () => {
         // One retry: a context evicted by the webview's context cap usually
@@ -104,9 +127,9 @@ export function ShaderOrb({ variant, state = "idle", size, still = false, classN
     });
     return renderer.dispose;
     // canvasKey changes exactly when a new renderer is needed, and is also
-    // what gives that renderer a fresh canvas (see above). Colours are part
-    // of it only for a still frame: a running loop reads them through
-    // `input`, so a theme change eases a live orb instead of rebuilding it.
+    // what gives that renderer a fresh canvas (see above). Colours are not
+    // part of it: the loop reads them through `input`, so a theme change
+    // eases a live orb instead of rebuilding it.
   }, [def, canvasKey, staticFrame]);
 
   if (!def) return null;
@@ -123,6 +146,8 @@ export function ShaderOrb({ variant, state = "idle", size, still = false, classN
           className="absolute inset-[8%] rounded-full"
           style={{ background: `radial-gradient(circle at 35% 30%, ${a ?? "#fff"}, ${b ?? a ?? "#888"} 70%)` }}
         />
+      ) : staticFrame ? (
+        stillSrc ? <img src={stillSrc} alt="" draggable={false} className="block size-full" /> : null
       ) : (
         <canvas
           key={canvasKey}

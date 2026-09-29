@@ -45,6 +45,13 @@ export interface OrbVariant {
   label: string;
   note: string;
   /**
+   * Whether the orb takes its colours from the active theme. Some orbs are
+   * their palette (a phosphor-green CRT, a rainbow film) and keep it under
+   * every theme; the picker labels which is which. `variants.test.ts` checks
+   * this agrees with the colours actually declared.
+   */
+  themed: boolean;
+  /**
    * GLSL ES 3.00 fragment shader body. The renderer prepends the version,
    * precision and the shared uniforms (`u_time`, `u_anim`, `u_inputVol`,
    * `u_outputVol`, `u_res`); the variant declares its own `p_<param>` floats

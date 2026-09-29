@@ -11,6 +11,7 @@ import { COMMON } from "./glsl";
 export const plasma: OrbVariant = {
   key: "plasma",
   label: "Plasma",
+  themed: true,
   note: "Warped, folding colour held inside a soft disc.",
   params: [
     { key: "flow", label: "Flow", min: 0, max: 3, default: 0.4, integrate: true },

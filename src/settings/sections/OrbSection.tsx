@@ -29,6 +29,16 @@ const STATE_LABELS: Record<OrbState, string> = {
   speaking: "Speaking",
 };
 
+/** Marks an orb that recolours with the theme. */
+function ThemeChip() {
+  return (
+    <span className="inline-flex items-center gap-0.5 rounded-sm bg-muted px-1 py-px text-[9.5px] font-normal text-muted-foreground">
+      <Icon name="theme" size={10} />
+      Theme
+    </span>
+  );
+}
+
 export function OrbSection() {
   const selected = usePreferencesStore((s) => s.aiOrbId);
   const [hovered, setHovered] = useState<string | null>(null);
@@ -39,7 +49,7 @@ export function OrbSection() {
     <div className="flex flex-col gap-4">
       <SectionHeader
         title="Orb"
-        description="The shape the assistant takes. It rests in a new chat, and follows the agent while it thinks, waits on an approval, or answers. Colours come from your theme."
+        description="The shape the assistant takes. It rests in a new chat, and follows the agent while it thinks, waits on an approval, or answers. Orbs marked Theme take their colours from your theme; the rest keep their own."
       />
 
       {current ? (
@@ -47,7 +57,10 @@ export function OrbSection() {
           <LazyShaderOrb variant={current.key} state={previewState} size={96} />
           <div className="flex min-w-0 flex-col gap-2">
             <div>
-              <div className="text-[13px] font-semibold">{current.label}</div>
+              <div className="flex items-center gap-1.5 text-[13px] font-semibold">
+                {current.label}
+                {current.themed ? <ThemeChip /> : null}
+              </div>
               <div className="text-[11px] leading-relaxed text-muted-foreground">{current.note}</div>
             </div>
             <div role="radiogroup" aria-label="Preview state" className="flex gap-1">
@@ -73,7 +86,7 @@ export function OrbSection() {
         </div>
       ) : null}
 
-      <div role="radiogroup" aria-label="Orb" className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+      <div role="radiogroup" aria-label="Orb" className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
         {ORB_VARIANTS.map((v) => {
           const active = v.key === selected;
           return (
@@ -101,6 +114,7 @@ export function OrbSection() {
                 {v.label}
                 {active ? <Icon name="check" size="xs" className="text-primary" /> : null}
               </span>
+              {v.themed ? <ThemeChip /> : <span className="h-[15px]" aria-hidden />}
             </button>
           );
         })}

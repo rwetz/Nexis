@@ -11,6 +11,7 @@ import { COMMON } from "./glsl";
 export const dither: OrbVariant = {
   key: "dither",
   label: "Dither",
+  themed: false,
   note: "A lit sphere drawn in ordered dither, like an old monochrome screen.",
   params: [
     { key: "light", label: "Light", min: 0, max: 3, default: 0.4, integrate: true },
@@ -19,8 +20,8 @@ export const dither: OrbVariant = {
     { key: "bumps", label: "Surface", min: 0, max: 1, default: 0.35 },
   ],
   colors: [
-    { key: "lit", label: "Lit", default: "theme:--terminal-ansi-green|#4ade80" },
-    { key: "shade", label: "Shade", default: "theme:--terminal-ansi-bright-black|#3f4552" },
+    { key: "lit", label: "Lit", default: "#4ade80" },
+    { key: "shade", label: "Shade", default: "#2b3140" },
   ],
   statePresets: {
     // Two levels is one-bit dither, the look this orb is for: with more,

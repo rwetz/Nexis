@@ -11,6 +11,7 @@ import { COMMON } from "./glsl";
 export const swarm: OrbVariant = {
   key: "swarm",
   label: "Swarm",
+  themed: true,
   note: "Points orbiting a sphere, loosening into a cloud while speaking.",
   params: [
     { key: "orbit", label: "Orbit", min: 0, max: 4, default: 0.6, integrate: true },

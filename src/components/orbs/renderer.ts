@@ -22,7 +22,7 @@
 import { Mesh, Program, Renderer, Triangle } from "ogl";
 import { runRafLoopWhileVisible } from "@/components/ui/backgrounds/rafLoop";
 import type { OrbDrive, DriveInput } from "./drive";
-import { SHARED_UNIFORMS, type OrbVariant } from "./types";
+import { SHARED_UNIFORMS, type OrbUniforms, type OrbVariant } from "./types";
 
 const MAX_STEP = 0.05;
 
@@ -46,6 +46,51 @@ export function fragmentSource(variant: OrbVariant): string {
   return PRELUDE + variant.fragment;
 }
 
+type Uniforms = Record<string, { value: number | number[] }>;
+
+/**
+ * Compile a variant on an existing ogl renderer. Throws with the driver's log
+ * when the program does not link, since ogl itself only warns.
+ */
+export function buildOrbMesh(renderer: Renderer, variant: OrbVariant): { mesh: Mesh; uniforms: Uniforms } {
+  const ctx = renderer.gl;
+  const uniforms: Uniforms = {};
+  for (const name of SHARED_UNIFORMS) uniforms[name] = { value: name === "u_res" ? [1, 1] : 0 };
+  for (const p of variant.params) uniforms[`p_${p.key}`] = { value: p.default };
+  for (const c of variant.colors) uniforms[`c_${c.key}`] = { value: [1, 1, 1] };
+  const program = new Program(ctx, { vertex: VERTEX, fragment: fragmentSource(variant), uniforms, transparent: true });
+  if (!ctx.getProgramParameter(program.program, ctx.LINK_STATUS)) {
+    throw new Error(`${variant.key}: ${ctx.getProgramInfoLog(program.program) || "shader failed to compile"}`);
+  }
+  return { mesh: new Mesh(ctx, { geometry: new Triangle(ctx), program }), uniforms };
+}
+
+/** Copy one frame of drive output into the program's uniforms. */
+export function applyFrame(uniforms: Uniforms, frame: OrbUniforms): void {
+  for (const [name, value] of Object.entries(frame)) {
+    const u = uniforms[name];
+    if (u) u.value = value as number | number[];
+  }
+}
+
+/** A WebGL2 ogl renderer on `canvas`, or null where WebGL2 is unavailable. */
+export function createGl2Renderer(canvas: HTMLCanvasElement, preserveDrawingBuffer = false): Renderer | null {
+  const renderer = new Renderer({
+    canvas,
+    webgl: 2,
+    alpha: true,
+    premultipliedAlpha: true,
+    antialias: false,
+    depth: false,
+    preserveDrawingBuffer,
+  });
+  if (typeof WebGL2RenderingContext === "undefined" || !(renderer.gl instanceof WebGL2RenderingContext)) {
+    renderer.gl.getExtension("WEBGL_lose_context")?.loseContext();
+    return null;
+  }
+  return renderer;
+}
+
 export type OrbRendererOptions = {
   canvas: HTMLCanvasElement;
   variant: OrbVariant;
@@ -53,8 +98,6 @@ export type OrbRendererOptions = {
   /** Read once per frame, so the caller can change state without a rebuild. */
   input: () => DriveInput;
   maxDpr?: number;
-  /** Draw one frame and stop (reduced motion, or a still gallery tile). */
-  still?: boolean;
   onFirstFrame?: () => void;
   /** The context was lost after starting; the caller shows its fallback. */
   onLost?: () => void;
@@ -68,7 +111,6 @@ export function createOrbRenderer({
   drive,
   input,
   maxDpr = 2,
-  still = false,
   onFirstFrame,
   onLost,
 }: OrbRendererOptions): OrbRenderer {
@@ -102,38 +144,27 @@ export function createOrbRenderer({
     // sizes only the backing store and never touches the style again.
     const styleWidth = canvas.style.width;
     const styleHeight = canvas.style.height;
-    const renderer = new Renderer({
-      canvas,
-      webgl: 2,
-      alpha: true,
-      premultipliedAlpha: true,
-      antialias: false,
-      depth: false,
-    });
-    if (typeof WebGL2RenderingContext === "undefined" || !(renderer.gl instanceof WebGL2RenderingContext)) {
-      dispose();
+    const renderer = createGl2Renderer(canvas);
+    if (!renderer) {
+      disposed = true;
       reject(new Error("WebGL2 is not available"));
       return;
     }
     canvas.style.width = styleWidth;
     canvas.style.height = styleHeight;
-    gl = renderer.gl;
+    // createGl2Renderer returned it, so it is WebGL2.
+    gl = renderer.gl as WebGL2RenderingContext;
     canvas.addEventListener("webglcontextlost", onContextLost);
 
-    const uniforms: Record<string, { value: number | number[] }> = {};
-    for (const name of SHARED_UNIFORMS) uniforms[name] = { value: name === "u_res" ? [1, 1] : 0 };
-    for (const p of variant.params) uniforms[`p_${p.key}`] = { value: p.default };
-    for (const c of variant.colors) uniforms[`c_${c.key}`] = { value: [1, 1, 1] };
-
-    const ctx = renderer.gl;
-    const program = new Program(ctx, { vertex: VERTEX, fragment: fragmentSource(variant), uniforms, transparent: true });
-    if (!gl.getProgramParameter(program.program, gl.LINK_STATUS)) {
-      const log = gl.getProgramInfoLog(program.program) || "shader failed to compile";
+    let built: ReturnType<typeof buildOrbMesh>;
+    try {
+      built = buildOrbMesh(renderer, variant);
+    } catch (e) {
       dispose();
-      reject(new Error(`${variant.key}: ${log}`));
+      reject(e);
       return;
     }
-    const mesh = new Mesh(ctx, { geometry: new Triangle(ctx), program });
+    const { mesh, uniforms } = built;
 
     const fit = () => {
       // The app zooms with CSS `zoom`, which the backing store knows nothing
@@ -156,31 +187,13 @@ export function createOrbRenderer({
 
     let painted = false;
     const draw = (dt: number) => {
-      const frame = drive.advance(dt, input());
-      for (const [name, value] of Object.entries(frame)) {
-        const u = uniforms[name];
-        if (u) u.value = value as number | number[];
-      }
+      applyFrame(uniforms, drive.advance(dt, input()));
       renderer.render({ scene: mesh });
       if (!painted) {
         painted = true;
         onFirstFrame?.();
       }
     };
-
-    if (still) {
-      // A still still has to look like its state, so let the springs settle
-      // before the one frame is drawn.
-      for (let i = 0; i < 90; i++) drive.advance(1 / 30, input());
-      draw(1 / 30);
-      resize = new ResizeObserver(() => {
-        fit();
-        draw(0);
-      });
-      resize.observe(canvas);
-      resolve();
-      return;
-    }
 
     let visible = true;
     intersect = new IntersectionObserver((entries) => {

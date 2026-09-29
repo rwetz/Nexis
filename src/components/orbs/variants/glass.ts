@@ -11,6 +11,7 @@ import { COMMON } from "./glsl";
 export const glass: OrbVariant = {
   key: "glass",
   label: "Glass",
+  themed: true,
   note: "A clear sphere with a bright rim and slow caustic bands inside.",
   params: [
     { key: "flow", label: "Flow", min: 0, max: 3, default: 0.5, integrate: true },

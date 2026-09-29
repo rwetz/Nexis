@@ -11,6 +11,7 @@ import { COMMON } from "./glsl";
 export const nebula: OrbVariant = {
   key: "nebula",
   label: "Nebula",
+  themed: false,
   note: "A glowing core with wisps swirling around it and a few sparks.",
   params: [
     { key: "swirl", label: "Swirl", min: 0, max: 3, default: 0.35, integrate: true },
@@ -19,8 +20,8 @@ export const nebula: OrbVariant = {
     { key: "sparks", label: "Sparks", min: 0, max: 1, default: 0.4 },
   ],
   colors: [
-    { key: "core", label: "Core", default: "theme:--terminal-ansi-cyan|#4fd1c5" },
-    { key: "dust", label: "Dust", default: "theme:--brand|#f0765a" },
+    { key: "core", label: "Core", default: "#3fd6c8" },
+    { key: "dust", label: "Dust", default: "#ff8a5c" },
   ],
   statePresets: {
     idle: { swirl: 0.35, core: 3.5, density: 0.9, sparks: 0.4 },

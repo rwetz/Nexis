@@ -9,7 +9,34 @@
  * must validate an id without pulling every shader's source into the main
  * chunk. `variants.test.ts` keeps this list equal to `ORB_VARIANTS`.
  */
-export const ORB_ID_LIST = ["glass", "plasma", "nebula", "rings", "swarm", "dither"] as const;
+export const ORB_ID_LIST = [
+  "glass",
+  "plasma",
+  "nebula",
+  "rings",
+  "swarm",
+  "dither",
+  "iridescent",
+  "scroll",
+  "galaxy",
+  "torsion",
+  "caustic",
+  "moire",
+  "ion",
+  "weave",
+  "nacre",
+  "field",
+  "phosphor",
+  "voxel",
+  "eclipse",
+  "chromatic",
+  "spectra",
+  "orbital",
+  "tracks",
+  "lattice",
+  "falls",
+  "nimbus",
+] as const;
 
 export type OrbId = (typeof ORB_ID_LIST)[number];
 

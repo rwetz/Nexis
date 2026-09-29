@@ -6,6 +6,7 @@ const VARIANT: OrbVariant = {
   key: "test",
   label: "Test",
   note: "",
+  themed: false,
   fragment: "",
   params: [
     { key: "size", label: "Size", min: 0, max: 2, default: 1 },

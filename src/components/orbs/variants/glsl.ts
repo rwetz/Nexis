@@ -58,6 +58,30 @@ float orbPx() {
   return 2.0 / min(u_res.x, u_res.y);
 }
 
+// A smooth rainbow for 0..1 (a cosine palette), for orbs whose look is
+// iridescence or dispersion rather than the theme's two colours.
+vec3 spectrum(float t) {
+  return 0.5 + 0.5 * cos(6.28318 * (t + vec3(0.0, 0.33, 0.67)));
+}
+
+// The front of a unit sphere seen at p (orb disc coordinates, radius 1):
+// the surface point, which doubles as its normal. z is 0 off the sphere.
+vec3 spherePoint(vec2 p) {
+  return vec3(p, sqrt(max(0.0, 1.0 - dot(p, p))));
+}
+
+// Turn a point about Y by ay, then about X by ax.
+vec3 turn(vec3 v, float ay, float ax) {
+  v.xz = rot2(ay) * v.xz;
+  v.yz = rot2(ax) * v.yz;
+  return v;
+}
+
+// Diffuse light from the upper left, the house light for sphere orbs.
+float lambert(vec3 n) {
+  return clamp(dot(n, normalize(vec3(-0.45, 0.55, 0.7))), 0.0, 1.0);
+}
+
 // 1 inside a disc of radius r, 0 outside, with a one-pixel antialiased edge.
 float discMask(float dist, float r) {
   float px = orbPx();
