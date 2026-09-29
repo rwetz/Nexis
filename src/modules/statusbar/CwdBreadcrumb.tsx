@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { filesystem } from "@/platform/filesystem";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { absoluteDirname as dirname, basename } from "@/lib/path";
 import { segmentsFromCwd } from "./lib/pathUtils";
@@ -42,8 +42,7 @@ export function CwdBreadcrumb({ cwd, filePath, home, onCd }: Props) {
     const first = segments[0];
     const middle = segments.slice(1);
     return (
-      <Breadcrumb>
-        <BreadcrumbList className="gap-1 text-xs sm:gap-1.5">
+      <OneLineBreadcrumb>
           {first ? (
             <BreadcrumbSegment
               label={first.label}
@@ -69,8 +68,7 @@ export function CwdBreadcrumb({ cwd, filePath, home, onCd }: Props) {
           <BreadcrumbItem>
             <BreadcrumbPage className="text-foreground">{name}</BreadcrumbPage>
           </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      </OneLineBreadcrumb>
     );
   }
 
@@ -87,8 +85,7 @@ export function CwdBreadcrumb({ cwd, filePath, home, onCd }: Props) {
   const firstParent = parents[0];
   const middleParents = parents.slice(1);
   return (
-    <Breadcrumb>
-      <BreadcrumbList className="gap-1 text-xs sm:gap-1.5">
+    <OneLineBreadcrumb>
         {firstParent ? (
           <BreadcrumbSegment
             label={firstParent.label}
@@ -115,6 +112,63 @@ export function CwdBreadcrumb({ cwd, filePath, home, onCd }: Props) {
             onCd={onCd}
           />
         </BreadcrumbItem>
+    </OneLineBreadcrumb>
+  );
+}
+
+/**
+ * The breadcrumb's row: one line, always.
+ *
+ * It lives in the status bar, a fixed `h-8` row that centres its content.
+ * The shared `BreadcrumbList` wraps (`flex-wrap`), and a long path used to
+ * wrap into two or three lines that spilled out of the bar and over the
+ * sidebar rail above it. The `md:` collapse into "..." did not prevent it,
+ * because it keys on the window width, not on the room the status bar
+ * actually leaves the breadcrumb.
+ *
+ * So the row never wraps, and when it does not fit it clips from the start
+ * (`justify-end` in an `overflow-hidden` flex row overflows toward the
+ * start). The current folder, the last crumb and the one with the dropdown,
+ * always stays visible. A fade on the clipped edge says there is more, and
+ * only appears while something is actually clipped.
+ */
+function OneLineBreadcrumb({ children }: { children: ReactNode }) {
+  const listRef = useRef<HTMLOListElement>(null);
+  const [clipped, setClipped] = useState(false);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    // With the overflow on the start side, `scrollWidth` does not count it,
+    // so compare where the first crumb starts with where the row starts.
+    const measure = () => {
+      const first = list.firstElementChild;
+      setClipped(
+        !!first && first.getBoundingClientRect().left < list.getBoundingClientRect().left - 0.5,
+      );
+    };
+    measure();
+    // The row's own size, for window and sidebar resizes; its children, for
+    // a cd that changes the path without changing the row's width.
+    const resize = new ResizeObserver(measure);
+    resize.observe(list);
+    const mutation = new MutationObserver(measure);
+    mutation.observe(list, { childList: true, subtree: true, characterData: true });
+    return () => {
+      resize.disconnect();
+      mutation.disconnect();
+    };
+  }, []);
+
+  const mask = clipped ? "linear-gradient(to right, transparent, #000 20px)" : undefined;
+  return (
+    <Breadcrumb className="min-w-0">
+      <BreadcrumbList
+        ref={listRef}
+        className="flex-nowrap justify-end gap-1 overflow-hidden whitespace-nowrap text-xs sm:gap-1.5 [&>*]:shrink-0"
+        style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
+      >
+        {children}
       </BreadcrumbList>
     </Breadcrumb>
   );
