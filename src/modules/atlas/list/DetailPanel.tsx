@@ -181,7 +181,7 @@ function DetailBody({
           variant="secondary"
           onClick={() => void enterRepo(summary.path)}
         >
-          <Icon name="globe" size="sm" />
+          <Icon name="map" size="sm" />
           Show on map
         </Button>
         <Button size="sm" variant="secondary" onClick={handleOpenWorkspace}>

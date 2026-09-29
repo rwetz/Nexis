@@ -13,6 +13,10 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
   - **Context budget:** webviews keep about 16 live WebGL contexts and evict the oldest. Each orb releases its context when it unmounts, and in the Settings gallery only the selected and hovered tiles animate; the others draw one still frame.
   - Orb code loads with the first orb (a separate chunk of about 6 KB plus `ogl`), not at startup.
 
+### Changed
+
+- **Atlas has its own icon.** Atlas and the Web workbench both used the globe, so the two title-bar launchers looked the same side by side. Web keeps the globe, as do preview, ports and the HTTP client. Atlas, an isometric map of your repos, now uses a map icon: its launcher, window, "Show this repo in Atlas" command, Map mode tab and "Show on map" button (new `map` key in `components/icon.tsx`).
+
 ## [1.29.0] — 2026-09-24
 
 ### Added

@@ -13,9 +13,9 @@ function AtlasCapabilityPanel() {
 
 export const atlasCapability: CapabilityDefinition = {
   id: "atlas.main",
-  panels: [{ id: "atlas:main", legacyView: "atlas", title: "Atlas", location: "sidebar", icon: "globe", group: "Navigation", pack: "dev-tools", lifecycle: "unmount", render: () => <AtlasCapabilityPanel /> }],
+  panels: [{ id: "atlas:main", legacyView: "atlas", title: "Atlas", location: "sidebar", icon: "map", group: "Navigation", pack: "dev-tools", lifecycle: "unmount", render: () => <AtlasCapabilityPanel /> }],
   toolWindows: [{
-    id: "atlas", label: "Atlas", title: "Atlas — Nexis", icon: "globe",
+    id: "atlas", label: "Atlas", title: "Atlas — Nexis", icon: "map",
     width: 1440, height: 860, minWidth: 720, minHeight: 500, header: "featured",
     // The companion window has no tabs and no workspace of its own, so the
     // three actions that need them are forwarded to the main window instead
@@ -33,7 +33,7 @@ export const atlasCapability: CapabilityDefinition = {
   }],
   commands: (context) => [
     { id: "atlas.open", title: "Show Atlas (every git repo on this machine)", category: "View", pack: "dev-tools", keywords: ["repos", "repositories", "map", "isometric", "city", "dirty", "branch", "stash", "scan"], handler: () => context().panels.activate("atlas:main") },
-    { id: "atlas.showRepo", title: "Show this repo in Atlas", category: "General", icon: "globe", keywords: ["atlas", "map", "repos", "isometric"], handler: () => {
+    { id: "atlas.showRepo", title: "Show this repo in Atlas", category: "General", icon: "map", keywords: ["atlas", "map", "repos", "isometric"], handler: () => {
       const host = context();
       const root = host.workspace.snapshot().roots[0];
       if (!root) { host.notify("No workspace open", "Open a folder before showing it in Atlas."); return; }
