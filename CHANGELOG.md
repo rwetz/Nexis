@@ -4,6 +4,12 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Changed
+
+- **Spotlight got an adaptive search bar and a real preview.** At rest (Ctrl/Cmd+P) it is a compact pill listing your recent files, falling back to the top of the workspace when there is no history. The placeholder cycles through hints that teach what it can do ("Try “mtx”…", "Type a command…"). As soon as you type, it springs wide and squares off into results plus preview. The icon turns into a spinner while the workspace is indexed, a live badge counts files and commands, and a footer shows the keys. Rows show each file's own icon. With reduced motion, nothing animates. Width and radius are animated values rather than a layout animation, because the app loads motion's `domAnimation` set, which has no layout support.
+  - **The preview shows the file:** images render as a thumbnail on a checkerboard, with their pixel size. Code files render as a small editor window (title bar, line numbers, syntax colour from the theme's terminal palette), starting where the code begins when the file opens with a long header comment. Text and markdown show an excerpt with headings, bullets and inline markers cleaned up. Below it: type, size, modified and line count. Commands show their category. Reads are debounced (70ms) and cached, so a pointer sweeping the list reads only where it stops, and nothing over 256 KB is read. The highlighter is a small line tokenizer (`spotlight/miniHighlight.ts`), not CodeMirror's parsers, so a preview never waits on a language chunk. File text reaches the page only as SVG and React text nodes.
+  - **Opening from Spotlight uses the explorer's routing,** so an image opens in the image viewer and markdown in its preview. Before, every file went to the code editor, and an image opened as binary.
+
 ## [1.29.0] — 2026-09-24
 
 ### Added
