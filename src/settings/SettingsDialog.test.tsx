@@ -58,6 +58,7 @@ describe("navigation", () => {
       "Shortcuts",
       "Models",
       "Agents",
+      "Orb",
       "Environment",
       "Formatters",
       "About",
@@ -149,7 +150,7 @@ describe("escape handling", () => {
 
     expect(search).toHaveValue("");
     expect(useSettingsDialogStore.getState().isOpen).toBe(true);
-    expect(navItemNames()).toHaveLength(10);
+    expect(navItemNames()).toHaveLength(11);
   });
 
   test("Escape on an empty filter closes the dialog", async () => {
@@ -173,6 +174,6 @@ test("reopening starts from a cleared query", async () => {
 
   const reopened = await screen.findByLabelText("Search settings");
   expect(reopened).toHaveValue("");
-  expect(navItemNames()).toHaveLength(10);
+  expect(navItemNames()).toHaveLength(11);
   expect(activeSectionTitle()).toBe("Models");
 });

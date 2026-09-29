@@ -4,6 +4,15 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Added
+
+- **An animated orb for the AI, in six styles.** The AI window's new-chat card shows the chosen orb at rest in place of the logo tile. While the agent works, the chat's "Thinking…" spinner becomes a small orb that follows the run: it thinks while the model is working or waiting on a tool approval, and it speaks while the answer streams. It stays for the whole run, where the spinner disappeared at the first token. The styles are Glass, Plasma, Nebula, Rings, Swarm and Dither, each with its own idle, thinking and speaking look, and states ease into each other rather than switching. Colours come from the active theme (brand and ANSI colours, with fallbacks) and ease to the new ones when the theme changes. **Settings → AI → Orb** has a live preview of each state, a gallery, and **Off**, which keeps the old logo and spinner. The choice syncs across windows through `writePref`. Code: `src/components/orbs/`.
+  - **Why not shadercn's orbs:** all 33 of its orb shaders are XorDev ports licensed for non-commercial use only, which Nexis's Apache-2.0 licence can't carry. The engine design comes from shadercn's MIT renderer (spring-eased params and colours, synthesized input/output volumes per state, one flow clock that runs faster while speaking). The six shaders are original.
+  - **Why WebGL2, not WebGPU:** shadercn's engine is WebGPU-only, and Linux's WebKitGTK has no WebGPU (WKWebView only gained it recently). The orbs run on WebGL2 through `ogl`, the same stack as the animated backgrounds, so they work on every platform Nexis ships on and add no dependency.
+  - **Graceful degradation:** with no WebGL2, a shader that fails to compile, or a context lost twice, the orb becomes a CSS disc in its own colours; one lost context is retried on a fresh canvas. `prefers-reduced-motion` draws one settled frame and runs no loop. Loops also stop while the window is hidden or the orb is scrolled out of view.
+  - **Context budget:** webviews keep about 16 live WebGL contexts and evict the oldest. Each orb releases its context when it unmounts, and in the Settings gallery only the selected and hovered tiles animate; the others draw one still frame.
+  - Orb code loads with the first orb (a separate chunk of about 6 KB plus `ogl`), not at startup.
+
 ## [1.29.0] — 2026-09-24
 
 ### Added

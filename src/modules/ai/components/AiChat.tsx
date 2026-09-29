@@ -30,6 +30,8 @@ import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
 import { SLASH_COMMANDS, NEXIS_CMD_RE } from "../lib/slashCommands";
 import { Spinner } from "@/components/ui/spinner";
+import { LazyShaderOrb } from "@/components/orbs/LazyShaderOrb";
+import { useAgentOrbState } from "../lib/orbState";
 import { useChatStore, sendMessage } from "../store/chatStore";
 import type {
   ChatStatus,
@@ -214,6 +216,22 @@ type Props = {
   stop: () => void | PromiseLike<void>;
 };
 
+/**
+ * The orb while a run is in flight. Unlike the spinner it replaces, it stays
+ * for the whole run, not only until the first token: the orb's state is what
+ * says whether the agent is thinking, waiting on an approval, or speaking.
+ */
+function WorkingRow({ orb, step }: { orb: string; step: string | null }) {
+  const state = useAgentOrbState();
+  const label = step ?? (state === "speaking" ? "Responding" : "Thinking…");
+  return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <LazyShaderOrb variant={orb} state={state} size={22} className="-my-1 -ml-0.5" />
+      <span className="truncate">{label}</span>
+    </div>
+  );
+}
+
 export function AiChatView({
   messages,
   status,
@@ -234,6 +252,7 @@ export function AiChatView({
   const patchAgentMeta = useChatStore((s) => s.patchAgentMeta);
   const showContinue =
     !isBusy && hitStepCap && lastMessage?.role === "assistant";
+  const orb = usePreferencesStore((s) => s.aiOrbId);
 
   const onApproval = useCallback(
     (id: string, approved: boolean) => addToolApprovalResponse({ id, approved }),
@@ -261,11 +280,15 @@ export function AiChatView({
             onDismiss={() => patchAgentMeta({ compactionNotice: null })}
           />
         )}
-        {showSpinner && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Spinner />
-            <span className="truncate">{step ?? "Thinking…"}</span>
-          </div>
+        {orb !== "off" ? (
+          isBusy && <WorkingRow orb={orb} step={step} />
+        ) : (
+          showSpinner && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Spinner />
+              <span className="truncate">{step ?? "Thinking…"}</span>
+            </div>
+          )
         )}
         {showContinue && (
           <ContinueRow
