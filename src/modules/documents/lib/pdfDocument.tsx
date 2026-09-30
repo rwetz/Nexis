@@ -13,13 +13,13 @@
  * (non-embedded) images are written as their alt text and URL rather than
  * fetched: an export should not reach the network.
  *
- * Keys are array indices, and react-doctor's no-array-index-as-key flags every
- * one. That rule is about reconciliation, and this tree is never reconciled:
- * `serialize` walks it once into Forme's JSON. Document nodes also have no
- * identity other than their position, so an index is the honest key.
+ * Lists are keyed by Children.toArray rather than by hand. This tree is never
+ * reconciled (`serialize` walks it once into Forme's JSON), and document
+ * nodes have no identity beyond their position, so there is no stable id to
+ * key by; toArray says exactly that without an index-as-key.
  */
 import type { JSONContent } from "@tiptap/core";
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 import {
   Cell,
   Code,
@@ -46,49 +46,49 @@ function plainText(node: JSONContent): string {
 }
 
 function inline(nodes: JSONContent[] | undefined, theme: PdfTheme): ReactNode[] {
-  return (nodes ?? []).map((n, i) => {
+  return Children.toArray((nodes ?? []).map((n) => {
     if (n.type === "hardBreak") return "\n";
     if (n.type !== "text") return plainText(n);
     let el: ReactNode = n.text ?? "";
     for (const mark of n.marks ?? []) {
       switch (mark.type) {
         case "bold":
-          el = <Text key={i} style={{ fontWeight: 700 }}>{el}</Text>;
+          el = <Text style={{ fontWeight: 700 }}>{el}</Text>;
           break;
         case "italic":
-          el = <Em key={i}>{el}</Em>;
+          el = <Em>{el}</Em>;
           break;
         case "underline":
-          el = <Text key={i} style={{ textDecoration: "underline" }}>{el}</Text>;
+          el = <Text style={{ textDecoration: "underline" }}>{el}</Text>;
           break;
         case "strike":
-          el = <Text key={i} style={{ textDecoration: "line-through" }}>{el}</Text>;
+          el = <Text style={{ textDecoration: "line-through" }}>{el}</Text>;
           break;
         case "code":
-          el = <Code key={i}>{el}</Code>;
+          el = <Code>{el}</Code>;
           break;
         case "highlight":
-          el = <Text key={i} style={{ backgroundColor: "#fef08a" }}>{el}</Text>;
+          el = <Text style={{ backgroundColor: "#fef08a" }}>{el}</Text>;
           break;
         case "link": {
           const href = String(mark.attrs?.href ?? "");
           if (isAllowedHref(href)) {
-            el = <Link key={i} href={href} style={{ color: theme.colors.accent }}>{el}</Link>;
+            el = <Link href={href} style={{ color: theme.colors.accent }}>{el}</Link>;
           }
           break;
         }
       }
     }
-    return <Text key={i}>{el}</Text>;
-  });
+    return <Text>{el}</Text>;
+  }));
 }
 
-function list(n: JSONContent, theme: PdfTheme, key: number): ReactNode {
-  const items = (n.content ?? []).map((item, i) => {
+function list(n: JSONContent, theme: PdfTheme): ReactNode {
+  const items = Children.toArray((n.content ?? []).map((item) => {
     const box = item.type === "taskItem" ? (item.attrs?.checked ? "[x] " : "[ ] ") : "";
     const [first, ...rest] = item.content ?? [];
     return (
-      <ListItem key={i}>
+      <ListItem>
         <Text>
           {box}
           {first?.type === "paragraph" ? inline(first.content, theme) : null}
@@ -96,26 +96,26 @@ function list(n: JSONContent, theme: PdfTheme, key: number): ReactNode {
         {blocks(first?.type === "paragraph" ? rest : item.content, theme)}
       </ListItem>
     );
-  });
+  }));
   return n.type === "orderedList" ? (
-    <OrderedList key={key} start={Number(n.attrs?.start) || 1}>{items}</OrderedList>
+    <OrderedList start={Number(n.attrs?.start) || 1}>{items}</OrderedList>
   ) : (
-    <UnorderedList key={key}>{items}</UnorderedList>
+    <UnorderedList>{items}</UnorderedList>
   );
 }
 
 function blocks(nodes: JSONContent[] | undefined, theme: PdfTheme): ReactNode[] {
   const gap = { marginBottom: theme.paragraphGap };
-  return (nodes ?? []).map((n, i) => {
+  return Children.toArray((nodes ?? []).map((n) => {
     const textAlign = (n.attrs?.textAlign as "left" | "center" | "right" | "justify" | undefined) ?? undefined;
     switch (n.type) {
       case "paragraph":
-        return <Text key={i} style={{ ...gap, textAlign }}>{inline(n.content, theme)}</Text>;
+        return <Text style={{ ...gap, textAlign }}>{inline(n.content, theme)}</Text>;
       case "heading": {
         const level = Math.min(6, Math.max(1, Number(n.attrs?.level) || 1));
         return (
           <Text
-            key={i}
+           
             bookmark={level <= 2 ? plainText(n) : undefined}
             style={{
               fontFamily: theme.heading.fontFamily,
@@ -134,11 +134,11 @@ function blocks(nodes: JSONContent[] | undefined, theme: PdfTheme): ReactNode[] 
       case "bulletList":
       case "orderedList":
       case "taskList":
-        return list(n, theme, i);
+        return list(n, theme);
       case "blockquote":
         return (
           <View
-            key={i}
+           
             style={{
               ...gap,
               paddingLeft: 12,
@@ -152,31 +152,31 @@ function blocks(nodes: JSONContent[] | undefined, theme: PdfTheme): ReactNode[] 
         );
       case "codeBlock":
         return (
-          <View key={i} style={{ ...gap, padding: 10, backgroundColor: theme.colors.muted, borderRadius: 4 }}>
+          <View style={{ ...gap, padding: 10, backgroundColor: theme.colors.muted, borderRadius: 4 }}>
             <Text style={{ fontFamily: "Courier", fontSize: theme.body.fontSize - 1 }}>{plainText(n)}</Text>
           </View>
         );
       case "horizontalRule":
-        return <View key={i} style={{ ...gap, borderBottomWidth: 1, borderBottomColor: theme.colors.border }} />;
+        return <View style={{ ...gap, borderBottomWidth: 1, borderBottomColor: theme.colors.border }} />;
       case "image": {
         const src = String(n.attrs?.src ?? "");
         const alt = n.attrs?.alt ? String(n.attrs.alt) : undefined;
         return src.startsWith("data:image/") ? (
-          <Image key={i} src={src} alt={alt} style={{ ...gap, maxWidth: "100%" }} />
+          <Image src={src} alt={alt} style={{ ...gap, maxWidth: "100%" }} />
         ) : (
-          <Text key={i} style={{ ...gap, fontStyle: "italic", color: theme.colors.mutedForeground }}>
+          <Text style={{ ...gap, fontStyle: "italic", color: theme.colors.mutedForeground }}>
             [{alt ? `${alt}: ` : ""}{src}]
           </Text>
         );
       }
       case "table":
         return (
-          <Table key={i} style={gap}>
-            {(n.content ?? []).map((row, r) => (
-              <Row key={r} header={row.content?.every((c) => c.type === "tableHeader")}>
-                {(row.content ?? []).map((cell, c) => (
+          <Table style={gap}>
+            {Children.toArray((n.content ?? []).map((row) => (
+              <Row header={row.content?.every((c) => c.type === "tableHeader")}>
+                {Children.toArray((row.content ?? []).map((cell) => (
                   <Cell
-                    key={c}
+                   
                     colSpan={Number(cell.attrs?.colspan) > 1 ? Number(cell.attrs?.colspan) : undefined}
                     rowSpan={Number(cell.attrs?.rowspan) > 1 ? Number(cell.attrs?.rowspan) : undefined}
                     style={{
@@ -187,21 +187,19 @@ function blocks(nodes: JSONContent[] | undefined, theme: PdfTheme): ReactNode[] 
                     }}
                   >
                     {/* Paragraph gaps inside a cell would pad every row. */}
-                    {(cell.content ?? []).map((p, k) => (
-                      <Text key={k}>{inline(p.content, theme)}</Text>
-                    ))}
+                    {Children.toArray((cell.content ?? []).map((p) => <Text>{inline(p.content, theme)}</Text>))}
                   </Cell>
-                ))}
+                )))}
               </Row>
-            ))}
+            )))}
           </Table>
         );
       default: {
         const text = plainText(n);
-        return text ? <Text key={i} style={gap}>{text}</Text> : null;
+        return text ? <Text style={gap}>{text}</Text> : null;
       }
     }
-  });
+  }));
 }
 
 export function pdfDocumentFor(

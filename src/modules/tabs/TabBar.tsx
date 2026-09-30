@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { Icon } from "@/components/icon";
+import { Icon, type IconName } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -374,62 +374,34 @@ export function TabBar({
   );
 }
 
+/**
+ * The glyph for each tab kind that uses a fixed icon. Kinds that show a file
+ * use its file-type icon instead, and terminals depend on privacy, so both
+ * are handled in TabIcon; anything unlisted reads as a terminal.
+ */
+const TAB_KIND_ICON: Partial<Record<Tab["kind"], IconName>> = {
+  preview: "globe",
+  "ai-diff": "git-compare",
+  "git-diff": "git-compare",
+  "git-commit-file": "git-compare",
+  "git-history": "clock",
+  "ml-network": "network",
+  "ml-lab": "brain",
+  web: "globe",
+  "documents-home": "document",
+  "svg-playground": "brush",
+};
+
 export function TabIcon({ tab }: { tab: Tab }) {
   if (tab.kind === "editor" || tab.kind === "markdown" || tab.kind === "document") {
     return <FileTypeIcon name={tab.title} className="size-3.5 shrink-0" />;
   }
   if (tab.kind === "image") {
-    return (
-      <Icon name="image" size="md" className="shrink-0 text-muted-foreground/70" />
-    );
+    return <Icon name="image" size="md" className="shrink-0 text-muted-foreground/70" />;
   }
-  if (tab.kind === "preview") {
-    return (
-      <Icon name="globe" size="md" className="shrink-0" />
-    );
-  }
-  if (tab.kind === "ai-diff") {
-    return (
-      <Icon name="git-compare" size="md" className="shrink-0" />
-    );
-  }
-  if (tab.kind === "terminal" && tab.private) {
-    return (
-      <Icon name="incognito" size="md" className="shrink-0" />
-    );
-  }
-  if (tab.kind === "git-diff" || tab.kind === "git-commit-file") {
-    return (
-      <Icon name="git-compare" size="md" className="shrink-0" />
-    );
-  }
-  if (tab.kind === "git-history") {
-    return (
-      <Icon name="clock" size="md" className="shrink-0" />
-    );
-  }
-  if (tab.kind === "ml-network") {
-    return (
-      <Icon name="network" size="md" className="shrink-0" />
-    );
-  }
-  if (tab.kind === "ml-lab") {
-    return <Icon name="brain" size="md" className="shrink-0" />;
-  }
-  if (tab.kind === "web") {
-    return <Icon name="globe" size="md" className="shrink-0" />;
-  }
-  if (tab.kind === "documents-home") {
-    return <Icon name="document" size="md" className="shrink-0" />;
-  }
-  if (tab.kind === "svg-playground") {
-    return (
-      <Icon name="brush" size="md" className="shrink-0" />
-    );
-  }
-  return (
-    <Icon name="terminal" size="md" className="shrink-0" />
-  );
+  const name: IconName =
+    tab.kind === "terminal" ? (tab.private ? "incognito" : "terminal") : (TAB_KIND_ICON[tab.kind] ?? "terminal");
+  return <Icon name={name} size="md" className="shrink-0" />;
 }
 
 export function labelFor(t: Tab): string {

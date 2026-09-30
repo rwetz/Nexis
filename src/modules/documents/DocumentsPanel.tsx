@@ -16,7 +16,6 @@ import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { PanelEmptyGlyph, PanelEmptyState } from "@/components/ui/PanelEmptyState";
 import { basename, displayDirname } from "@/lib/path";
-import { cn } from "@/lib/utils";
 import { filesystem } from "@/platform/filesystem";
 import { openFiles } from "@/platform/dialogs";
 import type { DocumentFormat } from "@/modules/tabs";
@@ -33,13 +32,11 @@ type Row = { path: string; rel: string; format: DocumentFormat };
 const LIST_CAP = 500;
 const exists = (p: string) => filesystem.stat(p).then(() => true, () => false);
 
-export function DocumentsPanel({ workspaceRoot, onOpenDocument }: Props) {
+/** The workspace's markdown and Word files, rescanned when `reloadKey` changes. */
+function useWorkspaceDocuments(workspaceRoot: string | null, reloadKey: number) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [truncated, setTruncated] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
-
   useEffect(() => {
     if (!workspaceRoot) return;
     let cancelled = false;
@@ -65,6 +62,84 @@ export function DocumentsPanel({ workspaceRoot, onOpenDocument }: Props) {
       cancelled = true;
     };
   }, [workspaceRoot, reloadKey]);
+  return { rows, truncated, error };
+}
+
+function DocumentRow({ row, onOpen }: { row: Row; onOpen: (path: string, format: DocumentFormat) => void }) {
+  const dir = displayDirname(row.rel);
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(row.path, row.format)}
+      className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-muted/50"
+    >
+      <Icon name={row.format === "docx" ? "document" : "file-edit"} className="shrink-0 text-muted-foreground/60" />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-medium text-foreground">{basename(row.path)}</span>
+        {dir ? <span className="block truncate text-[10.5px] text-muted-foreground/60">{dir}</span> : null}
+      </span>
+    </button>
+  );
+}
+
+/** The list, or whichever empty state applies. */
+function DocumentList({
+  hasWorkspace,
+  rows,
+  visible,
+  truncated,
+  error,
+  filtered,
+  onOpen,
+}: {
+  hasWorkspace: boolean;
+  rows: Row[] | null;
+  visible: Row[];
+  truncated: boolean;
+  error: string | null;
+  filtered: boolean;
+  onOpen: (path: string, format: DocumentFormat) => void;
+}) {
+  if (!hasWorkspace) {
+    return (
+      <PanelEmptyState
+        art={<PanelEmptyGlyph icon="document" />}
+        title="No workspace open"
+        description="Open a folder to list its documents, or use Open to pick a file."
+      />
+    );
+  }
+  if (error) {
+    return <PanelEmptyState art={<PanelEmptyGlyph icon="alert" />} title="Could not list documents" description={error} />;
+  }
+  if (rows === null) return <PanelEmptyState title="Looking for documents..." />;
+  if (visible.length === 0) {
+    return (
+      <PanelEmptyState
+        art={<PanelEmptyGlyph icon={filtered ? "search" : "document"} />}
+        title={filtered ? "No matching documents" : "No documents yet"}
+        description={filtered ? undefined : "Markdown and Word files in this workspace show up here."}
+      />
+    );
+  }
+  return (
+    <div className="nexis-scrollbar flex-1 overflow-y-auto py-1">
+      {visible.map((row) => (
+        <DocumentRow key={row.path} row={row} onOpen={onOpen} />
+      ))}
+      {truncated ? (
+        <p className="px-3 py-2 text-[10.5px] text-muted-foreground">
+          Showing the first {LIST_CAP}. Filter to narrow the list.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+export function DocumentsPanel({ workspaceRoot, onOpenDocument }: Props) {
+  const [query, setQuery] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const { rows, truncated, error } = useWorkspaceDocuments(workspaceRoot, reloadKey);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -148,53 +223,15 @@ export function DocumentsPanel({ workspaceRoot, onOpenDocument }: Props) {
         </div>
       ) : null}
 
-      {!workspaceRoot ? (
-        <PanelEmptyState
-          art={<PanelEmptyGlyph icon="document" />}
-          title="No workspace open"
-          description="Open a folder to list its documents, or use Open to pick a file."
-        />
-      ) : error ? (
-        <PanelEmptyState art={<PanelEmptyGlyph icon="alert" />} title="Could not list documents" description={error} />
-      ) : rows === null ? (
-        <PanelEmptyState title="Looking for documents..." />
-      ) : visible.length === 0 ? (
-        <PanelEmptyState
-          art={<PanelEmptyGlyph icon={query ? "search" : "document"} />}
-          title={query ? "No matching documents" : "No documents yet"}
-          description={query ? undefined : "Markdown and Word files in this workspace show up here."}
-        />
-      ) : (
-        <div className="nexis-scrollbar flex-1 overflow-y-auto py-1">
-          {visible.map((row) => {
-            const dir = displayDirname(row.rel);
-            return (
-              <button
-                key={row.path}
-                type="button"
-                onClick={() => onOpenDocument(row.path, row.format)}
-                className={cn("flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-muted/50")}
-              >
-                <Icon
-                  name={row.format === "docx" ? "document" : "file-edit"}
-                  className="shrink-0 text-muted-foreground/60"
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium text-foreground">{basename(row.path)}</span>
-                  {dir ? (
-                    <span className="block truncate text-[10.5px] text-muted-foreground/60">{dir}</span>
-                  ) : null}
-                </span>
-              </button>
-            );
-          })}
-          {truncated ? (
-            <p className="px-3 py-2 text-[10.5px] text-muted-foreground">
-              Showing the first {LIST_CAP}. Filter to narrow the list.
-            </p>
-          ) : null}
-        </div>
-      )}
+      <DocumentList
+        hasWorkspace={!!workspaceRoot}
+        rows={rows}
+        visible={visible}
+        truncated={truncated}
+        error={error}
+        filtered={!!query}
+        onOpen={onOpenDocument}
+      />
     </div>
   );
 }
