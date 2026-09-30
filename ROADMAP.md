@@ -70,6 +70,12 @@ Owner-requested work, ahead of everything below it. These are handed out **one a
 requests — each bullet is scoped to stand alone as a single task, so pick one, finish it, changelog it,
 and stop. Don't batch them.
 
+- [ ] **Deep links (`nexis://`)** — open a file, folder, workspace or panel from a URL through `@tauri-apps/plugin-deep-link`. Any path from a link goes through `workspace_authorize` before `pty_open` (AGENTS.md pitfall #1C) and is judged like any other untrusted input; a link must never run a command.
+
+- [ ] **Agent recipes from agentcn** — port the useful agentcn recipes (github-review, deep-search, docs-expert, ...) into Nexis agent profiles under `src/modules/ai/agents`. agentcn targets server frameworks (Eve, Flue, Mastra, LangGraph), so this is a port of prompts and tool design, not a dependency. Any new runner must prune reasoning blocks (pitfall #3).
+
+- [ ] **Documents: edit a .docx in place** — the Documents pack rebuilds a `.docx` on save and guards the loss with a copy-first dialog (`docs/vault/subsystems/documents-pack.md`). Patching `word/document.xml` for text-only edits would keep headers, comments and styles instead.
+
 - [ ] **Lumen ↔ Nexis integration** — cross-compatibility between Lumen and Nexis: shared/portable
   config and theme formats, launching one from the other, and a defined handoff for workspace and session
   state. Start with a written interop contract (what's shared, what's owned by which app, what the

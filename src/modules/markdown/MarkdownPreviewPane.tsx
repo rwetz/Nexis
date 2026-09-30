@@ -23,6 +23,8 @@ type ViewMode = "preview" | "raw" | "split";
 type Props = {
   path: string;
   visible: boolean;
+  /** Open this file in the rich editor. Absent when the Documents pack is off. */
+  onEdit?: (path: string) => void;
 };
 
 const components = { code: MarkdownCode };
@@ -47,15 +49,9 @@ function writeViewMode(mode: ViewMode): void {
   }
 }
 
-export function MarkdownPreviewPane({ path, visible }: Props) {
+/** The file's text, or why there is none. Re-reads when the path changes. */
+function useMarkdownFile(path: string): Status {
   const [status, setStatus] = useState<Status>({ kind: "loading" });
-  const [mode, setModeState] = useState<ViewMode>(readViewMode);
-
-  const setMode = (m: ViewMode) => {
-    setModeState(m);
-    writeViewMode(m);
-  };
-
   useEffect(() => {
     let cancelled = false;
     setStatus({ kind: "loading" });
@@ -81,8 +77,115 @@ export function MarkdownPreviewPane({ path, visible }: Props) {
       cancelled = true;
     };
   }, [path]);
+  return status;
+}
 
-  const content = status.kind === "ready" ? status.content : null;
+/**
+ * File name, the three view modes, and (when the Documents pack is on) Edit,
+ * which opens the file in the rich-text editor.
+ */
+function PreviewToolbar({
+  path,
+  mode,
+  onMode,
+  onEdit,
+}: {
+  path: string;
+  mode: ViewMode;
+  onMode: (m: ViewMode) => void;
+  onEdit?: (path: string) => void;
+}) {
+  return (
+    <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-card/60 px-3 py-1">
+      <span className="truncate font-mono text-[10.5px] text-muted-foreground/70">
+        {path.split(/[\\/]/).pop()}
+      </span>
+      <div className="flex items-center gap-0.5">
+        <ModeButton icon={"sidebar-right"} label="Preview" active={mode === "preview"} onClick={() => onMode("preview")} />
+        <ModeButton icon={"layout-left"} label="Split" active={mode === "split"} onClick={() => onMode("split")} />
+        <ModeButton icon={"source"} label="Raw" active={mode === "raw"} onClick={() => onMode("raw")} />
+        {onEdit ? (
+          <>
+            <span aria-hidden className="mx-1 h-3.5 w-px bg-border/70" />
+            <button
+              type="button"
+              onClick={() => onEdit(path)}
+              title="Edit in the rich-text editor"
+              className="flex h-6 cursor-pointer items-center gap-1 rounded px-1.5 text-[10.5px] text-muted-foreground outline-none transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-1 focus-visible:ring-primary/40"
+            >
+              <Icon name="edit" size="xs" />
+              Edit
+            </button>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** Every state but "ready": loading, or why the file cannot be shown. */
+function StatusMessage({ status }: { status: Exclude<Status, { kind: "ready" }> }) {
+  if (status.kind === "loading") {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-[12px] text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+  const text =
+    status.kind === "error"
+      ? `Failed to read file: ${status.message}`
+      : status.kind === "binary"
+        ? "Binary file — cannot render as markdown."
+        : `File is ${status.size} bytes; limit ${status.limit}.`;
+  return (
+    <div className="px-6 py-4">
+      <p className={cn("text-[12px]", status.kind === "error" ? "text-destructive" : "text-muted-foreground")}>{text}</p>
+    </div>
+  );
+}
+
+/** The rendered markdown, its source, or both side by side. */
+function MarkdownBody({ content, mode }: { content: string; mode: ViewMode }) {
+  const split = mode === "split";
+  return (
+    <div className={cn("flex h-full min-h-0", split ? "flex-row" : "flex-col")}>
+      {mode !== "raw" && (
+        <div
+          className={cn(
+            "min-h-0 overflow-auto px-6 py-4",
+            split ? "w-1/2 flex-shrink-0 border-r border-border/40" : "flex-1",
+          )}
+        >
+          <Streamdown className="prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0" components={components}>
+            {content}
+          </Streamdown>
+        </div>
+      )}
+      {mode !== "preview" && (
+        <div className={cn("min-h-0 overflow-auto", split ? "flex-1" : "flex-1 px-6 py-4")}>
+          <pre
+            className={cn(
+              "h-full font-mono text-[12px] leading-relaxed text-foreground/90 whitespace-pre-wrap break-words",
+              split && "px-6 py-4",
+            )}
+          >
+            {content}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function MarkdownPreviewPane({ path, visible, onEdit }: Props) {
+  const status = useMarkdownFile(path);
+  const [mode, setModeState] = useState<ViewMode>(readViewMode);
+
+  const setMode = (m: ViewMode) => {
+    setModeState(m);
+    writeViewMode(m);
+  };
 
   return (
     <div
@@ -91,104 +194,11 @@ export function MarkdownPreviewPane({ path, visible }: Props) {
         !visible && "pointer-events-none",
       )}
     >
-      {/* Toolbar */}
-      <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-card/60 px-3 py-1">
-        <span className="truncate font-mono text-[10.5px] text-muted-foreground/70">
-          {path.split(/[\\/]/).pop()}
-        </span>
-        <div className="flex items-center gap-0.5">
-          <ModeButton
-            icon={"sidebar-right"}
-            label="Preview"
-            active={mode === "preview"}
-            onClick={() => setMode("preview")}
-          />
-          <ModeButton
-            icon={"layout-left"}
-            label="Split"
-            active={mode === "split"}
-            onClick={() => setMode("split")}
-          />
-          <ModeButton
-            icon={"source"}
-            label="Raw"
-            active={mode === "raw"}
-            onClick={() => setMode("raw")}
-          />
-        </div>
-      </div>
+      <PreviewToolbar path={path} mode={mode} onMode={setMode} onEdit={onEdit} />
 
       {/* Content area */}
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        {status.kind === "loading" && (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-[12px] text-muted-foreground">Loading…</p>
-          </div>
-        )}
-        {status.kind === "error" && (
-          <div className="px-6 py-4">
-            <p className="text-[12px] text-destructive">
-              Failed to read file: {status.message}
-            </p>
-          </div>
-        )}
-        {status.kind === "binary" && (
-          <div className="px-6 py-4">
-            <p className="text-[12px] text-muted-foreground">
-              Binary file — cannot render as markdown.
-            </p>
-          </div>
-        )}
-        {status.kind === "toolarge" && (
-          <div className="px-6 py-4">
-            <p className="text-[12px] text-muted-foreground">
-              File is {status.size} bytes; limit {status.limit}.
-            </p>
-          </div>
-        )}
-        {content !== null && (
-          <div
-            className={cn(
-              "flex h-full min-h-0",
-              mode === "split" ? "flex-row" : "flex-col",
-            )}
-          >
-            {(mode === "preview" || mode === "split") && (
-              <div
-                className={cn(
-                  "min-h-0 overflow-auto px-6 py-4",
-                  mode === "split"
-                    ? "w-1/2 flex-shrink-0 border-r border-border/40"
-                    : "flex-1",
-                )}
-              >
-                <Streamdown
-                  className="prose-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-                  components={components}
-                >
-                  {content}
-                </Streamdown>
-              </div>
-            )}
-            {(mode === "raw" || mode === "split") && (
-              <div
-                className={cn(
-                  "min-h-0 overflow-auto",
-                  mode === "split" ? "flex-1" : "flex-1 px-6 py-4",
-                )}
-              >
-                <pre
-                  className={cn(
-                    "h-full font-mono text-[12px] leading-relaxed text-foreground/90 whitespace-pre-wrap break-words",
-                    mode === "split" && "px-6 py-4",
-                  )}
-                >
-                  {content}
-                </pre>
-              </div>
-            )}
-          </div>
-        )}
+        {status.kind === "ready" ? <MarkdownBody content={status.content} mode={mode} /> : <StatusMessage status={status} />}
       </div>
     </div>
   );

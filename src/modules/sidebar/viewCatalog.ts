@@ -81,6 +81,7 @@ export const VIEW_CATALOG: Record<SidebarViewId, ViewEntry> = {
   "svg-playground":  { label: "SVG Studio",       icon: "brush",        kind: "workbench", command: false },
   atlas:             { label: "Atlas",            icon: "map",          kind: "workbench", command: false },
   benchmark:         { label: "Benchmark",        icon: "activity",     kind: "workbench", command: false },
+  documents:         { label: "Documents",        icon: "document",     kind: "workbench", command: false },
   // The Web workbench's tools: one title-bar tab (`web-workbench/`).
   ports:             { label: "Ports",            icon: "network",      kind: "workbench", keywords: ["listening", "localhost", "server"] },
   "http-client":     { label: "HTTP Client",      icon: "globe",        kind: "workbench", command: false },

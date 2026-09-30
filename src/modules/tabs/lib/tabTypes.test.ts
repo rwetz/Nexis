@@ -9,8 +9,10 @@ import {
   editorActivePath,
   editorAnyDirty,
   editorLeafPaths,
+  nextIdAfter,
   titleFromUrl,
   type EditorTab,
+  type Tab,
 } from "./tabTypes";
 
 function editorTab(overrides: Partial<EditorTab> = {}): EditorTab {
@@ -83,5 +85,50 @@ describe("titleFromUrl", () => {
   it("falls back to the raw string (or 'preview') when parsing fails", () => {
     expect(titleFromUrl("not a url")).toBe("not a url");
     expect(titleFromUrl("")).toBe("preview");
+  });
+});
+
+describe("nextIdAfter", () => {
+  it("starts past the launch-folder terminal's tab and leaf ids", () => {
+    // The shape useTabs builds for `nexis <folder>`: tab 1, leaf 2. The
+    // hand-kept count used to answer 1 here, so the next tab reused the
+    // terminal's id and could never become the active tab.
+    const launched: Tab[] = [
+      {
+        id: 1,
+        kind: "terminal",
+        title: "shell",
+        cwd: "/w",
+        paneTree: { kind: "leaf", id: 2, cwd: "/w" },
+        activeLeafId: 2,
+      },
+    ];
+    expect(nextIdAfter(launched)).toBe(3);
+  });
+
+  it("counts split nodes and nested leaves, and tabs without panes", () => {
+    const tabs: Tab[] = [
+      {
+        id: 1,
+        kind: "editor",
+        title: "a",
+        activeLeafId: 12,
+        paneTree: {
+          kind: "split",
+          id: 10,
+          dir: "row",
+          children: [
+            { kind: "leaf", id: 11, path: "/w/a.ts" },
+            { kind: "leaf", id: 12, path: "/w/b.ts" },
+          ],
+        },
+      },
+      { id: 5, kind: "web", title: "Web" },
+    ];
+    expect(nextIdAfter(tabs)).toBe(13);
+  });
+
+  it("is 1 with no tabs", () => {
+    expect(nextIdAfter([])).toBe(1);
   });
 });

@@ -47,6 +47,17 @@ export function createFilesystem(
         ),
         { path, bytes: Array.from(bytes) },
       ),
+    /** Whole file as bytes (the command answers with a raw ArrayBuffer). */
+    readFileBytes: async (path: string) =>
+      new Uint8Array(
+        await ipc.call(
+          defineCommand<{ path: string }, ArrayBuffer>(
+            "fs_read_file_bytes",
+            scope,
+          ),
+          { path },
+        ),
+      ),
     canonicalize: (path: string) =>
       ipc.call(
         defineCommand<{ path: string }, string>("fs_canonicalize", scope),

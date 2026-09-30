@@ -45,6 +45,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[onboarding]] — the first-run flow: preset, tour, Getting Started checklist, and why all of it derives from `enabledPacks`
 - [[web-dev-pack]] — multi-viewport preview, the REST client and its own SSRF-guarded Rust command, the local-only scratchpad tools
 - [[orbs]] — the AI's shader orbs: WebGL2 engine, the pure drive and its uniform contract, the context budget, and why the shaders are not shadercn's
+- [[documents-pack]] — rich-text markdown and .docx editing, the save guards that keep a rebuild from losing content, and PDF export
 - [[art-pack]] — the SVG playground: icon-scale preview, the in-house optimizer, and why the preview is sanitized
 - [[atlas]] — every git repo on the machine, as a status list and an isometric map: one libgit2 scan, two views, and why it stays host-scoped under WSL
 - [[benchmark]] — measuring local ONNX/GGUF models across inference backends: the `Engine` trait, the streaming matrix runner, and the engine it shares with ML Lab

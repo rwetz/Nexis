@@ -131,6 +131,28 @@ export default defineConfig(async ({ mode }) => ({
           )
             return "streamdown";
 
+          // ── Documents pack (rich-text editor) ──────────────────────────────
+          // Must come before the React rule below: `/react/` also matches
+          // `@tiptap/react/`, which put Tiptap, and ProseMirror with it, in
+          // the startup vendor chunk that every launch loads. `w3c-keyname`
+          // is deliberately absent: CodeMirror shares it, and claiming it here
+          // would drag this whole chunk into the startup preload set.
+          if (
+            id.includes("@tiptap/") ||
+            id.includes("/prosemirror-") ||
+            id.includes("/orderedmap/") ||
+            id.includes("/rope-sequence/") ||
+            id.includes("/linkifyjs/")
+          )
+            return "documents-editor";
+
+          // ── PDF export (Documents pack) ────────────────────────────────────
+          // Same trap as Tiptap: `/react/` below matches `@formepdf/react/`.
+          // In the React vendor chunk it pulled the PDF serializer into
+          // startup and made react and streamdown import each other, and the
+          // production build never came up (every E2E spec timed out).
+          if (id.includes("@formepdf/")) return "pdf-export";
+
           // ── Animation / 3D ─────────────────────────────────────────────────
           if (id.includes("/ogl/")) return "ogl-bg";
 

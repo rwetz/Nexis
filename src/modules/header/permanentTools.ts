@@ -14,7 +14,7 @@ import type { IconName } from "@/components/icon";
 import type { PackId } from "@/lib/packs";
 import type { SidebarViewId } from "@/modules/sidebar/types";
 
-export type PermanentToolId = "svg-playground" | "ml-lab" | "web";
+export type PermanentToolId = "svg-playground" | "ml-lab" | "web" | "documents";
 
 export type PermanentTool = {
   id: PermanentToolId;
@@ -50,6 +50,14 @@ export const PERMANENT_TOOLS: readonly PermanentTool[] = [
     icon: "globe",
     pack: "web-dev",
     view: "web-tools",
+  },
+  {
+    id: "documents",
+    label: "Documents",
+    title: "Open Documents",
+    icon: "document",
+    pack: "documents",
+    view: "documents",
   },
 ];
 

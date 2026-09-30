@@ -286,6 +286,13 @@
 .zoom-content .cm-editor {
   zoom: calc(1 / var(--app-zoom, 1));
 }
+/* ProseMirror (the Documents pack's rich-text editor) maps clicks through the
+ * same caret-from-point APIs, so it has the same defect and the same fix: net
+ * scale 1.0 here, and zoom reaches the text through the font-size in
+ * src/modules/documents/documents.css. AGENTS.md pitfall #15. */
+.zoom-content .ProseMirror {
+  zoom: calc(1 / var(--app-zoom, 1));
+}
 
 /* Custom window chrome (Linux/Windows): the OS gives us a transparent
  * borderless window, and we paint the rounded corners + border + shadow
