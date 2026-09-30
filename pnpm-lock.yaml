@@ -14,28 +14,28 @@ importers:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^4.0.63
-        version: 4.0.68(zod@4.4.3)
+        version: 4.0.65(zod@4.4.3)
       '@ai-sdk/cerebras':
         specifier: ^3.0.55
-        version: 3.0.59(zod@4.4.3)
+        version: 3.0.57(zod@4.4.3)
       '@ai-sdk/google':
         specifier: ^4.0.80
-        version: 4.0.85(zod@4.4.3)
+        version: 4.0.82(zod@4.4.3)
       '@ai-sdk/groq':
         specifier: ^4.0.48
-        version: 4.0.52(zod@4.4.3)
+        version: 4.0.50(zod@4.4.3)
       '@ai-sdk/openai':
         specifier: ^4.0.75
-        version: 4.0.80(zod@4.4.3)
+        version: 4.0.78(zod@4.4.3)
       '@ai-sdk/openai-compatible':
         specifier: ^3.0.55
-        version: 3.0.59(zod@4.4.3)
+        version: 3.0.57(zod@4.4.3)
       '@ai-sdk/react':
         specifier: ^4.0.117
-        version: 4.0.125(react@19.3.0)(zod@4.4.3)
+        version: 4.0.121(react@19.3.0)(zod@4.4.3)
       '@ai-sdk/xai':
         specifier: ^5.0.8
-        version: 5.0.12(zod@4.4.3)
+        version: 5.0.10(zod@4.4.3)
       '@codemirror/autocomplete':
         specifier: ^6.20.3
         version: 6.20.3
@@ -122,7 +122,7 @@ importers:
         version: 1.2.17
       '@lezer/highlight':
         specifier: ^1.2.4
-        version: 1.2.5
+        version: 1.2.4
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -139,29 +139,29 @@ importers:
         specifier: ^2.12.0
         version: 2.12.0
       '@tauri-apps/plugin-autostart':
-        specifier: ~2.5.1
-        version: 2.5.1
+        specifier: ~2.6.0
+        version: 2.6.0
       '@tauri-apps/plugin-dialog':
-        specifier: ^2.7.3
-        version: 2.7.3
+        specifier: ^2.8.0
+        version: 2.8.0
       '@tauri-apps/plugin-global-shortcut':
-        specifier: ~2.3.2
-        version: 2.3.2
+        specifier: ~2.4.0
+        version: 2.4.0
       '@tauri-apps/plugin-opener':
         specifier: ^2
-        version: 2.5.4
+        version: 2.6.0
       '@tauri-apps/plugin-os':
-        specifier: ~2.3.2
-        version: 2.3.2
+        specifier: ~2.4.0
+        version: 2.4.0
       '@tauri-apps/plugin-process':
-        specifier: ~2.3.1
-        version: 2.3.1
+        specifier: ~2.4.0
+        version: 2.4.0
       '@tauri-apps/plugin-store':
-        specifier: ~2.4.5
-        version: 2.4.5
+        specifier: ~2.5.0
+        version: 2.5.0
       '@tauri-apps/plugin-updater':
-        specifier: ~2.12.0
-        version: 2.12.0
+        specifier: ~2.13.0
+        version: 2.13.0
       '@tiptap/core':
         specifier: ^3.31.3
         version: 3.31.3(@tiptap/pm@3.31.3)
@@ -248,7 +248,7 @@ importers:
         version: 6.0.0
       ai:
         specifier: ^7.0.114
-        version: 7.0.122(zod@4.4.3)
+        version: 7.0.118(zod@4.4.3)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -257,7 +257,7 @@ importers:
         version: 2.1.1
       cm6-graphql:
         specifier: ^0.2.2
-        version: 0.2.2(@codemirror/autocomplete@6.20.3)(@codemirror/language@6.12.4)(@codemirror/lint@6.9.7)(@codemirror/state@6.7.6)(@codemirror/view@6.43.13)(@lezer/highlight@1.2.5)(graphql@16.13.2)
+        version: 0.2.2(@codemirror/autocomplete@6.20.3)(@codemirror/language@6.12.4)(@codemirror/lint@6.9.7)(@codemirror/state@6.7.6)(@codemirror/view@6.43.13)(@lezer/highlight@1.2.4)(graphql@16.13.2)
       cmdk:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -403,72 +403,72 @@ packages:
   '@adobe/css-tools@4.5.0':
     resolution: {integrity: sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q==}
 
-  '@ai-sdk/anthropic@4.0.68':
-    resolution: {integrity: sha512-7PzZEf2brum218FSdXf6gE9yz4gKkLwkoLkPwoBExWYFj/Qsbi2JetWDKnFOdV6eezOnP72pGs3T0OKUaAEcLw==}
+  '@ai-sdk/anthropic@4.0.65':
+    resolution: {integrity: sha512-3fmxxn5xWGOPU1wGrUCI30YFW5r6h2WrY+sz3rokkVlBHrDr889hPYP1yNoSmOVvtAwCFWlm79P2lRngIPOObg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/cerebras@3.0.59':
-    resolution: {integrity: sha512-6WDJDStGPTvzCehTiDyQhJAKcz7uw2YyGIUxDiEZNOg368DPYfjy1J5DZ9t6t88TnnI0/pFGHfgR5UjWVbPjHQ==}
+  '@ai-sdk/cerebras@3.0.57':
+    resolution: {integrity: sha512-9bnV6Cvh50pvdhym/Wk5qxsnuZ3P3Ym3s5kmlqEEKgB0JMz7mZ/YI0ee4gio3l0YhtCoZo1e1qp3jDfz72Ia1g==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/gateway@4.0.100':
-    resolution: {integrity: sha512-diJXVW2D1/NUW2JSg99b8yTpN8eW9AK5ntXSW4B7NrsW5STqwcGJAAOFlfOrQBzYHJlWReyy11WefWetdx4Qsw==}
+  '@ai-sdk/gateway@4.0.96':
+    resolution: {integrity: sha512-1aniRTzEf9T7uRHdKnBQ36WgEVQswK6wDgkPVsNMl+sPy7otcmrBa2HEurdFBS51s1q3/UXlh8nNcguwU79Hkg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/google@4.0.85':
-    resolution: {integrity: sha512-gYfORjh13EkLZWKvpF3gEe2cAMEC3O9tnWniz2wuz8mHqJo08RfCjtLtP8iTka/xq4+a8lnXD4OGipDELd/GnA==}
+  '@ai-sdk/google@4.0.82':
+    resolution: {integrity: sha512-2zPYyBSyIcywLtOEJRxlrtXjBjz4KxEU19Qqg/Dk8I9BrsB08+ghG2jv155dtuDZj8qZMrh6LO8J+Wt5O4xVhg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/groq@4.0.52':
-    resolution: {integrity: sha512-Vmgr4GDtZRd/eKGVSfCYvWLEPpVJyxbE4PI5OWPmnu/uHHvCOQU/6jRP7z2Rn4S+GGR64p3QvSHqeTRuj2bfQA==}
+  '@ai-sdk/groq@4.0.50':
+    resolution: {integrity: sha512-hNyn0BNfWyV0a6IfOxZ4QeymVAwzMEZ0iOMKnBtNdQS74hECd1bvKfPD/JCJDSZizZk65Q4b5a0rVpK4p2227g==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/mcp@2.0.62':
-    resolution: {integrity: sha512-nGfJ+M9oW9haxvnDptzFoW/QQj7JQO1dzhKq31zls4UlKJ3BXrSlHnkpZvqMFjQbWKY97YCrIk9PjQpCXlk5Og==}
+  '@ai-sdk/mcp@2.0.60':
+    resolution: {integrity: sha512-/veUBdZ3u/Kg/F5J2IPq8ePC2sxbtPsteZ9idUWLdmavxI46xbT/ygwWT+jOSp6I4x8p0z618fFdVSNVOyLL4g==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/openai-compatible@3.0.59':
-    resolution: {integrity: sha512-ZRWWHhLTyVT0NSy+CnGuRAushwRRxXxpX0XMPgUjz+LTR3IP3nE155NkPhrD06yCT8fTKX+xlzF2nEg0P/LjGQ==}
+  '@ai-sdk/openai-compatible@3.0.57':
+    resolution: {integrity: sha512-TEY5Ng/bTJXrYy9wpdxK70gABdYejYedaKbmPCZLhBkPe21rmLzkGxAGkfPYgAfCKPaoAO9THrEhmwUZ4Xhg2Q==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/openai@4.0.80':
-    resolution: {integrity: sha512-rd3IiSqiniCSB+3E6FryRb3VfNgBErRqklp50zUqA90EovtumFglzHZfRRjBnUfw49aArKvpWwMe5/1RGZDaKg==}
+  '@ai-sdk/openai@4.0.78':
+    resolution: {integrity: sha512-S9WLSZUqebRjZbwYM8uorb4fsjo4Lhz/PGA3rWl01x88WeF/1PdHtNckcxqNZy5xMRzCHPVv9iA3F+ckV74zfA==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider-utils@5.0.51':
-    resolution: {integrity: sha512-z0IsEsDx+dxlZqyCtDjMbBj16NGmxFVTgQcP3+n3EFm9ttNU6wjOgL/kgvaPwtmZM6F7JbtRuLyzr6WOfo5DMw==}
+  '@ai-sdk/provider-utils@5.0.49':
+    resolution: {integrity: sha512-T+/H8DCvqJoCqLhltVatS7ffA779Iyk/ZZrgNXkrgv51E0n2Cd6eIdCmtwhCGIKqtbTtwCvTmQdAMv5Z8rOGHQ==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/provider@4.0.19':
-    resolution: {integrity: sha512-ryVZSSfmpEsr4bM8rbt9cSBWal+KGYRrm57C+k/hiPQHMiMahaqg2bPF0MpxSUWY8mGpt7s/ajM6PAqNTMKqPQ==}
+  '@ai-sdk/provider@4.0.18':
+    resolution: {integrity: sha512-+GZJIgz1jk86pwEbb3f1BD2bdoSKyWE4Jg4YUc7NMnMozbWemSKYZcw2F4nMaO5qwsL5A8RmioAKW81YktRpIQ==}
     engines: {node: '>=22'}
 
-  '@ai-sdk/react@4.0.125':
-    resolution: {integrity: sha512-Pnv0YL21IigDrx9MYD2FsVwfmXrTO9xyTTsXMuQMNCcdt9GR9EJTj+WS+BHrReJEhUfSOJ4Imd6f9THHuvYdyw==}
+  '@ai-sdk/react@4.0.121':
+    resolution: {integrity: sha512-x1ZAJVpogdXZJ7E3GJMg6dOKR3Qe+DDgNpQRvnjxdzPN99MXkls58l0o80pNjPExZWEn763iuCB0+V0qZiKEsQ==}
     engines: {node: '>=22'}
     peerDependencies:
       react: ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
 
-  '@ai-sdk/xai@5.0.12':
-    resolution: {integrity: sha512-Vkgwm/p0LHlz6JUE3VLrPooYg2FoJdrQ6OdPFDcn86nUJfJYDkQPrRSRaxzdA3T2fjBrsOeKJeNi9iqZxCOdag==}
+  '@ai-sdk/xai@5.0.10':
+    resolution: {integrity: sha512-fSZtjtoQPa6VR6a30WNGagbfIECWTJA1I5dJCovYOC/JDZqibpBNCkvjnxd2YaWJy0Ozzq52rWCS+D1sY3M/uQ==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -1581,8 +1581,8 @@ packages:
   '@lezer/go@1.0.1':
     resolution: {integrity: sha512-xToRsYxwsgJNHTgNdStpcvmbVuKxTapV0dM0wey1geMMRc9aggoVyKgzYp41D2/vVOx+Ii4hmE206kvxIXBVXQ==}
 
-  '@lezer/highlight@1.2.5':
-    resolution: {integrity: sha512-O1GMVKgtf5YspFaRzpmqkVgMtIk2HG9uMAbH6wdAIdNh3TVzCsch/+cRi+6l2//UGDKe6NB9BW3cvuR5ezMQ0w==}
+  '@lezer/highlight@1.2.4':
+    resolution: {integrity: sha512-4UeRVFO0lsBaM7GA32zOqbmqNPme9jedo8Ey+5c5656MU3MLitMLIA8aCZTYjUMEpEsuSeXEm78Uea6Iq3bvSg==}
 
   '@lezer/html@1.3.13':
     resolution: {integrity: sha512-oI7n6NJml729m7pjm9lvLvmXbdoMoi2f+1pwSDJkl9d68zGr7a9Btz8NdHTGQZtW2DA25ybeuv/SyDb9D5tseg==}
@@ -3174,29 +3174,29 @@ packages:
     engines: {node: '>= 10'}
     hasBin: true
 
-  '@tauri-apps/plugin-autostart@2.5.1':
-    resolution: {integrity: sha512-zS/xx7yzveCcotkA+8TqkI2lysmG2wvQXv2HGAVExITmnFfHAdj1arGsbbfs3o6EktRHf6l34pJxc3YGG2mg7w==}
+  '@tauri-apps/plugin-autostart@2.6.0':
+    resolution: {integrity: sha512-myppl3C/dygGbn7Inmm3LqsAQ7SSsT3KtNpSt/e+fA5J7xeCIf8H+LMiE1tkS7mKzTfChCutfZCt0FQkrL/YdA==}
 
-  '@tauri-apps/plugin-dialog@2.7.3':
-    resolution: {integrity: sha512-CRgE+7TP4tvq9MjBU6f04NLTFIqVMLKHk3hAqlhil00ngK9ACTrXPH3oHpKMProxILodd3YjBoKbMwSI4IEcfA==}
+  '@tauri-apps/plugin-dialog@2.8.0':
+    resolution: {integrity: sha512-HSSD5C8UFE9ijD1wue84F7jjaIReFmj8AAPtS+xyjYRltJafIc4BiWHY7SJ6vbbew6u+YljEJHfyNfy5VwywXg==}
 
-  '@tauri-apps/plugin-global-shortcut@2.3.2':
-    resolution: {integrity: sha512-UReHNXrLvpEjylE4jb4oCYiy96uRykPUthoCQCmRXYrd5hs5X9DrW+qOn7GLW57EJN4tdK8bgK5twBTz2NOxzA==}
+  '@tauri-apps/plugin-global-shortcut@2.4.0':
+    resolution: {integrity: sha512-XBA4PcRjRdJBp/jwFxc5YZ/yKhZuslpOG/pGaNfhnRDVGMQfoXEKMv/6A6vjzfKLUxr8ml3ay8o2W8Rk6mHICA==}
 
-  '@tauri-apps/plugin-opener@2.5.4':
-    resolution: {integrity: sha512-1HnPkb+AmgO29HBazm4uPLKB+r7zzcTBW1d0fyYp1uP+jwtpoiNDGKMMzz58SFp49nOIrxdE3aUJtT57lfO9CQ==}
+  '@tauri-apps/plugin-opener@2.6.0':
+    resolution: {integrity: sha512-KIl9qkBGyAUrbzfCtdk+NRPTXUOwpMyUKsKN57H6/qA0q8auVywXpfUyWClqX6I/iH8PHmqAUa/KK9YZPWVQew==}
 
-  '@tauri-apps/plugin-os@2.3.2':
-    resolution: {integrity: sha512-n+nXWeuSeF9wcEsSPmRnBEGrRgOy6jjkSU+UVCOV8YUGKb2erhDOxis7IqRXiRVHhY8XMKks00BJ0OAdkpf6+A==}
+  '@tauri-apps/plugin-os@2.4.0':
+    resolution: {integrity: sha512-XFQjntNNI3Vlqdy4WUGwiXX8DByzKVvoemAcUVkBm9NJPGmoDtII5i+vfuAzWaJfOE5cUJJLUDqXBnd4reSAIA==}
 
-  '@tauri-apps/plugin-process@2.3.1':
-    resolution: {integrity: sha512-nCa4fGVaDL/B9ai03VyPOjfAHRHSBz5v6F/ObsB73r/dA3MHHhZtldaDMIc0V/pnUw9ehzr2iEG+XkSEyC0JJA==}
+  '@tauri-apps/plugin-process@2.4.0':
+    resolution: {integrity: sha512-GddrmsSLAYrLa/yTXlXK/YRDzUgYeeOnUXTbiyvJWkmI424RmDPD3FVLeqcon7rv6O6ZfhBilcrHWnSo7o6hIQ==}
 
-  '@tauri-apps/plugin-store@2.4.5':
-    resolution: {integrity: sha512-bVD9riKzf+WKYm1L8uXD1CMDTC/eaFS2Cbjcgq+39ahChtVGnyDCbzug3HpjgpZMw78yoAVMqHOAEjqJ/kD9YQ==}
+  '@tauri-apps/plugin-store@2.5.0':
+    resolution: {integrity: sha512-+ykjiQwMJCSk/U2enHA8peKBWgDKgrP7JfZnGwQpqzwA0nVtKTc0LCyxWr2whOrcQoQqtUdr9NVdDZpfKpT1Xw==}
 
-  '@tauri-apps/plugin-updater@2.12.0':
-    resolution: {integrity: sha512-74+g7rSIHXQje3ttR6tYap3FJP/UtZqqYxGVF9EE0Kpz0YADxHX2Ynw/eIlNPMy9D1aG+F8oBosT+6nphSa8Og==}
+  '@tauri-apps/plugin-updater@2.13.0':
+    resolution: {integrity: sha512-9iwTSOlxMPZGI6M84Nd00rv6g+xERo8g4GDvG9cazOao+HjdIHZYCcvkvSP6JGn7Z50/R8t2jbR+PxQxf2qKMQ==}
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -4046,8 +4046,8 @@ packages:
     resolution: {integrity: sha512-nHlms9BkP8ZiY79HrwCGiA2DcNaXrAaJrCM/BEqQ7MEsSKyCk+2A76xPGylIfASZSZE0SaU3T0bNSg4rBPIJAQ==}
     hasBin: true
 
-  ai@7.0.122:
-    resolution: {integrity: sha512-Un4yVROG+BMd6Q62xUxb9yV+wlTrUGeXhRtg5ltEFDV0p3lOYQaQHK9ozB6rdPdqlH3LyaszfbFdUkZ1p00nIQ==}
+  ai@7.0.118:
+    resolution: {integrity: sha512-ZjkbbOffH09yQAjeZ5yGXd8ePTQlFIyKH5aW0s0LOMmvaR1TSoeg5wVURwLvFry/IzzaLndmw9glTKwWRoog3Q==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -7981,87 +7981,87 @@ snapshots:
 
   '@adobe/css-tools@4.5.0': {}
 
-  '@ai-sdk/anthropic@4.0.68(zod@4.4.3)':
+  '@ai-sdk/anthropic@4.0.65(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 4.0.19
-      '@ai-sdk/provider-utils': 5.0.51(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.49(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/cerebras@3.0.59(zod@4.4.3)':
+  '@ai-sdk/cerebras@3.0.57(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/openai-compatible': 3.0.59(zod@4.4.3)
-      '@ai-sdk/provider': 4.0.19
-      '@ai-sdk/provider-utils': 5.0.51(zod@4.4.3)
+      '@ai-sdk/openai-compatible': 3.0.57(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.49(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/gateway@4.0.100(zod@4.4.3)':
+  '@ai-sdk/gateway@4.0.96(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 4.0.19
-      '@ai-sdk/provider-utils': 5.0.51(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.49(zod@4.4.3)
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
 
-  '@ai-sdk/google@4.0.85(zod@4.4.3)':
+  '@ai-sdk/google@4.0.82(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 4.0.19
-      '@ai-sdk/provider-utils': 5.0.51(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.49(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/groq@4.0.52(zod@4.4.3)':
+  '@ai-sdk/groq@4.0.50(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 4.0.19
-      '@ai-sdk/provider-utils': 5.0.51(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.49(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/mcp@2.0.62(zod@4.4.3)':
+  '@ai-sdk/mcp@2.0.60(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 4.0.19
-      '@ai-sdk/provider-utils': 5.0.51(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.49(zod@4.4.3)
       cross-spawn: 7.0.6
       pkce-challenge: 5.0.1
       zod: 4.4.3
 
-  '@ai-sdk/openai-compatible@3.0.59(zod@4.4.3)':
+  '@ai-sdk/openai-compatible@3.0.57(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 4.0.19
-      '@ai-sdk/provider-utils': 5.0.51(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.49(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/openai@4.0.80(zod@4.4.3)':
+  '@ai-sdk/openai@4.0.78(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 4.0.19
-      '@ai-sdk/provider-utils': 5.0.51(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.49(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/provider-utils@5.0.51(zod@4.4.3)':
+  '@ai-sdk/provider-utils@5.0.49(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 4.0.19
+      '@ai-sdk/provider': 4.0.18
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.1
       undici: 7.29.1
       zod: 4.4.3
 
-  '@ai-sdk/provider@4.0.19':
+  '@ai-sdk/provider@4.0.18':
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@4.0.125(react@19.3.0)(zod@4.4.3)':
+  '@ai-sdk/react@4.0.121(react@19.3.0)(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/mcp': 2.0.62(zod@4.4.3)
-      '@ai-sdk/provider': 4.0.19
-      '@ai-sdk/provider-utils': 5.0.51(zod@4.4.3)
-      ai: 7.0.122(zod@4.4.3)
+      '@ai-sdk/mcp': 2.0.60(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.49(zod@4.4.3)
+      ai: 7.0.118(zod@4.4.3)
       react: 19.3.0
       swr: 2.5.1(react@19.3.0)
       throttleit: 2.1.0
     transitivePeerDependencies:
       - zod
 
-  '@ai-sdk/xai@5.0.12(zod@4.4.3)':
+  '@ai-sdk/xai@5.0.10(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 4.0.19
-      '@ai-sdk/provider-utils': 5.0.51(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.49(zod@4.4.3)
       zod: 4.4.3
 
   '@alcalzone/ansi-tokenize@0.3.0':
@@ -8429,7 +8429,7 @@ snapshots:
       '@codemirror/state': 6.7.6
       '@codemirror/view': 6.43.13
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
       style-mod: 4.1.3
 
@@ -8448,7 +8448,7 @@ snapshots:
       '@codemirror/language': 6.12.4
       '@codemirror/state': 6.7.6
       '@codemirror/view': 6.43.13
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       style-mod: 4.1.3
 
   '@codemirror/search@6.7.2':
@@ -8466,7 +8466,7 @@ snapshots:
       '@codemirror/language': 6.12.4
       '@codemirror/state': 6.7.6
       '@codemirror/view': 6.43.13
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
 
   '@codemirror/view@6.43.13':
     dependencies:
@@ -9084,47 +9084,47 @@ snapshots:
   '@lezer/cpp@1.1.6':
     dependencies:
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
 
   '@lezer/css@1.3.6':
     dependencies:
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
 
   '@lezer/go@1.0.1':
     dependencies:
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
 
-  '@lezer/highlight@1.2.5':
+  '@lezer/highlight@1.2.4':
     dependencies:
       '@lezer/common': 1.5.2
 
   '@lezer/html@1.3.13':
     dependencies:
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
 
   '@lezer/java@1.1.3':
     dependencies:
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
 
   '@lezer/javascript@1.5.4':
     dependencies:
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
 
   '@lezer/json@1.0.3':
     dependencies:
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
 
   '@lezer/lr@1.4.10':
@@ -9134,24 +9134,24 @@ snapshots:
   '@lezer/markdown@1.7.2':
     dependencies:
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
 
   '@lezer/php@1.0.5':
     dependencies:
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
 
   '@lezer/python@1.1.18':
     dependencies:
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
 
   '@lezer/rust@1.0.2':
     dependencies:
       '@lezer/common': 1.5.2
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       '@lezer/lr': 1.4.10
 
   '@marijn/find-cluster-break@1.0.4': {}
@@ -10502,35 +10502,35 @@ snapshots:
       '@tauri-apps/cli-win32-ia32-msvc': 2.12.0
       '@tauri-apps/cli-win32-x64-msvc': 2.12.0
 
-  '@tauri-apps/plugin-autostart@2.5.1':
+  '@tauri-apps/plugin-autostart@2.6.0':
     dependencies:
       '@tauri-apps/api': 2.12.0
 
-  '@tauri-apps/plugin-dialog@2.7.3':
+  '@tauri-apps/plugin-dialog@2.8.0':
     dependencies:
       '@tauri-apps/api': 2.12.0
 
-  '@tauri-apps/plugin-global-shortcut@2.3.2':
+  '@tauri-apps/plugin-global-shortcut@2.4.0':
     dependencies:
       '@tauri-apps/api': 2.12.0
 
-  '@tauri-apps/plugin-opener@2.5.4':
+  '@tauri-apps/plugin-opener@2.6.0':
     dependencies:
       '@tauri-apps/api': 2.12.0
 
-  '@tauri-apps/plugin-os@2.3.2':
+  '@tauri-apps/plugin-os@2.4.0':
     dependencies:
       '@tauri-apps/api': 2.12.0
 
-  '@tauri-apps/plugin-process@2.3.1':
+  '@tauri-apps/plugin-process@2.4.0':
     dependencies:
       '@tauri-apps/api': 2.12.0
 
-  '@tauri-apps/plugin-store@2.4.5':
+  '@tauri-apps/plugin-store@2.5.0':
     dependencies:
       '@tauri-apps/api': 2.12.0
 
-  '@tauri-apps/plugin-updater@2.12.0':
+  '@tauri-apps/plugin-updater@2.13.0':
     dependencies:
       '@tauri-apps/api': 2.12.0
 
@@ -11584,11 +11584,11 @@ snapshots:
       prompts: 2.4.2
       yaml: 2.9.0
 
-  ai@7.0.122(zod@4.4.3):
+  ai@7.0.118(zod@4.4.3):
     dependencies:
-      '@ai-sdk/gateway': 4.0.100(zod@4.4.3)
-      '@ai-sdk/provider': 4.0.19
-      '@ai-sdk/provider-utils': 5.0.51(zod@4.4.3)
+      '@ai-sdk/gateway': 4.0.96(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.49(zod@4.4.3)
       zod: 4.4.3
 
   ajv-formats@3.0.1(ajv@8.18.0):
@@ -11958,14 +11958,14 @@ snapshots:
 
   clsx@2.1.1: {}
 
-  cm6-graphql@0.2.2(@codemirror/autocomplete@6.20.3)(@codemirror/language@6.12.4)(@codemirror/lint@6.9.7)(@codemirror/state@6.7.6)(@codemirror/view@6.43.13)(@lezer/highlight@1.2.5)(graphql@16.13.2):
+  cm6-graphql@0.2.2(@codemirror/autocomplete@6.20.3)(@codemirror/language@6.12.4)(@codemirror/lint@6.9.7)(@codemirror/state@6.7.6)(@codemirror/view@6.43.13)(@lezer/highlight@1.2.4)(graphql@16.13.2):
     dependencies:
       '@codemirror/autocomplete': 6.20.3
       '@codemirror/language': 6.12.4
       '@codemirror/lint': 6.9.7
       '@codemirror/state': 6.7.6
       '@codemirror/view': 6.43.13
-      '@lezer/highlight': 1.2.5
+      '@lezer/highlight': 1.2.4
       graphql: 16.13.2
       graphql-language-service: 5.7.0(graphql@16.13.2)
 
