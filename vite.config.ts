@@ -146,6 +146,13 @@ export default defineConfig(async ({ mode }) => ({
           )
             return "documents-editor";
 
+          // ── PDF export (Documents pack) ────────────────────────────────────
+          // Same trap as Tiptap: `/react/` below matches `@formepdf/react/`.
+          // In the React vendor chunk it pulled the PDF serializer into
+          // startup and made react and streamdown import each other, and the
+          // production build never came up (every E2E spec timed out).
+          if (id.includes("@formepdf/")) return "pdf-export";
+
           // ── Animation / 3D ─────────────────────────────────────────────────
           if (id.includes("/ogl/")) return "ogl-bg";
 
