@@ -19,7 +19,7 @@
  * fast sweep reads only the file the pointer settles on, and returning to a
  * file reads nothing.
  */
-import { memo, useEffect, useState } from "react";
+import { Children, memo, useEffect, useState } from "react";
 import { Icon, type IconName } from "@/components/icon";
 import { formatBytes, relativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -88,31 +88,33 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** One excerpt line; markdown headings and bullets get their shape back. */
+function ExcerptLine({ line, markdown }: { line: string; markdown: boolean }) {
+  const heading = markdown ? /^(#{1,6})\s+(.*)$/.exec(line) : null;
+  if (heading) {
+    return (
+      <div className={cn("truncate font-semibold text-foreground", heading[1].length === 1 ? "text-[12px]" : "text-[10.5px]")}>
+        {plainInline(heading[2])}
+      </div>
+    );
+  }
+  const bullet = markdown ? /^\s*[-*]\s+(.*)$/.exec(line) : null;
+  if (bullet) {
+    return (
+      <div className="truncate pl-2">
+        <span className="text-muted-foreground">•</span> {plainInline(bullet[1])}
+      </div>
+    );
+  }
+  return <div className="truncate">{(markdown ? plainInline(line) : line) || " "}</div>;
+}
+
 function TextExcerpt({ lines, markdown }: { lines: string[]; markdown: boolean }) {
+  // An excerpt is a fixed slice of a file that never reorders, so the lines
+  // have no identity beyond their position; Children.toArray keys them.
   return (
     <div className="h-full overflow-hidden bg-card px-3 py-2.5 text-[9.5px] leading-[1.45] text-foreground/85">
-      {lines.slice(0, 16).map((line, i) => {
-        if (markdown && /^#{1,6}\s/.test(line)) {
-          const level = line.match(/^#+/)![0].length;
-          return (
-            <div key={i} className={cn("truncate font-semibold text-foreground", level === 1 ? "text-[12px]" : "text-[10.5px]")}>
-              {plainInline(line.replace(/^#+\s*/, ""))}
-            </div>
-          );
-        }
-        if (markdown && /^\s*[-*]\s/.test(line)) {
-          return (
-            <div key={i} className="truncate pl-2">
-              <span className="text-muted-foreground">•</span> {plainInline(line.replace(/^\s*[-*]\s/, ""))}
-            </div>
-          );
-        }
-        return (
-          <div key={i} className="truncate">
-            {(markdown ? plainInline(line) : line) || " "}
-          </div>
-        );
-      })}
+      {Children.toArray(lines.slice(0, 16).map((line) => <ExcerptLine line={line} markdown={markdown} />))}
     </div>
   );
 }

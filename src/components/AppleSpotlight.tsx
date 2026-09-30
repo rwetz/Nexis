@@ -30,7 +30,7 @@ import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { FileTypeIcon } from "@/modules/explorer/lib/FileTypeIcon";
 import { useRecentFiles } from "@/modules/recent-files/useRecentFiles";
 import { Kbd } from "@/components/ui/kbd";
-import { SpotlightPreview } from "./spotlight/SpotlightPreview";
+import { SpotlightPreview, type PreviewTarget } from "./spotlight/SpotlightPreview";
 import {
   memo,
   useCallback,
@@ -437,6 +437,132 @@ function useSpotlightResults(
   }, [deferredQuery, allFiles, root, commands, recentFiles]);
 }
 
+/** The workspace's files for client-side matching, and whether they are loading. */
+function useWorkspaceFiles(root: string | null): { files: string[]; loading: boolean } {
+  const [files, setFiles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!root) return;
+    setLoading(true);
+    filesystem
+      .listFiles(root, { limit: FILE_SCAN_LIMIT, maxDepth: 10, showHidden: false })
+      .then((res) => {
+        setFiles(res.files);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [root]);
+  return { files, loading };
+}
+
+/** What the preview pane shows for a result. */
+function previewTargetFor(hit: Result): PreviewTarget {
+  return hit.kind === "file"
+    ? { kind: "file", path: hit.path, title: hit.title, subtitle: hit.subtitle }
+    : { kind: "command", title: hit.title, subtitle: hit.subtitle, icon: hit.icon, category: hit.category };
+}
+
+type KeyAction = "close" | "down" | "up" | "commit" | null;
+
+/** The finder's keys, as an action; the component applies it. */
+function keyAction(key: string): KeyAction {
+  switch (key) {
+    case "Escape":
+      return "close";
+    case "ArrowDown":
+      return "down";
+    case "ArrowUp":
+      return "up";
+    case "Enter":
+      return "commit";
+    default:
+      return null;
+  }
+}
+
+/**
+ * Everything under the query field: the result list (with a "Recent" label at
+ * rest), the preview beside it once there is a query, or the empty state.
+ */
+function ResultsPane({
+  results,
+  activeIdx,
+  expanded,
+  loading,
+  hasRoot,
+  hasRecent,
+  listRef,
+  onCommit,
+  onHover,
+}: {
+  results: Result[];
+  activeIdx: number;
+  expanded: boolean;
+  loading: boolean;
+  hasRoot: boolean;
+  hasRecent: boolean;
+  listRef: React.RefObject<HTMLDivElement | null>;
+  onCommit: (idx: number) => void;
+  onHover: (idx: number) => void;
+}) {
+  if (results.length === 0) {
+    if (loading || !expanded) return null;
+    return (
+      <div className="border-t border-border/60 px-4 py-8 text-center text-[12px] text-muted-foreground">
+        {hasRoot ? "No results" : "No workspace open"}
+      </div>
+    );
+  }
+  const active = results[activeIdx];
+  return (
+    <div className="flex min-h-0 border-t border-border/60">
+      <div className="flex min-w-0 flex-1 flex-col">
+        {!expanded ? (
+          <div className="px-4 pt-2 text-[10px] font-medium tracking-wide text-muted-foreground/70 uppercase">
+            {hasRecent ? "Recent" : "In this workspace"}
+          </div>
+        ) : null}
+        <div
+          ref={listRef}
+          role="listbox"
+          aria-label="Results"
+          className={cn(
+            "min-w-0 flex-1 overflow-y-auto overscroll-contain p-1.5",
+            expanded ? "max-h-[46vh]" : "max-h-[30vh]",
+          )}
+        >
+          {results.map((hit, idx) => (
+            <SpotlightRow
+              key={`${hit.kind}:${hit.id}`}
+              hit={hit}
+              idx={idx}
+              selected={idx === activeIdx}
+              onCommit={onCommit}
+              onHover={onHover}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Preview. Spotlight's defining half: the list answers "which one",
+          this answers "is it the one". Only once there is a query: at rest
+          the bar stays a compact pill.
+
+          The pane is NOT animated between results. The first version keyed a
+          motion.div on the active result inside `AnimatePresence
+          mode="wait"`, which waits for the outgoing panel's exit before the
+          incoming one starts, so dragging the pointer down the list left the
+          preview visibly chasing the cursor. A pane that answers "what am I
+          hovering" has to be synchronous with the hover. */}
+      {expanded && active ? (
+        <div className="hidden w-[300px] shrink-0 border-l border-border/60 sm:block">
+          <SpotlightPreview target={previewTargetFor(active)} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 type Props = {
   root: string | null;
   onSelect: (path: string) => void;
@@ -452,9 +578,8 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
   // it. Without this, ranking several thousand paths runs synchronously
   // inside the keystroke and the caret visibly stutters on a large workspace.
   const deferredQuery = useDeferredValue(query);
-  const [allFiles, setAllFiles] = useState<string[]>([]);
+  const { files: allFiles, loading } = useWorkspaceFiles(root);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -462,18 +587,6 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
-
-  useEffect(() => {
-    if (!root) return;
-    setLoading(true);
-    filesystem
-      .listFiles(root, { limit: FILE_SCAN_LIMIT, maxDepth: 10, showHidden: false })
-      .then((res) => {
-        setAllFiles(res.files);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [root]);
 
   const results = useSpotlightResults(deferredQuery, allFiles, root, commands, recentFiles);
 
@@ -490,8 +603,6 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
     item?.scrollIntoView({ block: "nearest" });
   }, [activeIdx]);
 
-  const active = results[activeIdx];
-
   // Stable identity, so the memoized rows actually skip re-rendering — a
   // fresh closure here would defeat SpotlightRow's memo on every keystroke.
   const commit = useCallback(
@@ -506,24 +617,12 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
   );
 
   const onKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      onClose();
-      return;
-    }
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActiveIdx((i) => Math.min(i + 1, results.length - 1));
-      return;
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActiveIdx((i) => Math.max(i - 1, 0));
-      return;
-    }
-    if (e.key === "Enter") {
-      e.preventDefault();
-      commit(activeIdx);
-    }
+    const action = keyAction(e.key);
+    if (!action) return;
+    if (action === "close") return onClose();
+    e.preventDefault();
+    if (action === "commit") commit(activeIdx);
+    else setActiveIdx((i) => (action === "down" ? Math.min(i + 1, results.length - 1) : Math.max(i - 1, 0)));
   };
 
   const expanded = query.trim().length > 0;
@@ -594,72 +693,17 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
           {expanded ? <CountBadge files={fileCount} commands={commandCount} spring={spring} /> : null}
         </div>
 
-        {results.length > 0 && (
-          <div className="flex min-h-0 border-t border-border/60">
-            <div className="flex min-w-0 flex-1 flex-col">
-              {!expanded ? (
-                <div className="px-4 pt-2 text-[10px] font-medium tracking-wide text-muted-foreground/70 uppercase">
-                  {recentFiles.length > 0 ? "Recent" : "In this workspace"}
-                </div>
-              ) : null}
-              <div
-                ref={listRef}
-                role="listbox"
-                aria-label="Results"
-                className={cn(
-                  "min-w-0 flex-1 overflow-y-auto overscroll-contain p-1.5",
-                  expanded ? "max-h-[46vh]" : "max-h-[30vh]",
-                )}
-              >
-                {results.map((hit, idx) => (
-                  <SpotlightRow
-                    key={`${hit.kind}:${hit.id}`}
-                    hit={hit}
-                    idx={idx}
-                    selected={idx === activeIdx}
-                    onCommit={commit}
-                    onHover={setActiveIdx}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Preview. Spotlight's defining half: the list answers "which
-                one", this answers "is it the one". Only once there is a
-                query: at rest the bar stays a compact pill.
-
-                The pane is NOT animated between results. The first version
-                keyed a motion.div on the active result inside
-                `AnimatePresence mode="wait"`, which waits for the outgoing
-                panel's exit before the incoming one starts, so dragging the
-                pointer down the list left the preview visibly chasing the
-                cursor. A pane that answers "what am I hovering" has to be
-                synchronous with the hover. */}
-            {expanded && active && (
-              <div className="hidden w-[300px] shrink-0 border-l border-border/60 sm:block">
-                <SpotlightPreview
-                  target={
-                    active.kind === "file"
-                      ? { kind: "file", path: active.path, title: active.title, subtitle: active.subtitle }
-                      : {
-                          kind: "command",
-                          title: active.title,
-                          subtitle: active.subtitle,
-                          icon: active.icon,
-                          category: active.category,
-                        }
-                  }
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {results.length === 0 && !loading && expanded && (
-          <div className="border-t border-border/60 px-4 py-8 text-center text-[12px] text-muted-foreground">
-            {root ? "No results" : "No workspace open"}
-          </div>
-        )}
+        <ResultsPane
+          results={results}
+          activeIdx={activeIdx}
+          expanded={expanded}
+          loading={loading}
+          hasRoot={!!root}
+          hasRecent={recentFiles.length > 0}
+          listRef={listRef}
+          onCommit={commit}
+          onHover={setActiveIdx}
+        />
 
         <KeyHints />
       </m.div>
