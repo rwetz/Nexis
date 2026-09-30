@@ -4,6 +4,19 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Added
+
+- **An animated orb for the AI, in 26 styles.** The AI window's new-chat card shows the chosen orb at rest in place of the logo tile. While the agent works, the chat's "Thinking…" spinner becomes a small orb that follows the run: it thinks while the model is working or waiting on a tool approval, and it speaks while the answer streams. It stays for the whole run, where the spinner disappeared at the first token. Each style has its own idle, thinking and speaking look, and states ease into each other rather than switching. Ten styles follow the theme (Glass, Plasma, Rings, Swarm, Scroll, Moiré, Torsion, Weave, Field, Voxel): they take the brand and ANSI colours and ease to new ones when the theme changes. The other sixteen keep a signature palette that is part of the look (Nebula, Dither, Iridescent, Galaxy, Caustic, Ion, Nacre, Phosphor, Eclipse, Chromatic, Spectra, Orbital, Tracks, Lattice, Falls, Nimbus). The picker marks themed orbs with a Theme chip, and a test holds that chip to the colours each orb actually declares. **Settings → AI → Orb** has a live preview of each state, a gallery, and **Off**, which keeps the old logo and spinner. The choice syncs across windows through `writePref`. Code: `src/components/orbs/`.
+  - **Why not shadercn's orbs:** all 33 of its orb shaders are XorDev ports licensed for non-commercial use only, which Nexis's Apache-2.0 licence can't carry. The engine design comes from shadercn's MIT renderer (spring-eased params and colours, synthesized input/output volumes per state, one flow clock that runs faster while speaking). All 26 shaders are original. Twenty take their *idea* from shadcn labs' list of orb concepts (a plasma globe, a thin-film sheen, a galaxy and so on), read from the titles and one-line descriptions only; none is derived from their code.
+  - **Why WebGL2, not WebGPU:** shadercn's engine is WebGPU-only, and Linux's WebKitGTK has no WebGPU (WKWebView only gained it recently). The orbs run on WebGL2 through `ogl`, the same stack as the animated backgrounds, so they work on every platform Nexis ships on and add no dependency.
+  - **Graceful degradation:** with no WebGL2, a shader that fails to compile, or a context lost twice, the orb becomes a CSS disc in its own colours; one lost context is retried on a fresh canvas. `prefers-reduced-motion` draws one settled frame and runs no loop. Loops also stop while the window is hidden or the orb is scrolled out of view.
+  - **Context budget:** webviews keep about 16 live WebGL contexts and evict the oldest. Every still frame (gallery tiles, reduced motion) is drawn by one shared renderer and shown as an image, so the whole gallery costs one context however many orbs it lists. Results are cached, and each live orb releases its context when it unmounts.
+  - Orb code loads with the first orb (a separate chunk of about 6 KB plus `ogl`), not at startup.
+
+### Changed
+
+- **Atlas has its own icon.** Atlas and the Web workbench both used the globe, so the two title-bar launchers looked the same side by side. Web keeps the globe, as do preview, ports and the HTTP client. Atlas, an isometric map of your repos, now uses a map icon: its launcher, window, "Show this repo in Atlas" command, Map mode tab and "Show on map" button (new `map` key in `components/icon.tsx`).
+
 ## [1.29.0] — 2026-09-24
 
 ### Added

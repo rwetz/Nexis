@@ -176,6 +176,7 @@ import {
   CircleHalfIcon,
   XIcon,
   XLogoIcon,
+  MapTrifoldIcon,
 } from "@phosphor-icons/react";
 
 import type { ArtProps } from "@/components/icon-art";
@@ -310,6 +311,7 @@ const REGISTRY = {
   "link-external": ArrowSquareOutIcon,
   "loading": CircleNotchIcon,
   "magic": MagicWandIcon,
+  "map": MapTrifoldIcon,
   "messages": ChatsCircleIcon,
   "minus": MinusIcon,
   "more": DotsThreeIcon,

@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
+import { LazyShaderOrb } from "@/components/orbs/LazyShaderOrb";
 import { cn } from "@/lib/utils";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import { useEffect, useMemo } from "react";
@@ -516,6 +517,23 @@ function SessionRow({
   );
 }
 
+/**
+ * The chosen orb at idle, or the logo tile when orbs are off. The orb sits
+ * bare rather than in the tile: it is round and carries its own glow, and a
+ * square border around it would read as a thumbnail.
+ */
+function EmptyStateMark() {
+  const orb = usePreferencesStore((s) => s.aiOrbId);
+  if (orb !== "off") {
+    return <LazyShaderOrb variant={orb} state="idle" size={44} className="-my-1 -ml-1" />;
+  }
+  return (
+    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card shadow-sm">
+      <img src="/nexis-logo.png" alt="" className="size-6 opacity-90" />
+    </div>
+  );
+}
+
 function EmptyState({ onPick }: { onPick: (text: string) => void }) {
   return (
     <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
@@ -525,9 +543,7 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
           className="pointer-events-none absolute -right-8 -top-12 size-32 rounded-full bg-primary/[0.09] blur-2xl"
         />
         <div className="relative flex items-start gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card shadow-sm">
-            <img src="/nexis-logo.png" alt="" className="size-6 opacity-90" />
-          </div>
+          <EmptyStateMark />
           <div className="min-w-0">
             <p className="text-[13px] font-semibold tracking-tight">
               Start with the work in front of you

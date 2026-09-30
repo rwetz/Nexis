@@ -35,6 +35,7 @@ import { FeaturesSection } from "./sections/FeaturesSection";
 import { FormattersSection } from "./sections/FormattersSection";
 import { GeneralSection } from "./sections/GeneralSection";
 import { ModelsSection } from "./sections/ModelsSection";
+import { OrbSection } from "./sections/OrbSection";
 import { PrivacySection } from "./sections/PrivacySection";
 import { ShortcutsSection } from "./sections/ShortcutsSection";
 import { ThemesSection } from "./sections/ThemesSection";
@@ -116,6 +117,13 @@ const TAB_GROUPS: TabGroup[] = [
         icon: "users",
         component: AgentsSection,
         keywords: "agent subagent custom prompt tools",
+      },
+      {
+        id: "orb",
+        label: "Orb",
+        icon: "sparkle",
+        component: OrbSection,
+        keywords: "orb shader animation assistant thinking idle speaking avatar",
       },
     ],
   },

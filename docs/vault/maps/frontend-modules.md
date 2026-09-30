@@ -44,4 +44,5 @@ As of 2026-07. One-liners are orientation, not spec — verify in code, and fix 
 - `src/lib/pitfall-guards.test.ts` — frontend tripwire suite; never weaken
 - `src/lib/plugins/` — contribution contracts, registry (`usePluginRegistry`) and activation host; `src/plugins/` contains first-party plugin implementations
 - `src/app/App.tsx` — workbench composition and the built-in sidebar render chain; see [[architecture-boundaries]] for extraction seams
+- `src/components/orbs/` — the AI's shader orbs (WebGL2 via ogl); variants, pure drive, renderer, `ShaderOrb`. See [[orbs]]
 - `src/modules/atlas/` / `src/modules/benchmark/` — absorbed host-scoped tools, with embedded panels and companion windows; see [[atlas]] and [[benchmark]]
