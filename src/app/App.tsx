@@ -2327,7 +2327,10 @@ function MainApp() {
           {quickFilePickerOpen && (
             <AppleSpotlight
               root={explorerRoot}
-              onSelect={(path) => openFileTab(path)}
+              // The same routing as the explorer, so an image opens in the
+              // viewer and a markdown file in its preview, not all in the
+              // code editor.
+              onSelect={(path) => handleOpenFile(path)}
               onClose={() => setQuickFilePickerOpen(false)}
               commands={visiblePaletteCommands}
             />
