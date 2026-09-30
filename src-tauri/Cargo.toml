@@ -37,7 +37,7 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 portable-pty = "0.9"
-dirs = "6"
+dirs = "7"
 log = "0.4"
 ignore = "0.4"
 grep-regex = "0.1"
@@ -100,7 +100,7 @@ git2 = { version = "0.21", default-features = false }
 # including a full filesystem walk land in ~270 ms because of this.
 rayon = "1.10"
 # `atlas.toml`, the hand-edited repo list.
-toml = "0.8"
+toml = "1.1"
 
 # ── Benchmark panel (modules/benchmark) ──────────────────────────────────────
 # Result timestamps.
