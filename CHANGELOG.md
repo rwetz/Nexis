@@ -4,6 +4,16 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.30.1] — 2026-09-30
+
+### Fixed
+
+- **Intel Macs get a DMG again.** 1.30.0 shipped without one. The release workflow's pnpm setup action, updated to v6.1 in the 1.30.0 dependency batch, installs the latest pnpm and then switches to the pinned version. That switch cannot verify pnpm's Intel-Mac binary, so the Intel build failed before it started. The release workflow is back on the v6.0 action that 1.29.0 was built with; CI stays on v6.1, where the switch works.
+
+### Security
+
+- **rustls 0.23.40 → 0.23.45** for RUSTSEC-2026-0285 (medium): TLS 1.3 handshake messages were accepted across encryption-level boundaries.
+
 ## [1.30.0] — 2026-09-30
 
 ### Added
