@@ -22,7 +22,7 @@ Two engines answer to the same name and have different feature sets — the Pyth
 - `src/modules/ml/lib/engine-bridge.ts` — domain bridge; candidate building, detection memo, captured authorization/spawn, event subscription
 - `src/modules/ml/store.ts` — engine state, the live run, historical runs, compare, serve/playground
 - `src/modules/ml/MlPanel.tsx` — the shared panel body (large; setup card, run browser, hyperparams, playground), lazy-loaded by the capability and reused by the full-workspace tab
-- `src/modules/ml/MlLabStack.tsx` — the full-workspace `ml-lab` tab host; passes the same shared panel and network-tab action into the primary work area
+- `src/capabilities/workbenches/windows.tsx` (`MlLabWindow`) — the ML Lab window (a main-window `ml-lab` tab until 2026-09-30); renders the shared panel and opens the network diagram over it in the same window
 - `src/modules/ml/NetworkGraph.tsx` — the architecture drawing, canvas; also the `ml-network` tab body via `MlNetworkStack.tsx`
 - `src/modules/ml/lib/protocol.ts` / `series.ts` / `artifacts.ts` — event parsing, metric buffers, on-disk artifacts
 

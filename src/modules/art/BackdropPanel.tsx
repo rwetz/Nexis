@@ -31,7 +31,7 @@
 
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import { ExportBar } from "./ExportBar";
 import { parseColor } from "./lib/color";
 import {
@@ -157,7 +157,10 @@ export function BackdropPanel({ workspaceRoot }: Props) {
   const hasSeed = scene.params.some((p) => p.key === "seed");
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+    // A container, so the layout follows the room the panel has rather than
+    // the window: in SVG Studio's full-width window the preview used to
+    // stretch edge to edge and push every control below the fold.
+    <div className="@container/backdrop flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="image" className="text-muted-foreground" />
         <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
@@ -234,14 +237,23 @@ export function BackdropPanel({ workspaceRoot }: Props) {
         ))}
       </div>
 
-      {/* Preview */}
-      <div className="shrink-0 border-b border-border/50 p-2">
+      {/* Wide: the preview fills the left, fitted to its box at the chosen
+          aspect, and the controls get a scrolling column on the right.
+          Narrow: stacked, as in a sidebar. */}
+      <div className="flex min-h-0 flex-1 flex-col @3xl/backdrop:flex-row">
+      <div className="shrink-0 border-b border-border/50 p-2 @3xl/backdrop:flex @3xl/backdrop:min-h-0 @3xl/backdrop:min-w-0 @3xl/backdrop:flex-1 @3xl/backdrop:items-center @3xl/backdrop:justify-center @3xl/backdrop:border-b-0 @3xl/backdrop:bg-muted/20 @3xl/backdrop:p-6 @3xl/backdrop:[container-type:size]">
         <div
-          className="w-full overflow-hidden rounded-md border border-border/60 [&>svg]:h-auto [&>svg]:w-full"
+          className="w-full overflow-hidden rounded-md border border-border/60 [&>svg]:block [&>svg]:h-auto [&>svg]:w-full @3xl/backdrop:w-[var(--fit-w)] @3xl/backdrop:shadow-sm"
+          // The largest box of this aspect that fits the preview area: as
+          // wide as it is, unless that would make it taller than it is.
+          style={{ "--fit-w": `min(100cqw, calc(100cqh * ${aspect.width} / ${aspect.height}))` } as CSSProperties}
           // Ours, and sanitized above.
           dangerouslySetInnerHTML={{ __html: safe }}
         />
-        <div className="mt-1.5 flex items-center gap-1">
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col @3xl/backdrop:w-80 @3xl/backdrop:flex-none @3xl/backdrop:border-l @3xl/backdrop:border-border/50">
+        <div className="flex shrink-0 items-center gap-1 px-2 pt-2 @3xl/backdrop:border-b @3xl/backdrop:border-border/50 @3xl/backdrop:pb-2">
           {hasSeed && (
             <>
               <button
@@ -301,7 +313,6 @@ export function BackdropPanel({ workspaceRoot }: Props) {
             Reset
           </button>
         </div>
-      </div>
 
       {/* Controls */}
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
@@ -338,6 +349,8 @@ export function BackdropPanel({ workspaceRoot }: Props) {
             />
           ))}
         </div>
+      </div>
+      </div>
       </div>
 
       <ExportBar source={svg} valid workspaceRoot={workspaceRoot} />

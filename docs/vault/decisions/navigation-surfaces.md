@@ -21,7 +21,7 @@ Every built-in view has a `kind` in `src/modules/sidebar/viewCatalog.ts`, and th
 | `contextual` | glance at it while working on a file | the rail |
 | `session` | start it, watch it run, it finishes | the bottom panel (`src/modules/bottom-panel/`) |
 | `ai` | hand the agent work | the AI window's tool strip (`ai/store/aiToolStore.ts`) |
-| `workbench` | go to it and stay a while | title bar (`header/permanentTools.ts`); Ports, HTTP Client and Web Tools share the Web workbench tab (`web-workbench/`) |
+| `workbench` | go to it and stay a while | its own window, launched from the title bar (`header/TitlebarTools.tsx`, `capabilities/workbenches/`); Ports, HTTP Client and Web Tools share the Web window (`web-workbench/`) |
 | `utility` | invoke it, use it, dismiss it | palette |
 
 The rail is `RAIL_VIEWS`, the contextual views in catalogue order. `viewPaletteCommands` generates a "Show …" command for every view whose owner does not already contribute one, and `pluginPanelCommands` does the same for contributed panels. A contributed panel joins the rail only with `showInRail: true`; the default flipped to false.

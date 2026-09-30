@@ -1,44 +1,44 @@
 import { describe, expect, it } from "vitest";
 import { PRESETS } from "@/lib/packs";
-import { isPermanentToolView, visiblePermanentTools } from "./permanentTools";
+import { CAPABILITY_TOOL_WINDOWS } from "@/capabilities";
+import { isPermanentToolView, mergeToolOrder, orderTools, visibleTools } from "./permanentTools";
 
-describe("permanent titlebar tools", () => {
-  it("promotes the Web workbench for the Web Dev pack only", () => {
-    expect(visiblePermanentTools(PRESETS["web-dev"].packs).map((tool) => tool.id)).toEqual(["web"]);
-    expect(visiblePermanentTools(PRESETS.standard.packs)).toEqual([]);
-  });
+const ids = (tools: readonly { id: string }[]) => tools.map((tool) => tool.id);
 
-  it("promotes SVG Studio for Art and every workbench for Everything", () => {
-    expect(visiblePermanentTools(PRESETS.art.packs).map((tool) => tool.id)).toEqual([
-      "svg-playground",
+describe("titlebar tools", () => {
+  it("shows a workbench only with its pack, and Atlas and Benchmark always", () => {
+    expect(ids(visibleTools(CAPABILITY_TOOL_WINDOWS, PRESETS.standard.packs))).toEqual(["atlas", "benchmark"]);
+    expect(ids(visibleTools(CAPABILITY_TOOL_WINDOWS, PRESETS.art.packs))).toEqual(["svg-studio", "atlas", "benchmark"]);
+    expect(ids(visibleTools(CAPABILITY_TOOL_WINDOWS, PRESETS.everything.packs))).toEqual([
+      "svg-studio", "ml-lab", "web", "documents", "atlas", "benchmark",
     ]);
-    expect(
-      visiblePermanentTools(PRESETS.everything.packs).map((tool) => tool.id),
-    ).toEqual(["svg-playground", "ml-lab", "web", "documents"]);
   });
 
-  it("does not promote SVG Studio for configurations without the Art pack", () => {
-    expect(visiblePermanentTools(PRESETS.standard.packs)).toEqual([]);
-    expect(isPermanentToolView("svg-playground", PRESETS.art.packs)).toBe(true);
-    expect(
-      isPermanentToolView("svg-playground", PRESETS.standard.packs),
-    ).toBe(false);
+  it("keeps a replaced view off the rail only while its window is available", () => {
+    expect(isPermanentToolView("svg-playground", PRESETS.art.packs, CAPABILITY_TOOL_WINDOWS)).toBe(true);
+    expect(isPermanentToolView("svg-playground", PRESETS.standard.packs, CAPABILITY_TOOL_WINDOWS)).toBe(false);
+    expect(isPermanentToolView("ml", PRESETS["ai-ml"].packs, CAPABILITY_TOOL_WINDOWS)).toBe(true);
+    // Pack off: a .docx opened then lands on the sidebar's "enable this
+    // pack?" placeholder instead of being healed back to Files.
+    expect(isPermanentToolView("documents", PRESETS.standard.packs, CAPABILITY_TOOL_WINDOWS)).toBe(false);
+    expect(isPermanentToolView("documents", ["documents"], CAPABILITY_TOOL_WINDOWS)).toBe(true);
+  });
+});
+
+describe("tool order", () => {
+  const tools = [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }];
+
+  it("applies a saved order and appends tools it has never seen", () => {
+    expect(ids(orderTools(tools, ["c", "a"]))).toEqual(["c", "a", "b", "d"]);
+    expect(ids(orderTools(tools, []))).toEqual(["a", "b", "c", "d"]);
+    expect(ids(orderTools(tools, ["gone", "d"]))).toEqual(["d", "a", "b", "c"]);
   });
 
-  it("promotes ML Lab for AI / ML and keeps its sidebar view out of the rail", () => {
-    expect(visiblePermanentTools(PRESETS["ai-ml"].packs).map((tool) => tool.id)).toEqual([
-      "ml-lab",
-    ]);
-    expect(isPermanentToolView("ml", PRESETS["ai-ml"].packs)).toBe(true);
-    expect(isPermanentToolView("ml", PRESETS.standard.packs)).toBe(false);
-  });
-
-  it("promotes Documents only with its pack, and keeps its view out of the rail", () => {
-    expect(visiblePermanentTools(["documents"]).map((tool) => tool.id)).toEqual(["documents"]);
-    expect(isPermanentToolView("documents", ["documents"])).toBe(true);
-    // Pack off: the view is not a titlebar tool, so a .docx opened then lands
-    // on the sidebar's "enable this pack?" placeholder instead of being healed
-    // back to Files.
-    expect(isPermanentToolView("documents", PRESETS.standard.packs)).toBe(false);
+  it("remembers where a hidden tool was when the visible ones move", () => {
+    // "b" is hidden (pack off) and followed "a"; the user swaps a and c.
+    expect(mergeToolOrder(["a", "b", "c"], ["c", "a"])).toEqual(["c", "a", "b"]);
+    // A hidden tool at the front stays at the front.
+    expect(mergeToolOrder(["x", "a", "c"], ["c", "a"])).toEqual(["x", "c", "a"]);
+    expect(mergeToolOrder([], ["c", "a"])).toEqual(["c", "a"]);
   });
 });

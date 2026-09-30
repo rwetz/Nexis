@@ -31,6 +31,12 @@
  * menu items (`[role="menuitem"]`), options and tree items are excluded by the
  * first half — they are the bulk of what made the first version too much.
  *
+ * ## What never does
+ * A control holding a file-type icon (`[data-file-icon]`: explorer rows, file
+ * tabs, Spotlight results), and anything inside a tree or under
+ * `[data-no-rainbow]`. File icons have their own colour scheme, which says
+ * what kind of file it is; repainting it on hover erases the information.
+ *
  * ## Glyph or text
  * A control with an SVG paints the **glyph** — even when it also has a label.
  * A text-only control paints its **text**. Its ordinary neutral hover surface
@@ -73,8 +79,12 @@ const CANDIDATE = 'button,[role="button"],[role="tab"],a[href]';
  * colour (primary, destructive, link) matches none of these and is left be. */
 const NEUTRAL_HOVER = /(?:^|\s)(?:hover|group-hover|focus):bg-(?:accent|muted)(?:\/\d{1,3})?(?=\s|$)/;
 
+/** Where the accent never goes, even on an otherwise eligible control. */
+const EXCLUDED_WITHIN = '[role="tree"],[data-no-rainbow]';
+
 export function isRainbowTarget(el: Element): boolean {
   if (!el.matches(CANDIDATE)) return false;
+  if (el.querySelector("[data-file-icon]") !== null || el.closest(EXCLUDED_WITHIN) !== null) return false;
   const cls = el.getAttribute("class");
   return cls !== null && NEUTRAL_HOVER.test(cls) && rainbowMode(el) !== null;
 }

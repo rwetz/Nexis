@@ -3,9 +3,8 @@ import "@/test/dom";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { Tab } from "@/modules/tabs/lib/tabTypes";
 import { useSvgStudioStore } from "./studioStore";
-import { SvgPlaygroundStack } from "./SvgPlaygroundStack";
+import { SvgStudio } from "./SvgStudio";
 
 // The panels are exercised by their own lib tests; here only the Studio's
 // switching matters, so each is a marker. Draw carries a counter so the test
@@ -22,14 +21,12 @@ vi.mock("./IconSetPanel", () => ({ IconSetPanel: () => <p>icon set panel</p> }))
 vi.mock("./FaviconPanel", () => ({ FaviconPanel: () => <p>favicon panel</p> }));
 vi.mock("./AnimatorPanel", () => ({ AnimatorPanel: () => <p>animator panel</p> }));
 
-const tabs: Tab[] = [{ id: 7, kind: "svg-playground", title: "SVG Studio" }];
-
 beforeEach(() => {
   useSvgStudioStore.setState({ tool: "draw" });
 });
 
 it("swaps tools in front while Draw keeps its state", () => {
-  render(<SvgPlaygroundStack tabs={tabs} activeId={7} workspaceRoot={null} />);
+  render(<SvgStudio workspaceRoot={null} />);
   fireEvent.click(screen.getByRole("button", { name: "Draw 0" }));
 
   fireEvent.click(screen.getByRole("tab", { name: "Palette" }));
@@ -47,13 +44,6 @@ it("swaps tools in front while Draw keeps its state", () => {
 
 it("opens at whichever tool a caller asked for", () => {
   act(() => useSvgStudioStore.getState().setTool("favicon"));
-  render(<SvgPlaygroundStack tabs={tabs} activeId={7} workspaceRoot={null} />);
+  render(<SvgStudio workspaceRoot={null} />);
   expect(screen.getByText("favicon panel")).toBeInTheDocument();
-});
-
-it("renders nothing when the Studio tab is not active", () => {
-  const { container } = render(
-    <SvgPlaygroundStack tabs={tabs} activeId={1} workspaceRoot={null} />,
-  );
-  expect(container).toBeEmptyDOMElement();
 });

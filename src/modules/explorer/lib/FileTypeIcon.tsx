@@ -44,6 +44,9 @@ export function FileTypeIcon({
       className={className}
       aria-hidden
       focusable="false"
+      // The rainbow hover accent skips any control holding one of these:
+      // file-type colours carry meaning a gradient would paint over.
+      data-file-icon=""
       dangerouslySetInnerHTML={{ __html: art.body }}
     />
   );

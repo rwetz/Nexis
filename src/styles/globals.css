@@ -643,6 +643,51 @@ html *::-webkit-scrollbar {
   animation: nexis-scene-enter var(--dur-scene) var(--ease-enter) both;
 }
 
+/* Tool windows (ToolWindowShell): the window settles into place, then its
+ * header drops in and the body rises behind it, so opening SVG Studio or
+ * Atlas reads as the window arriving rather than a blank frame filling in.
+ * The shell animates as a whole because tool windows are transparent on
+ * Windows and Linux, so its scale reads as the window itself growing. */
+@keyframes nexis-window-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.965) translateY(10px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes nexis-window-header-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.nexis-window-enter {
+  animation: nexis-window-enter 460ms var(--ease-enter) both;
+  transform-origin: 50% 40%;
+}
+.nexis-window-header {
+  animation: nexis-window-header-enter 380ms var(--ease-enter) 90ms both;
+}
+.nexis-window-body {
+  animation: nexis-scene-enter var(--dur-scene) var(--ease-enter) 150ms both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nexis-window-enter,
+  .nexis-window-header,
+  .nexis-window-body {
+    animation: none;
+  }
+}
+
 .nexis-stagger > * {
   animation: nexis-scene-enter var(--dur-scene) var(--ease-enter) both;
 }
@@ -943,13 +988,15 @@ textarea,
  * The gradient lives only inside a glyph or label, never behind one. Holding
  * ONE lightness across all seven stops keeps the hue moving without producing
  * a bright band that becomes illegible against the neutral hover surface. */
+/* Toned down from 0.20 / 0.22: at full chroma the hover read as a
+ * decoration competing with the content rather than a small signal. */
 :root {
-  --accent-rainbow-c: 0.20;
-  --accent-rainbow-glyph-l: 0.58;
+  --accent-rainbow-c: 0.14;
+  --accent-rainbow-glyph-l: 0.6;
 }
 .dark {
-  --accent-rainbow-c: 0.22;
-  --accent-rainbow-glyph-l: 0.74;
+  --accent-rainbow-c: 0.15;
+  --accent-rainbow-glyph-l: 0.76;
 }
 
 /* Text-only controls keep their normal hover surface. `background-clip: text`

@@ -87,7 +87,8 @@ import {
 } from "@/modules/terminal/lib/ledger";
 import { openNewWindow } from "@/modules/window/openNewWindow";
 import { ToolWindowShell } from "@/modules/window/ToolWindowShell";
-import { currentToolWindow } from "@/modules/window/toolWindow";
+import { currentToolWindow, openToolWindow } from "@/modules/window/toolWindow";
+import { onToolHostAction, useWorkspaceRootBroadcast } from "@/modules/window/toolWindowHost";
 import { onAtlasHostAction } from "@/modules/atlas/repos/hostBridge";
 import { desktopWindow } from "@/platform/desktop";
 import { toast } from "sonner";
@@ -117,7 +118,7 @@ import {
 import { ActivityPanel } from "@/modules/processes";
 import { usePluginRegistry } from "@/lib/plugins/registry";
 import { ProblemsPanel } from "@/modules/problems/ProblemsPanel";
-import { OPEN_WEB_WORKBENCH_EVENT, WebWorkbench } from "@/modules/web-workbench";
+import { OPEN_WEB_WORKBENCH_EVENT, type WebTool } from "@/modules/web-workbench";
 import {
   PanelDock,
   PROBLEMS_TAB,
@@ -144,7 +145,7 @@ import { RecentFilesPanel, pushRecentFile } from "@/modules/recent-files";
 import { OnboardingDialog } from "@/modules/onboarding/OnboardingDialog";
 import { openOnboarding } from "@/modules/onboarding/onboardingDialogStore";
 import { SvgPlaygroundPanel } from "@/modules/art/SvgPlaygroundPanel";
-import { useSvgStudioStore, type StudioTool } from "@/modules/art/studioStore";
+import type { StudioTool } from "@/modules/art/studioStore";
 import { OnboardingTour } from "@/modules/onboarding/OnboardingTour";
 import { useOnboardingSignals } from "@/modules/onboarding/useOnboardingSignals";
 import { signalOnboardingStep, type OnboardingAction } from "@/lib/onboarding";
@@ -212,25 +213,14 @@ const ImageStackLazy = lazy(() =>
 const DocumentStackLazy = lazy(() =>
   import("@/modules/documents").then((m) => ({ default: m.DocumentStack })),
 );
-const DocumentsPanelLazy = lazy(() =>
-  import("@/modules/documents").then((m) => ({ default: m.DocumentsPanel })),
-);
 // Heavy, rarely-open panels: keep them out of the main chunk so app startup
 // doesn't pay their parse cost. Same pattern as the tab stacks above.
 const SettingsDialogLazy = lazy(() =>
   import("@/settings/SettingsDialog").then((m) => ({ default: m.SettingsDialog })),
 );
-const MlLabStackLazy = lazy(() =>
-  import("@/modules/ml/MlLabStack").then((m) => ({ default: m.MlLabStack })),
-);
 // Lazy for the same reason as the panel: the network tab pulls in the whole
 // ML graph/artifact reading stack, which nobody who never opens it should pay
 // the parse cost for.
-const SvgPlaygroundStackLazy = lazy(() =>
-  import("@/modules/art/SvgPlaygroundStack").then((m) => ({
-    default: m.SvgPlaygroundStack,
-  })),
-);
 const MlNetworkStackLazy = lazy(() =>
   import("@/modules/ml/MlNetworkStack").then((m) => ({
     default: m.MlNetworkStack,
@@ -269,16 +259,12 @@ function MainApp() {
     newNotebookTab,
     newImageTab,
     newDocumentTab,
-    openDocumentsHomeTab,
     openAiDiffTab,
     closeAiDiffTab,
     openGitDiffTab,
     openCommitHistoryTab,
     openCommitFileDiffTab,
-    openMlLabTab,
     openMlNetworkTab,
-    openSvgPlaygroundTab,
-    openWebTab,
     closeTab,
     updateTab,
     selectByIndex,
@@ -309,24 +295,6 @@ function MainApp() {
   useEffect(() => {
     tabsRef.current = tabs;
   }, [tabs]);
-
-  // The Web workbench is opened by `requestWebWorkbench` (palette commands,
-  // persistSidebarView), which can't reach tab state — hence the event.
-  useEffect(() => {
-    const open = () => openWebTab();
-    window.addEventListener(OPEN_WEB_WORKBENCH_EVENT, open);
-    return () => window.removeEventListener(OPEN_WEB_WORKBENCH_EVENT, open);
-  }, [openWebTab]);
-
-  /** Open SVG Studio with a specific tool in front — the palette, backdrop,
-   *  icon set, favicon set and animator live inside it, not in the sidebar. */
-  const openSvgStudio = useCallback(
-    (tool: StudioTool) => {
-      useSvgStudioStore.getState().setTool(tool);
-      openSvgPlaygroundTab();
-    },
-    [openSvgPlaygroundTab],
-  );
 
   const activeTerminalTab = useMemo(() => {
     const t = tabs.find((x) => x.id === activeId);
@@ -702,15 +670,11 @@ function MainApp() {
   const isNotebookTab = activeTab?.kind === "notebook";
   const isImageTab = activeTab?.kind === "image";
   const isDocumentTab = activeTab?.kind === "document";
-  const isDocumentsHomeTab = activeTab?.kind === "documents-home";
   const isAiDiffTab = activeTab?.kind === "ai-diff";
   const isGitDiffTab =
     activeTab?.kind === "git-diff" || activeTab?.kind === "git-commit-file";
   const isGitHistoryTab = activeTab?.kind === "git-history";
-  const isMlLabTab = activeTab?.kind === "ml-lab";
   const isMlNetworkTab = activeTab?.kind === "ml-network";
-  const isSvgPlaygroundTab = activeTab?.kind === "svg-playground";
-  const isWebTab = activeTab?.kind === "web";
 
   // When an AI diff is approved (write_file applied to disk), reload any
   // open editor tabs for that path so the user sees the new content. We
@@ -1489,6 +1453,51 @@ function MainApp() {
     [openFileTab],
   );
 
+  // ── Tool windows ──
+  // SVG Studio, ML Lab, Web, Documents, Atlas and Benchmark each open in a
+  // window of their own. The workspace root rides along at launch and is
+  // kept current by the broadcast below.
+  const launchTool = useCallback(
+    (id: string, params: Record<string, string> = {}) => {
+      const tool = CAPABILITY_TOOL_WINDOWS.find((t) => t.id === id);
+      if (!tool) return;
+      void openToolWindow(tool, { ...(explorerRoot ? { root: explorerRoot } : {}), ...params }).catch((e: unknown) => {
+        toast.error(`Could not open ${tool.label}`, { description: e instanceof Error ? e.message : String(e) });
+      });
+    },
+    [explorerRoot],
+  );
+  useWorkspaceRootBroadcast(explorerRoot);
+
+  /** Open SVG Studio with a specific tool in front — the palette, backdrop,
+   *  icon set, favicon set and animator live inside it, not in the sidebar. */
+  const openSvgStudio = useCallback(
+    (tool: StudioTool) => launchTool("svg-studio", { studio: tool }),
+    [launchTool],
+  );
+
+  // The Web window is opened by `requestWebWorkbench` (palette commands,
+  // persistSidebarView), which can't reach the launcher — hence the event.
+  useEffect(() => {
+    const open = (e: Event) => launchTool("web", { web: (e as CustomEvent<WebTool>).detail });
+    window.addEventListener(OPEN_WEB_WORKBENCH_EVENT, open);
+    return () => window.removeEventListener(OPEN_WEB_WORKBENCH_EVENT, open);
+  }, [launchTool]);
+
+  // What the workbench windows cannot do themselves lands here, in the
+  // window that owns tabs, which is then raised so the result is visible.
+  useEffect(() => {
+    const unlistenP = onToolHostAction((action) => {
+      if (action.kind === "file") openFileTab(action.path, true);
+      else if (action.kind === "preview") openPreviewTab(action.url);
+      else handleOpenSshSession(action.command, action.label);
+      void desktopWindow().setFocus().catch(() => {});
+    });
+    return () => {
+      void unlistenP.then((fn) => fn());
+    };
+  }, [openFileTab, openPreviewTab, handleOpenSshSession]);
+
   const openImageViewer = useCallback(
     (path: string) => {
       newImageTab(path);
@@ -1548,20 +1557,20 @@ function MainApp() {
     { id: "ledger.history",      label: "Show command history",     category: "View",    action: () => persistSidebarView("command-history"), pack: "dev-tools", keywords: ["ledger", "recorded", "commands", "trends", "journal", "output", "build time"] },
     { id: "webdev.http",         label: "Show HTTP client",         category: "View",    action: () => persistSidebarView("http-client"), pack: "web-dev", keywords: ["rest", "request", "curl", "api"] },
     { id: "art.svgPlayground",   label: "Open SVG Studio",          category: "View",    action: () => openSvgStudio("draw"), pack: "art", keywords: ["svg", "icon", "vector", "art", "playground", "studio"] },
-    { id: "ml.open",             label: "Open ML Lab",              category: "View",    action: () => { openMlLabTab(); }, pack: "ml-lab", keywords: ["model", "training", "inference", "onnx", "benchmark"] },
+    { id: "ml.open",             label: "Open ML Lab",              category: "View",    action: () => launchTool("ml-lab"), pack: "ml-lab", keywords: ["model", "training", "inference", "onnx", "benchmark"] },
     { id: "art.palette",         label: "Open the palette",         category: "View",    action: () => openSvgStudio("palette"), pack: "art", keywords: ["colour", "color", "contrast", "wcag", "swatch", "theme"] },
     { id: "art.backdrop",        label: "Open the backdrop generator", category: "View",  action: () => openSvgStudio("backdrop"), pack: "art", keywords: ["wallpaper", "background", "gradient", "waves", "generative"] },
     { id: "art.iconSet",         label: "Open the icon set review", category: "View",    action: () => openSvgStudio("icon-set"), pack: "art", keywords: ["icons", "audit", "consistency", "stroke", "svg"] },
     { id: "art.favicon",         label: "Open the favicon exporter", category: "View",   action: () => openSvgStudio("favicon"), pack: "art", keywords: ["favicon", "app icon", "manifest", "apple touch", "pwa"] },
     { id: "art.animator",        label: "Open the SVG animator",    category: "View",    action: () => openSvgStudio("animator"), pack: "art", keywords: ["animate", "keyframe", "smil", "motion", "timeline"] },
-    { id: "documents.open",      label: "Open Documents",           category: "View",    action: () => { openDocumentsHomeTab(); }, pack: "documents", keywords: ["docx", "word", "markdown", "rich text", "document", "pdf"] },
+    { id: "documents.open",      label: "Open Documents",           category: "View",    action: () => launchTool("documents"), pack: "documents", keywords: ["docx", "word", "markdown", "rich text", "document", "pdf"] },
     { id: "help.gettingStarted", label: "Open Getting Started",       category: "General", action: () => openOnboarding(), keywords: ["onboarding", "tour", "help", "first run", "checklist"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },
     { id: "sidebar.sysmon",      label: "Show system monitor (CPU, memory, processes)", category: "View", action: () => persistSidebarView("system-monitor"), pack: "dev-tools" },
     // Every sidebar view off the rail is reached from here; see viewCatalog.ts.
     ...viewPaletteCommands(persistSidebarView),
-  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgStudio, openMlLabTab, openDocumentsHomeTab]);
+  ], [newTab, closeTab, activeId, setQuickFilePickerOpen, setWorkspaceSearchOpen, toggleSidebar, setShortcutsOpen, zoomIn, zoomOut, zoomReset, splitActivePaneInActiveTab, persistSidebarView, openSvgStudio, launchTool]);
 
   // Commands owned by a disabled expansion pack disappear from the palette,
   // mirroring how the rail hides their views (V2 gating; decision doc in
@@ -1570,7 +1579,7 @@ function MainApp() {
   // Promoted workbenches have one titlebar home, not a second sidebar surface.
   // Heal old persisted rail selections when Settings → Features promotes them.
   useEffect(() => {
-    if (isSidebarViewId(sidebarView) && isPermanentToolView(sidebarView, enabledPacks)) {
+    if (isSidebarViewId(sidebarView) && isPermanentToolView(sidebarView, enabledPacks, CAPABILITY_TOOL_WINDOWS)) {
       persistSidebarView("explorer");
     }
   }, [enabledPacks, persistSidebarView, sidebarView]);
@@ -1988,22 +1997,6 @@ function MainApp() {
     <div className="relative h-full min-h-0">
       <div
         className={cn(
-          "absolute inset-0",
-          !isMlLabTab && "invisible pointer-events-none",
-        )}
-        aria-hidden={!isMlLabTab}
-      >
-        <Suspense fallback={null}>
-          <MlLabStackLazy
-            tabs={tabs}
-            activeId={activeId}
-            workspaceRoot={explorerRoot}
-            onOpenNetworkTab={openMlNetworkTab}
-          />
-        </Suspense>
-      </div>
-      <div
-        className={cn(
           "absolute inset-0 px-3 pt-2 pb-2",
           !isTerminalTab && "invisible pointer-events-none",
         )}
@@ -2105,19 +2098,6 @@ function MainApp() {
         </Suspense>
       </div>
       <div
-        className={cn("absolute inset-0", !isDocumentsHomeTab && "invisible pointer-events-none")}
-        aria-hidden={!isDocumentsHomeTab}
-        inert={!isDocumentsHomeTab}
-      >
-        {tabs.some((t) => t.kind === "documents-home") ? (
-          <Suspense fallback={null}>
-            <div className="mx-auto h-full max-w-3xl">
-              <DocumentsPanelLazy workspaceRoot={explorerRoot} onOpenDocument={openDocument} />
-            </div>
-          </Suspense>
-        ) : null}
-      </div>
-      <div
         className={cn(
           "absolute inset-0 px-3 pt-2 pb-2",
           !isAiDiffTab && "invisible pointer-events-none",
@@ -2168,29 +2148,6 @@ function MainApp() {
             onCollapse={closeTab}
           />
         </Suspense>
-      </div>
-      <div
-        className={cn(
-          "absolute inset-0",
-          !isSvgPlaygroundTab && "invisible pointer-events-none",
-        )}
-        aria-hidden={!isSvgPlaygroundTab}
-      >
-        <Suspense fallback={null}>
-          <SvgPlaygroundStackLazy
-            tabs={tabs}
-            activeId={activeId}
-            onCollapse={closeTab}
-            workspaceRoot={explorerRoot}
-          />
-        </Suspense>
-      </div>
-      <div
-        className={cn("absolute inset-0", !isWebTab && "invisible pointer-events-none")}
-        aria-hidden={!isWebTab}
-        inert={!isWebTab}
-      >
-        <WebWorkbench tabs={tabs} activeId={activeId} onClose={closeTab} />
       </div>
     </div>
   );
@@ -2251,10 +2208,7 @@ function MainApp() {
             }
             onOpenShortcuts={() => setShortcutsOpen(true)}
             onOpenSettings={() => void openSettingsWindow()}
-            onOpenSvgStudio={openSvgPlaygroundTab}
-            onOpenMlLab={openMlLabTab}
-            onOpenWeb={openWebTab}
-            onOpenDocuments={openDocumentsHomeTab}
+            onOpenTool={(id) => launchTool(id)}
             searchTarget={searchTarget}
             searchRef={searchInlineRef}
             onOpenSpotlight={() => setQuickFilePickerOpen(true)}
@@ -2300,7 +2254,7 @@ function MainApp() {
                         onShowExplorer={() => persistSidebarView("explorer")}
                       />
                     ) : sidebarView === "svg-playground" ? (
-                      <SvgPlaygroundPanel onExpand={openSvgPlaygroundTab} workspaceRoot={explorerRoot} />
+                      <SvgPlaygroundPanel onExpand={() => openSvgStudio("draw")} workspaceRoot={explorerRoot} />
                     ) : sidebarView === "recent-files" ? (
                       <RecentFilesPanel onOpenFile={handleOpenFile} />
                     ) : sidebarView === "profiles" ? (

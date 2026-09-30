@@ -5,7 +5,7 @@ description: The Documents pack's rich-text editor for markdown and .docx, why s
 
 # Documents pack
 
-Added 2026-09-29. The `documents` pack puts a Tiptap editor behind a `document` tab kind (one tab per file) and a `documents-home` tab (the list, New, Open) opened from the title bar. Markdown and `.docx` are read and written in their own formats. The editor's JSON is also rendered to PDF. What shipped is in CHANGELOG `[Unreleased]`.
+Added 2026-09-29. The `documents` pack puts a Tiptap editor behind a `document` tab kind (one tab per file, for documents opened from the explorer) and a Documents window opened from the title bar (`DocumentsWorkbench.tsx`: the list, New and Open on the left, the editor with its own strip of open documents on the right; a `documents-home` tab until 2026-09-30). Markdown and `.docx` are read and written in their own formats. The editor's JSON is also rendered to PDF. What shipped is in CHANGELOG `[Unreleased]`.
 
 ## Key files
 

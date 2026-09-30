@@ -11,21 +11,46 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { IS_MAC, USE_CUSTOM_WINDOW_CONTROLS } from "@/lib/platform";
 import { ThemeProvider } from "@/modules/theme";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef } from "react";
+import { useToolWindowLaunch } from "./toolWindowHost";
 import type { ToolWindowContribution } from "@/workbench/capability";
+
+/** The entrance, replayed when a window that is already open is summoned
+ * again: the same motion as the first open, a touch shorter. */
+const RESUMMON: Keyframe[] = [
+  { opacity: 0.4, transform: "scale(0.985)", filter: "blur(3px)" },
+  { opacity: 1, transform: "scale(1)", filter: "blur(0)" },
+];
 
 /** A focused companion window for an app-level tool, without terminal chrome. */
 export function ToolWindowShell({ tool }: { tool: ToolWindowContribution }) {
   const featured = tool.header === "featured";
+  const shellRef = useRef<HTMLDivElement>(null);
+  const { opens } = useToolWindowLaunch(tool.id);
+  const mountedAt = useRef<number | null>(null);
+  useEffect(() => {
+    mountedAt.current = performance.now();
+  }, []);
+
+  // CSS plays the first entrance; later opens replay it through the Web
+  // Animations API, because restarting a CSS animation means remounting,
+  // which would throw away whatever the tool has open. The open that created
+  // this window also arrives as an event, moments after mount; replaying for
+  // that one would stutter the entrance still in flight.
+  useEffect(() => {
+    if (opens === 0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (mountedAt.current !== null && performance.now() - mountedAt.current < 900) return;
+    shellRef.current?.animate(RESUMMON, { duration: 320, easing: "cubic-bezier(0.2, 0, 0, 1)" });
+  }, [opens]);
 
   return (
     <ThemeProvider>
       <TooltipProvider>
-        <div className="relative flex h-dvh flex-col overflow-hidden bg-background text-foreground">
+        <div ref={shellRef} className="nexis-window-enter relative flex h-dvh flex-col overflow-hidden bg-background text-foreground">
           <WindowResizeEdges />
           <header
             data-tauri-drag-region
-            className={`flex ${featured ? "h-14" : "h-10"} shrink-0 items-center gap-2 border-b border-border/60 bg-card px-3 select-none ${
+            className={`nexis-window-header flex ${featured ? "h-14" : "h-10"} shrink-0 items-center gap-2 border-b border-border/60 bg-card px-3 select-none ${
               IS_MAC ? "pl-20" : ""
             }`}
           >
@@ -38,7 +63,7 @@ export function ToolWindowShell({ tool }: { tool: ToolWindowContribution }) {
             {tool.renderActions?.()}
             {USE_CUSTOM_WINDOW_CONTROLS && <WindowControls />}
           </header>
-          <main className="zoom-content nexis-scene-enter min-h-0 flex-1 overflow-hidden">
+          <main className="zoom-content nexis-window-body min-h-0 flex-1 overflow-hidden">
             <Suspense fallback={null}>
               {tool.render()}
             </Suspense>

@@ -189,42 +189,6 @@ export type MlNetworkTab = {
   projectDir: string;
 };
 
-/** The ML Lab workbench promoted from the sidebar by the AI / ML preset. */
-export type MlLabTab = {
-  id: number;
-  kind: "ml-lab";
-  title: string;
-};
-
-/**
- * The SVG playground detached from the sidebar.
- *
- * Carries no state at all: the source lives in the playground's own storage,
- * so the panel and the tab are two views of one document rather than two
- * documents. That is why there is only ever one of these.
- */
-export type SvgPlaygroundTab = {
-  id: number;
-  kind: "svg-playground";
-  title: string;
-};
-
-/** The Web workbench: Ports, HTTP Client and Web Tools. Stateless like SVG
- *  Studio (the tools keep their own state), so there is only ever one. */
-export type WebWorkbenchTab = {
-  id: number;
-  kind: "web";
-  title: string;
-};
-
-/** The Documents pack's home: the workspace's documents plus New and Open.
- *  Stateless, like the Web workbench, so there is only ever one. */
-export type DocumentsHomeTab = {
-  id: number;
-  kind: "documents-home";
-  title: string;
-};
-
 export type Tab =
   | TerminalTab
   | EditorTab
@@ -233,15 +197,11 @@ export type Tab =
   | NotebookTab
   | ImageTab
   | DocumentTab
-  | DocumentsHomeTab
   | AiDiffTab
   | GitDiffTab
   | GitHistoryTab
   | GitCommitFileDiffTab
-  | MlLabTab
-  | MlNetworkTab
-  | SvgPlaygroundTab
-  | WebWorkbenchTab;
+  | MlNetworkTab;
 
 /**
  * The first id no existing tab or pane node uses. Tabs and pane nodes share

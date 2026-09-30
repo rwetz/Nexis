@@ -6,3 +6,4 @@
 
 export { DocumentStack } from "./DocumentStack";
 export { DocumentsPanel } from "./DocumentsPanel";
+export { DocumentsWorkbench } from "./DocumentsWorkbench";

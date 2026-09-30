@@ -3,6 +3,7 @@ import type { PlatformIpc } from "@/platform/ipc";
 import type { CommandContribution, PanelContribution, PluginAPI } from "@/lib/plugins/types";
 import type { IconName } from "@/components/icon";
 import type { ReactNode } from "react";
+import type { PackId } from "@/lib/packs";
 
 /** Callbacks are supplied by the workbench composition root; capabilities do
  * not reach into App, tab stores or a second workspace implementation. */
@@ -32,7 +33,8 @@ export type CapabilityDefinition = {
 
 /** Focused companion surfaces are declared by their capability instead of
  * being hard-coded into the application shell. They intentionally receive no
- * workspace context: Atlas and Benchmark companion windows are host-scoped. */
+ * workspace context of their own: the ones that need a root read the main
+ * window's through `useToolWindowRoot` (modules/window/toolWindowHost.ts). */
 export type ToolWindowContribution = {
   id: string;
   label: string;
@@ -43,6 +45,9 @@ export type ToolWindowContribution = {
   minWidth?: number;
   minHeight?: number;
   header?: "compact" | "featured";
+  /** The expansion pack that owns this window. Without one its titlebar
+   * launcher always shows, as Atlas and Benchmark always have. */
+  pack?: PackId;
   render: () => ReactNode;
   renderActions?: () => ReactNode;
 };

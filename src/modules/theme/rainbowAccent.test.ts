@@ -67,6 +67,21 @@ describe("scope", () => {
     }
   });
 
+  it("leaves file-type icons their own colours", () => {
+    // Explorer rows are buttons with a neutral hover, so they qualified; the
+    // gradient then painted over the icon's file-type colour.
+    const root = mount(`
+      <div role="tree"><button id="a" class="hover:bg-accent/70"><svg></svg>main.rs</button></div>
+      <button id="b" role="tab" class="hover:bg-accent"><svg data-file-icon=""></svg>App.tsx</button>
+      <div data-no-rainbow><button id="c" class="hover:bg-accent"><svg></svg></button></div>
+      <button id="d" class="hover:bg-accent"><svg></svg></button>
+    `);
+    expect(isRainbowTarget(root.querySelector("#a")!)).toBe(false);
+    expect(isRainbowTarget(root.querySelector("#b")!)).toBe(false);
+    expect(isRainbowTarget(root.querySelector("#c")!)).toBe(false);
+    expect(isRainbowTarget(root.querySelector("#d")!)).toBe(true);
+  });
+
   it("does not match a bare colour name inside another utility", () => {
     const root = mount(
       `<button id="a" class="hover:bg-accented hover:bg-muted-foreground">x</button>`,

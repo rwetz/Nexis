@@ -386,10 +386,6 @@ const TAB_KIND_ICON: Partial<Record<Tab["kind"], IconName>> = {
   "git-commit-file": "git-compare",
   "git-history": "clock",
   "ml-network": "network",
-  "ml-lab": "brain",
-  web: "globe",
-  "documents-home": "document",
-  "svg-playground": "brush",
 };
 
 export function TabIcon({ tab }: { tab: Tab }) {
@@ -411,15 +407,11 @@ export function labelFor(t: Tab): string {
   if (t.kind === "notebook") return t.title;
   if (t.kind === "image") return t.title;
   if (t.kind === "document") return t.title;
-  if (t.kind === "documents-home") return t.title;
   if (t.kind === "ai-diff") return t.title;
   if (t.kind === "git-diff") return t.title;
   if (t.kind === "git-history") return t.title;
   if (t.kind === "git-commit-file") return t.title;
   if (t.kind === "ml-network") return t.title;
-  if (t.kind === "ml-lab") return t.title;
-  if (t.kind === "svg-playground") return t.title;
-  if (t.kind === "web") return t.title;
   // t is TerminalTab from here — prefer OSC 0/2 title when set by the shell.
   if (t.oscTitle) return t.oscTitle;
   if (!t.cwd) return t.title;
