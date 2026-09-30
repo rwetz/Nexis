@@ -195,6 +195,7 @@ import {
   WrenchIcon,
   XIcon,
   XLogoIcon,
+  MapTrifoldIcon,
 } from "@phosphor-icons/react";
 
 import type { ArtProps } from "@/components/icon-art";
@@ -345,6 +346,7 @@ const REGISTRY = {
   "list-numbered": ListNumbersIcon,
   "loading": CircleNotchIcon,
   "magic": MagicWandIcon,
+  "map": MapTrifoldIcon,
   "messages": ChatsCircleIcon,
   "minus": MinusIcon,
   "more": DotsThreeIcon,

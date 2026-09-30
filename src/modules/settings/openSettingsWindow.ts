@@ -14,6 +14,7 @@ export type SettingsTab =
   | "shortcuts"
   | "models"
   | "agents"
+  | "orb"
   | "environment"
   | "formatters"
   | "about";

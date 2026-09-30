@@ -70,8 +70,6 @@ Owner-requested work, ahead of everything below it. These are handed out **one a
 requests — each bullet is scoped to stand alone as a single task, so pick one, finish it, changelog it,
 and stop. Don't batch them.
 
-- [ ] **Shader orbs for the AI (idle / thinking / speaking)** — a user-selectable orb that the built-in AI shows at idle and while it thinks. Use shadercn's MIT renderer (`registry/components/orbs/renderer.ts`, TypeGPU + vgpu) with **Nexis's own shaders**: all 33 shadercn orb shaders are XorDev ports licensed "non-commercial use only", which Nexis's Apache-2.0 licence cannot carry (decided 2026-09-29). Needs a fallback that doesn't use WebGPU, because WebKitGTK (Linux) has no WebGPU and WKWebView only has it on recent macOS.
-
 - [ ] **Deep links (`nexis://`)** — open a file, folder, workspace or panel from a URL through `@tauri-apps/plugin-deep-link`. Any path from a link goes through `workspace_authorize` before `pty_open` (AGENTS.md pitfall #1C) and is judged like any other untrusted input; a link must never run a command.
 
 - [ ] **Agent recipes from agentcn** — port the useful agentcn recipes (github-review, deep-search, docs-expert, ...) into Nexis agent profiles under `src/modules/ai/agents`. agentcn targets server frameworks (Eve, Flue, Mastra, LangGraph), so this is a port of prompts and tool design, not a dependency. Any new runner must prune reasoning blocks (pitfall #3).

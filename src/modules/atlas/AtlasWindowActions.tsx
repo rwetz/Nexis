@@ -48,7 +48,7 @@ export function AtlasModeSwitch() {
   const setMode = useAtlasStore((s) => s.setMode);
   const options = [
     { id: "list" as Mode, label: "List", icon: "layout-left" as const },
-    { id: "map" as Mode, label: "Map", icon: "globe" as const },
+    { id: "map" as Mode, label: "Map", icon: "map" as const },
   ];
 
   // The selected pill travels between the two rather than the card
