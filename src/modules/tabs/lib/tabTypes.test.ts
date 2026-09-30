@@ -123,7 +123,7 @@ describe("nextIdAfter", () => {
           ],
         },
       },
-      { id: 5, kind: "web", title: "Web" },
+      { id: 5, kind: "preview", title: "Preview", url: "http://localhost:1" },
     ];
     expect(nextIdAfter(tabs)).toBe(13);
   });

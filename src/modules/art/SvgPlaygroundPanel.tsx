@@ -34,8 +34,8 @@ export function SvgPlaygroundPanel({ onExpand, workspaceRoot }: Props) {
         <button
           type="button"
           onClick={onExpand}
-          title="Open in a tab"
-          aria-label="Open the SVG playground in a tab"
+          title="Open in SVG Studio"
+          aria-label="Open the SVG playground in SVG Studio"
           className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <Icon name="expand" size="sm" />

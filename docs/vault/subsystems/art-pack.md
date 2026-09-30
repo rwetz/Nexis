@@ -9,7 +9,7 @@ One surface, six tools. The SVG playground, added 2026-09-03, under the `art` pa
 
 ## The Studio's tool strip
 
-Palette, Backdrop, Icon Set, Favicon Set and Animator are **not sidebar views** (since 2026-09-20). They are tools in the SVG Studio tab's header strip — `Draw | Palette | Backdrop | Icon Set | Favicon | Animate` — hosted by `SvgPlaygroundStack.tsx`. Which one is in front lives in `studioStore.ts` (`useSvgStudioStore`), so any caller can open the Studio at a tool: App's `openSvgStudio(tool)` sets it, then opens the tab. The pack's `views` is just `["svg-playground"]`, and the five old ids sit in `SidebarRail`'s `RETIRED_VIEWS` so old saved pins are stripped.
+Palette, Backdrop, Icon Set, Favicon Set and Animator are **not sidebar views** (since 2026-09-20). They are tools in SVG Studio's header strip — `Draw | Palette | Backdrop | Icon Set | Favicon | Animate` — hosted by `SvgStudio.tsx`. The Studio has its own window (since 2026-09-30, `capabilities/workbenches/`). Which tool is in front lives in `studioStore.ts` (`useSvgStudioStore`); the window has its own copy of that store, so App's `openSvgStudio(tool)` passes the tool as a launch parameter (`studio=`) and the window applies it on every open. The pack's `views` is just `["svg-playground"]`, and the five old ids sit in `SidebarRail`'s `RETIRED_VIEWS` so old saved pins are stripped.
 
 The rule behind the move: the sidebar is for panels you glance at while working, and these are somewhere you go and stay. Two decisions not to undo:
 

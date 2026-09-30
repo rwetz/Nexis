@@ -1,4 +1,5 @@
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { currentMonitor } from "@tauri-apps/api/window";
 import { Lifetime } from "./lifetime";
 
 type WindowOptions = NonNullable<
@@ -53,4 +54,17 @@ export async function openOrFocusWindow(
   const window = await ensureWindow(label, options);
   await window.show();
   await window.setFocus();
+}
+
+/** The usable size, in logical pixels, of the monitor this window is on
+ * (the screen minus the taskbar or dock), or null if it cannot be read. */
+export async function currentWorkArea(): Promise<{ width: number; height: number } | null> {
+  try {
+    const monitor = await currentMonitor();
+    if (!monitor) return null;
+    const { width, height } = monitor.workArea.size.toLogical(monitor.scaleFactor);
+    return { width, height };
+  } catch {
+    return null;
+  }
 }

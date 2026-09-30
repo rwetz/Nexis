@@ -5,14 +5,13 @@
 // ╚══════════════════════════════════════╝
 
 /**
- * Host for the `svg-playground` tab — SVG Studio.
+ * SVG Studio, the body of its own window (capabilities/workbenches).
  *
  * The Studio is the whole Art pack in one place: the playground ("Draw") plus
  * the five tools that used to be separate sidebar panels. They are one suite —
  * Favicon and Animate read the playground's document, Backdrop reads the
  * Palette's colours — so they belong behind one door rather than scattered
- * across a rail next to Source Control. The sidebar keeps only panels you
- * glance at while working; this is a place you go to and stay.
+ * across a rail next to Source Control.
  *
  * The strip lives in the Studio header, not in the playground's left-pane
  * strip (Source / Canvas / Shapes / Presets), because every tool here carries
@@ -26,17 +25,12 @@
  * box with no layout answers with zeros. The other tools mount on demand —
  * Favicon and Animate read the document at mount, so a fresh mount is what
  * picks up the latest drawing.
- *
- * The tab carries no document of its own: the source lives in the
- * playground's storage, so closing the tab loses nothing, which is why
- * collapsing is just a close.
  */
 
 import { RailIndicator } from "@/components/ui/rail-indicator";
 import { Icon } from "@/components/icon";
 import { useGlidingRail } from "@/components/ui/use-gliding-rail";
 import { cn } from "@/lib/utils";
-import type { Tab } from "@/modules/tabs/lib/tabTypes";
 import { AnimatorPanel } from "./AnimatorPanel";
 import { BackdropPanel } from "./BackdropPanel";
 import { FaviconPanel } from "./FaviconPanel";
@@ -45,16 +39,9 @@ import { PalettePanel } from "./PalettePanel";
 import { STUDIO_TOOLS, useSvgStudioStore, type StudioTool } from "./studioStore";
 import { SvgPlayground } from "./SvgPlayground";
 
-export function SvgPlaygroundStack({
-  tabs,
-  activeId,
-  onCollapse,
+export function SvgStudio({
   workspaceRoot,
 }: {
-  tabs: Tab[];
-  activeId: number | null;
-  /** Close this tab. The document is in storage, so nothing is lost. */
-  onCollapse?: (tabId: number) => void;
   /** Where "Save to workspace" writes. Null disables it. */
   workspaceRoot: string | null;
 }) {
@@ -62,19 +49,9 @@ export function SvgPlaygroundStack({
   const setTool = useSvgStudioStore((s) => s.setTool);
   const rail = useGlidingRail<StudioTool>(tool, "horizontal", STUDIO_TOOLS.length);
 
-  const tab = tabs.find(
-    (t): t is Extract<Tab, { kind: "svg-playground" }> =>
-      t.kind === "svg-playground" && t.id === activeId,
-  );
-  if (!tab) return null;
-
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center gap-3 border-b border-border/50 px-3 py-1.5">
-        <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          <Icon name="brush" className="text-muted-foreground" />
-          SVG Studio
-        </span>
         <div
           ref={rail.containerRef}
           role="tablist"
@@ -110,17 +87,6 @@ export function SvgPlaygroundStack({
             </button>
           ))}
         </div>
-        {onCollapse && (
-          <button
-            type="button"
-            onClick={() => onCollapse(tab.id)}
-            title="Close SVG Studio"
-            aria-label="Close SVG Studio"
-            className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            <Icon name="collapse" size="sm" />
-          </button>
-        )}
       </div>
       <div className="relative min-h-0 flex-1">
         <div

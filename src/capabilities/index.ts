@@ -13,9 +13,11 @@ import { webToolsCapability } from "./web-tools";
 import { databaseCapability } from "./database";
 import { portsCapability } from "./ports";
 import { sshCapability } from "./ssh";
+import { workbenchesCapability } from "./workbenches";
 import type { CapabilityDefinition } from "@/workbench/capability";
 
 /** Composition only. Each capability owns its panel and command declarations. */
-export const CAPABILITIES: readonly CapabilityDefinition[] = [webToolsCapability, atlasCapability, benchmarkCapability, gitCapability, editorCapability, aiCapability, terminalCapability, lspCapability, debuggerCapability, databaseCapability, portsCapability, sshCapability, pythonCapability, mlCapability, shareCapability];
+// Workbenches first: their windows lead the titlebar's default launcher order.
+export const CAPABILITIES: readonly CapabilityDefinition[] = [workbenchesCapability, webToolsCapability, atlasCapability, benchmarkCapability, gitCapability, editorCapability, aiCapability, terminalCapability, lspCapability, debuggerCapability, databaseCapability, portsCapability, sshCapability, pythonCapability, mlCapability, shareCapability];
 export const CAPABILITY_VIEWS = CAPABILITIES.flatMap((capability) => capability.panels.flatMap((panel) => panel.legacyView ? [panel.legacyView] : []));
 export const CAPABILITY_TOOL_WINDOWS = CAPABILITIES.flatMap((capability) => capability.toolWindows ?? []);

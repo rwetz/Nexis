@@ -259,6 +259,10 @@ export type Preferences = {
   enabledPacks: PackId[];
   /** The AI's shader orb (idle and while working), or "off" for the plain logo. */
   aiOrbId: AiOrbPref;
+  /** The titlebar's tool launchers, in the order the user dragged them into.
+   * Ids of tools that are not installed are ignored, and new tools are
+   * appended, so the list never has to be migrated. */
+  titlebarToolOrder: string[];
   /** Set once the first-run pack preset picker has been answered. */
   packsOnboarded: boolean;
   /** Completed Getting Started step ids (src/lib/onboarding.ts). Unknown ids
@@ -358,6 +362,7 @@ const KEY_ML_AUTO_OPEN = "mlAutoOpenOnTrain";
 const KEY_SYSMON_INTERVAL = "sysmonIntervalMs";
 const KEY_ENABLED_PACKS = "enabledPacks";
 const KEY_AI_ORB = "aiOrbId";
+const KEY_TITLEBAR_TOOL_ORDER = "titlebarToolOrder";
 const KEY_PACKS_ONBOARDED = "packsOnboarded";
 const KEY_ONBOARDING_COMPLETED = "onboardingCompleted";
 const KEY_ONBOARDING_TOUR_DONE = "onboardingTourDone";
@@ -464,6 +469,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   sysmonIntervalMs: SYSMON_DEFAULT_INTERVAL_MS,
   enabledPacks: [...PACK_IDS],
   aiOrbId: DEFAULT_AI_ORB,
+  titlebarToolOrder: [],
   packsOnboarded: false,
   onboardingCompleted: [],
   onboardingTourDone: false,
@@ -696,6 +702,9 @@ export async function loadPreferences(): Promise<Preferences> {
     aiOrbId: isAiOrbPref(get<unknown>(KEY_AI_ORB))
       ? (get<AiOrbPref>(KEY_AI_ORB) as AiOrbPref)
       : DEFAULT_PREFERENCES.aiOrbId,
+    titlebarToolOrder: ((v) => (Array.isArray(v) ? v : []))(get<unknown>(KEY_TITLEBAR_TOOL_ORDER)).filter(
+      (id): id is string => typeof id === "string",
+    ),
     // Filtered to strings only: the ids are matched against the step table at
     // render time, so a hand-edited config cannot inject a non-string here.
     onboardingCompleted: (
@@ -1073,6 +1082,10 @@ export async function setAiOrbId(value: AiOrbPref): Promise<void> {
   await writePref(KEY_AI_ORB, value);
 }
 
+export async function setTitlebarToolOrder(ids: string[]): Promise<void> {
+  await writePref(KEY_TITLEBAR_TOOL_ORDER, ids);
+}
+
 export async function setPacksOnboarded(value: boolean): Promise<void> {
   await writePref(KEY_PACKS_ONBOARDED, value);
 }
@@ -1174,6 +1187,7 @@ export async function onPreferencesChange(
     [KEY_SYSMON_INTERVAL]: "sysmonIntervalMs",
     [KEY_ENABLED_PACKS]: "enabledPacks",
     [KEY_AI_ORB]: "aiOrbId",
+    [KEY_TITLEBAR_TOOL_ORDER]: "titlebarToolOrder",
     [KEY_PACKS_ONBOARDED]: "packsOnboarded",
     [KEY_ONBOARDING_COMPLETED]: "onboardingCompleted",
     [KEY_ONBOARDING_TOUR_DONE]: "onboardingTourDone",

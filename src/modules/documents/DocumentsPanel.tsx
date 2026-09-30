@@ -16,6 +16,7 @@ import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { PanelEmptyGlyph, PanelEmptyState } from "@/components/ui/PanelEmptyState";
 import { basename, displayDirname } from "@/lib/path";
+import { cn } from "@/lib/utils";
 import { filesystem } from "@/platform/filesystem";
 import { openFiles } from "@/platform/dialogs";
 import type { DocumentFormat } from "@/modules/tabs";
@@ -25,6 +26,8 @@ import { documentFormatFor, newDocumentPath } from "./lib/paths";
 type Props = {
   workspaceRoot: string | null;
   onOpenDocument: (path: string, format: DocumentFormat) => void;
+  /** The document in front, marked in the list. */
+  activePath?: string | null;
 };
 
 type Row = { path: string; rel: string; format: DocumentFormat };
@@ -65,15 +68,30 @@ function useWorkspaceDocuments(workspaceRoot: string | null, reloadKey: number) 
   return { rows, truncated, error };
 }
 
-function DocumentRow({ row, onOpen }: { row: Row; onOpen: (path: string, format: DocumentFormat) => void }) {
+function DocumentRow({
+  row,
+  active,
+  onOpen,
+}: {
+  row: Row;
+  active: boolean;
+  onOpen: (path: string, format: DocumentFormat) => void;
+}) {
   const dir = displayDirname(row.rel);
   return (
     <button
       type="button"
+      aria-current={active ? "true" : undefined}
       onClick={() => onOpen(row.path, row.format)}
-      className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-muted/50"
+      className={cn(
+        "flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors",
+        active ? "bg-primary/10" : "hover:bg-muted/50",
+      )}
     >
-      <Icon name={row.format === "docx" ? "document" : "file-edit"} className="shrink-0 text-muted-foreground/60" />
+      <Icon
+        name={row.format === "docx" ? "document" : "file-edit"}
+        className={cn("shrink-0", active ? "text-primary" : "text-muted-foreground/60")}
+      />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium text-foreground">{basename(row.path)}</span>
         {dir ? <span className="block truncate text-[10.5px] text-muted-foreground/60">{dir}</span> : null}
@@ -90,6 +108,7 @@ function DocumentList({
   truncated,
   error,
   filtered,
+  activePath,
   onOpen,
 }: {
   hasWorkspace: boolean;
@@ -98,6 +117,7 @@ function DocumentList({
   truncated: boolean;
   error: string | null;
   filtered: boolean;
+  activePath: string | null;
   onOpen: (path: string, format: DocumentFormat) => void;
 }) {
   if (!hasWorkspace) {
@@ -125,7 +145,7 @@ function DocumentList({
   return (
     <div className="nexis-scrollbar flex-1 overflow-y-auto py-1">
       {visible.map((row) => (
-        <DocumentRow key={row.path} row={row} onOpen={onOpen} />
+        <DocumentRow key={row.path} row={row} active={row.path === activePath} onOpen={onOpen} />
       ))}
       {truncated ? (
         <p className="px-3 py-2 text-[10.5px] text-muted-foreground">
@@ -136,7 +156,7 @@ function DocumentList({
   );
 }
 
-export function DocumentsPanel({ workspaceRoot, onOpenDocument }: Props) {
+export function DocumentsPanel({ workspaceRoot, onOpenDocument, activePath = null }: Props) {
   const [query, setQuery] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const { rows, truncated, error } = useWorkspaceDocuments(workspaceRoot, reloadKey);
@@ -181,7 +201,7 @@ export function DocumentsPanel({ workspaceRoot, onOpenDocument }: Props) {
     <div className="flex h-full flex-col overflow-hidden text-[12px]">
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-3 py-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-          Documents
+          In this workspace
         </span>
         <Button
           variant="ghost"
@@ -230,6 +250,7 @@ export function DocumentsPanel({ workspaceRoot, onOpenDocument }: Props) {
         truncated={truncated}
         error={error}
         filtered={!!query}
+        activePath={activePath}
         onOpen={onOpenDocument}
       />
     </div>

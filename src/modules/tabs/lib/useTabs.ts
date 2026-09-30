@@ -37,15 +37,11 @@ import {
   titleFromUrl,
   type AiDiffStatus,
   type DocumentFormat,
-  type DocumentsHomeTab,
   type EditorTab,
   type GitCommitFileDiffTab,
   type GitDiffTab,
   type GitHistoryTab,
-  type MlLabTab,
   type MlNetworkTab,
-  type SvgPlaygroundTab,
-  type WebWorkbenchTab,
   nextIdAfter,
   type Tab,
   type TabPatch,
@@ -675,89 +671,6 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     [],
   );
 
-  /**
-   * The top-margin ML Lab launcher has one reusable workbench tab. The ML
-   * store owns the live engine, project, and run state, so another tab would
-   * only create a competing view over the same work.
-   */
-  const openMlLabTab = useCallback(() => {
-    const curr = tabsRef.current;
-    const existing = curr.find((t) => t.kind === "ml-lab");
-    if (existing) {
-      setActiveId(existing.id);
-      return existing.id;
-    }
-    const id = nextIdRef.current++;
-    const nextTabs = [
-      ...curr,
-      { id, kind: "ml-lab", title: "ML Lab" } satisfies MlLabTab,
-    ];
-    tabsRef.current = nextTabs;
-    setTabs(nextTabs);
-    setActiveId(id);
-    return id;
-  }, []);
-
-  /**
-   * Detach the SVG playground into a tab, where the preview can sit beside
-   * the code instead of under it. Deduped outright: the playground has one
-   * document, so a second request is "show me the one I have".
-   */
-  const openSvgPlaygroundTab = useCallback(() => {
-    const curr = tabsRef.current;
-    const existing = curr.find((t) => t.kind === "svg-playground");
-    if (existing) {
-      setActiveId(existing.id);
-      return existing.id;
-    }
-    const id = nextIdRef.current++;
-    const nextTabs = [
-      ...curr,
-      { id, kind: "svg-playground", title: "SVG Studio" } satisfies SvgPlaygroundTab,
-    ];
-    tabsRef.current = nextTabs;
-    setTabs(nextTabs);
-    setActiveId(id);
-    return id;
-  }, []);
-
-  /** Open (or focus) the Web workbench tab. Deduped: one workbench. */
-  const openDocumentsHomeTab = useCallback(() => {
-    const curr = tabsRef.current;
-    const existing = curr.find((t) => t.kind === "documents-home");
-    if (existing) {
-      setActiveId(existing.id);
-      return existing.id;
-    }
-    const id = nextIdRef.current++;
-    const nextTabs = [
-      ...curr,
-      { id, kind: "documents-home", title: "Documents" } satisfies DocumentsHomeTab,
-    ];
-    tabsRef.current = nextTabs;
-    setTabs(nextTabs);
-    setActiveId(id);
-    return id;
-  }, []);
-
-  const openWebTab = useCallback(() => {
-    const curr = tabsRef.current;
-    const existing = curr.find((t) => t.kind === "web");
-    if (existing) {
-      setActiveId(existing.id);
-      return existing.id;
-    }
-    const id = nextIdRef.current++;
-    const nextTabs = [
-      ...curr,
-      { id, kind: "web", title: "Web" } satisfies WebWorkbenchTab,
-    ];
-    tabsRef.current = nextTabs;
-    setTabs(nextTabs);
-    setActiveId(id);
-    return id;
-  }, []);
-
   const openCommitFileDiffTab = useCallback(
     (input: {
       repoRoot: string;
@@ -1312,11 +1225,7 @@ export function useTabs(initial?: Partial<TerminalTab>) {
     openGitDiffTab,
     openCommitHistoryTab,
     openCommitFileDiffTab,
-    openMlLabTab,
     openMlNetworkTab,
-    openSvgPlaygroundTab,
-    openWebTab,
-    openDocumentsHomeTab,
     setAiDiffStatus,
     closeAiDiffTab,
     closeTab,

@@ -7,6 +7,22 @@ async function palette(query: string) {
   await input.setValue(query);
 }
 
+/**
+ * Load a tool window's route in this webview. The Web window is a separate
+ * native window, which WebDriver's session does not follow, so its body is
+ * checked at its own route; `leaveToolWindow` comes back to the main window.
+ */
+async function openToolRoute(query: string) {
+  await browser.execute((q) => window.location.assign(`/?${q}`), query);
+  await $("main.nexis-window-body").waitForExist({ timeout: 30_000 });
+}
+
+async function leaveToolWindow() {
+  await browser.execute(() => window.location.assign("/"));
+  await $("[data-tauri-drag-region]").waitForExist({ timeout: 60_000 });
+  await dismissStartupDialogs();
+}
+
 async function runCommand(query: string) {
   await palette(query);
   const command = $('[cmdk-item]');
@@ -20,19 +36,20 @@ describe("Contributed workbench panels", () => {
     await dismissStartupDialogs();
   });
 
-  it("opens lazy Web Tools through its registered command", async () => {
-    // Web Tools lives in the Web workbench tab now; its command still
-    // activates the contribution, which renders the lazy body there.
-    await runCommand("Show web tools");
+  it("renders lazy Web Tools in the Web window", async () => {
+    // Web Tools lives in the Web window; `web=` is how "Show web tools"
+    // asks for it, and the contribution renders its lazy body there.
+    await openToolRoute("tool=web&web=web-tools");
     const panel = $('[data-panel-id="webdev:tools"]');
     await panel.waitForDisplayed();
     await panel.$("textarea").waitForExist();
+    await leaveToolWindow();
   });
 
   it("restores a lazy sidebar panel's saved view across a reload", async () => {
     // Share is a contributed, lazily loaded panel that still lives in the
     // sidebar; its selection is persisted, so a reload must bring it back.
-    // (Workbench tabs such as Web, SVG Studio and ML Lab are not restored.)
+    // (Web, SVG Studio, ML Lab and Documents are windows, not sidebar views.)
     await runCommand("Show Share");
     const panel = $('[data-panel-id="share:terminal"]');
     await panel.waitForDisplayed();
@@ -60,13 +77,14 @@ describe("Contributed workbench panels", () => {
     await panel.waitForDisplayed({ reverse: true });
   });
 
-  it("mounts a migrated integration panel through its capability host", async () => {
-    // HTTP Client lives in the Web workbench: the palette opens that tab on
-    // it, and the tool body carries the contribution's data-panel-id.
-    await runCommand("Show HTTP client");
+  it("mounts a migrated integration panel through the Web window's host", async () => {
+    // HTTP Client needs the integration host (workspace key, preview
+    // opener), which the Web window supplies in place of the main window's.
+    await openToolRoute("tool=web&web=http-client");
     const panel = $('[data-panel-id="webdev:http-client"]');
     await panel.waitForDisplayed();
     await panel.$("span*=HTTP Client").waitForDisplayed();
+    await leaveToolWindow();
   });
 
   it("admits the Atlas refresh command only while Atlas is selected", async () => {

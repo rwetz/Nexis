@@ -11,12 +11,13 @@
  * running (Ports), requests against them (HTTP Client), and the codecs you
  * reach for while doing it (Web Tools). It is a title-bar destination like
  * SVG Studio, somewhere you go and work for a while rather than a panel you
- * glance at, so these views left the sidebar and the bottom panel for one tab.
+ * glance at, so these views left the sidebar and the bottom panel for their
+ * own window.
  *
- * Opening a tool is `requestWebWorkbench(tool)`: it sets the tool and asks
- * App (which owns tabs) to open the tab through a window event, because
- * `persistSidebarView`, the funnel every "open this view" goes through,
- * cannot reach tab state.
+ * Opening a tool is `requestWebWorkbench(tool)`. The window is a separate
+ * webview with its own copy of this store, so the tool rides along as a launch
+ * parameter (`?web=<tool>`) and the window applies it; the local `setTool`
+ * only matters inside that window.
  */
 
 import type { IconName } from "@/components/icon";
@@ -34,8 +35,6 @@ export function isWebTool(view: unknown): view is WebTool {
   return WEB_TOOLS.some((t) => t.id === view);
 }
 
-export const OPEN_WEB_WORKBENCH_EVENT = "nexis:open-web-workbench";
-
 type State = { tool: WebTool; setTool: (tool: WebTool) => void };
 
 export const useWebWorkbenchStore = create<State>((set) => ({
@@ -43,8 +42,12 @@ export const useWebWorkbenchStore = create<State>((set) => ({
   setTool: (tool) => set({ tool }),
 }));
 
-/** Open the Web workbench tab with `tool` in front. */
+/**
+ * Open the Web window with `tool` in front. Handled by App, which knows the
+ * workspace root the window should start with.
+ */
+export const OPEN_WEB_WORKBENCH_EVENT = "nexis:open-web-workbench";
+
 export function requestWebWorkbench(tool: WebTool) {
-  useWebWorkbenchStore.getState().setTool(tool);
-  window.dispatchEvent(new CustomEvent(OPEN_WEB_WORKBENCH_EVENT));
+  window.dispatchEvent(new CustomEvent<WebTool>(OPEN_WEB_WORKBENCH_EVENT, { detail: tool }));
 }

@@ -28,8 +28,7 @@ import {
   type SearchInlineHandle,
   type SearchTarget,
 } from "./SearchInline";
-import { PermanentToolShelf } from "./PermanentToolShelf";
-import { ToolLaunchers } from "./ToolLaunchers";
+import { TitlebarTools } from "./TitlebarTools";
 
 type Props = {
   tabs: Tab[];
@@ -52,11 +51,8 @@ type Props = {
   onNewWindow: () => void;
   onOpenShortcuts: () => void;
   onOpenSettings: () => void;
-  onOpenSvgStudio: () => void;
-  onOpenMlLab: () => void;
-  /** Opens the Web workbench tab (Ports, HTTP Client, Web Tools). */
-  onOpenWeb: () => void;
-  onOpenDocuments: () => void;
+  /** Open a tool window by id (capabilities: toolWindows). */
+  onOpenTool: (id: string) => void;
   searchTarget: SearchTarget;
   searchRef: RefObject<SearchInlineHandle | null>;
   /** Opens the Spotlight finder (files + commands). */
@@ -83,10 +79,7 @@ export function Header({
   canSplit,
   onOpenShortcuts,
   onOpenSettings,
-  onOpenSvgStudio,
-  onOpenMlLab,
-  onOpenWeb,
-  onOpenDocuments,
+  onOpenTool,
   searchTarget,
   searchRef,
   onOpenSpotlight,
@@ -247,17 +240,7 @@ export function Header({
 
       <SearchInline ref={searchRef} target={searchTarget} onDemand />
 
-      <PermanentToolShelf
-        compact={compact}
-        onOpenTool={(tool) => {
-          if (tool === "svg-playground") onOpenSvgStudio();
-          if (tool === "ml-lab") onOpenMlLab();
-          if (tool === "web") onOpenWeb();
-          if (tool === "documents") onOpenDocuments();
-        }}
-      />
-
-      <ToolLaunchers compact={compact} />
+      <TitlebarTools compact={compact} onOpenTool={onOpenTool} />
 
       {IS_MAC && (
         <>
