@@ -307,12 +307,11 @@ export const SourceControlPanel = memo(function SourceControlPanel({
     return map;
   }, [rows]);
 
-  useEffect(() => {
-    if (!focusedRowKey) return;
-    if (!rowKeyToIndex.has(focusedRowKey)) {
-      setFocusedRowKey(null);
-    }
-  }, [focusedRowKey, rowKeyToIndex]);
+  // A focused row that disappeared is dropped during render, so the next
+  // paint never points the keyboard focus at a row that is gone.
+  if (focusedRowKey && !rowKeyToIndex.has(focusedRowKey)) {
+    setFocusedRowKey(null);
+  }
 
   const focusableIndices = useMemo(() => {
     const out: number[] = [];

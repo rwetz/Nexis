@@ -234,6 +234,7 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
               <span className="flex items-center gap-0.5">
                 {keys.map((k, i) => (
                   <kbd
+                    // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
                     key={i}
                     className="rounded px-1 py-0.5 text-[11px] font-medium leading-none
                                bg-white/5 text-muted-foreground/60 border border-white/10

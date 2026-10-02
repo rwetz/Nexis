@@ -148,6 +148,7 @@ export async function svgToPngBlob(
 
   // A Blob URL rather than a `data:` URL: no percent-encoding to get wrong,
   // and no length ceiling to run into on a large document.
+  // react-doctor-disable-next-line react-doctor/no-create-object-url-without-revoke -- revoked in the finally block below
   const url = URL.createObjectURL(
     new Blob([source], { type: "image/svg+xml;charset=utf-8" }),
   );

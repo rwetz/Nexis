@@ -2166,7 +2166,7 @@ function LogView({ logs }: { logs: string[] }) {
       className="mt-1 max-h-32 overflow-y-auto rounded bg-muted/30 px-1.5 py-1 font-mono text-[10px] leading-4 text-muted-foreground"
     >
       {logs.map((line, i) => (
-        // eslint-disable-next-line react/no-array-index-key
+        // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
         <div key={i} className="whitespace-pre-wrap break-all">
           {line}
         </div>

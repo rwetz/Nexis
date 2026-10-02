@@ -162,17 +162,21 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
 
         set({ unlisteners });
 
-        // Set breakpoints for each file
-        for (const [path, lines] of breakpoints) {
-          await invokeDap("dap_request", {
-            sessionId,
-            command: "setBreakpoints",
-            arguments: {
-              source: { path },
-              breakpoints: lines.map((l) => ({ line: l })),
-            },
-          });
-        }
+        // Set breakpoints for each file. Requests for different sources are
+        // independent in DAP, so they go out together; all must land before
+        // launch.
+        await Promise.all(
+          [...breakpoints].map(([path, lines]) =>
+            invokeDap("dap_request", {
+              sessionId,
+              command: "setBreakpoints",
+              arguments: {
+                source: { path },
+                breakpoints: lines.map((l) => ({ line: l })),
+              },
+            }),
+          ),
+        );
 
         // Launch
         await invokeDap("dap_request", {
@@ -305,6 +309,7 @@ export const useDebugStore = create<DebugSessionState & DebugSessionActions>(
       // Eagerly expand non-expensive scopes
       for (const scope of scopes) {
         if (!scope.expensive) {
+          // react-doctor-disable-next-line react-doctor/async-await-in-loop -- each expansion read-modify-writes the same store Map; must be sequential
           await get().expandVariables(scope.variablesReference);
         }
       }

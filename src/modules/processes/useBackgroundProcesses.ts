@@ -33,10 +33,14 @@ export function useBackgroundProcesses(pollMs = 2000) {
     };
   }, []);
 
+  // The poll and manual refreshes overlap; only the newest request may
+  // write, or a slow older response would overwrite a fresher list.
+  const requestRef = useRef(0);
   const refresh = async () => {
+    const request = ++requestRef.current;
     try {
       const list = await processNative.shellBgList();
-      if (aliveRef.current) setProcesses(list);
+      if (aliveRef.current && request === requestRef.current) setProcesses(list);
     } catch {
       // backend not ready or no processes yet
     }

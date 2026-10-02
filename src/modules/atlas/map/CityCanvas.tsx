@@ -9,7 +9,7 @@
 // useTheme through it makes Rollup emit a circular chunk dependency and warn
 // about broken execution order. Same reason the ML plugin avoids its barrel.
 import { useTheme } from "@/modules/theme/ThemeProvider";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef } from "react";
 import {
   fitCamera,
   hitTest,
@@ -311,6 +311,7 @@ export function CityCanvas() {
 
   // ── keyboard: rotate / fit ───────────────────────────────────────────────
 
+  const flyToFit = useEffectEvent((target: Camera) => flyTo(target));
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -350,7 +351,7 @@ export function CityCanvas() {
           break;
         case "f":
           e.preventDefault();
-          flyTo(fitCamera(scene, vp.current, cam.current.rot));
+          flyToFit(fitCamera(scene, vp.current, cam.current.rot));
           break;
         case "l":
           e.preventDefault();
@@ -360,7 +361,7 @@ export function CityCanvas() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [scene, schedule, stopFly, flyTo]);
+  }, [scene, schedule, stopFly]);
 
   // Hover/selection are drawn, not React state, so repaint when they move.
   useEffect(() => useAtlasStore.subscribe(schedule), [schedule]);

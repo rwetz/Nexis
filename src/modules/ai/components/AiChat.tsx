@@ -40,7 +40,7 @@ import type {
   UIMessage,
   UIMessagePart,
 } from "ai";
-import { memo, useCallback, useEffect, useMemo } from "react";
+import { memo, useCallback, useEffect, useEffectEvent, useMemo } from "react";
 import { AiToolApproval } from "./AiToolApproval";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { resolveApprovalPolicy } from "../lib/security";
@@ -62,10 +62,13 @@ function AutoApprovalEffect({
   /** Extra context shown after the tool name (e.g. the shell command). */
   detail?: string | null;
 }) {
+  // An effect event, not a dependency: a parent re-render that hands over a
+  // new `onApproval` must not re-run the effect, or the decision is sent twice.
+  const sendApproval = useEffectEvent(() => onApproval(approvalId, approved));
   useEffect(() => {
-    const t = setTimeout(() => onApproval(approvalId, approved), 0);
+    const t = setTimeout(sendApproval, 0);
     return () => clearTimeout(t);
-  }, [approvalId, approved, onApproval]);
+  }, [approvalId, approved]);
   return (
     <div className="flex min-w-0 items-center gap-1.5 py-0.5 text-[11px] text-muted-foreground">
       <span

@@ -95,6 +95,7 @@ function CodeCell({
       {outputs.length > 0 && (
         <div className="ml-10 mt-1 space-y-1">
           {outputs.map((o, i) => (
+            // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
             <OutputBlock key={i} output={o} />
           ))}
         </div>
@@ -174,6 +175,7 @@ export function NotebookViewer({ path, visible }: Props) {
           if (cell.cell_type === "code") {
             return (
               <CodeCell
+                // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
                 key={i}
                 source={source}
                 outputs={cell.outputs ?? []}
@@ -183,9 +185,11 @@ export function NotebookViewer({ path, visible }: Props) {
             );
           }
           if (cell.cell_type === "markdown") {
+            // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
             return <MarkdownCell key={i} source={source} />;
           }
           return (
+            // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
             <pre key={i} className="rounded border border-border/30 bg-muted/20 px-3 py-2 font-mono text-[12px] text-muted-foreground">
               {source}
             </pre>

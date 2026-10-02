@@ -53,20 +53,27 @@ export function useDocument({ path, onDirtyChange }: Options) {
     dirtyRef.current = dirty;
   }, [dirty]);
 
-  // Notify parent of dirty transitions.
+  // Notify the parent of dirty transitions from where they happen, rather
+  // than from an effect on `dirty`, which cost the parent an extra render
+  // per transition. Only real changes are reported.
   const onDirtyChangeRef = useRef(onDirtyChange);
   useEffect(() => {
     onDirtyChangeRef.current = onDirtyChange;
   }, [onDirtyChange]);
-  useEffect(() => {
-    onDirtyChangeRef.current?.(dirty);
-  }, [dirty]);
+  const notifiedDirtyRef = useRef(false);
+  const updateDirty = useCallback((next: boolean) => {
+    setDirty(next);
+    if (notifiedDirtyRef.current !== next) {
+      notifiedDirtyRef.current = next;
+      onDirtyChangeRef.current?.(next);
+    }
+  }, []);
 
   // Load on path change or explicit reload.
   useEffect(() => {
     let cancelled = false;
     setDoc({ status: "loading" });
-    setDirty(false);
+    updateDirty(false);
 
     filesystem.readFile(path)
       .then(async (res) => {
@@ -110,7 +117,7 @@ export function useDocument({ path, onDirtyChange }: Options) {
     return () => {
       cancelled = true;
     };
-  }, [path, reloadCounter]);
+  }, [path, reloadCounter, updateDirty]);
 
   /** Re-read the file from disk. No-op (silent) if the buffer is dirty —
    *  callers shouldn't clobber unsaved user edits. Returns whether reload ran. */
@@ -129,7 +136,7 @@ export function useDocument({ path, onDirtyChange }: Options) {
     (next: string) => {
       bufferRef.current = next;
       const isDirty = next !== savedRef.current;
-      setDirty(isDirty);
+      updateDirty(isDirty);
       // Debounced crash-recovery snapshot. Edited back to the saved state →
       // remove the snapshot instead, so no stale recovery is offered later.
       if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
@@ -143,7 +150,7 @@ export function useDocument({ path, onDirtyChange }: Options) {
         void deleteEditorAutosave(path).catch(() => {});
       }
     },
-    [path],
+    [path, updateDirty],
   );
 
   // Cancel any pending snapshot when the pane unmounts or switches files —
@@ -163,14 +170,14 @@ export function useDocument({ path, onDirtyChange }: Options) {
     const content = bufferRef.current;
     await filesystem.writeFile(path, content, "editor");
     savedRef.current = content;
-    setDirty(false);
+    updateDirty(false);
     // Saved — the recovery snapshot is now redundant.
     if (autosaveTimerRef.current) {
       clearTimeout(autosaveTimerRef.current);
       autosaveTimerRef.current = null;
     }
     void deleteEditorAutosave(path).catch(() => {});
-  }, [path, dirty]);
+  }, [path, dirty, updateDirty]);
 
   /** Adopt the crash-recovery snapshot as the buffer (dirty until saved).
    * The autosave file stays — if this session also dies before saving, the
@@ -179,14 +186,14 @@ export function useDocument({ path, onDirtyChange }: Options) {
     const d = docRef.current;
     if (d.status !== "ready" || d.recovered === null) return;
     bufferRef.current = d.recovered;
-    setDirty(true);
+    updateDirty(true);
     setDoc({
       status: "ready",
       content: d.recovered,
       size: d.size,
       recovered: null,
     });
-  }, []);
+  }, [updateDirty]);
 
   /** Reject the crash-recovery snapshot and delete it from disk. */
   const discardRecovery = useCallback(() => {

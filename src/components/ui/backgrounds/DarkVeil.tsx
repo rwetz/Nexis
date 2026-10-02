@@ -191,6 +191,7 @@ export const DarkVeilBackground = memo(function DarkVeilBackground({
     // built once, and every prop the shader reads is pushed through
     // `propsRef` inside the render loop above. Listing the uniforms here would
     // tear down and rebuild the canvas on each slider drag.
+  // react-doctor-disable-next-line react-doctor/exhaustive-deps -- props reach the render loop through propsRef; see the comment above
   }, []);
 
   return (

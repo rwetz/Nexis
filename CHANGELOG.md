@@ -4,6 +4,21 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Fixed
+
+- **Auto-approved AI tool calls could be approved twice.** The auto-approval row sent its decision from an effect that also depended on the `onApproval` callback, so a parent re-render after the decision went out ran it again. The callback is now an effect event (`useEffectEvent`), and the decision is sent once per approval.
+- **Background process list could show an older snapshot.** The 2-second poll and a manual refresh could overlap, and whichever answer arrived last won, even if it was the older request. Only the newest request may now write the list.
+- **Deleting a palette swatch moved focus to its neighbour.** Swatches were keyed by position, so removing one handed its DOM, including a focused name field or an open colour picker, to the next row. Swatches now keep a stable key for their lifetime, without changing the saved palette format.
+- **One-frame flashes of stale state** in the Source Control panel (the previous repo's status, or a selection that no longer exists, painted for a frame after a refresh), the SVG canvas (an overlay around a deleted node), the secret-scan section, and shell-history search (the old row stayed highlighted for a frame of new results). Each now updates during render or in the event that caused the change, instead of in an effect afterwards.
+- **Web Tools "Copy" could throw an unhandled rejection** when clipboard access was denied; the failure is now logged.
+- **Accessibility:** the HTTP client and Web Tools fields, previously labelled only by placeholder text, now have accessible names. The benchmark number fields have a real `<label>`, and their −/+ buttons are named. The SVG canvas and the Atlas panel expose roles; Atlas rows are focusable and report selection. The guided tour card is a native non-modal `<dialog>`.
+
+### Changed
+
+- **Faster favicon export, icon-set scans and debugger start.** Favicon sizes render and write in parallel, icon-set files are read in parallel (in their original order), and breakpoints for different files are sent to the debug adapter together before launch.
+- **The AI context meter is one component.** It was copied verbatim between the docked AI panel and the mini window; both now use `ContextIndicator.tsx`.
+- **react-doctor health score 71 → 87.** Fixes are listed above. Verified false positives carry an inline `react-doctor-disable-next-line` comment stating why (static display lists keyed by index, object URLs revoked in `finally` or on unmount, dependencies that are deliberate re-run triggers). The remaining findings are refactor debt (function complexity, component size, non-component exports in component files, eager CodeMirror imports) and are not suppressed.
+
 ### Removed
 
 - **The terminal's exit-status gutter and "✦ Explain" chip.** The green/red bar beside each finished command and the inline Explain button on failed commands are gone, along with the "Explain failed commands with AI" setting. After `cls`, both kept reappearing on blank rows at their old positions (reported again on 1.30.1 after the 1.29.0 fix), and `cls` itself got a red bar because PowerShell re-reports the previous exit code. Byte streams recorded from a real ConPTY session, replayed through xterm with the same tracker code, always cleared correctly, so the leak only happened inside the running app. Rather than ship a third partial fix, the decorations are removed: the terminal now draws nothing per command. Shell integration (OSC 133) still drives prompt-to-prompt navigation, the busy-terminal close check and the command ledger, whose command capture is unchanged. To explain a failure, select the output and use Ask AI. The investigation is recorded as pitfall #24 in `AGENTS.md`.

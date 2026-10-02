@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TASK_LABELS, type TaskType } from "@/modules/benchmark/lib/types";
@@ -169,21 +169,28 @@ function NumberField({
   onChange: (v: number) => void;
 }) {
   const clamp = (v: number) => Math.max(min, Math.min(max, v));
+  const id = useId();
   return (
-    <label className="flex flex-col gap-1">
-      <span className="flex items-baseline justify-between text-[10.5px] font-medium text-muted-foreground">
+    <div className="flex flex-col gap-1">
+      <label
+        htmlFor={id}
+        className="flex items-baseline justify-between text-[10.5px] font-medium text-muted-foreground"
+      >
         {label}
         {hint && <span className="text-muted-foreground/50">{hint}</span>}
-      </span>
+      </label>
       <div className="flex items-center rounded-lg border border-border bg-input/40 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30">
         <button
+          type="button"
           tabIndex={-1}
+          aria-label={`Decrease ${label}`}
           onClick={() => onChange(clamp(value - step))}
           className="grid h-8 w-7 place-items-center text-muted-foreground hover:text-foreground"
         >
           −
         </button>
         <input
+          id={id}
           type="number"
           value={value}
           min={min}
@@ -193,13 +200,15 @@ function NumberField({
           className="w-full min-w-0 bg-transparent text-center font-mono text-sm outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
         />
         <button
+          type="button"
           tabIndex={-1}
+          aria-label={`Increase ${label}`}
           onClick={() => onChange(clamp(value + step))}
           className="grid h-8 w-7 place-items-center text-muted-foreground hover:text-foreground"
         >
           +
         </button>
       </div>
-    </label>
+    </div>
   );
 }

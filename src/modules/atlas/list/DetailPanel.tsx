@@ -163,6 +163,7 @@ function DetailBody({
           ) : (
             <ul className="mt-1.5 space-y-0.5">
               {stashes.map((msg, i) => (
+                // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
                 <li key={i} className="truncate font-mono text-xs text-muted-foreground">
                   stash@{"{"}
                   {i}

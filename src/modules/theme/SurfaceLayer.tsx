@@ -192,6 +192,7 @@ function BackgroundImage({ fastImageId }: { fastImageId: string | null }) {
       const { getBgImage } = await import("./bgImageStore");
       const blob = await getBgImage(imageId).catch(() => null);
       if (!alive || !blob) return;
+      // react-doctor-disable-next-line react-doctor/no-create-object-url-without-revoke -- previous URL revoked on swap; last one revoked in the unmount cleanup
       const url = URL.createObjectURL(blob);
       if (lastUrlRef.current) URL.revokeObjectURL(lastUrlRef.current);
       lastUrlRef.current = url;

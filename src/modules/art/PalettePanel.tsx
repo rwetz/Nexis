@@ -86,6 +86,25 @@ type Props = {
   workspaceRoot: string | null;
 };
 
+/**
+ * Stable React keys for swatches, without persisting an id. Rows can be
+ * removed from the middle, and an index key would hand the removed row's
+ * DOM (a focused name field, an open colour picker) to its neighbour. The
+ * hex can't be the key either: dragging the picker changes it every frame.
+ * Keyed by object identity, and `update` carries the id over to the edited
+ * copy, so a row keeps its key for its whole life.
+ */
+const swatchIds = new WeakMap<PaletteEntry, number>();
+let nextSwatchId = 0;
+function swatchKey(entry: PaletteEntry): number {
+  let id = swatchIds.get(entry);
+  if (id === undefined) {
+    id = nextSwatchId++;
+    swatchIds.set(entry, id);
+  }
+  return id;
+}
+
 export function PalettePanel({ workspaceRoot }: Props) {
   const [entries, setEntries] = useState<PaletteEntry[]>(loadPalette);
   const [format, setFormat] = useState<PaletteFormat>("css");
@@ -133,8 +152,15 @@ export function PalettePanel({ workspaceRoot }: Props) {
     return darkest;
   }, [contrastAgainst, entries]);
 
-  const update = (i: number, patch: Partial<PaletteEntry>) =>
-    setEntries((prev) => prev.map((e, j) => (j === i ? { ...e, ...patch } : e)));
+  const update = (i: number, patch: Partial<PaletteEntry>) => {
+    const current = entries[i];
+    if (!current) return;
+    // Built outside the setter: the key carry-over is a side effect, and a
+    // state updater may run more than once.
+    const next = { ...current, ...patch };
+    swatchIds.set(next, swatchKey(current));
+    setEntries((prev) => prev.map((e) => (e === current ? next : e)));
+  };
 
   const remove = (i: number) =>
     setEntries((prev) => prev.filter((_, j) => j !== i));
@@ -278,7 +304,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
             const isReference = entry.hex === reference;
             return (
               <li
-                key={i}
+                key={swatchKey(entry)}
                 className="flex items-center gap-1.5 rounded-md border border-border/50 bg-card/40 px-1.5 py-1"
               >
                 <input

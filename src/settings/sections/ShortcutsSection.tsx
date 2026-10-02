@@ -200,6 +200,7 @@ function ShortcutRow({
       return (
         <KbdGroup>
           {modTokens.map((t, i) => (
+            // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
             <Kbd key={i} className="group-hover:bg-accent group-hover:text-accent-foreground transition-colors">{t}</Kbd>
           ))}
           <Kbd className="group-hover:bg-accent group-hover:text-accent-foreground transition-colors">1</Kbd>
@@ -212,6 +213,7 @@ function ShortcutRow({
       <KbdGroup>
         {getBindingTokens(bindings[0]).map((t, i) => (
           <Kbd
+            // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
             key={i}
             className="group-hover:bg-accent group-hover:text-accent-foreground transition-colors"
           >
