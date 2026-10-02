@@ -4,6 +4,10 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Removed
+
+- **The terminal's exit-status gutter and "✦ Explain" chip.** The green/red bar beside each finished command and the inline Explain button on failed commands are gone, along with the "Explain failed commands with AI" setting. After `cls`, both kept reappearing on blank rows at their old positions (reported again on 1.30.1 after the 1.29.0 fix), and `cls` itself got a red bar because PowerShell re-reports the previous exit code. Byte streams recorded from a real ConPTY session, replayed through xterm with the same tracker code, always cleared correctly, so the leak only happened inside the running app. Rather than ship a third partial fix, the decorations are removed: the terminal now draws nothing per command. Shell integration (OSC 133) still drives prompt-to-prompt navigation, the busy-terminal close check and the command ledger, whose command capture is unchanged. To explain a failure, select the output and use Ask AI. The investigation is recorded as pitfall #24 in `AGENTS.md`.
+
 ## [1.30.1] — 2026-09-30
 
 ### Fixed

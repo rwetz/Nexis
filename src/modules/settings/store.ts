@@ -232,10 +232,6 @@ export type Preferences = {
   /** Ask before closing a terminal tab/pane whose shell is mid-command
    * (OSC 133 in-command). Without shell integration the check is silent. */
   terminalConfirmCloseBusy: boolean;
-  /** Inline "✦ Explain" chip on commands that exit nonzero (needs OSC 133
-   * shell integration, like the exit gutter). Clicking sends the command,
-   * its output, and the cwd to the AI chat — see osc-handlers.ts. */
-  terminalExplainFailures: boolean;
   /** Records finished commands to the per-workspace command ledger. Private
    *  terminals are excluded regardless of this, at the OSC 133 source. */
   commandLedgerEnabled: boolean;
@@ -351,7 +347,6 @@ const KEY_TERMINAL_CURSOR_STYLE = "terminalCursorStyle";
 const KEY_TERMINAL_CURSOR_BLINK = "terminalCursorBlink";
 const KEY_TERMINAL_OSC52_CLIPBOARD = "terminalOsc52Clipboard";
 const KEY_TERMINAL_CONFIRM_CLOSE_BUSY = "terminalConfirmCloseBusy";
-const KEY_TERMINAL_EXPLAIN_FAILURES = "terminalExplainFailures";
 const KEY_COMMAND_LEDGER_ENABLED = "commandLedgerEnabled";
 const KEY_COMMAND_LEDGER_MAX_RECORDS = "commandLedgerMaxRecords";
 const KEY_COMMAND_LEDGER_MAX_AGE_DAYS = "commandLedgerMaxAgeDays";
@@ -456,7 +451,6 @@ export const DEFAULT_PREFERENCES: Preferences = {
   terminalCursorBlink: false,
   terminalOsc52Clipboard: true,
   terminalConfirmCloseBusy: true,
-  terminalExplainFailures: true,
   // Off by default. This store is durable and holds command lines, so it is a
   // thing the user opts into rather than discovers after the fact.
   commandLedgerEnabled: false,
@@ -665,9 +659,6 @@ export async function loadPreferences(): Promise<Preferences> {
     terminalConfirmCloseBusy:
       get<boolean>(KEY_TERMINAL_CONFIRM_CLOSE_BUSY) ??
       DEFAULT_PREFERENCES.terminalConfirmCloseBusy,
-    terminalExplainFailures:
-      get<boolean>(KEY_TERMINAL_EXPLAIN_FAILURES) ??
-      DEFAULT_PREFERENCES.terminalExplainFailures,
     commandLedgerEnabled:
       get<boolean>(KEY_COMMAND_LEDGER_ENABLED) ??
       DEFAULT_PREFERENCES.commandLedgerEnabled,
@@ -1020,10 +1011,6 @@ export async function setTerminalConfirmCloseBusy(value: boolean): Promise<void>
   await writePref(KEY_TERMINAL_CONFIRM_CLOSE_BUSY, value);
 }
 
-export async function setTerminalExplainFailures(value: boolean): Promise<void> {
-  await writePref(KEY_TERMINAL_EXPLAIN_FAILURES, value);
-}
-
 export async function setCommandLedgerEnabled(value: boolean): Promise<void> {
   await writePref(KEY_COMMAND_LEDGER_ENABLED, value);
 }
@@ -1174,7 +1161,6 @@ export async function onPreferencesChange(
     [KEY_TERMINAL_CURSOR_BLINK]: "terminalCursorBlink",
     [KEY_TERMINAL_OSC52_CLIPBOARD]: "terminalOsc52Clipboard",
     [KEY_TERMINAL_CONFIRM_CLOSE_BUSY]: "terminalConfirmCloseBusy",
-    [KEY_TERMINAL_EXPLAIN_FAILURES]: "terminalExplainFailures",
     [KEY_COMMAND_LEDGER_ENABLED]: "commandLedgerEnabled",
     [KEY_COMMAND_LEDGER_MAX_RECORDS]: "commandLedgerMaxRecords",
     [KEY_COMMAND_LEDGER_MAX_AGE_DAYS]: "commandLedgerMaxAgeDays",

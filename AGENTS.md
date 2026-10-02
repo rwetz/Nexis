@@ -353,6 +353,24 @@ This stayed hidden in WSL until shell integration actually installed into the di
 
 ---
 
+### 24. Terminal decorations that outlive their text (exit gutter + Explain chip, removed in 1.31.0)
+
+**Symptom:** After `cls`, red exit bars and "✦ Explain" chips stayed painted on blank rows at their old positions, and they survived later clears too. The `cls` line itself got a red bar, because `cls` re-reports the previous command's exit code (`cls` doesn't set `$LASTEXITCODE`). The reproduction was simply a failing command followed by `cls`. Fixed once in `625e617` (v1.29.0), and it came back on v1.30.1.
+
+**Resolution:** The exit-status gutter and the Explain chip were **removed** (1.31.0), along with the `terminalExplainFailures` preference and the `nexis:ai-explain-failure` bridge in `App.tsx`. `registerPromptTracker` no longer calls `registerDecoration` at all, and a test asserts it. OSC 133 still drives prompt navigation, the busy-close check and the command ledger.
+
+**What was verified before removal** (2026-10-01/02, Windows 11 26200, powershell.exe 5.1, system ConPTY, real `profile.ps1`):
+- `cls` arrives as `C` … `CSI H` `CSI 2J` `CSI 3J` `D;<stale code>` `A` `B`. Ctrl+L arrives as `CSI 2J` then `D A B`, with no C. Both pass through the CSI J handler.
+- The recorded byte streams, replayed through xterm 6.0.0 with the real `registerPromptTracker` (bundled with esbuild), with and without WebGL, with a simulated slot rebind and with an injected backpressure `ESC c`, **always cleared correctly**. The failure only happened inside the running app, and the root cause inside Nexis was never isolated.
+- The surviving chips stayed at identical pixel positions across separate `cls` runs. That pattern points at decoration elements orphaned from their decoration, not at markers the handler missed.
+
+**Future danger:**
+- **Don't bring back per-line terminal decorations** (gutters, inline chips, highlights) without first finding why these leaked in the real app. Every xterm decoration needs a marker whose lifetime matches the text it describes, and blanking a line does not dispose its markers.
+- A test with a mock terminal proved nothing here. Any new decoration needs a test that feeds a recorded shell byte stream into real xterm and checks the DOM after a clear.
+- To capture a stream under ConPTY, use pywinpty in a scratch dir with `PYWINPTY_BACKEND=0`, `powershell.exe -NoLogo -NoExit -ExecutionPolicy Bypass -File <profile.ps1>`, a background read thread (`read()` blocks), and the bytes dumped to JSON.
+
+---
+
 ## Pre-push checklist
 First, **update `CHANGELOG.md`**: every user-facing change in this push must have an entry under `[Unreleased]` (see "CHANGELOG is the record" above) — this is not optional.
 

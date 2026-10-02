@@ -4,7 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Terminal } from "@xterm/xterm";
 import {
   adjacentPromptLine,
@@ -186,31 +186,23 @@ describe("OSC 7 cwd handler — gated by OSC 133 in-command state", () => {
   });
 });
 
-describe("OSC 133 failed-command Explain chip", () => {
+describe("OSC 133 command capture for the ledger", () => {
   type FakeMarker = { line: number; isDisposed: boolean; dispose: () => void };
-  type FakeDecoration = {
-    options: { anchor?: string; x?: number; marker?: FakeMarker };
-    marker: FakeMarker;
-    disposed: boolean;
-    render: ((el: HTMLElement) => void) | null;
-    dispose: () => void;
-    onRender: (cb: (el: HTMLElement) => void) => void;
-    onDispose: (cb: () => void) => void;
-  };
 
   /**
    * Buffer-capable fake: real marker lines (recorded at the cursor position
-   * at registration time), a line store for translateToString, and captured
-   * decorations so tests can render the chip and click it — all without a
-   * DOM, since the chip deliberately styles the decoration element itself.
+   * at registration time) and a line store for translateToString.
+   * `registerDecoration` is a spy so tests can assert the tracker never
+   * paints anything into the terminal.
    */
   function makeBufferTerm(lines: string[], wrappedRows: number[] = []) {
     const handlers = new Map<number, OscHandler>();
     const wrapped = new Set(wrappedRows);
     const cursor = { x: 0, y: 0 };
-    const decorations: FakeDecoration[] = [];
+    const markers: FakeMarker[] = [];
     const csi: { erase?: (params: (number | number[])[]) => boolean } = {};
     const screen = { baseY: 0, type: "normal" as "normal" | "alternate" };
+    const registerDecoration = vi.fn();
     const term = {
       parser: {
         registerOscHandler(code: number, handler: OscHandler) {
@@ -230,25 +222,10 @@ describe("OSC 133 failed-command Explain chip", () => {
             m.isDisposed = true;
           },
         };
+        markers.push(m);
         return m;
       },
-      registerDecoration(options: { anchor?: string; x?: number; marker: FakeMarker }): FakeDecoration {
-        const dec: FakeDecoration = {
-          options,
-          marker: options.marker,
-          disposed: false,
-          render: null,
-          dispose: () => {
-            dec.disposed = true;
-          },
-          onRender: (cb) => {
-            dec.render = cb;
-          },
-          onDispose: () => {},
-        };
-        decorations.push(dec);
-        return dec;
-      },
+      registerDecoration,
       buffer: {
         active: {
           get baseY() {
@@ -274,24 +251,8 @@ describe("OSC 133 failed-command Explain chip", () => {
         },
       },
     } as unknown as Terminal;
-    return { term, handlers, cursor, decorations, csi, screen };
+    return { term, handlers, cursor, markers, csi, screen, registerDecoration };
   }
-
-  /** Minimal stand-in for the decoration element the chip styles. */
-  function makeChipEl() {
-    return {
-      style: {} as Record<string, string>,
-      textContent: "",
-      title: "",
-      onclick: null as
-        | ((e: { preventDefault: () => void; stopPropagation: () => void }) => void)
-        | null,
-      onmouseenter: null as (() => void) | null,
-      onmouseleave: null as (() => void) | null,
-    };
-  }
-
-  const clickEvent = () => ({ preventDefault: vi.fn(), stopPropagation: vi.fn() });
 
   type Fake = ReturnType<typeof makeBufferTerm>;
 
@@ -324,52 +285,18 @@ describe("OSC 133 failed-command Explain chip", () => {
     h?.(`D;${opts.exit}`);
   }
 
-  const chipsOf = (t: Fake) =>
-    t.decorations.filter((d) => d.options.anchor === "right");
-
   function setup(lines: string[], wrappedRows: number[] = [], enabled = true) {
     const t = makeBufferTerm(lines, wrappedRows);
-    const onExplain = vi.fn();
+    const record = vi.fn();
     const tracker = registerPromptTracker(t.term, createShellIntegrationState(), {
       isEnabled: () => enabled,
       getCwd: () => "/home/me/dev",
-      onExplain,
+      record,
     });
-    return { ...t, onExplain, tracker };
+    return { ...t, record, tracker };
   }
 
-  /**
-   * The chip is right-anchored, and xterm's `_refreshXPosition` reads
-   * `element.style.right = x ? \`${x * cellWidth}px\` : ''`. An `x` of 0 is
-   * falsy, so it *clears* `right` rather than setting `0px` — the element then
-   * has neither `left` nor `right`, falls back to its static position at the
-   * left edge, and renders as a ghost over the prompt text at 0.6 opacity.
-   * `anchor: "right"` is silently ignored, so the symptom looks nothing like a
-   * positioning bug. Keep `x` non-zero.
-   */
-  it("gives the chip a non-zero x, or xterm ignores the right anchor", () => {
-    const t = setup(["~/dev > nope", "command not found"]);
-    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "127", endLine: 2 });
-
-    const [chip] = chipsOf(t);
-    expect(chip, "expected a chip for a failed command").toBeTruthy();
-    expect(
-      chip.options.x,
-      "x must be non-zero: xterm clears `right` for a falsy x, which drops the " +
-        "chip onto the prompt text at the left edge",
-    ).toBeGreaterThan(0);
-  });
-
-  it("keeps the chip off the left edge when it renders", () => {
-    const t = setup(["~/dev > nope", "command not found"]);
-    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "127", endLine: 2 });
-
-    const el = makeChipEl();
-    chipsOf(t)[0].render?.(el as unknown as HTMLElement);
-    expect(el.style.left).toBe("auto");
-  });
-
-  it("captures command, output, exit code, and cwd; clicking fires onExplain", () => {
+  it("records command, output, exit code, and cwd", () => {
     const t = setup([
       "~/dev ❯ cargo build",
       "error[E0308]: mismatched types",
@@ -377,72 +304,49 @@ describe("OSC 133 failed-command Explain chip", () => {
     ]);
     runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "101", endLine: 3 });
 
-    const chips = chipsOf(t);
-    expect(chips).toHaveLength(1);
-
-    const el = makeChipEl();
-    chips[0].render?.(el as unknown as HTMLElement);
-    expect(el.textContent).toBe("✦ Explain");
-    expect(el.title).toContain("exit code 101");
-    expect(el.style.pointerEvents).toBe("auto");
-
-    el.onclick?.(clickEvent());
-    expect(t.onExplain).toHaveBeenCalledTimes(1);
-    expect(t.onExplain).toHaveBeenCalledWith({
-      command: "cargo build",
-      output: "error[E0308]: mismatched types\nerror: could not compile",
-      exitCode: 101,
-      cwd: "/home/me/dev",
-    });
+    expect(t.record).toHaveBeenCalledTimes(1);
+    expect(t.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd: "/home/me/dev",
+        argv: "cargo build",
+        exitCode: 101,
+        output: "error[E0308]: mismatched types\nerror: could not compile",
+      }),
+    );
   });
 
-  it("adds no chip on exit 0 (the green gutter bar still appears)", () => {
-    const t = setup(["~/dev ❯ ls", "file.txt"]);
+  it("never draws anything in the terminal, for success or failure", () => {
+    const t = setup(["~/dev ❯ ls", "a", "~/dev ❯ false", ""]);
     runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "0", endLine: 2 });
-    expect(chipsOf(t)).toHaveLength(0);
-    // The plain exit-status gutter decoration is still registered.
-    expect(t.decorations.length).toBe(1);
+    runCommand(t, { promptLine: 2, promptLen: 8, cLine: 3, exit: "1", endLine: 3 });
+    expect(t.registerDecoration).not.toHaveBeenCalled();
   });
 
-  it("adds no chip on SIGINT (exit 130) — Ctrl+C is a cancel, not a failure", () => {
-    const t = setup(["~/dev ❯ sleep 100", "^C"]);
-    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "130", endLine: 2 });
-    expect(chipsOf(t)).toHaveLength(0);
-  });
-
-  it("adds no chip when the preference is off", () => {
+  it("records nothing when the ledger is off", () => {
     const t = setup(["~/dev ❯ cargo build", "error: boom"], [], false);
     runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "101", endLine: 2 });
-    expect(chipsOf(t)).toHaveLength(0);
+    expect(t.record).not.toHaveBeenCalled();
   });
 
-  it("adds no chip for a bare Enter re-emitting the stale exit status", () => {
+  it("records nothing for a bare Enter re-emitting the stale exit status", () => {
     const t = setup(["~/dev ❯ cargo build", "error: boom", "~/dev ❯"]);
     runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "101", endLine: 2 });
     // Empty prompt on line 2: Enter without a command — precmd re-emits
     // D with the stale nonzero status, no C fires, no output is printed.
     runCommand(t, { promptLine: 2, promptLen: 8, exit: "101", endLine: 3 });
-    expect(chipsOf(t)).toHaveLength(1);
+    expect(t.record).toHaveBeenCalledTimes(1);
   });
 
   it("degrades without OSC 133 C (PowerShell): B line is the command, rest is output", () => {
-    const t = setup([
-      "PS C:\\Users\\me> git puhs",
-      "git: 'puhs' is not a git command.",
-    ]);
+    const t = setup(["PS C:\\Users\\me> git puhs", "git: 'puhs' is not a git command."]);
     runCommand(t, { promptLine: 0, promptLen: 16, exit: "1", endLine: 2 });
-
-    const chips = chipsOf(t);
-    expect(chips).toHaveLength(1);
-    const el = makeChipEl();
-    chips[0].render?.(el as unknown as HTMLElement);
-    el.onclick?.(clickEvent());
-    expect(t.onExplain).toHaveBeenCalledWith({
-      command: "git puhs",
-      output: "git: 'puhs' is not a git command.",
-      exitCode: 1,
-      cwd: "/home/me/dev",
-    });
+    expect(t.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        argv: "git puhs",
+        output: "git: 'puhs' is not a git command.",
+        exitCode: 1,
+      }),
+    );
   });
 
   it("joins wrapped command rows without a newline", () => {
@@ -451,12 +355,8 @@ describe("OSC 133 failed-command Explain chip", () => {
       [1], // row 1 is a soft-wrap continuation of row 0
     );
     runCommand(t, { promptLine: 0, promptLen: 4, cLine: 2, exit: "1", endLine: 3 });
-
-    const el = makeChipEl();
-    chipsOf(t)[0].render?.(el as unknown as HTMLElement);
-    el.onclick?.(clickEvent());
-    expect(t.onExplain).toHaveBeenCalledWith(
-      expect.objectContaining({ command: "echo aaaabbbb wrapped", output: "out" }),
+    expect(t.record).toHaveBeenCalledWith(
+      expect.objectContaining({ argv: "echo aaaabbbb wrapped", output: "out" }),
     );
   });
 
@@ -465,164 +365,31 @@ describe("OSC 133 failed-command Explain chip", () => {
     for (let i = 1; i <= 300; i++) lines.push(`line-${i}`);
     const t = setup(lines);
     runCommand(t, { promptLine: 0, promptLen: 4, cLine: 1, exit: "1", endLine: 301 });
-
-    const el = makeChipEl();
-    chipsOf(t)[0].render?.(el as unknown as HTMLElement);
-    el.onclick?.(clickEvent());
-    const failure = t.onExplain.mock.calls[0][0];
-    expect(failure.output.startsWith("[… earlier output truncated …]")).toBe(true);
-    expect(failure.output).toContain("line-300");
-    expect(failure.output).not.toContain("line-100\n");
+    const { output } = t.record.mock.calls[0][0];
+    expect(output.startsWith("[… earlier output truncated …]")).toBe(true);
+    expect(output).toContain("line-300");
+    expect(output).not.toContain("line-100\n");
   });
 
-  it("disposes chip decorations with the tracker", () => {
-    const t = setup(["~/dev ❯ false", ""]);
-    runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "1", endLine: 1, endX: 0 });
-    // `false` printed nothing: no output and C fired — chip still appears
-    // (sawExec is the evidence a command ran).
-    const chips = chipsOf(t);
-    expect(chips).toHaveLength(1);
-    t.tracker.dispose();
-    expect(chips[0].disposed).toBe(true);
+  it("cls drops the prompt markers on erased lines", () => {
+    const t = setup(["❯ ls", "a", "❯ cls", ""]);
+    runCommand(t, { promptLine: 0, promptLen: 2, cLine: 1, exit: "0", endLine: 2 });
+    const firstPrompt = t.markers[0];
+    const h = t.handlers.get(133);
+    t.cursor.y = 2;
+    t.cursor.x = 0;
+    h?.("A");
+    t.csi.erase?.([2]);
+    expect(firstPrompt.isDisposed).toBe(true);
+    expect(t.tracker.getMarker()).toBeNull();
   });
 
-  describe("block gutter — per-command decoration with click-to-copy", () => {
-    /** The gutter bar is the decoration with no anchor (the chip is right-anchored). */
-    const gutterOf = (t: Fake) =>
-      t.decorations.filter((d) => d.options.anchor === undefined);
-
-    function clipboardSpy() {
-      const writeText = vi.fn(() => Promise.resolve());
-      vi.stubGlobal("navigator", { clipboard: { writeText } });
-      return writeText;
-    }
-
-    afterEach(() => vi.unstubAllGlobals());
-
-    it("copies the command when the gutter bar is clicked", () => {
-      const writeText = clipboardSpy();
-      const t = setup(["~/dev ❯ cargo build", "ok"]);
-      runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "0", endLine: 2 });
-
-      const bars = gutterOf(t);
-      expect(bars).toHaveLength(1);
-      const el = makeChipEl();
-      bars[0].render?.(el as unknown as HTMLElement);
-
-      expect(el.title).toContain("cargo build");
-      expect(el.style.pointerEvents).toBe("auto");
-      el.onclick?.(clickEvent());
-      expect(writeText).toHaveBeenCalledWith("cargo build");
-    });
-
-    it("names the exit status in the hover title for a successful command", () => {
-      clipboardSpy();
-      const t = setup(["~/dev ❯ true", ""]);
-      runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "0", endLine: 1, endX: 0 });
-      const el = makeChipEl();
-      gutterOf(t)[0].render?.(el as unknown as HTMLElement);
-      expect(el.title).toContain("Exit 0");
-    });
-
-    it("names a nonzero exit status", () => {
-      clipboardSpy();
-      const t = setup(["~/dev ❯ false", ""]);
-      runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "1", endLine: 1, endX: 0 });
-      const el = makeChipEl();
-      gutterOf(t)[0].render?.(el as unknown as HTMLElement);
-      expect(el.title).toContain("Exit 1");
-    });
-
-    it("stays inert with no command text rather than offering an empty copy", () => {
-      clipboardSpy();
-      // No B marker => no command was captured. The bar must fall back to the
-      // plain non-interactive form instead of copying an empty string.
-      const t = setup(["~/dev ❯ ", ""]);
-      const h = t.handlers.get(133);
-      t.cursor.y = 0;
-      h?.("A");
-      h?.("D;0");
-      const el = makeChipEl();
-      gutterOf(t)[0].render?.(el as unknown as HTMLElement);
-      expect(el.style.pointerEvents).toBe("none");
-      expect(el.onclick).toBeNull();
-    });
-
-    it("draws no bar for a bare Enter on an empty prompt", () => {
-      // The shell marked where input began (B) and nothing was typed there:
-      // D re-sends the previous $?, which is not a command's result.
-      const t = setup(["~/dev ❯ ", ""]);
-      runCommand(t, { promptLine: 0, promptLen: 8, exit: "0", endLine: 1 });
-      expect(gutterOf(t)).toHaveLength(0);
-    });
-
-    it("cls drops the bars on erased lines and never bars the clearing prompt", () => {
-      const t = setup(["❯ ls", "a", "❯ pwd", "/x", "❯ cls", ""]);
-      runCommand(t, { promptLine: 0, promptLen: 2, cLine: 1, exit: "0", endLine: 2 });
-      runCommand(t, { promptLine: 2, promptLen: 2, cLine: 3, exit: "1", endLine: 4 });
-      expect(gutterOf(t).filter((d) => !d.disposed)).toHaveLength(2);
-
-      // `cls`: A/B on line 4, then the shell erases the display and the
-      // scrollback before its D arrives.
-      const h = t.handlers.get(133);
-      t.cursor.y = 4;
-      t.cursor.x = 0;
-      h?.("A");
-      t.cursor.x = 2;
-      h?.("B");
-      t.csi.erase?.([2]);
-      t.csi.erase?.([3]);
-      t.cursor.y = 0;
-      h?.("D;0");
-
-      expect(gutterOf(t).every((d) => d.disposed)).toBe(true);
-      expect(gutterOf(t)).toHaveLength(2);
-    });
-
-    it("leaves bars alone when a full-screen app clears the alternate screen", () => {
-      const t = setup(["❯ ls", "a", ""]);
-      runCommand(t, { promptLine: 0, promptLen: 2, cLine: 1, exit: "0", endLine: 2 });
-      t.screen.type = "alternate";
-      t.csi.erase?.([2]);
-      expect(gutterOf(t)[0].disposed).toBe(false);
-    });
-
-    it("clearing only the scrollback keeps the bars still on screen", () => {
-      const t = setup(["❯ ls", "a", "❯ pwd", "/x", ""]);
-      runCommand(t, { promptLine: 0, promptLen: 2, cLine: 1, exit: "0", endLine: 2 });
-      runCommand(t, { promptLine: 2, promptLen: 2, cLine: 3, exit: "0", endLine: 4 });
-      t.screen.baseY = 2; // lines 0-1 are scrollback, 2+ the viewport
-      t.csi.erase?.([3]);
-      const [first, second] = gutterOf(t);
-      expect(first.disposed).toBe(true);
-      expect(second.disposed).toBe(false);
-    });
-
-    it("re-rendering does not stack handlers (xterm repaints call onRender again)", () => {
-      const writeText = clipboardSpy();
-      const t = setup(["~/dev ❯ ls", "a"]);
-      runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "0", endLine: 2 });
-      const el = makeChipEl();
-      const bar = gutterOf(t)[0];
-      bar.render?.(el as unknown as HTMLElement);
-      bar.render?.(el as unknown as HTMLElement);
-      bar.render?.(el as unknown as HTMLElement);
-      el.onclick?.(clickEvent());
-      // Property assignment, not addEventListener: exactly one write.
-      expect(writeText).toHaveBeenCalledTimes(1);
-    });
-
-    it("hover paints and clears the highlight", () => {
-      clipboardSpy();
-      const t = setup(["~/dev ❯ ls", "a"]);
-      runCommand(t, { promptLine: 0, promptLen: 8, cLine: 1, exit: "0", endLine: 2 });
-      const el = makeChipEl();
-      gutterOf(t)[0].render?.(el as unknown as HTMLElement);
-      el.onmouseenter?.();
-      expect(el.style.background).not.toBe("transparent");
-      el.onmouseleave?.();
-      expect(el.style.background).toBe("transparent");
-    });
+  it("leaves prompt markers alone when a full-screen app clears the alternate screen", () => {
+    const t = setup(["❯ ls", "a", ""]);
+    runCommand(t, { promptLine: 0, promptLen: 2, cLine: 1, exit: "0", endLine: 2 });
+    t.screen.type = "alternate";
+    t.csi.erase?.([2]);
+    expect(t.markers[0].isDisposed).toBe(false);
   });
 });
 

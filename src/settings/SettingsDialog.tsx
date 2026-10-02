@@ -66,7 +66,7 @@ const TAB_GROUPS: TabGroup[] = [
         icon: "settings",
         component: GeneralSection,
         keywords:
-          "vim mode word wrap hidden files webgl renderer inline suggestions default shell font family size weight letter spacing scrollback cursor style blink clipboard osc 52 confirm busy terminal explain failed commands launch at login restore window position tabs quick terminal height focus loss",
+          "vim mode word wrap hidden files webgl renderer inline suggestions default shell font family size weight letter spacing scrollback cursor style blink clipboard osc 52 confirm busy terminal launch at login restore window position tabs quick terminal height focus loss",
       },
       {
         id: "features",

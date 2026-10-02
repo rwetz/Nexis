@@ -12,7 +12,6 @@ export {
   sessionHasRunningCommand,
 } from "./lib/useTerminalSession";
 export { writeToLeaf } from "./lib/rendererPool";
-export { type CommandFailure } from "./lib/osc-handlers";
 export { gcSessionSnapshots } from "./lib/snapshot-bridge";
 export {
   findLeafCwd,
