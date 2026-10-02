@@ -173,6 +173,7 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
+  // react-doctor-disable-next-line react-doctor/prefer-use-effect-event -- a new runSearch (root change) must re-run the search
   }, [query, runSearch]);
 
   const { kind } = parseQuery(query.trim() || "plain:");

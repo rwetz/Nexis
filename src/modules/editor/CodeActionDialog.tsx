@@ -223,6 +223,7 @@ export function CodeActionDialog({
           ) : (
             actions.map((a, i) => (
               <button
+                // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
                 key={`${a.title}-${i}`}
                 type="button"
                 disabled={applying || !!done}

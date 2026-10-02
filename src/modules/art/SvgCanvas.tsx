@@ -102,6 +102,10 @@ type Overlay = {
   unitsPerPx: number;
 };
 
+/** Hoisted so a document without a viewBox doesn't hand `measure` a new
+ * array identity — and a new callback — on every render. */
+const DEFAULT_VIEWBOX: [number, number, number, number] = [0, 0, 24, 24];
+
 const EMPTY_OVERLAY: Overlay = {
   box: null,
   handles: [],
@@ -178,7 +182,7 @@ export function SvgCanvas({ source, onChange }: Props) {
 
   // The overlay mirrors the art's viewBox and aspect-ratio handling, which is
   // what makes the two coordinate systems literally the same one.
-  const viewBox = parsed?.viewBox ?? [0, 0, 24, 24];
+  const viewBox = parsed?.viewBox ?? DEFAULT_VIEWBOX;
   const aspect =
     parsed?.root.getAttribute("preserveAspectRatio") ?? "xMidYMid meet";
 
@@ -507,11 +511,12 @@ export function SvgCanvas({ source, onChange }: Props) {
 
   // Selecting a node that no longer exists (the source was edited in the code
   // pane) leaves a selection pointing at nothing.
-  useEffect(() => {
-    if (parsed && selected !== null && !elementById(parsed, selected)) {
-      setSelected(null);
-    }
-  }, [parsed, selected]);
+  // Cleared during render rather than in an effect, so the overlay never
+  // paints one frame around a node that is gone. Converges: after the reset,
+  // `selected` is null and the branch no longer runs.
+  if (parsed && selected !== null && !elementById(parsed, selected)) {
+    setSelected(null);
+  }
 
   if (!parsed) {
     return (
@@ -586,6 +591,8 @@ export function SvgCanvas({ source, onChange }: Props) {
           space, with no zoom factor left to divide out. */}
       <div
         ref={containerRef}
+        role="application"
+        aria-label="SVG canvas"
         tabIndex={0}
         onKeyDown={onKeyDown}
         onPointerMove={onPointerMove}

@@ -189,6 +189,7 @@ function ScopeSection({
   // Seeded from the prop once, which is correct here: the parent keys each
   // ScopeSection on `scope.variablesReference`, so a different scope is a
   // different component instance rather than a prop change to this one.
+  // react-doctor-disable-next-line react-doctor/no-derived-useState -- parent keys each section by scope, so a new scope remounts it
   const [open, setOpen] = useState(!scope.expensive);
   const vars = variables.get(scope.variablesReference);
 

@@ -94,6 +94,7 @@ export function ShortcutsDialog({ open, onOpenChange }: Props) {
                                 ) {
                                   label = "1…9";
                                 }
+                                // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
                                 return <Kbd key={i}>{label}</Kbd>;
                               })}
                             </KbdGroup>

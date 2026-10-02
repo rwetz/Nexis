@@ -95,6 +95,7 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
+  // react-doctor-disable-next-line react-doctor/prefer-use-effect-event -- a new runSearch (regex/case/root change) must re-run the search
   }, [query, runSearch]);
 
   const doReplaceAll = async () => {
@@ -293,6 +294,7 @@ function FileGroupRow({
         <div className="flex flex-col">
           {group.hits.map((hit, i) => (
             <HitRow
+              // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
               key={i}
               hit={hit}
               query={query}

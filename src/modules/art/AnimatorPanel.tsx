@@ -329,6 +329,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
 
                     <div className="mt-1 flex flex-col gap-1">
                       {track.keys.map((key, i) => (
+                        // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- keyframes are append-only, never removed or reordered
                         <div key={i} className="flex items-center gap-1.5">
                           <input
                             type="range"

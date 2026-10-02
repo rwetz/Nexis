@@ -172,8 +172,13 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
 
   // Re-run whenever the query *or* the source changes, so flipping the toggle
   // answers the question already typed rather than clearing it.
+  // The highlight is reset by the events that change the query or source
+  // (below), not here, so a new result list never paints with the old row
+  // still highlighted.
+  // react-doctor-disable-next-line react-doctor/no-derived-state-effect -- runs a debounced async search; results cannot be derived during render
   useEffect(() => {
-    setActiveIdx(0);
+    // react-doctor-disable-next-line react-doctor/no-adjust-state-on-prop-change -- starts a debounced search (external sync), not a state adjustment
+    // react-doctor-disable-next-line react-doctor/no-derived-state -- results come from an async search; they cannot be derived during render
     searchDebounced(query.trim());
   }, [query, searchDebounced]);
 
@@ -198,6 +203,7 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
   const toggleSource = () => {
     if (!ledgerAvailable) return;
     setSource((s) => (s === "shell" ? "ledger" : "shell"));
+    setActiveIdx(0);
   };
 
   const onKey = (e: React.KeyboardEvent) => {
@@ -277,7 +283,10 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
                 : "Search history…"
             }
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setActiveIdx(0);
+            }}
             onKeyDown={onKey}
             className="flex-1 bg-transparent font-mono text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
           />
@@ -317,6 +326,7 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
                   // destination, and losing the caret would cost a click back.
                   e.preventDefault();
                   setSource(id);
+                  setActiveIdx(0);
                 }}
                 className={cn(
                   "rounded-md px-2 py-0.5 text-[11px] transition-colors",
@@ -357,6 +367,7 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
           )}
           {results.map((row, idx) => (
             <button
+              // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
               key={`${row.command}-${idx}`}
               type="button"
               onMouseDown={(e) => {

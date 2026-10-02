@@ -62,6 +62,8 @@ function RepoRow({ repo, selected }: { repo: RepoSummary; selected: boolean }) {
   return (
     <div
       role="row"
+      tabIndex={-1}
+      aria-selected={selected}
       data-selected={selected || undefined}
       onClick={() => select(repo.path)}
       onDoubleClick={() => void toggleDetail()}

@@ -28,7 +28,7 @@ import { tourFor, type OnboardingAction, type OnboardingStep } from "@/lib/onboa
 import { cn } from "@/lib/utils";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setOnboardingTourDone } from "@/modules/settings/store";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useState } from "react";
 
 type Props = {
   open: boolean;
@@ -94,17 +94,18 @@ export function OnboardingTour({ open, onClose, onRunAction }: Props) {
     };
   }, [open, step]);
 
+  const onEscapeFinish = useEffectEvent(() => finish());
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
-        finish();
+        onEscapeFinish();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, finish]);
+  }, [open]);
 
   if (!open || !step || !rect) return null;
 
@@ -135,13 +136,17 @@ export function OnboardingTour({ open, onClose, onRunAction }: Props) {
         }}
       />
 
-      <div
-        role="dialog"
+      {/* Non-modal on purpose (`open`, never `showModal()`): the app stays
+          usable underneath. `m-0` and `right: auto` undo the UA dialog
+          centring, which would otherwise fight the computed `left`. */}
+      <dialog
+        open
         aria-label="Guided tour"
-        className="fixed z-[61] flex flex-col gap-2 rounded-xl border border-border bg-popover p-3 shadow-2xl"
+        className="fixed z-[61] m-0 flex flex-col gap-2 rounded-xl border border-border bg-popover p-3 text-popover-foreground shadow-2xl"
         style={{
           top,
           left,
+          right: "auto",
           width: CARD_WIDTH,
           transform: above ? "translateY(-100%)" : undefined,
         }}
@@ -197,7 +202,7 @@ export function OnboardingTour({ open, onClose, onRunAction }: Props) {
             {isLast ? "Done" : "Next"}
           </button>
         </div>
-      </div>
+      </dialog>
     </>
   );
 }

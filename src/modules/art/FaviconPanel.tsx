@@ -132,16 +132,19 @@ export function FaviconPanel({ workspaceRoot }: Props) {
       // every PNG below is a fallback for the ones that cannot use it.
       await filesystem.writeFile(`${targetDir}/favicon.svg`, source);
 
-      for (const target of FAVICON_TARGETS) {
-        const bytes = await svgToPngBytes(source, {
-          scale: scaleFor(target.size, source),
-          color: themed ? color : null,
-          // Only iOS needs the opaque plate; giving every size a background
-          // would put a coloured square in every browser tab.
-          background: needsOpaqueBackground(target) ? background : null,
-        });
-        await filesystem.writeFileBytes(`${targetDir}/${target.name}`, bytes);
-      }
+      // Each size is independent, so they render and write in parallel.
+      await Promise.all(
+        FAVICON_TARGETS.map(async (target) => {
+          const bytes = await svgToPngBytes(source, {
+            scale: scaleFor(target.size, source),
+            color: themed ? color : null,
+            // Only iOS needs the opaque plate; giving every size a background
+            // would put a coloured square in every browser tab.
+            background: needsOpaqueBackground(target) ? background : null,
+          });
+          await filesystem.writeFileBytes(`${targetDir}/${target.name}`, bytes);
+        }),
+      );
 
       await filesystem.writeFile(
         `${targetDir}/site.webmanifest`,

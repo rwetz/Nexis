@@ -74,10 +74,13 @@ function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={() => {
-        void navigator.clipboard.writeText(text).then(() => {
-          setCopied(true);
-          window.setTimeout(() => setCopied(false), 1400);
-        });
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1400);
+          })
+          .catch((e) => console.warn("[nexis] copy failed:", e));
       }}
       className="flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:border-border hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
     >
@@ -126,6 +129,7 @@ export function WebToolsPanel() {
           <>
             <textarea
               className={cn(FIELD, "h-28")}
+              aria-label="JSON input"
               placeholder="Paste JSON"
               spellCheck={false}
               value={json}
@@ -133,6 +137,7 @@ export function WebToolsPanel() {
             />
             <input
               className={cn(FIELD, "h-7")}
+              aria-label="JSON path query"
               placeholder="$.path.to[0].value  (optional)"
               spellCheck={false}
               value={jsonPath}
@@ -171,6 +176,7 @@ export function WebToolsPanel() {
           <>
             <textarea
               className={cn(FIELD, "h-20")}
+              aria-label="JWT"
               placeholder="Paste a JWT"
               spellCheck={false}
               value={jwt}
@@ -227,6 +233,7 @@ export function WebToolsPanel() {
           <>
             <textarea
               className={cn(FIELD, "h-24")}
+              aria-label="Text to encode or decode"
               placeholder="Text to encode or decode"
               spellCheck={false}
               value={codecInput}
@@ -262,6 +269,7 @@ export function WebToolsPanel() {
             <div className="flex items-center gap-1.5">
               <input
                 className={cn(FIELD, "h-7 flex-1")}
+                aria-label="Regex pattern"
                 placeholder="pattern"
                 spellCheck={false}
                 value={pattern}
@@ -269,6 +277,7 @@ export function WebToolsPanel() {
               />
               <input
                 className={cn(FIELD, "h-7 w-16")}
+                aria-label="Regex flags"
                 placeholder="flags"
                 spellCheck={false}
                 value={flags}
@@ -277,6 +286,7 @@ export function WebToolsPanel() {
             </div>
             <textarea
               className={cn(FIELD, "h-24")}
+              aria-label="Regex test string"
               placeholder="Test string"
               spellCheck={false}
               value={subject}
@@ -291,6 +301,7 @@ export function WebToolsPanel() {
                 <ul className="flex flex-col gap-1">
                   {regexOut.matches.map((m, i) => (
                     <li
+                      // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
                       key={i}
                       className="rounded-md bg-muted/40 px-2 py-1 font-mono text-[10.5px]"
                     >

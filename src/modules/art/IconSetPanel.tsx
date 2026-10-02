@@ -24,7 +24,7 @@ import { Icon } from "@/components/icon";
 import { basename } from "@/lib/path";
 import { cn } from "@/lib/utils";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   auditIcons,
   readIconFacts,
@@ -53,20 +53,20 @@ type LoadState =
   | { kind: "ready"; entries: Entry[]; truncated: boolean }
   | { kind: "error"; message: string };
 
+const NO_ENTRIES: Entry[] = [];
+
 type Props = {
   /** The folder scanned when no other is given. */
   workspaceRoot: string | null;
 };
 
 export function IconSetPanel({ workspaceRoot }: Props) {
-  const [dir, setDir] = useState<string>(workspaceRoot ?? "");
+  const [dirInput, setDir] = useState<string>(workspaceRoot ?? "");
+  // An empty field follows the workspace root, which may arrive after mount.
+  const dir = dirInput === "" ? (workspaceRoot ?? "") : dirInput;
   const [state, setState] = useState<LoadState>({ kind: "idle" });
   const [selected, setSelected] = useState<string | null>(null);
   const [size, setSize] = useState<number>(24);
-
-  useEffect(() => {
-    if (workspaceRoot && dir === "") setDir(workspaceRoot);
-  }, [workspaceRoot, dir]);
 
   const scan = useCallback(async () => {
     const root = dir.trim();
@@ -81,37 +81,38 @@ export function IconSetPanel({ workspaceRoot }: Props) {
       const svgs = all.slice(0, MAX_FILES);
 
       const base = root.replace(/[\/]+$/, "");
-      const entries: Entry[] = [];
-      for (const file of svgs) {
-        const failed = (message: string): Entry => ({
-          facts: { ...readIconFacts({ name: file.name, source: "" }), error: message },
-          source: "",
-        });
-        try {
-          const read = await filesystem.readFile(`${base}/${file.name}`);
-          if (read.kind !== "text") {
-            // A binary or oversized "SVG" is a finding, not a crash — and it
-            // is exactly the kind of thing a folder of exports collects.
-            entries.push(failed(`not readable as text (${read.kind})`));
-            continue;
-          }
-          entries.push({
-            facts: readIconFacts({ name: file.name, source: read.content }),
-            source: read.content,
+      // Read in parallel; Promise.all keeps the listing's order.
+      const entries = await Promise.all(
+        svgs.map(async (file): Promise<Entry> => {
+          const failed = (message: string): Entry => ({
+            facts: { ...readIconFacts({ name: file.name, source: "" }), error: message },
+            source: "",
           });
-        } catch (e) {
-          // A file the backend refuses (a symlink, a permissions problem) is
-          // reported in the set rather than aborting the scan.
-          entries.push(failed(String(e)));
-        }
-      }
+          try {
+            const read = await filesystem.readFile(`${base}/${file.name}`);
+            if (read.kind !== "text") {
+              // A binary or oversized "SVG" is a finding, not a crash — and it
+              // is exactly the kind of thing a folder of exports collects.
+              return failed(`not readable as text (${read.kind})`);
+            }
+            return {
+              facts: readIconFacts({ name: file.name, source: read.content }),
+              source: read.content,
+            };
+          } catch (e) {
+            // A file the backend refuses (a symlink, a permissions problem) is
+            // reported in the set rather than aborting the scan.
+            return failed(String(e));
+          }
+        }),
+      );
       setState({ kind: "ready", entries, truncated: all.length > svgs.length });
     } catch (e) {
       setState({ kind: "error", message: String(e) });
     }
   }, [dir]);
 
-  const entries = state.kind === "ready" ? state.entries : [];
+  const entries = state.kind === "ready" ? state.entries : NO_ENTRIES;
   const facts = useMemo(() => entries.map((e) => e.facts), [entries]);
   const findings = useMemo(() => auditIcons(facts), [facts]);
 

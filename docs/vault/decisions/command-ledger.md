@@ -39,7 +39,7 @@ Shipped so far, and where it lives:
 
 ## Context
 
-Nexis injects OSC 133 shell integration, so every command already carries cwd, argv, exit code and timing, and an fswatch runs alongside it (`src-tauri/src/modules/fswatch.rs`). Today all of that feeds the exit-status gutter in `src/modules/terminal/lib/osc-handlers.ts` and is then discarded.
+Nexis injects OSC 133 shell integration, so every command already carries cwd, argv, exit code and timing, and an fswatch runs alongside it (`src-tauri/src/modules/fswatch.rs`). Before the ledger, all of that fed only the exit-status gutter in `src/modules/terminal/lib/osc-handlers.ts` (since removed) and was then discarded.
 
 Eight items in ROADMAP's *"terminal-native features an IDE can't have"* are gated on keeping it: command provenance, success-filtered history, the failure/fix loop, build-time trends, the searchable output archive, "while you were away", the work journal, and "where was I?". Built ad hoc, that becomes five incompatible stores. Built once, it is the substrate the whole differentiating pool sits on.
 

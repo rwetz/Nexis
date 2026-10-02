@@ -198,7 +198,7 @@ function CommandCard({ code, lang }: { code: string; lang: string }) {
           )}
         >
           {code.split("\n").map((line, i) => (
-            // eslint-disable-next-line react/no-array-index-key
+            // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
             <span key={i} className="flex">
               <span className="mr-2 select-none text-muted-foreground/70">
                 {prompt}

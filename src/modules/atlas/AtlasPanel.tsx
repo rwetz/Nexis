@@ -84,6 +84,8 @@ function Shell({ standalone }: { standalone: boolean }) {
     // somewhere to fire from; the outline is suppressed because the visible
     // focus affordance is the selected row, not a ring around the panel.
     <div
+      role="region"
+      aria-label="Atlas"
       className="flex h-full flex-col outline-none"
       tabIndex={-1}
       onKeyDown={onKeyDown}

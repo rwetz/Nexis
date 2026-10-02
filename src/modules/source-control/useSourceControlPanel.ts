@@ -559,79 +559,94 @@ export function useSourceControlPanel(
     await summary.refresh({ remote: "never" });
   }, [isOpen, summary]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setPanelState("closed");
-      setSelectionTransition("none");
-      return;
-    }
-    if (summary.isLoading && !summary.hasRepo && !summary.status) {
-      setPanelState("loading");
-      return;
-    }
-    if (!summary.hasRepo) {
-      setRepo(null);
-      setStatus(null);
-      setSelected(null);
-      setPanelState("no-repo");
-      setSelectionTransition("none");
-      return;
-    }
-    if (summary.localError && !summary.status) {
-      setRepo(summary.repo);
-      setStatus(null);
-      setSelected(null);
-      setPanelState("error");
-      setSelectionTransition("none");
-      return;
-    }
-    if (!summary.repo || !summary.status) {
-      if (summary.isLoading) {
-        setPanelState("loading");
-      }
-      return;
-    }
-
-    setRepo(summary.repo);
-    setStatus(summary.status);
-    setPanelState("ready");
-
-    const current = selectedRef.current;
-    const exists =
-      !!current &&
-      summary.status.changedFiles.some((file) => {
-        if (file.path !== current.path) return false;
-        return current.mode === "+" ? file.staged : file.unstaged;
-      });
-
-    if (!exists && current) {
-      const samePathOtherMode = summary.status.changedFiles.find(
-        (file) =>
-          file.path === current.path &&
-          (current.mode === "+" ? file.unstaged : file.staged),
-      );
-      if (samePathOtherMode) {
-        const moved: DiffSelection = {
-          path: samePathOtherMode.path,
-          mode: current.mode === "+" ? "-" : "+",
-        };
-        setSelected(moved);
-        setSelectionTransition("moved-group");
-      } else {
-        setSelected(null);
-        setSelectionTransition("reset");
-      }
-    } else {
-      setSelectionTransition("none");
-    }
-  }, [
+  // Mirror the repo summary into panel state during render, not in an
+  // effect: an effect let one frame paint the previous repo's status (or a
+  // stale selection) after the summary had already moved on. The previous
+  // inputs are kept in state and compared, so the update runs once per
+  // change and converges. Repo and status are state rather than derived
+  // because they deliberately hold the last good snapshot while a refresh
+  // is loading.
+  const syncInputs = [
     isOpen,
     summary.hasRepo,
     summary.isLoading,
     summary.localError,
     summary.repo,
     summary.status,
-  ]);
+  ] as const;
+  const [prevSyncInputs, setPrevSyncInputs] = useState<readonly unknown[] | null>(null);
+  if (
+    prevSyncInputs === null ||
+    syncInputs.some((value, i) => value !== prevSyncInputs[i])
+  ) {
+    setPrevSyncInputs(syncInputs);
+    (() => {
+      if (!isOpen) {
+        setPanelState("closed");
+        setSelectionTransition("none");
+        return;
+      }
+      if (summary.isLoading && !summary.hasRepo && !summary.status) {
+        setPanelState("loading");
+        return;
+      }
+      if (!summary.hasRepo) {
+        setRepo(null);
+        setStatus(null);
+        setSelected(null);
+        setPanelState("no-repo");
+        setSelectionTransition("none");
+        return;
+      }
+      if (summary.localError && !summary.status) {
+        setRepo(summary.repo);
+        setStatus(null);
+        setSelected(null);
+        setPanelState("error");
+        setSelectionTransition("none");
+        return;
+      }
+      if (!summary.repo || !summary.status) {
+        if (summary.isLoading) {
+          setPanelState("loading");
+        }
+        return;
+      }
+
+      setRepo(summary.repo);
+      setStatus(summary.status);
+      setPanelState("ready");
+
+      const current = selected;
+      const exists =
+        !!current &&
+        summary.status.changedFiles.some((file) => {
+          if (file.path !== current.path) return false;
+          return current.mode === "+" ? file.staged : file.unstaged;
+        });
+
+      if (!exists && current) {
+        const samePathOtherMode = summary.status.changedFiles.find(
+          (file) =>
+            file.path === current.path &&
+            (current.mode === "+" ? file.unstaged : file.staged),
+        );
+        if (samePathOtherMode) {
+          const moved: DiffSelection = {
+            path: samePathOtherMode.path,
+            mode: current.mode === "+" ? "-" : "+",
+          };
+          setSelected(moved);
+          setSelectionTransition("moved-group");
+        } else {
+          setSelected(null);
+          setSelectionTransition("reset");
+        }
+      } else {
+        setSelectionTransition("none");
+      }
+    })();
+  }
 
   const selectEntry = useCallback(
     async (entry: SourceControlEntry) => {

@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { signalOnboardingStep } from "@/lib/onboarding";
-import type { IBuffer, IDecoration, IMarker, Terminal } from "@xterm/xterm";
+import type { IBuffer, IMarker, Terminal } from "@xterm/xterm";
 
 /**
  * Cross-handler state shared between the OSC 7 cwd handler and the OSC 133
@@ -137,33 +137,6 @@ export function scrollToAdjacentPrompt(term: Terminal, dir: -1 | 1): boolean {
 }
 
 /**
- * Everything captured about a failed command for the AI "Explain" flow.
- * Captured at OSC 133 D time (buffer content is final for that command),
- * delivered when the user clicks the inline chip.
- */
-export type CommandFailure = {
-  /** The command line as typed. zsh and bash place the OSC 133 B marker at
-   * the start of the prompt (they prepend it to PS1), so on those shells
-   * this includes the rendered prompt prefix — harmless for the model. */
-  command: string;
-  /** Command output, tail-biased and capped (errors live at the end). */
-  output: string;
-  exitCode: number;
-  /** cwd the command ran in. Read at D time, which is before the shell's
-   * post-command OSC 7 fires — so a failed `cd`-ish command can't skew it. */
-  cwd: string | null;
-};
-
-export type FailureExplainOptions = {
-  /** Live preference check — read at each command exit, no rebind needed. */
-  isEnabled: () => boolean;
-  /** cwd the command ran in; called at OSC 133 D time. */
-  getCwd: () => string | null;
-  /** Invoked when the user clicks the inline "✦ Explain" chip. */
-  onExplain: (failure: CommandFailure) => void;
-};
-
-/**
  * The command-ledger hook.
  *
  * `isEnabled` is checked **here**, in the OSC 133 handler, and never
@@ -188,27 +161,22 @@ export type LedgerOptions = {
   }) => void;
 };
 
-/** SIGINT exit — a deliberate Ctrl+C is a cancel, not a failure to explain. */
-const EXIT_SIGINT = 130;
-
 export function registerPromptTracker(
   term: Terminal,
   state?: ShellIntegrationState,
-  explain?: FailureExplainOptions,
   ledger?: LedgerOptions,
 ): PromptTracker {
   let marker: IMarker | null = null;
-  // Failed-command capture state, one command at a time. `cmdMarker` pins
+  // Command capture state for the ledger, one command at a time. `cmdMarker` pins
   // the line where input begins (B), `outMarker` the first output line (C).
   // PowerShell's profile emits no C — the capture degrades, see
-  // captureFailedCommand. `sawExec` distinguishes a real execution from a
+  // captureCommand. `sawExec` distinguishes a real execution from a
   // bare Enter on an empty prompt (precmd re-emits D with the stale $?).
   let cmdMarker: IMarker | null = null;
   let cmdStartX = 0;
   let outMarker: IMarker | null = null;
   let sawExec = false;
   let cmdStartedAt = 0;
-  const decorations: IDecoration[] = [];
   const disposeCommandMarkers = () => {
     cmdMarker?.dispose();
     cmdMarker = null;
@@ -226,10 +194,9 @@ export function registerPromptTracker(
         // is over whether or not its D survived the trip.
         state.executing = false;
       }
-      // A fresh marker per prompt. We intentionally do NOT dispose the
-      // previous one — its exit-status decoration (added at the matching D)
-      // must persist down the scrollback. xterm disposes the marker for us
-      // once it scrolls past the buffer, which tears down its decoration too.
+      // A fresh marker per prompt. The previous one is not disposed: prompt
+      // navigation needs every marker down the scrollback, and xterm disposes
+      // each one itself once its line scrolls out of the buffer.
       marker = term.registerMarker(0);
       if (marker) recordPromptMarker(term, marker);
       disposeCommandMarkers();
@@ -255,25 +222,13 @@ export function registerPromptTracker(
       outMarker = term.registerMarker(0);
       sawExec = true;
     } else if (data.startsWith("D")) {
-      // OSC 133 D;<exitcode> — command ends. Accent the command's prompt line
-      // green/red in the gutter so success/failure is scannable at a glance.
+      // OSC 133 D;<exitcode> — command ends.
       if (state) {
         state.inCommand = false;
         state.executing = false;
       }
       if (marker && !marker.isDisposed) {
         const code = parseExitCode(data);
-        // Read the command now, while the buffer still holds this block.
-        const command = readCommandText(term, cmdMarker, cmdStartX, outMarker);
-        // Only a command that ran gets a bar. A bare Enter on an empty prompt
-        // re-emits D with the previous $?, and barring it stacked a green (or
-        // red) bar on every empty prompt line. PowerShell sends no C, so
-        // "ran" is a C marker *or* typed command text. An integration that
-        // never marks input (no B at all) cannot tell the two apart, so it
-        // keeps the old behaviour rather than losing every bar.
-        if (sawExec || command !== "" || cmdMarker === null) {
-          addExitDecoration(term, marker, code, decorations, command);
-        }
         // A finished command with a real exit status is the signal that the
         // "run a command" onboarding step has actually happened. This is a
         // bare dispatchEvent -- the listener owns the preference write, so
@@ -284,7 +239,7 @@ export function registerPromptTracker(
         // a private terminal must not enter it, and a filter applied at write
         // time is a filter someone later moves (decision record §4).
         if (ledger?.isEnabled()) {
-          const captured = captureFailedCommand(
+          const captured = captureCommand(
             term,
             cmdMarker,
             cmdStartX,
@@ -301,21 +256,6 @@ export function registerPromptTracker(
             });
           }
         }
-        if (explain && code !== 0 && code !== EXIT_SIGINT && explain.isEnabled()) {
-          const capture = captureFailedCommand(term, cmdMarker, cmdStartX, outMarker);
-          // Require evidence a command actually ran: a C marker, or output.
-          // Bare Enter after a failure re-emits D with the stale status and
-          // must not grow a chip on the empty prompt line.
-          if (capture && (sawExec || capture.output.length > 0)) {
-            addExplainDecoration(
-              term,
-              marker,
-              { ...capture, exitCode: code, cwd: explain.getCwd() },
-              decorations,
-              explain.onExplain,
-            );
-          }
-        }
       }
       disposeCommandMarkers();
     }
@@ -323,12 +263,10 @@ export function registerPromptTracker(
   });
   // Erase in Display (CSI J). `cls` / `clear` blank the screen (mode 2) and
   // the scrollback (mode 3), but the lines themselves survive, and so do the
-  // markers on them: every exit bar and Explain chip stayed painted on blank
-  // rows, stacking into a solid green stripe down the gutter under the fresh
-  // prompt. Drop everything anchored in the erased region. The prompt marker
-  // for the command that did the clearing goes too, or its D would bar a
-  // blank line. Returns false so xterm still performs the erase; runs before
-  // it, so marker lines are still the pre-erase positions.
+  // markers on them. Drop the prompt markers in the erased region so prompt
+  // navigation doesn't jump to blank rows. Returns false so xterm still
+  // performs the erase; runs before it, so marker lines are still the
+  // pre-erase positions.
   const ed =
     typeof term.parser.registerCsiHandler === "function"
       ? term.parser.registerCsiHandler({ final: "J" }, (params) => {
@@ -338,9 +276,6 @@ export function registerPromptTracker(
           if ((mode !== 2 && mode !== 3) || buf.type === "alternate") return false;
           const top = buf.baseY;
           const erased = (line: number) => (mode === 2 ? line >= top : line < top);
-          for (const dec of decorations.slice()) {
-            if (dec.marker.isDisposed || erased(dec.marker.line)) dec.dispose();
-          }
           const prompts = promptMarkers.get(term);
           if (prompts) {
             const kept: IMarker[] = [];
@@ -362,11 +297,8 @@ export function registerPromptTracker(
     dispose: () => {
       d.dispose();
       ed?.dispose();
-      for (const dec of decorations.slice()) dec.dispose();
-      decorations.length = 0;
       // Only drop our navigation index — the markers themselves belong to the
-      // terminal (their exit decorations may still be on screen) and xterm
-      // disposes them when they scroll out.
+      // terminal, and xterm disposes them when they scroll out.
       promptMarkers.delete(term);
       marker?.dispose();
       marker = null;
@@ -399,90 +331,15 @@ function parseExitCode(data: string): number {
   return Number.isFinite(code) ? code : 0;
 }
 
-/** Add a thin green/red gutter bar on a command's prompt line, by exit code. */
-/**
- * The exit-status bar in the gutter, which doubles as the per-command block
- * affordance: hovering names the command and its exit status, clicking copies
- * the command.
- *
- * `command` is captured at D time and closed over — the buffer rows it came
- * from may have scrolled away or been overwritten by the time anyone clicks,
- * so reading lazily would hand back the wrong text (or nothing) exactly when
- * the scrollback is long enough for this to be useful.
- */
-function addExitDecoration(
-  term: Terminal,
-  marker: IMarker,
-  code: number,
-  decorations: IDecoration[],
-  command = "",
-): void {
-  // Decorations aren't guaranteed (older xterm builds / headless test mocks).
-  if (typeof term.registerDecoration !== "function") return;
-  const dec = term.registerDecoration({ marker, x: 0, width: 1 });
-  if (!dec) return;
-  decorations.push(dec);
-  dec.onDispose(() => {
-    const i = decorations.indexOf(dec);
-    if (i >= 0) decorations.splice(i, 1);
-  });
-  const ok = code === 0;
-  const label = command
-    ? `${command}\n${ok ? "Exit 0" : `Exit ${code}`} — click to copy command`
-    : ok
-      ? "Exit 0"
-      : `Exit ${code}`;
-  dec.onRender((el) => {
-    // Widen the *hit* area without widening the bar: a 2px target is not
-    // clickable in practice, so the element spans the gutter and paints the
-    // bar with an inset border instead of a background.
-    el.style.width = command ? "6px" : "2px";
-    // Leave height alone: xterm sizes the element to one cell row. A "100%"
-    // override resolves against the decoration container (the whole screen),
-    // which painted the bar down the entire terminal instead of one line.
-    el.style.borderRadius = "1px";
-    const color = ok ? "var(--terminal-ansi-green)" : "var(--terminal-ansi-red)";
-    if (command) {
-      el.style.background = "transparent";
-      el.style.borderLeft = `2px solid ${color}`;
-      el.style.cursor = "pointer";
-      el.style.pointerEvents = "auto";
-      el.title = label;
-      // Assigned as properties, not addEventListener: xterm re-invokes
-      // onRender on every paint, and listeners would stack (same rule the
-      // Explain chip follows).
-      el.onmouseenter = () => {
-        el.style.background = `color-mix(in srgb, ${color} 22%, transparent)`;
-      };
-      el.onmouseleave = () => {
-        el.style.background = "transparent";
-      };
-      el.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        void navigator.clipboard?.writeText(command).catch((err) => {
-          console.warn("[nexis] block copy failed:", err);
-        });
-      };
-    } else {
-      el.style.width = "2px";
-      el.style.background = color;
-      el.style.pointerEvents = "none";
-    }
-    el.style.opacity = "0.85";
-  });
-}
-
-// Caps for the failed-command capture. Errors live at the end of output, so
-// truncation keeps the tail. The capture is held in a closure per failed
-// command until its marker scrolls out, so the cap is also a memory bound.
+// Caps for the ledger's command capture. Errors live at the end of output,
+// so truncation keeps the tail.
 const MAX_COMMAND_CHARS = 2_000;
 const MAX_OUTPUT_LINES = 200;
 const MAX_OUTPUT_CHARS = 16_000;
 const TRUNCATION_NOTE = "[… earlier output truncated …]";
 
 /**
- * Extract the failed command and its output from the buffer at OSC 133 D
+ * Extract the finished command and its output from the buffer at OSC 133 D
  * time. All bytes printed before the D sequence are already in the buffer
  * (the parser is in-order), so the content between the B/C markers and the
  * cursor is exactly this command's transcript.
@@ -492,7 +349,7 @@ const TRUNCATION_NOTE = "[… earlier output truncated …]";
  * below is treated as output — multi-line PS commands land in `output`,
  * which the model copes with fine.
  */
-function captureFailedCommand(
+function captureCommand(
   term: Terminal,
   cmdMarker: IMarker | null,
   cmdStartX: number,
@@ -531,10 +388,6 @@ function captureFailedCommand(
  * time (the buffer is final for that command — the parser is in-order, so
  * everything it printed is already there).
  *
- * Shared by the failed-command capture and the block gutter's copy action so
- * the two can never disagree about where a command ends and its output
- * begins — they used to be the same code, and a divergence here would show
- * up as the copied command silently including a line of output.
  */
 function commandBounds(
   term: Terminal,
@@ -562,33 +415,6 @@ function commandBounds(
   return { cmdLine, cmdEnd, outStart, lastLine };
 }
 
-/**
- * Just the command text of the block that finished, for the gutter's
- * click-to-copy action.
- *
- * Only the command is retained per block, never its output: a block index
- * spans the whole scrollback (up to `MAX_PROMPT_MARKERS`), and holding each
- * command's output would put tens of megabytes behind a feature that exists
- * to copy a one-line command. Output stays reachable through selection.
- */
-function readCommandText(
-  term: Terminal,
-  cmdMarker: IMarker | null,
-  cmdStartX: number,
-  outMarker: IMarker | null,
-): string {
-  const bounds = commandBounds(term, cmdMarker, outMarker);
-  if (!bounds) return "";
-  return readLines(
-    term.buffer.active,
-    bounds.cmdLine,
-    Math.min(bounds.cmdEnd, bounds.lastLine),
-    cmdStartX,
-  )
-    .slice(0, MAX_COMMAND_CHARS)
-    .trim();
-}
-
 /** Read buffer rows [from..to], joining wrapped rows without a newline.
  * `firstCol` skips the prompt prefix on the first row (cursor x at B). */
 function readLines(buf: IBuffer, from: number, to: number, firstCol: number): string {
@@ -601,92 +427,6 @@ function readLines(buf: IBuffer, from: number, to: number, firstCol: number): st
     else text += (line.isWrapped ? "" : "\n") + row;
   }
   return text;
-}
-
-/** Cells reserved at the right edge of the command line for the chip. The
- * element itself shrinks to max-content, so this is a placement hint. */
-const EXPLAIN_CHIP_CELLS = 12;
-
-/**
- * Cells between the chip and the right edge. **This must not be zero**, and the
- * reason is a trap in xterm rather than a matter of taste. `_refreshXPosition`
- * in `BufferDecorationRenderer` reads:
- *
- *     element.style.right = x ? `${x * cellWidth}px` : '';
- *
- * so an `x` of 0 *clears* `right` instead of setting `0px`. The element is
- * absolutely positioned with neither `left` nor `right`, falls back to its
- * static position at the **left** edge, and — at the chip's 0.6 opacity —
- * renders as a ghost sitting on top of the prompt text. `anchor: "right"` is
- * silently ignored, which is why the symptom looks nothing like a positioning
- * bug. Pinned by a test.
- */
-const EXPLAIN_CHIP_RIGHT_GAP = 1;
-
-/**
- * Add the clickable "✦ Explain" chip on a failed command's prompt line,
- * right-anchored. The decoration element itself is the chip — no child
- * nodes, no `document.*` — so the logic stays testable in a Node test
- * environment, and handlers are assigned as properties (not addEventListener)
- * so xterm re-invoking onRender on every paint can't stack listeners.
- */
-function addExplainDecoration(
-  term: Terminal,
-  marker: IMarker,
-  failure: CommandFailure,
-  decorations: IDecoration[],
-  onExplain: (failure: CommandFailure) => void,
-): void {
-  if (typeof term.registerDecoration !== "function") return;
-  const dec = term.registerDecoration({
-    marker,
-    anchor: "right",
-    x: EXPLAIN_CHIP_RIGHT_GAP,
-    width: EXPLAIN_CHIP_CELLS,
-    layer: "top",
-  });
-  if (!dec) return;
-  decorations.push(dec);
-  dec.onDispose(() => {
-    const i = decorations.indexOf(dec);
-    if (i >= 0) decorations.splice(i, 1);
-  });
-  dec.onRender((el) => {
-    el.textContent = "✦ Explain";
-    el.title = `Explain this failure with AI (exit code ${failure.exitCode})`;
-    const s = el.style;
-    // xterm re-applies its own width each paint; ours must win every render.
-    s.width = "max-content";
-    s.height = "auto";
-    // Belt and braces for the anchoring trap above: if a stale `left` ever
-    // survives a re-layout, it would beat `right` and put the chip back over
-    // the prompt text.
-    s.left = "auto";
-    s.padding = "0 7px";
-    s.fontSize = "10px";
-    s.lineHeight = "16px";
-    s.fontFamily = "var(--font-sans, ui-sans-serif, system-ui, sans-serif)";
-    s.borderRadius = "8px";
-    s.color = "var(--terminal-ansi-red)";
-    s.background = "color-mix(in srgb, var(--terminal-ansi-red) 12%, transparent)";
-    s.border = "1px solid color-mix(in srgb, var(--terminal-ansi-red) 35%, transparent)";
-    s.cursor = "pointer";
-    s.pointerEvents = "auto";
-    s.userSelect = "none";
-    s.opacity = "0.6";
-    s.zIndex = "10";
-    el.onmouseenter = () => {
-      el.style.opacity = "1";
-    };
-    el.onmouseleave = () => {
-      el.style.opacity = "0.6";
-    };
-    el.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onExplain(failure);
-    };
-  });
 }
 
 /**

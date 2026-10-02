@@ -229,6 +229,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
             </div>
             <ul className="space-y-0.5">
               {commits.map((c, i) => (
+                // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
                 <li key={i} className="text-[11px] text-foreground/80 leading-relaxed font-mono">
                   {c}
                 </li>

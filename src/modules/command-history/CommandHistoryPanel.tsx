@@ -242,6 +242,7 @@ function RecentTab({ root }: { root: string }) {
     return () => {
       if (timerRef.current !== null) clearTimeout(timerRef.current);
     };
+  // react-doctor-disable-next-line react-doctor/prefer-use-effect-event -- a new load (root change) must re-run the query
   }, [query, exit, inOutput, load]);
 
   const refresh = () => load(query.trim(), exit, inOutput);

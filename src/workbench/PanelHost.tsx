@@ -30,7 +30,8 @@ export function PanelHost({ view, fallback, onShowExplorer, pendingViews = [] }:
   }, [view, activeEnabled]);
   useEffect(() => {
     setVisited((previous) => {
-      const next = new Set([...previous].filter((panel) => panels.includes(panel) && packEnabled(panel.pack, packs)));
+      const current = new Set(panels);
+      const next = new Set([...previous].filter((panel) => current.has(panel) && packEnabled(panel.pack, packs)));
       if (active && activeEnabled) next.add(active);
       return next.size === previous.size && [...next].every((panel) => previous.has(panel)) ? previous : next;
     });

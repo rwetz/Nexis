@@ -128,9 +128,11 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
   // Open on a finding. Deliberately one-way: it opens itself when something
   // appears, and does not slam shut on the next keystroke while you are
   // reading it.
-  useEffect(() => {
+  const [prevLiveCount, setPrevLiveCount] = useState(0);
+  if (live.length !== prevLiveCount) {
+    setPrevLiveCount(live.length);
     if (live.length > 0) setExpanded(true);
-  }, [live.length]);
+  }
 
   const dismiss = (fingerprint: string) => {
     const next = new Set(allowed);

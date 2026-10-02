@@ -10,6 +10,7 @@ import { describeKind, scanDiffForSecrets } from "./secretScan";
 
 // Not real credentials — shaped to match the detectors, nothing more.
 const OPENAI = "sk-proj-AAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+// react-doctor-disable-next-line react-doctor/no-secrets-in-client-code -- test fixture for the secret scanner, not a real credential
 const AWS = "AKIAIOSFODNN7EXAMPLE";
 
 describe("findSecrets", () => {

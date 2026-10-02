@@ -219,6 +219,7 @@ export function HttpClientPanel({ workspaceKey }: Props) {
           </select>
           <input
             className={cn(FIELD, "h-7 flex-1")}
+            aria-label="Request URL"
             placeholder="localhost:3000/api  or  {{baseUrl}}/users"
             spellCheck={false}
             value={url}
@@ -440,6 +441,7 @@ function RequestTabBody({
       <>
         <textarea
           className={cn(FIELD, "h-20")}
+          aria-label="Request headers"
           placeholder={"Content-Type: application/json\n# Authorization: Bearer {{token}}"}
           spellCheck={false}
           value={headerText}
@@ -456,6 +458,7 @@ function RequestTabBody({
     {tab === "body" && (
       <textarea
         className={cn(FIELD, "h-28")}
+        aria-label="Request body"
         placeholder={
           method === "GET" || method === "HEAD"
             ? `${method} sends no body`
@@ -471,6 +474,7 @@ function RequestTabBody({
       <>
         <textarea
           className={cn(FIELD, "h-20")}
+          aria-label="Environment variables"
           placeholder={"baseUrl: http://localhost:3000\ntoken: dev-token"}
           spellCheck={false}
           value={varsText}

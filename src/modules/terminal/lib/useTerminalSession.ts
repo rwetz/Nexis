@@ -15,7 +15,6 @@ import {
   registerCwdHandler,
   registerPromptTracker,
   registerTitleHandler,
-  type CommandFailure,
   type ShellIntegrationState,
 } from "./osc-handlers";
 import {
@@ -422,7 +421,7 @@ function logMissingIntegration(leafId: number): void {
   loggedMissingIntegration = true;
   console.info(
     `[nexis] leaf ${leafId}: no shell-integration markers after ${INTEGRATION_CHECK_MS}ms — ` +
-      "falling back to OS-level cwd tracking (prompt exit gutter and cwd-spoofing " +
+      "falling back to OS-level cwd tracking (prompt navigation and cwd-spoofing " +
       "protection unavailable without integration)",
   );
 }
@@ -448,21 +447,7 @@ function bindLeafToSlot(leafId: number, s: Session): void {
       // attacker file, etc.). Session-level, not per-bind, so the flag is
       // still correct after a background/foreground slot cycle.
       const shellState = s.shellState;
-      // Failed-command "✦ Explain" chip: capture is buffer-local, the click
-      // just dispatches a window event — App.tsx bridges it into the AI
-      // composer (same decoupling as selections and explorer attachments).
       const prompt = registerPromptTracker(term, shellState, {
-        isEnabled: () =>
-          usePreferencesStore.getState().terminalExplainFailures,
-        getCwd: () => s.lastCwd,
-        onExplain: (failure) =>
-          window.dispatchEvent(
-            new CustomEvent<CommandFailure>("nexis:ai-explain-failure", {
-              detail: failure,
-            }),
-          ),
-      },
-      {
         // Private terminals never enter the ledger. The resolver is owned by
         // App (it holds the tab list); an uninstalled resolver answers
         // "private", so forgetting to wire it records nothing rather than

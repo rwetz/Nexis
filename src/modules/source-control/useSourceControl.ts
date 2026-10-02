@@ -302,6 +302,7 @@ export function useSourceControl(
     // so switching Windows <-> WSL changes what this function does without
     // changing anything it closes over. Rebuilding it on a switch is what
     // makes every consumer re-read against the new machine.
+    // react-doctor-disable-next-line react-doctor/exhaustive-deps -- workspaceKey is a deliberate rebuild trigger; see the comment above
     [contextPath, workspaceKey],
   );
 

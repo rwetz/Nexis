@@ -268,6 +268,7 @@ function StepCard({
               <span className="ml-auto flex shrink-0 items-center gap-0.5">
                 {keys.map((k, i) => (
                   <kbd
+                    // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
                     key={i}
                     className="rounded border border-border/60 bg-muted/60 px-1 py-px text-[9.5px] leading-none text-muted-foreground"
                   >

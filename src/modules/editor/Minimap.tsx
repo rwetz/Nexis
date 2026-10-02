@@ -119,6 +119,7 @@ export function Minimap({ view, className }: Props) {
     // `--app-zoom` custom property, and no CSS pixel size changes when app
     // zoom does — so nothing else would ever trigger the redraw. Removing it
     // makes the strip render soft at any zoom above 1.
+  // react-doctor-disable-next-line react-doctor/exhaustive-deps -- zoomLevel is a deliberate redraw trigger; see the comment above
   }, [view, zoomLevel]);
 
   const scheduleDraw = useCallback(() => {

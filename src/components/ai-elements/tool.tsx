@@ -450,6 +450,7 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
         <div className="max-h-72 overflow-auto rounded bg-muted/30 font-mono text-[11px]">
           {hits.slice(0, 200).map((h, idx) => (
             <div
+              // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
               key={`${h.rel ?? h.path}-${h.line}-${idx}`}
               className="flex gap-2 border-b border-border/30 px-2 py-1 last:border-b-0 hover:bg-muted/60"
             >
@@ -654,10 +655,12 @@ function highlightMatch(text: string, pattern: string): ReactNode {
   const parts = text.split(re);
   return parts.map((p, i) =>
     i % 2 === 1 ? (
+      // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
       <mark key={i} className="rounded bg-amber-500/30 px-0.5 text-foreground">
         {p}
       </mark>
     ) : (
+      // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
       <span key={i}>{p}</span>
     ),
   );
