@@ -28,6 +28,10 @@ const appBinary = resolve(
 
 const isWindows = process.platform === "win32";
 
+/// Folder to open the app on (`nexis <folder>`). Screenshot runs set this so
+/// the editor, explorer and Source Control have a real repo to show.
+const launchArgs = process.env.NEXIS_E2E_WORKSPACE ? [resolve(process.env.NEXIS_E2E_WORKSPACE)] : [];
+
 /// The DevTools port the app is built to expose on Windows.
 ///
 /// This is NOT passed at launch — it is compiled into the bundle by
@@ -104,6 +108,8 @@ function seedFirstRunPreferences(): void {
   // does. Do not drop it.
   const seeded = {
     ...existing,
+    // Screenshot runs match the sites, which show the dark theme.
+    ...(process.env.NEXIS_SCREENSHOTS === "1" ? { theme: "dark" } : {}),
     packsOnboarded: true,
     onboardingTourDone: true,
     enabledPacks: [
@@ -114,6 +120,8 @@ function seedFirstRunPreferences(): void {
       "ml-lab",
       "advanced",
       "web-dev",
+      // Screenshot runs capture SVG Studio and Documents too.
+      ...(process.env.NEXIS_SCREENSHOTS === "1" ? ["art", "documents"] : []),
     ],
   };
 
@@ -242,7 +250,7 @@ async function waitForDebugPort(port: number, timeoutMs: number): Promise<string
 async function startWindowsHarness(): Promise<void> {
   const msedgedriverPath = await resolveMsedgedriver();
 
-  appProcess = spawn(appBinary, [], { stdio: ["ignore", "inherit", "inherit"], windowsHide: true });
+  appProcess = spawn(appBinary, launchArgs, { stdio: ["ignore", "inherit", "inherit"], windowsHide: true });
   appProcess.on("exit", (code) => {
     if (code !== 0 && code !== null) console.error(`[e2e] app exited early with code ${code}`);
   });
@@ -281,7 +289,7 @@ export const config: WebdriverIO.Config = {
         // it needs an assertion the Windows branch above does not.
         ({
           browserName: "",
-          "tauri:options": { application: appBinary },
+          "tauri:options": { application: appBinary, args: launchArgs },
           "wdio:enforceWebDriverClassic": true,
         } as WebdriverIO.Capabilities),
   ],

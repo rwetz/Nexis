@@ -45,3 +45,4 @@ docs/vault/.obsidian/
 # Local generated output and fixture scratch files
 /brag-output/
 /test/
+e2e/screenshots/
