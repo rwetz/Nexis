@@ -7,8 +7,10 @@
 /**
  * ML suite plugin — the in-app half of the Nexis ML Suite (ML_SUITE.md).
  *
- * Contributes the training status-bar pill and a command to open the ML
- * panel, and wires the engine's Tauri event stream into the ML store.
+ * Contributes the training status-bar pill, a command to open the ML
+ * panel, and the agent tools that let the AI chat use trained models
+ * (`ml_list_models` / `ml_predict` / `ml_rank_csv`), and wires the engine's
+ * Tauri event stream into the ML store.
  * The panel itself lives in the sidebar rail ("ml" view), following the
  * same convention as Tests/Build/Database.
  */
@@ -20,6 +22,7 @@ import { createElement } from "react";
 // main chunk and defeat App.tsx's lazy `import("@/modules/ml/MlPanel")`.
 import { MlStatusPill } from "@/modules/ml/MlStatusPill";
 import { initMlSubscriptions } from "@/modules/ml/store";
+import { ML_MODEL_TOOLS } from "@/modules/ml/lib/model-tools";
 
 export const mlPlugin: Plugin = {
   id: "nexis.ml",
@@ -31,6 +34,7 @@ export const mlPlugin: Plugin = {
 
     return combineDisposables(
       { dispose: unsubscribe },
+      ...ML_MODEL_TOOLS.map((tool) => api.registerTool(tool)),
       api.registerStatusBarItem({
         id: "nexis.ml:training-pill",
         side: "right",

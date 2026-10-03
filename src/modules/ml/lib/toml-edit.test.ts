@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { describe, expect, it } from "vitest";
-import { tomlGet, tomlSet } from "./toml-edit";
+import { tomlGet, tomlSet, tomlUpsert } from "./toml-edit";
 
 const SAMPLE = `# Hyperparameters
 [data]
@@ -65,6 +65,36 @@ describe("tomlSet", () => {
     const crlf = SAMPLE.replace(/\n/g, "\r\n");
     const out = tomlSet(crlf, "train", "epochs", "9");
     expect(out).toContain("\r\n");
+    expect(out).not.toMatch(/[^\r]\n/);
+  });
+});
+
+describe("tomlUpsert", () => {
+  it("replaces an existing key like tomlSet", () => {
+    const out = tomlUpsert(SAMPLE, "data", "target", '"tier"');
+    expect(tomlGet(out, "data", "target")).toBe('"tier"');
+    expect(out).toBe(tomlSet(SAMPLE, "data", "target", '"tier"'));
+  });
+
+  it("adds a missing key at the end of its section", () => {
+    const out = tomlUpsert(SAMPLE, "model", "dropout", "0.1");
+    expect(tomlGet(out, "model", "dropout")).toBe("0.1");
+    // inserted before the blank line that ends [model], not after [train]
+    expect(out.indexOf("dropout")).toBeLessThan(out.indexOf("[train]"));
+  });
+
+  it("appends a missing section", () => {
+    const rust = "[train]\nepochs = 30\n\n[model]\nhidden = [16]\n";
+    const withPath = tomlUpsert(rust, "data", "path", '"data/players.csv"');
+    const out = tomlUpsert(withPath, "data", "target", '"tier"');
+    expect(tomlGet(out, "data", "path")).toBe('"data/players.csv"');
+    expect(tomlGet(out, "data", "target")).toBe('"tier"');
+    expect(tomlGet(out, "model", "hidden")).toBe("[16]");
+    expect(out.match(/\[data\]/g)).toHaveLength(1);
+  });
+
+  it("keeps CRLF files CRLF", () => {
+    const out = tomlUpsert("[train]\r\nepochs = 3\r\n", "data", "path", '"x.csv"');
     expect(out).not.toMatch(/[^\r]\n/);
   });
 });

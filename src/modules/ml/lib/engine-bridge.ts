@@ -22,6 +22,7 @@ import {
   createMlWorkspaceApi,
   mlHost,
   subscribeMlProtocol,
+  subscribeMlProtocolAttached,
   type EngineDetectResult,
   type EnginePin,
   type ExitPayload,
@@ -431,4 +432,9 @@ export type MlBridgeHandlers = {
  */
 export function subscribeMlEvents(handlers: MlBridgeHandlers): () => void {
   return subscribeMlProtocol(handlers);
+}
+
+/** `subscribeMlEvents`, resolving once the listeners are attached. */
+export function subscribeMlEventsAttached(handlers: MlBridgeHandlers): Promise<() => void> {
+  return subscribeMlProtocolAttached(handlers);
 }

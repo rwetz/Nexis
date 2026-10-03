@@ -73,6 +73,14 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     title: "Convolution layer",
     body: "Slides small learned filters across the image to detect local patterns — edges and textures in early layers, shapes in later ones. The channel count is how many different patterns the layer can learn.",
   },
+  conv1: {
+    title: "First conv filters",
+    body: "How many filters the first convolution layer learns. These see raw pixels, so they pick up edges, colors and fine texture. 8-16 is plenty for simple images; more helps with subtle textures.",
+  },
+  conv2: {
+    title: "Second conv filters",
+    body: "How many filters the second convolution layer learns. It combines the first layer's edges into shapes and parts, so it is usually about twice the first layer's count.",
+  },
   temperature: {
     title: "Temperature",
     body: "How adventurous sampling is when generating. Low (~0.3) keeps to the most likely next characters — safe and repetitive. High (~1.2) takes risks — creative but error-prone. 0.8 is a good default.",
