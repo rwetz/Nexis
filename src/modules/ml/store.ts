@@ -66,18 +66,26 @@ import {
   parseProtocolLines,
   parseServeLine,
   type ArtifactRef,
-  type MetricStats,
   type MlSample,
   type RunSummary,
   type ServeEvent,
   type ServeMeta,
 } from "./lib/protocol";
 import { appendPoint, createSeriesMap, type Series } from "./lib/series";
-import { readRunMeta, writeRunMeta, type RunMeta } from "./lib/notes";
+import { writeRunMeta, type RunMeta } from "./lib/notes";
 import { readTextFile } from "./lib/fs";
 import { readTrainToml, writeProjectBrief, writeTrainToml } from "./lib/config";
-import { tomlSet } from "./lib/toml-edit";
-import type { CreationOverride } from "./lib/model-blueprint";
+import { applyOverrides, type CreationOverride } from "./lib/model-blueprint";
+import type { StarterFile } from "./lib/starter-data";
+import {
+  discoverProjects,
+  fileExists,
+  readRuns,
+  sortRuns,
+  type HistoricalRun,
+  type MlProject,
+} from "./lib/projects";
+import { isHeadlessSid } from "./lib/headless";
 
 export type EngineStatus = "idle" | "detecting" | "ready" | "missing";
 
@@ -103,30 +111,7 @@ export type ActiveRun = {
   paused?: boolean;
 };
 
-export type MlProject = {
-  /** Absolute-ish path Nexis uses for fs/spawn calls. */
-  dir: string;
-  /** Short display name (directory basename). */
-  name: string;
-  /** An exported model.onnx exists in the project dir. */
-  hasOnnx: boolean;
-};
-
-export type HistoricalRun = {
-  id: string;
-  dir: string;
-  status: string;
-  metrics?: Record<string, MetricStats>;
-  lastEpoch?: number | null;
-  totalEpochs?: number | null;
-  device?: string | null;
-  startedAt?: string;
-  finishedAt?: string;
-  /** Per-run metadata from notes.json. */
-  note?: string;
-  tags?: string[];
-  pinned?: boolean;
-};
+export type { MlProject, HistoricalRun } from "./lib/projects";
 
 /** A historical run selected for overlay comparison. */
 export type CompareRun = {
@@ -209,7 +194,6 @@ function serveOwns(payload: ProtoPayload, serve: ServeSession | null): boolean {
 }
 
 const MAX_LOG_LINES = 200;
-const MAX_RUNS_LISTED = 50;
 const BUSY_RUN_STATES = ["starting", "running", "cancelling"];
 /** Keep only the most recent generated-text snapshots in memory. */
 const MAX_SAMPLES = 12;
@@ -309,6 +293,7 @@ type MlStore = {
     autoTrain: boolean;
     purpose?: string;
     overrides?: CreationOverride[];
+    files?: StarterFile[];
   } | null;
   /** Why the last "Create & train" didn't start — shown on the create card. */
   createError: string | null;
@@ -378,6 +363,8 @@ type MlStore = {
     autoTrain: boolean,
     purpose?: string,
     overrides?: CreationOverride[],
+    /** Starter data written into the new project (never over a file). */
+    files?: StarterFile[],
   ) => Promise<void>;
   startTrain: (projectDir: string) => Promise<void>;
   cancelActive: () => Promise<void>;
@@ -404,41 +391,24 @@ type MlStore = {
   _applyExit: (payload: ExitPayload) => void;
 };
 
-/** Pinned runs first; order is otherwise preserved (the input is already
- *  newest-first), relying on Array.prototype.sort being stable. */
-function sortRuns(runs: HistoricalRun[]): HistoricalRun[] {
-  // Boolean-coerce: a missing `pinned` must read as 0, not NaN (which
-  // would make the comparator inconsistent and leave the list unsorted).
-  return runs.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
-}
-
-/** Subdirectories that can't plausibly be ML projects. */
-const SKIP_DIRS = new Set(["node_modules", "dist", "build", "target", "coverage"]);
-
-async function fileExists(path: string): Promise<boolean> {
-  try {
-    await filesystem.stat(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 /**
- * A dir is an ML project when it has a `train.toml` — the engine-agnostic
- * marker both engines scaffold. The Rust engine's projects are config-only
- * (NO train.py), so checking train.py alone made them invisible and the
- * panel showed the first-model create card next to a fully trained model.
- * train.py is kept as a fallback for old Python projects.
+ * Write a new project's starter files, skipping any path that already exists
+ * (a scaffold's own `data/example.csv` or a re-used directory). Returns the
+ * paths written.
  */
-async function isMlProject(dir: string): Promise<boolean> {
-  if (await fileExists(`${dir}/train.toml`)) return true;
-  return fileExists(`${dir}/train.py`);
-}
-
-/** Build the MlProject record for a discovered dir (ONNX badge included). */
-async function toProject(dir: string, name: string): Promise<MlProject> {
-  return { dir, name, hasOnnx: await fileExists(`${dir}/model.onnx`) };
+async function writeStarterFiles(dir: string, files: StarterFile[]): Promise<string[]> {
+  const written: string[] = [];
+  for (const file of files) {
+    const path = `${dir}/${file.path}`;
+    if (await fileExists(path)) continue;
+    const parent = path.slice(0, path.lastIndexOf("/"));
+    if (parent !== dir && !(await fileExists(parent))) {
+      await filesystem.createDir(parent);
+    }
+    await filesystem.writeFile(path, file.content, "ml-lab");
+    written.push(file.path);
+  }
+  return written;
 }
 
 function pushLog(logs: string[], line: string): string[] {
@@ -738,33 +708,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   async refreshProjects(workspaceRoot) {
-    const found: MlProject[] = [];
-    if (await isMlProject(workspaceRoot)) {
-      found.push(await toProject(workspaceRoot, basename(workspaceRoot)));
-    }
-    try {
-      const entries = await filesystem.readDir(workspaceRoot, false);
-      const candidates = entries
-        .filter(
-          (e) =>
-            e.kind === "dir" && !e.name.startsWith(".") && !SKIP_DIRS.has(e.name),
-        )
-        .slice(0, 40);
-      const checks = await Promise.all(
-        candidates.map(async (e) => ({
-          entry: e,
-          ok: await isMlProject(`${workspaceRoot}/${e.name}`),
-        })),
-      );
-      const projects = await Promise.all(
-        checks
-          .filter((c) => c.ok)
-          .map((c) => toProject(`${workspaceRoot}/${c.entry.name}`, c.entry.name)),
-      );
-      found.push(...projects);
-    } catch {
-      // unreadable workspace root — keep whatever we found
-    }
+    const found = await discoverProjects(workspaceRoot);
     const prev = get().selectedProject;
     const selected =
       (prev && found.some((p) => p.dir === prev) ? prev : null) ??
@@ -782,7 +726,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     void get().refreshRuns(dir);
   },
 
-  async createProject(workspaceRoot, template, name, autoTrain, purpose, overrides) {
+  async createProject(workspaceRoot, template, name, autoTrain, purpose, overrides, files) {
     const { engineExe, engineKind, pendingCreate } = get();
     if (pendingCreate) return; // already creating one
     // Surface why nothing would happen, instead of silently returning.
@@ -824,6 +768,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
           autoTrain,
           purpose,
           overrides,
+          files,
         },
       });
     } catch (err) {
@@ -922,54 +867,14 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   async refreshRuns(projectDir) {
-    const runsDir = `${projectDir}/.nexis-ml/runs`;
     set({ runsLoading: true });
     // Concurrent refreshes can race (e.g. create-project triggers one
     // via refreshProjects and another via selectProject) — only the
     // load for the currently selected project may write the list.
     const stillCurrent = () => get().selectedProject === projectDir;
     try {
-      const entries = await filesystem.readDir(runsDir, true);
-      const dirs = entries
-        .filter((e) => e.kind === "dir")
-        .map((e) => e.name)
-        .sort()
-        .reverse()
-        .slice(0, MAX_RUNS_LISTED);
-      const runs: HistoricalRun[] = await Promise.all(
-        dirs.map(async (name) => {
-          const dir = `${runsDir}/${name}`;
-          const base: HistoricalRun = { id: name, dir, status: "unknown" };
-          // notes.json is independent of summary.json (a crashed run can
-          // still be annotated/pinned); the two files are independent, so
-          // read them concurrently.
-          const [meta, summaryText] = await Promise.all([
-            readRunMeta(dir),
-            readTextFile(`${dir}/summary.json`),
-          ]);
-          const withMeta = { note: meta.note, tags: meta.tags, pinned: meta.pinned };
-          if (summaryText !== null) {
-            try {
-              const summary = JSON.parse(summaryText) as RunSummary;
-              return {
-                ...base,
-                ...withMeta,
-                status: summary.status ?? "unknown",
-                metrics: summary.metrics,
-                lastEpoch: summary.lastEpoch,
-                totalEpochs: summary.totalEpochs,
-                device: summary.device,
-                startedAt: summary.startedAt,
-                finishedAt: summary.finishedAt,
-              };
-            } catch {
-              // malformed summary → keep "unknown"
-            }
-          }
-          return { ...base, ...withMeta };
-        }),
-      );
-      if (stillCurrent()) set({ runs: sortRuns(runs), runsLoading: false });
+      const runs = await readRuns(projectDir);
+      if (stillCurrent()) set({ runs, runsLoading: false });
       else set({ runsLoading: false });
     } catch {
       // .nexis-ml/runs doesn't exist yet — that's a fresh project, not an error
@@ -1237,6 +1142,8 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   _applyProto(payload) {
+    // Chat-tool inference sessions (lib/headless.ts) are not the panel's.
+    if (isHeadlessSid(payload.sid)) return;
     if (serveOwns(payload, get().serve)) {
       get()._applyServeProto(payload);
       return;
@@ -1350,6 +1257,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   _applyStderr(payload) {
+    if (isHeadlessSid(payload.sid)) return;
     const { activeRun, installSid, pendingCreate, serve, pendingExport, pendingOnnx } =
       get();
     const known =
@@ -1368,6 +1276,9 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 
   _applyExit(payload) {
+    // Without this, a chat tool's serve exiting during an install was taken
+    // for the install's own exit (see the installSid window below).
+    if (isHeadlessSid(payload.sid)) return;
     const { activeRun, installSid, pendingCreate, serve, pendingExport, pendingOnnx } =
       get();
 
@@ -1480,7 +1391,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
 
     // project scaffold finished → select it (and maybe start training)
     if (payload.sid === pendingCreate?.sid) {
-      const { workspaceRoot, dir, autoTrain, purpose, overrides = [] } = pendingCreate;
+      const { workspaceRoot, dir, autoTrain, purpose, overrides = [], files = [] } = pendingCreate;
       set({ pendingCreate: null });
       if (payload.code === 0) {
         void get()
@@ -1488,15 +1399,22 @@ export const useMlStore = create<MlStore>((set, get) => ({
           .then(async () => {
             try {
               await writeProjectBrief(dir, purpose ?? "");
+              const written = await writeStarterFiles(dir, files);
               const config = await readTrainToml(dir);
               if (config && overrides.length > 0) {
-                await writeTrainToml(
-                  dir,
-                  overrides.reduce(
-                    (next, override) => tomlSet(next, override.section, override.key, override.value),
-                    config,
-                  ),
-                );
+                const { text, skipped } = applyOverrides(config, overrides);
+                await writeTrainToml(dir, text);
+                if (skipped.length > 0) {
+                  const keys = skipped.map((o) => `${o.section}.${o.key}`).join(", ");
+                  set((s) => ({
+                    logs: pushLog(s.logs, `this engine's scaffold has no ${keys}; kept its defaults`),
+                  }));
+                }
+              }
+              if (written.length > 0) {
+                set((s) => ({
+                  logs: pushLog(s.logs, `starter data: ${written.join(", ")}`),
+                }));
               }
             } catch (err) {
               set((s) => ({ logs: pushLog(s.logs, `couldn't save model setup: ${String(err)}`) }));

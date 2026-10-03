@@ -11,6 +11,9 @@ is reference you can dip into.
 
 > Companion docs: [`ML_SUITE.md`](ML_SUITE.md) is the design/decision record
 > and status; this file is the user + feature guide.
+> [`ML_MODEL_WALKTHROUGH.md`](ML_MODEL_WALKTHROUGH.md) builds one model start
+> to finish (a basketball GOAT ranker), including asking it questions in the
+> AI chat.
 
 ---
 
@@ -100,9 +103,10 @@ work with "either engine."
 2. **Get an engine.** If none is detected, the panel offers a one-click
    install into a detected Python environment (CPU PyTorch, or a CUDA build if
    it sees an NVIDIA GPU). See [§5](#installing-an-engine).
-3. **Create a project.** In the **Create** card, pick a template
-   (`tabular`, `textgen`, or `image`), name it, and hit **Create & train**.
-   This scaffolds a folder with `train.py` + `train.toml` and starts training.
+3. **Create a project.** In the **Create** card, pick a
+   [stock network](#stock-networks) (a *Starter* comes with data and trains
+   immediately) or a bare model family, name it, and hit **Create**. This
+   scaffolds a folder with `train.toml` (and `train.py` on the Python engine).
 4. **Watch it learn.** The progress bar, status sentences, and the hero chart
    update live. For `textgen` you'll see generated-text snapshots; for `image`,
    a sample-prediction grid.
@@ -204,6 +208,59 @@ A convolutional classifier over a *folder-per-class* image directory.
 > The Rust engine supports `tabular` and `image` (config-only). `textgen`
 > requires the Python engine.
 
+<a name="stock-networks"></a>
+### Stock networks
+
+The create card's **Pick a stock network** gallery holds ready-made starting
+points. A stock network is **not a new engine template**: it is a set of
+documented `train.toml` values applied on top of one of the templates above.
+That keeps every one of them trainable on any engine that supports its family,
+with nothing the engine has to know about.
+
+**Starters** pair a network with a **synthetic dataset** Nexis generates into
+`data/`, and point `[data] path` / `target` at it, so the project trains the
+moment it exists. Every starter dataset is invented by a seeded generator (a
+hidden scoring rule plus noise decides the label). It is learnable, and it is
+clearly not real-world data. Swap in your own CSV with the same kind of columns
+whenever you're ready. Targets are integer class ids; `PROJECT.md` records
+what each id means.
+
+| starter | predicts | classes | rows |
+|---|---|---|---:|
+| Basketball GOAT | career tier, then rank by P(all-time great) | 4 | 900 |
+| Game picker | home win | 2 | 1000 |
+| Churn risk | customer churn | 2 | 800 |
+| Lead score | lead converts | 2 | 700 |
+| Credit risk | loan default | 2 | 900 |
+| Fraud flag | fraudulent transaction (6% positive) | 2 | 1500 |
+| Flower species | species from 4 measurements | 3 | 450 |
+| Wine quality | poor / fine / excellent | 3 | 900 |
+| Home price band | budget / mid / premium | 3 | 900 |
+| Demand band | low / normal / high day | 3 | 730 |
+| Exam outcome | student passes | 2 | 600 |
+| Machine health | failure soon | 2 | 1200 |
+
+**Architectures** are the classic shapes, for comparing and learning:
+
+| family | stock networks |
+|---|---|
+| Spreadsheet (MLP) | Linear baseline `[]`, Tiny `[8]`, Classic `[32, 16]`, Wide `[256]`, Deep funnel `[128, 64, 32]`, Deep uniform `[64, 64, 64, 64]`, Bottleneck `[64, 8, 64]`, Big `[512, 256, 128]` |
+| Image (CNN, `conv1`/`conv2` → dense) | Mini 8/16→32, LeNet-style 6/16→84, Standard 16/32→64, Wide 32/64→128, Large 64/128→256 |
+| Text (GPT, ctx/width/heads/layers) | Nano 32/32/2/1, Micro 64/64/4/2, Mini 128/128/4/4, Small 256/256/8/6, Long-context 512/128/4/4, Deep narrow 128/96/4/8 |
+
+With a stock network selected, the **Starting configuration** size sets only
+the training budget (epochs, batch size, learning rate); the network's own
+shape wins. If the engine's scaffold lacks a key the stock network sets, Nexis
+leaves the engine's default, and the log names the key. It never adds an
+unknown key to the engine's schema. The only keys it will add are the
+documented `[data] path` and `target`.
+
+The catalog is `src/modules/ml/lib/stock-models.ts`, the generators
+`src/modules/ml/lib/starter-data.ts`. Adding a stock network is one entry; the
+tests check that it only sets keys its family documents, that every knob is in
+the hyperparameter form, that GPT widths divide by heads, and that each starter
+dataset has every class represented.
+
 ---
 
 <a name="traintoml-reference"></a>
@@ -299,9 +356,10 @@ When you train, the panel shows:
   metric names. Long runs are decimated so the chart stays small and smooth
   without losing spikes.
 - **The hyperparameter form** — edit `train.toml` from the UI (epochs, lr,
-  batch size, `hidden`, etc.) with surgical edits that preserve your comments
-  and formatting.
-- **The create card** — pick a template and scaffold + train in one click.
+  batch size, `hidden`, the CNN's `conv1`/`conv2` filters, etc.) with surgical
+  edits that preserve your comments and formatting.
+- **The create card** — pick a [stock network](#stock-networks) or a model
+  family and scaffold + train in one click.
 
 **Auto-open.** There's a setting, **"Open the ML Lab panel automatically when
 a training run starts"** (off by default). Turn it on if you usually kick off
@@ -409,6 +467,43 @@ message rather than a crash.
 > standalone **Rust** engine (tabular models; the panel checks the engine's
 > `serve` capability). Image-model inference isn't in the Playground yet —
 > watch the sample-prediction grid during training instead.
+
+<a name="talk-to-your-models"></a>
+### Talking to your models from the AI chat
+
+With the ML Lab pack on, the AI window's **Chat** gets three tools that let a
+language model use the models you trained:
+
+| tool | input | returns |
+|---|---|---|
+| `ml_list_models` | none | every ML project in the workspace: kind, architecture, data file, target, feature columns, `PROJECT.md` brief, the run it would serve, and the last five runs with final metrics |
+| `ml_predict` | `project`, optional `run`; `rows` (up to 50 objects of feature → number) for tabular, or `prompt` / `max_new` / `temperature` for text | per-row predicted class and probabilities (or value), or the text continuation |
+| `ml_rank_csv` | `project`, `csv`, optional `run`, `id_column`, `rank_class`, `top`, `ascending` | every row scored, the top N by the probability of `rank_class` (default: the highest-numbered class) with `log_odds` to separate near-1.0 scores |
+
+So you can ask *"what models do I have?"*, *"would a customer with 3 support
+tickets and 2 logins a week churn?"*, or *"rank everyone in
+data/players_named.csv with goat-ranker"*, and the language model calls your
+model for the answer instead of guessing. The language model handles the
+conversation; your model handles the one question it was trained for.
+
+**How it runs.** Each call starts its own `nexis-ml serve` on the chosen run's
+checkpoint, sends the requests, and stops it. It is a separate *headless*
+session that the Playground never sees, and one at a time. With no `run` the
+tools serve the first pinned **completed** run, else the newest completed run,
+else the newest stopped run (stopped runs still checkpoint). Feature columns are
+matched by name; extra CSV columns are ignored; missing features use the
+training average, exactly as in the Playground.
+
+**Safety.** The tools are read-only and auto-approved: they read the run store
+and run inference, and never train, write or delete. A project is chosen by
+name from the projects discovered in the open workspace, a run by id from that
+project's run store, and a CSV only from inside the workspace root (`..` is
+resolved first). The data a provider sees is the tool *results* shown in the
+chat; with a local provider (Ollama, LM Studio, …) nothing leaves the machine.
+
+**Engines.** Same rules as the Playground: the Python engine serves tabular and
+text models; the standalone engine serves tabular models from v0.8. Image
+models can't be served yet, so the tools say so.
 
 ---
 
@@ -587,6 +682,7 @@ engines coexist.
 | pause / resume / stop | ✅ | ✅ |
 | reproducible seed | ✅ | ✅ |
 | Playground (serve inference) | ✅ | ✅ (v0.8+, tabular) |
+| AI chat tools (`ml_predict` / `ml_rank_csv`) | ✅ | ✅ (v0.8+, tabular) |
 | HTML report (`export --run`) | ✅ | ❌ |
 | ONNX export (`export --onnx`) | ❌ | ✅ (tabular) |
 | `replay` | ✅ | ❌ |

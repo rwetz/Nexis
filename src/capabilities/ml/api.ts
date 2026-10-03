@@ -76,3 +76,27 @@ export function subscribeMlProtocol(handlers: {
   void events.listen(exitEvent, handlers.onExit).catch(() => {});
   return () => events.dispose();
 }
+
+/**
+ * `subscribeMlProtocol`, resolving once all three listeners are attached.
+ * For a caller that spawns right after subscribing and must not miss the
+ * child's first batch (a headless serve session's `ready` line).
+ */
+export async function subscribeMlProtocolAttached(handlers: {
+  onProto: (payload: ProtoPayload) => void;
+  onStderr: (payload: StderrPayload) => void;
+  onExit: (payload: ExitPayload) => void;
+}): Promise<() => void> {
+  const events = hostIpc.events();
+  try {
+    await Promise.all([
+      events.listen(protoEvent, handlers.onProto),
+      events.listen(stderrEvent, handlers.onStderr),
+      events.listen(exitEvent, handlers.onExit),
+    ]);
+  } catch (err) {
+    events.dispose();
+    throw err;
+  }
+  return () => events.dispose();
+}

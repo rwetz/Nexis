@@ -96,3 +96,41 @@ export function tomlSet(
   }
   return text;
 }
+
+/**
+ * `tomlSet`, but add the key when it is missing — at the end of its
+ * section, or in a new section appended to the file. Only for keys the
+ * engines document (e.g. `[data] path`): `tomlSet`'s no-op on an unknown key
+ * is what keeps an unrecognised knob out of an engine's schema, and this
+ * deliberately gives that up.
+ */
+export function tomlUpsert(
+  text: string,
+  section: string,
+  key: string,
+  rawValue: string,
+): string {
+  if (tomlGet(text, section, key) !== null) {
+    return tomlSet(text, section, key, rawValue);
+  }
+  const nl = detectNewline(text);
+  const lines = text.split(/\r?\n/);
+  const entry = `${key} = ${rawValue}`;
+  let current = "";
+  let lastInSection = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const sm = lines[i].match(SECTION_RE);
+    if (sm) {
+      current = sm[1].trim();
+      if (current === section) lastInSection = i;
+      continue;
+    }
+    if (current === section && lines[i].trim() !== "") lastInSection = i;
+  }
+  if (lastInSection >= 0) {
+    lines.splice(lastInSection + 1, 0, entry);
+    return lines.join(nl);
+  }
+  const body = text.replace(/(\r?\n)*$/, "");
+  return `${body}${body ? `${nl}${nl}` : ""}[${section}]${nl}${entry}${nl}`;
+}
