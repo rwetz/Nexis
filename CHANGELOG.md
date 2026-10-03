@@ -4,6 +4,8 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.31.0] — 2026-10-02
+
 ### Fixed
 
 - **Auto-approved AI tool calls could be approved twice.** The auto-approval row sent its decision from an effect that also depended on the `onApproval` callback, so a parent re-render after the decision went out ran it again. The callback is now an effect event (`useEffectEvent`), and the decision is sent once per approval.
