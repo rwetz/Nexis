@@ -365,8 +365,8 @@ importers:
         specifier: ^9.31.2
         version: 9.32.0
       edgedriver:
-        specifier: ^6.3.0
-        version: 6.3.1(supports-color@8.1.1)
+        specifier: ^7.0.0
+        version: 7.0.0(supports-color@8.1.1)
       jsdom:
         specifier: ^30.0.1
         version: 30.1.1(@noble/hashes@1.8.0)
@@ -4930,6 +4930,11 @@ packages:
 
   edgedriver@6.3.1:
     resolution: {integrity: sha512-wCL/Ydgt0DPkWecjhhPj2/lnDxsGeHLPKeJYKKMTNol+ULFVg4WaTvxoB19GU4tieM6LSA3vZEdZxmDC0DwIpQ==}
+    engines: {node: '>=20.0.0'}
+    hasBin: true
+
+  edgedriver@7.0.0:
+    resolution: {integrity: sha512-4sJLhorcBSfzaqMN41q2VI9KVW9Qcpo7CHbUcBUDWeQ7uHiWnRWayV1KZOQr9jllSBOHD2aXzhUWrC2yCt+PRA==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -12515,6 +12520,18 @@ snapshots:
       which: 2.0.2
 
   edgedriver@6.3.1(supports-color@8.1.1):
+    dependencies:
+      '@wdio/logger': 9.29.1
+      '@zip.js/zip.js': 2.8.26
+      decamelize: 6.0.1
+      edge-paths: 3.0.5
+      http-proxy-agent: 7.0.2(supports-color@8.1.1)
+      https-proxy-agent: 7.0.6(supports-color@8.1.1)
+      which: 6.0.1
+    transitivePeerDependencies:
+      - supports-color
+
+  edgedriver@7.0.0(supports-color@8.1.1):
     dependencies:
       '@wdio/logger': 9.29.1
       '@zip.js/zip.js': 2.8.26
