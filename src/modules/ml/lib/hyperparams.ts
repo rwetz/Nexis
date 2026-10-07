@@ -38,6 +38,8 @@ export const HP_FIELDS: HpField[] = [
     type: "enum",
     options: ["auto", "cpu", "gpu"],
   },
+  { section: "model", key: "conv1", label: "Conv filters (1st)", type: "int" },
+  { section: "model", key: "conv2", label: "Conv filters (2nd)", type: "int" },
   { section: "model", key: "hidden", label: "Hidden layers", type: "intList" },
   { section: "model", key: "context", label: "Context (chars)", type: "int" },
   { section: "model", key: "embed", label: "Model width", type: "int" },

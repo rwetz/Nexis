@@ -70,7 +70,16 @@ import {
   TORCH_MIN_MINOR,
 } from "./lib/pythonSupport";
 import { tomlGet, tomlSet } from "./lib/toml-edit";
-import { creationOverrides, type ModelScale } from "./lib/model-blueprint";
+import type { ModelScale } from "./lib/model-blueprint";
+import {
+  STOCK_MODELS,
+  planCreation,
+  stockBrief,
+  stockModel,
+  type StockFamily,
+  type StockModel,
+} from "./lib/stock-models";
+import { STARTER_DATASETS } from "./lib/starter-data";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import { setMlAutoOpenOnTrain } from "@/modules/settings/store";
 import {
@@ -118,19 +127,12 @@ const TEMPLATE_OPTIONS: {
   },
 ];
 
-/** Familiar jobs, mapped honestly onto the engine templates it can train. */
-const QUICK_STARTS: {
-  label: string;
-  template: MlTemplate;
-  name: string;
-  purpose: string;
-}[] = [
-  { label: "Churn risk", template: "tabular", name: "churn-risk", purpose: "Predict which customers are likely to leave from a CSV." },
-  { label: "Lead score", template: "tabular", name: "lead-score", purpose: "Rank incoming leads using known conversion signals." },
-  { label: "Demand forecast", template: "tabular", name: "demand-forecast", purpose: "Estimate demand from historical spreadsheet rows." },
-  { label: "Photo sorter", template: "image", name: "photo-sorter", purpose: "Classify images into folders that represent the desired labels." },
-  { label: "Tiny writer", template: "textgen", name: "tiny-writer", purpose: "Learn the style and patterns in a focused text corpus." },
-  { label: "Custom research", template: "blank", name: "research-model", purpose: "Explore a custom training architecture and dataset." },
+/** Gallery tabs over the stock networks. */
+const STOCK_TABS: { id: "starter" | StockFamily; label: string }[] = [
+  { id: "starter", label: "Starters" },
+  { id: "tabular", label: "Spreadsheet nets" },
+  { id: "image", label: "Image nets" },
+  { id: "textgen", label: "Text nets" },
 ];
 
 type Props = {
@@ -398,9 +400,18 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
                 creating={pendingCreate != null}
                 createError={createError}
                 engineKind={engineKind}
-                onCreate={(template, name, autoTrain, purpose, scale) => {
+                onCreate={(template, name, autoTrain, purpose, scale, stockId) => {
                   setShowCreate(false);
-                  void createProject(workspaceRoot, template, name, autoTrain, purpose, creationOverrides(template, scale));
+                  const stock = stockId ? stockModel(stockId) ?? null : null;
+                  void createProject(
+                    workspaceRoot,
+                    template,
+                    name,
+                    autoTrain,
+                    stock ? stockBrief(stock, purpose) : purpose,
+                    planCreation(template, scale, stock),
+                    stock?.dataset ? STARTER_DATASETS[stock.dataset].build() : [],
+                  );
                 }}
                 onDismiss={() => setShowCreate(false)}
               />
@@ -1071,7 +1082,8 @@ function CopyLine({ command }: { command: string }) {
 
 // ── Project creation ──────────────────────────────────────────────────────────
 
-function CreateCard({
+/** Exported for its test; the panel is the only caller. */
+export function CreateCard({
   creating,
   createError,
   engineKind,
@@ -1081,35 +1093,42 @@ function CreateCard({
   creating: boolean;
   createError: string | null;
   engineKind: EngineKind | null;
-  onCreate: (template: MlTemplate, name: string, autoTrain: boolean, purpose: string, scale: ModelScale) => void;
+  onCreate: (
+    template: MlTemplate,
+    name: string,
+    autoTrain: boolean,
+    purpose: string,
+    scale: ModelScale,
+    stockId: string | null,
+  ) => void;
   onDismiss?: () => void;
 }) {
-  const [template, setTemplate] = useState<MlTemplate>("tabular");
+  const [chosen, setTemplate] = useState<MlTemplate>("tabular");
   const [name, setName] = useState(TEMPLATE_OPTIONS[0].defaultName);
   const [autoTrain, setAutoTrain] = useState(false);
   const [purpose, setPurpose] = useState("");
   const [scale, setScale] = useState<ModelScale>("starter");
+  const [stockId, setStockId] = useState<string | null>(null);
+  const [stockTab, setStockTab] = useState<(typeof STOCK_TABS)[number]["id"]>("starter");
+
+  // If the active engine can't scaffold the chosen template (e.g. the
+  // standalone Rust engine resolved after the card mounted), show and create
+  // the first one it can, so the Create button never starts a doomed run.
+  // Derived during render rather than synced by an effect, so no frame ever
+  // shows the unsupported choice.
+  const fallback = engineSupportsTemplate(chosen, engineKind)
+    ? null
+    : (TEMPLATE_OPTIONS.find((o) => engineSupportsTemplate(o.id, engineKind)) ?? null);
+  const template = fallback?.id ?? chosen;
+  const stock = !fallback && stockId ? (stockModel(stockId) ?? null) : null;
 
   // Switching template swaps in its suggested name (the user can still
   // rename); keeps "tiny-writer" from sticking on a tabular project.
   const pick = (id: MlTemplate) => {
     setTemplate(id);
+    setStockId(null);
     setName(TEMPLATE_OPTIONS.find((o) => o.id === id)?.defaultName ?? name);
   };
-
-  // If the active engine can't scaffold the selected template — e.g. the
-  // standalone Rust engine resolved after the card mounted — fall back to
-  // the first one it can, so the Create button never starts a doomed run.
-  useEffect(() => {
-    if (engineSupportsTemplate(template, engineKind)) return;
-    const fallback = TEMPLATE_OPTIONS.find((o) =>
-      engineSupportsTemplate(o.id, engineKind),
-    );
-    if (fallback) {
-      setTemplate(fallback.id);
-      setName(fallback.defaultName);
-    }
-  }, [engineKind, template]);
 
   // Show only templates the active engine can actually scaffold. The Rust
   // engine is config-only, so textgen and the code-it-yourself `blank`
@@ -1120,11 +1139,22 @@ function CreateCard({
     engineSupportsTemplate(o.id, engineKind),
   );
 
-  const pickQuickStart = (quick: (typeof QUICK_STARTS)[number]) => {
-    pick(quick.template);
-    setName(quick.name);
-    setPurpose(quick.purpose);
+  const pickStock = (m: StockModel) => {
+    setTemplate(m.family);
+    setStockId(m.id);
+    setName(m.name);
+    setPurpose(m.purpose);
   };
+  const create = () => onCreate(template, name, autoTrain, purpose, scale, stock?.id ?? null);
+
+  // Only networks the active engine can train (the standalone engine has no
+  // text template), filtered to the open tab.
+  const stockShown = STOCK_MODELS.filter(
+    (m) =>
+      engineSupportsTemplate(m.family, engineKind) &&
+      (stockTab === "starter" ? m.group === "starter" : m.group === "architecture" && m.family === stockTab),
+  );
+  const tabs = STOCK_TABS.filter((t) => t.id === "starter" || engineSupportsTemplate(t.id, engineKind));
 
   return (
     <div className="mb-3 rounded-xl border border-primary/25 bg-primary/[0.035] p-4 shadow-sm">
@@ -1148,19 +1178,56 @@ function CreateCard({
       </div>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(19rem,0.85fr)]">
         <section className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">1. Pick a starting point</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-          {QUICK_STARTS.filter((quick) => engineSupportsTemplate(quick.template, engineKind)).map((quick) => (
-            <button
-              key={quick.label}
-              type="button"
-              disabled={creating}
-              onClick={() => pickQuickStart(quick)}
-              className="rounded-full border border-border bg-background/50 px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/[0.06] hover:text-foreground disabled:opacity-50"
-            >
-              {quick.label}
-            </button>
-          ))}
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">1. Pick a stock network</p>
+          <div role="tablist" aria-label="Stock networks" className="mt-2 flex flex-wrap gap-1">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={stockTab === t.id}
+                onClick={() => setStockTab(t.id)}
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[10px] transition-colors",
+                  stockTab === t.id
+                    ? "border-primary/50 bg-primary/[0.10] text-primary"
+                    : "border-border text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 grid max-h-64 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-2">
+            {stockShown.map((m) => {
+              const selected = m.id === stock?.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  disabled={creating}
+                  aria-pressed={selected}
+                  onClick={() => pickStock(m)}
+                  className={cn(
+                    "rounded-lg border px-2.5 py-2 text-left transition-colors disabled:opacity-50",
+                    selected
+                      ? "border-primary/50 bg-primary/[0.07]"
+                      : "border-border bg-background/50 hover:border-primary/30 hover:bg-primary/[0.04]",
+                  )}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[11px] font-semibold text-foreground/90">{m.label}</span>
+                    {m.dataset ? (
+                      <span className="shrink-0 rounded bg-emerald-500/10 px-1 text-[9px] text-emerald-600 dark:text-emerald-400">
+                        data included
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="mt-0.5 block truncate font-mono text-[9.5px] text-muted-foreground/80">{m.shape}</span>
+                  <span className="mt-0.5 block text-[10px] leading-snug text-muted-foreground">{m.blurb}</span>
+                </button>
+              );
+            })}
           </div>
           <p className="mt-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Or choose the model family</p>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -1220,8 +1287,7 @@ function CreateCard({
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && name.trim())
-                  onCreate(template, name, autoTrain, purpose, scale);
+                if (e.key === "Enter" && name.trim()) create();
               }}
               aria-label="New project name"
               spellCheck={false}
@@ -1246,7 +1312,14 @@ function CreateCard({
                 </button>
               ))}
             </div>
-            {template === "textgen" ? (
+            {stock ? (
+              <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+                {stock.label} sets the network ({stock.shape}); the size here sets the training budget.
+                {stock.dataset
+                  ? ` Writes synthetic starter data to ${STARTER_DATASETS[stock.dataset].path}, so it can train right away.`
+                  : ""}
+              </p>
+            ) : template === "textgen" ? (
               <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
                 This creates a local GPT-style character model. Size controls context, width, heads, layers, and training defaults; you can edit every value before training.
               </p>
@@ -1279,10 +1352,10 @@ function CreateCard({
           <button
             type="button"
             disabled={!name.trim()}
-            onClick={() => onCreate(template, name, autoTrain, purpose, scale)}
+            onClick={create}
             className="mt-3 h-8 w-full rounded-md bg-primary px-3 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Create {template === "textgen" ? "GPT-style model" : "model"}
+            Create {stock ? stock.label : template === "textgen" ? "GPT-style model" : "model"}
           </button>
         </>
       )}

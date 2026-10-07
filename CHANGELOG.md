@@ -4,6 +4,18 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Added
+
+- **Stock networks in the ML Lab.** The create card's six quick-start chips are now a gallery of 31 stock networks in four tabs. **Starters** (Basketball GOAT, Game picker, Churn risk, Lead score, Credit risk, Fraud flag, Flower species, Wine quality, Home price band, Demand band, Exam outcome, Machine health) each write a synthetic, seeded dataset into `data/` and point `[data]` at it, so the project trains the moment it exists. **Architectures** cover the classic shapes: 8 MLPs (from a linear baseline to `[512, 256, 128]`), 5 CNNs (Mini to Large, including LeNet-style proportions) and 6 tiny GPTs (Nano to Small, plus long-context and deep-narrow). Each is a set of documented `train.toml` values on an engine template, so both engines train them unchanged.
+- **Talk to your models from the AI chat.** With the ML Lab pack on, the chat gets `ml_list_models`, `ml_predict` and `ml_rank_csv`. A language model can now list your trained models, run one on rows you describe (or continue text with a text model), and rank every row of a CSV, then explain the result in plain English. The tools are read-only and auto-approved, run their own headless `nexis-ml serve` session that the Playground never sees, and only reach projects and CSVs inside the open workspace.
+- **`docs/ML_MODEL_WALKTHROUGH.md`**: a start-to-finish guide to building a model, using "who is the greatest basketball player of all time?" as the example. It covers framing the question as a label, baselines, the confusion matrix, tuning, seed-stability checks, asking the model through the AI chat, and swapping in real NBA data.
+- **CNN filter counts in the hyperparameter form.** `conv1` and `conv2` are now editable, with glossary cards, so image networks can be resized without opening `train.toml`.
+
+### Changed
+
+- **Project discovery and run-store reads moved out of the ML store** into `src/modules/ml/lib/projects.ts`, so the chat tools can read projects without touching what the panel shows. No behavior change.
+- **Creation reports keys the engine's scaffold lacks.** When a stock network or size sets a key the scaffold didn't write, the log names it ("kept its defaults") instead of the edit silently doing nothing.
+
 ## [1.31.0] — 2026-10-02
 
 ### Fixed

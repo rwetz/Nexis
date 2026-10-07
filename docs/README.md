@@ -12,7 +12,7 @@ Two audiences, two shapes of documentation. Pick the one that matches what you'r
 | Avoid a **known landmine** | [AGENTS.md](../AGENTS.md) — invariants and pitfalls, authoritative |
 | Add your own **AI agent tool** | [architecture/custom-ai-tools.md](architecture/custom-ai-tools.md) |
 | Exchange **Lumen palettes, scenes, and workspace handoffs** | [interop/lumen.md](interop/lumen.md) |
-| Use or extend the **ML Lab** | [ML_LAB_GUIDE.md](ML_LAB_GUIDE.md) (user guide) · [ML_SUITE.md](ML_SUITE.md) (protocol + design record) |
+| Use or extend the **ML Lab** | [ML_LAB_GUIDE.md](ML_LAB_GUIDE.md) (user guide) · [ML_MODEL_WALKTHROUGH.md](ML_MODEL_WALKTHROUGH.md) (build one model start to finish) · [ML_SUITE.md](ML_SUITE.md) (protocol + design record) |
 
 ## architecture/ vs vault/
 
