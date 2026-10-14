@@ -71,7 +71,17 @@ import {
   TORCH_MIN_MINOR,
 } from "./lib/pythonSupport";
 import { tomlGet, tomlSet } from "./lib/toml-edit";
-import type { ModelScale } from "./lib/model-blueprint";
+import { applyOverrides, type ModelScale } from "./lib/model-blueprint";
+import {
+  dataOverrides,
+  guessTarget,
+  listWorkspaceCsvs,
+  relativeDataPath,
+  summarizeCsv,
+  summarizeTarget,
+} from "./lib/data-source";
+import { parseDataConfig, parseTomlNet } from "./lib/netspec";
+import { readTextFile } from "./lib/fs";
 import {
   STOCK_MODELS,
   planCreation,
@@ -444,6 +454,16 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
               >
                 ▶ Train model
               </button>
+            ) : null}
+
+            {/* Training data — choose [data] path + target without editing train.toml */}
+            {selectedProject && !busy && !pendingCreate && projects.length > 0 ? (
+              <DataSourceForm
+                key={`data-${selectedProject}`}
+                workspaceRoot={workspaceRoot}
+                projectDir={selectedProject}
+                onSaveTrain={() => void startTrain(selectedProject)}
+              />
             ) : null}
 
             {/* Hyperparameters — tweak train.toml without leaving the panel */}
@@ -2563,7 +2583,9 @@ function HyperparamForm({
 
   const save = async (thenTrain: boolean) => {
     if (text == null) return;
-    let next = text;
+    // Re-read so an edit made since the form loaded (the Data section, or
+    // the file itself) is kept; only this form's keys are replaced.
+    let next = (await readTrainToml(projectDir)) ?? text;
     for (const f of fields) {
       const raw = displayToRaw(f.type, values[fieldId(f)] ?? "");
       if (raw == null) {
@@ -2665,6 +2687,264 @@ function HyperparamForm({
             </div>
           </>
         )}
+      </div>
+    </details>
+  );
+}
+
+// ── Training data ─────────────────────────────────────────────────────────────
+// Picks the CSV ([data] path, relative to the project) and the column to
+// predict ([data] target) for MLP projects. Pure helpers live in
+// lib/data-source.ts; writes go through applyOverrides like the stock networks.
+
+type DataPreview =
+  | { kind: "loading" }
+  | { kind: "unreadable" }
+  | { kind: "ok"; text: string; columns: string[]; rows: number };
+
+function DataSourceForm({
+  workspaceRoot,
+  projectDir,
+  onSaveTrain,
+}: {
+  workspaceRoot: string | null;
+  projectDir: string;
+  onSaveTrain: () => void;
+}) {
+  // null until train.toml is read; false when this isn't a tabular project.
+  const [tabular, setTabular] = useState<boolean | null>(null);
+  const [saved, setSaved] = useState<{ path: string | null; target: string | null }>({
+    path: null,
+    target: null,
+  });
+  const [csvs, setCsvs] = useState<string[] | null>(null);
+  const [path, setPath] = useState("");
+  const [target, setTarget] = useState("");
+  const [preview, setPreview] = useState<DataPreview | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void readTrainToml(projectDir).then((t) => {
+      if (cancelled) return;
+      if (t == null || parseTomlNet(t)?.kind !== "mlp") {
+        setTabular(false);
+        return;
+      }
+      const data = parseDataConfig(t);
+      setTabular(true);
+      setSaved(data);
+      setPath(data.path ?? "");
+      setTarget(data.target ?? "");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectDir]);
+
+  useEffect(() => {
+    if (!tabular || !workspaceRoot) return;
+    let cancelled = false;
+    listWorkspaceCsvs(workspaceRoot)
+      .then((abs) => {
+        if (cancelled) return;
+        const rel = abs
+          .map((a) => relativeDataPath(projectDir, a))
+          .filter((r): r is string => r != null)
+          // The project's own files first, then the rest of the workspace.
+          .sort(
+            (a, b) =>
+              Number(a.startsWith("..")) - Number(b.startsWith("..")) || a.localeCompare(b),
+          );
+        setCsvs(rel);
+      })
+      .catch(() => {
+        if (!cancelled) setCsvs([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [tabular, workspaceRoot, projectDir]);
+
+  useEffect(() => {
+    if (!path) {
+      setPreview(null);
+      return;
+    }
+    let cancelled = false;
+    setPreview({ kind: "loading" });
+    void readTextFile(`${projectDir}/${path}`).then((text) => {
+      if (cancelled) return;
+      if (text == null) {
+        setPreview({ kind: "unreadable" });
+        return;
+      }
+      const { columns, rows } = summarizeCsv(text);
+      setPreview({ kind: "ok", text, columns, rows });
+      setTarget((t) => (columns.includes(t) ? t : (guessTarget(columns) ?? "")));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [path, projectDir]);
+
+  const targetInfo = useMemo(
+    () => (preview?.kind === "ok" && target ? summarizeTarget(preview.text, target) : null),
+    [preview, target],
+  );
+
+  if (!tabular) return null;
+
+  const options = csvs ?? [];
+  const pathOptions = path && !options.includes(path) ? [path, ...options] : options;
+  const dirty = path !== (saved.path ?? "") || target !== (saved.target ?? "");
+  const canSave =
+    !saving && preview?.kind === "ok" && target !== "" && preview.columns.includes(target);
+
+  const save = async (thenTrain: boolean) => {
+    if (!canSave) return;
+    setSaving(true);
+    try {
+      // Fresh read: the hyperparameter form may have saved since this loaded.
+      const current = await readTrainToml(projectDir);
+      if (current == null) {
+        setStatus("No train.toml in this project.");
+        return;
+      }
+      const { text } = applyOverrides(current, dataOverrides(path, target));
+      await writeTrainToml(projectDir, text);
+      setSaved({ path, target });
+      setStatus("Saved");
+      if (thenTrain) onSaveTrain();
+    } catch (e) {
+      setStatus(`Save failed: ${String(e)}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const selectClass =
+    "h-6 w-full rounded border border-border bg-background px-1 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40";
+
+  return (
+    <details open={!saved.path} className="mb-2 rounded-md border border-border/60 bg-muted/20">
+      <summary className="cursor-pointer select-none px-2.5 py-1.5 text-[11px] font-semibold text-foreground/90">
+        Training data
+        <span className="ml-1.5 font-normal text-muted-foreground">
+          {saved.path
+            ? `${saved.path}${saved.target ? `, predicting ${saved.target}` : ""}`
+            : "built-in practice data"}
+        </span>
+      </summary>
+      <div className="flex flex-col gap-1.5 px-2.5 pb-2.5">
+        {!saved.path ? (
+          <p className="text-[10.5px] text-muted-foreground">
+            This project trains on made-up practice points until you choose a spreadsheet
+            (CSV) from your workspace.
+          </p>
+        ) : null}
+        <label className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+          Spreadsheet (CSV)
+          <select
+            value={path}
+            onChange={(e) => {
+              setPath(e.target.value);
+              setStatus(null);
+            }}
+            className={selectClass}
+          >
+            <option value="" disabled>
+              {csvs == null
+                ? "Looking for CSV files..."
+                : options.length > 0
+                  ? "Choose a file..."
+                  : "No CSV files in this workspace"}
+            </option>
+            {pathOptions.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </label>
+        {preview?.kind === "unreadable" ? (
+          <p className="text-[10.5px] text-destructive">
+            Could not read this file (missing, too large, or not text).
+          </p>
+        ) : null}
+        {preview?.kind === "ok" ? (
+          <>
+            <label className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+              Column to predict
+              <select
+                value={target}
+                onChange={(e) => {
+                  setTarget(e.target.value);
+                  setStatus(null);
+                }}
+                className={selectClass}
+              >
+                {preview.columns.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="rounded border border-border/50 bg-background/50 px-2 py-1.5 text-[10.5px] text-muted-foreground">
+              <p>
+                {preview.rows.toLocaleString()} rows, {preview.columns.length} columns. The
+                model learns from{" "}
+                <span className="text-foreground/90">
+                  {preview.columns.filter((c) => c !== target).join(", ") || "nothing"}
+                </span>
+                .
+              </p>
+              {targetInfo?.classes ? (
+                <p className="mt-0.5">
+                  Answers in <span className="font-mono text-foreground/90">{target}</span>:{" "}
+                  {targetInfo.classes.map(([label, n]) => `${label} (${n})`).join(", ")}
+                </p>
+              ) : targetInfo ? (
+                <p className="mt-0.5">
+                  {targetInfo.distinct} different values in {target}; that looks like a number
+                  to estimate, not a set of categories.
+                </p>
+              ) : null}
+              {targetInfo && !targetInfo.numeric ? (
+                <p className="mt-0.5 text-amber-600 dark:text-amber-400">
+                  The training engine expects category numbers (0, 1, 2 and so on) in this
+                  column, not words.
+                </p>
+              ) : null}
+              {targetInfo && targetInfo.missing > 0 ? (
+                <p className="mt-0.5 text-amber-600 dark:text-amber-400">
+                  {targetInfo.missing} rows have no {target} value.
+                </p>
+              ) : null}
+            </div>
+          </>
+        ) : null}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            disabled={!canSave || !dirty}
+            onClick={() => void save(false)}
+            className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            disabled={!canSave}
+            onClick={() => void save(true)}
+            className="rounded-md bg-primary px-2.5 py-0.5 text-[10.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            Save &amp; train
+          </button>
+          {status ? <span className="text-[10px] text-muted-foreground">{status}</span> : null}
+        </div>
       </div>
     </details>
   );
