@@ -11,6 +11,10 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 - **`docs/ML_MODEL_WALKTHROUGH.md`**: a start-to-finish guide to building a model, using "who is the greatest basketball player of all time?" as the example. It covers framing the question as a label, baselines, the confusion matrix, tuning, seed-stability checks, asking the model through the AI chat, and swapping in real NBA data.
 - **CNN filter counts in the hyperparameter form.** `conv1` and `conv2` are now editable, with glossary cards, so image networks can be resized without opening `train.toml`.
 
+### Fixed
+
+- **ML Lab window could hang on "Creating project…" forever.** The ML Lab tool window runs in its own webview without the plugin host, so its store never subscribed to the engine's events. The scaffold finished and wrote `train.toml`, but the window never heard that it had exited, and training progress and installs went unheard too. The panel now subscribes itself, sharing one listener set with the plugin in the main window. A scaffold that exits before its spawn call returns is also caught now, instead of matching nothing.
+
 ### Changed
 
 - **Project discovery and run-store reads moved out of the ML store** into `src/modules/ml/lib/projects.ts`, so the chat tools can read projects without touching what the panel shows. No behavior change.

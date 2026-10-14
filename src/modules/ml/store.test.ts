@@ -17,7 +17,7 @@ vi.mock("@tauri-apps/plugin-opener", () => ({
   revealItemInDir: vi.fn(async () => {}),
 }));
 
-import { useMlStore, getCompareData, type HistoricalRun } from "./store";
+import { useMlStore, getCompareData, initMlSubscriptions, type HistoricalRun } from "./store";
 
 const metricsJsonl = (names: string[]) =>
   names
@@ -244,5 +244,73 @@ describe("install lifecycle (store)", () => {
     useMlStore.getState()._applyExit({ sid: 4, code: 1 });
 
     expect(useMlStore.getState().installing).toBe(false);
+  });
+});
+
+describe("project creation completion (store)", () => {
+  beforeEach(async () => {
+    const core = await import("@tauri-apps/api/core");
+    vi.mocked(core.invoke).mockReset();
+    useMlStore.setState({
+      engineExe: "/bin/nexis-ml",
+      engineKind: "python",
+      pendingCreate: null,
+      installing: false,
+      installSid: null,
+      createError: null,
+      logs: [],
+    });
+  });
+
+  // The scaffold can exit before `spawnNew` resolves with its sid; that
+  // exit matched nothing and left "Creating project…" up forever.
+  it("completes when the scaffold exits before its sid is known", async () => {
+    const core = await import("@tauri-apps/api/core");
+    vi.mocked(core.invoke).mockImplementation(async (cmd: string) => {
+      if (cmd === "ml_spawn") {
+        useMlStore.getState()._applyExit({ sid: 91, code: 0 });
+        return 91;
+      }
+      return null;
+    });
+
+    await useMlStore.getState().createProject("/w", "tabular", "fast", false);
+
+    expect(useMlStore.getState().pendingCreate).toBeNull();
+  });
+
+  it("still waits for a scaffold that has not exited", async () => {
+    const core = await import("@tauri-apps/api/core");
+    vi.mocked(core.invoke).mockImplementation(async (cmd: string) =>
+      cmd === "ml_spawn" ? 92 : null,
+    );
+
+    await useMlStore.getState().createProject("/w", "tabular", "slow", false);
+
+    expect(useMlStore.getState().pendingCreate?.sid).toBe(92);
+  });
+});
+
+describe("initMlSubscriptions", () => {
+  // MlPanel subscribes itself because the ML Lab tool window has no plugin
+  // host; in the main window the plugin and the panel must share listeners.
+  it("is refcounted: one listener set, kept until the last caller disposes", async () => {
+    const event = await import("@tauri-apps/api/event");
+    const listen = vi.mocked(event.listen);
+    listen.mockClear();
+
+    const fromPlugin = initMlSubscriptions();
+    const fromPanel = initMlSubscriptions();
+    expect(listen).toHaveBeenCalledTimes(3);
+
+    fromPanel();
+    fromPanel();
+    const again = initMlSubscriptions();
+    expect(listen).toHaveBeenCalledTimes(3);
+
+    again();
+    fromPlugin();
+    initMlSubscriptions()();
+    expect(listen).toHaveBeenCalledTimes(6);
   });
 });

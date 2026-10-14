@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import {
   useMlStore,
   getSeriesMap,
+  initMlSubscriptions,
   type ActiveRun,
   type CompareRun,
   type HistoricalRun,
@@ -220,6 +221,10 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
   // can leave the root string untouched (or change it long before the engine
   // facts are re-derived), and every engine answer belongs to exactly one
   // environment. Re-detect on either.
+  // The ML Lab tool window has no plugin host, so the panel subscribes
+  // itself; in the main window this shares the plugin's listeners.
+  useEffect(() => initMlSubscriptions(), []);
+
   useEffect(() => {
     void detect(workspaceRoot);
     if (workspaceRoot) void refreshProjects(workspaceRoot);

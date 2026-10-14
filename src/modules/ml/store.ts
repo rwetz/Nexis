@@ -771,6 +771,10 @@ export const useMlStore = create<MlStore>((set, get) => ({
           files,
         },
       });
+      // A fast scaffold can exit before `spawnNew` resolves with its sid, so
+      // its ml:exit matched nothing and "Creating project…" never cleared.
+      const code = takeRecentExit(sid);
+      if (code !== undefined) get()._applyExit({ sid, code });
     } catch (err) {
       set((s) => ({
         createError: `Couldn't start the engine: ${String(err)}`,
@@ -1279,6 +1283,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     // Without this, a chat tool's serve exiting during an install was taken
     // for the install's own exit (see the installSid window below).
     if (isHeadlessSid(payload.sid)) return;
+    rememberExit(payload);
     const { activeRun, installSid, pendingCreate, serve, pendingExport, pendingOnnx } =
       get();
 
@@ -1446,15 +1451,52 @@ export const useMlStore = create<MlStore>((set, get) => ({
   },
 }));
 
+/** Recent exits, by sid. A one-shot spawn can exit before its invoke
+ *  resolves and the store learns its sid; the caller checks here once it
+ *  has the sid. Sids are unique, so a stale entry can't be misclaimed. */
+const recentExits = new Map<number, number | null>();
+const RECENT_EXITS_MAX = 32;
+
+function rememberExit(payload: { sid: number; code: number | null }) {
+  recentExits.set(payload.sid, payload.code);
+  if (recentExits.size > RECENT_EXITS_MAX) {
+    recentExits.delete(recentExits.keys().next().value!);
+  }
+}
+
+function takeRecentExit(sid: number): number | null | undefined {
+  if (!recentExits.has(sid)) return undefined;
+  const code = recentExits.get(sid)!;
+  recentExits.delete(sid);
+  return code;
+}
+
+let subscriptionRefs = 0;
+let unsubscribeEvents: (() => void) | null = null;
+
 /**
- * Wire the Tauri event stream into the store. Called once from the
- * plugin's activate(); returns a dispose function.
+ * Wire the Tauri event stream into the store; returns a dispose function.
+ * Called from the plugin's activate() in the main window and from MlPanel,
+ * because the ML Lab tool window runs in its own webview with no plugins,
+ * and without it nothing there ever saw an ml:exit. Refcounted, so the two
+ * callers share one listener set.
  */
 export function initMlSubscriptions(): () => void {
-  const s = useMlStore.getState();
-  return subscribeMlEvents({
-    onProto: s._applyProto,
-    onStderr: s._applyStderr,
-    onExit: s._applyExit,
-  });
+  if (subscriptionRefs++ === 0) {
+    const s = useMlStore.getState();
+    unsubscribeEvents = subscribeMlEvents({
+      onProto: s._applyProto,
+      onStderr: s._applyStderr,
+      onExit: s._applyExit,
+    });
+  }
+  let disposed = false;
+  return () => {
+    if (disposed) return;
+    disposed = true;
+    if (--subscriptionRefs === 0) {
+      unsubscribeEvents?.();
+      unsubscribeEvents = null;
+    }
+  };
 }
