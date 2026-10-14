@@ -26,6 +26,7 @@ Two engines answer to the same name and have different feature sets — the Pyth
 - `src/modules/ml/NetworkGraph.tsx` — the architecture drawing, canvas; also the `ml-network` tab body via `MlNetworkStack.tsx`
 - `src/modules/ml/lib/protocol.ts` / `series.ts` / `artifacts.ts` — event parsing, metric buffers, on-disk artifacts
 - `src/modules/ml/lib/stock-models.ts` / `starter-data.ts` / `model-blueprint.ts` — the stock-network catalog, the seeded starter-dataset generators, and the creation plan (`planCreation` / `applyOverrides`)
+- `src/modules/ml/lib/data-source.ts` — the panel's Training data picker: workspace CSV listing, project-relative `[data] path`, target-column preview, and the `[data]` upserts it writes through `applyOverrides`
 - `src/modules/ml/lib/projects.ts` — project discovery and run-store reads with no store state, shared by the store and the chat tools
 - `src/modules/ml/lib/headless.ts` / `model-tools.ts` — headless `serve` sessions and the `ml_list_models` / `ml_predict` / `ml_rank_csv` agent tools, registered by `src/plugins/ml/index.ts`
 
@@ -36,6 +37,7 @@ Two engines answer to the same name and have different feature sets — the Pyth
 - **Anything host-scoped is hidden, not silently offered, in a WSL workspace** — the pinned download, the managed binary, its uninstall row. A Windows `.exe` in the host's app-data dir is unreachable from inside a distro. Hiding alone left WSL with no path at all, so `WslEngineSteps` gives the commands instead.
 - **`lib/pythonSupport.ts` only ever warns.** Its torch version bounds are a heuristic that goes stale in one direction (a new CPython gains wheels later), so a stale bound must never block an environment that already works.
 - **Caches of engine facts must carry the workspace scope.** `detectCache` keys on `currentWorkspaceScopeKey()`; `MlStore.engineScope` records who answered and discards everything on a mismatch.
+- **`[data] path` / `target` are the only keys Nexis adds to a scaffold** (`upsert`), because both engines document them. Every other form edit uses `tomlSet`, which no-ops on a missing key. The hyperparameter and data forms re-read `train.toml` before each save so one never writes back the other's stale copy.
 - **Metric buffers are NOT in the store** (pitfall #14) — they live in a module-level Map in `lib/series.ts`; components subscribe to the primitive `seriesTick` and read through `getSeriesMap()`.
 - **`workspace_authorize` runs before every `ml_spawn`** (pitfall #1C), same as `pty-bridge` does for `pty_open`.
 - **Authorization and spawn reuse one captured workspace environment.** Switching from WSL to local, or between distros, while authorization is pending must not stamp the later environment onto `ml_spawn`.
