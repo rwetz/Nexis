@@ -29,6 +29,11 @@ import {
   type ProviderInfo,
 } from "@/modules/ai/config";
 import { clearKey, getAllKeys, setKey } from "@/modules/ai/lib/keyring";
+import {
+  checkLocalModel,
+  type LocalModelCheck,
+} from "@/modules/ai/lib/modelCheck";
+import { createProxyFetch } from "@/modules/ai/lib/proxyFetch";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
   emitKeysChanged,
@@ -53,7 +58,6 @@ import {
   setOpenaiCompatibleModelId,
 } from "@/modules/settings/store";
 import { openHostUrl } from "@/platform/opener";
-import { settingsNative } from "@/platform/settings-native";
 import { useEffect, useMemo, useState } from "react";
 import { ProviderIcon } from "../components/ProviderIcon";
 import { ProviderKeyCard } from "../components/ProviderKeyCard";
@@ -716,9 +720,7 @@ function LocalProviderCard({
   const [modelDraft, setModelDraft] = useState(modelId);
   const [contextDraft, setContextDraft] = useState(String(contextLimit ?? ""));
   const [keyDraft, setKeyDraft] = useState("");
-  const [testStatus, setTestStatus] = useState<
-    "idle" | "testing" | "ok" | "fail"
-  >("idle");
+  const [testStatus, setTestStatus] = useState<TestStatus>({ kind: "idle" });
 
   useEffect(() => setUrlDraft(baseURL), [baseURL]);
   useEffect(() => setModelDraft(modelId), [modelId]);
@@ -727,13 +729,15 @@ function LocalProviderCard({
   const supportsKey = provider.id === "openai-compatible";
 
   const test = async () => {
-    setTestStatus("testing");
-    try {
-      const status = await settingsNative.pingLocalModel(urlDraft);
-      setTestStatus(status > 0 ? "ok" : "fail");
-    } catch {
-      setTestStatus("fail");
-    }
+    setTestStatus({ kind: "testing" });
+    setTestStatus(
+      await checkLocalModel(
+        urlDraft,
+        modelDraft,
+        localProbeFetch,
+        supportsKey ? compatKey : undefined,
+      ),
+    );
   };
 
   return (
@@ -907,30 +911,50 @@ function FieldRow({
   );
 }
 
-function StatusLine({
-  status,
-}: {
-  status: "idle" | "testing" | "ok" | "fail";
-}) {
-  if (status === "idle") return null;
-  if (status === "testing") {
-    return (
-      <span className="text-[10.5px] text-muted-foreground">Testing…</span>
-    );
+type TestStatus = { kind: "idle" } | { kind: "testing" } | LocalModelCheck;
+
+const localProbeFetch = createProxyFetch({ allowPrivateNetwork: true });
+
+function StatusLine({ status }: { status: TestStatus }) {
+  switch (status.kind) {
+    case "idle":
+      return null;
+    case "testing":
+      return (
+        <span className="text-[10.5px] text-muted-foreground">Testing…</span>
+      );
+    case "ok":
+    case "reachable":
+      return (
+        <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground">
+          <Icon name="success" size="xs" />
+          {status.kind === "ok"
+            ? "Reachable — model found on the server."
+            : "Reachable — server responded (model list unavailable)."}
+        </span>
+      );
+    case "model-missing":
+      return (
+        <span className="text-[10.5px] text-destructive/80">
+          Reachable, but the server doesn't list this model id.
+          {status.available.length > 0
+            ? ` Available: ${status.available.slice(0, 8).join(", ")}${status.available.length > 8 ? ", …" : ""}`
+            : " It reports no models."}
+        </span>
+      );
+    case "http-error":
+      return (
+        <span className="text-[10.5px] text-destructive/80">
+          Server responded with HTTP {status.status}.
+        </span>
+      );
+    case "unreachable":
+      return (
+        <span className="text-[10.5px] text-destructive/80">
+          Could not reach the server: {status.message}
+        </span>
+      );
   }
-  if (status === "ok") {
-    return (
-      <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground">
-        <Icon name="success" size="xs" />
-        Reachable — server responded.
-      </span>
-    );
-  }
-  return (
-    <span className="text-[10.5px] text-destructive/80">
-      Could not reach the server.
-    </span>
-  );
 }
 
 function Label({ children }: { children: React.ReactNode }) {

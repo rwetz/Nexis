@@ -17,6 +17,12 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 - **The Python engine is phased out.** Axon is the supported engine; the setup card's Python steps are now marked legacy, and `docs/ML_LAB_GUIDE.md` is rewritten around Axon, with the Python engine reduced to a short appendix of what only it still does (text generation, `blank`, the HTML report).
 - **ONNX export exports the run you are viewing.** With Axon 0.9 it writes that run's trained weights (plus `model.json` describing the inputs) instead of retraining from `train.toml`.
 
+### Fixed
+
+- **AI chat works again with every provider.** Since the AI SDK moved to v7, each chat message failed before reaching the model, because v7 rejects the system prompt inside the message list. The system prompt now goes through `instructions`.
+- **Chat errors say what went wrong.** The error card shows the provider's own message, HTTP status and URL, with a hint for a missing model id, a bad key or an unreachable server, instead of "An error occurred."
+- **Test in Settings → Models checks the model id.** For local and custom providers it now confirms the server lists the configured model and shows the ids it does list, instead of only checking that the server answers.
+
 ## [1.32.0] — 2026-10-14
 
 ### Added

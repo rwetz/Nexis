@@ -11,6 +11,7 @@ import {
   streamText,
   type LanguageModel,
   type ModelMessage,
+  type SystemModelMessage,
   type UIMessage,
 } from "ai";
 import {
@@ -389,23 +390,42 @@ function buildStableSystem(
 // OpenAI / Gemini / DeepSeek apply prefix caching automatically; only
 // Anthropic needs explicit breakpoints. Mark the stable system prefix and
 // the rotating conversation tail.
-function applyCacheBreakpoints(
-  messages: ModelMessage[],
-  provider: ProviderId,
-): ModelMessage[] {
-  if (provider !== "anthropic" || messages.length === 0) return messages;
-  const marker = {
-    anthropic: { cacheControl: { type: "ephemeral" as const } },
-  };
-  const withMarker = (m: ModelMessage): ModelMessage => ({
+const ANTHROPIC_CACHE_MARKER = {
+  anthropic: { cacheControl: { type: "ephemeral" as const } },
+};
+
+function withCacheMarker<T extends ModelMessage>(m: T): T {
+  return {
     ...m,
-    providerOptions: { ...(m.providerOptions ?? {}), ...marker },
-  });
-  const out = messages.slice();
-  out[0] = withMarker(out[0]);
-  const lastIdx = out.length - 1;
-  if (lastIdx > 0) out[lastIdx] = withMarker(out[lastIdx]);
-  return out;
+    providerOptions: { ...(m.providerOptions ?? {}), ...ANTHROPIC_CACHE_MARKER },
+  };
+}
+
+/**
+ * Split the run into AI SDK v7's two prompt channels. v7 rejects
+ * `role: "system"` entries inside `messages` (InvalidPromptError: "System
+ * messages are not allowed in the prompt or messages fields"), so the system
+ * prompt and plan-mode block travel as `instructions` and only the
+ * conversation goes in `messages`.
+ */
+export function buildAgentPrompt(
+  stableSystem: string,
+  history: ModelMessage[],
+  provider: ProviderId,
+  planMode = false,
+): { instructions: SystemModelMessage[]; messages: ModelMessage[] } {
+  const instructions: SystemModelMessage[] = [
+    { role: "system", content: stableSystem },
+  ];
+  if (planMode) {
+    instructions.push({ role: "system", content: PLAN_MODE_PROMPT });
+  }
+  const messages = history.filter((m) => m.role !== "system");
+  if (provider !== "anthropic") return { instructions, messages };
+  instructions[0] = withCacheMarker(instructions[0]);
+  const lastIdx = messages.length - 1;
+  if (lastIdx >= 0) messages[lastIdx] = withCacheMarker(messages[lastIdx]);
+  return { instructions, messages };
 }
 
 export type AgentUsage = {
@@ -498,18 +518,18 @@ export async function runAgentStream(opts: RunAgentOptions) {
     opts.onCompact?.({ droppedCount: compact.droppedCount });
   }
 
-  const messages: ModelMessage[] = [{ role: "system", content: stableSystem }];
-  if (opts.planMode) {
-    messages.push({ role: "system", content: PLAN_MODE_PROMPT });
-  }
-  messages.push(...compactedHistory);
-
-  const finalMessages = applyCacheBreakpoints(messages, provider);
+  const { instructions, messages } = buildAgentPrompt(
+    stableSystem,
+    compactedHistory,
+    provider,
+    opts.planMode,
+  );
 
   let stepsSeen = 0;
   return streamText({
     model,
-    messages: finalMessages,
+    instructions,
+    messages,
     tools: buildTools(opts.toolContext),
     stopWhen: stepCountIs(MAX_AGENT_STEPS),
     abortSignal: opts.abortSignal,

@@ -8,6 +8,7 @@ import { filesystem } from "@/platform/filesystem";
 import type { UIMessage } from "@ai-sdk/react";
 import { type ModelId } from "../config";
 import { runAgentStream, type AgentUsageDelta } from "./agent";
+import { formatChatError } from "./chatError";
 import type { ProviderKeys } from "./keyring";
 
 import type { ToolContext } from "../tools/tools";
@@ -121,6 +122,7 @@ export function createContextAwareTransport(deps: Deps) {
     });
     return result.toUIMessageStream({
       originalMessages: options.messages,
+      onError: formatChatError,
     });
   };
 
