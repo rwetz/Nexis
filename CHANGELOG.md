@@ -33,7 +33,7 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ### Security
 
-- **Patched `quinn-proto` (0.11.15 → 0.11.19) and `rustls` (0.23.45 → 0.23.46)** for nine RustSec advisories (RUSTSEC-2026-0338 to -0342 and -0347/-0348 among them): memory-exhaustion and panic paths in QUIC stream handling, and TLS issues around ECH rejection, Brotli certificate decompression and key-exchange downgrade. Both reach Nexis through `reqwest`. Lockfile-only change; this is what had kept the Security audit workflow red on `main` since late September.
+- **Patched `quinn-proto` (0.11.15 → 0.11.19) and `rustls` (0.23.45 → 0.23.46)** for nine RustSec advisories (RUSTSEC-2026-0338 to -0342 and -0347/-0348 among them): memory-exhaustion and panic paths in QUIC stream handling, and TLS issues around ECH rejection, Brotli certificate decompression and key-exchange downgrade. Both reach Nexis through `reqwest`. Lockfile-only change. `yoke-derive` also moved from the yanked 0.8.3 to 0.8.4, which `cargo deny` rejected. Together these had kept the Security audit workflow red on `main` since late September.
 
 
 ## [1.31.0] — 2026-10-02
