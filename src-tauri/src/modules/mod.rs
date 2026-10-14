@@ -11,6 +11,7 @@ pub mod benchmark;
 pub mod crash;
 pub mod dap;
 pub mod diagnostics;
+pub mod epoch;
 pub mod fs;
 pub mod fswatch;
 pub mod git;
@@ -18,6 +19,7 @@ pub mod http_share;
 #[cfg(windows)]
 pub mod job;
 pub mod ledger;
+pub mod links;
 pub mod lsp;
 pub mod ml;
 pub mod net;

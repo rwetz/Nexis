@@ -19,9 +19,9 @@ pub mod bench_internals {
 }
 
 use modules::{
-    ai_audit, atlas, autosave, benchmark, crash, dap, diagnostics, fs, fswatch, git, http_share,
-    ledger, lsp, ml, net, pty, python, recording, secrets, shell, snapshots, sysmon, tools,
-    winstate, workspace,
+    ai_audit, atlas, autosave, benchmark, crash, dap, diagnostics, epoch, fs, fswatch, git,
+    http_share, ledger, links, lsp, ml, net, pty, python, recording, secrets, shell, snapshots,
+    sysmon, tools, winstate, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -112,6 +112,17 @@ pub fn run() {
     crash::install_panic_hook();
     workspace::init_launch_cwd();
 
+    // A launch that carries a `nexis://` link (from Epoch, say) goes to the
+    // Nexis that is already open, and this process ends before any window
+    // exists. With no Nexis running it falls through and opens normally,
+    // following the link once the window is up. Plain launches are untouched.
+    let launch_link = links::link_from_args(std::env::args().skip(1));
+    if let Some(url) = &launch_link {
+        if links::send("nexis", url).is_ok() {
+            return;
+        }
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
         // Must be registered BEFORE the window-state plugin: plugin setups run
@@ -166,7 +177,12 @@ pub fn run() {
         .manage(http_share::HttpShareState::default())
         .manage(benchmark::state::BenchState::default())
         .manage(LaunchDir(Mutex::new(parse_launch_dir())))
-        .setup(|_app| {
+        .manage(links::PendingLinks::default())
+        .setup(move |_app| {
+            links::start_listener(_app.handle().clone());
+            if let Some(url) = &launch_link {
+                links::queue_launch_link(_app.handle(), url);
+            }
             // Re-assert undecorated after the webview is up (webkit2gtk can
             // reset window hints during init) and log the actual state so a
             // lingering KDE title bar can be diagnosed as "KWin ignored us"
@@ -256,6 +272,9 @@ pub fn run() {
             workspace::workspace_authorize,
             workspace::workspace_current_dir,
             get_launch_dir,
+            links::links_take_pending,
+            epoch::epoch_locate,
+            epoch::epoch_open,
             secrets::secrets_get,
             secrets::secrets_set,
             secrets::secrets_delete,

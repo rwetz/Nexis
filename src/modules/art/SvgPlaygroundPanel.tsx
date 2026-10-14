@@ -14,6 +14,7 @@
  * expand one, which is why the tab carries its own control back.
  */
 
+import { TOOL_NAMES } from "@/lib/toolNames";
 import { Icon } from "@/components/icon";
 import { SvgPlayground } from "./SvgPlayground";
 
@@ -34,8 +35,8 @@ export function SvgPlaygroundPanel({ onExpand, workspaceRoot }: Props) {
         <button
           type="button"
           onClick={onExpand}
-          title="Open in SVG Studio"
-          aria-label="Open the SVG playground in SVG Studio"
+          title={`Open in ${TOOL_NAMES.svgStudio}`}
+          aria-label={`Open the SVG playground in ${TOOL_NAMES.svgStudio}`}
           className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <Icon name="expand" size="sm" />

@@ -24,6 +24,7 @@
  * under "open a folder" wastes the one screen where attention is guaranteed.
  */
 
+import { TOOL_NAMES } from "@/lib/toolNames";
 import type { IconName } from "@/components/icon";
 import { packEnabled, type PackId } from "@/lib/packs";
 import type { SettingsTab } from "@/modules/settings/openSettingsWindow";
@@ -159,7 +160,7 @@ const STEPS: readonly OnboardingStep[] = [
   },
   {
     id: "ml.open",
-    label: "Open the ML Lab",
+    label: `Open ${TOOL_NAMES.mlLab}, the ML lab`,
     why: "Train and inspect a small model locally — no notebook server, no cloud account.",
     icon: "brain",
     action: { kind: "sidebar", view: "ml" },

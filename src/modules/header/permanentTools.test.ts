@@ -10,8 +10,15 @@ describe("titlebar tools", () => {
     expect(ids(visibleTools(CAPABILITY_TOOL_WINDOWS, PRESETS.standard.packs))).toEqual(["atlas", "benchmark"]);
     expect(ids(visibleTools(CAPABILITY_TOOL_WINDOWS, PRESETS.art.packs))).toEqual(["svg-studio", "atlas", "benchmark"]);
     expect(ids(visibleTools(CAPABILITY_TOOL_WINDOWS, PRESETS.everything.packs))).toEqual([
-      "svg-studio", "ml-lab", "web", "documents", "atlas", "benchmark",
+      "svg-studio", "ml-lab", "web", "documents", "atlas", "benchmark", "epoch",
     ]);
+  });
+
+  it("puts Epoch beside Synapse and Pulse, with the ML pack only", () => {
+    expect(ids(visibleTools(CAPABILITY_TOOL_WINDOWS, PRESETS["ai-ml"].packs))).toEqual(
+      expect.arrayContaining(["ml-lab", "benchmark", "epoch"]),
+    );
+    expect(ids(visibleTools(CAPABILITY_TOOL_WINDOWS, PRESETS.standard.packs))).not.toContain("epoch");
   });
 
   it("keeps a replaced view off the rail only while its window is available", () => {

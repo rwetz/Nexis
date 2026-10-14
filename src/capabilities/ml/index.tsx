@@ -1,3 +1,4 @@
+import { TOOL_NAMES } from "@/lib/toolNames";
 import { lazy } from "react";
 import { useIntegrationCapabilityHost } from "@/capabilities/integration-context";
 import type { CapabilityDefinition } from "@/workbench/capability";
@@ -23,7 +24,7 @@ export const mlCapability: CapabilityDefinition = {
   panels: [{
     id: "ml:lab",
     legacyView: "ml",
-    title: "ML Lab",
+    title: TOOL_NAMES.mlLab,
     location: "sidebar",
     icon: "brain",
     group: "Dev Tools",

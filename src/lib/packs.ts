@@ -11,6 +11,7 @@
  * docs/vault/decisions/expansion-packs.md). Every sidebar view must be
  * either in CORE_VIEWS or claimed by exactly one pack.
  */
+import { TOOL_NAMES } from "@/lib/toolNames";
 import type { IconName } from "@/components/icon";
 import type { SidebarViewId } from "@/modules/sidebar/types";
 import { SIDEBAR_VIEW_IDS } from "@/modules/sidebar/types";
@@ -114,9 +115,9 @@ export const PACKS: Record<PackId, PackDef> = {
   },
   "ml-lab": {
     id: "ml-lab",
-    label: "ML Lab",
+    label: "Machine Learning",
     description:
-      "Local model training, experiments, and benchmarking via nexis-ml. Runs against a local Python/Rust engine.",
+      `${TOOL_NAMES.mlLab} trains small models with nexis-ml, ${TOOL_NAMES.benchmark} times them, and ${TOOL_NAMES.epoch} (a companion app) explores their data and runs. All local.`,
     icon: "brain",
     views: ["ml", "benchmark"],
   },
@@ -148,7 +149,7 @@ export const PACKS: Record<PackId, PackDef> = {
     id: "art",
     label: "Art",
     description:
-      "SVG work: an icon-scale playground, generative backdrops, and a palette with contrast checks.",
+      `${TOOL_NAMES.svgStudio}: SVG work with an icon-scale playground, generative backdrops, and a palette with contrast checks.`,
     icon: "brush",
     // One view: palette, backdrop, icon set, favicon set and animator are
     // tools inside SVG Studio (`art/studioStore.ts`), not sidebar views.
@@ -158,7 +159,7 @@ export const PACKS: Record<PackId, PackDef> = {
     id: "documents",
     label: "Documents",
     description:
-      "Rich-text editing for markdown and Word (.docx) files, with PDF export.",
+      `${TOOL_NAMES.documents}: rich-text editing for markdown and Word (.docx) files, with PDF export.`,
     icon: "document",
     views: ["documents"],
   },
@@ -260,7 +261,7 @@ export const PRESETS: Record<PresetId, PresetDef> = {
   everything: {
     id: "everything",
     label: "Everything",
-    blurb: "The full surface, ML Lab and all. The classic Nexis experience.",
+    blurb: `The full surface, ${TOOL_NAMES.mlLab} and all. The classic Nexis experience.`,
     icon: "preset-everything",
     packs: PACK_IDS,
   },

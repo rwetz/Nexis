@@ -3,7 +3,9 @@ type: subsystem
 description: ML Lab — the external nexis-ml engine, its detection/spawn bridge, the training store, and the panel's charts and network diagram.
 ---
 
-# ML Lab
+# ML Lab (Synapse)
+
+Shown to users as **Synapse** (`lib/toolNames.ts`); the id, pack and code keep `ml-lab`/`ml`. Links to Pulse and Epoch: [[ml-tool-links]] (`ml/MlLinks.tsx`, `ml/links.ts`).
 
 Trains models locally through an **external** tool called `nexis-ml`, which Nexis does not ship: it is detected (venv / PATH / a managed download) and driven over a line-oriented NDJSON protocol. Rust owns the process and batches its output into Tauri events; the frontend owns the store, the charts, and the run browser.
 

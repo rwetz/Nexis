@@ -18,6 +18,7 @@
  * rename fallback every other write in Nexis gets (pitfall #17).
  */
 
+import { TOOL_NAMES } from "@/lib/toolNames";
 import { hostFilesystem } from "@/platform/filesystem";
 import { openFiles, saveFile } from "@/platform/dialogs";
 import { defineCommand, defineEvent } from "@/platform/ipc";
@@ -238,7 +239,7 @@ export function runToCsv(run: BenchRun, models: ModelInfo[]): string {
       m?.accuracy != null ? m.accuracy.toFixed(4) : "",
     ].join(",");
   });
-  return [`# Nexis Benchmark — run ${run.id} — ${run.createdAt}`, head, ...rows].join("\n");
+  return [`# Nexis ${TOOL_NAMES.benchmark} benchmark — run ${run.id} — ${run.createdAt}`, head, ...rows].join("\n");
 }
 
 export function runToMarkdown(run: BenchRun, models: ModelInfo[]): string {
@@ -259,7 +260,7 @@ export function runToMarkdown(run: BenchRun, models: ModelInfo[]): string {
     ];
     return `| ${cells.join(" | ")} |`;
   });
-  return [`**Nexis Benchmark** — ${new Date(run.createdAt).toLocaleString()}`, "", head, sep, ...rows].join(
+  return [`**Nexis ${TOOL_NAMES.benchmark} benchmark** — ${new Date(run.createdAt).toLocaleString()}`, "", head, sep, ...rows].join(
     "\n",
   );
 }

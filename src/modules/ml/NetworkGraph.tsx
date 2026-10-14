@@ -21,6 +21,7 @@
  * the latest confusion-matrix artifact. Both are best-effort — unknown
  * columns render as unlabeled ghost nodes.
  */
+import { TOOL_NAMES } from "@/lib/toolNames";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
@@ -193,8 +194,8 @@ export function NetworkGraph({
             <button
               type="button"
               onClick={onCollapse}
-              aria-label="Collapse back into the ML Lab panel"
-              title="Collapse back into the ML Lab panel"
+              aria-label={`Collapse back into ${TOOL_NAMES.mlLab}`}
+              title={`Collapse back into ${TOOL_NAMES.mlLab}`}
               className="rounded p-0.5 text-muted-foreground/60 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
             >
               <Icon name="collapse" size="xs" />

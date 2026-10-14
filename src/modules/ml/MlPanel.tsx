@@ -14,6 +14,8 @@
  *    sentence about what the model is doing
  *  - metrics labeled "Accuracy", not "acc/val"; jargon lives in Details
  */
+import { TOOL_NAMES } from "@/lib/toolNames";
+import { MlLinks } from "./MlLinks";
 import {
   Fragment,
   useEffect,
@@ -252,7 +254,7 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-2.5 py-1.5">
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold tracking-wide">ML Lab</span>
+          <span className="text-[11px] font-semibold tracking-wide">{TOOL_NAMES.mlLab}</span>
           <EngineChip
             status={engineStatus}
             version={engineVersion}
@@ -540,6 +542,13 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
                       </button>
                     </Explain>
                   ) : null}
+                  {selectedProject ? (
+                    <MlLinks
+                      projectDir={selectedProject}
+                      runId={viewedRun?.runId ?? null}
+                      hasOnnx={projects.find((p) => p.dir === selectedProject)?.hasOnnx ?? false}
+                    />
+                  ) : null}
                 </div>
               </>
             )}
@@ -755,7 +764,7 @@ function SetupCard({
           </dl>
           <p className="mb-1.5 text-[10px] leading-snug text-muted-foreground/70">
             Nexis verifies the download against this pinned checksum before it
-            can run. This is the only thing the ML Lab ever downloads.
+            can run. This is the only thing {TOOL_NAMES.mlLab} ever downloads.
           </p>
           <div className="flex gap-1.5">
             <button

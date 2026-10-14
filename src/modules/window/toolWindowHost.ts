@@ -8,7 +8,7 @@
  * What a companion tool window borrows from the main window.
  *
  * A tool window is its own webview with its own React root: no tabs, no
- * workspace, no terminal. SVG Studio, ML Lab, Web and Documents all read the
+ * workspace, no terminal. Vellum, Synapse, Portal and Quill all read the
  * workspace root, and a few of their buttons end in a place only the main
  * window has (a file tab, a preview tab, an SSH session). So the root flows
  * out of the main window as an event, and those actions flow back into it,
@@ -30,7 +30,10 @@ const HOST_ACTION_EVENT = "nexis://tool-host-action";
 export type ToolHostAction =
   | { kind: "file"; path: string }
   | { kind: "preview"; url: string }
-  | { kind: "ssh"; command: string; label: string };
+  | { kind: "ssh"; command: string; label: string }
+  /** Open another tool window (or a companion app) with launch parameters:
+   * how Synapse, Pulse and Epoch link to each other (window/toolLinks.ts). */
+  | { kind: "tool"; tool: string; params: Record<string, string> };
 
 /** Tool-window side: have the main window do something it owns. */
 export function requestToolHostAction(action: ToolHostAction): void {

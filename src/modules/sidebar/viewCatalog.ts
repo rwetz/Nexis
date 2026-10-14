@@ -30,6 +30,7 @@
  * what kind of thing it is fails to typecheck.
  */
 
+import { TOOL_NAMES } from "@/lib/toolNames";
 import type { IconName } from "@/components/icon";
 import type { CommandDef } from "@/components/CommandPalette";
 import { packForView } from "@/lib/packs";
@@ -77,11 +78,11 @@ export const VIEW_CATALOG: Record<SidebarViewId, ViewEntry> = {
   "code-review":     { label: "Code Review",      icon: "code-box",     kind: "ai", keywords: ["ai", "review", "diff"] },
 
   // ── Workbenches — the title bar ─────────────────────────────────────────
-  ml:                { label: "ML Lab",           icon: "brain",        kind: "workbench", command: false },
-  "svg-playground":  { label: "SVG Studio",       icon: "brush",        kind: "workbench", command: false },
+  ml:                { label: TOOL_NAMES.mlLab,      icon: "brain",        kind: "workbench", command: false },
+  "svg-playground":  { label: TOOL_NAMES.svgStudio,  icon: "brush",        kind: "workbench", command: false },
   atlas:             { label: "Atlas",            icon: "map",          kind: "workbench", command: false },
-  benchmark:         { label: "Benchmark",        icon: "activity",     kind: "workbench", command: false },
-  documents:         { label: "Documents",        icon: "document",     kind: "workbench", command: false },
+  benchmark:         { label: TOOL_NAMES.benchmark,  icon: "activity",     kind: "workbench", command: false },
+  documents:         { label: TOOL_NAMES.documents,  icon: "document",     kind: "workbench", command: false },
   // The Web workbench's tools: one title-bar tab (`web-workbench/`).
   ports:             { label: "Ports",            icon: "network",      kind: "workbench", keywords: ["listening", "localhost", "server"] },
   "http-client":     { label: "HTTP Client",      icon: "globe",        kind: "workbench", command: false },

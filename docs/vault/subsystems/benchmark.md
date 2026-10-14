@@ -3,7 +3,9 @@ type: subsystem
 description: Benchmarking local ONNX/GGUF models across inference backends — Rust harness behind an Engine trait, streaming results into an ML Lab panel.
 ---
 
-# Benchmark
+# Benchmark (Pulse)
+
+Shown to users as **Pulse** (`lib/toolNames.ts`); the id stays `benchmark`. Its window takes a `model` launch parameter (`benchmark/PulseWindow.tsx`), and model rows exported by Synapse link back to Synapse and Epoch: [[ml-tool-links]].
 
 The ML Lab sidebar panel that measures local models: drop in `.onnx` or `.gguf` files, pick backends, run the model x backend matrix, and compare throughput, latency, peak memory and accuracy side by side. Results stream live over Tauri events.
 

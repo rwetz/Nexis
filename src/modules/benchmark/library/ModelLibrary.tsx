@@ -1,3 +1,4 @@
+import { ModelLinks } from "./ModelLinks";
 import { Icon } from "@/components/icon";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -145,6 +146,7 @@ function ModelRow({
         </div>
       </button>
 
+      <ModelLinks model={model} />
       <Button
         variant="ghost"
         size="icon-xs"
