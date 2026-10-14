@@ -5,9 +5,10 @@
 // ╚══════════════════════════════════════╝
 
 /**
- * nexis-ml protocol v1 types + line parsing.
+ * ML engine protocol v1 types + line parsing (spoken by Axon, and by the
+ * phased-out Python `nexis-ml`).
  *
- * Canonical spec: ML_SUITE.md (this repo) / PROTOCOL.md (engine repo).
+ * Canonical spec: ML_SUITE.md (this repo).
  * Per the protocol's forward-compatibility rule, unknown event types and
  * unknown fields are preserved but ignored by consumers.
  */
@@ -94,17 +95,33 @@ export function parseProtocolLine(line: string): MlEvent | null {
 
 // ── Serve (inference) protocol ────────────────────────────────────────────────
 //
-// `nexis-ml serve` speaks a separate request/response NDJSON dialect (see
-// PROTOCOL.md): a `ready` event, then one `prediction` or `error` per
+// `axon serve` speaks a separate request/response NDJSON dialect (see
+// ML_SUITE.md): a `ready` event, then one `prediction` or `error` per
 // request. These lines arrive on the same stdout stream as training, so
 // the store routes a session's batches here by sid and parses them with
 // parseServeLine (NOT parseProtocolLine — the event sets is disjoint).
 
+/** One input column of a tabular model (Axon v0.9+): a number box for
+ *  `numeric`, a dropdown of `categories` for `categorical`. */
+export type ServeColumn = {
+  name: string;
+  kind: "numeric" | "categorical";
+  /** numeric: the training mean (what a blank value stands for). */
+  mean?: number;
+  categories?: string[];
+};
+
 export type ServeMeta = {
-  /** tabular: the feature columns + class labels, for the input form. */
+  /** tabular: the input column names + class labels, for the input form. */
   features?: string[];
+  /** tabular, Axon v0.9+: each input column's kind; older engines omit it
+   *  and every feature is numeric. */
+  columns?: ServeColumn[];
   classes?: string[];
+  /** "classification" | "regression". */
   task?: string;
+  /** tabular, Axon v0.9+: the column the model predicts. */
+  target?: string | null;
   vocab?: number;
   context?: number;
 };

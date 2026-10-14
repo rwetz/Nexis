@@ -14,7 +14,7 @@ The ML Lab's standalone engine is the only true download in Nexis. The original 
 
 ## Decision
 
-1. **Hosting stays on GitHub Releases** (`rwetz/nexis-ml-rs`). Free, CDN-backed, tags map cleanly to pins, checksums can be produced by the same release workflow. No new infra.
+1. **Hosting stays on GitHub Releases** (`rwetz/nexis-ml-rs`, renamed `rwetz/axon` at v0.9.0; GitHub redirects the old URLs, but the pin uses the new one). Free, CDN-backed, tags map cleanly to pins, checksums can be produced by the same release workflow. No new infra.
 2. **Integrity = compiled-in pin, not signatures.** Each Nexis release pins an exact engine release tag plus per-platform asset name, size, and SHA-256 (`ENGINE_TAG` / `ENGINE_VERSION` / `engine_asset()` in `src-tauri/src/modules/ml.rs`). The URL is derived from the pin — never frontend-supplied. Bytes are hashed **before** being written to the managed dir or executed; post-install, `--version` must report exactly the pinned version. "latest" is never fetched.
 3. **Offline path shares the gate.** `ml_install_local` installs from a file on disk with the same hash check — air-gapped machines download the asset elsewhere and carry it over. Self-built engines fail the pin by design; they remain usable through PATH/venv *detection*, which stays unverified as before. Invariant: **the managed engine dir only ever holds pin-verified bytes.**
 4. **Uninstall + footprint.** `ml_uninstall` deletes the managed binary (returns freed bytes); `ml_engine_status` reports installed/size for the panel readout. Engines in venvs/PATH are not Nexis's to remove.
@@ -29,6 +29,7 @@ The ML Lab's standalone engine is the only true download in Nexis. The original 
 ## Consequences
 
 - **Shipping a new engine requires a Nexis release**: bump `ENGINE_TAG`/`ENGINE_VERSION`, download the assets, paste `sha256sum` output into `engine_asset()`. The `engine_pin_is_well_formed` unit test catches malformed pins.
-- The nexis-ml-rs release workflow should publish a `checksums.txt` asset so the pin can be cross-checked against CI output instead of trusting a local download (tracked in ROADMAP).
+- Axon's release workflow publishes `<asset>.sha256` beside each binary (from v0.9.0), so a new pin is cross-checked against CI's hash instead of only a local download.
 - The v0.8.0 pin's hashes were computed from the published release assets at implementation time (trust-on-first-use) — cross-check them against the original build outputs when convenient.
-- macOS still has no prebuilt asset: `engine_asset()` returns None, the panel offers the Python engine instead. Adding a mac build means adding a pin entry, not new flow.
+- macOS still has no prebuilt asset: `engine_asset()` returns None and the guide says to build Axon from source. Adding a mac build means adding a pin entry, not new flow.
+- Renaming the binary (`nexis-ml` → `axon`, v0.9.0) kept the flow: the managed dir now holds `axon(.exe)`, a pre-rename `nexis-ml(.exe)` is still detected until an install replaces it, and uninstall removes both.

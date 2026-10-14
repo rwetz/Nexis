@@ -84,22 +84,35 @@ export function pickRun(runs: HistoricalRun[], requested?: string): HistoricalRu
   );
 }
 
-/** A CSV row as a model input: only the model's own features, only numbers.
- *  Missing features are left out (the engine fills the training mean). */
+/** A CSV row as a model input: only the model's own features. Categorical
+ *  columns (Axon v0.9+) go through as text, exactly as written, so "007"
+ *  still matches its category; the rest as numbers. Blank or unreadable
+ *  values are left out, and the engine treats them as missing. */
 export function rowToInput(
   header: string[],
   row: string[],
   features: string[],
-): Record<string, number> {
-  const input: Record<string, number> = {};
+  categorical: ReadonlySet<string> = new Set(),
+): Record<string, number | string> {
+  const input: Record<string, number | string> = {};
   for (const f of features) {
     const idx = header.indexOf(f);
     if (idx < 0) continue;
     const raw = row[idx]?.trim();
-    const n = raw === "" || raw == null ? NaN : Number(raw);
+    if (raw === "" || raw == null) continue;
+    if (categorical.has(f)) {
+      input[f] = raw;
+      continue;
+    }
+    const n = Number(raw);
     if (Number.isFinite(n)) input[f] = n;
   }
   return input;
+}
+
+/** The categorical input columns a serve session reported, if any. */
+export function categoricalColumns(meta: { columns?: { name: string; kind: string }[] }): Set<string> {
+  return new Set((meta.columns ?? []).filter((c) => c.kind === "categorical").map((c) => c.name));
 }
 
 export type TabularOutput = { label?: string; probs?: Record<string, number>; value?: number };
@@ -224,7 +237,7 @@ async function engineFor(root: string): Promise<string> {
   if (!store.engineExe) await store.detect(root);
   const { engineExe, engineKind, envInfo } = useMlStore.getState();
   if (!engineExe) {
-    throw new Error(`No nexis-ml engine is set up. Open ${TOOL_NAMES.mlLab} (the ML lab) to install one.`);
+    throw new Error(`No ML engine is set up. Open ${TOOL_NAMES.mlLab} (the ML lab) to install Axon.`);
   }
   if (engineKind === "rust" && !envInfo?.serve) {
     throw new Error(`This engine version can't serve models. Update it from ${TOOL_NAMES.mlLab}.`);
@@ -279,7 +292,7 @@ const listModels: ToolContribution = {
   name: "ml_list_models",
   description:
     `List the machine-learning models the user trained in ${TOOL_NAMES.mlLab}, Nexis's ML lab: each project's ` +
-    "kind (tabular classifier, image CNN, text GPT), the columns it reads and predicts, its " +
+    "kind (tabular classifier or regressor, image CNN, text GPT), the columns it reads and predicts, its " +
     "training brief, and its recent runs with their final metrics. Call this first whenever " +
     "the user asks about 'my model(s)', before ml_predict or ml_rank_csv.",
   inputSchema: z.object({}),
@@ -297,7 +310,7 @@ const listModels: ToolContribution = {
             runsOf(p),
           ]);
           const net = toml ? parseTomlNet(toml) : null;
-          const data = toml ? parseDataConfig(toml) : { path: null, target: null };
+          const data = toml ? parseDataConfig(toml) : { path: null, target: null, task: null };
           let columns: string[] | null = null;
           if (data.path && net?.kind === "mlp") {
             const csv = await readTextFile(`${p.dir}/${data.path}`);
@@ -334,10 +347,12 @@ const predictInput = z.object({
   project: z.string().describe("Project name from ml_list_models."),
   run: z.string().optional().describe("Run id. Default: the pinned or latest finished run."),
   rows: z
-    .array(z.record(z.string(), z.number()))
+    .array(z.record(z.string(), z.union([z.number(), z.string()])))
     .max(MAX_PREDICT_ROWS)
     .optional()
-    .describe("Tabular models: feature name → number, one object per prediction. Missing features use the training average."),
+    .describe(
+      "Tabular models: feature name → value (a number, or text for a category column), one object per prediction. Missing features count as missing (numbers use the training average).",
+    ),
   prompt: z.string().optional().describe("Text models: the text to continue."),
   max_new: z.number().int().min(1).max(2000).optional().describe("Text models: characters to generate (default 200)."),
   temperature: z.number().min(0.05).max(3).optional().describe("Text models: sampling temperature (default 0.8)."),
@@ -349,8 +364,8 @@ const predict: ToolContribution = {
   description:
     `Run one of the user's trained ${TOOL_NAMES.mlLab} models. ` +
     "Tabular models: pass `rows` (up to 50 " +
-    "objects of feature → number) and get each row's predicted class with class " +
-    "probabilities, or a predicted value. Text models: pass `prompt` and get the model's " +
+    "objects of feature → number or category text) and get each row's predicted class with class " +
+    "probabilities, or a predicted number for a regression model. Text models: pass `prompt` and get the model's " +
     "continuation. Report results as the model's output, not as fact.",
   inputSchema: predictInput,
   approval: "auto",
@@ -387,7 +402,14 @@ const predict: ToolContribution = {
           value: round(out.value),
         });
       }
-      return { ...base, features: session.meta.features, classes: session.meta.classes, predictions };
+      return {
+        ...base,
+        task: session.meta.task,
+        target: session.meta.target ?? undefined,
+        features: session.meta.columns ?? session.meta.features,
+        classes: session.meta.classes,
+        predictions,
+      };
     });
   },
 };
@@ -407,8 +429,9 @@ const rankCsv: ToolContribution = {
   name: "ml_rank_csv",
   description:
     `Score every row of a CSV with one of the user's trained tabular ${TOOL_NAMES.mlLab} models and ` +
-    "return the top rows. Use it for 'who is the best/most likely/riskiest' questions, " +
-    "e.g. ranking players by the model's probability of the all-time-great tier. Feature " +
+    "return the top rows. Use it for 'who is the best/most likely/riskiest/most expensive' questions, " +
+    "e.g. ranking players by the model's probability of the all-time-great tier; a regression " +
+    "model ranks by its predicted number. Feature " +
     "columns are matched by name; other columns are ignored. Up to 5000 rows.",
   inputSchema: rankInput,
   approval: "auto",
@@ -440,6 +463,7 @@ const rankCsv: ToolContribution = {
     return serveRun(root, project.name, input.run, async (session, _p, run) => {
       if (session.template === "textgen") throw new Error("Ranking needs a tabular model.");
       const features = session.meta.features ?? [];
+      const categorical = categoricalColumns(session.meta);
       const columns = new Set(header);
       const featureSet = new Set(features);
       const missing = features.filter((f) => !columns.has(f));
@@ -458,7 +482,9 @@ const rankCsv: ToolContribution = {
       const scored: Scored[] = [];
       for (let i = 0; i < rows.length; i++) {
         // react-doctor-disable-next-line react-doctor/async-await-in-loop -- serve answers one stdin line at a time; infer() refuses overlap
-        const out = tabularOutput(await session.infer({ input: rowToInput(header, rows[i], features) }));
+        const out = tabularOutput(
+          await session.infer({ input: rowToInput(header, rows[i], features, categorical) }),
+        );
         const id = idCol >= 0 ? rows[i][idCol] : `row ${i + 1}`;
         scored.push(scorePrediction(id, out, rankClass));
       }
@@ -469,7 +495,9 @@ const rankCsv: ToolContribution = {
         run: run.id,
         csv: csvPath,
         rows_scored: scored.length,
-        ranked_by: rankClass ? `probability of class "${rankClass}"` : "predicted value",
+        ranked_by: rankClass
+          ? `probability of class "${rankClass}"`
+          : `predicted ${session.meta.target ?? "value"}`,
         ...(rankClass
           ? { note: "Near 1.0, compare log_odds. A gap under ~1 is within run-to-run noise; check with another run." }
           : {}),

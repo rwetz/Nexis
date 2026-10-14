@@ -117,7 +117,7 @@ export const PACKS: Record<PackId, PackDef> = {
     id: "ml-lab",
     label: "Machine Learning",
     description:
-      `${TOOL_NAMES.mlLab} trains small models with nexis-ml, ${TOOL_NAMES.benchmark} times them, and ${TOOL_NAMES.epoch} (a companion app) explores their data and runs. All local.`,
+      `${TOOL_NAMES.mlLab} trains small models with Axon, ${TOOL_NAMES.benchmark} times them, and ${TOOL_NAMES.epoch} (a companion app) explores their data and runs. All local.`,
     icon: "brain",
     views: ["ml", "benchmark"],
   },

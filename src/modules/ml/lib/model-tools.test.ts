@@ -19,6 +19,7 @@ import {
   parseCsv,
   pickRun,
   rowToInput,
+  categoricalColumns,
   scorePrediction,
 } from "./model-tools";
 import { RESERVED_TOOL_NAMES, admitTool } from "@/modules/ai/tools/plugin-tools";
@@ -59,6 +60,23 @@ describe("rowToInput", () => {
   it("keeps only the model's numeric features", () => {
     const header = ["player", "ppg", "mvp", "team"];
     expect(rowToInput(header, ["Hale", "27.1", "", "BOS"], ["ppg", "mvp", "rpg"])).toEqual({ ppg: 27.1 });
+  });
+
+  it("passes category columns through as text, exactly as written", () => {
+    const header = ["zip", "team", "ppg"];
+    const categorical = categoricalColumns({
+      columns: [
+        { name: "zip", kind: "categorical" },
+        { name: "team", kind: "categorical" },
+        { name: "ppg", kind: "numeric" },
+      ],
+    });
+    expect(rowToInput(header, ["007", "BOS", "12"], ["zip", "team", "ppg"], categorical)).toEqual({
+      zip: "007",
+      team: "BOS",
+      ppg: 12,
+    });
+    expect(categoricalColumns({})).toEqual(new Set());
   });
 });
 

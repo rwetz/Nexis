@@ -4,8 +4,9 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-//! ML engine bridge — spawns the external `nexis-ml` tool (the engine half
-//! of the ML Suite, see ML_SUITE.md) and streams its NDJSON protocol events
+//! ML engine bridge — spawns the external engine, Axon (`axon`; the legacy
+//! Python engine and pre-0.9 Axon builds are named `nexis-ml`; see
+//! ML_SUITE.md), and streams its NDJSON protocol events
 //! to the frontend as Tauri events:
 //!
 //!   ml:proto  { sid, lines: Vec<String> }  — batched stdout protocol lines
@@ -105,7 +106,7 @@ struct ExitPayload {
 /// Lowercased final-component stem of a path, splitting on BOTH `/` and `\`
 /// regardless of host OS. `Path::file_stem` is host-dependent — on Unix it
 /// doesn't treat `\` as a separator — so a Windows-style candidate path like
-/// `C:\venv\Scripts\nexis-ml.exe` would otherwise pass the guard on Windows
+/// `C:\tools\axon.exe` would otherwise pass the guard on Windows
 /// but fail it (and the unit tests) on the Linux/macOS CI runners.
 fn exe_stem_lower(exe: &str) -> String {
     let name = exe.rsplit(['/', '\\']).next().unwrap_or(exe);
@@ -113,11 +114,16 @@ fn exe_stem_lower(exe: &str) -> String {
     stem.to_ascii_lowercase()
 }
 
-/// True if `exe` plausibly names the nexis-ml binary (and nothing else).
+/// The engine's binary names: `axon` (v0.9+), and `nexis-ml` (the legacy
+/// Python engine and Axon before the rename). Also the names `--version`
+/// must start with.
+const ENGINE_NAMES: [&str; 2] = ["axon", "nexis-ml"];
+
+/// True if `exe` plausibly names the engine binary (and nothing else).
 /// This command must not become a generic process launcher: only a file
-/// whose stem is exactly `nexis-ml` may be spawned.
-fn is_nexis_ml_exe(exe: &str) -> bool {
-    exe_stem_lower(exe) == "nexis-ml"
+/// whose stem is exactly one of `ENGINE_NAMES` may be spawned.
+fn is_engine_exe(exe: &str) -> bool {
+    ENGINE_NAMES.contains(&exe_stem_lower(exe).as_str())
 }
 
 /// Build the command that runs the engine for a given workspace.
@@ -238,12 +244,15 @@ fn engine_version_in(workspace: &WorkspaceEnv, exe: &str) -> Result<String, Prob
         }));
     }
     let stdout = String::from_utf8_lossy(&out.stdout);
-    parse_version(&stdout).ok_or(Probe::Failed("empty --version output".into()))
+    parse_version(&stdout).ok_or(Probe::Failed(format!(
+        "not the ML engine (--version said {:?})",
+        stdout.trim()
+    )))
 }
 
 /// Absolute in either convention — a POSIX `/…` or a Windows `C:\…`. Used
 /// only to decide whether a cheap `exists()` check is meaningful; a bare
-/// `nexis-ml` has to be resolved by PATH, which only a spawn can do.
+/// `axon` has to be resolved by PATH, which only a spawn can do.
 fn looks_absolute(path: &str) -> bool {
     path.starts_with('/')
         || path.starts_with('\\')
@@ -253,9 +262,9 @@ fn looks_absolute(path: &str) -> bool {
             .is_some_and(|&c| c == b':' && path.len() > 2)
 }
 
-/// Run `<exe> --version` and return the parsed version (the last
-/// whitespace-separated token, e.g. "0.5.0" from "nexis-ml 0.5.0"). Host-only:
-/// the managed engine this verifies is always a host binary.
+/// Run `<exe> --version` and return the parsed version (see
+/// `parse_version`). Host-only: the managed engine this verifies is always a
+/// host binary.
 fn engine_version(exe: &std::path::Path) -> Result<String, String> {
     let mut cmd = proc::command(exe);
     cmd.arg("--version")
@@ -267,14 +276,23 @@ fn engine_version(exe: &std::path::Path) -> Result<String, String> {
         return Err(format!("exit {:?}", out.status.code()));
     }
     let stdout = String::from_utf8_lossy(&out.stdout);
-    parse_version(&stdout).ok_or_else(|| "empty --version output".to_string())
+    parse_version(&stdout)
+        .ok_or_else(|| format!("not the ML engine (--version said {:?})", stdout.trim()))
 }
 
-/// Parse the version token from `<exe> --version` output (the last
-/// whitespace-separated token of "nexis-ml 0.5.0").
+/// Parse `<name> <version>` from `--version` output ("axon 0.9.0"). The name
+/// must be one of `ENGINE_NAMES`: `axon` is a common enough word that an
+/// unrelated `axon` on PATH must not be taken for the engine.
 fn parse_version(stdout: &str) -> Option<String> {
-    let v = stdout.trim().rsplit(' ').next().unwrap_or("");
-    (!v.is_empty()).then(|| v.to_string())
+    // Exactly two tokens, the second a version: "Axon Server CLI 4.6.3" has
+    // the right first word but is not the engine.
+    let tokens: Vec<&str> = stdout.split_whitespace().collect();
+    let [name, version] = tokens.as_slice() else {
+        return None;
+    };
+    let is_version = version.starts_with(|c: char| c.is_ascii_digit());
+    (ENGINE_NAMES.contains(&name.to_ascii_lowercase().as_str()) && is_version)
+        .then(|| version.to_string())
 }
 
 /// Try `<exe> --version` for each candidate path; first success wins.
@@ -297,8 +315,8 @@ pub async fn ml_detect(
         let mut checked = 0usize;
         let mut failures: Vec<String> = Vec::new();
         for exe in &candidates {
-            if !is_nexis_ml_exe(exe) {
-                failures.push(format!("{exe}: not a nexis-ml binary"));
+            if !is_engine_exe(exe) {
+                failures.push(format!("{exe}: not an engine binary"));
                 continue;
             }
             checked += 1;
@@ -329,21 +347,44 @@ pub async fn ml_detect(
 /// dir), whether or not it exists yet. The frontend adds it to the detection
 /// candidates so a downloaded engine is found like any other; a missing path
 /// just fails the `--version` probe instantly.
-/// `pub(crate)` for the Benchmark panel: its nexis-ml backend resolves the same
+/// `pub(crate)` for the Benchmark panel: its engine backend resolves the same
 /// engine, so an install done once in ML Lab is visible in both places rather
 /// than only to whichever of them happens to find a copy on PATH.
 pub(crate) fn managed_engine_exe(app: &AppHandle) -> Result<std::path::PathBuf, String> {
-    let name = if cfg!(windows) {
-        "nexis-ml.exe"
-    } else {
-        "nexis-ml"
-    };
-    let dir = app
+    Ok(managed_engine_dir(app)?.join(exe_file_name("axon"))) // pure path; the dir is created lazily by ml_download
+}
+
+/// Where a pre-0.9 managed install (named `nexis-ml`) lives. It keeps working
+/// until the user installs Axon, which removes it.
+fn legacy_managed_engine_exe(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    Ok(managed_engine_dir(app)?.join(exe_file_name("nexis-ml")))
+}
+
+fn managed_engine_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    Ok(app
         .path()
         .app_local_data_dir()
         .map_err(|e| e.to_string())?
-        .join("engine");
-    Ok(dir.join(name)) // pure path; the dir is created lazily by ml_download
+        .join("engine"))
+}
+
+fn exe_file_name(stem: &str) -> String {
+    if cfg!(windows) {
+        format!("{stem}.exe")
+    } else {
+        stem.to_string()
+    }
+}
+
+/// The managed engine actually on disk: Axon if installed, else a legacy
+/// install, else the Axon path (absent).
+pub(crate) fn installed_managed_engine_exe(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    let exe = managed_engine_exe(app)?;
+    if exe.is_file() {
+        return Ok(exe);
+    }
+    let legacy = legacy_managed_engine_exe(app)?;
+    Ok(if legacy.is_file() { legacy } else { exe })
 }
 
 /// The managed engine path as a string, for the frontend's candidate list.
@@ -360,14 +401,14 @@ pub fn ml_managed_engine_path(app: AppHandle) -> Result<String, String> {
 // release asset must fail the hash check here rather than run once with
 // `--version` as its only vetting. Shipping a new engine therefore means
 // bumping this pin in a Nexis release: update TAG/VERSION, download the
-// assets, and paste the `sha256sum` output. The nexis-ml-rs release workflow
-// should also publish a checksums.txt so the pin can be cross-checked against
-// CI output instead of a local download.
+// assets, and paste the `sha256sum` output. Axon's release workflow also
+// publishes `<asset>.sha256`, so the pin can be cross-checked against CI's
+// own hash instead of only a local download.
 
 /// Release tag the download URL points at.
-const ENGINE_TAG: &str = "v0.8.0";
-/// Version string `nexis-ml --version` must report after install.
-const ENGINE_VERSION: &str = "0.8.0";
+const ENGINE_TAG: &str = "v0.9.0";
+/// Version string `axon --version` must report after install.
+const ENGINE_VERSION: &str = "0.9.0";
 
 /// Per-platform pinned asset: release file name, byte size (shown in the
 /// consent UI; not a security boundary), and SHA-256 of the exact bytes.
@@ -378,18 +419,18 @@ struct EngineAsset {
 }
 
 /// The pinned asset for this OS/arch, or None on a platform with no prebuilt
-/// binary. macOS standalone builds are deferred — the panel guides Mac users
-/// to the Python engine instead of offering a download that would 404.
+/// binary. macOS builds are deferred, so the panel tells Mac users to build
+/// Axon from source instead of offering a download that would 404.
 fn engine_asset() -> Option<&'static EngineAsset> {
     if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
         Some(&EngineAsset {
-            name: "nexis-ml-windows-x64.exe",
+            name: "axon-windows-x64.exe",
             size: 34_814_464,
             sha256: "f8d7eacd6d9517277fbf40869b0589f689efeb8c76c0425dee31e68a95357dbf",
         })
     } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
         Some(&EngineAsset {
-            name: "nexis-ml-linux-x64",
+            name: "axon-linux-x64",
             size: 26_113_824,
             sha256: "18a4981b476e639cfd4cc6722f4eea4686612568253c59a3f3591a63ba8bc5e9",
         })
@@ -400,7 +441,7 @@ fn engine_asset() -> Option<&'static EngineAsset> {
 
 fn engine_asset_url(asset: &EngineAsset) -> String {
     format!(
-        "https://github.com/rwetz/nexis-ml-rs/releases/download/{ENGINE_TAG}/{}",
+        "https://github.com/rwetz/axon/releases/download/{ENGINE_TAG}/{}",
         asset.name
     )
 }
@@ -485,6 +526,11 @@ fn install_verified_bytes(app: &AppHandle, bytes: &[u8]) -> Result<MlDetectResul
         let _ = std::fs::remove_file(&tmp);
         format!("install engine: {e}")
     })?;
+    // The pre-rename install is superseded; leaving it would keep ~35 MB on
+    // disk that nothing uses.
+    if let Ok(legacy) = legacy_managed_engine_exe(app) {
+        let _ = std::fs::remove_file(legacy);
+    }
 
     match engine_version(&exe) {
         Ok(version) if version == ENGINE_VERSION => Ok(MlDetectResult {
@@ -499,14 +545,12 @@ fn install_verified_bytes(app: &AppHandle, bytes: &[u8]) -> Result<MlDetectResul
         }
         Err(e) => {
             let _ = std::fs::remove_file(&exe);
-            Err(format!(
-                "downloaded file is not a valid nexis-ml engine: {e}"
-            ))
+            Err(format!("downloaded file is not a valid engine: {e}"))
         }
     }
 }
 
-/// Download the pinned standalone `nexis-ml` engine release into the managed
+/// Download the pinned Axon engine release into the managed
 /// engine dir. The URL is derived from the compiled-in pin — never
 /// frontend-supplied — and the bytes are SHA-256-verified against the pin
 /// before touching disk or being executed. The "download → verify → detect"
@@ -563,7 +607,7 @@ pub struct ManagedEngineStatus {
 /// Engines detected from PATH/venvs are not Nexis's to account for.
 #[tauri::command]
 pub fn ml_engine_status(app: AppHandle) -> Result<ManagedEngineStatus, String> {
-    let exe = managed_engine_exe(&app)?;
+    let exe = installed_managed_engine_exe(&app)?;
     let size = std::fs::metadata(&exe).map(|m| m.len()).unwrap_or(0);
     Ok(ManagedEngineStatus {
         installed: size > 0,
@@ -576,8 +620,12 @@ pub fn ml_engine_status(app: AppHandle) -> Result<ManagedEngineStatus, String> {
 /// freed byte count. Detection falls back to PATH/venv engines afterwards.
 #[tauri::command]
 pub fn ml_uninstall(app: AppHandle) -> Result<u64, String> {
+    // A pre-rename install goes too; it is the same engine under its old name.
+    let legacy = legacy_managed_engine_exe(&app)?;
+    let legacy_size = std::fs::metadata(&legacy).map(|m| m.len()).unwrap_or(0);
+    let _ = std::fs::remove_file(&legacy);
     let exe = managed_engine_exe(&app)?;
-    let size = std::fs::metadata(&exe).map(|m| m.len()).unwrap_or(0);
+    let size = std::fs::metadata(&exe).map(|m| m.len()).unwrap_or(0) + legacy_size;
     // Sweep an interrupted download's staging file too. It is the one thing
     // in the engine dir that no other code path ever removes, and leaving it
     // means "Remove" reports space freed while the disk keeps holding ~35 MB.
@@ -586,7 +634,12 @@ pub fn ml_uninstall(app: AppHandle) -> Result<u64, String> {
     let _ = std::fs::remove_file(&tmp);
     match std::fs::remove_file(&exe) {
         Ok(()) => {}
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(tmp_size),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            if let Some(parent) = exe.parent() {
+                let _ = std::fs::remove_dir(parent);
+            }
+            return Ok(tmp_size + legacy_size);
+        }
         Err(e) => return Err(format!("remove engine: {e}")),
     }
     if let Some(parent) = exe.parent() {
@@ -595,15 +648,16 @@ pub fn ml_uninstall(app: AppHandle) -> Result<u64, String> {
     Ok(size + tmp_size)
 }
 
-/// Run `nexis-ml env` and return its JSON capability report (torch
-/// version, CUDA availability, GPU name). Blocking — importing torch
-/// takes a few seconds — so the frontend calls it fire-and-forget.
+/// Run `<engine> env` and return its JSON capability report (backend and
+/// feature flags for Axon; torch/CUDA for the legacy Python engine, where
+/// importing torch takes a few seconds — so the frontend calls it
+/// fire-and-forget).
 #[tauri::command]
 pub async fn ml_env(exe: String, workspace: Option<WorkspaceEnv>) -> Result<String, String> {
     let workspace = WorkspaceEnv::from_option(workspace);
     crate::modules::heavy(move || {
-        if !is_nexis_ml_exe(&exe) {
-            return Err(format!("not a nexis-ml binary: {exe}"));
+        if !is_engine_exe(&exe) {
+            return Err(format!("not an engine binary: {exe}"));
         }
         let mut cmd = env_command(&workspace, &exe, None)?;
         cmd.arg("env")
@@ -653,7 +707,7 @@ fn ml_gpu_probe_blocking() -> Option<String> {
     }
 }
 
-/// Spawn `nexis-ml --nexis-protocol <subcommand> ...` rooted at
+/// Spawn `<engine> --nexis-protocol <subcommand> ...` rooted at
 /// `project_dir` and stream its events. Returns a session id.
 #[tauri::command]
 pub fn ml_spawn(
@@ -666,8 +720,8 @@ pub fn ml_spawn(
     workspace: Option<WorkspaceEnv>,
 ) -> Result<u32, String> {
     let workspace = WorkspaceEnv::from_option(workspace);
-    if !is_nexis_ml_exe(&exe) {
-        return Err(format!("not a nexis-ml binary: {exe}"));
+    if !is_engine_exe(&exe) {
+        return Err(format!("not an engine binary: {exe}"));
     }
     let sub = args.first().map(String::as_str).unwrap_or("");
     if !ALLOWED_SUBCOMMANDS.contains(&sub) {
@@ -842,7 +896,7 @@ pub fn ml_cancel(state: State<'_, MlState>, sid: u32) -> Result<(), String> {
 }
 
 /// Write one request line to a session's stdin. The inference playground
-/// (`nexis-ml serve`) reads one JSON request per line, so the frontend
+/// (`axon serve`) reads one JSON request per line, so the frontend
 /// sends each request through here. A trailing newline is appended (and
 /// any the caller included is stripped first) so the engine always gets
 /// exactly one complete line.
@@ -874,7 +928,7 @@ pub fn ml_kill(state: State<'_, MlState>, sid: u32) -> Result<(), String> {
 }
 
 /// True only for a plain CPython launcher (python / python3 / python3.x).
-/// Same rationale as `is_nexis_ml_exe`: ml_install must not become a
+/// Same rationale as `is_engine_exe`: ml_install must not become a
 /// generic process launcher.
 fn is_python_exe(exe: &str) -> bool {
     let stem = exe_stem_lower(exe);
@@ -1027,22 +1081,29 @@ mod tests {
     use super::*;
 
     #[test]
-    fn exe_name_guard_accepts_nexis_ml_forms() {
-        assert!(is_nexis_ml_exe("nexis-ml"));
-        assert!(is_nexis_ml_exe("nexis-ml.exe"));
-        assert!(is_nexis_ml_exe("NEXIS-ML.EXE"));
-        assert!(is_nexis_ml_exe(r"C:\venv\Scripts\nexis-ml.exe"));
-        assert!(is_nexis_ml_exe("/home/u/.venv/bin/nexis-ml"));
+    fn exe_name_guard_accepts_engine_forms() {
+        assert!(is_engine_exe("axon"));
+        assert!(is_engine_exe("axon.exe"));
+        assert!(is_engine_exe("AXON.EXE"));
+        assert!(is_engine_exe(
+            r"C:\Users\me\AppData\Local\nexis\engine\axon.exe"
+        ));
+        assert!(is_engine_exe("/home/u/.local/bin/axon"));
+        // Legacy name: the Python engine and pre-0.9 Axon.
+        assert!(is_engine_exe("nexis-ml"));
+        assert!(is_engine_exe(r"C:\venv\Scripts\nexis-ml.exe"));
     }
 
     #[test]
     fn exe_name_guard_rejects_other_binaries() {
-        assert!(!is_nexis_ml_exe("powershell.exe"));
-        assert!(!is_nexis_ml_exe(r"C:\evil\nexis-ml-extra.exe"));
-        assert!(!is_nexis_ml_exe("nexis_ml"));
-        assert!(!is_nexis_ml_exe(""));
+        assert!(!is_engine_exe("powershell.exe"));
+        assert!(!is_engine_exe(r"C:\evil\nexis-ml-extra.exe"));
+        assert!(!is_engine_exe(r"C:\evil\axon-extra.exe"));
+        assert!(!is_engine_exe("nexis_ml"));
+        assert!(!is_engine_exe(""));
         // Path tricks must not slip through the stem check
-        assert!(!is_nexis_ml_exe(r"cmd.exe /c nexis-ml"));
+        assert!(!is_engine_exe(r"cmd.exe /c nexis-ml"));
+        assert!(!is_engine_exe(r"cmd.exe /c axon"));
     }
 
     #[test]
@@ -1070,9 +1131,9 @@ mod tests {
                 "pin must be lowercase hex (sha256_hex emits lowercase)"
             );
             assert!(asset.size > 0);
-            assert!(asset.name.starts_with("nexis-ml-"));
+            assert!(asset.name.starts_with("axon-"));
             let url = engine_asset_url(asset);
-            assert!(url.starts_with("https://github.com/rwetz/nexis-ml-rs/releases/download/"));
+            assert!(url.starts_with("https://github.com/rwetz/axon/releases/download/"));
             assert!(
                 url.contains(ENGINE_TAG),
                 "url must pin the exact tag, never 'latest'"
@@ -1084,7 +1145,7 @@ mod tests {
     #[test]
     fn verify_pinned_bytes_rejects_mismatch() {
         let asset = EngineAsset {
-            name: "nexis-ml-test",
+            name: "axon-test",
             size: 3,
             sha256: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
         };
@@ -1125,13 +1186,17 @@ mod tests {
     }
 
     #[test]
-    fn parse_version_takes_last_token() {
+    fn parse_version_requires_the_engine_name() {
+        assert_eq!(parse_version("axon 0.9.0\n").as_deref(), Some("0.9.0"));
         assert_eq!(parse_version("nexis-ml 0.5.0\n").as_deref(), Some("0.5.0"));
         assert_eq!(
             parse_version("  nexis-ml 1.2.3  ").as_deref(),
             Some("1.2.3")
         );
-        assert_eq!(parse_version("0.1.0").as_deref(), Some("0.1.0"));
+        // Some other program that happens to be called `axon`.
+        assert_eq!(parse_version("Axon Server CLI 4.6.3").as_deref(), None);
+        assert_eq!(parse_version("0.1.0").as_deref(), None);
+        assert_eq!(parse_version("axon").as_deref(), None);
         assert_eq!(parse_version("").as_deref(), None);
         assert_eq!(parse_version("   ").as_deref(), None);
     }

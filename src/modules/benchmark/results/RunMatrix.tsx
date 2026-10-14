@@ -57,7 +57,7 @@ function Cell({
   progress?: BenchProgress;
   task: TaskType;
 }) {
-  // nexis-ml-rs never runs the model in this cell; it trains a synthetic
+  // Axon never runs the model in this cell; it trains a synthetic
   // workload, so the cell must not read as "this model's" numbers.
   const engineWorkload = !measuresModel({ backendId });
   const unit = throughputUnit(task, backendId);

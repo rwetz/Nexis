@@ -1,6 +1,6 @@
 ---
 type: decision
-description: Feature surface is split into a fixed core plus toggleable "expansion packs"; packs enable/disable shipped code, they don't install it (except nexis-ml)
+description: Feature surface is split into a fixed core plus toggleable "expansion packs"; packs enable/disable shipped code, they don't install it (except the Axon engine)
 ---
 
 # Feature surface splits into core + expansion packs
@@ -22,7 +22,7 @@ The sidebar rail exposes ~24 panels. The average CS-focused user needs a fractio
    - `code-tools` — build, tests, debugger, symbol-search, code-review
    - `ai-extras` — refactor, prompt-templates
    - `dev-tools` — processes, ports, repl, database, profiles, ssh
-   - `ml-lab` — ml (owns the future nexis-ml download flow)
+   - `ml-lab` — ml (owns the Axon engine download)
    - `advanced` — share, notes, shell-snippets, snippets, release
 5. **Config:** `enabledPacks: PackId[]` in the preferences store, routed through `writePref()` (cross-window sync — AGENTS.md pitfall #2). **Default = all packs on** so existing users see no change on upgrade. A `packsOnboarded` marker pref gates the one-time first-run preset picker (Bare-Bones / Standard / Everything — presets are just bundles of toggles over the same config).
 6. **Gating points:** `SidebarRail` filters its item list; App.tsx renders `PackGatePlaceholder` ("This panel is part of the X pack — Enable?") in the panel slot when the active view's pack is disabled — the view id stays put, so enabling restores the panel in place; `PluginHost` skips plugins whose pack is off (mlPlugin → `ml-lab`). Pinned-rail entries of disabled packs are filtered at render but kept in storage so re-enabling restores them; the same survive-in-storage rule applies to keybinding customizations of gated shortcuts.

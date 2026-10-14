@@ -9,8 +9,8 @@
  * referenced by path in the protocol (never inlined), so the panel loads
  * them through the same `fs_read_file` IPC the run browser already uses.
  *
- * Today that's the per-epoch confusion matrix (a `tabular`/`image`
- * classification artifact); image grids and others land here later.
+ * The per-epoch confusion matrix (classification), residuals (regression)
+ * and network weights. Image grids are shown directly as <img>.
  */
 import { readTextFile } from "./fs";
 import { parseWeights, type WeightsFile } from "./netgraph";
@@ -62,6 +62,46 @@ export async function readConfusionMatrix(
   if (content === null) return null;
   try {
     return parseConfusionMatrix(JSON.parse(content));
+  } catch {
+    return null;
+  }
+}
+
+/** Shape Axon writes for a `residuals` artifact (regression): validation
+ *  rows' real and predicted values, in the target's own units. */
+export type Residuals = {
+  target: string | null;
+  actual: number[];
+  predicted: number[];
+};
+
+/** Validate a residuals artifact's parsed JSON; null on any mismatch. Pairs
+ *  with a non-finite value are dropped rather than failing the whole plot. */
+export function parseResiduals(raw: unknown): Residuals | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const o = raw as { target?: unknown; actual?: unknown; predicted?: unknown };
+  if (!Array.isArray(o.actual) || !Array.isArray(o.predicted)) return null;
+  if (o.actual.length !== o.predicted.length) return null;
+  const actual: number[] = [];
+  const predicted: number[] = [];
+  for (let i = 0; i < o.actual.length; i++) {
+    const a = o.actual[i];
+    const p = o.predicted[i];
+    if (typeof a === "number" && typeof p === "number" && Number.isFinite(a) && Number.isFinite(p)) {
+      actual.push(a);
+      predicted.push(p);
+    }
+  }
+  if (actual.length === 0) return null;
+  return { target: typeof o.target === "string" ? o.target : null, actual, predicted };
+}
+
+/** Read + parse a `residuals` artifact file; null on any failure. */
+export async function readResiduals(path: string): Promise<Residuals | null> {
+  const content = await readTextFile(path);
+  if (content === null) return null;
+  try {
+    return parseResiduals(JSON.parse(content));
   } catch {
     return null;
   }

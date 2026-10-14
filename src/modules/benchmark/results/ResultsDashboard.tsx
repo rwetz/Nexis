@@ -155,7 +155,7 @@ function MetricsProvenance({ results }: { results: BenchResult[] }) {
   const hasSim = results.some((r) => r.simulated);
   const realDone = results.filter((r) => !r.simulated && r.status === "done");
   const real = realDone[0];
-  // One line per engine: the ONNX and nexis-ml-rs notes say different things
+  // One line per engine: the ONNX and Axon notes say different things
   // (inference on your model vs. a synthetic training workload).
   const realNotes = [...new Set(realDone.map((r) => r.note ?? "Measured from a live engine."))];
   if (!hasSim && !real) return null;

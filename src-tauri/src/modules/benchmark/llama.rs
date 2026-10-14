@@ -1,6 +1,6 @@
 //! llama.cpp / GGUF backend via the prebuilt `llama-bench` binary. We shell out
 //! (no cmake / source build) with `-o json` and parse the result — the same
-//! spawn-and-parse pattern as the nexis-ml backend. Real GGUF inference numbers.
+//! spawn-and-parse pattern as the Axon backend. Real GGUF inference numbers.
 
 use crate::modules::benchmark::domain::*;
 use crate::modules::proc::command as new_command;

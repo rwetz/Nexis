@@ -17,7 +17,7 @@ export const BACKEND_TEXT: Record<BackendId, string> = {
 };
 
 export const BACKEND_SHORT: Record<BackendId, string> = {
-  nexis: "nexis-ml-rs",
+  nexis: "Axon",
   onnx: "ONNX RT",
   llama: "llama.cpp",
   sim: "Simulated",

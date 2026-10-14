@@ -25,7 +25,7 @@ const valueOf = (metric: MetricDef, r: BenchResult | undefined) => {
 
 /**
  * Grouped horizontal bar chart — one row group per model, one bar per backend
- * that ran that model. Engine-workload results (nexis-ml-rs) describe a
+ * that ran that model. Engine-workload results (Axon) describe a
  * synthetic training task, so they get their own section and scale instead of
  * a bar under a model's name.
  */
@@ -105,7 +105,7 @@ export function ComparisonChart({ metric, models, backendIds, results, task }: P
   );
 }
 
-/** nexis-ml-rs runs: own scale, no winner, never under a model's name. */
+/** Axon runs: own scale, no winner, never under a model's name. */
 function EngineWorkload({
   metric,
   results,

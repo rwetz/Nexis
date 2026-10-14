@@ -21,6 +21,7 @@ import {
   resetEngineDetection,
   sendInfer,
   siblingExe,
+  versionOlder,
   spawnExport,
   spawnNew,
   spawnServe,
@@ -63,12 +64,14 @@ describe("candidate building", () => {
       { python_path: "C:\\a\\.venv\\Scripts\\python.exe" },
       { python_path: "C:\\a\\.venv\\Scripts\\python.exe" },
     ]);
-    expect(candidates).toHaveLength(2);
+    // axon first, the one deduped legacy sibling, then legacy PATH.
+    expect(candidates).toHaveLength(3);
+    expect(candidates[0]).toBe("axon");
     expect(candidates[candidates.length - 1]).toBe("nexis-ml");
   });
 
   it("PATH-only when no envs detected and no workspace", () => {
-    expect(buildCandidates([])).toEqual(["nexis-ml"]);
+    expect(buildCandidates([])).toEqual(["axon", "nexis-ml"]);
   });
 
   it("walks ancestor dirs for .venv/venv (repo venv serving a subproject)", () => {
@@ -81,12 +84,13 @@ describe("candidate building", () => {
     expect(candidates).not.toContain("E:/.venv/Scripts/nexis-ml.exe");
   });
 
-  it("buildCandidates merges env siblings, ancestor venvs, then PATH", () => {
+  it("buildCandidates puts axon first, then env siblings, ancestor venvs, legacy PATH", () => {
     const candidates = buildCandidates(
       [{ python_path: "C:\\Python313\\python.exe" }],
       "E:\\nexis-ml\\scratch\\demo",
     );
-    expect(candidates[0]).toBe("C:\\Python313\\nexis-ml.exe");
+    expect(candidates[0]).toBe("axon");
+    expect(candidates[1]).toBe("C:\\Python313\\nexis-ml.exe");
     expect(candidates).toContain("E:/nexis-ml/.venv/Scripts/nexis-ml.exe");
     expect(candidates[candidates.length - 1]).toBe("nexis-ml");
   });
@@ -205,6 +209,8 @@ describe("engine kind + template gating", () => {
     gpuName: null,
     backend: null,
     serve: false,
+    tasks: [],
+    categorical: false,
     ...over,
   });
 
@@ -260,6 +266,29 @@ describe("engine kind + template gating", () => {
       JSON.stringify({ backend: "cpu", serve: "yes" }),
     );
     expect((await probeEnv("nexis-ml")).serve).toBe(false);
+  });
+
+  it("probeEnv parses Axon v0.9's task and categorical flags", async () => {
+    invokeMock.mockResolvedValueOnce(
+      JSON.stringify({ backend: "cpu", tasks: ["classification", "regression", 3], categorical: true }),
+    );
+    const info = await probeEnv("axon");
+    expect(info.tasks).toEqual(["classification", "regression"]);
+    expect(info.categorical).toBe(true);
+    invokeMock.mockResolvedValueOnce(JSON.stringify({ backend: "cpu" }));
+    const old = await probeEnv("nexis-ml");
+    expect(old.tasks).toEqual([]);
+    expect(old.categorical).toBe(false);
+  });
+});
+
+describe("versionOlder", () => {
+  it("compares dotted versions numerically", () => {
+    expect(versionOlder("0.8.0", "0.9.0")).toBe(true);
+    expect(versionOlder("0.9.0", "0.9.0")).toBe(false);
+    expect(versionOlder("0.10.0", "0.9.0")).toBe(false);
+    expect(versionOlder("0.9", "0.9.1")).toBe(true);
+    expect(versionOlder("garbage", "0.0.0")).toBe(false);
   });
 });
 

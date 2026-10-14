@@ -20,7 +20,7 @@ fn run(app: &AppHandle, job: &BenchJob, cancel: &AtomicBool) {
     // Resolved once per job, not per cell: it is a pure path computation, but
     // re-deriving it inside the matrix loop would let the engine change
     // underneath a run that is meant to be one comparison.
-    let managed = crate::modules::ml::managed_engine_exe(app).ok();
+    let managed = crate::modules::ml::installed_managed_engine_exe(app).ok();
     'outer: for model in &job.models {
         for &backend_id in &job.backend_ids {
             if cancel.load(Ordering::Relaxed) {

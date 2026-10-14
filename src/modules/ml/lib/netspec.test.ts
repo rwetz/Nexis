@@ -100,6 +100,7 @@ describe("parseDataConfig", () => {
     expect(parseDataConfig(TABULAR_TOML)).toEqual({
       path: "data/example.csv",
       target: "label",
+      task: null,
     });
   });
 
@@ -107,6 +108,7 @@ describe("parseDataConfig", () => {
     expect(parseDataConfig("[train]\nepochs = 1\n")).toEqual({
       path: null,
       target: null,
+      task: null,
     });
   });
 });

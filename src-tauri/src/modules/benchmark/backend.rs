@@ -60,7 +60,7 @@ impl Engine for Simulated {
     }
 }
 
-// ── nexis-ml-rs (the home team) ──────────────────────────────────────────────
+// ── Axon (the home team) ─────────────────────────────────────────────────────
 
 pub struct NexisMl {
     binary: Option<PathBuf>,
@@ -69,7 +69,7 @@ pub struct NexisMl {
 }
 impl NexisMl {
     pub fn detect(managed: Option<&Path>) -> Self {
-        let binary = find_nexis_ml(managed);
+        let binary = find_axon(managed);
         let (version, device) = match binary.as_ref() {
             Some(p) => ml_engine::probe(p),
             None => (None, DeviceKind::Cpu),
@@ -88,10 +88,10 @@ impl Engine for NexisMl {
     fn info(&self) -> BackendInfo {
         BackendInfo {
             id: BackendId::Nexis,
-            label: "nexis-ml-rs".into(),
+            label: "Axon".into(),
             description: "Python-free burn engine (wgpu / ndarray). Real training throughput."
                 .into(),
-            available: self.binary.is_some(),
+            available: self.binary.is_some() && self.version.is_some(),
             device: self.device,
             version: self.version.clone(),
             // The engine trains a synthetic workload; it doesn't load the model
@@ -107,7 +107,7 @@ impl Engine for NexisMl {
         emit: &dyn Fn(BenchProgress),
         cancel: &AtomicBool,
     ) -> Result<BenchMetrics, String> {
-        let bin = self.binary.as_ref().ok_or("nexis-ml binary not found")?;
+        let bin = self.binary.as_ref().ok_or("Axon binary not found")?;
         ml_engine::run(bin, job_id, model, config, emit, cancel)
     }
     fn simulated(&self) -> bool {
@@ -242,7 +242,7 @@ impl Engine for LlamaCpp {
 /// Build one of each engine.
 ///
 /// `managed` is the path Nexis's own ML Lab installs the standalone engine to
-/// (`ml::managed_engine_exe`). It is threaded through rather than looked up
+/// (`ml::installed_managed_engine_exe`). It is threaded through rather than looked up
 /// here because resolving it needs an `AppHandle`, and because it is the whole
 /// reason this panel and ML Lab agree about what "the engine" is: an engine
 /// downloaded once in ML Lab must show up here without a second install and
@@ -264,17 +264,18 @@ pub fn engine_for(id: BackendId, managed: Option<&Path>) -> Option<Box<dyn Engin
     registry(managed).into_iter().find(|e| e.id() == id)
 }
 
-// ── nexis-ml binary discovery ────────────────────────────────────────────────
+// ── Axon binary discovery ────────────────────────────────────────────────────
 
-fn exe_name() -> &'static str {
+/// `axon`, then the pre-rename `nexis-ml`.
+fn exe_names() -> [&'static str; 2] {
     if cfg!(windows) {
-        "nexis-ml.exe"
+        ["axon.exe", "nexis-ml.exe"]
     } else {
-        "nexis-ml"
+        ["axon", "nexis-ml"]
     }
 }
 
-fn find_nexis_ml(managed: Option<&Path>) -> Option<PathBuf> {
+fn find_axon(managed: Option<&Path>) -> Option<PathBuf> {
     // 0) The engine Nexis manages itself, if it has been installed. Checked
     //    first on purpose: a deliberate install through ML Lab is a stronger
     //    statement of intent than whatever happens to be on PATH, and having
@@ -286,22 +287,30 @@ fn find_nexis_ml(managed: Option<&Path>) -> Option<PathBuf> {
         }
     }
     // 1) Anything on PATH (split_paths handles the per-OS separator).
+    //    `ml_engine::probe` then asks it for `env`, so an unrelated `axon`
+    //    reports no version rather than passing as the engine.
     if let Some(path) = std::env::var_os("PATH") {
         for dir in std::env::split_paths(&path) {
-            let cand = dir.join(exe_name());
-            if cand.is_file() {
-                return Some(cand);
+            for name in exe_names() {
+                let cand = dir.join(name);
+                if cand.is_file() {
+                    return Some(cand);
+                }
             }
         }
     }
     // 2) The sibling cargo build, if the dev tree is laid out as expected.
     for rel in [
+        "../../axon/target/release",
+        "../axon/target/release",
         "../../nexis-ml-rs/target/release",
         "../nexis-ml-rs/target/release",
     ] {
-        let cand = PathBuf::from(rel).join(exe_name());
-        if cand.is_file() {
-            return std::fs::canonicalize(cand).ok();
+        for name in exe_names() {
+            let cand = PathBuf::from(rel).join(name);
+            if cand.is_file() {
+                return std::fs::canonicalize(cand).ok();
+            }
         }
     }
     None

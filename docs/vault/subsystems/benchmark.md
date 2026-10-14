@@ -17,7 +17,7 @@ Absorbed in v1.27.0 from the standalone `nexis-benchmark` app; history grafted i
 |---|---|
 | `ONNX Runtime` | real inference on Windows and Apple Silicon via the `ort` crate and a linked prebuilt ORT; unavailable on Linux and Intel macOS — see [[bundling-onnx-runtime]] |
 | `llama.cpp` | real GGUF inference via a `llama-bench` binary the user locates |
-| `nexis-ml-rs` | real training throughput on a standardized workload (the engine has no arbitrary-model inference path) |
+| Axon | real training throughput on a standardized workload (the engine has no arbitrary-model inference path) |
 | `Simulated` | deterministic synthetic metrics, for UI and protocol work |
 
 The UI labels every result's provenance with a `real` / `sim` badge plus a per-run note. Keep that: a benchmark that does not say what it measured is worse than no benchmark.
@@ -25,7 +25,7 @@ The UI labels every result's provenance with a `real` / `sim` badge plus a per-r
 ## Key files
 
 - `src-tauri/src/modules/benchmark/mod.rs` — module overview and what changed on absorption
-- `src-tauri/src/modules/benchmark/backend.rs` — the `Engine` trait, the registry, nexis-ml discovery
+- `src-tauri/src/modules/benchmark/backend.rs` — the `Engine` trait, the registry, Axon discovery
 - `src-tauri/src/modules/benchmark/bench.rs` — the matrix runner; owns its worker thread, emits `bench://progress` / `bench://result`
 - `src-tauri/src/modules/benchmark/commands.rs` — the `bench_*` command surface
 - `src-tauri/src/modules/benchmark/{onnx,llama,ml_engine,simulate}.rs` — the four engines
@@ -39,7 +39,7 @@ The UI labels every result's provenance with a `real` / `sim` badge plus a per-r
 
 - **A run outlives the panel.** The engine keeps working when the sidebar view is switched away or the frontend hot-reloads. The store persists `jobId` and `init()` asks `bench_is_running` rather than assuming the run stopped — assuming would let a second job start on top of the first. The typed `bench://progress` and `bench://result` event scope in `api.ts` is module-owned for the same reason, not tied to a component lifecycle.
 - **Benchmark is host-scoped even under a WSL workspace.** Model pickers, engine probing, runs, and export destinations refer to the desktop host. Exports use `hostFilesystem` and must not inherit the active workspace environment.
-- **The nexis-ml backend resolves ML Lab's managed engine before `PATH`.** `ml::managed_engine_exe` is `pub(crate)` for exactly this. A deliberate install through [[ml-lab]] is a stronger statement than whatever is on `PATH`, and the two panels disagreeing about which binary they measure makes every cross-panel comparison meaningless. The path is resolved once per job, not per cell.
+- **The Axon backend resolves ML Lab's managed engine before `PATH`.** `ml::installed_managed_engine_exe` is `pub(crate)` for exactly this (it returns a pre-rename `nexis-ml` install when no `axon` is there). The backend reports available only when `env` returns a version, so an unrelated `axon` on `PATH` doesn't pass. A deliberate install through [[ml-lab]] is a stronger statement than whatever is on `PATH`, and the two panels disagreeing about which binary they measure makes every cross-panel comparison meaningless. The path is resolved once per job, not per cell.
 - **`BenchState`'s mutex recovers from poisoning** (`unwrap_or_else(|e| e.into_inner())`). In the standalone app a panic here killed an app that only benchmarked; here it lands on a Tauri worker thread and takes the terminal with it. Pitfall #8.
 - **`bench_list_backends`, `bench_scan_models` and `bench_probe_llama` must stay `async` + `heavy()`** — they walk `PATH`, read GGUF headers, and spawn binaries to read versions.
 - **Export goes through `fs_write_file`.** The standalone app had its own `write_text_file` command; it skipped the atomic staging and the WSL rename fallback every other write in Nexis gets (pitfall #17). Do not reintroduce a second write path.

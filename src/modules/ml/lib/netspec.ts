@@ -73,16 +73,19 @@ export function parseTomlNet(toml: string): TomlNet | null {
   return null;
 }
 
-/** `[data]` section: where the training data lives + the label column. */
+/** `[data]` section: where the training data lives, the column to predict,
+ *  and `task` (`auto` | `classification` | `regression`; null when unset). */
 export function parseDataConfig(toml: string): {
   path: string | null;
   target: string | null;
+  task: string | null;
 } {
   const strip = (raw: string | null) =>
     raw == null ? null : raw.trim().replace(/^"|"$/g, "") || null;
   return {
     path: strip(tomlGet(toml, "data", "path")),
     target: strip(tomlGet(toml, "data", "target")),
+    task: strip(tomlGet(toml, "data", "task")),
   };
 }
 

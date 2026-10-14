@@ -6,13 +6,17 @@
 
 /**
  * Choosing a tabular project's training data from the panel: which CSV
- * (`[data] path`) and which column to predict (`[data] target`).
+ * (`[data] path`), which column to predict (`[data] target`), and whether
+ * that is a category or a number (`[data] task`).
  *
- * A project scaffolded by `nexis-ml new tabular` has no `[data]` section and
- * trains on built-in synthetic blobs until it gets one. Both keys are
- * documented by both engines, so they are written with `upsert` through
- * `applyOverrides`, the same path the stock networks use. Paths are stored
- * relative to the project dir, which is how the engines resolve them.
+ * A project scaffolded by `axon new tabular` has no `[data]` section and
+ * trains on built-in synthetic blobs until it gets one. Axon documents all
+ * three keys, so they are written with `upsert` through `applyOverrides`,
+ * the same path the stock networks use. Paths are stored relative to the
+ * project dir, which is how the engine resolves them.
+ *
+ * The column and task guesses here mirror Axon's own rules (its
+ * `tabular.rs`), so the preview says what training will actually do.
  *
  * The pure helpers are unit-tested; `listWorkspaceCsvs` is the one IPC call.
  */
@@ -24,8 +28,22 @@ import { parseCsv } from "./model-tools";
 const SKIP_DIRS = new Set(["runs", "node_modules", "target", ".git"]);
 
 /** More distinct values than this and the column reads as a number to
- *  predict, not a set of classes, so no per-class counts are shown. */
+ *  predict, not a set of classes, so no per-class counts are shown. Also
+ *  Axon's `auto` cut-off for reading integer ids as classes. */
 const MAX_CLASSES = 20;
+
+/** Axon one-hot encodes a text column with at most this many distinct
+ *  values and leaves out anything wider (IDs, free text). */
+const MAX_CATEGORIES = 50;
+
+export type Task = "classification" | "regression";
+
+/** The spellings Axon treats as "no value". */
+export function isMissingValue(v: string): boolean {
+  return ["", "na", "n/a", "nan", "null", "none", "?", "-"].includes(v.trim().toLowerCase());
+}
+
+const isNumber = (v: string) => v.trim() !== "" && Number.isFinite(Number(v.trim()));
 
 const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "");
 
@@ -74,11 +92,25 @@ export type TargetSummary = {
    *  too many distinct values to be a class label. */
   classes: [string, number][] | null;
   distinct: number;
-  /** Every value is a whole number. Both engines read class ids (0..k-1);
-   *  text labels are not something they document. */
+  /** Every value is a whole number. */
   numeric: boolean;
-  /** Rows with no value in the target column. */
+  /** Rows with no value in the target column (Axon skips them). */
   missing: number;
+  /** What Axon's `task = "auto"` will choose for this column. */
+  task: Task;
+  /** Every value parses as a number, so regression is possible. */
+  canRegress: boolean;
+};
+
+export type ColumnKind = "numeric" | "categorical" | "skipped";
+
+export type ColumnSummary = {
+  name: string;
+  /** How Axon will read the column: a number, a category (one-hot), or
+   *  left out (empty, or too many distinct text values). */
+  kind: ColumnKind;
+  missing: number;
+  distinct: number;
 };
 
 export function summarizeCsv(text: string): CsvSummary {
@@ -94,7 +126,7 @@ export function summarizeTarget(text: string, target: string): TargetSummary | n
   let missing = 0;
   for (const row of rows) {
     const v = (row[col] ?? "").trim();
-    if (v === "") {
+    if (isMissingValue(v)) {
       missing++;
       continue;
     }
@@ -102,6 +134,7 @@ export function summarizeTarget(text: string, target: string): TargetSummary | n
   }
   const labels = [...counts.keys()];
   const numeric = labels.length > 0 && labels.every((l) => /^-?\d+$/.test(l));
+  const canRegress = labels.length > 0 && labels.every(isNumber);
   const sorted = [...counts.entries()].sort(([a], [b]) =>
     numeric ? Number(a) - Number(b) : a.localeCompare(b),
   );
@@ -110,7 +143,38 @@ export function summarizeTarget(text: string, target: string): TargetSummary | n
     distinct: counts.size,
     numeric,
     missing,
+    task: canRegress && !(numeric && counts.size <= MAX_CLASSES) ? "regression" : "classification",
+    canRegress,
   };
+}
+
+/** How Axon will read each column besides the target. `categorical` and
+ *  `ignore` are the `[data]` overrides. */
+export function summarizeColumns(
+  text: string,
+  target: string,
+  overrides: { categorical?: readonly string[]; ignore?: readonly string[] } = {},
+): ColumnSummary[] {
+  const { header, rows } = parseCsv(text);
+  return header
+    .map((name, col): ColumnSummary | null => {
+      if (name === target) return null;
+      const present: string[] = [];
+      let missing = 0;
+      for (const row of rows) {
+        const v = (row[col] ?? "").trim();
+        if (isMissingValue(v)) missing++;
+        else present.push(v);
+      }
+      const distinct = new Set(present).size;
+      let kind: ColumnKind;
+      if (overrides.ignore?.includes(name) || present.length === 0) kind = "skipped";
+      else if (overrides.categorical?.includes(name)) kind = "categorical";
+      else if (present.every(isNumber)) kind = "numeric";
+      else kind = distinct <= MAX_CATEGORIES ? "categorical" : "skipped";
+      return { name, kind, missing, distinct };
+    })
+    .filter((c): c is ColumnSummary => c !== null);
 }
 
 /** The column a new user most likely wants to predict: one with a label-ish
@@ -122,11 +186,16 @@ export function guessTarget(columns: readonly string[]): string | null {
 
 const tomlString = (s: string) => `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 
-/** The `[data]` edits for a chosen CSV and target column. */
-export function dataOverrides(path: string, target: string): CreationOverride[] {
+/** The `[data]` edits for a chosen CSV, target column and task. */
+export function dataOverrides(
+  path: string,
+  target: string,
+  task: Task | "auto" = "auto",
+): CreationOverride[] {
   return [
     { section: "data", key: "path", value: tomlString(path), upsert: true },
     { section: "data", key: "target", value: tomlString(target), upsert: true },
+    { section: "data", key: "task", value: tomlString(task), upsert: true },
   ];
 }
 

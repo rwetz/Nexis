@@ -1,4 +1,4 @@
-//! Real `nexis-ml-rs` integration. The engine trains/exports (it has no
+//! Real Axon (the ML engine) integration. The engine trains/exports (it has no
 //! arbitrary-model inference path), so we benchmark what it genuinely does:
 //! **training throughput** on a standardized synthetic workload, streamed over
 //! the NDJSON protocol (`--nexis-protocol train`). Every number here is real —
@@ -21,7 +21,7 @@ const WORKLOAD_SAMPLES: u32 = 4096;
 const WORKLOAD_HIDDEN: &str = "[128, 128]";
 
 pub const NEXIS_NOTE: &str =
-    "Real engine throughput — nexis-ml-rs trains a standardized workload on its wgpu/ndarray backend. It does not run inference on the dropped model (the engine has no such path yet).";
+    "Real engine throughput — Axon trains a standardized workload on its wgpu/ndarray backend. It does not run inference on the dropped model (the engine has no such path yet).";
 
 #[cfg(windows)]
 fn configure(cmd: &mut Command) {
@@ -50,7 +50,8 @@ fn kill_tree(pid: u32) {
     }
 }
 
-/// Run `nexis-ml env` and return (version, device).
+/// Run `axon env` and return (version, device). A binary that isn't the engine
+/// (an unrelated `axon` on PATH) reports no version.
 pub fn probe(binary: &Path) -> (Option<String>, DeviceKind) {
     let mut cmd = new_command(binary);
     cmd.arg("env").stdout(Stdio::piped()).stderr(Stdio::null());
@@ -166,7 +167,7 @@ pub fn run(
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
     configure(&mut cmd);
-    let mut child = cmd.spawn().map_err(|e| format!("spawn nexis-ml: {e}"))?;
+    let mut child = cmd.spawn().map_err(|e| format!("spawn Axon: {e}"))?;
     let pid = child.id();
 
     let stop_mem = Arc::new(AtomicBool::new(false));
@@ -245,9 +246,9 @@ pub fn run(
 
     if epoch_times.is_empty() {
         return Err(if finished {
-            "nexis-ml produced no epochs".into()
+            "Axon produced no epochs".into()
         } else {
-            "nexis-ml exited before reporting (check the binary/build)".into()
+            "Axon exited before reporting (check the binary/build)".into()
         });
     }
 

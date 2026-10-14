@@ -5,7 +5,8 @@
 // ╚══════════════════════════════════════╝
 
 /**
- * Bridge to the external `nexis-ml` engine (see ML_SUITE.md).
+ * Bridge to the external ML engine, Axon (see ML_SUITE.md). The legacy
+ * Python engine, phased out, answers to the old name `nexis-ml`.
  *
  * Spawning goes through the Rust `ml_*` commands which stream protocol
  * events back as Tauri events. Two AGENTS.md pitfalls are load-bearing
@@ -52,8 +53,9 @@ export type PythonEnvLike = { python_path: string };
 
 /**
  * `.../Scripts/python.exe` → `.../Scripts/nexis-ml.exe` (or bin/ on
- * unix). The env's own layout tells us the flavor — a `.exe` python
- * means a Windows-layout env regardless of anything else.
+ * unix): where the legacy Python engine installs. The env's own layout
+ * tells us the flavor — a `.exe` python means a Windows-layout env
+ * regardless of anything else.
  */
 export function siblingExe(pythonPath: string): string | null {
   const normalized = pythonPath.replace(/\\/g, "/");
@@ -88,9 +90,10 @@ export function ancestorVenvCandidates(workspaceRoot: string): string[] {
 }
 
 /**
- * Candidate executables, most specific first: every detected Python
- * env's scripts dir, then `.venv`s up the directory tree, then bare
- * `nexis-ml` from PATH.
+ * Candidate executables in probe order: `axon` from PATH, then the legacy
+ * Python engine — every detected Python env's scripts dir, `.venv`s up the
+ * directory tree, and a bare `nexis-ml` from PATH. The store puts the
+ * managed (downloaded) Axon ahead of all of these.
  *
  * `envs` must come from the *same* environment the probe will run in.
  * `py_detect_envs` only ever scans the host, so a WSL workspace passes an
@@ -102,10 +105,10 @@ export function buildCandidates(
   envs: PythonEnvLike[],
   workspaceRoot?: string | null,
 ): string[] {
-  const out: string[] = [];
+  const out: string[] = ["axon"];
   // A Set carries the membership test; `out` keeps the order, which is the
   // probe order and therefore meaningful.
-  const seen = new Set<string>();
+  const seen = new Set<string>(out);
   for (const env of envs) {
     const exe = siblingExe(env.python_path);
     if (exe && !seen.has(exe)) {
@@ -159,8 +162,9 @@ export function resetEngineDetection(): void {
 /**
  * Path where a downloaded standalone engine lives (under the app's local
  * data dir), to add to the detection candidates. Resolved by the Rust side
- * so the platform-specific name (`nexis-ml` vs `nexis-ml.exe`) and base dir
- * are authoritative. Returns null if the path can't be resolved.
+ * so the platform-specific name (`axon` vs `axon.exe`, or a pre-rename
+ * `nexis-ml` install) and base dir are authoritative. Returns null if the
+ * path can't be resolved.
  */
 export async function managedEngineCandidate(): Promise<string | null> {
   // The managed engine is a host binary in the host's app-data dir. It is
@@ -171,7 +175,7 @@ export async function managedEngineCandidate(): Promise<string | null> {
   // resolves whether or not anything is there, so an interrupted download
   // left detection probing a file that cannot exist — and since this entry
   // is appended last, its ENOENT became the error the setup card displayed
-  // ("…\engine\nexis-ml.exe: os error 3"), which reads like a broken
+  // ("…\engine\axon.exe: os error 3"), which reads like a broken
   // install rather than an absent one.
   const status = await managedEngineStatus();
   if (!status?.installed) return null;
@@ -234,7 +238,7 @@ async function workspaceApiForProject(projectDir: string) {
   return createMlWorkspaceApi(ipcForEnvironment(workspace));
 }
 
-/** Spawn `nexis-ml train` in the project dir. Resolves to a session id. */
+/** Spawn `axon train` in the project dir. Resolves to a session id. */
 export async function spawnTrain(
   exe: string,
   projectDir: string,
@@ -294,12 +298,17 @@ export type MlEnvInfo = {
    * `kind !== "rust" || serve` (see the panel's Playground gate).
    */
   serve: boolean;
+  /** Axon v0.9+: the tasks it trains (`classification`, `regression`).
+   *  Empty for older engines, which only classify. */
+  tasks: string[];
+  /** Axon v0.9+: text columns are encoded as categories. */
+  categorical: boolean;
 };
 
 /**
- * Ask the engine what it can do (`nexis-ml env`). Slow-ish — importing
- * torch takes a few seconds on the Python engine — so callers fire it
- * without blocking UI. The Rust engine answers instantly.
+ * Ask the engine what it can do (`axon env`). Axon answers instantly; the
+ * legacy Python engine imports torch first (seconds), so callers fire it
+ * without blocking UI.
  */
 export async function probeEnv(exe: string): Promise<MlEnvInfo> {
   const workspace = currentWorkspaceEnv();
@@ -312,11 +321,15 @@ export async function probeEnv(exe: string): Promise<MlEnvInfo> {
     gpuName: typeof parsed.gpuName === "string" ? parsed.gpuName : null,
     backend: typeof parsed.backend === "string" ? parsed.backend : null,
     serve: parsed.serve === true,
+    tasks: Array.isArray(parsed.tasks)
+      ? parsed.tasks.filter((t): t is string => typeof t === "string")
+      : [],
+    categorical: parsed.categorical === true,
   };
 }
 
-/** Which engine binary is in use. The two engines share the name
- *  `nexis-ml` but have different capability sets (ML_LAB_GUIDE §22). */
+/** Which engine binary is in use: Axon (`rust`) or the phased-out Python
+ *  engine. They have different capability sets (ML_LAB_GUIDE §22). */
 export type EngineKind = "python" | "rust";
 
 /**
@@ -356,7 +369,7 @@ export function probeGpu(): Promise<string | null> {
 }
 
 /**
- * Start an inference session (`nexis-ml serve --run <id>`) for the
+ * Start an inference session (`axon serve --run <id>`) for the
  * playground. Long-lived like train; requests go in via `sendInfer`,
  * responses stream back as ml:proto serve events. Resolves to a sid.
  */
@@ -377,7 +390,7 @@ export function sendInfer(sid: number, request: unknown): Promise<void> {
 }
 
 /** Write a run's self-contained HTML report (`nexis-ml export --run`).
- *  Python engine only — the Rust engine's `export` speaks `--onnx` instead.
+ *  Legacy Python engine only — Axon's `export` speaks `--onnx` instead.
  *  One-shot: completion arrives as ml:exit; the file lands at
  *  <run>/report.html. */
 export async function spawnExport(
@@ -389,16 +402,20 @@ export async function spawnExport(
   return ml.spawn(exe, ["export", "--run", runId], projectDir);
 }
 
-/** Export the project's tabular model to ONNX (`nexis-ml export --onnx .`).
- *  Rust engine only. Retrains from train.toml (reproducible via [train]
- *  seed) and writes <project>/model.onnx. One-shot: completion arrives as
+/** Export a tabular model to ONNX (`axon export --onnx [--run <id>] .`),
+ *  writing <project>/model.onnx and model.json. Axon v0.9+ exports the given
+ *  run's trained weights (default: its newest run); pass `runId` only to an
+ *  engine that reports `tasks` — v0.8 retrains from train.toml and would
+ *  read the run id as the project dir. One-shot: completion arrives as
  *  ml:exit. */
 export async function spawnExportOnnx(
   exe: string,
   projectDir: string,
+  runId: string | null = null,
 ): Promise<number> {
   const ml = await workspaceApiForProject(projectDir);
-  return ml.spawn(exe, ["export", "--onnx", "."], projectDir);
+  const run = runId ? ["--run", runId] : [];
+  return ml.spawn(exe, ["export", "--onnx", ...run, "."], projectDir);
 }
 
 /** Graceful stop: the engine checkpoints and finishes as "cancelled". */
@@ -437,4 +454,16 @@ export function subscribeMlEvents(handlers: MlBridgeHandlers): () => void {
 /** `subscribeMlEvents`, resolving once the listeners are attached. */
 export function subscribeMlEventsAttached(handlers: MlBridgeHandlers): Promise<() => void> {
   return subscribeMlProtocolAttached(handlers);
+}
+
+/** True when dotted version `a` is older than `b` ("0.8.0" < "0.9.0").
+ *  Non-numeric parts compare as 0, so a malformed version never prompts. */
+export function versionOlder(a: string, b: string): boolean {
+  const pa = a.split(".").map((n) => Number.parseInt(n, 10) || 0);
+  const pb = b.split(".").map((n) => Number.parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (d !== 0) return d < 0;
+  }
+  return false;
 }

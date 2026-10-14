@@ -56,16 +56,22 @@ import {
   rawToDisplay,
   type HpField,
 } from "./lib/hyperparams";
-import type { MetricStats, RunSummary } from "./lib/protocol";
+import type { MetricStats, RunSummary, ServeColumn } from "./lib/protocol";
 import {
   engineSupportsTemplate,
+  versionOlder,
   type EngineKind,
   type EnginePin,
   type MlEnvInfo,
   type MlTemplate,
 } from "./lib/engine-bridge";
 import { revealPathInHost } from "@/platform/opener";
-import { readConfusionMatrix, type ConfusionMatrix } from "./lib/artifacts";
+import {
+  readConfusionMatrix,
+  readResiduals,
+  type ConfusionMatrix,
+  type Residuals,
+} from "./lib/artifacts";
 import { readTrainToml, writeTrainToml } from "./lib/config";
 import {
   torchSupportWarning,
@@ -79,8 +85,10 @@ import {
   guessTarget,
   listWorkspaceCsvs,
   relativeDataPath,
+  summarizeColumns,
   summarizeCsv,
   summarizeTarget,
+  type Task,
 } from "./lib/data-source";
 import { parseDataConfig, parseTomlNet } from "./lib/netspec";
 import { readTextFile } from "./lib/fs";
@@ -103,7 +111,7 @@ import {
 /** Release feed for the standalone (Rust) engine — the WSL steps fetch the
  *  Linux build from here. The in-app download uses the Rust-side pin, not
  *  this URL; this is only what a human types into curl. */
-const ENGINE_RELEASES_URL = "https://github.com/rwetz/nexis-ml-rs/releases";
+const ENGINE_RELEASES_URL = "https://github.com/rwetz/axon/releases";
 /** Source repo for the Python engine, for the pip-from-git fallback. */
 const ENGINE_PY_REPO = "https://github.com/rwetz/nexis-ml";
 
@@ -345,6 +353,27 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
                 onUpgrade={() => void upgradeToGpu(workspaceRoot)}
               />
             ) : null}
+            {/* A newer pinned Axon than the one in use (an older managed
+                install, or one on PATH). */}
+            {engineKind === "rust" &&
+            enginePin &&
+            engineVersion &&
+            versionOlder(engineVersion, enginePin.version) ? (
+              <div className="mb-2 flex items-center gap-2 rounded-md border border-sky-500/30 bg-sky-500/[0.05] px-2.5 py-1.5">
+                <p className="flex-1 text-[10.5px] leading-snug text-muted-foreground">
+                  Axon {enginePin.version} is available (you have {engineVersion}). It can
+                  predict numbers, read text columns as categories, and handle blank cells.
+                </p>
+                <button
+                  type="button"
+                  disabled={downloadingEngine}
+                  onClick={() => void downloadStandaloneEngine()}
+                  className="shrink-0 rounded-md bg-primary px-2 py-0.5 text-[10.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  {downloadingEngine ? "Updating…" : "Update"}
+                </button>
+              </div>
+            ) : null}
             {/* Models discovered in this folder */}
             {projects.length > 0 ? (
               <div className="mb-2">
@@ -400,7 +429,7 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
                 <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground/70">
                   A model lives in a project folder with a{" "}
                   <span className="font-mono">train.toml</span>. Models trained
-                  here (or by <span className="font-mono">nexis-ml</span> in a
+                  here (or by <span className="font-mono">axon</span> in a
                   terminal) show up automatically.
                 </p>
                 <button
@@ -520,6 +549,9 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
                 {/* Confusion matrix (classification) — per-epoch artifact grid */}
                 <ConfusionMatrixView />
 
+                {/* Predicted vs actual (regression) — per-epoch scatter */}
+                <ResidualsView />
+
                 {/* Sample-prediction grid (image template) */}
                 <ImageGridView />
 
@@ -560,7 +592,12 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
                       <button
                         type="button"
                         disabled={pendingOnnx != null || busy}
-                        onClick={() => void exportOnnx(selectedProject)}
+                        onClick={() =>
+                          void exportOnnx(
+                            selectedProject,
+                            viewedRun?.projectDir === selectedProject ? viewedRun.runId : null,
+                          )
+                        }
                         className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
                       >
                         {pendingOnnx ? "Exporting ONNX…" : "⤓ Export ONNX model"}
@@ -735,9 +772,8 @@ function SetupCard({
     <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
       <p className="mb-1 text-[12px] font-semibold">Set up the ML engine</p>
       <p className="mb-2 text-[11px] leading-snug text-muted-foreground">
-        Nexis trains models with a small local tool called{" "}
-        <span className="font-mono">nexis-ml</span>. Everything runs on your
-        machine — no cloud, no accounts.
+        Nexis trains models with Axon, a small local engine. Everything runs
+        on your machine — no cloud, no accounts.
       </p>
       {wslDistro ? (
         <p className="mb-2 flex items-start gap-1.5 rounded border border-border/50 bg-background/50 p-1.5 text-[10.5px] leading-snug text-muted-foreground">
@@ -767,13 +803,13 @@ function SetupCard({
       ) : confirmingDownload && pin ? (
         <div className="rounded-md border border-border/60 bg-background/60 p-2">
           <p className="mb-1 text-[11px] font-semibold">
-            Download nexis-ml {pin.version}?
+            Download Axon {pin.version}?
           </p>
           <dl className="mb-1.5 flex flex-col gap-0.5 text-[10px] text-muted-foreground">
             <div className="flex gap-1">
               <dt className="shrink-0 text-muted-foreground/60">From</dt>
               <dd className="min-w-0 truncate font-mono" title={pin.url}>
-                github.com/rwetz/nexis-ml-rs · {pinAsset}
+                github.com/rwetz/axon · {pinAsset}
               </dd>
             </div>
             <div className="flex gap-1">
@@ -826,8 +862,8 @@ function SetupCard({
           </button>
           <p className="text-[10px] leading-snug text-muted-foreground/70">
             One verified binary from the project&apos;s GitHub releases. No
-            Python, no PyTorch, nothing else to install. Trains tabular and
-            image models
+            Python, no PyTorch, nothing else to install. Trains spreadsheet
+            models (categories or numbers) and image models
             {hostGpu ? ` on your ${hostGpu}` : " on your GPU"} through wgpu — no
             CUDA toolchain — with the inference playground built in.
           </p>
@@ -940,13 +976,13 @@ function WslEngineSteps({ distro }: { distro: string }) {
         In a <span className="font-mono">{distro}</span> terminal, put the
         Linux build of the engine on your PATH:
       </p>
-      <CopyLine command={`mkdir -p ~/.local/bin && curl -fL -o ~/.local/bin/nexis-ml ${ENGINE_RELEASES_URL}/latest/download/nexis-ml-linux-x64`} />
-      <CopyLine command="chmod +x ~/.local/bin/nexis-ml" />
-      <CopyLine command="nexis-ml --version" />
+      <CopyLine command={`mkdir -p ~/.local/bin && curl -fL -o ~/.local/bin/axon ${ENGINE_RELEASES_URL}/latest/download/axon-linux-x64`} />
+      <CopyLine command="chmod +x ~/.local/bin/axon" />
+      <CopyLine command="axon --version" />
       <p className="text-[10px] leading-snug text-muted-foreground/70">
         If the last command prints a version, hit “check again” below.{" "}
         <span className="font-mono">~/.local/bin</span> is on the default PATH
-        for most distros — if <span className="font-mono">nexis-ml</span> is
+        for most distros — if <span className="font-mono">axon</span> is
         not found, open a fresh terminal or add it to your shell profile.
       </p>
     </div>
@@ -954,7 +990,9 @@ function WslEngineSteps({ distro }: { distro: string }) {
 }
 
 /**
- * The Python engine, as documentation rather than a button.
+ * The legacy Python engine, as documentation rather than a button. It is
+ * phased out — Axon is the supported engine — and stays here only for the
+ * few things Axon cannot do yet.
  *
  * Nexis used to run `pip install nexis-ml[torch]` itself. That is deprecated:
  * it committed to a ~3 GB download into an interpreter the user had not
@@ -976,12 +1014,13 @@ function PythonEngineSteps({
   return (
     <details>
       <summary className="cursor-pointer select-none text-[10.5px] font-medium text-muted-foreground hover:text-foreground">
-        Need text generation? Set up the Python engine
+        Need text generation? The legacy Python engine
       </summary>
       <div className="mt-1.5 flex flex-col gap-1.5">
         <p className="text-[10.5px] leading-snug text-muted-foreground">
-          Almost everything works on the engine above. The Python engine adds
-          three things it cannot do: <strong>text generation</strong> (the{" "}
+          The Python engine is phased out and no longer maintained; Axon
+          above is the supported engine. It still covers three things Axon
+          cannot do yet: <strong>text generation</strong> (the{" "}
           <span className="font-mono">textgen</span> template), the{" "}
           <span className="font-mono">blank</span> template — a{" "}
           <span className="font-mono">train.py</span> you write yourself — and
@@ -1703,6 +1742,106 @@ function ConfusionMatrixView() {
   );
 }
 
+// ── Residuals (regression) ────────────────────────────────────────────────────
+
+/** Compact number for axis/readout labels: 1234567 → "1.23M", 0.01234 → "0.0123". */
+function shortNum(v: number): string {
+  const a = Math.abs(v);
+  if (a >= 1e9) return `${(v / 1e9).toFixed(2)}B`;
+  if (a >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
+  if (a >= 1e4) return `${(v / 1e3).toFixed(1)}k`;
+  if (a >= 100) return v.toFixed(0);
+  return Number(v.toPrecision(3)).toString();
+}
+
+function ResidualsView() {
+  const artifact = useMlStore((s) => s.residualsArtifact);
+  const [data, setData] = useState<Residuals | null>(null);
+
+  // Same read-on-path-change + stale-read guard as ConfusionMatrixView.
+  useEffect(() => {
+    if (!artifact) {
+      setData(null);
+      return;
+    }
+    let cancelled = false;
+    void readResiduals(artifact.path)
+      .then((d) => {
+        if (!cancelled) setData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setData(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [artifact?.path]);
+
+  if (!data) return null;
+  const { actual, predicted } = data;
+  let lo = Infinity;
+  let hi = -Infinity;
+  let absErr = 0;
+  for (let i = 0; i < actual.length; i++) {
+    lo = Math.min(lo, actual[i], predicted[i]);
+    hi = Math.max(hi, actual[i], predicted[i]);
+    absErr += Math.abs(predicted[i] - actual[i]);
+  }
+  const span = hi - lo || 1;
+  const size = 160;
+  const pad = 6;
+  const px = (v: number) => pad + ((v - lo) / span) * (size - 2 * pad);
+  const py = (v: number) => size - px(v);
+
+  return (
+    <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          Predicted vs actual{data.target ? ` · ${data.target}` : ""}
+        </span>
+        <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <span className="font-mono tabular-nums text-foreground/80">
+            off by {shortNum(absErr / actual.length)} on average
+          </span>
+          {artifact?.epoch != null ? <span>after pass {artifact.epoch}</span> : null}
+        </span>
+      </div>
+      <div className="flex items-end gap-2">
+        <svg
+          viewBox={`0 0 ${size} ${size}`}
+          className="h-40 w-40 shrink-0 rounded-sm bg-background/60"
+          role="img"
+          aria-label={`Predicted versus actual for ${actual.length} validation rows`}
+        >
+          {/* The diagonal is a perfect prediction. */}
+          <line
+            x1={px(lo)}
+            y1={py(lo)}
+            x2={px(hi)}
+            y2={py(hi)}
+            className="stroke-emerald-500/60"
+            strokeWidth={1}
+            strokeDasharray="3 3"
+          />
+          {actual.map((a, i) => (
+            <circle key={i} cx={px(a)} cy={py(predicted[i])} r={1.8} className="fill-primary/60" />
+          ))}
+        </svg>
+        <div className="flex flex-col gap-0.5 text-[9.5px] text-muted-foreground">
+          <span>
+            range {shortNum(lo)} – {shortNum(hi)}
+          </span>
+          <span>{actual.length} validation rows</span>
+        </div>
+      </div>
+      <p className="mt-1 text-[9.5px] leading-snug text-muted-foreground/60">
+        Across is the real value, up is the model's guess — dots on the dashed
+        line are exact.
+      </p>
+    </div>
+  );
+}
+
 // ── Sample-prediction grid (image template) ───────────────────────────────────
 
 function ImageGridView() {
@@ -1915,17 +2054,24 @@ function TabularPlayground({
   serve: ServeSession;
   onPredict: (request: unknown) => void;
 }) {
-  const features = serve.meta?.features ?? [];
+  // Axon v0.9+ describes each column; older engines send names only, and
+  // every one of those is numeric.
+  const columns: ServeColumn[] =
+    serve.meta?.columns ??
+    (serve.meta?.features ?? []).map((name) => ({ name, kind: "numeric" as const }));
   const [values, setValues] = useState<Record<string, string>>({});
   const result = serve.result?.kind === "tabular" ? serve.result : null;
+  const fieldClass =
+    "h-6 min-w-0 flex-1 rounded border border-border bg-background px-1 font-mono text-[10px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40";
 
   const submit = () => {
-    const input: Record<string, number> = {};
-    for (const f of features) {
-      const v = values[f];
-      if (v !== undefined && v.trim() !== "" && Number.isFinite(Number(v))) {
-        input[f] = Number(v);
-      }
+    // Blank fields are left out: the engine treats them as missing.
+    const input: Record<string, number | string> = {};
+    for (const col of columns) {
+      const v = values[col.name]?.trim();
+      if (!v) continue;
+      if (col.kind === "categorical") input[col.name] = v;
+      else if (Number.isFinite(Number(v))) input[col.name] = Number(v);
     }
     onPredict({ input });
   };
@@ -1933,23 +2079,38 @@ function TabularPlayground({
   return (
     <div className="flex flex-col gap-1.5">
       <p className="text-[10px] text-muted-foreground">
-        Enter feature values (blanks use the training average):
+        Fill in what you know. A blank number uses the training average; a
+        blank choice counts as missing.
       </p>
       <div className="grid grid-cols-2 gap-1.5">
-        {features.map((f) => (
-          <label key={f} className="flex items-center gap-1 text-[10px]">
-            <span className="w-12 shrink-0 truncate text-muted-foreground" title={f}>
-              {f}
+        {columns.map((col) => (
+          <label key={col.name} className="flex items-center gap-1 text-[10px]">
+            <span className="w-12 shrink-0 truncate text-muted-foreground" title={col.name}>
+              {col.name}
             </span>
-            <input
-              type="number"
-              step="any"
-              value={values[f] ?? ""}
-              onChange={(e) =>
-                setValues((s) => ({ ...s, [f]: e.target.value }))
-              }
-              className="h-6 min-w-0 flex-1 rounded border border-border bg-background px-1 font-mono text-[10px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
-            />
+            {col.kind === "categorical" ? (
+              <select
+                value={values[col.name] ?? ""}
+                onChange={(e) => setValues((s) => ({ ...s, [col.name]: e.target.value }))}
+                className={fieldClass}
+              >
+                <option value="">—</option>
+                {(col.categories ?? []).map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="number"
+                step="any"
+                value={values[col.name] ?? ""}
+                placeholder={col.mean !== undefined ? shortNum(col.mean) : undefined}
+                onChange={(e) => setValues((s) => ({ ...s, [col.name]: e.target.value }))}
+                className={fieldClass}
+              />
+            )}
           </label>
         ))}
       </div>
@@ -1964,12 +2125,18 @@ function TabularPlayground({
       {serve.error ? (
         <p className="text-[10px] text-destructive">{serve.error}</p>
       ) : null}
-      {result ? <TabularResult result={result} /> : null}
+      {result ? <TabularResult result={result} target={serve.meta?.target ?? null} /> : null}
     </div>
   );
 }
 
-function TabularResult({ result }: { result: Extract<PlaygroundResult, { kind: "tabular" }> }) {
+function TabularResult({
+  result,
+  target,
+}: {
+  result: Extract<PlaygroundResult, { kind: "tabular" }>;
+  target: string | null;
+}) {
   if (result.label !== undefined) {
     const entries = Object.entries(result.probs ?? {}).sort((a, b) => b[1] - a[1]);
     return (
@@ -1999,9 +2166,11 @@ function TabularResult({ result }: { result: Extract<PlaygroundResult, { kind: "
   }
   return (
     <p className="mt-0.5 text-[12px]">
-      Predicted value:{" "}
+      Predicted {target ?? "value"}:{" "}
       <span className="font-mono font-semibold text-foreground">
-        {result.value?.toFixed(4)}
+        {result.value === undefined
+          ? "—"
+          : result.value.toLocaleString(undefined, { maximumSignificantDigits: 6 })}
       </span>
     </p>
   );
@@ -2702,9 +2871,10 @@ function HyperparamForm({
 }
 
 // ── Training data ─────────────────────────────────────────────────────────────
-// Picks the CSV ([data] path, relative to the project) and the column to
-// predict ([data] target) for MLP projects. Pure helpers live in
-// lib/data-source.ts; writes go through applyOverrides like the stock networks.
+// Picks the CSV ([data] path, relative to the project), the column to
+// predict ([data] target) and whether it is a category or a number ([data]
+// task) for MLP projects. Pure helpers live in lib/data-source.ts; writes go
+// through applyOverrides like the stock networks.
 
 type DataPreview =
   | { kind: "loading" }
@@ -2722,13 +2892,15 @@ function DataSourceForm({
 }) {
   // null until train.toml is read; false when this isn't a tabular project.
   const [tabular, setTabular] = useState<boolean | null>(null);
-  const [saved, setSaved] = useState<{ path: string | null; target: string | null }>({
-    path: null,
-    target: null,
-  });
+  const [saved, setSaved] = useState<{
+    path: string | null;
+    target: string | null;
+    task: string | null;
+  }>({ path: null, target: null, task: null });
   const [csvs, setCsvs] = useState<string[] | null>(null);
   const [path, setPath] = useState("");
   const [target, setTarget] = useState("");
+  const [task, setTask] = useState<Task | "auto">("auto");
   const [preview, setPreview] = useState<DataPreview | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -2746,6 +2918,7 @@ function DataSourceForm({
       setSaved(data);
       setPath(data.path ?? "");
       setTarget(data.target ?? "");
+      setTask(data.task === "classification" || data.task === "regression" ? data.task : "auto");
     });
     return () => {
       cancelled = true;
@@ -2802,14 +2975,25 @@ function DataSourceForm({
     () => (preview?.kind === "ok" && target ? summarizeTarget(preview.text, target) : null),
     [preview, target],
   );
+  const columnInfo = useMemo(
+    () => (preview?.kind === "ok" && target ? summarizeColumns(preview.text, target) : []),
+    [preview, target],
+  );
 
   if (!tabular) return null;
 
   const options = csvs ?? [];
   const pathOptions = path && !options.includes(path) ? [path, ...options] : options;
-  const dirty = path !== (saved.path ?? "") || target !== (saved.target ?? "");
+  const effectiveTask: Task = task === "auto" ? (targetInfo?.task ?? "classification") : task;
+  const dirty =
+    path !== (saved.path ?? "") ||
+    target !== (saved.target ?? "") ||
+    task !== (saved.task ?? "auto");
   const canSave =
     !saving && preview?.kind === "ok" && target !== "" && preview.columns.includes(target);
+  const used = columnInfo.filter((c) => c.kind !== "skipped");
+  const left = columnInfo.filter((c) => c.kind === "skipped");
+  const gaps = used.filter((c) => c.missing > 0);
 
   const save = async (thenTrain: boolean) => {
     if (!canSave) return;
@@ -2821,9 +3005,9 @@ function DataSourceForm({
         setStatus("No train.toml in this project.");
         return;
       }
-      const { text } = applyOverrides(current, dataOverrides(path, target));
+      const { text } = applyOverrides(current, dataOverrides(path, target, task));
       await writeTrainToml(projectDir, text);
-      setSaved({ path, target });
+      setSaved({ path, target, task });
       setStatus("Saved");
       if (thenTrain) onSaveTrain();
     } catch (e) {
@@ -2901,35 +3085,66 @@ function DataSourceForm({
                 ))}
               </select>
             </label>
+            <label className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+              Predict
+              <select
+                value={task}
+                onChange={(e) => {
+                  setTask(e.target.value as Task | "auto");
+                  setStatus(null);
+                }}
+                className={selectClass}
+              >
+                <option value="auto">
+                  Decide for me ({targetInfo?.task === "regression" ? "a number" : "a category"})
+                </option>
+                <option value="classification">A category (which group?)</option>
+                <option value="regression" disabled={targetInfo ? !targetInfo.canRegress : false}>
+                  A number (how much?)
+                </option>
+              </select>
+            </label>
             <div className="rounded border border-border/50 bg-background/50 px-2 py-1.5 text-[10.5px] text-muted-foreground">
               <p>
-                {preview.rows.toLocaleString()} rows, {preview.columns.length} columns. The
-                model learns from{" "}
+                {preview.rows.toLocaleString()} rows. The model learns from{" "}
                 <span className="text-foreground/90">
-                  {preview.columns.filter((c) => c !== target).join(", ") || "nothing"}
+                  {used
+                    .map((c) => (c.kind === "categorical" ? `${c.name} (${c.distinct} choices)` : c.name))
+                    .join(", ") || "nothing"}
                 </span>
                 .
               </p>
-              {targetInfo?.classes ? (
+              {left.length > 0 ? (
+                <p className="mt-0.5">
+                  Left out: {left.map((c) => c.name).join(", ")} (empty, or too many different
+                  text values to use as categories, like IDs or notes).
+                </p>
+              ) : null}
+              {gaps.length > 0 ? (
+                <p className="mt-0.5">
+                  Some cells are blank in {gaps.map((c) => `${c.name} (${c.missing})`).join(", ")};
+                  the model learns that a value was missing.
+                </p>
+              ) : null}
+              {effectiveTask === "classification" && targetInfo?.classes ? (
                 <p className="mt-0.5">
                   Answers in <span className="font-mono text-foreground/90">{target}</span>:{" "}
                   {targetInfo.classes.map(([label, n]) => `${label} (${n})`).join(", ")}
                 </p>
+              ) : effectiveTask === "classification" && targetInfo ? (
+                <p className="mt-0.5 text-amber-600 dark:text-amber-400">
+                  {targetInfo.distinct} different values in {target} is a lot of categories;
+                  if it is a quantity, predict a number instead.
+                </p>
               ) : targetInfo ? (
                 <p className="mt-0.5">
-                  {targetInfo.distinct} different values in {target}; that looks like a number
-                  to estimate, not a set of categories.
-                </p>
-              ) : null}
-              {targetInfo && !targetInfo.numeric ? (
-                <p className="mt-0.5 text-amber-600 dark:text-amber-400">
-                  The training engine expects category numbers (0, 1, 2 and so on) in this
-                  column, not words.
+                  The model estimates <span className="font-mono text-foreground/90">{target}</span>{" "}
+                  and reports how far off it is on average.
                 </p>
               ) : null}
               {targetInfo && targetInfo.missing > 0 ? (
                 <p className="mt-0.5 text-amber-600 dark:text-amber-400">
-                  {targetInfo.missing} rows have no {target} value.
+                  {targetInfo.missing} rows have no {target} value and are skipped.
                 </p>
               ) : null}
             </div>

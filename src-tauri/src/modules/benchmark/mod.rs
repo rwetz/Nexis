@@ -26,7 +26,7 @@
 //! - Every subprocess is built with [`crate::modules::proc::command`], so the
 //!   engine probes and `taskkill` no longer flash a console -- which, next to
 //!   a live ConPTY, is not cosmetic (pitfalls #1D / #4).
-//! - The nexis-ml backend resolves the engine ML Lab manages before it looks
+//! - The Axon backend resolves the engine ML Lab manages before it looks
 //!   at `PATH`, so the two panels measure the same binary.
 //!
 //! ## On bundling ONNX Runtime

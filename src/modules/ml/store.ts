@@ -129,7 +129,7 @@ export type PlaygroundResult =
   | { kind: "text"; input: string; output: string; continuation: string }
   | { kind: "tabular"; label?: string; probs?: Record<string, number>; value?: number };
 
-/** Live inference session backing the playground (one `nexis-ml serve`). */
+/** Live inference session backing the playground (one `axon serve`). */
 export type ServeSession = {
   sid: number;
   projectDir: string;
@@ -312,6 +312,8 @@ type MlStore = {
    *  and renders it. Path is rebuilt from the run dir so it survives a
    *  moved project, like the metrics.jsonl reads do. */
   cmArtifact: ArtifactRef | null;
+  /** Latest `residuals` artifact (regression: actual vs predicted). */
+  residualsArtifact: ArtifactRef | null;
   /** Latest image-grid (sample-prediction) artifact for the image template. */
   imageArtifact: ArtifactRef | null;
   /** Latest `weights` artifact (network-graph overlay — ML_SUITE.md contract;
@@ -330,7 +332,7 @@ type MlStore = {
 
   /** In-flight `nexis-ml export --run` (one at a time); its report path. */
   pendingExport: { sid: number; reportPath: string } | null;
-  /** In-flight `nexis-ml export --onnx` (Rust engine); its output path. */
+  /** In-flight `axon export --onnx`; its output path. */
   pendingOnnx: { sid: number; outPath: string; projectDir: string } | null;
 
   detect: (workspaceRoot: string | null) => Promise<void>;
@@ -382,7 +384,8 @@ type MlStore = {
 
   setRunMeta: (run: HistoricalRun, patch: Partial<RunMeta>) => Promise<void>;
   exportReport: (projectDir: string, runId: string) => Promise<void>;
-  exportOnnx: (projectDir: string) => Promise<void>;
+  /** `runId`: the run to export (Axon v0.9+); otherwise the newest. */
+  exportOnnx: (projectDir: string, runId?: string | null) => Promise<void>;
 
   _startNextInstall: () => Promise<void>;
   _applyProto: (payload: ProtoPayload) => void;
@@ -451,6 +454,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
   lastValues: {},
   samples: [],
   cmArtifact: null,
+  residualsArtifact: null,
   imageArtifact: null,
   weightsArtifact: null,
   logs: [],
@@ -509,24 +513,23 @@ export const useMlStore = create<MlStore>((set, get) => ({
       installPythonVersion: installTarget?.version ?? null,
     });
     try {
-      // Candidates: Python envs + ancestor venvs + PATH, then the managed
-      // standalone engine (the "no Python" fallback) last.
-      const candidates = buildCandidates(envs, workspaceRoot);
+      // Candidates: the managed (pinned) Axon first — it is the engine
+      // Nexis supports — then `axon` on PATH, then the legacy Python engine.
       const managed = await managedEngineCandidate();
-      if (managed) candidates.push(managed);
+      const candidates = [...(managed ? [managed] : []), ...buildCandidates(envs, workspaceRoot)];
       set({ engineCandidates: candidates });
       const found = await detectEngine(candidates);
       set({
         engineStatus: "ready",
         engineExe: found.exe,
         engineVersion: found.version,
-        // The managed binary is always the standalone Rust engine, so we
+        // The managed binary is always Axon, so we
         // can gate its narrower feature set immediately; for anything else
         // we wait for the env probe rather than guessing.
         engineKind: managed && found.exe === managed ? "rust" : null,
       });
-      // Capability probe (torch/CUDA + backend) after the UI unblocks —
-      // importing torch inside `nexis-ml env` takes a few seconds.
+      // Capability probe after the UI unblocks — instant for Axon, but the
+      // legacy Python engine imports torch inside `env` (seconds).
       void probeEnv(found.exe)
         .then((env) =>
           set((s) => ({
@@ -579,7 +582,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
       engineError: null,
       logs: pushLog(
         s.logs,
-        `downloading nexis-ml ${pin.version} (${mb} MB, sha256-verified)…`,
+        `downloading Axon ${pin.version} (${mb} MB, sha256-verified)…`,
       ),
     }));
     await get()._finishManagedInstall(downloadEngine(), "download");
@@ -756,7 +759,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     }
     set((s) => ({
       createError: null,
-      logs: pushLog(s.logs, `$ nexis-ml new ${template} ${clean}  (${workspaceRoot})`),
+      logs: pushLog(s.logs, `$ axon new ${template} ${clean}  (${workspaceRoot})`),
     }));
     try {
       const sid = await spawnNew(engineExe, workspaceRoot, template, clean);
@@ -807,10 +810,11 @@ export const useMlStore = create<MlStore>((set, get) => ({
       lastValues: {},
       samples: [],
       cmArtifact: null,
+      residualsArtifact: null,
       imageArtifact: null,
       weightsArtifact: null,
       seriesTick: s.seriesTick + 1,
-      logs: pushLog(s.logs, `$ nexis-ml train  (${projectDir})`),
+      logs: pushLog(s.logs, `$ axon train  (${projectDir})`),
     }));
     try {
       const sid = await spawnTrain(engineExe, projectDir);
@@ -921,6 +925,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
         lastValues,
         samples: collectSamples(events, MAX_SAMPLES),
         cmArtifact: rebindArtifact(latestConfusionMatrix(events), artifactsDir),
+        residualsArtifact: rebindArtifact(latestArtifact(events, "residuals"), artifactsDir),
         imageArtifact: rebindArtifact(latestArtifact(events, "image-grid"), artifactsDir),
         weightsArtifact: rebindArtifact(latestArtifact(events, "weights"), artifactsDir),
         seriesTick: s.seriesTick + 1,
@@ -1088,22 +1093,27 @@ export const useMlStore = create<MlStore>((set, get) => ({
     }
   },
 
-  async exportOnnx(projectDir) {
-    const { engineExe, engineKind, pendingOnnx, activeRun } = get();
+  async exportOnnx(projectDir, runId = null) {
+    const { engineExe, engineKind, pendingOnnx, activeRun, envInfo } = get();
     if (!engineExe || pendingOnnx) return;
-    // Python-engine `export` has no --onnx (Rust engine feature, ML_SUITE M5).
+    // The legacy Python engine's `export` has no --onnx.
     if (engineKind !== "rust") {
       set((s) => ({
-        logs: pushLog(s.logs, "ONNX export needs the standalone (Rust) engine"),
+        logs: pushLog(s.logs, "ONNX export needs Axon"),
       }));
       return;
     }
     if (activeRun && BUSY_RUN_STATES.includes(activeRun.status)) return;
+    // v0.8 has no --run (it retrains); v0.9+ reports `tasks`.
+    const run = runId && (envInfo?.tasks.length ?? 0) > 0 ? runId : null;
     set((s) => ({
-      logs: pushLog(s.logs, `$ nexis-ml export --onnx .  (${projectDir})`),
+      logs: pushLog(
+        s.logs,
+        `$ axon export --onnx${run ? ` --run ${run}` : ""} .  (${projectDir})`,
+      ),
     }));
     try {
-      const sid = await spawnExportOnnx(engineExe, projectDir);
+      const sid = await spawnExportOnnx(engineExe, projectDir, run);
       set({
         pendingOnnx: { sid, outPath: `${projectDir}/model.onnx`, projectDir },
       });
@@ -1205,6 +1215,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
           // a viewer yet still surfaces in the log.
           if (
             ev.kind !== "confusion-matrix" &&
+            ev.kind !== "residuals" &&
             ev.kind !== "image-grid" &&
             ev.kind !== "weights"
           ) {
@@ -1238,6 +1249,9 @@ export const useMlStore = create<MlStore>((set, get) => ({
     const cmArtifact = hadArtifact
       ? rebindArtifact(latestConfusionMatrix(events, run.epoch), runArtifactDir)
       : null;
+    const residualsArtifact = hadArtifact
+      ? rebindArtifact(latestArtifact(events, "residuals", run.epoch), runArtifactDir)
+      : null;
     const imageArtifact = hadArtifact
       ? rebindArtifact(latestArtifact(events, "image-grid", run.epoch), runArtifactDir)
       : null;
@@ -1251,6 +1265,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
       logs,
       ...(samples ? { samples } : {}),
       ...(cmArtifact ? { cmArtifact } : {}),
+      ...(residualsArtifact ? { residualsArtifact } : {}),
       ...(imageArtifact ? { imageArtifact } : {}),
       ...(weightsArtifact ? { weightsArtifact } : {}),
       seriesTick: s.seriesTick + 1,

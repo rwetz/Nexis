@@ -11,12 +11,13 @@ import {
   isCandidateCsv,
   relativeDataPath,
   summarizeCsv,
+  summarizeColumns,
   summarizeTarget,
 } from "./data-source";
 import { applyOverrides } from "./model-blueprint";
 import { parseDataConfig } from "./netspec";
 
-// What `nexis-ml new tabular` writes: no [data] section at all.
+// What `nexis-ml new tabular` (v0.8) wrote: no [data] section at all.
 const SCAFFOLD = `# nexis-ml-rs (Phase 3 engine) — an MLP over tabular data.
 
 [train]
@@ -80,7 +81,29 @@ describe("CSV preview", () => {
       distinct: 3,
       numeric: true,
       missing: 0,
+      task: "classification",
+      canRegress: true,
     });
+  });
+
+  it("predicts Axon's task choice for the target", () => {
+    const prices = ["x,price", ...Array.from({ length: 30 }, (_, i) => `${i},${i * 1.5}`)].join("\n");
+    expect(summarizeTarget(prices, "price")).toMatchObject({ task: "regression", canRegress: true });
+    const words = summarizeTarget("x,label\n1,cat\n2,NA\n3,dog\n", "label");
+    expect(words).toMatchObject({ task: "classification", canRegress: false, missing: 1 });
+  });
+
+  it("reads each column the way Axon will", () => {
+    const ids = Array.from({ length: 60 }, (_, i) => `id${i},${i % 3 ? "red" : "blue"},${i % 7 ? i : ""},${i % 2}`);
+    const cols = summarizeColumns(["id,color,size,y", ...ids].join("\n"), "y");
+    expect(cols.map((c) => [c.name, c.kind])).toEqual([
+      ["id", "skipped"],
+      ["color", "categorical"],
+      ["size", "numeric"],
+    ]);
+    expect(cols[2].missing).toBe(9);
+    const forced = summarizeColumns("zip,y\n90210,1\n10001,0\n", "y", { categorical: ["zip"] });
+    expect(forced[0].kind).toBe("categorical");
   });
 
   it("flags text labels and blanks, and gives up on continuous columns", () => {
@@ -102,7 +125,11 @@ describe("dataOverrides", () => {
   it("adds a [data] section to a scaffold that has none", () => {
     const { text, skipped } = applyOverrides(SCAFFOLD, dataOverrides("data/plants.csv", "health"));
     expect(skipped).toEqual([]);
-    expect(parseDataConfig(text)).toEqual({ path: "data/plants.csv", target: "health" });
+    expect(parseDataConfig(text)).toEqual({
+      path: "data/plants.csv",
+      target: "health",
+      task: "auto",
+    });
     // The user's comments survive.
     expect(text).toContain("# MLP hidden-layer widths");
   });
@@ -112,8 +139,15 @@ describe("dataOverrides", () => {
       'path = "a.csv"',
       'path = "a.csv"   # old data',
     );
-    const { text } = applyOverrides(first, dataOverrides("../data/plants.csv", "health"));
-    expect(parseDataConfig(text)).toEqual({ path: "../data/plants.csv", target: "health" });
+    const { text } = applyOverrides(
+      first,
+      dataOverrides("../data/plants.csv", "health", "regression"),
+    );
+    expect(parseDataConfig(text)).toEqual({
+      path: "../data/plants.csv",
+      target: "health",
+      task: "regression",
+    });
     expect(text).toContain("# old data");
     expect(text.match(/^\[data\]/gm)).toHaveLength(1);
   });

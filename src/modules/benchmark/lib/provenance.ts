@@ -4,7 +4,7 @@ import { type BackendId, type BenchResult, type TaskType } from "./types";
  * What a result's numbers actually describe.
  *
  * ONNX Runtime, llama.cpp and the simulator run (or stand in for) the dropped
- * model. nexis-ml-rs cannot load an arbitrary model: it trains a standardized
+ * model. Axon cannot load an arbitrary model: it trains a standardized
  * synthetic workload (see `src-tauri/src/modules/benchmark/ml_engine.rs`), so
  * its throughput, latency and accuracy describe the engine, never the model in
  * that cell. Anything that names a model as a winner must skip those results.
@@ -24,7 +24,7 @@ export interface ThroughputUnit {
 /**
  * The unit of `BenchMetrics.tokensPerSec`, which despite its name holds
  * whatever rate the backend measured: tokens for generation, input rows for
- * classification and embedding, training samples for nexis-ml-rs.
+ * classification and embedding, training samples for Axon.
  */
 export function throughputUnit(task: TaskType, backendId: BackendId): ThroughputUnit {
   if (backendId === "nexis") return { short: "samples/s", long: "samples/s" };

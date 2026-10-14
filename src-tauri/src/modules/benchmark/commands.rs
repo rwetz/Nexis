@@ -20,12 +20,12 @@ use tauri::{AppHandle, Manager, State};
 /// Which engines are compiled in and which of them can actually run here.
 ///
 /// Probing is why this is `heavy`: resolving llama-bench walks `PATH` and the
-/// nexis-ml probe spawns the engine to ask its version.
+/// Axon probe spawns the engine to ask its version.
 #[tauri::command]
 pub async fn bench_list_backends(app: AppHandle) -> Result<Vec<BackendInfo>, String> {
     // Resolved on the caller's thread because it needs the AppHandle, then
     // moved into the blocking closure -- see `backend::registry`.
-    let managed = crate::modules::ml::managed_engine_exe(&app).ok();
+    let managed = crate::modules::ml::installed_managed_engine_exe(&app).ok();
     crate::modules::heavy(move || Ok(backend::infos(managed.as_deref()))).await
 }
 

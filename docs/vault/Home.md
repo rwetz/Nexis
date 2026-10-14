@@ -39,7 +39,7 @@ This vault is the **navigational knowledge base** for the Nexis codebase. It ans
 - [[theming]] — theme data → CSS variables, the generated Nexis ramp, community and custom sets
 - [[window-chrome]] — borderless chrome: decorations config, drag region, window controls, Linux edge resize
 - [[system-monitor]] — btop-style resource analyzer: sysinfo sampling, braille charts, process table
-- [[ml-lab]] — the external `nexis-ml` engine: detection, spawn bridge, training store, charts and network diagram
+- [[ml-lab]] — Synapse and its external engine, Axon: detection, spawn bridge, training store, charts and network diagram
 - [[icon-and-motion-system]] — the semantic icon choke point, the house size scale, file-tree retint, motion tokens
 - [[e2e-harness]] — how the Windows E2E suite gets a session: the compiled-in debugging port, the config overlay, seeded first-run prefs, and why the helper asserts clickability rather than the absence of an overlay
 - [[onboarding]] — the first-run flow: preset, tour, Getting Started checklist, and why all of it derives from `enabledPacks`

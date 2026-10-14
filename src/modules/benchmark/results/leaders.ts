@@ -13,7 +13,7 @@ export interface Leader {
 
 /**
  * One "leader" per headline metric, chosen only among results that measured
- * the model itself. Engine-workload results (nexis-ml-rs) never win a tile:
+ * the model itself. Engine-workload results (Axon) never win a tile:
  * their numbers describe a synthetic training task, not the model they sit
  * next to, so naming the model as the winner would be false.
  */

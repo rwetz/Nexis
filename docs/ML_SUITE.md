@@ -1,7 +1,15 @@
 # Nexis ML Suite — working spec (draft)
 
-> 📖 **Using the Lab?** See the [Nexis AI Lab — Complete Guide](ML_LAB_GUIDE.md)
+> 📖 **Using the Lab?** See the [Synapse (ML Lab) — Complete Guide](ML_LAB_GUIDE.md)
 > — how and why to use every feature. This file is the design/decision record.
+
+> **Current state (2026-10-14).** The Rust engine, renamed **Axon** at v0.9.0
+> (repo `rwetz/axon`, binary `axon`), is the supported engine; the Python
+> `nexis-ml` engine is phased out. v0.9.0 added regression, categorical
+> columns, missing-value handling and class balancing, and its fitted input
+> schema rides in the checkpoint (see "Axon v0.9 additions" below). The
+> phase-by-phase record that follows is historical: where it says the Python
+> engine is primary, that is no longer true.
 
 > Status: engine repo live ([rwetz/nexis-ml](https://github.com/rwetz/nexis-ml), local: `E:\nexis-ml`, v0.3.0) — protocol v1, run store, harness, `tabular` + `textgen` templates, `new`/`train`/`runs`/`replay`/`env`, stdin cancel all verified end-to-end. Nexis-side wireup + UX pass done (2026-06-12): "ML Lab" pinned to the sidebar rail by default, plain-language panel (progress bar, status sentences, friendly metric names, hero chart), one-click engine install (`ml_install` → pip into the detected venv, `default` or `cuda-torch` flavor), in-panel project creation (`Create & train`), project selector. GPU support (2026-06-12): `device = auto|cpu|gpu` in train.toml with a job-size auto heuristic, `device` field on run.started/summary, `nexis-ml env` capability probe + `nvidia-smi` host probe, GPU chip / "Enable GPU" upsell / install-with-GPU checkbox in the panel. Phase 2 started (2026-06-13): `textgen` template (engine v0.3.0) — a hand-rolled char-level tiny GPT streaming `loss/val`/`perplexity/val` + a `sample` event per epoch; Nexis side renders generated-text snapshots (scrub through passes) and the create card now picks between the `tabular`/`textgen` templates. Verified end-to-end on the RTX 4070 SUPER (gibberish → words by epoch 4 of a smoke run). Item #2 done (2026-06-13): the per-epoch confusion-matrix artifact renders as a colored grid in the panel (accuracy + pass label) instead of a log line — `lib/artifacts.ts` + `protocol.ts` `latestConfusionMatrix`, live and on historical-run load. Item #3 done (2026-06-13): inference — engine `infer`/`serve` (v0.4.0) rebuild the model from checkpoint sizes; Rust `serve` allowlist + `ml_stdin`; a Playground panel (textgen prompt→text, tabular feature form→class probs) over a `serve` session. Engine verified end-to-end (textgen + tabular, infer + serve) on the RTX 4070 SUPER. Item #4 done (2026-06-13): run comparison — check 2+ past runs to overlay their metric curves (colored multi-line `CompareChart`, shared decimation, legend). Items #5 + #6 done (2026-06-13): `image` template (CNN + sample-grid PNG, engine v0.5.0) and the hyperparameter form (surgical train.toml editing). **Phase 2 is functionally complete except #7 (PyPI publish)**, which needs the trusted-publisher set up on pypi.org (external, can't be automated here). Parking lot cleared (2026-06-13/14, engine v0.6.0→v0.7.0): early-stopping helper, live GPU-memory line, per-run notes/tags/pin, pause/resume, auto-open-on-train setting, and self-contained HTML run-report export. Companion doc to [ROADMAP.md](../ROADMAP.md) (open follow-ups live there under "ML Lab follow-ups").
 
@@ -114,6 +122,14 @@ Rules:
 ```
 
 Nexis matches layers to the drawn columns by `in`/`out` sizes and bucket-averages |w| for display (`src/modules/ml/lib/netgraph.ts`), so the engine may also downsample large layers as long as `in`/`out` reflect the emitted matrix. Layers whose sizes don't match the toml-derived architecture are skipped gracefully. Parser is defensive (`parseWeights`) — a malformed file renders structure-only, never throws.
+**Axon v0.9 additions (2026-10-14).**
+- `residuals` artifact (regression, one per eval): `{"target": "price", "actual": [...], "predicted": [...]}`, validation rows in the target's own units, at most 1000 points. The panel draws it as predicted-vs-actual (`lib/artifacts.ts:parseResiduals`).
+- Regression metrics: `mae/val`, `rmse/val`, `r2/val` in the target's units; `loss/*` is MSE on the standardized target.
+- Serve `ready.meta` gains `columns` (`[{name, kind: "numeric", mean} | {name, kind: "categorical", categories}]`), `target`, and the real `task`; `features` stays the list of input column names. Requests take numbers or strings; anything absent is missing. A regression prediction is `{"output": {"value": v}}`.
+- `env` gains `"tasks": ["classification", "regression"]` and `"categorical": true`. Nexis gates `export --onnx --run <id>` on `tasks` being present, because v0.8 had no `--run` and would read the run id as the project dir.
+- `config.json` `derived` carries `task`, `target`, `features` (input columns) and `inputs` (encoded width). `checkpoints/best.json` carries the fitted `schema`; v0.8 checkpoints (no schema) still load as all-numeric classifiers.
+- `[data]` keys Nexis may add with `upsert`: `path`, `target`, `task`. `categorical`/`ignore` are documented by Axon but only edited by hand.
+
 - Metrics are append-only and also written by the engine to `runs/<id>/metrics.jsonl`, so the Nexis run browser can render **finished/historical runs without the engine running** by reading the file directly (fs IPC already exists).
 - Artifacts are files on disk, referenced by path — the protocol never inlines binary data. Charts panel loads them via the existing fs/image-viewer plumbing.
 - Engine prints human-readable progress to stderr; stdout is protocol-only when `--nexis-protocol` is set.

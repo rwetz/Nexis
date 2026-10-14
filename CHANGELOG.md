@@ -4,6 +4,19 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+### Added
+
+- **Synapse trains on real spreadsheets.** With Axon 0.9 (below), a tabular project can predict a **number** as well as a category, use **text columns** (a city, a plan, yes/no) as categories, and train on CSVs with **blank cells**. The **Training data** section gains a **Predict** choice (*Decide for me* / *A category* / *A number*, written as `[data] task`) and a preview that says which columns the model learns from, which it leaves out (IDs, free text) and where cells are blank, using the engine's own rules. Number models show *Average error* as the headline metric, plus *Prediction error* and *Fit (R²)*, and a per-pass **predicted-vs-actual** plot in place of the confusion matrix. Imbalanced classes are weighted automatically (`[train] class_weights`).
+- **Playground dropdowns for category columns.** A model's category columns get a dropdown of the categories it saw in training; number boxes show the training average a blank stands for; a number model's answer is named after the column it predicts.
+- **The AI-chat model tools handle the new models.** `ml_predict` accepts category text as well as numbers and reports the model's task and target; `ml_rank_csv` passes category columns through as written and ranks a number model by its prediction.
+- **An "Update Axon" notice** appears when the engine in use is older than the version this Nexis pins.
+
+### Changed
+
+- **The ML engine is Axon.** The standalone engine formerly called `nexis-ml-rs` is now **Axon** (binary `axon`, repository `rwetz/axon`), and Nexis pins Axon 0.9.0. Detection tries the managed Axon first, then `axon` on `PATH`, then the legacy names. A binary only counts as the engine when `--version` prints exactly `axon <version>` (or the legacy `nexis-ml <version>`), so an unrelated `axon` on `PATH` is ignored. An existing managed `nexis-ml` install keeps working until the update replaces it; uninstall removes both. Pulse's engine backend is labelled Axon and finds either name.
+- **The Python engine is phased out.** Axon is the supported engine; the setup card's Python steps are now marked legacy, and `docs/ML_LAB_GUIDE.md` is rewritten around Axon, with the Python engine reduced to a short appendix of what only it still does (text generation, `blank`, the HTML report).
+- **ONNX export exports the run you are viewing.** With Axon 0.9 it writes that run's trained weights (plus `model.json` describing the inputs) instead of retraining from `train.toml`.
+
 ## [1.32.0] — 2026-10-14
 
 ### Added

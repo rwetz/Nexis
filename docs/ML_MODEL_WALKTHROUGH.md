@@ -50,8 +50,8 @@ trained model for the numbers and explains them.
 You need:
 
 - Nexis with the **ML Lab** pack on (the *AI / ML* preset turns it on).
-- A `nexis-ml` engine. The ML Lab's setup card installs the standalone engine
-  in one click. Either engine works for this walkthrough.
+- The Axon engine. The ML Lab's setup card downloads and verifies it in one
+  click.
 - For step 11: an AI provider set up in Nexis whose model supports tool
   calling. A local one (Ollama, LM Studio) works and keeps everything on your
   machine.
@@ -171,10 +171,9 @@ epochs = 20
 lr = 0.001
 ```
 
-If the engine's scaffold lacks a key Nexis wanted to set (the standalone
-engine's tabular scaffold has no `batch_size`, for example), the log says
+If the engine's scaffold lacks a key Nexis wanted to set, the log says
 `kept its defaults` and names it. Nexis never invents a key the engine didn't
-write, except the documented `[data] path` and `target`.
+write, except the documented `[data] path`, `target` and `task`.
 
 ---
 
@@ -310,7 +309,7 @@ The ML Lab adds three tools to the AI chat (while the ML Lab pack is on):
 | `ml_predict` | runs a model on up to 50 rows you describe (or continues text, for a text model) |
 | `ml_rank_csv` | scores every row of a CSV and returns the top N |
 
-They are **read-only**. They read the run store and run `nexis-ml serve` on a
+They are **read-only**. They read the run store and run `axon serve` on a
 checkpoint you already trained. They never train, write or delete, so they run
 without an approval prompt. They only see projects and CSVs inside the open
 workspace. The engine runs locally, so your data goes to the language model's
@@ -446,10 +445,9 @@ several seeds.
 
 ## 14. Ship it
 
-- **HTML report** (Python engine): a self-contained page with curves, metrics
-  and the confusion matrix, for sharing a run.
-- **ONNX export** (standalone engine): `model.onnx` for running the model in
-  any language with onnxruntime, outside Nexis.
+- **ONNX export**: `model.onnx` (plus `model.json` describing its inputs) for
+  running the run you are viewing in any language with onnxruntime, outside
+  Nexis.
 - **The run store** (`.nexis-ml/runs/`): every run's config, metrics and
   checkpoint. Commit `train.toml`, `PROJECT.md` and the data; leave the run
   store out of git.

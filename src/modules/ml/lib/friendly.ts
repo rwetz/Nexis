@@ -49,11 +49,23 @@ const KNOWN_METRICS: Record<string, MetricDisplay> = {
     hint: "Error on data the model has never seen — lower is better",
     format: formatValue,
   },
+  "mae/val": {
+    label: "Average error",
+    better: "down",
+    hint: "How far off a prediction is on average, in the column's own units — lower is better",
+    format: formatValue,
+  },
   "rmse/val": {
     label: "Prediction error",
     better: "down",
-    hint: "Average distance between predictions and truth — lower is better",
+    hint: "Typical miss, with big misses counting extra (RMSE) — lower is better",
     format: formatValue,
+  },
+  "r2/val": {
+    label: "Fit (R²)",
+    better: "up",
+    hint: "How much of the variation the model explains: 1 is perfect, 0 is no better than guessing the average",
+    format: (v) => v.toFixed(3),
   },
   "perplexity/val": {
     label: "Perplexity",
@@ -82,7 +94,7 @@ export function displayMetric(name: string): MetricDisplay {
 
 /** Which metric headlines the panel, in order of how meaningful it is
  *  to a non-expert. */
-const HEADLINE_PRIORITY = ["acc/val", "rmse/val", "loss/val", "loss/train"];
+const HEADLINE_PRIORITY = ["acc/val", "mae/val", "rmse/val", "loss/val", "loss/train"];
 
 export function headlineMetric(names: string[]): string | null {
   for (const name of HEADLINE_PRIORITY) {

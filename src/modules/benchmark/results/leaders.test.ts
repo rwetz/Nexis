@@ -50,7 +50,7 @@ const result = (
   },
 });
 
-// The run that prompted this: ONNX RT ran the real model, nexis-ml-rs
+// The run that prompted this: ONNX RT ran the real model, Axon
 // trained its own synthetic task and reported 91.5K samples/s and 76.2%.
 const onnx = result("onnx", {
   tokensPerSec: 21_276,
@@ -67,7 +67,7 @@ const nexis = result("nexis", {
 });
 
 describe("measuresModel", () => {
-  it("treats nexis-ml-rs as an engine workload, everything else as the model", () => {
+  it("treats Axon as an engine workload, everything else as the model", () => {
     expect(measuresModel(nexis)).toBe(false);
     expect(measuresModel(onnx)).toBe(true);
     expect(measuresModel({ backendId: "llama" })).toBe(true);
@@ -92,7 +92,7 @@ describe("throughputUnit", () => {
 });
 
 describe("pickLeaders", () => {
-  it("never credits a model with nexis-ml-rs workload numbers", () => {
+  it("never credits a model with Axon workload numbers", () => {
     const leaders = pickLeaders([onnx, nexis], [model], "classification");
     expect(leaders.every((l) => l.backendId === "onnx")).toBe(true);
     // ONNX reported no accuracy, so there is no "Most accurate" tile at all
@@ -101,7 +101,7 @@ describe("pickLeaders", () => {
     expect(leaders.find((l) => l.label === "Fastest")?.value).toBe("21.3K inferences/s");
   });
 
-  it("has no leaders when only nexis-ml-rs ran", () => {
+  it("has no leaders when only Axon ran", () => {
     expect(pickLeaders([nexis], [model], "classification")).toEqual([]);
   });
 });
@@ -125,7 +125,7 @@ describe("exports", () => {
     expect(nexisRow.endsWith("samples/s,engine_synthetic_workload")).toBe(true);
   });
 
-  it("Markdown does not attribute the nexis-ml-rs row to the model", () => {
+  it("Markdown does not attribute the Axon row to the model", () => {
     const md = runToMarkdown(run, [model]);
     expect(md).not.toContain("tok/s");
     const nexisLine = md.split("\n").find((l) => l.includes("nexis"))!;

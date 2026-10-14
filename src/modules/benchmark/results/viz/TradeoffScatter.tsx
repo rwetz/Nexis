@@ -35,7 +35,7 @@ export function TradeoffScatter({
   task: TaskType;
 }) {
   const pts = useMemo<Pt[]>(() => {
-    // Engine-workload results (nexis-ml-rs) time a synthetic training task in
+    // Engine-workload results (Axon) time a synthetic training task in
     // a different unit, so plotting them beside model inference would mislead.
     const base = results
       .filter((r) => r.status === "done" && r.metrics && r.metrics.latencyMeanMs > 0 && measuresModel(r))
