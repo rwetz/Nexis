@@ -425,14 +425,14 @@ fn engine_asset() -> Option<&'static EngineAsset> {
     if cfg!(all(target_os = "windows", target_arch = "x86_64")) {
         Some(&EngineAsset {
             name: "axon-windows-x64.exe",
-            size: 34_814_464,
-            sha256: "f8d7eacd6d9517277fbf40869b0589f689efeb8c76c0425dee31e68a95357dbf",
+            size: 34_458_624,
+            sha256: "316b7be6f69b43e951189f10c9610cdcb730bda71728d0de9b40b6f42510d32a",
         })
     } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
         Some(&EngineAsset {
             name: "axon-linux-x64",
-            size: 26_113_824,
-            sha256: "18a4981b476e639cfd4cc6722f4eea4686612568253c59a3f3591a63ba8bc5e9",
+            size: 25_433_168,
+            sha256: "0c4a71ab23dcbf7a23b851cf5742d0296778e456a5d71f15c2c6c429bcda8c96",
         })
     } else {
         None
