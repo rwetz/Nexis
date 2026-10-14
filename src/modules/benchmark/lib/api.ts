@@ -23,6 +23,7 @@ import { openFiles, saveFile } from "@/platform/dialogs";
 import { defineCommand, defineEvent } from "@/platform/ipc";
 import { hostIpc } from "@/platform/tauri";
 import { IS_WINDOWS } from "@/lib/platform";
+import { measuresModel, throughputUnit } from "./provenance";
 import {
   type BackendInfo,
   type LlamaProbe,
@@ -222,6 +223,8 @@ export function runToCsv(run: BenchRun, models: ModelInfo[]): string {
     "latency_p95_ms",
     "peak_mem_mb",
     "accuracy",
+    "throughput_unit",
+    "measures",
   ].join(",");
   const rows = run.results.map((r) => {
     const m = r.metrics;
@@ -236,6 +239,10 @@ export function runToCsv(run: BenchRun, models: ModelInfo[]): string {
       m?.latencyP95Ms?.toFixed(2) ?? "",
       m ? (m.peakMemBytes / 1e6).toFixed(1) : "",
       m?.accuracy != null ? m.accuracy.toFixed(4) : "",
+      throughputUnit(run.config.task, r.backendId).long,
+      // `tokens_per_sec` keeps its column name for existing consumers; this
+      // says whether the row describes the model or an engine workload.
+      measuresModel(r) ? "model" : "engine_synthetic_workload",
     ].join(",");
   });
   return [`# Nexis Benchmark — run ${run.id} — ${run.createdAt}`, head, ...rows].join("\n");
@@ -243,14 +250,15 @@ export function runToCsv(run: BenchRun, models: ModelInfo[]): string {
 
 export function runToMarkdown(run: BenchRun, models: ModelInfo[]): string {
   const modelName = (id: string) => models.find((m) => m.id === id)?.name ?? id;
-  const head = "| Model | Backend | tok/s | TTFT (ms) | mean (ms) | p95 (ms) | mem (MB) | acc |";
+  const head = "| Model | Backend | throughput | TTFT (ms) | mean (ms) | p95 (ms) | mem (MB) | acc |";
   const sep = "| --- | --- | --: | --: | --: | --: | --: | --: |";
   const rows = run.results.map((r) => {
     const m = r.metrics;
+    const engine = !measuresModel(r);
     const cells = [
-      modelName(r.modelId),
-      r.backendId,
-      m ? m.tokensPerSec.toFixed(1) : "—",
+      engine ? "synthetic training workload" : modelName(r.modelId),
+      engine ? `${r.backendId} (engine, not this model)` : r.backendId,
+      m ? `${m.tokensPerSec.toFixed(1)} ${throughputUnit(run.config.task, r.backendId).long}` : "—",
       m ? m.firstTokenMs.toFixed(2) : "—",
       m ? m.latencyMeanMs.toFixed(2) : "—",
       m ? m.latencyP95Ms.toFixed(2) : "—",

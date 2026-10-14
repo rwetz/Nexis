@@ -16,6 +16,11 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 - **Project discovery and run-store reads moved out of the ML store** into `src/modules/ml/lib/projects.ts`, so the chat tools can read projects without touching what the panel shows. No behavior change.
 - **Creation reports keys the engine's scaffold lacks.** When a stock network or size sets a key the scaffold didn't write, the log names it ("kept its defaults") instead of the edit silently doing nothing.
 
+### Fixed
+
+- **Benchmark no longer credits your model with nexis-ml-rs numbers.** nexis-ml-rs cannot load a dropped model; it trains a fixed synthetic workload. The results still put it in the same matrix as real ONNX inference, so a 4 KB classifier could show "Most accurate 76.2% · model.onnx · nexis-ml-rs" when 76.2% was the workload's own validation accuracy. Now the leader tiles, the per-model bars and the efficiency map only rank engines that ran the model. nexis-ml-rs results appear in their own "Engine training throughput (synthetic workload)" section with their own scale and no winner star. Its run-matrix cell reads "Synthetic training workload" and labels its numbers samples/s, 1st epoch and val acc. Markdown exports name the row as a synthetic workload, and CSV exports gain `throughput_unit` and `measures` columns (`tokens_per_sec` keeps its name).
+- **Benchmark throughput units match the task.** Throughput was labelled tok/s for every task. Classification and embedding now show inferences/s and generation shows tok/s. ONNX classification and embedding throughput now counts input rows per second: it used to multiply batch by the feature count, so an 8-input classifier reported 8 times its real rate.
+
 ## [1.31.0] — 2026-10-02
 
 ### Fixed

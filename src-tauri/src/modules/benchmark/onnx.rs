@@ -152,6 +152,21 @@ fn percentile(sorted: &[f64], p: f64) -> f64 {
     sorted[idx]
 }
 
+/// Items one pass processes, in the unit the UI shows for the task:
+/// generation counts tokens (tok/s); classification and embedding count
+/// inferences, one per input row in the batch (inferences/s). Counting
+/// `batch x features` for an 8-input classifier would report 8x the real rate.
+fn items_per_pass(specs: &[InSpec], task: TaskType) -> f64 {
+    match task {
+        TaskType::Generation => tokens_per_pass(specs),
+        TaskType::Classification | TaskType::Embedding => specs
+            .first()
+            .and_then(|s| s.shape.first())
+            .map(|&d| d.max(1))
+            .unwrap_or(1) as f64,
+    }
+}
+
 /// tokens/pass ≈ batch × sequence for rank-≥2 inputs, else batch.
 fn tokens_per_pass(specs: &[InSpec]) -> f64 {
     if let Some(s) = specs.iter().find(|s| s.shape.len() >= 2) {
@@ -213,7 +228,7 @@ pub fn run(
         .map_err(|e| format!("load '{}': {e}", model.name))?;
 
     let specs = build_specs(&session, config)?;
-    let tok_per_pass = tokens_per_pass(&specs);
+    let tok_per_pass = items_per_pass(&specs, config.task);
 
     // Warm-up (discarded).
     for _ in 0..config.warmup {
@@ -264,6 +279,27 @@ pub fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn spec(shape: &[i64]) -> InSpec {
+        InSpec {
+            name: "x".into(),
+            ty: TensorElementType::Float32,
+            shape: shape.to_vec(),
+        }
+    }
+
+    #[test]
+    fn classification_counts_rows_not_features() {
+        let specs = [spec(&[4, 8])];
+        assert_eq!(items_per_pass(&specs, TaskType::Classification), 4.0);
+        assert_eq!(items_per_pass(&specs, TaskType::Embedding), 4.0);
+        assert_eq!(items_per_pass(&specs, TaskType::Generation), 32.0);
+    }
+
+    #[test]
+    fn scalar_input_counts_one_inference() {
+        assert_eq!(items_per_pass(&[spec(&[])], TaskType::Classification), 1.0);
+    }
 
     /// Real load+inference smoke test. Gated on an env var so plain `cargo test`
     /// skips it: `ONNX_SMOKE_MODEL=/path/model.onnx cargo test onnx_smoke -- --nocapture`.

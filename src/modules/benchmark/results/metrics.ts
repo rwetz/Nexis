@@ -1,6 +1,7 @@
 import { formatBytes } from "@/lib/format";
 import { formatCompact, formatMs } from "@/modules/benchmark/lib/format";
-import { type BenchMetrics } from "@/modules/benchmark/lib/types";
+import { throughputUnit } from "@/modules/benchmark/lib/provenance";
+import { type BackendId, type BenchMetrics, type TaskType } from "@/modules/benchmark/lib/types";
 
 export type MetricKey =
   | "tokensPerSec"
@@ -17,17 +18,18 @@ export interface MetricDef {
   /** Which direction is better — drives winner highlighting. */
   better: "high" | "low";
   get: (m: BenchMetrics) => number | null | undefined;
-  format: (v: number) => string;
+  /** Task and backend decide the unit (tok/s, inferences/s, samples/s). */
+  format: (v: number, task: TaskType, backendId: BackendId) => string;
 }
 
 export const METRICS: MetricDef[] = [
   {
     key: "tokensPerSec",
     label: "Throughput",
-    short: "tok/s",
+    short: "rate",
     better: "high",
     get: (m) => m.tokensPerSec,
-    format: (v) => `${formatCompact(v)} tok/s`,
+    format: (v, task, backendId) => `${formatCompact(v)} ${throughputUnit(task, backendId).long}`,
   },
   {
     key: "firstTokenMs",
