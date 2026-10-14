@@ -1,3 +1,4 @@
+import { TOOL_NAMES } from "@/lib/toolNames";
 import { activeWorkspace, workspaceCurrentDir } from "@/platform/workspaces";
 import { setContrast } from "@/modules/settings/store";
 import { git } from "@/capabilities/git/api";
@@ -89,6 +90,7 @@ import { openNewWindow } from "@/modules/window/openNewWindow";
 import { ToolWindowShell } from "@/modules/window/ToolWindowShell";
 import { currentToolWindow, openToolWindow } from "@/modules/window/toolWindow";
 import { onToolHostAction, useWorkspaceRootBroadcast } from "@/modules/window/toolWindowHost";
+import { useNexisDeepLinks } from "@/modules/window/deepLinks";
 import { onAtlasHostAction } from "@/modules/atlas/repos/hostBridge";
 import { desktopWindow } from "@/platform/desktop";
 import { toast } from "sonner";
@@ -1423,20 +1425,27 @@ function MainApp() {
   );
 
   // ── Tool windows ──
-  // SVG Studio, ML Lab, Web, Documents, Atlas and Benchmark each open in a
-  // window of their own. The workspace root rides along at launch and is
+  // Vellum, Synapse, Portal, Quill, Atlas and Pulse each open in a window of
+  // their own (names: lib/toolNames.ts). The workspace root rides along at launch and is
   // kept current by the broadcast below.
   const launchTool = useCallback(
     (id: string, params: Record<string, string> = {}) => {
       const tool = CAPABILITY_TOOL_WINDOWS.find((t) => t.id === id);
       if (!tool) return;
-      void openToolWindow(tool, { ...(explorerRoot ? { root: explorerRoot } : {}), ...params }).catch((e: unknown) => {
+      const withRoot = { ...(explorerRoot ? { root: explorerRoot } : {}), ...params };
+      if (tool.launch) {
+        tool.launch(withRoot);
+        return;
+      }
+      void openToolWindow(tool, withRoot).catch((e: unknown) => {
         toast.error(`Could not open ${tool.label}`, { description: e instanceof Error ? e.message : String(e) });
       });
     },
     [explorerRoot],
   );
   useWorkspaceRootBroadcast(explorerRoot);
+  // `nexis://` links from Epoch: open Synapse or Pulse on what they name.
+  useNexisDeepLinks(explorerRoot, launchTool, switchWorkspacePath);
 
   /** Open SVG Studio with a specific tool in front — the palette, backdrop,
    *  icon set, favicon set and animator live inside it, not in the sidebar. */
@@ -1457,6 +1466,12 @@ function MainApp() {
   // window that owns tabs, which is then raised so the result is visible.
   useEffect(() => {
     const unlistenP = onToolHostAction((action) => {
+      if (action.kind === "tool") {
+        // A tool-to-tool link (Synapse → Pulse, say): the other tool's window
+        // comes to the front, not the main window.
+        launchTool(action.tool, action.params);
+        return;
+      }
       if (action.kind === "file") openFileTab(action.path, true);
       else if (action.kind === "preview") openPreviewTab(action.url);
       else handleOpenSshSession(action.command, action.label);
@@ -1465,7 +1480,7 @@ function MainApp() {
     return () => {
       void unlistenP.then((fn) => fn());
     };
-  }, [openFileTab, openPreviewTab, handleOpenSshSession]);
+  }, [openFileTab, openPreviewTab, handleOpenSshSession, launchTool]);
 
   const openImageViewer = useCallback(
     (path: string) => {
@@ -1525,14 +1540,14 @@ function MainApp() {
     { id: "pane.splitDown",      label: "Split pane down",          category: "Panes",   action: () => splitActivePaneInActiveTab("col") },
     { id: "ledger.history",      label: "Show command history",     category: "View",    action: () => persistSidebarView("command-history"), pack: "dev-tools", keywords: ["ledger", "recorded", "commands", "trends", "journal", "output", "build time"] },
     { id: "webdev.http",         label: "Show HTTP client",         category: "View",    action: () => persistSidebarView("http-client"), pack: "web-dev", keywords: ["rest", "request", "curl", "api"] },
-    { id: "art.svgPlayground",   label: "Open SVG Studio",          category: "View",    action: () => openSvgStudio("draw"), pack: "art", keywords: ["svg", "icon", "vector", "art", "playground", "studio"] },
-    { id: "ml.open",             label: "Open ML Lab",              category: "View",    action: () => launchTool("ml-lab"), pack: "ml-lab", keywords: ["model", "training", "inference", "onnx", "benchmark"] },
+    { id: "art.svgPlayground",   label: `Open ${TOOL_NAMES.svgStudio} (SVG studio)`, category: "View", action: () => openSvgStudio("draw"), pack: "art", keywords: ["svg studio", "vellum", "svg", "icon", "vector", "art", "playground", "studio"] },
+    { id: "ml.open",             label: `Open ${TOOL_NAMES.mlLab} (ML lab)`, category: "View",  action: () => launchTool("ml-lab"), pack: "ml-lab", keywords: ["ml lab", "synapse", "model", "training", "inference", "onnx", "benchmark"] },
     { id: "art.palette",         label: "Open the palette",         category: "View",    action: () => openSvgStudio("palette"), pack: "art", keywords: ["colour", "color", "contrast", "wcag", "swatch", "theme"] },
     { id: "art.backdrop",        label: "Open the backdrop generator", category: "View",  action: () => openSvgStudio("backdrop"), pack: "art", keywords: ["wallpaper", "background", "gradient", "waves", "generative"] },
     { id: "art.iconSet",         label: "Open the icon set review", category: "View",    action: () => openSvgStudio("icon-set"), pack: "art", keywords: ["icons", "audit", "consistency", "stroke", "svg"] },
     { id: "art.favicon",         label: "Open the favicon exporter", category: "View",   action: () => openSvgStudio("favicon"), pack: "art", keywords: ["favicon", "app icon", "manifest", "apple touch", "pwa"] },
     { id: "art.animator",        label: "Open the SVG animator",    category: "View",    action: () => openSvgStudio("animator"), pack: "art", keywords: ["animate", "keyframe", "smil", "motion", "timeline"] },
-    { id: "documents.open",      label: "Open Documents",           category: "View",    action: () => launchTool("documents"), pack: "documents", keywords: ["docx", "word", "markdown", "rich text", "document", "pdf"] },
+    { id: "documents.open",      label: `Open ${TOOL_NAMES.documents} (documents)`, category: "View", action: () => launchTool("documents"), pack: "documents", keywords: ["documents", "quill", "docx", "word", "markdown", "rich text", "document", "pdf"] },
     { id: "help.gettingStarted", label: "Open Getting Started",       category: "General", action: () => openOnboarding(), keywords: ["onboarding", "tour", "help", "first run", "checklist"] },
     { id: "onboarding.tour",     label: "Start the guided tour",     category: "View",    action: () => setTourOpen(true), keywords: ["onboarding", "walkthrough"] },
     { id: "sidebar.processes",   label: "Show activity (processes + agent queue)",category: "View",    action: () => persistSidebarView("processes"), pack: "dev-tools" },

@@ -18,6 +18,7 @@ import { STUDIO_TOOLS, useSvgStudioStore } from "@/modules/art/studioStore";
 import { SvgStudio } from "@/modules/art/SvgStudio";
 import { DocumentsWorkbench } from "@/modules/documents";
 import { MlPanel } from "@/modules/ml/MlPanel";
+import { focusMlRun } from "@/modules/ml/links";
 import { NetworkGraph } from "@/modules/ml/NetworkGraph";
 import { isWebTool, useWebWorkbenchStore, WebWorkbench } from "@/modules/web-workbench";
 import {
@@ -40,6 +41,12 @@ export function SvgStudioWindow() {
 
 export function MlLabWindow() {
   const root = useToolWindowRoot();
+  const { params, opens } = useToolWindowLaunch("ml-lab");
+  // A link from Pulse or Epoch names a project and maybe a run: select the
+  // project, then open that run's charts once the run list has loaded.
+  useEffect(() => {
+    if (params.project) void focusMlRun(params.project, params.run);
+  }, [params, opens]);
   // The network diagram used to open as a main-window tab. From its own
   // window it opens over the Lab instead, where "back" is one click.
   const [networkDir, setNetworkDir] = useState<string | null>(null);

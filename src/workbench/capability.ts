@@ -50,4 +50,8 @@ export type ToolWindowContribution = {
   pack?: PackId;
   render: () => ReactNode;
   renderActions?: () => ReactNode;
+  /** A companion *app* rather than a Nexis window (Epoch): the launcher calls
+   * this with the launch parameters, the workspace root included, instead of
+   * opening a webview. `render` is never shown for such a tool. */
+  launch?: (params: Record<string, string>) => void;
 };

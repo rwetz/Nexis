@@ -21,6 +21,7 @@
  * list, a run by id from that project's run store, and a CSV must resolve
  * inside the workspace root.
  */
+import { TOOL_NAMES } from "@/lib/toolNames";
 import { z } from "zod";
 import type { ToolContribution } from "@/modules/ai/tools/plugin-tools";
 import { useMlStore } from "../store";
@@ -223,10 +224,10 @@ async function engineFor(root: string): Promise<string> {
   if (!store.engineExe) await store.detect(root);
   const { engineExe, engineKind, envInfo } = useMlStore.getState();
   if (!engineExe) {
-    throw new Error("No nexis-ml engine is set up. Open the ML Lab to install one.");
+    throw new Error(`No nexis-ml engine is set up. Open ${TOOL_NAMES.mlLab} (the ML lab) to install one.`);
   }
   if (engineKind === "rust" && !envInfo?.serve) {
-    throw new Error("This engine version can't serve models. Update it from the ML Lab.");
+    throw new Error(`This engine version can't serve models. Update it from ${TOOL_NAMES.mlLab}.`);
   }
   return engineExe;
 }
@@ -253,7 +254,7 @@ async function serveRun<T>(
     throw new Error(
       runId
         ? `Project "${project.name}" has no run "${runId}".`
-        : `Project "${project.name}" has no finished run yet. Train it in the ML Lab first.`,
+        : `Project "${project.name}" has no finished run yet. Train it in ${TOOL_NAMES.mlLab} first.`,
     );
   }
   const exe = await engineFor(root);
@@ -277,7 +278,7 @@ const listModels: ToolContribution = {
   id: "nexis.ml:list-models",
   name: "ml_list_models",
   description:
-    "List the machine-learning models the user trained in the Nexis ML Lab: each project's " +
+    `List the machine-learning models the user trained in ${TOOL_NAMES.mlLab}, Nexis's ML lab: each project's ` +
     "kind (tabular classifier, image CNN, text GPT), the columns it reads and predicts, its " +
     "training brief, and its recent runs with their final metrics. Call this first whenever " +
     "the user asks about 'my model(s)', before ml_predict or ml_rank_csv.",
@@ -346,7 +347,8 @@ const predict: ToolContribution = {
   id: "nexis.ml:predict",
   name: "ml_predict",
   description:
-    "Run one of the user's trained ML Lab models. Tabular models: pass `rows` (up to 50 " +
+    `Run one of the user's trained ${TOOL_NAMES.mlLab} models. ` +
+    "Tabular models: pass `rows` (up to 50 " +
     "objects of feature → number) and get each row's predicted class with class " +
     "probabilities, or a predicted value. Text models: pass `prompt` and get the model's " +
     "continuation. Report results as the model's output, not as fact.",
@@ -404,7 +406,7 @@ const rankCsv: ToolContribution = {
   id: "nexis.ml:rank-csv",
   name: "ml_rank_csv",
   description:
-    "Score every row of a CSV with one of the user's trained tabular ML Lab models and " +
+    `Score every row of a CSV with one of the user's trained tabular ${TOOL_NAMES.mlLab} models and ` +
     "return the top rows. Use it for 'who is the best/most likely/riskiest' questions, " +
     "e.g. ranking players by the model's probability of the all-time-great tier. Feature " +
     "columns are matched by name; other columns are ignored. Up to 5000 rows.",

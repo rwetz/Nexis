@@ -21,6 +21,7 @@
  * rather than sitting at the bottom of a scrolling column.
  */
 
+import { TOOL_NAMES } from "@/lib/toolNames";
 import { useEffect } from "react";
 import { Icon } from "@/components/icon";
 import { CallChip } from "@/components/ui/CallChip";
@@ -74,7 +75,7 @@ export function BenchmarkPanel() {
               // process, so it gets the same chip, elapsed clock included.
               // The old spinner said "busy" and nothing else.
               <CallChip
-                label="Benchmark"
+                label={TOOL_NAMES.benchmark}
                 startedAtMs={runStartedAtMs ?? Date.now()}
                 onEnd={() => void cancelRun()}
                 endLabel="Cancel"
