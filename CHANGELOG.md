@@ -4,6 +4,8 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.32.0] — 2026-10-14
+
 ### Added
 
 - **Nexis Epoch joins Synapse and Pulse in the title bar.** Epoch, the standalone data-and-experiments app (DuckDB dataset explorer, SQL, TOML studio, run browser), gets a launcher beside the two ML tools when the Machine Learning pack is on, plus a palette command ("Open this workspace in Epoch"). It is a companion app, not a Nexis window: the launcher hands it the open workspace and Epoch opens on it. Nexis finds Epoch in the usual install places (per-user and per-machine on Windows, `/Applications` on macOS, `/usr/bin` on Linux, anything named `nexis-epoch` on `PATH`, or `NEXIS_EPOCH`); if it can't, the error toast offers **Locate…** and remembers the choice (`epochPath`). Code: `capabilities/epoch/`, `src-tauri/src/modules/epoch.rs`.
