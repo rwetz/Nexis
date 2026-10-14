@@ -9,8 +9,10 @@ import {
   type BenchProgress,
   type BenchResult,
   type ModelInfo,
+  type TaskType,
 } from "@/modules/benchmark/lib/types";
 import { useBenchStore } from "@/modules/benchmark/store";
+import { measuresModel, throughputUnit } from "@/modules/benchmark/lib/provenance";
 import { NOISY_CV, sampleStats } from "@/modules/benchmark/lib/stats";
 import { DistributionStrip } from "./viz/DistributionStrip";
 
@@ -34,6 +36,7 @@ export function RunMatrix() {
             backendId={cell.backendId}
             result={byCell.get(k)}
             progress={progress[k]}
+            task={run.config.task}
           />
         );
       })}
@@ -46,12 +49,18 @@ function Cell({
   backendId,
   result,
   progress,
+  task,
 }: {
   model?: ModelInfo;
   backendId: BackendId;
   result?: BenchResult;
   progress?: BenchProgress;
+  task: TaskType;
 }) {
+  // nexis-ml-rs never runs the model in this cell; it trains a synthetic
+  // workload, so the cell must not read as "this model's" numbers.
+  const engineWorkload = !measuresModel({ backendId });
+  const unit = throughputUnit(task, backendId);
   const done = result?.status === "done" && result.metrics;
   const errored = result?.status === "error";
   const phase = result ? (errored ? "error" : "done") : (progress?.phase ?? "queued");
@@ -90,18 +99,30 @@ function Cell({
           {model?.paramsLabel ?? model?.format}
         </span>
       </div>
-      <div className="truncate text-[12px] font-medium leading-tight">{model?.name ?? "—"}</div>
+      {engineWorkload ? (
+        <div className="flex flex-col leading-tight">
+          <span className="truncate text-[12px] font-medium">Synthetic training workload</span>
+          <span className="truncate text-[10px] text-muted-foreground">
+            engine throughput · does not run {model?.name ?? "this model"}
+          </span>
+        </div>
+      ) : (
+        <div className="truncate text-[12px] font-medium leading-tight">{model?.name ?? "—"}</div>
+      )}
 
       {done ? (
         <>
           <div className="mt-0.5 grid grid-cols-3 gap-2">
-            <Stat label="tok/s" value={formatCompact(result!.metrics!.tokensPerSec)} />
-            <Stat label="TTFT" value={formatMs(result!.metrics!.firstTokenMs)} />
+            <Stat label={unit.short} value={formatCompact(result!.metrics!.tokensPerSec)} />
+            <Stat
+              label={engineWorkload ? "1st epoch" : "TTFT"}
+              value={formatMs(result!.metrics!.firstTokenMs)}
+            />
             <Stat label="mem" value={formatBytes(result!.metrics!.peakMemBytes)} />
             <Stat label="p50" value={formatMs(result!.metrics!.latencyP50Ms)} />
             <Stat label="p95" value={formatMs(result!.metrics!.latencyP95Ms)} />
             <Stat
-              label="acc"
+              label={engineWorkload ? "val acc" : "acc"}
               value={
                 result!.metrics!.accuracy != null
                   ? `${(result!.metrics!.accuracy * 100).toFixed(1)}%`
@@ -117,7 +138,9 @@ function Cell({
             return (
               <div className="mt-1 flex flex-col gap-1">
                 <div className="flex items-center justify-between text-[9px] uppercase tracking-wide text-muted-foreground/60">
-                  <span>latency spread · {samples.length} runs</span>
+                  <span>
+                    {engineWorkload ? "epoch" : "latency"} spread · {samples.length} runs
+                  </span>
                   <span
                     className={cn(
                       "font-mono normal-case tracking-normal",

@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 import { BACKEND_COLOR, BACKEND_SHORT } from "@/modules/benchmark/lib/backendMeta";
 import { formatCompact, formatMs } from "@/modules/benchmark/lib/format";
-import { type BenchResult, type ModelInfo } from "@/modules/benchmark/lib/types";
+import { measuresModel, throughputUnit } from "@/modules/benchmark/lib/provenance";
+import { type BenchResult, type ModelInfo, type TaskType } from "@/modules/benchmark/lib/types";
 
 interface Pt {
   x: number; // mean latency (ms) — lower is better
-  y: number; // throughput (tok/s) — higher is better
+  y: number; // throughput (task unit) — higher is better
   backendId: BenchResult["backendId"];
   name: string;
   frontier: boolean;
@@ -27,13 +28,17 @@ const log10 = (v: number) => Math.log10(Math.max(v, 1e-9));
 export function TradeoffScatter({
   results,
   models,
+  task,
 }: {
   results: BenchResult[];
   models: ModelInfo[];
+  task: TaskType;
 }) {
   const pts = useMemo<Pt[]>(() => {
+    // Engine-workload results (nexis-ml-rs) time a synthetic training task in
+    // a different unit, so plotting them beside model inference would mislead.
     const base = results
-      .filter((r) => r.status === "done" && r.metrics && r.metrics.latencyMeanMs > 0)
+      .filter((r) => r.status === "done" && r.metrics && r.metrics.latencyMeanMs > 0 && measuresModel(r))
       .map((r) => ({
         x: r.metrics!.latencyMeanMs,
         y: r.metrics!.tokensPerSec,
@@ -53,7 +58,9 @@ export function TradeoffScatter({
   if (pts.length === 0) {
     return (
       <div className="grid place-items-center py-10 text-sm text-muted-foreground">
-        Run a benchmark to map throughput against latency.
+        {results.some((r) => r.status === "done" && !measuresModel(r))
+          ? "Only engine-workload results so far; they are not mapped against model inference."
+          : "Run a benchmark to map throughput against latency."}
       </div>
     );
   }
@@ -120,7 +127,7 @@ export function TradeoffScatter({
         className="fill-muted-foreground/70 text-[10px]"
         transform={`rotate(-90 14 ${M.t + PH / 2})`}
       >
-        throughput → higher
+        throughput ({throughputUnit(task, "onnx").long}) → higher
       </text>
 
       {/* frontier */}
@@ -146,7 +153,7 @@ export function TradeoffScatter({
             <title>
               {p.name} · {BACKEND_SHORT[p.backendId]}
               {"\n"}
-              {formatCompact(p.y)} tok/s @ {formatMs(p.x)}
+              {formatCompact(p.y)} {throughputUnit(task, p.backendId).long} @ {formatMs(p.x)}
               {p.frontier ? "\n★ on the efficiency frontier" : ""}
             </title>
             {p.frontier && <circle cx={cx} cy={cy} r={10} fill={c} opacity={0.18} />}

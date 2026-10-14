@@ -102,7 +102,7 @@ export function ResultsDashboard() {
       <div className="min-h-0 flex-1 overflow-y-auto nexis-scrollbar">
         <div className="@container mx-auto flex w-full max-w-[1700px] flex-col gap-6 px-5 py-5 lg:px-8 2xl:px-10">
           {/* Leaders */}
-          <SummaryStrip results={run.results} models={models} />
+          <SummaryStrip results={run.results} models={models} task={run.config.task} />
 
           {/* Comparison */}
           <section className="rounded-2xl border border-border bg-card p-5 lg:p-6">
@@ -121,6 +121,7 @@ export function ResultsDashboard() {
               models={runModels}
               backendIds={activeBackends}
               results={run.results}
+              task={run.config.task}
             />
             <MetricsProvenance results={run.results} />
           </section>
@@ -134,7 +135,7 @@ export function ResultsDashboard() {
                 where nothing else is both faster and higher-throughput. Top-left is ideal.
               </p>
             </div>
-            <TradeoffScatter results={run.results} models={models} />
+            <TradeoffScatter results={run.results} models={models} task={run.config.task} />
           </section>
 
           {/* Per-cell detail */}
@@ -152,17 +153,19 @@ export function ResultsDashboard() {
 
 function MetricsProvenance({ results }: { results: BenchResult[] }) {
   const hasSim = results.some((r) => r.simulated);
-  const real = results.find((r) => !r.simulated && r.status === "done");
+  const realDone = results.filter((r) => !r.simulated && r.status === "done");
+  const real = realDone[0];
+  // One line per engine: the ONNX and nexis-ml-rs notes say different things
+  // (inference on your model vs. a synthetic training workload).
+  const realNotes = [...new Set(realDone.map((r) => r.note ?? "Measured from a live engine."))];
   if (!hasSim && !real) return null;
   return (
     <div className="mt-4 flex flex-col gap-1.5 border-t border-border/60 pt-3 text-[11px] text-muted-foreground">
-      {real && (
-        <p>
-          <span className="font-medium text-emerald-500">● Real.</span>{" "}
-          {real.note ??
-            "Measured from a live engine."}
+      {realNotes.map((note) => (
+        <p key={note}>
+          <span className="font-medium text-emerald-500">● Real.</span> {note}
         </p>
-      )}
+      ))}
       {hasSim && (
         <p>
           <span className="font-medium text-foreground">● Simulated.</span> Synthetic metrics — the
