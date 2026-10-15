@@ -26,7 +26,7 @@ The public user documentation lives in the separate `nexis-wiki` repository. **W
 
 ## Known bug pitfalls
 
-**These invariants are enforced by the build, not just this document.** Two tripwire suites scan the source tree and fail with a message naming the pitfall: `src-tauri/tests/pitfall_invariants.rs` (ConPTY lifecycle lock, `-Command` launch, `authorize_spawn_cwd`, `Command::new` confinement, PTY lock-poison handling, heavy-command async audit, `pty_write` sync/enqueue-only input ordering, WSL probe sentinels, no emoji) and `src/lib/pitfall-guards.test.ts` (`pty_open` confinement, `pty_write` confinement, `writePref` routing, composer `disabled`, reasoning pruning, Zustand selector references, CodeMirror zoom exemption, icon-vendor confinement, file-tree retint, terminal session-effect deps, no emoji). `src-tauri/clippy.toml` additionally bans raw `std::process::Command::new` via `disallowed-methods`. **If one of these fails, fix the code — never weaken or delete the tripwire.** They exist because every guarded invariant has been broken at least once by a refactor that looked harmless.
+**These invariants are enforced by the build, not just this document.** Two tripwire suites scan the source tree and fail with a message naming the pitfall: `src-tauri/tests/pitfall_invariants.rs` (ConPTY lifecycle lock, `-Command` launch, `authorize_spawn_cwd`, `Command::new` confinement, PTY lock-poison handling, heavy-command async audit, `pty_write` sync/enqueue-only input ordering, WSL probe sentinels, no emoji) and `src/lib/pitfall-guards.test.ts` (`pty_open` confinement, `pty_write` confinement, `writePref` routing, composer `disabled`, reasoning pruning, AI provider fetch routing, Zustand selector references, CodeMirror zoom exemption, icon-vendor confinement, file-tree retint, terminal session-effect deps, no emoji). `src-tauri/clippy.toml` additionally bans raw `std::process::Command::new` via `disallowed-methods`. **If one of these fails, fix the code — never weaken or delete the tripwire.** They exist because every guarded invariant has been broken at least once by a refactor that looked harmless.
 
 ### 1. ConPTY lifecycle race (Windows — CRITICAL)
 **Symptom:** New terminal opens blank — cursor visible but shell never prints output.
@@ -368,6 +368,18 @@ This stayed hidden in WSL until shell integration actually installed into the di
 - **Don't bring back per-line terminal decorations** (gutters, inline chips, highlights) without first finding why these leaked in the real app. Every xterm decoration needs a marker whose lifetime matches the text it describes, and blanking a line does not dispose its markers.
 - A test with a mock terminal proved nothing here. Any new decoration needs a test that feeds a recorded shell byte stream into real xterm and checks the DOM after a clear.
 - To capture a stream under ConPTY, use pywinpty in a scratch dir with `PYWINPTY_BACKEND=0`, `powershell.exe -NoLogo -NoExit -ExecutionPolicy Bypass -File <profile.ps1>`, a background read thread (`read()` blocks), and the bytes dumped to JSON.
+
+---
+
+### 25. AI provider called with the webview's own `fetch` (cloud chat dead)
+
+**Symptom:** Every chat on a cloud provider (OpenAI, Anthropic, Google, xAI, Cerebras, Groq, DeepSeek, Mistral, Z.ai, OpenRouter, Hugging Face) fails at once with "TypeError: Failed to fetch". Local providers (Ollama, LM Studio, ...) keep working. Voice transcription fails the same way.
+
+**Root cause:** `d0754e4` (2026-07-17) pinned the CSP's `connect-src` to the updater endpoint and localhost, on the stated assumption that AI traffic goes through the Rust proxy. Only the local providers did (`fetch: localProxyFetch`). The cloud providers in `buildLanguageModel` and `createOpenAI` in `useWhisperRecording.ts` used the SDK default, the webview `fetch`, which the CSP blocks (`securitypolicyviolation`: `connect-src blocked https://openrouter.ai/...`). It shipped this way for three months because there was no test with a real provider host.
+
+**Fix in place:** every AI SDK provider is built with a `fetch` option: `cloudProxyFetch` (exported by `src/modules/ai/lib/proxyFetch.ts`, SSRF default: no private networks) for cloud providers, and `localProxyFetch` (private networks allowed) for local runtimes. Both stream through `ai_http_stream`. `bodyToBytes` sends FormData and other bodies as raw bytes with their content type (Whisper's multipart upload depends on it).
+
+**Future danger:** A new provider, or a new direct `create*()` call anywhere (autocomplete, voice, embeddings, title generation), must pass `fetch:`. **Do not fix a "Failed to fetch" by widening `connect-src`**: the proxy is where the SSRF guards, DNS pinning and the header blocklist live. Enforced by `pitfall 25` in `src/lib/pitfall-guards.test.ts`, which fails on any `create<Provider>({...})` without a `fetch:` key.
 
 ---
 

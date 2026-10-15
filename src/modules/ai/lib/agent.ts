@@ -34,8 +34,10 @@ import { basename } from "@/lib/path";
 import { buildTools, type ToolContext } from "../tools/tools";
 import { compactModelMessagesDetailed } from "./compact";
 import type { ProviderKeys } from "./keyring";
-import { createProxyFetch } from "./proxyFetch";
+import { cloudProxyFetch, createProxyFetch } from "./proxyFetch";
 
+/** Local runtimes opt in to private networks: reaching localhost is their
+ *  point. Cloud providers use {@link cloudProxyFetch}. */
 const localProxyFetch = createProxyFetch({ allowPrivateNetwork: true });
 
 const TOOL_LABELS: Record<string, (input: Record<string, unknown>) => string> =
@@ -109,27 +111,37 @@ export async function buildLanguageModel(
   switch (provider) {
     case "openai": {
       const { createOpenAI } = await import("@ai-sdk/openai");
-      built = createOpenAI({ apiKey: key })(resolvedModelId);
+      built = createOpenAI({ apiKey: key, fetch: cloudProxyFetch })(
+        resolvedModelId,
+      );
       break;
     }
     case "anthropic": {
       const { createAnthropic } = await import("@ai-sdk/anthropic");
-      built = createAnthropic({ apiKey: key })(resolvedModelId);
+      built = createAnthropic({ apiKey: key, fetch: cloudProxyFetch })(
+        resolvedModelId,
+      );
       break;
     }
     case "google": {
       const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
-      built = createGoogleGenerativeAI({ apiKey: key })(resolvedModelId);
+      built = createGoogleGenerativeAI({ apiKey: key, fetch: cloudProxyFetch })(
+        resolvedModelId,
+      );
       break;
     }
     case "xai": {
       const { createXai } = await import("@ai-sdk/xai");
-      built = createXai({ apiKey: key })(resolvedModelId);
+      built = createXai({ apiKey: key, fetch: cloudProxyFetch })(
+        resolvedModelId,
+      );
       break;
     }
     case "cerebras": {
       const { createCerebras } = await import("@ai-sdk/cerebras");
-      built = createCerebras({ apiKey: key })(resolvedModelId);
+      built = createCerebras({ apiKey: key, fetch: cloudProxyFetch })(
+        resolvedModelId,
+      );
       break;
     }
     case "deepseek": {
@@ -139,6 +151,7 @@ export async function buildLanguageModel(
         name: "deepseek",
         baseURL: "https://api.deepseek.com",
         apiKey: key,
+        fetch: cloudProxyFetch,
       })(resolvedModelId);
       break;
     }
@@ -149,12 +162,15 @@ export async function buildLanguageModel(
         name: "mistral",
         baseURL: "https://api.mistral.ai/v1",
         apiKey: key,
+        fetch: cloudProxyFetch,
       })(resolvedModelId);
       break;
     }
     case "groq": {
       const { createGroq } = await import("@ai-sdk/groq");
-      built = createGroq({ apiKey: key })(resolvedModelId);
+      built = createGroq({ apiKey: key, fetch: cloudProxyFetch })(
+        resolvedModelId,
+      );
       break;
     }
     case "openrouter": {
@@ -168,6 +184,7 @@ export async function buildLanguageModel(
           "HTTP-Referer": "https://nexis.ai",
           "X-Title": "Nexis",
         },
+        fetch: cloudProxyFetch,
       })(resolvedModelId);
       break;
     }
@@ -178,6 +195,7 @@ export async function buildLanguageModel(
         name: "zai",
         baseURL: "https://api.z.ai/api/paas/v4",
         apiKey: key,
+        fetch: cloudProxyFetch,
       })(resolvedModelId);
       break;
     }
@@ -267,6 +285,7 @@ export async function buildLanguageModel(
         name: "huggingface",
         baseURL: "https://api-inference.huggingface.co/v1",
         apiKey: key,
+        fetch: cloudProxyFetch,
       })(resolvedModelId);
       break;
     }
