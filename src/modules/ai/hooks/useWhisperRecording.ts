@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { cloudProxyFetch } from "../lib/proxyFetch";
 import { useChatStore } from "../store/chatStore";
 
 const MIME_CANDIDATES = [
@@ -28,7 +29,7 @@ async function transcribeBlob(blob: Blob, apiKey: string): Promise<string> {
   // dynamic-imports every provider, and this was the one leak defeating it.
   const [{ createOpenAI }, { experimental_transcribe: transcribe }] =
     await Promise.all([import("@ai-sdk/openai"), import("ai")]);
-  const openai = createOpenAI({ apiKey });
+  const openai = createOpenAI({ apiKey, fetch: cloudProxyFetch });
   const buf = new Uint8Array(await blob.arrayBuffer());
   const { text } = await transcribe({
     model: openai.transcription("whisper-1"),
