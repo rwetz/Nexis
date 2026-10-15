@@ -66,6 +66,9 @@
     --color-background: var(--background);
     --color-brand: var(--brand);
     --color-brand-foreground: var(--brand-foreground);
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+    --color-info: var(--info);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -269,6 +272,21 @@
   --terminal-ansi-bright-magenta: #eea4ff;
   --terminal-ansi-bright-cyan: #00e0e0;
   --terminal-ansi-bright-white: #eff2f4;
+}
+
+/* ── Status tones ─────────────────────────────────────────────────────────
+ * Success / warning / info are not new colours: they are the active theme's
+ * own ANSI green, yellow and blue, which every theme already generates
+ * against its backgrounds with contrast floors (see themes.contrast.test.ts).
+ * So a status pill re-tints with the theme instead of every app reaching for
+ * Tailwind's stock emerald-500/amber-500 — which ignore the theme entirely
+ * and were the commonest raw colours in Nexis itself. Error is
+ * `--destructive`, which already exists. These mark *state*; they are never
+ * the accent. */
+:root {
+  --success: var(--terminal-ansi-green);
+  --warning: var(--terminal-ansi-yellow);
+  --info: var(--terminal-ansi-blue);
 }
 
 .zoom-content {
@@ -684,6 +702,49 @@ html *::-webkit-scrollbar {
   .nexis-window-enter,
   .nexis-window-header,
   .nexis-window-body {
+    animation: none;
+  }
+}
+
+/* App shells (from Epoch): the same arrival as a tool window, for an app
+ * that is the whole window — the title bar drops, the body rises behind it,
+ * the status bar fades in last. Views then fade up whenever they are
+ * switched to, and content fades in when it lands after a load. These use
+ * `backwards` fill, not `both`, so nothing keeps a transform once the
+ * animation ends: a lingering transform becomes the containing block for
+ * fixed overlays (docking drag previews, floating groups, popovers). */
+@keyframes nexis-view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+}
+@keyframes nexis-fade-enter {
+  from {
+    opacity: 0;
+  }
+}
+.nexis-shell-header {
+  animation: nexis-window-header-enter 380ms var(--ease-enter) 90ms backwards;
+}
+.nexis-shell-body {
+  animation: nexis-view-enter var(--dur-scene) var(--ease-enter) 150ms backwards;
+}
+.nexis-shell-status {
+  animation: nexis-fade-enter var(--dur-scene) var(--ease-enter) 260ms backwards;
+}
+.nexis-view-enter {
+  animation: nexis-view-enter 260ms var(--ease-enter) backwards;
+}
+.nexis-content-enter {
+  animation: nexis-fade-enter 220ms var(--ease-enter) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nexis-shell-header,
+  .nexis-shell-body,
+  .nexis-shell-status,
+  .nexis-view-enter,
+  .nexis-content-enter {
     animation: none;
   }
 }
