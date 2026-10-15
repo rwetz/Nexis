@@ -28,6 +28,8 @@ So:
 
 Both, plus port agreement between the overlay and `DEBUG_PORT` in `wdio.conf.ts`, are enforced by a tripwire in `src/lib/pitfall-guards.test.ts`.
 
+A consequence found on 2026-10-15: **an overlay build cannot open tool windows.** The restated window drops the platform config's window settings (`tauri.windows.conf.json`), so the main window also gets a native title bar over Nexis's chrome. A second webview then fails with WebView2 `0x8007139F` ("The group or resource is not in the correct state"), shown as a "Could not open Portal" toast, or fails silently (Epoch, Vellum). The same failure happened with an overlay that kept only wry's default `--disable-features` args. An overlay that sets only `identifier` and leaves `app.windows` alone opens every tool window normally. That is why the specs load tool routes (`/?tool=<id>`) in the main webview. Epoch can't be covered that way: its `tauri-plugin-epoch` commands are capability-scoped to the `nexis-epoch` window and are refused in `main` ("epoch.project_open not allowed on window main").
+
 **Shipping builds never use the overlay** — `release.yml` builds plain, so no released artifact exposes a debugging port. Keep it that way.
 
 ## First-run state is seeded, not fought
