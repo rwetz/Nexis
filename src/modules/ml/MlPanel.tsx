@@ -25,6 +25,7 @@ import {
   type ReactNode,
 } from "react";
 import { Icon } from "@/components/icon";
+import { Button } from "@/components/ui/button";
 import { IS_WINDOWS } from "@/lib/platform";
 import { assetUrl } from "@/platform/desktop";
 import { cn } from "@/lib/utils";
@@ -272,6 +273,16 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
         ? { projectDir: selectedProject, runId: chartSource.runId }
         : null;
 
+  // What the body is showing; a change of phase (folder opened, engine
+  // found, setup finished) plays the view entrance, the way Epoch's pages do.
+  const phase = !workspaceRoot
+    ? "no-folder"
+    : engineStatus === "missing"
+      ? "setup"
+      : engineStatus === "detecting" || engineStatus === "idle"
+        ? "detecting"
+        : "ready";
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Header */}
@@ -287,7 +298,7 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
           {engineStatus === "ready" &&
           (envInfo?.cudaAvailable || envInfo?.backend === "wgpu") ? (
             <span
-              className="flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-px text-[10px] text-emerald-500"
+              className="flex items-center gap-1 rounded bg-success/10 px-1.5 py-px text-[10px] text-success"
               title={
                 envInfo?.gpuName ??
                 (envInfo?.backend === "wgpu" ? "GPU via wgpu" : "CUDA available")
@@ -298,7 +309,9 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
             </span>
           ) : null}
         </div>
-        <button
+        <Button
+          variant="ghost"
+          size="icon-xs"
           type="button"
           aria-label="Refresh"
           onClick={() => {
@@ -307,408 +320,428 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
               if (selectedProject) void refreshRuns(selectedProject);
             }
           }}
-          className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+          className="text-muted-foreground"
         >
           <Icon name="refresh" size="xs" />
-        </button>
+        </Button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2">
-        {!workspaceRoot ? (
-          <p className="text-[11px] text-muted-foreground">
-            Open a folder to start training models in it.
-          </p>
-        ) : engineStatus === "missing" ? (
-          <SetupCard
-            installPythonVersion={installPythonVersion}
-            downloadingEngine={downloadingEngine}
-            pin={enginePin}
-            wslDistro={wslDistro}
-            candidates={engineCandidates}
-            hostGpu={hostGpu}
-            logs={logs}
-            error={engineError}
-            onDownloadEngine={() => void downloadStandaloneEngine()}
-            onInstallLocal={(path) => void installLocalCopy(path)}
-            onRetry={() => void redetect(workspaceRoot)}
-          />
-        ) : engineStatus === "detecting" || engineStatus === "idle" ? (
-          <p className="text-[11px] text-muted-foreground">
-            Looking for the training engine…
-          </p>
-        ) : (
-          <>
-            {/* GPU available on the machine but the engine can't use it.
-                Python-engine only: the upsell installs the CUDA torch build,
-                which is meaningless for the Rust engine (it uses wgpu). */}
-            {hostGpu &&
-            envInfo &&
-            !envInfo.cudaAvailable &&
-            installPython &&
-            engineKind === "python" ? (
-              <GpuUpsell
-                gpuName={hostGpu}
-                installing={installing}
-                logs={logs}
-                onUpgrade={() => void upgradeToGpu(workspaceRoot)}
-              />
-            ) : null}
-            {/* A newer pinned Axon than the one in use (an older managed
-                install, or one on PATH). */}
-            {engineKind === "rust" &&
-            enginePin &&
-            engineVersion &&
-            versionOlder(engineVersion, enginePin.version) ? (
-              <div className="mb-2 flex items-center gap-2 rounded-md border border-sky-500/30 bg-sky-500/[0.05] px-2.5 py-1.5">
-                <p className="flex-1 text-[10.5px] leading-snug text-muted-foreground">
-                  Axon {enginePin.version} is available (you have {engineVersion}). It can
-                  predict numbers, read text columns as categories, and handle blank cells.
-                </p>
-                <button
-                  type="button"
-                  disabled={downloadingEngine}
-                  onClick={() => void downloadStandaloneEngine()}
-                  className="shrink-0 rounded-md bg-primary px-2 py-0.5 text-[10.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-                >
-                  {downloadingEngine ? "Updating…" : "Update"}
-                </button>
-              </div>
-            ) : null}
-            {/* Models discovered in this folder */}
-            {projects.length > 0 ? (
-              <div className="mb-2">
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                  Models
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <select
-                    value={selectedProject ?? ""}
-                    onChange={(e) => selectProject(e.target.value)}
-                    aria-label="Select project"
-                    disabled={busy}
-                    className="h-6 min-w-0 flex-1 truncate rounded border border-border bg-background px-1.5 text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+        <div key={phase} className="nexis-view-enter">
+          {!workspaceRoot ? (
+            <p className="text-[11px] text-muted-foreground">
+              Open a folder to start training models in it.
+            </p>
+          ) : engineStatus === "missing" ? (
+            <SetupCard
+              installPythonVersion={installPythonVersion}
+              downloadingEngine={downloadingEngine}
+              pin={enginePin}
+              wslDistro={wslDistro}
+              candidates={engineCandidates}
+              hostGpu={hostGpu}
+              logs={logs}
+              error={engineError}
+              onDownloadEngine={() => void downloadStandaloneEngine()}
+              onInstallLocal={(path) => void installLocalCopy(path)}
+              onRetry={() => void redetect(workspaceRoot)}
+            />
+          ) : engineStatus === "detecting" || engineStatus === "idle" ? (
+            <p className="text-[11px] text-muted-foreground">
+              Looking for the training engine…
+            </p>
+          ) : (
+            <>
+              {/* GPU available on the machine but the engine can't use it.
+                  Python-engine only: the upsell installs the CUDA torch build,
+                  which is meaningless for the Rust engine (it uses wgpu). */}
+              {hostGpu &&
+              envInfo &&
+              !envInfo.cudaAvailable &&
+              installPython &&
+              engineKind === "python" ? (
+                <GpuUpsell
+                  gpuName={hostGpu}
+                  installing={installing}
+                  logs={logs}
+                  onUpgrade={() => void upgradeToGpu(workspaceRoot)}
+                />
+              ) : null}
+              {/* A newer pinned Axon than the one in use (an older managed
+                  install, or one on PATH). */}
+              {engineKind === "rust" &&
+              enginePin &&
+              engineVersion &&
+              versionOlder(engineVersion, enginePin.version) ? (
+                <div className="mb-2 flex items-center gap-2 rounded-md border border-info/30 bg-info/[0.05] px-2.5 py-1.5">
+                  <p className="flex-1 text-[10.5px] leading-snug text-muted-foreground">
+                    Axon {enginePin.version} is available (you have {engineVersion}). It can
+                    predict numbers, read text columns as categories, and handle blank cells.
+                  </p>
+                  <Button
+                    size="xs"
+                    type="button"
+                    disabled={downloadingEngine}
+                    onClick={() => void downloadStandaloneEngine()}
+                    className="shrink-0"
                   >
-                    {projects.map((p) => (
-                      <option key={p.dir} value={p.dir}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                  {projects.find((p) => p.dir === selectedProject)?.hasOnnx ? (
-                    <Explain term="onnx">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void revealPathInHost(`${selectedProject}/model.onnx`).catch(
-                            () => {},
-                          )
-                        }
-                        className="h-6 shrink-0 rounded border border-sky-500/40 bg-sky-500/[0.06] px-1.5 text-[10px] font-medium text-sky-500"
-                        title="model.onnx — click to reveal"
-                      >
-                        ONNX
-                      </button>
-                    </Explain>
-                  ) : null}
-                  <button
+                    {downloadingEngine ? "Updating…" : "Update"}
+                  </Button>
+                </div>
+              ) : null}
+              {/* Models discovered in this folder */}
+              {projects.length > 0 ? (
+                <div className="mb-2">
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                    Models
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={selectedProject ?? ""}
+                      onChange={(e) => selectProject(e.target.value)}
+                      aria-label="Select project"
+                      disabled={busy}
+                      className="h-6 min-w-0 flex-1 truncate rounded border border-border bg-background px-1.5 text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                    >
+                      {projects.map((p) => (
+                        <option key={p.dir} value={p.dir}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                    {projects.find((p) => p.dir === selectedProject)?.hasOnnx ? (
+                      <Explain term="onnx">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void revealPathInHost(`${selectedProject}/model.onnx`).catch(
+                              () => {},
+                            )
+                          }
+                          className="h-6 shrink-0 rounded border border-info/40 bg-info/[0.06] px-1.5 text-[10px] font-medium text-info"
+                          title="model.onnx — click to reveal"
+                        >
+                          ONNX
+                        </button>
+                      </Explain>
+                    ) : null}
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      type="button"
+                      onClick={() => setShowCreate(true)}
+                      disabled={busy}
+                      className="shrink-0"
+                      title="Create a new model"
+                    >
+                      <Icon name="add" size="xs" />
+                      New
+                    </Button>
+                  </div>
+                </div>
+              ) : !showCreate && !pendingCreate ? (
+                <div className="mb-2 rounded-md border border-border/60 bg-muted/20 p-2.5">
+                  <p className="text-[11px] font-medium text-foreground/90">
+                    No models in this folder.
+                  </p>
+                  <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground/70">
+                    A model lives in a project folder with a{" "}
+                    <span className="font-mono">train.toml</span>. Models trained
+                    here (or by <span className="font-mono">axon</span> in a
+                    terminal) show up automatically.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="xs"
                     type="button"
                     onClick={() => setShowCreate(true)}
-                    disabled={busy}
-                    className="h-6 shrink-0 rounded border border-border px-2 text-[11px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                    title="Create a new model"
+                    className="mt-1.5"
                   >
-                    + New
-                  </button>
+                    New model…
+                  </Button>
                 </div>
-              </div>
-            ) : !showCreate && !pendingCreate ? (
-              <div className="mb-2 rounded-md border border-border/60 bg-muted/20 p-2.5">
-                <p className="text-[11px] font-medium text-foreground/90">
-                  No models in this folder.
-                </p>
-                <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground/70">
-                  A model lives in a project folder with a{" "}
-                  <span className="font-mono">train.toml</span>. Models trained
-                  here (or by <span className="font-mono">axon</span> in a
-                  terminal) show up automatically.
-                </p>
-                <button
+              ) : null}
+              {showCreate || pendingCreate ? (
+                <CreateCard
+                  creating={pendingCreate != null}
+                  createError={createError}
+                  engineKind={engineKind}
+                  onCreate={(template, name, autoTrain, purpose, scale, stockId) => {
+                    setShowCreate(false);
+                    const stock = stockId ? stockModel(stockId) ?? null : null;
+                    void createProject(
+                      workspaceRoot,
+                      template,
+                      name,
+                      autoTrain,
+                      stock ? stockBrief(stock, purpose) : purpose,
+                      planCreation(template, scale, stock),
+                      stock?.dataset ? STARTER_DATASETS[stock.dataset].build() : [],
+                    );
+                  }}
+                  onDismiss={() => setShowCreate(false)}
+                />
+              ) : null}
+
+              {/* Train hero / progress / result */}
+              {busy && activeRun ? (
+                <ProgressBlock
+                  run={activeRun}
+                  onCancel={() => void cancelActive()}
+                  onPause={() => void pauseActive()}
+                  onResume={() => void resumeActive()}
+                />
+              ) : finished && activeRun ? (
+                <ResultCard
+                  run={activeRun}
+                  summary={lastSummary}
+                  onTrainAgain={() => void startTrain(activeRun.projectDir)}
+                />
+              ) : selectedProject && projects.length > 0 && !pendingCreate ? (
+                <Button
+                  variant="brand"
+                  size="sm"
                   type="button"
-                  onClick={() => setShowCreate(true)}
-                  className="mt-1.5 rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                  onClick={() => void startTrain(selectedProject)}
+                  className="mb-2 w-full"
                 >
-                  New model…
-                </button>
-              </div>
-            ) : null}
-            {showCreate || pendingCreate ? (
-              <CreateCard
-                creating={pendingCreate != null}
-                createError={createError}
-                engineKind={engineKind}
-                onCreate={(template, name, autoTrain, purpose, scale, stockId) => {
-                  setShowCreate(false);
-                  const stock = stockId ? stockModel(stockId) ?? null : null;
-                  void createProject(
-                    workspaceRoot,
-                    template,
-                    name,
-                    autoTrain,
-                    stock ? stockBrief(stock, purpose) : purpose,
-                    planCreation(template, scale, stock),
-                    stock?.dataset ? STARTER_DATASETS[stock.dataset].build() : [],
-                  );
-                }}
-                onDismiss={() => setShowCreate(false)}
-              />
-            ) : null}
+                  <Icon name="play" size="xs" />
+                  Train model
+                </Button>
+              ) : null}
 
-            {/* Train hero / progress / result */}
-            {busy && activeRun ? (
-              <ProgressBlock
-                run={activeRun}
-                onCancel={() => void cancelActive()}
-                onPause={() => void pauseActive()}
-                onResume={() => void resumeActive()}
-              />
-            ) : finished && activeRun ? (
-              <ResultCard
-                run={activeRun}
-                summary={lastSummary}
-                onTrainAgain={() => void startTrain(activeRun.projectDir)}
-              />
-            ) : selectedProject && projects.length > 0 && !pendingCreate ? (
-              <button
-                type="button"
-                onClick={() => void startTrain(selectedProject)}
-                className="mb-2 w-full rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-              >
-                ▶ Train model
-              </button>
-            ) : null}
+              {/* Training data — choose [data] path + target without editing train.toml */}
+              {selectedProject && !busy && !pendingCreate && projects.length > 0 ? (
+                <DataSourceForm
+                  key={`data-${selectedProject}`}
+                  workspaceRoot={workspaceRoot}
+                  projectDir={selectedProject}
+                  onSaveTrain={() => void startTrain(selectedProject)}
+                />
+              ) : null}
 
-            {/* Training data — choose [data] path + target without editing train.toml */}
-            {selectedProject && !busy && !pendingCreate && projects.length > 0 ? (
-              <DataSourceForm
-                key={`data-${selectedProject}`}
-                workspaceRoot={workspaceRoot}
-                projectDir={selectedProject}
-                onSaveTrain={() => void startTrain(selectedProject)}
-              />
-            ) : null}
+              {/* Hyperparameters — tweak train.toml without leaving the panel */}
+              {selectedProject && !busy && !pendingCreate && projects.length > 0 ? (
+                <HyperparamForm
+                  key={selectedProject}
+                  projectDir={selectedProject}
+                  onSaveTrain={() => void startTrain(selectedProject)}
+                />
+              ) : null}
 
-            {/* Hyperparameters — tweak train.toml without leaving the panel */}
-            {selectedProject && !busy && !pendingCreate && projects.length > 0 ? (
-              <HyperparamForm
-                key={selectedProject}
-                projectDir={selectedProject}
-                onSaveTrain={() => void startTrain(selectedProject)}
-              />
-            ) : null}
+              {/* The model itself — architecture graph (weights overlay once
+                  the engine emits a `weights` artifact; ML_SUITE.md contract) */}
+              {selectedProject && !pendingCreate && projects.length > 0 ? (
+                <NetworkGraph
+                  key={`net-${selectedProject}`}
+                  projectDir={selectedProject}
+                  onOpenAsTab={
+                    onOpenNetworkTab
+                      ? () => onOpenNetworkTab({ projectDir: selectedProject })
+                      : undefined
+                  }
+                />
+              ) : null}
 
-            {/* The model itself — architecture graph (weights overlay once
-                the engine emits a `weights` artifact; ML_SUITE.md contract) */}
-            {selectedProject && !pendingCreate && projects.length > 0 ? (
-              <NetworkGraph
-                key={`net-${selectedProject}`}
-                projectDir={selectedProject}
-                onOpenAsTab={
-                  onOpenNetworkTab
-                    ? () => onOpenNetworkTab({ projectDir: selectedProject })
-                    : undefined
-                }
-              />
-            ) : null}
+              {comparing ? (
+                /* Overlay several runs on shared charts */
+                <ComparisonView runs={compareRuns} onClear={clearCompare} />
+              ) : (
+                <>
+                  {/* Facts about the run in view — id, device, duration, best/last metrics */}
+                  <RunDetails />
 
-            {comparing ? (
-              /* Overlay several runs on shared charts */
-              <ComparisonView runs={compareRuns} onClear={clearCompare} />
-            ) : (
-              <>
-                {/* Facts about the run in view — id, device, duration, best/last metrics */}
-                <RunDetails />
+                  {/* Generated text (textgen) — the payoff, above the charts */}
+                  <SamplesView />
 
-                {/* Generated text (textgen) — the payoff, above the charts */}
-                <SamplesView />
+                  {/* Charts */}
+                  {metricNames.length > 0 ? (
+                    <div
+                      key={chartSource?.kind === "historical" ? chartSource.runId : "live"}
+                      className="nexis-content-enter mb-2 mt-2 flex flex-col gap-2"
+                    >
+                      {chartSource?.kind === "historical" ? (
+                        <p className="text-[10px] text-muted-foreground">
+                          Viewing a past run ({friendlyRunName(chartSource.runId)})
+                        </p>
+                      ) : null}
+                      {hero ? <MetricChart name={hero} hero /> : null}
+                      {restMetrics.map((name) => (
+                        <MetricChart key={name} name={name} />
+                      ))}
+                    </div>
+                  ) : null}
 
-                {/* Charts */}
-                {metricNames.length > 0 ? (
-                  <div className="mb-2 mt-2 flex flex-col gap-2">
-                    {chartSource?.kind === "historical" ? (
-                      <p className="text-[10px] text-muted-foreground">
-                        Viewing a past run ({friendlyRunName(chartSource.runId)})
-                      </p>
+                  {/* Confusion matrix (classification) — per-epoch artifact grid */}
+                  <ConfusionMatrixView />
+
+                  {/* Predicted vs actual (regression) — per-epoch scatter */}
+                  <ResidualsView />
+
+                  {/* Sample-prediction grid (image template) */}
+                  <ImageGridView />
+
+                  {/* Inference playground — try the trained model live.
+                      Capability-gated: the Python engine has always had
+                      `serve`; the standalone Rust engine implements it from
+                      v0.8 and reports it via the env probe's `serve` flag. */}
+                  {engineKind !== "rust" || envInfo?.serve ? (
+                    <Playground run={viewedRun} />
+                  ) : viewedRun ? (
+                    <p className="mb-1 mt-3 text-[10px] leading-snug text-muted-foreground/70">
+                      This engine version can't serve models — update the
+                      standalone engine (v0.8+) for in-panel inference, or
+                      export to{" "}
+                      <Explain term="onnx">
+                        <span>ONNX</span>
+                      </Explain>{" "}
+                      below and run the model with onnxruntime anywhere.
+                    </p>
+                  ) : null}
+
+                  {/* Exports: HTML report (Python engine) / ONNX (Rust engine) */}
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {viewedRun && engineKind !== "rust" ? (
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        type="button"
+                        disabled={pendingExport != null}
+                        onClick={() =>
+                          void exportReport(viewedRun.projectDir, viewedRun.runId)
+                        }
+                      >
+                        <Icon name="download" size="xs" />
+                        {pendingExport ? "Exporting…" : "Export HTML report"}
+                      </Button>
                     ) : null}
-                    {hero ? <MetricChart name={hero} hero /> : null}
-                    {restMetrics.map((name) => (
-                      <MetricChart key={name} name={name} />
+                    {selectedProject && engineKind === "rust" ? (
+                      <Explain term="onnx">
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          type="button"
+                          disabled={pendingOnnx != null || busy}
+                          onClick={() =>
+                            void exportOnnx(
+                              selectedProject,
+                              viewedRun?.projectDir === selectedProject ? viewedRun.runId : null,
+                            )
+                          }
+                        >
+                          <Icon name="download" size="xs" />
+                          {pendingOnnx ? "Exporting ONNX…" : "Export ONNX model"}
+                        </Button>
+                      </Explain>
+                    ) : null}
+                    {selectedProject ? (
+                      <MlLinks
+                        projectDir={selectedProject}
+                        runId={viewedRun?.runId ?? null}
+                        hasOnnx={projects.find((p) => p.dir === selectedProject)?.hasOnnx ?? false}
+                      />
+                    ) : null}
+                  </div>
+                </>
+              )}
+
+              {/* Details (logs, raw output) — collapsed so novices never see it */}
+              {logs.length > 0 ? (
+                <details className="mt-2">
+                  <summary className="cursor-pointer select-none text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 hover:text-muted-foreground">
+                    Details
+                  </summary>
+                  <LogView logs={logs} />
+                </details>
+              ) : null}
+
+              {/* Past runs */}
+              <div className="mt-3">
+                <p className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                  <span>Past runs {runsLoading ? "…" : ""}</span>
+                  {runs.length > 1 ? (
+                    <span className="font-normal normal-case tracking-normal text-muted-foreground/50">
+                      check 2+ to compare
+                    </span>
+                  ) : null}
+                </p>
+                {runs.length === 0 && !runsLoading ? (
+                  <p className="text-[11px] text-muted-foreground/70">
+                    Runs you train will show up here.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-0.5">
+                    {runs.map((run) => (
+                      <RunRow
+                        key={run.id}
+                        run={run}
+                        selected={
+                          chartSource?.kind === "historical" &&
+                          chartSource.runId === run.id
+                        }
+                        comparing={compareRuns.some((r) => r.id === run.id)}
+                        compareColor={compareRuns.find((r) => r.id === run.id)?.color}
+                        disabled={busy}
+                        onClick={() => void loadHistoricalRun(run)}
+                        onToggleCompare={() => void toggleCompare(run)}
+                        onSaveMeta={(patch) => void setRunMeta(run, patch)}
+                      />
                     ))}
                   </div>
-                ) : null}
-
-                {/* Confusion matrix (classification) — per-epoch artifact grid */}
-                <ConfusionMatrixView />
-
-                {/* Predicted vs actual (regression) — per-epoch scatter */}
-                <ResidualsView />
-
-                {/* Sample-prediction grid (image template) */}
-                <ImageGridView />
-
-                {/* Inference playground — try the trained model live.
-                    Capability-gated: the Python engine has always had
-                    `serve`; the standalone Rust engine implements it from
-                    v0.8 and reports it via the env probe's `serve` flag. */}
-                {engineKind !== "rust" || envInfo?.serve ? (
-                  <Playground run={viewedRun} />
-                ) : viewedRun ? (
-                  <p className="mb-1 mt-3 text-[10px] leading-snug text-muted-foreground/70">
-                    This engine version can't serve models — update the
-                    standalone engine (v0.8+) for in-panel inference, or
-                    export to{" "}
-                    <Explain term="onnx">
-                      <span>ONNX</span>
-                    </Explain>{" "}
-                    below and run the model with onnxruntime anywhere.
-                  </p>
-                ) : null}
-
-                {/* Exports: HTML report (Python engine) / ONNX (Rust engine) */}
-                <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                  {viewedRun && engineKind !== "rust" ? (
-                    <button
-                      type="button"
-                      disabled={pendingExport != null}
-                      onClick={() =>
-                        void exportReport(viewedRun.projectDir, viewedRun.runId)
-                      }
-                      className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-                    >
-                      {pendingExport ? "Exporting…" : "⤓ Export HTML report"}
-                    </button>
-                  ) : null}
-                  {selectedProject && engineKind === "rust" ? (
-                    <Explain term="onnx">
-                      <button
-                        type="button"
-                        disabled={pendingOnnx != null || busy}
-                        onClick={() =>
-                          void exportOnnx(
-                            selectedProject,
-                            viewedRun?.projectDir === selectedProject ? viewedRun.runId : null,
-                          )
-                        }
-                        className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-                      >
-                        {pendingOnnx ? "Exporting ONNX…" : "⤓ Export ONNX model"}
-                      </button>
-                    </Explain>
-                  ) : null}
-                  {selectedProject ? (
-                    <MlLinks
-                      projectDir={selectedProject}
-                      runId={viewedRun?.runId ?? null}
-                      hasOnnx={projects.find((p) => p.dir === selectedProject)?.hasOnnx ?? false}
-                    />
-                  ) : null}
-                </div>
-              </>
-            )}
-
-            {/* Details (logs, raw output) — collapsed so novices never see it */}
-            {logs.length > 0 ? (
-              <details className="mt-2">
-                <summary className="cursor-pointer select-none text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 hover:text-muted-foreground">
-                  Details
-                </summary>
-                <LogView logs={logs} />
-              </details>
-            ) : null}
-
-            {/* Past runs */}
-            <div className="mt-3">
-              <p className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                <span>Past runs {runsLoading ? "…" : ""}</span>
-                {runs.length > 1 ? (
-                  <span className="font-normal normal-case tracking-normal text-muted-foreground/50">
-                    check 2+ to compare
-                  </span>
-                ) : null}
-              </p>
-              {runs.length === 0 && !runsLoading ? (
-                <p className="text-[11px] text-muted-foreground/70">
-                  Runs you train will show up here.
-                </p>
-              ) : (
-                <div className="flex flex-col gap-0.5">
-                  {runs.map((run) => (
-                    <RunRow
-                      key={run.id}
-                      run={run}
-                      selected={
-                        chartSource?.kind === "historical" &&
-                        chartSource.runId === run.id
-                      }
-                      comparing={compareRuns.some((r) => r.id === run.id)}
-                      compareColor={compareRuns.find((r) => r.id === run.id)?.color}
-                      disabled={busy}
-                      onClick={() => void loadHistoricalRun(run)}
-                      onToggleCompare={() => void toggleCompare(run)}
-                      onSaveMeta={(patch) => void setRunMeta(run, patch)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Settings */}
-            <label className="mt-3 flex cursor-pointer items-center gap-1.5 text-[10px] text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={autoOpenOnTrain}
-                onChange={(e) => void setMlAutoOpenOnTrain(e.target.checked)}
-                className="size-3 accent-primary"
-              />
-              Open this panel automatically when training starts
-            </label>
-
-            {/* Managed (downloaded) engine footprint + uninstall. Engines
-                found in venvs/PATH are not Nexis's to remove. */}
-            {managedEngine?.installed ? (
-              <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
-                <span>
-                  Downloaded engine on disk:{" "}
-                  {Math.max(
-                    1,
-                    Math.round(managedEngine.sizeBytes / (1024 * 1024)),
-                  )}{" "}
-                  MB
-                </span>
-                <button
-                  type="button"
-                  disabled={
-                    busy || downloadingEngine || installing || uninstallingEngine
-                  }
-                  onClick={() => void uninstallManagedEngine(workspaceRoot)}
-                  title="Deletes the downloaded engine binary and frees the disk space. Engines installed in a venv or on PATH are unaffected; you can re-download any time."
-                  className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] transition-colors hover:border-destructive/50 hover:text-destructive disabled:opacity-50"
-                >
-                  {uninstallingEngine ? "Removing…" : "Remove"}
-                </button>
+                )}
               </div>
-            ) : null}
-            {/* Engine errors used to be rendered only by SetupCard, which is
-                gone once an engine is detected — so a failed uninstall (or any
-                other post-setup engine failure) was swallowed and the click
-                looked like it had done nothing at all. */}
-            {engineError ? (
-              <p className="mt-1.5 flex items-start gap-1.5 text-[10.5px] leading-snug text-red-400">
-                <Icon name="alert-circle" size="xs" className="mt-px shrink-0" />
-                <span>{engineError}</span>
-              </p>
-            ) : null}
-          </>
-        )}
+
+              {/* Settings */}
+              <label className="mt-3 flex cursor-pointer items-center gap-1.5 text-[10px] text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={autoOpenOnTrain}
+                  onChange={(e) => void setMlAutoOpenOnTrain(e.target.checked)}
+                  className="size-3 accent-primary"
+                />
+                Open this panel automatically when training starts
+              </label>
+
+              {/* Managed (downloaded) engine footprint + uninstall. Engines
+                  found in venvs/PATH are not Nexis's to remove. */}
+              {managedEngine?.installed ? (
+                <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span>
+                    Downloaded engine on disk:{" "}
+                    {Math.max(
+                      1,
+                      Math.round(managedEngine.sizeBytes / (1024 * 1024)),
+                    )}{" "}
+                    MB
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    type="button"
+                    disabled={
+                      busy || downloadingEngine || installing || uninstallingEngine
+                    }
+                    onClick={() => void uninstallManagedEngine(workspaceRoot)}
+                    title="Deletes the downloaded engine binary and frees the disk space. Engines installed in a venv or on PATH are unaffected; you can re-download any time."
+                    className="hover:border-destructive/40 hover:text-destructive"
+                  >
+                    {uninstallingEngine ? "Removing…" : "Remove"}
+                  </Button>
+                </div>
+              ) : null}
+              {/* Engine errors used to be rendered only by SetupCard, which is
+                  gone once an engine is detected — so a failed uninstall (or any
+                  other post-setup engine failure) was swallowed and the click
+                  looked like it had done nothing at all. */}
+              {engineError ? (
+                <p className="mt-1.5 flex items-start gap-1.5 text-[10.5px] leading-snug text-destructive">
+                  <Icon name="alert-circle" size="xs" className="mt-px shrink-0" />
+                  <span>{engineError}</span>
+                </p>
+              ) : null}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -769,7 +802,7 @@ function SetupCard({
   const pinMb = pin ? Math.max(1, Math.round(pin.sizeBytes / (1024 * 1024))) : null;
   const pinAsset = pin?.url.split("/").pop() ?? "the release binary";
   return (
-    <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
+    <div className="nexis-scene-enter rounded-md border border-border/60 bg-muted/20 p-2.5">
       <p className="mb-1 text-[12px] font-semibold">Set up the ML engine</p>
       <p className="mb-2 text-[11px] leading-snug text-muted-foreground">
         Nexis trains models with Axon, a small local engine. Everything runs
@@ -789,7 +822,7 @@ function SetupCard({
       {downloadingEngine ? (
         <>
           <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
-            <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
+            <span className="size-1.5 nexis-blink rounded-full bg-info" />
             Downloading and verifying the standalone engine
             {pinMb ? ` (~${pinMb} MB)` : ""}…
           </p>
@@ -828,38 +861,42 @@ function SetupCard({
             can run. This is the only thing {TOOL_NAMES.mlLab} ever downloads.
           </p>
           <div className="flex gap-1.5">
-            <button
+            <Button
+              size="xs"
               type="button"
               onClick={() => {
                 setConfirmingDownload(false);
                 onDownloadEngine();
               }}
-              className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              className="flex-1"
             >
               Download &amp; verify
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="xs"
               type="button"
               onClick={() => setConfirmingDownload(false)}
-              className="rounded-md border border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <>
-          <button
+          <Button
+            variant="brand"
+            size="sm"
             type="button"
             onClick={() =>
               // No pin = no prebuilt for this platform; let the store surface
               // its "not available" error instead of consenting to nothing.
               pin ? setConfirmingDownload(true) : onDownloadEngine()
             }
-            className="mb-1.5 w-full rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            className="mb-1.5 w-full"
           >
             Download engine{pinMb ? ` (~${pinMb} MB)` : ""}
-          </button>
+          </Button>
           <p className="text-[10px] leading-snug text-muted-foreground/70">
             One verified binary from the project&apos;s GitHub releases. No
             Python, no PyTorch, nothing else to install. Trains spreadsheet
@@ -885,14 +922,15 @@ function SetupCard({
                   placeholder={`/path/to/${pinAsset}`}
                   className="min-w-0 flex-1 rounded border border-border/60 bg-background px-2 py-1 font-mono text-[10px] outline-none placeholder:text-muted-foreground/40 focus:border-foreground/40"
                 />
-                <button
+                <Button
+                  variant="outline"
+                  size="xs"
                   type="button"
                   disabled={!localPath.trim()}
                   onClick={() => onInstallLocal(localPath)}
-                  className="rounded border border-border/60 px-2 py-1 text-[10px] font-medium text-foreground/90 transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   Verify &amp; install
-                </button>
+                </Button>
               </div>
             </details>
           ) : null}
@@ -901,7 +939,7 @@ function SetupCard({
 
       {error && !downloadingEngine ? (
         <div className="mt-1.5">
-          <p className="text-[10.5px] leading-snug text-red-400">{error}</p>
+          <p className="text-[10.5px] leading-snug text-destructive">{error}</p>
           {/* Where it looked. "No engine found" is only actionable if you can
               see the search path — the usual cause is an engine installed in
               an environment the scan never visits, which is invisible
@@ -1046,7 +1084,7 @@ function PythonEngineSteps({
           distribution found for torch”.
         </p>
         {warning ? (
-          <p className="flex items-start gap-1.5 text-[10px] leading-snug text-amber-500">
+          <p className="flex items-start gap-1.5 text-[10px] leading-snug text-warning">
             <Icon name="alert" size="xs" className="mt-px shrink-0" />
             <span>{warning}</span>
           </p>
@@ -1103,11 +1141,11 @@ function GpuUpsell({
   onUpgrade: () => void;
 }) {
   return (
-    <div className="mb-2 rounded-md border border-emerald-500/30 bg-emerald-500/[0.05] p-2">
+    <div className="mb-2 rounded-md border border-success/30 bg-success/[0.05] p-2">
       {installing ? (
         <>
           <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
-            <span className="size-1.5 nexis-blink rounded-full bg-emerald-500" />
+            <span className="size-1.5 nexis-blink rounded-full bg-success" />
             Installing the GPU build (~3 GB) — keep this window open…
           </p>
           <LogView logs={logs} />
@@ -1118,13 +1156,15 @@ function GpuUpsell({
             Your <span className="text-foreground/90">{gpuName}</span> isn't
             being used yet — the engine has the CPU-only build of PyTorch.
           </p>
-          <button
+          <Button
+            variant="outline"
+            size="xs"
             type="button"
             onClick={onUpgrade}
-            className="shrink-0 rounded border border-emerald-500/40 px-2 py-0.5 text-[10.5px] font-medium text-emerald-500 transition-colors hover:bg-emerald-500/10"
+            className="shrink-0 border-success/40 text-success hover:bg-success/10 hover:text-success"
           >
             Enable GPU
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -1138,17 +1178,19 @@ function CopyLine({ command }: { command: string }) {
       <code className="flex-1 truncate rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[10px]">
         {command}
       </code>
-      <button
+      <Button
+        variant="outline"
+        size="xs"
         type="button"
         onClick={() => {
           void navigator.clipboard.writeText(command);
           setCopied(true);
           window.setTimeout(() => setCopied(false), 1500);
         }}
-        className="shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+        className="shrink-0"
       >
         {copied ? "Copied" : "Copy"}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -1230,7 +1272,7 @@ export function CreateCard({
   const tabs = STOCK_TABS.filter((t) => t.id === "starter" || engineSupportsTemplate(t.id, engineKind));
 
   return (
-    <div className="mb-3 rounded-xl border border-primary/25 bg-primary/[0.035] p-4 shadow-sm">
+    <div className="nexis-scene-enter mb-3 rounded-xl border border-primary/25 bg-primary/[0.035] p-4 shadow-sm">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold">Build a model</p>
@@ -1291,7 +1333,7 @@ export function CreateCard({
                   <span className="flex items-center justify-between gap-2">
                     <span className="truncate text-[11px] font-semibold text-foreground/90">{m.label}</span>
                     {m.dataset ? (
-                      <span className="shrink-0 rounded bg-emerald-500/10 px-1 text-[9px] text-emerald-600 dark:text-emerald-400">
+                      <span className="shrink-0 rounded bg-success/10 px-1 text-[9px] text-success">
                         data included
                       </span>
                     ) : null}
@@ -1349,7 +1391,7 @@ export function CreateCard({
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">2. Configure it</p>
       {creating ? (
         <p className="flex items-center gap-1.5 text-[11px] text-foreground/90">
-          <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
+          <span className="size-1.5 nexis-blink rounded-full bg-info" />
           Creating project…
         </p>
       ) : (
@@ -1422,18 +1464,20 @@ export function CreateCard({
             Start training right away (otherwise review the hyperparameters
             first)
           </label>
-          <button
+          <Button
+            variant="brand"
+            size="sm"
             type="button"
             disabled={!name.trim()}
             onClick={create}
-            className="mt-3 h-8 w-full rounded-md bg-primary px-3 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-3 w-full"
           >
             Create {stock ? stock.label : template === "textgen" ? "GPT-style model" : "model"}
-          </button>
+          </Button>
         </>
       )}
       {createError && !creating ? (
-        <p className="mt-1.5 text-[10.5px] leading-snug text-red-400">
+        <p className="mt-1.5 text-[10.5px] leading-snug text-destructive">
           {createError}
         </p>
       ) : null}
@@ -1819,7 +1863,7 @@ function ResidualsView() {
             y1={py(lo)}
             x2={px(hi)}
             y2={py(hi)}
-            className="stroke-emerald-500/60"
+            className="stroke-success/60"
             strokeWidth={1}
             strokeDasharray="3 3"
           />
@@ -1909,7 +1953,7 @@ function Playground({
               className={cn(
                 "rounded px-1 py-px text-[9px] font-medium",
                 serve.device.startsWith("cuda")
-                  ? "bg-emerald-500/10 text-emerald-500"
+                  ? "bg-success/10 text-success"
                   : "bg-muted/60 text-muted-foreground",
               )}
               title={`device: ${serve.device}`}
@@ -1935,17 +1979,17 @@ function Playground({
             Load this trained model and try it live — give it an input, get a
             prediction back.
           </p>
-          <button
+          <Button
+            size="xs"
             type="button"
             onClick={open}
-            className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
           >
             Try this model
-          </button>
+          </Button>
         </>
       ) : serve.status === "starting" ? (
         <p className="flex items-center gap-1.5 text-[11px] text-foreground/90">
-          <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
+          <span className="size-1.5 nexis-blink rounded-full bg-info" />
           Loading the model…
         </p>
       ) : serve.status === "error" ? (
@@ -1953,25 +1997,28 @@ function Playground({
           <p className="text-[11px] text-destructive">
             {serve.error ?? "Couldn't load the model."}
           </p>
-          <button
+          <Button
+            variant="outline"
+            size="xs"
             type="button"
             onClick={open}
-            className="self-start rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground hover:text-foreground"
+            className="self-start"
           >
             Try again
-          </button>
+          </Button>
         </div>
       ) : serve.status === "stopped" ? (
         <div className="flex items-center justify-between gap-2">
           <p className="text-[11px] text-muted-foreground">Playground closed.</p>
           {run ? (
-            <button
+            <Button
+              variant="outline"
+              size="xs"
               type="button"
               onClick={open}
-              className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground hover:text-foreground"
             >
               Reopen
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : serve.template === "tabular" ? (
@@ -2025,14 +2072,15 @@ function TextgenPlayground({
         <span className="w-6 font-mono text-[10px] tabular-nums text-muted-foreground">
           {temperature.toFixed(1)}
         </span>
-        <button
+        <Button
+          size="xs"
           type="button"
           onClick={submit}
           disabled={serve.busy}
-          className="shrink-0 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="shrink-0"
         >
           {serve.busy ? "Writing…" : "Generate"}
-        </button>
+        </Button>
       </div>
       {serve.error ? (
         <p className="text-[10px] text-destructive">{serve.error}</p>
@@ -2114,14 +2162,15 @@ function TabularPlayground({
           </label>
         ))}
       </div>
-      <button
+      <Button
+        size="xs"
         type="button"
         onClick={submit}
         disabled={serve.busy}
-        className="self-start rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="self-start"
       >
         {serve.busy ? "Predicting…" : "Predict"}
-      </button>
+      </Button>
       {serve.error ? (
         <p className="text-[10px] text-destructive">{serve.error}</p>
       ) : null}
@@ -2226,17 +2275,22 @@ function ProgressBlock({
   });
 
   return (
-    <div className="mb-2 rounded-md border border-border/60 bg-muted/20 p-2.5">
+    <div
+      className={cn(
+        "mb-2 rounded-md border border-border/60 bg-muted/20 p-2.5",
+        !run.paused && "nexis-run-live",
+      )}
+    >
       <div className="mb-1.5 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-[11px] font-semibold">
-          <span className="size-1.5 nexis-blink rounded-full bg-emerald-500" />
+          <span className="size-1.5 nexis-blink rounded-full bg-success" />
           Training
           {run.device ? (
             <span
               className={cn(
                 "rounded px-1 py-px text-[9px] font-medium",
                 run.device.startsWith("cuda")
-                  ? "bg-emerald-500/10 text-emerald-500"
+                  ? "bg-success/10 text-success"
                   : "bg-muted/60 text-muted-foreground",
               )}
               title={`device: ${run.device}`}
@@ -2245,7 +2299,7 @@ function ProgressBlock({
             </span>
           ) : null}
           {run.paused ? (
-            <span className="rounded bg-amber-500/10 px-1 py-px text-[9px] font-medium text-amber-500">
+            <span className="rounded bg-warning/10 px-1 py-px text-[9px] font-medium text-warning">
               paused
             </span>
           ) : null}
@@ -2259,8 +2313,10 @@ function ProgressBlock({
       <div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
         <div
           className={cn(
-            "h-full rounded-full bg-emerald-500/80 transition-[width] duration-500",
-            pct === null && "w-1/4 animate-pulse",
+            "h-full rounded-full transition-[width] duration-(--dur-scene) ease-(--ease-enter)",
+            pct === null
+              ? "nexis-shimmer w-full bg-[linear-gradient(90deg,transparent,var(--brand),transparent)] bg-size-[200%_100%]"
+              : "bg-brand",
           )}
           style={pct !== null ? { width: `${Math.max(pct, 3)}%` } : undefined}
         />
@@ -2282,21 +2338,24 @@ function ProgressBlock({
 
       <div className="flex items-center gap-1.5">
         {run.status === "running" ? (
-          <button
+          <Button
+            variant="outline"
+            size="xs"
             type="button"
             onClick={run.paused ? onResume : onPause}
-            className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground"
           >
             {run.paused ? "Resume" : "Pause"}
-          </button>
+          </Button>
         ) : null}
-        <button
+        <Button
+          variant="outline"
+          size="xs"
           type="button"
           onClick={onCancel}
-          className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
+          className="hover:border-destructive/40 hover:text-destructive"
         >
           {run.status === "cancelling" ? "Force stop" : "Stop (keeps progress)"}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -2321,10 +2380,10 @@ function ResultCard({
 }) {
   const tone =
     run.status === "ok"
-      ? "border-emerald-500/40 bg-emerald-500/[0.06]"
+      ? "border-success/40 bg-success/[0.06]"
       : run.status === "cancelled"
-        ? "border-amber-500/40 bg-amber-500/[0.06]"
-        : "border-red-500/40 bg-red-500/[0.06]";
+        ? "border-warning/40 bg-warning/[0.06]"
+        : "border-destructive/40 bg-destructive/[0.06]";
   const title =
     run.status === "ok"
       ? "Training complete"
@@ -2346,7 +2405,7 @@ function ResultCard({
   if (summary?.device?.startsWith("cuda")) chips.push("trained on GPU");
 
   return (
-    <div className={cn("mb-2 rounded-md border p-2.5", tone)}>
+    <div className={cn("nexis-result-arrival mb-2 rounded-md border p-2.5", tone)}>
       <p className="mb-1 text-[12px] font-semibold">{title}</p>
       {chips.length > 0 ? (
         <div className="mb-1.5 flex flex-wrap gap-1">
@@ -2370,13 +2429,15 @@ function ResultCard({
           folder.
         </p>
       )}
-      <button
+      <Button
+        variant="brand"
+        size="xs"
         type="button"
         onClick={onTrainAgain}
-        className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
       >
-        ▶ Train again
-      </button>
+        <Icon name="play" size="xs" />
+        Train again
+      </Button>
     </div>
   );
 }
@@ -2396,9 +2457,9 @@ function EngineChip({
 }) {
   const dot =
     status === "ready"
-      ? "bg-emerald-500"
+      ? "bg-success"
       : status === "missing"
-        ? "bg-red-500/80"
+        ? "bg-destructive/80"
         : "bg-muted-foreground/50";
   // Which engine is answering, not just that one exists: the standalone
   // Rust/burn binary and the Python/PyTorch package share the name
@@ -2490,11 +2551,11 @@ function RunRow({
 
   const dot =
     run.status === "ok"
-      ? "bg-emerald-500"
+      ? "bg-success"
       : run.status === "error"
-        ? "bg-red-500/80"
+        ? "bg-destructive/80"
         : run.status === "cancelled"
-          ? "bg-amber-500/80"
+          ? "bg-warning/80"
           : "bg-muted-foreground/40";
 
   const metricNames = Object.keys(run.metrics ?? {});
@@ -2568,7 +2629,7 @@ function RunRow({
           className={cn(
             "shrink-0 px-1 leading-none",
             run.pinned
-              ? "text-amber-500"
+              ? "text-warning"
               : "text-muted-foreground/40 hover:text-foreground",
           )}
         >
@@ -2627,20 +2688,21 @@ function RunRow({
             className="h-6 rounded border border-border bg-background px-1.5 text-[10.5px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
           />
           <div className="flex gap-1.5">
-            <button
+            <Button
+              size="xs"
               type="button"
               onClick={saveMeta}
-              className="rounded-md bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground hover:opacity-90"
             >
               Save
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="xs"
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded border border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
@@ -2843,22 +2905,23 @@ function HyperparamForm({
               ))}
             </div>
             <div className="mt-2 flex items-center gap-1.5">
-              <button
+              <Button
+                variant="outline"
+                size="xs"
                 type="button"
                 disabled={saving}
                 onClick={() => void save(false)}
-                className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
               >
                 Save
-              </button>
-              <button
+              </Button>
+              <Button
+                size="xs"
                 type="button"
                 disabled={saving}
                 onClick={() => void save(true)}
-                className="rounded-md bg-primary px-2.5 py-0.5 text-[10.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 Save &amp; train
-              </button>
+              </Button>
               {status ? (
                 <span className="text-[10px] text-muted-foreground">{status}</span>
               ) : null}
@@ -3132,7 +3195,7 @@ function DataSourceForm({
                   {targetInfo.classes.map(([label, n]) => `${label} (${n})`).join(", ")}
                 </p>
               ) : effectiveTask === "classification" && targetInfo ? (
-                <p className="mt-0.5 text-amber-600 dark:text-amber-400">
+                <p className="mt-0.5 text-warning">
                   {targetInfo.distinct} different values in {target} is a lot of categories;
                   if it is a quantity, predict a number instead.
                 </p>
@@ -3143,7 +3206,7 @@ function DataSourceForm({
                 </p>
               ) : null}
               {targetInfo && targetInfo.missing > 0 ? (
-                <p className="mt-0.5 text-amber-600 dark:text-amber-400">
+                <p className="mt-0.5 text-warning">
                   {targetInfo.missing} rows have no {target} value and are skipped.
                 </p>
               ) : null}
@@ -3151,22 +3214,23 @@ function DataSourceForm({
           </>
         ) : null}
         <div className="flex items-center gap-1.5">
-          <button
+          <Button
+            variant="outline"
+            size="xs"
             type="button"
             disabled={!canSave || !dirty}
             onClick={() => void save(false)}
-            className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
           >
             Save
-          </button>
-          <button
+          </Button>
+          <Button
+            size="xs"
             type="button"
             disabled={!canSave}
             onClick={() => void save(true)}
-            className="rounded-md bg-primary px-2.5 py-0.5 text-[10.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             Save &amp; train
-          </button>
+          </Button>
           {status ? <span className="text-[10px] text-muted-foreground">{status}</span> : null}
         </div>
       </div>
