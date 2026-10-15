@@ -107,11 +107,11 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
   }, []);
 
   const statusIcon = saveStatus === "saving"
-    ? <span className="text-[9.5px] text-muted-foreground/50">Saving…</span>
+    ? <span className="text-micro text-muted-foreground/50">Saving…</span>
     : saveStatus === "saved"
     ? <Icon name="check" size="xs" className="text-green-500" />
     : saveStatus === "error"
-    ? <span className="text-[9.5px] text-red-500">Save failed</span>
+    ? <span className="text-micro text-red-500">Save failed</span>
     : null;
 
   return (
@@ -119,7 +119,7 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="file-edit" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Notes
         </span>
         <div className="ml-auto flex items-center gap-1.5">
@@ -141,11 +141,11 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
       {/* Content */}
       {!workspaceRoot ? (
         <div className="flex flex-1 items-center justify-center px-4 text-center">
-          <p className="text-[11px] text-muted-foreground/60">No workspace open</p>
+          <p className="text-caption text-muted-foreground/60">No workspace open</p>
         </div>
       ) : !loaded ? (
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-[11px] text-muted-foreground/40">Loading…</p>
+          <p className="text-caption text-muted-foreground/40">Loading…</p>
         </div>
       ) : preview ? (
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
@@ -159,7 +159,7 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
           placeholder={`# Workspace notes\n\nWrite anything here — saved to .nexis/NOTES.md\n\nSupports Markdown.`}
           spellCheck={false}
           className={cn(
-            "flex-1 resize-none bg-transparent px-3 py-2 font-mono text-[12px]",
+            "flex-1 resize-none bg-transparent px-3 py-2 font-mono text-ui",
             "leading-relaxed text-foreground outline-none",
             "placeholder:text-muted-foreground/30",
           )}
@@ -169,7 +169,7 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
       {/* Footer */}
       {workspaceRoot && loaded && (
         <div className="shrink-0 border-t border-border/20 px-3 py-1">
-          <p className="truncate text-[9px] text-muted-foreground/30">
+          <p className="truncate text-micro text-muted-foreground/30">
             .nexis/NOTES.md
           </p>
         </div>
@@ -187,14 +187,14 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
 function MarkdownPreview({ text }: { text: string }) {
   if (!text.trim()) {
     return (
-      <p className="text-[11px] italic text-muted-foreground/40">Nothing to preview.</p>
+      <p className="text-caption italic text-muted-foreground/40">Nothing to preview.</p>
     );
   }
 
   const html = mdToHtml(text);
   return (
     <div
-      className="prose prose-sm prose-invert max-w-none text-[12px] [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:text-[11px] [&_h1]:text-[14px] [&_h2]:text-[13px] [&_h3]:text-[12px] [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-muted/40 [&_pre]:p-2"
+      className="prose prose-sm prose-invert max-w-none text-ui [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:text-caption [&_h1]:text-[14px] [&_h2]:text-body [&_h3]:text-ui [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-muted/40 [&_pre]:p-2"
       // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: html }}
     />

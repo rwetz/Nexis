@@ -79,10 +79,10 @@ export function BookmarksPanel({ onNavigate }: Props) {
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="bookmark-add" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Bookmarks
         </span>
-        <span className="ml-auto text-[10px] text-muted-foreground/50">
+        <span className="ml-auto text-micro text-muted-foreground/50">
           {bookmarks.length > 0 ? `${bookmarks.length}` : ""}
         </span>
       </div>
@@ -96,7 +96,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
             description="Bookmark a line to jump straight back to it later."
             hint={
               <>
-                Press <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">Alt+D</kbd> in the editor.
+                Press <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-micro">Alt+D</kbd> in the editor.
               </>
             }
           />
@@ -111,13 +111,13 @@ export function BookmarksPanel({ onNavigate }: Props) {
                     size="xs"
                     className="shrink-0 text-muted-foreground/60"
                   />
-                  <span className="truncate text-[10.5px] font-semibold">
+                  <span className="truncate text-caption font-semibold">
                     {basename(filePath)}
                   </span>
-                  <span className="truncate text-[10px] text-muted-foreground/40">
+                  <span className="truncate text-micro text-muted-foreground/40">
                     {dirname(filePath)}
                   </span>
-                  <span className="ml-auto shrink-0 text-[9px] text-muted-foreground/40">
+                  <span className="ml-auto shrink-0 text-micro text-muted-foreground/40">
                     {bms.length}
                   </span>
                 </div>
@@ -130,7 +130,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                   >
                     {/* Line gutter */}
                     {bm.line > 0 && (
-                      <span className="w-8 shrink-0 font-mono text-[9px] text-muted-foreground/40 tabular-nums">
+                      <span className="w-8 shrink-0 font-mono text-micro text-muted-foreground/40 tabular-nums">
                         :{bm.line}
                       </span>
                     )}
@@ -151,7 +151,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                         type="button"
                         onClick={() => handleNavigate(bm)}
                         className={cn(
-                          "min-w-0 flex-1 truncate text-left text-[11px] text-foreground/80 hover:text-foreground",
+                          "min-w-0 flex-1 truncate text-left text-caption text-foreground/80 hover:text-foreground",
                           !onNavigate && "cursor-default",
                         )}
                         title={`${bm.path}${bm.line > 0 ? `:${bm.line}` : ""}`}
@@ -202,7 +202,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                 onClick={() => {
                   for (const bm of bookmarks) removeBookmark(bm.id);
                 }}
-                className="flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-red-500"
+                className="flex items-center gap-1 text-micro text-muted-foreground/50 hover:text-red-500"
               >
                 <Icon name="delete" size="xs" />
                 Clear all

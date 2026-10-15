@@ -498,16 +498,16 @@ export function GitHistoryPane({
         {loadStatus === "initial" && commits.length === 0 ? (
           <CenterPlaceholder>
             <Spinner className="size-4" />
-            <span className="text-[11.5px] text-muted-foreground">
+            <span className="text-ui text-muted-foreground">
               Loading commits…
             </span>
           </CenterPlaceholder>
         ) : loadStatus === "error" && commits.length === 0 ? (
           <CenterPlaceholder>
-            <div className="text-[13px] font-medium">
+            <div className="text-body font-medium">
               Could not load history
             </div>
-            <div className="max-w-md text-[11px] leading-relaxed text-muted-foreground">
+            <div className="max-w-md text-caption leading-relaxed text-muted-foreground">
               {error ?? "Unknown error"}
             </div>
             <Button size="sm" onClick={handleRefresh}>
@@ -516,15 +516,15 @@ export function GitHistoryPane({
           </CenterPlaceholder>
         ) : commits.length === 0 ? (
           <CenterPlaceholder>
-            <div className="text-[13px] font-medium">No commits yet</div>
-            <div className="max-w-md text-[11px] leading-relaxed text-muted-foreground">
+            <div className="text-body font-medium">No commits yet</div>
+            <div className="max-w-md text-caption leading-relaxed text-muted-foreground">
               This branch has no commits.
             </div>
           </CenterPlaceholder>
         ) : (
           <>
             <div
-              className="grid shrink-0 items-center gap-3 border-b border-border/40 bg-card/55 pr-3 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70"
+              className="grid shrink-0 items-center gap-3 border-b border-border/40 bg-card/55 pr-3 text-micro font-semibold uppercase tracking-[0.14em] text-muted-foreground/70"
               style={{
                 height: TABLE_HEADER_HEIGHT,
                 gridTemplateColumns: gridTemplate,
@@ -580,23 +580,23 @@ export function GitHistoryPane({
               </div>
 
               {loadStatus === "more" ? (
-                <div className="flex items-center justify-center gap-2 py-3 text-[11px] text-muted-foreground">
+                <div className="flex items-center justify-center gap-2 py-3 text-caption text-muted-foreground">
                   <Spinner className="size-3" />
                   Loading more…
                 </div>
               ) : null}
               {endReached && !activeSearch ? (
-                <div className="py-3 text-center text-[10.5px] text-muted-foreground/65">
+                <div className="py-3 text-center text-caption text-muted-foreground/65">
                   End of history
                 </div>
               ) : null}
               {loadStatus === "error" && commits.length > 0 ? (
-                <div className="flex items-center justify-center gap-2 py-3 text-[11px] text-destructive">
+                <div className="flex items-center justify-center gap-2 py-3 text-caption text-destructive">
                   {error ?? "Failed to load more"}
                   <Button
                     size="xs"
                     variant="ghost"
-                    className="h-6 cursor-pointer text-[11px]"
+                    className="h-6 cursor-pointer text-caption"
                     onClick={() => void loadMore()}
                   >
                     Retry
@@ -715,12 +715,12 @@ const CommitRow = memo(function CommitRow({
           />
         ) : null}
       </div>
-      <span className="pl-px font-mono text-[10.5px] tabular-nums text-muted-foreground/80">
+      <span className="pl-px font-mono text-caption tabular-nums text-muted-foreground/80">
         {commit.shortSha}
       </span>
       <span
         className={cn(
-          "min-w-0 truncate text-[12px] leading-tight",
+          "min-w-0 truncate text-ui leading-tight",
           active
             ? "font-semibold text-foreground"
             : "font-medium text-foreground/95",
@@ -734,11 +734,11 @@ const CommitRow = memo(function CommitRow({
       </span>
       <span aria-hidden />
       <span
-        className="ml-2 inline-flex h-[18px] max-w-full min-w-0 items-center gap-1.5 justify-self-start self-center overflow-hidden rounded-md bg-foreground/6 pl-1 pr-1.5 text-[10.5px] font-medium text-foreground/85"
+        className="ml-2 inline-flex h-[18px] max-w-full min-w-0 items-center gap-1.5 justify-self-start self-center overflow-hidden rounded-md bg-foreground/6 pl-1 pr-1.5 text-caption font-medium text-foreground/85"
         title={commit.authorEmail || commit.author}
       >
         <span
-          className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-[3px] font-mono text-[8.5px] font-bold uppercase tabular-nums text-background"
+          className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-[3px] font-mono text-micro font-bold uppercase tabular-nums text-background"
           style={{
             backgroundColor: authorTint(commit.authorEmail || commit.author),
           }}
@@ -749,10 +749,10 @@ const CommitRow = memo(function CommitRow({
           {commit.author ? highlight(commit.author, query) : "Unknown"}
         </span>
       </span>
-      <span className="text-right font-mono text-[10.5px] tabular-nums text-muted-foreground/75">
+      <span className="text-right font-mono text-caption tabular-nums text-muted-foreground/75">
         {date}
       </span>
-      <span className="flex min-w-0 items-center justify-end gap-1.5 font-mono text-[10px] tabular-nums">
+      <span className="flex min-w-0 items-center justify-end gap-1.5 font-mono text-micro tabular-nums">
         {commit.filesChanged > 0 ? (
           <span
             className="inline-flex items-center gap-1 text-muted-foreground/75"
@@ -826,16 +826,16 @@ function CommitDetail({
     <div className="flex max-h-[60vh] min-h-0 flex-col">
       <div className="shrink-0 border-b border-border/45 p-3">
         <div className="flex items-start gap-2">
-          <span className="mt-px shrink-0 rounded bg-muted/65 px-1.5 py-0.5 font-mono text-[10.5px] leading-none tabular-nums text-muted-foreground">
+          <span className="mt-px shrink-0 rounded bg-muted/65 px-1.5 py-0.5 font-mono text-caption leading-none tabular-nums text-muted-foreground">
             {commit.shortSha}
           </span>
-          <div className="min-w-0 flex-1 text-[12.5px] font-semibold leading-snug text-foreground">
+          <div className="min-w-0 flex-1 text-ui font-semibold leading-snug text-foreground">
             {commit.subject || (
               <span className="text-muted-foreground">(no subject)</span>
             )}
           </div>
         </div>
-        <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[10.5px] text-muted-foreground">
+        <div className="mt-2 flex min-w-0 items-center gap-1.5 text-caption text-muted-foreground">
           <span className="truncate">{commit.author || "Unknown"}</span>
           {commit.authorEmail ? (
             <>
@@ -853,7 +853,7 @@ function CommitDetail({
           <Button
             size="xs"
             variant="ghost"
-            className="h-6 cursor-pointer gap-1.5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+            className="h-6 cursor-pointer gap-1.5 px-1.5 text-caption text-muted-foreground hover:text-foreground"
             onClick={() => {
               void onCopySha(commit.sha);
               setCopied(true);
@@ -866,7 +866,7 @@ function CommitDetail({
             <Button
               size="xs"
               variant="ghost"
-              className="h-6 cursor-pointer gap-1.5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+              className="h-6 cursor-pointer gap-1.5 px-1.5 text-caption text-muted-foreground hover:text-foreground"
               onClick={() => void openHostUrl(webUrl).catch(console.error)}
             >
               <Icon name="link-external" size="xs" />
@@ -877,7 +877,7 @@ function CommitDetail({
             size="xs"
             variant="ghost"
             disabled={explaining}
-            className="h-6 cursor-pointer gap-1.5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-50"
+            className="h-6 cursor-pointer gap-1.5 px-1.5 text-caption text-muted-foreground hover:text-foreground disabled:opacity-50"
             onClick={() => {
               setExplaining(true);
               void (async () => {
@@ -936,7 +936,7 @@ function CommitFiles({
 }) {
   if (!filesEntry || filesEntry.state === "loading") {
     return (
-      <div className="flex items-center gap-2 px-3 py-3 text-[11px] text-muted-foreground">
+      <div className="flex items-center gap-2 px-3 py-3 text-caption text-muted-foreground">
         <Spinner className="size-3" />
         Loading files…
       </div>
@@ -944,12 +944,12 @@ function CommitFiles({
   }
   if (filesEntry.state === "error") {
     return (
-      <div className="flex items-center justify-between gap-2 px-3 py-3 text-[11px] text-destructive">
+      <div className="flex items-center justify-between gap-2 px-3 py-3 text-caption text-destructive">
         <span className="truncate">{filesEntry.error}</span>
         <Button
           size="xs"
           variant="ghost"
-          className="h-6 cursor-pointer text-[11px]"
+          className="h-6 cursor-pointer text-caption"
           onClick={onRetry}
         >
           Retry
@@ -959,16 +959,16 @@ function CommitFiles({
   }
   if (filesEntry.files.length === 0) {
     return (
-      <div className="px-3 py-3 text-[11px] text-muted-foreground">
+      <div className="px-3 py-3 text-caption text-muted-foreground">
         No file changes.
       </div>
     );
   }
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center justify-between px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/85">
+      <div className="flex shrink-0 items-center justify-between px-3 pb-1 pt-2 text-micro font-semibold uppercase tracking-[0.16em] text-muted-foreground/85">
         <span>Files</span>
-        <span className="rounded-sm bg-muted/55 px-1 py-px text-[9.5px] tabular-nums text-muted-foreground/85 normal-case tracking-normal">
+        <span className="rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground/85 normal-case tracking-normal">
           {filesEntry.files.length}
         </span>
       </div>
@@ -1005,16 +1005,16 @@ const FileRow = memo(function FileRow({
     >
       <FileTypeIcon name={fileName} className="size-3.5 shrink-0" />
       <div className="flex min-w-0 flex-1 items-baseline gap-1.5 leading-none">
-        <span className="truncate text-[11.5px] font-medium leading-tight">
+        <span className="truncate text-ui font-medium leading-tight">
           {fileName}
         </span>
         {dir ? (
-          <span className="min-w-0 flex-1 truncate text-[10px] leading-tight text-muted-foreground/80">
+          <span className="min-w-0 flex-1 truncate text-micro leading-tight text-muted-foreground/80">
             {dir}
           </span>
         ) : null}
       </div>
-      <div className="flex shrink-0 items-center gap-1 text-[10px] tabular-nums">
+      <div className="flex shrink-0 items-center gap-1 text-micro tabular-nums">
         {file.isBinary ? (
           <span className="text-muted-foreground/70">binary</span>
         ) : (
@@ -1034,7 +1034,7 @@ const FileRow = memo(function FileRow({
       </div>
       <span
         className={cn(
-          "inline-flex w-4 shrink-0 justify-center text-[9.5px] font-bold leading-none tabular-nums",
+          "inline-flex w-4 shrink-0 justify-center text-micro font-bold leading-none tabular-nums",
           statusTone(file.status),
         )}
         title={file.statusLabel}

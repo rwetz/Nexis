@@ -220,11 +220,11 @@ export function GeneralSection() {
               )}
             >
               <Icon name={o.icon} size="lg" />
-              <span className="text-[11.5px]">{o.label}</span>
+              <span className="text-ui">{o.label}</span>
             </button>
           ))}
         </div>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           For theme, background and customization, see the{" "}
           <strong className="font-medium text-foreground">Themes</strong> tab.
         </p>
@@ -248,11 +248,11 @@ export function GeneralSection() {
               )}
             >
               <Icon name={o.icon} size="lg" active={o.active} />
-              <span className="text-[11.5px]">{o.label}</span>
+              <span className="text-ui">{o.label}</span>
             </button>
           ))}
         </div>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           High contrast works with any theme: stronger text, borders and focus
           rings, no animated background or frosted glass, and terminal colours
           lifted to a 7:1 floor. System follows your OS accessibility setting.
@@ -263,10 +263,10 @@ export function GeneralSection() {
         <Label>Zoom</Label>
         <div className="flex flex-col gap-3 rounded-lg border border-border/60 p-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-[11.5px] text-muted-foreground">
+            <span className="text-ui text-muted-foreground">
               UI zoom level
             </span>
-            <span className="tabular-nums text-[11px] text-muted-foreground">
+            <span className="tabular-nums text-caption text-muted-foreground">
               {Math.round(zoomLevel * 100)}%
             </span>
           </div>
@@ -326,7 +326,7 @@ export function GeneralSection() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span
-                      className="cursor-help text-[11px] text-muted-foreground/70 leading-none"
+                      className="cursor-help text-caption text-muted-foreground/70 leading-none"
                       aria-label="More info about WebGL renderer"
                     >
                       ⓘ
@@ -334,7 +334,7 @@ export function GeneralSection() {
                   </TooltipTrigger>
                   <TooltipContent
                     side="top"
-                    className="max-w-65 text-[11px]"
+                    className="max-w-65 text-caption"
                   >
                     xterm's WebGL renderer caches glyphs in a GPU texture
                     atlas. On some macOS setups (especially with Nerd Fonts),
@@ -372,7 +372,7 @@ export function GeneralSection() {
             aria-label="Default shell"
             placeholder="Auto-detect"
             onChange={(e) => void setDefaultShellPath(e.target.value)}
-            className="h-8 w-48 rounded-md border border-border bg-background px-2.5 text-[12px] outline-none focus:border-foreground/40"
+            className="h-8 w-48 rounded-md border border-border bg-background px-2.5 text-ui outline-none focus:border-foreground/40"
           />
         </SettingRow>
         <SettingRow
@@ -385,7 +385,7 @@ export function GeneralSection() {
             aria-label="Font family"
             placeholder="Auto-detect"
             onChange={(e) => void setTerminalFontFamily(e.target.value)}
-            className="h-8 w-48 rounded-md border border-border bg-background px-2.5 text-[12px] outline-none focus:border-foreground/40"
+            className="h-8 w-48 rounded-md border border-border bg-background px-2.5 text-ui outline-none focus:border-foreground/40"
           />
         </SettingRow>
         <SettingRow
@@ -396,12 +396,12 @@ export function GeneralSection() {
             value={String(terminalLetterSpacing)}
             onValueChange={(v) => void setTerminalLetterSpacing(Number(v))}
           >
-            <SelectTrigger size="sm" className="h-8 w-28 text-[12px]">
+            <SelectTrigger size="sm" className="h-8 w-28 text-ui">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {LETTER_SPACINGS.map((v) => (
-                <SelectItem key={v} value={String(v)} className="text-[12px]">
+                <SelectItem key={v} value={String(v)} className="text-ui">
                   {v > 0 ? `+${v}` : v} px
                 </SelectItem>
               ))}
@@ -413,12 +413,12 @@ export function GeneralSection() {
             value={String(terminalFontSize)}
             onValueChange={(v) => void setTerminalFontSize(Number(v))}
           >
-            <SelectTrigger size="sm" className="h-8 w-28 text-[12px]">
+            <SelectTrigger size="sm" className="h-8 w-28 text-ui">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {TERMINAL_FONT_SIZES.map((size) => (
-                <SelectItem key={size} value={String(size)} className="text-[12px]">
+                <SelectItem key={size} value={String(size)} className="text-ui">
                   {size} px
                 </SelectItem>
               ))}
@@ -433,7 +433,7 @@ export function GeneralSection() {
             value={String(terminalFontWeight)}
             onValueChange={(v) => void setTerminalFontWeight(Number(v))}
           >
-            <SelectTrigger size="sm" className="h-8 w-28 text-[12px]">
+            <SelectTrigger size="sm" className="h-8 w-28 text-ui">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -441,7 +441,7 @@ export function GeneralSection() {
                 <SelectItem
                   key={w.value}
                   value={String(w.value)}
-                  className="text-[12px]"
+                  className="text-ui"
                 >
                   {w.label}
                 </SelectItem>
@@ -457,7 +457,7 @@ export function GeneralSection() {
             value={String(terminalScrollback)}
             onValueChange={(v) => void setTerminalScrollback(Number(v))}
           >
-            <SelectTrigger size="sm" className="h-8 w-36 text-[12px]">
+            <SelectTrigger size="sm" className="h-8 w-36 text-ui">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -465,7 +465,7 @@ export function GeneralSection() {
                 <SelectItem
                   key={lines}
                   value={String(lines)}
-                  className="text-[12px]"
+                  className="text-ui"
                 >
                   {lines.toLocaleString()} lines
                 </SelectItem>
@@ -483,7 +483,7 @@ export function GeneralSection() {
               void setTerminalCursorStyle(v as TerminalCursorStyle)
             }
           >
-            <SelectTrigger size="sm" className="h-8 w-28 text-[12px]">
+            <SelectTrigger size="sm" className="h-8 w-28 text-ui">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -493,7 +493,7 @@ export function GeneralSection() {
                   string,
                 ][]
               ).map(([value, label]) => (
-                <SelectItem key={value} value={value} className="text-[12px]">
+                <SelectItem key={value} value={value} className="text-ui">
                   {label}
                 </SelectItem>
               ))}
@@ -587,7 +587,7 @@ export function GeneralSection() {
                   value={String(quickTerminalHeight)}
                   onValueChange={(v) => void setQuickTerminalHeight(Number(v))}
                 >
-                  <SelectTrigger size="sm" className="h-8 w-28 text-[12px]">
+                  <SelectTrigger size="sm" className="h-8 w-28 text-ui">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -595,7 +595,7 @@ export function GeneralSection() {
                       <SelectItem
                         key={v}
                         value={String(v)}
-                        className="text-[12px]"
+                        className="text-ui"
                       >
                         {Math.round(v * 100)}%
                       </SelectItem>

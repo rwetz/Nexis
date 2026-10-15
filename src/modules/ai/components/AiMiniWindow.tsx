@@ -98,7 +98,7 @@ export function AiMiniWindow({
         "animate-in fade-in slide-in-from-bottom-3 zoom-in-[0.98] duration-200 ease-out",
         "no-scrollbar-deep fixed right-4 bottom-24 z-40 flex flex-col overflow-hidden",
         "h-[min(42rem,calc(100vh-7rem))] w-[min(34rem,calc(100vw-2rem))]",
-        "rounded-2xl border border-border/60 bg-card text-[12px]",
+        "rounded-2xl border border-border/60 bg-card text-ui",
         "shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_24px_48px_-12px_rgba(0,0,0,0.45),0_8px_16px_-8px_rgba(0,0,0,0.3)]",
         "ring-1 ring-black/5 dark:ring-white/5",
       )}
@@ -175,7 +175,7 @@ function Body({
         {helpers.messages.length === 0 ? (
           <EmptyState onPick={onPick} />
         ) : (
-          <div className="flex min-h-0 flex-1 flex-col [&_.text-sm]:text-[12px] [&_p]:leading-relaxed">
+          <div className="flex min-h-0 flex-1 flex-col [&_.text-sm]:text-ui [&_p]:leading-relaxed">
             <AiChatView
               messages={helpers.messages}
               status={helpers.status}
@@ -205,15 +205,15 @@ function PlanModeStrip() {
   return (
     <div className="flex shrink-0 items-center gap-2 border-b border-border/40 bg-muted/40 px-3 py-1.5">
       <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
-      <span className="text-[11px] font-medium text-foreground">Plan mode</span>
-      <span className="text-[11px] text-muted-foreground">
+      <span className="text-caption font-medium text-foreground">Plan mode</span>
+      <span className="text-caption text-muted-foreground">
         {queueLen > 0 ? `· ${queueLen} queued` : "· no edits queued"}
       </span>
       <span className="flex-1" />
       <button
         type="button"
         onClick={() => disable()}
-        className="rounded px-1.5 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="rounded px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         Exit
       </button>
@@ -236,7 +236,7 @@ function EmptyShell({
         onClose={onClose}
         onExpand={onExpand}
       />
-      <div className="flex flex-1 items-center justify-center text-[11px] text-muted-foreground">
+      <div className="flex flex-1 items-center justify-center text-caption text-muted-foreground">
         Loading sessions…
       </div>
     </>
@@ -268,7 +268,7 @@ function Header({
       </div>
       <div className="flex shrink-0 items-center gap-1">
         {isBusy ? (
-          <span className="flex min-w-0 items-center gap-1 text-[10px] text-muted-foreground">
+          <span className="flex min-w-0 items-center gap-1 text-micro text-muted-foreground">
             <Spinner className="size-2.5" />
             <span className="max-w-32 truncate">{step ?? "Thinking…"}</span>
           </span>
@@ -310,7 +310,7 @@ function SessionPicker() {
           type="button"
           className={cn(
             "flex min-w-0 max-w-48 items-center gap-1 rounded-md px-1.5 py-1",
-            "text-[11px] text-muted-foreground transition-colors",
+            "text-caption text-muted-foreground transition-colors",
             "hover:bg-accent hover:text-foreground",
           )}
           title="Switch session"
@@ -416,22 +416,22 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
         <div className="relative flex items-start gap-3">
           <EmptyStateMark />
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold tracking-tight">
+            <p className="text-body font-semibold tracking-tight">
               Start with the work in front of you
             </p>
-            <p className="mt-0.5 text-[10.5px] leading-relaxed text-muted-foreground">
+            <p className="mt-0.5 text-caption leading-relaxed text-muted-foreground">
               Nexis can use the active terminal, workspace, and files as context.
             </p>
           </div>
         </div>
         <div className="relative mt-3 flex flex-wrap gap-1.5">
-          <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-1 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-1 text-micro text-muted-foreground">
             <Icon name="terminal" size="xs" /> Active terminal
           </span>
-          <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-1 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-1 text-micro text-muted-foreground">
             <Icon name="folder" size="xs" /> Workspace aware
           </span>
-          <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-1 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card/70 px-1.5 py-1 text-micro text-muted-foreground">
             <Icon name="file" size="xs" /> Attach files with @
           </span>
         </div>
@@ -439,8 +439,8 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
 
       <div className="mt-5 flex items-center justify-between px-0.5">
         <div>
-          <p className="text-[11px] font-semibold text-foreground">Jump in</p>
-          <p className="mt-0.5 text-[10px] text-muted-foreground">
+          <p className="text-caption font-semibold text-foreground">Jump in</p>
+          <p className="mt-0.5 text-micro text-muted-foreground">
             Or write your own prompt below
           </p>
         </div>
@@ -462,10 +462,10 @@ function EmptyState({ onPick }: { onPick: (text: string) => void }) {
             <div className="flex size-7 items-center justify-center rounded-md border border-border/50 bg-muted/65 text-muted-foreground transition-colors group-hover:border-primary/20 group-hover:bg-primary/10 group-hover:text-primary">
               <Icon name={s.icon} size="sm" />
             </div>
-            <div className="mt-2 text-[11px] font-medium leading-tight text-foreground">
+            <div className="mt-2 text-caption font-medium leading-tight text-foreground">
               {s.label}
             </div>
-            <div className="mt-1 text-[10px] leading-snug text-muted-foreground">
+            <div className="mt-1 text-micro leading-snug text-muted-foreground">
               {s.hint}
             </div>
           </button>

@@ -106,7 +106,7 @@ export function AiCommandBar({ cwd, onInsert, onClose }: Props) {
       onKeyDown={handleKeyDown}
     >
       <div className="flex items-center gap-2 px-3 py-2">
-        <span className="shrink-0 text-[13px] text-brand">✦</span>
+        <span className="shrink-0 text-body text-brand">✦</span>
         <input
           ref={inputRef}
           value={intent}
@@ -114,9 +114,9 @@ export function AiCommandBar({ cwd, onInsert, onClose }: Props) {
           aria-label="Describe what you want to run"
           placeholder="Describe what you want to run…"
           spellCheck={false}
-          className="min-w-0 flex-1 bg-transparent text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
+          className="min-w-0 flex-1 bg-transparent text-ui text-foreground outline-none placeholder:text-muted-foreground/60"
         />
-        <span className="shrink-0 text-[10px] text-muted-foreground/70">
+        <span className="shrink-0 text-micro text-muted-foreground/70">
           {phase.kind === "result" && phase.result.command
             ? "↵ insert · esc close"
             : "↵ ask · esc close"}
@@ -124,7 +124,7 @@ export function AiCommandBar({ cwd, onInsert, onClose }: Props) {
       </div>
 
       {phase.kind === "loading" && (
-        <div className="border-t border-border/60 px-3 py-2 text-[11px] text-muted-foreground">
+        <div className="border-t border-border/60 px-3 py-2 text-caption text-muted-foreground">
           <span className="inline-block nexis-blink">Thinking…</span>
         </div>
       )}
@@ -133,16 +133,16 @@ export function AiCommandBar({ cwd, onInsert, onClose }: Props) {
         <div className="border-t border-border/60 px-3 py-2">
           {phase.result.command ? (
             <>
-              <pre className="overflow-x-auto rounded-md bg-muted/60 px-2 py-1.5 font-mono text-[11.5px] leading-relaxed text-foreground">
+              <pre className="overflow-x-auto rounded-md bg-muted/60 px-2 py-1.5 font-mono text-ui leading-relaxed text-foreground">
                 {phase.result.command}
               </pre>
               {phase.result.explanation && (
-                <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                <p className="mt-1.5 text-caption leading-relaxed text-muted-foreground">
                   {phase.result.explanation}
                 </p>
               )}
               {phase.result.warning && (
-                <p className="mt-1 text-[11px] leading-relaxed text-amber-500">
+                <p className="mt-1 text-caption leading-relaxed text-amber-500">
                   ⚠ {phase.result.warning}
                 </p>
               )}
@@ -150,21 +150,21 @@ export function AiCommandBar({ cwd, onInsert, onClose }: Props) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted"
+                  className="rounded px-2 py-1 text-caption text-muted-foreground hover:bg-muted"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={() => insert(phase.result.command)}
-                  className="rounded bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90"
+                  className="rounded bg-primary px-2.5 py-1 text-caption font-medium text-primary-foreground hover:bg-primary/90"
                 >
                   Insert at prompt
                 </button>
               </div>
             </>
           ) : (
-            <p className="text-[11px] leading-relaxed text-muted-foreground">
+            <p className="text-caption leading-relaxed text-muted-foreground">
               {phase.result.explanation || "The model declined to suggest a command."}
             </p>
           )}
@@ -173,14 +173,14 @@ export function AiCommandBar({ cwd, onInsert, onClose }: Props) {
 
       {phase.kind === "error" && (
         <div className="border-t border-border/60 px-3 py-2">
-          <p className="text-[11px] leading-relaxed text-rose-400">
+          <p className="text-caption leading-relaxed text-rose-400">
             {phase.message}
           </p>
           <div className="mt-1.5 flex justify-end">
             <button
               type="button"
               onClick={() => void openSettingsWindow("models")}
-              className="rounded px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted"
+              className="rounded px-2 py-1 text-caption text-muted-foreground hover:bg-muted"
             >
               Open Settings → Models
             </button>

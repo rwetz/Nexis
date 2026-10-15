@@ -37,9 +37,14 @@ export function PanelHost({ view, fallback, onShowExplorer, pendingViews = [] }:
     });
   }, [active, activeEnabled, panels, packs]);
 
+  // `nexis-content-enter` is Epoch's arrival fade. A CSS animation restarts
+  // whenever its element leaves `display: none`, so a retained panel replays
+  // it each time it is unhidden without remounting (and losing its state).
+  // The legacy `fallback` views are left alone: keying them to replay the
+  // fade would remount them, and switching between them must keep state.
   return <>
     {admitted.filter((panel) => panel === active || (panel.lifecycle === "retain" && visited.has(panel))).map((panel) => (
-      <div key={panel.id} ref={panel === active ? activeElement : undefined} data-panel-id={panel.id} hidden={panel !== active} inert={panel !== active} className="h-full min-h-0" tabIndex={-1}>
+      <div key={panel.id} ref={panel === active ? activeElement : undefined} data-panel-id={panel.id} hidden={panel !== active} inert={panel !== active} className="nexis-content-enter h-full min-h-0" tabIndex={-1}>
         <Suspense fallback={null}>{panel.render()}</Suspense>
       </div>
     ))}

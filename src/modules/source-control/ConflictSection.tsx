@@ -101,10 +101,10 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
           className="shrink-0 text-muted-foreground"
         />
         <Icon name="alert" size="xs" className="shrink-0 text-amber-500" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Conflicts
         </span>
-        <span className="ml-auto rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-500">
+        <span className="ml-auto rounded-full bg-amber-500/15 px-1.5 py-0.5 text-micro font-bold text-amber-500">
           {conflicts.length}
         </span>
       </button>
@@ -119,7 +119,7 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
                 className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/20"
               >
                 {/* Conflict type badge */}
-                <span className="shrink-0 rounded bg-amber-500/10 px-1 py-0.5 font-mono text-[9px] font-bold text-amber-500">
+                <span className="shrink-0 rounded bg-amber-500/10 px-1 py-0.5 font-mono text-micro font-bold text-amber-500">
                   {conflictTypeLabel(f)}
                 </span>
 
@@ -127,7 +127,7 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
                   <p className="truncate text-xs font-medium">
                     {basename(f.path)}
                   </p>
-                  <p className="truncate text-[10px] text-muted-foreground">
+                  <p className="truncate text-micro text-muted-foreground">
                     {f.path}
                   </p>
                 </div>
@@ -139,7 +139,7 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
                   onClick={() => void resolveWithAi(f)}
                   className={cn(
                     "flex shrink-0 items-center gap-1 rounded border border-primary/30 bg-primary/8 px-1.5 py-0.5",
-                    "text-[10px] font-medium text-primary/80 transition-colors",
+                    "text-micro font-medium text-primary/80 transition-colors",
                     "hover:bg-primary/15 hover:text-primary disabled:cursor-wait disabled:opacity-50",
                   )}
                 >

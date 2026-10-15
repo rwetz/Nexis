@@ -54,18 +54,18 @@ export function SharingPill() {
               new CustomEvent("nexis:open-sidebar-view", { detail: "share" }),
             );
           }}
-          className="flex shrink-0 items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10.5px] font-medium text-red-600 transition-colors hover:bg-red-500/25 dark:text-red-400"
+          className="flex shrink-0 items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-caption font-medium text-red-600 transition-colors hover:bg-red-500/25 dark:text-red-400"
         >
           <span className="h-1.5 w-1.5 nexis-blink rounded-full bg-red-500" />
           <span>Sharing on</span>
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-72 text-[11px] leading-relaxed">
+      <TooltipContent side="top" className="max-w-72 text-caption leading-relaxed">
         Sharing your {what} with anyone holding the link ({scope}).
         {url ? (
           <>
             {" "}
-            <span className="font-mono text-[10px]">{url}</span>
+            <span className="font-mono text-micro">{url}</span>
           </>
         ) : null}{" "}
         Click to manage or stop.

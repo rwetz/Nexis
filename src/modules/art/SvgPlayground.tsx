@@ -229,7 +229,7 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
               onClick={() => setLeftPane(id)}
               onPointerEnter={() => paneRail.setHoverId(id)}
               className={cn(
-                "relative z-10 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
+                "relative z-10 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-micro font-medium uppercase tracking-wide transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 leftPane === id
                   ? "text-primary"
@@ -257,7 +257,7 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
                   }
                   onClick={() => setPlaceMode(m)}
                   className={cn(
-                    "rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide transition-colors",
+                    "rounded px-1.5 py-0.5 text-micro font-medium uppercase tracking-wide transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                     placeMode === m
                       ? "bg-primary/15 text-primary"
@@ -270,7 +270,7 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
             </div>
           )}
           {leftPane === "source" && !valid && (
-            <span className="ml-auto flex items-center gap-1 text-[10px] text-amber-500">
+            <span className="ml-auto flex items-center gap-1 text-micro text-amber-500">
               <Icon name="alert" size="xs" />
               not a complete &lt;svg&gt; document
             </span>
@@ -322,7 +322,7 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
       >
         <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-1.5">
           <Icon name="image" size="sm" className="text-muted-foreground" />
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+          <span className="text-micro font-medium uppercase tracking-wide text-muted-foreground/70">
             Preview
           </span>
           <button
@@ -382,16 +382,16 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
                       dangerouslySetInnerHTML={{ __html: safe.svg }}
                     />
                   </div>
-                  <span className="text-[9.5px] tabular-nums text-muted-foreground/70">
+                  <span className="text-micro tabular-nums text-muted-foreground/70">
                     {size}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-[11px] leading-relaxed text-muted-foreground">
+            <p className="text-caption leading-relaxed text-muted-foreground">
               The preview renders once the source is a complete
-              {" "}<code className="text-[10.5px]">&lt;svg&gt;…&lt;/svg&gt;</code>{" "}
+              {" "}<code className="text-caption">&lt;svg&gt;…&lt;/svg&gt;</code>{" "}
               document.
             </p>
           )}
@@ -399,7 +399,7 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
 
         {safe.removed.length > 0 && (
           <div className="shrink-0 border-t border-border/50 bg-amber-500/[0.08] px-3 py-1.5">
-            <p className="flex items-start gap-1.5 text-[10px] leading-relaxed text-amber-600 dark:text-amber-400">
+            <p className="flex items-start gap-1.5 text-micro leading-relaxed text-amber-600 dark:text-amber-400">
               <Icon name="security" size="xs" className="mt-px shrink-0" />
               <span>
                 The preview is not rendering {safe.removed.join(", ")} — your
@@ -417,7 +417,7 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
               onClick={runOptimize}
               disabled={!valid}
               className={cn(
-                "flex items-center gap-1.5 rounded-md border border-border/60 bg-card px-2 py-1 text-[11px] transition-colors",
+                "flex items-center gap-1.5 rounded-md border border-border/60 bg-card px-2 py-1 text-caption transition-colors",
                 "hover:border-border hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 "disabled:cursor-not-allowed disabled:opacity-50",
               )}
@@ -426,7 +426,7 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
               Optimize
             </button>
             {optimized && (
-              <span className="text-[10px] tabular-nums text-muted-foreground">
+              <span className="text-micro tabular-nums text-muted-foreground">
                 {formatBytes(optimized.beforeBytes)} →{" "}
                 <span className="text-foreground">
                   {formatBytes(optimized.afterBytes)}
@@ -436,7 +436,7 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
             )}
           </div>
           {optimized && optimized.applied.length > 0 && (
-            <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground/70">
+            <p className="mt-1 text-micro leading-relaxed text-muted-foreground/70">
               {optimized.applied.join("; ")}.
             </p>
           )}

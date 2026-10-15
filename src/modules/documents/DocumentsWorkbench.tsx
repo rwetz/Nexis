@@ -127,7 +127,7 @@ export function DocumentsWorkbench({ workspaceRoot, onEditRaw }: Props) {
                   aria-selected={doc.id === activeId}
                   title={doc.path}
                   onClick={() => setActiveId(doc.id)}
-                  className="flex items-center gap-1.5 py-1 pr-1 pl-2 text-[11.5px] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                  className="flex items-center gap-1.5 py-1 pr-1 pl-2 text-ui focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
                 >
                   <Icon name={doc.format === "docx" ? "document" : "file-edit"} size="xs" className={doc.id === activeId ? "text-primary" : undefined} />
                   <span className="max-w-48 truncate">{doc.title}</span>

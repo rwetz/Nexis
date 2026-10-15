@@ -203,7 +203,7 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
                   type="button"
                   onClick={() => void handleRecordToggle()}
                   aria-label={isRecording ? "Stop recording" : "Start recording"}
-                  className={`flex h-5 w-5 items-center justify-center rounded-full border text-[8px] font-bold shadow-sm transition-colors ${
+                  className={`flex h-5 w-5 items-center justify-center rounded-full border text-micro font-bold shadow-sm transition-colors ${
                     isRecording
                       ? "border-red-500/70 bg-red-500/10 text-red-500 hover:bg-red-500/20"
                       : "border-border/60 bg-card/80 text-muted-foreground hover:bg-muted hover:border-red-400/60 hover:text-red-400"
@@ -226,8 +226,8 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
         {/* Saved notification toast */}
         {savedToast && visible && (
           <div className="pointer-events-none absolute bottom-3 right-3 z-50 max-w-[280px] rounded-md border border-border/50 bg-card/95 px-3 py-2 shadow-md">
-            <p className="text-[10px] font-medium text-foreground">Recording saved</p>
-            <p className="mt-0.5 truncate font-mono text-[9px] text-muted-foreground">{savedToast}</p>
+            <p className="text-micro font-medium text-foreground">Recording saved</p>
+            <p className="mt-0.5 truncate font-mono text-micro text-muted-foreground">{savedToast}</p>
           </div>
         )}
       </div>

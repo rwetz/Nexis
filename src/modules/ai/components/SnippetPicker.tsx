@@ -42,7 +42,7 @@ export function SnippetPickerContent({
       className="w-72 overflow-hidden rounded-lg border border-border/60 bg-popover/95 p-0 shadow-xl backdrop-blur-xl"
     >
       {items.length === 0 ? (
-        <div className="px-3 py-2.5 text-[11px] text-muted-foreground">
+        <div className="px-3 py-2.5 text-caption text-muted-foreground">
           No matches. Add snippets in Settings → Agents.
         </div>
       ) : (
@@ -63,7 +63,7 @@ export function SnippetPickerContent({
                         onMouseEnter={() => onHover(i)}
                         onClick={() => onPick(it)}
                         className={cn(
-                          "flex w-full items-center gap-2 px-2 py-1.5 text-left text-[12px]",
+                          "flex w-full items-center gap-2 px-2 py-1.5 text-left text-ui",
                           i === activeIndex
                             ? "bg-accent"
                             : "hover:bg-accent/60",
@@ -101,7 +101,7 @@ export function SnippetPickerContent({
                         onMouseEnter={() => onHover(i)}
                         onClick={() => onPick(it)}
                         className={cn(
-                          "flex w-full flex-col items-start gap-0.5 px-2 py-1.5 text-left text-[12px]",
+                          "flex w-full flex-col items-start gap-0.5 px-2 py-1.5 text-left text-ui",
                           i === activeIndex
                             ? "bg-accent"
                             : "hover:bg-accent/60",
@@ -114,7 +114,7 @@ export function SnippetPickerContent({
                           <span className="font-medium">{s.name}</span>
                         </span>
                         {s.description ? (
-                          <span className="line-clamp-1 text-[10.5px] text-muted-foreground">
+                          <span className="line-clamp-1 text-caption text-muted-foreground">
                             {s.description}
                           </span>
                         ) : null}
@@ -133,7 +133,7 @@ export function SnippetPickerContent({
 
 function SectionHeader({ label }: { label: string }) {
   return (
-    <div className="px-2 pt-1.5 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+    <div className="px-2 pt-1.5 pb-1 text-micro font-medium uppercase tracking-wide text-muted-foreground/70">
       {label}
     </div>
   );

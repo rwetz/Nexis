@@ -124,7 +124,7 @@ export function UpdaterDialog() {
                   key={d.key}
                   type="button"
                   onClick={() => setDistro(d.key)}
-                  className={`flex-1 rounded px-2 py-1 text-[11px] transition-colors ${
+                  className={`flex-1 rounded px-2 py-1 text-caption transition-colors ${
                     distro === d.key
                       ? "bg-background text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
@@ -134,12 +134,12 @@ export function UpdaterDialog() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-3 py-2 font-mono text-[12px]">
+            <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-3 py-2 font-mono text-ui">
               <span className="flex-1 select-all">$ {activeCommand}</span>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-[11px]"
+                className="h-7 px-2 text-caption"
                 onClick={() => void copyCommand()}
               >
                 {copied ? "Copied" : "Copy"}

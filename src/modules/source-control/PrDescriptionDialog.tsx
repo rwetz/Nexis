@@ -110,7 +110,7 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
       <DialogContent className="flex max-h-[80vh] max-w-2xl flex-col gap-0 p-0">
         <DialogHeader className="border-b border-border/50 px-5 py-4">
           <DialogTitle className="text-base">AI PR Description</DialogTitle>
-          <DialogDescription className="text-[12px]">
+          <DialogDescription className="text-ui">
             Generate a pull request title and description from recent commits.
           </DialogDescription>
         </DialogHeader>
@@ -118,19 +118,19 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4">
           {!title && !body && !generating && !error && (
             <div className="flex flex-col items-center justify-center gap-3 py-8">
-              <p className="text-[12.5px] text-muted-foreground">
+              <p className="text-ui text-muted-foreground">
                 Click Generate to create a PR description from recent commits.
               </p>
             </div>
           )}
           {generating && (
-            <div className="flex items-center gap-2 py-8 text-[12.5px] text-muted-foreground">
+            <div className="flex items-center gap-2 py-8 text-ui text-muted-foreground">
               <div className="size-3 nexis-spin rounded-full border-2 border-primary border-t-transparent" />
               Generating…
             </div>
           )}
           {error && (
-            <div className="rounded-md bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
+            <div className="rounded-md bg-destructive/10 px-3 py-2 text-ui text-destructive">
               {error}
             </div>
           )}
@@ -138,20 +138,20 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
             <div className="flex flex-col gap-3">
               {title && (
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="pr-title" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <label htmlFor="pr-title" className="text-micro font-semibold uppercase tracking-wider text-muted-foreground">
                     Title
                   </label>
                   <input
                     id="pr-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="rounded border border-border/60 bg-muted/30 px-2.5 py-1.5 text-[13px] font-medium text-foreground outline-none focus:border-primary/60"
+                    className="rounded border border-border/60 bg-muted/30 px-2.5 py-1.5 text-body font-medium text-foreground outline-none focus:border-primary/60"
                   />
                 </div>
               )}
               {body && (
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="pr-body" className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <label htmlFor="pr-body" className="text-micro font-semibold uppercase tracking-wider text-muted-foreground">
                     Body
                   </label>
                   <textarea
@@ -159,7 +159,7 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
                     rows={12}
-                    className="resize-none rounded border border-border/60 bg-muted/30 px-2.5 py-1.5 font-mono text-[12px] text-foreground outline-none focus:border-primary/60"
+                    className="resize-none rounded border border-border/60 bg-muted/30 px-2.5 py-1.5 font-mono text-ui text-foreground outline-none focus:border-primary/60"
                   />
                 </div>
               )}

@@ -225,11 +225,11 @@ const SpotlightRow = memo(function SpotlightRow({
         </span>
       )}
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[12.5px] font-medium">
+        <span className="block truncate text-ui font-medium">
           {hit.title}
         </span>
         {hit.subtitle && (
-          <span className="block truncate text-[10.5px] text-muted-foreground">
+          <span className="block truncate text-caption text-muted-foreground">
             {hit.subtitle}
           </span>
         )}
@@ -288,7 +288,7 @@ function CountBadge({ files, commands, spring }: { files: number; commands: numb
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
           transition={spring}
-          className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10.5px] tabular-nums text-muted-foreground"
+          className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-caption tabular-nums text-muted-foreground"
         >
           {parts.join(" · ")}
         </m.span>
@@ -299,7 +299,7 @@ function CountBadge({ files, commands, spring }: { files: number; commands: numb
 
 function KeyHints() {
   return (
-    <div className="flex items-center gap-3 border-t border-border/60 px-4 py-1.5 text-[10.5px] text-muted-foreground">
+    <div className="flex items-center gap-3 border-t border-border/60 px-4 py-1.5 text-caption text-muted-foreground">
       <span className="flex items-center gap-1">
         <Kbd>↑</Kbd>
         <Kbd>↓</Kbd>
@@ -508,7 +508,7 @@ function ResultsPane({
   if (results.length === 0) {
     if (loading || !expanded) return null;
     return (
-      <div className="border-t border-border/60 px-4 py-8 text-center text-[12px] text-muted-foreground">
+      <div className="border-t border-border/60 px-4 py-8 text-center text-ui text-muted-foreground">
         {hasRoot ? "No results" : "No workspace open"}
       </div>
     );
@@ -518,7 +518,7 @@ function ResultsPane({
     <div className="flex min-h-0 border-t border-border/60">
       <div className="flex min-w-0 flex-1 flex-col">
         {!expanded ? (
-          <div className="px-4 pt-2 text-[10px] font-medium tracking-wide text-muted-foreground/70 uppercase">
+          <div className="px-4 pt-2 text-micro font-medium tracking-wide text-muted-foreground/70 uppercase">
             {hasRecent ? "Recent" : "In this workspace"}
           </div>
         ) : null}

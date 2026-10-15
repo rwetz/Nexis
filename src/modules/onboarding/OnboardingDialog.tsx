@@ -126,7 +126,7 @@ export function OnboardingDialog({ onRunAction, onStartTour }: Props) {
                 <h2 className="font-heading text-[17px] font-semibold tracking-tight">
                   {tourDone ? "Getting started" : "Welcome to Nexis"}
                 </h2>
-                <p className="text-[12px] text-muted-foreground">
+                <p className="text-ui text-muted-foreground">
                   {done === total && total > 0
                     ? "That is the tour of the place. This screen stays in the command palette if you want it again."
                     : "Each row is one thing Nexis does that a terminal does not. Pick any of them — they are not in order."}
@@ -158,7 +158,7 @@ export function OnboardingDialog({ onRunAction, onStartTour }: Props) {
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <span className="shrink-0 text-[11px] font-medium tabular-nums text-muted-foreground">
+              <span className="shrink-0 text-caption font-medium tabular-nums text-muted-foreground">
                 {done} / {total}
               </span>
             </div>
@@ -187,7 +187,7 @@ export function OnboardingDialog({ onRunAction, onStartTour }: Props) {
                 close();
                 onStartTour();
               }}
-              className="flex items-center gap-1.5 rounded text-[11.5px] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+              className="flex items-center gap-1.5 rounded text-ui text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             >
               <Icon name="play" size="xs" />
               {tourDone ? "Replay the guided tour" : "Start the guided tour"}
@@ -196,7 +196,7 @@ export function OnboardingDialog({ onRunAction, onStartTour }: Props) {
             <button
               type="button"
               onClick={close}
-              className="ml-auto rounded-md bg-primary/90 px-3 py-1.5 text-[11.5px] font-medium text-primary-foreground transition-colors hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+              className="ml-auto rounded-md bg-primary/90 px-3 py-1.5 text-ui font-medium text-primary-foreground transition-colors hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             >
               Close
             </button>
@@ -258,7 +258,7 @@ function StepCard({
             />
             <span
               className={cn(
-                "min-w-0 truncate text-[12.5px] font-medium",
+                "min-w-0 truncate text-ui font-medium",
                 done && "text-muted-foreground/60 line-through",
               )}
             >
@@ -270,7 +270,7 @@ function StepCard({
                   <kbd
                     // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
                     key={i}
-                    className="rounded border border-border/60 bg-muted/60 px-1 py-px text-[9.5px] leading-none text-muted-foreground"
+                    className="rounded border border-border/60 bg-muted/60 px-1 py-px text-micro leading-none text-muted-foreground"
                   >
                     {k}
                   </kbd>
@@ -278,7 +278,7 @@ function StepCard({
               </span>
             )}
           </span>
-          <span className="text-[11px] leading-relaxed text-muted-foreground/80">
+          <span className="text-caption leading-relaxed text-muted-foreground/80">
             {step.why}
           </span>
         </button>

@@ -115,11 +115,11 @@ export function SymbolOutlinePanel({ filePath }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center border-b border-border/50 px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Outline
         </span>
         {loading && (
-          <span className="ml-2 text-[10px] text-muted-foreground/60">Loading…</span>
+          <span className="ml-2 text-micro text-muted-foreground/60">Loading…</span>
         )}
       </div>
       <div className="flex-1 overflow-y-auto">
@@ -139,10 +139,10 @@ export function SymbolOutlinePanel({ filePath }: Props) {
                 name={kindIcon(s.kind)}
                 className={cn("shrink-0", kindColor(s.kind))}
               />
-              <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-foreground">
+              <span className="min-w-0 flex-1 truncate font-mono text-ui text-foreground">
                 {s.name}
               </span>
-              <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/50">
+              <span className="shrink-0 text-micro tabular-nums text-muted-foreground/50">
                 {s.line}
               </span>
             </div>

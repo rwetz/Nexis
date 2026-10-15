@@ -94,7 +94,7 @@ export function AgentsSection() {
           <Button
             size="sm"
             variant="outline"
-            className="h-7 gap-1.5 px-2 text-[11px]"
+            className="h-7 gap-1.5 px-2 text-caption"
             onClick={() =>
               setEditingAgent({
                 id: newAgentId(),
@@ -128,7 +128,7 @@ export function AgentsSection() {
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <Label>Snippets</Label>
-            <span className="text-[10.5px] text-muted-foreground">
+            <span className="text-caption text-muted-foreground">
               Reusable instructions you can drop into any prompt with{" "}
               <code className="rounded bg-muted/50 px-1 font-mono">
                 #handle
@@ -139,7 +139,7 @@ export function AgentsSection() {
           <Button
             size="sm"
             variant="outline"
-            className="h-7 gap-1.5 px-2 text-[11px]"
+            className="h-7 gap-1.5 px-2 text-caption"
             onClick={() =>
               setEditingSnippet({
                 id: newSnippetId(),
@@ -156,7 +156,7 @@ export function AgentsSection() {
         </div>
 
         {snippets.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border/60 bg-card/30 px-4 py-6 text-center text-[11px] text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border/60 bg-card/30 px-4 py-6 text-center text-caption text-muted-foreground">
             No snippets yet. Create one and insert it with{" "}
             <code className="font-mono">#handle</code> in the AI input.
           </div>
@@ -167,15 +167,15 @@ export function AgentsSection() {
                 key={s.id}
                 className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/60 px-3 py-2"
               >
-                <code className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                <code className="rounded bg-muted/50 px-1.5 py-0.5 font-mono text-caption text-muted-foreground">
                   #{s.handle}
                 </code>
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-[12px] font-medium">
+                  <span className="truncate text-ui font-medium">
                     {s.name}
                   </span>
                   {s.description ? (
-                    <span className="truncate text-[10.5px] text-muted-foreground">
+                    <span className="truncate text-caption text-muted-foreground">
                       {s.description}
                     </span>
                   ) : null}
@@ -256,15 +256,15 @@ function AgentCard({
           <Icon name={iconName} size="md" />
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="flex items-center gap-1.5 text-[12.5px] font-medium">
+          <span className="flex items-center gap-1.5 text-ui font-medium">
             {agent.name}
             {agent.builtIn ? (
-              <span className="rounded bg-muted/50 px-1 py-0.5 text-[9px] tracking-wide text-muted-foreground uppercase">
+              <span className="rounded bg-muted/50 px-1 py-0.5 text-micro tracking-wide text-muted-foreground uppercase">
                 Built-in
               </span>
             ) : null}
           </span>
-          <span className="line-clamp-2 text-[10.5px] leading-relaxed text-muted-foreground">
+          <span className="line-clamp-2 text-caption leading-relaxed text-muted-foreground">
             {agent.description}
           </span>
         </div>
@@ -274,7 +274,7 @@ function AgentCard({
           size="sm"
           variant={active ? "default" : "outline"}
           onClick={onActivate}
-          className="h-6 gap-1 px-2 text-[10.5px]"
+          className="h-6 gap-1 px-2 text-caption"
         >
           {active ? (
             <>
@@ -381,7 +381,7 @@ function AgentEditorDialog({
               <Input
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                className="h-8 text-[12px]"
+                className="h-8 text-ui"
                 placeholder="e.g. Test Engineer"
               />
             </div>
@@ -394,7 +394,7 @@ function AgentEditorDialog({
                 setDraft({ ...draft, description: e.target.value })
               }
               placeholder="One line — shown in the agent picker"
-              className="h-8 text-[12px]"
+              className="h-8 text-ui"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -405,7 +405,7 @@ function AgentEditorDialog({
                 setDraft({ ...draft, instructions: e.target.value })
               }
               placeholder="Persona & rules. Appended to Nexis's core system prompt."
-              className="min-h-40 resize-y text-[12px] leading-relaxed"
+              className="min-h-40 resize-y text-ui leading-relaxed"
             />
           </div>
         </div>
@@ -474,7 +474,7 @@ function SnippetEditorDialog({
             <div className="flex w-32 flex-col gap-1">
               <Label>Handle</Label>
               <div className="relative">
-                <span className="absolute top-1/2 left-2 -translate-y-1/2 font-mono text-[11.5px] text-muted-foreground">
+                <span className="absolute top-1/2 left-2 -translate-y-1/2 font-mono text-ui text-muted-foreground">
                   #
                 </span>
                 <Input
@@ -486,11 +486,11 @@ function SnippetEditorDialog({
                     })
                   }
                   placeholder="review"
-                  className="h-8 pl-5 font-mono text-[11.5px]"
+                  className="h-8 pl-5 font-mono text-ui"
                 />
               </div>
               {handleErr ? (
-                <span className="text-[10px] text-destructive">
+                <span className="text-micro text-destructive">
                   {handleErr}
                 </span>
               ) : null}
@@ -501,7 +501,7 @@ function SnippetEditorDialog({
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
                 placeholder="e.g. Pre-merge review checklist"
-                className="h-8 text-[12px]"
+                className="h-8 text-ui"
               />
             </div>
           </div>
@@ -513,7 +513,7 @@ function SnippetEditorDialog({
                 setDraft({ ...draft, description: e.target.value })
               }
               placeholder="One line — shown in the # picker"
-              className="h-8 text-[12px]"
+              className="h-8 text-ui"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -522,7 +522,7 @@ function SnippetEditorDialog({
               value={draft.content}
               onChange={(e) => setDraft({ ...draft, content: e.target.value })}
               placeholder="Inserted into the prompt as a <snippet> block when you use #handle."
-              className="min-h-40 resize-y font-mono text-[11.5px] leading-relaxed"
+              className="min-h-40 resize-y font-mono text-ui leading-relaxed"
             />
           </div>
         </div>
@@ -566,7 +566,7 @@ function CustomInstructionsBlock({ value }: { value: string }) {
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         placeholder="e.g. Always reply in concise bullet points. Prefer pnpm over npm. My machine is an M-series Mac."
-        className="min-h-[100px] resize-y bg-card/60 font-sans text-[12px] leading-relaxed border border-border"
+        className="min-h-[100px] resize-y bg-card/60 font-sans text-ui leading-relaxed border border-border"
       />
     </div>
   );
@@ -611,7 +611,7 @@ function ToolPoliciesBlock() {
   return (
     <section className="flex flex-col gap-2">
       <Label>Tool approval policies</Label>
-      <p className="text-[11px] text-muted-foreground leading-relaxed">
+      <p className="text-caption text-muted-foreground leading-relaxed">
         Per-tool approval behavior. "Auto-approve" lets the AI run the tool without pausing.
         For shell commands, "Auto-approve read-only" auto-runs only a narrow allowlist —
         read-only git subcommands, ls, cat, and similar, with no pipes, redirects, or
@@ -628,19 +628,19 @@ function ToolPoliciesBlock() {
               className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/40 last:border-0"
             >
               <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-[12px] font-medium text-foreground">{label}</span>
-                <span className="font-mono text-[10px] text-muted-foreground">{id}</span>
+                <span className="text-ui font-medium text-foreground">{label}</span>
+                <span className="font-mono text-micro text-muted-foreground">{id}</span>
               </div>
               <Select
                 value={policy}
                 onValueChange={(v) => setPolicy(id, v as ToolApprovalPolicy)}
               >
-                <SelectTrigger size="sm" className="h-7 w-44 text-[11px] shrink-0">
+                <SelectTrigger size="sm" className="h-7 w-44 text-caption shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {options.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value} className="text-[11px]">
+                    <SelectItem key={opt.value} value={opt.value} className="text-caption">
                       {opt.label}
                     </SelectItem>
                   ))}

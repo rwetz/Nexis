@@ -23,7 +23,7 @@ export function BackendSelector() {
       <CardHeader className="pb-0">
         <div>
           <CardTitle className="text-sm">Engines</CardTitle>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">The runtimes to measure</p>
+          <p className="mt-0.5 text-caption text-muted-foreground">The runtimes to measure</p>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-1.5">
@@ -37,7 +37,7 @@ export function BackendSelector() {
               b.id === "llama" ? (
                 <button
                   onClick={locateLlama}
-                  className="shrink-0 rounded-md px-1.5 py-0.5 text-[10.5px] font-medium text-brand hover:bg-brand/10"
+                  className="shrink-0 rounded-md px-1.5 py-0.5 text-caption font-medium text-brand hover:bg-brand/10"
                 >
                   {b.available ? "Change" : "Locate…"}
                 </button>
@@ -90,15 +90,15 @@ function BackendRow({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <span className="text-[13px] font-medium leading-tight">{backend.label}</span>
+            <span className="text-body font-medium leading-tight">{backend.label}</span>
             {backend.version && (
-              <span className="font-mono text-[10px] text-muted-foreground">v{backend.version}</span>
+              <span className="font-mono text-micro text-muted-foreground">v{backend.version}</span>
             )}
-            <span className="rounded bg-muted px-1 py-px text-[9.5px] font-semibold uppercase text-muted-foreground">
+            <span className="rounded bg-muted px-1 py-px text-micro font-semibold uppercase text-muted-foreground">
               {backend.device}
             </span>
           </div>
-          <div className="mt-0.5 text-[10.5px] text-muted-foreground line-clamp-1 group-hover:line-clamp-none">
+          <div className="mt-0.5 text-caption text-muted-foreground line-clamp-1 group-hover:line-clamp-none">
             {backend.description}
           </div>
         </div>

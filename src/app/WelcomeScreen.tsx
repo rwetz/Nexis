@@ -229,14 +229,14 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
         {/* Shortcut grid */}
         <div className="mt-0 grid grid-cols-2 gap-x-6 gap-y-2">
           {SHORTCUTS.map(({ label, keys }) => (
-            <div key={label} className="flex items-center justify-between gap-3 text-[12px]">
+            <div key={label} className="flex items-center justify-between gap-3 text-ui">
               <span className="text-muted-foreground/70">{label}</span>
               <span className="flex items-center gap-0.5">
                 {keys.map((k, i) => (
                   <kbd
                     // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
                     key={i}
-                    className="rounded px-1 py-0.5 text-[11px] font-medium leading-none
+                    className="rounded px-1 py-0.5 text-caption font-medium leading-none
                                bg-white/5 text-muted-foreground/60 border border-white/10
                                shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.15)]"
                   >

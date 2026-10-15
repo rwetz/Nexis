@@ -93,11 +93,11 @@ export function AgentQueuePanel() {
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="queue" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Agent Queue
         </span>
         {(queuedCount > 0 || runningCount > 0) && (
-          <span className="ml-auto rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+          <span className="ml-auto rounded-full bg-primary/15 px-1.5 py-0.5 text-micro font-bold text-primary">
             {runningCount > 0
               ? `${runningCount} running`
               : `${queuedCount} queued`}
@@ -127,7 +127,7 @@ export function AgentQueuePanel() {
             <p className="text-xs text-muted-foreground">
               No tasks queued yet.
             </p>
-            <p className="text-[10px] text-muted-foreground/60">
+            <p className="text-micro text-muted-foreground/60">
               Add prompts below — they run sequentially while you work.
             </p>
           </div>
@@ -155,14 +155,14 @@ export function AgentQueuePanel() {
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "text-[10px] font-medium capitalize",
+                        "text-micro font-medium capitalize",
                         statusColor(task.status),
                       )}
                     >
                       {task.status}
                     </span>
                     {formatDuration(task) && (
-                      <span className="text-[10px] text-muted-foreground/60">
+                      <span className="text-micro text-muted-foreground/60">
                         {formatDuration(task)}
                       </span>
                     )}
@@ -246,7 +246,7 @@ export function AgentQueuePanel() {
               }}
               className="w-full resize-none rounded border border-border/60 bg-muted/30 px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary/60"
             />
-            <p className="text-[9px] text-muted-foreground/60">
+            <p className="text-micro text-muted-foreground/60">
               Ctrl+Enter to add · Esc to cancel
             </p>
             <div className="flex gap-1.5">
@@ -275,7 +275,7 @@ export function AgentQueuePanel() {
           <button
             type="button"
             onClick={() => setShowForm(true)}
-            className="flex w-full items-center justify-center gap-1.5 rounded border border-border/50 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+            className="flex w-full items-center justify-center gap-1.5 rounded border border-border/50 py-1.5 text-caption text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
           >
             <Icon name="add" size="xs" />
             Add task

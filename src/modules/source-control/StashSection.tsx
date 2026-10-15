@@ -128,7 +128,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
       <button
         type="button"
         onClick={() => setExpanded((p) => !p)}
-        className="flex h-7 w-full items-center gap-2 px-3 text-left text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+        className="flex h-7 w-full items-center gap-2 px-3 text-left text-caption font-medium text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
       >
         <Icon
           name="chevron-down"
@@ -138,7 +138,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
         <Icon name="archive" className="shrink-0" />
         <span>Stashes</span>
         {stashes.length > 0 && (
-          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-[9.5px] tabular-nums text-muted-foreground/85">
+          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground/85">
             {stashes.length}
           </span>
         )}
@@ -160,11 +160,11 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
                   }}
                   aria-label="Stash message (optional)"
                   placeholder="Stash message (optional)"
-                  className="h-6 min-w-0 flex-1 rounded border border-border/60 bg-background px-2 text-[11px] outline-none focus:border-primary/60"
+                  className="h-6 min-w-0 flex-1 rounded border border-border/60 bg-background px-2 text-caption outline-none focus:border-primary/60"
                 />
                 <Button
                   size="xs"
-                  className="h-6 shrink-0 cursor-pointer text-[10.5px]"
+                  className="h-6 shrink-0 cursor-pointer text-caption"
                   disabled={busy === "push"}
                   onClick={() => void handlePush()}
                 >
@@ -173,7 +173,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
                 <Button
                   size="xs"
                   variant="ghost"
-                  className="h-6 shrink-0 cursor-pointer text-[10.5px]"
+                  className="h-6 shrink-0 cursor-pointer text-caption"
                   onClick={() => setShowPushInput(false)}
                 >
                   Cancel
@@ -183,7 +183,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
               <Button
                 size="xs"
                 variant="secondary"
-                className="h-6 cursor-pointer gap-1.5 text-[10.5px]"
+                className="h-6 cursor-pointer gap-1.5 text-caption"
                 onClick={() => setShowPushInput(true)}
               >
                 <Icon name="archive" size="xs" />
@@ -193,7 +193,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
             <Button
               size="xs"
               variant="ghost"
-              className="ml-auto h-6 cursor-pointer text-[10.5px] text-muted-foreground"
+              className="ml-auto h-6 cursor-pointer text-caption text-muted-foreground"
               onClick={() => void load()}
             >
               {loading ? <Spinner className="size-2.5" /> : "Refresh"}
@@ -201,18 +201,18 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
           </div>
 
           {error && (
-            <div className="mb-1 rounded bg-destructive/10 px-2 py-1 text-[10.5px] text-destructive">
+            <div className="mb-1 rounded bg-destructive/10 px-2 py-1 text-caption text-destructive">
               {error}
             </div>
           )}
 
           {loading && stashes.length === 0 ? (
-            <div className="flex items-center gap-2 py-2 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-2 py-2 text-caption text-muted-foreground">
               <Spinner className="size-3" />
               Loading stashes…
             </div>
           ) : stashes.length === 0 ? (
-            <div className="py-2 text-[11px] text-muted-foreground/65">
+            <div className="py-2 text-caption text-muted-foreground/65">
               No stashes yet.
             </div>
           ) : (
@@ -223,7 +223,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
                 return (
                   <li
                     key={entry.refName}
-                    className="group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] hover:bg-accent/30"
+                    className="group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-caption hover:bg-accent/30"
                   >
                     <Icon
                       name="git-branch"
@@ -234,7 +234,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
                       <div className="truncate font-medium leading-tight text-foreground/90">
                         {label || entry.message}
                       </div>
-                      <div className="text-[10px] tabular-nums text-muted-foreground/65">
+                      <div className="text-micro tabular-nums text-muted-foreground/65">
                         {entry.refName} · {relativeTime(entry.timestampSecs)}
                       </div>
                     </div>
@@ -254,7 +254,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
                                 <Icon name="chevron-down" size="xs" />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[10.5px]">
+                            <TooltipContent side="top" className="text-caption">
                               Pop (apply &amp; drop)
                             </TooltipContent>
                           </Tooltip>
@@ -269,7 +269,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
                                 <Icon name="git-branch" size="xs" />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[10.5px]">
+                            <TooltipContent side="top" className="text-caption">
                               Apply (keep stash)
                             </TooltipContent>
                           </Tooltip>
@@ -284,7 +284,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
                                 <Icon name="delete" size="xs" />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[10.5px]">
+                            <TooltipContent side="top" className="text-caption">
                               Drop stash
                             </TooltipContent>
                           </Tooltip>

@@ -332,7 +332,7 @@ export function AiInputBar({ compact }: { compact?: boolean } = {}) {
                 placeholder="Ask Nexis anything   -   # for snippets and commands, @ for files"
                 rows={1}
                 className={cn(
-                  "max-h-40 flex-1 resize-none bg-transparent text-[13px] leading-relaxed outline-none",
+                  "max-h-40 flex-1 resize-none bg-transparent text-body leading-relaxed outline-none",
                   "placeholder:text-muted-foreground/60",
                 )}
               />
@@ -362,7 +362,7 @@ export function AiInputBar({ compact }: { compact?: boolean } = {}) {
         {voiceLabel && (
           <div
             key={voiceLabel}
-            className="animate-in fade-in slide-in-from-bottom-0.5 duration-150 flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground"
+            className="animate-in fade-in slide-in-from-bottom-0.5 duration-150 flex items-center gap-1.5 px-1 text-caption text-muted-foreground"
           >
             {c.voice.recording ? (
               <span className="size-1.5 nexis-blink rounded-full bg-destructive" />
@@ -399,7 +399,7 @@ function ChipsRow({
       {commands.map((cmd) => (
           <div
             key={`cmd-${cmd.name}`}
-            className="animate-in fade-in zoom-in-90 duration-150 group flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-[11px]"
+            className="animate-in fade-in zoom-in-90 duration-150 group flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-caption"
             title={cmd.label}
           >
             <Icon name={cmd.icon} size="xs" className="text-muted-foreground" />
@@ -417,7 +417,7 @@ function ChipsRow({
         {snippets.map((s) => (
           <div
             key={`snip-${s.id}`}
-            className="animate-in fade-in zoom-in-90 duration-150 group flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary"
+            className="animate-in fade-in zoom-in-90 duration-150 group flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-caption text-primary"
             title={s.description || s.name}
           >
             <Icon name="hash" size="xs" className="opacity-80" />
@@ -435,7 +435,7 @@ function ChipsRow({
         {files.map((f) => (
           <div
             key={f.id}
-            className="animate-in fade-in zoom-in-90 duration-150 group flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-[11px]"
+            className="animate-in fade-in zoom-in-90 duration-150 group flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-caption"
           >
             {f.kind === "image" && f.url ? (
               <img src={f.url} alt="" className="size-4 rounded object-cover" />
@@ -446,7 +446,7 @@ function ChipsRow({
                 className="text-muted-foreground"
               />
             ) : (
-              <span className="font-mono text-[10px] text-muted-foreground">
+              <span className="font-mono text-micro text-muted-foreground">
                 {extOf(f.name)}
               </span>
             )}

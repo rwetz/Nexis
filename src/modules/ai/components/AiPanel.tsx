@@ -163,7 +163,7 @@ function SessionPicker() {
           type="button"
           className={cn(
             "flex min-w-0 max-w-48 items-center gap-1 rounded-md px-1.5 py-1",
-            "text-[11px] text-muted-foreground transition-colors",
+            "text-caption text-muted-foreground transition-colors",
             "hover:bg-accent hover:text-foreground",
           )}
           title="Chat history"
@@ -199,7 +199,7 @@ function SessionPicker() {
             }}
             aria-label="Search chat history"
             placeholder="Search history…"
-            className="min-w-0 flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground/55"
+            className="min-w-0 flex-1 bg-transparent text-caption text-foreground outline-none placeholder:text-muted-foreground/55"
           />
         </div>
 
@@ -210,7 +210,7 @@ function SessionPicker() {
               newSession();
               setOpen(false);
             }}
-            className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-caption text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <Icon name="add" size="xs" />
             New session
@@ -219,7 +219,7 @@ function SessionPicker() {
 
         <div className="max-h-64 overflow-y-auto">
           {filtered.length === 0 ? (
-            <div className="px-3 py-4 text-center text-[11px] text-muted-foreground/60">
+            <div className="px-3 py-4 text-center text-caption text-muted-foreground/60">
               No sessions found
             </div>
           ) : (
@@ -269,10 +269,10 @@ function SessionRow({
         aria-current={active || undefined}
         className="min-w-0 flex-1 text-left"
       >
-        <div className="truncate text-[11.5px] font-medium leading-snug text-foreground/90">
+        <div className="truncate text-ui font-medium leading-snug text-foreground/90">
           {session.title || "New chat"}
         </div>
-        <div className="text-[10px] tabular-nums text-muted-foreground/60">
+        <div className="text-micro tabular-nums text-muted-foreground/60">
           {compactSessionDate(session.updatedAt)}
         </div>
       </button>
@@ -299,15 +299,15 @@ function PlanModeStrip() {
   return (
     <div className="flex shrink-0 items-center gap-2 border-b border-border/40 bg-muted/40 px-3 py-1.5">
       <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
-      <span className="text-[11px] font-medium text-foreground">Plan mode</span>
-      <span className="text-[11px] text-muted-foreground">
+      <span className="text-caption font-medium text-foreground">Plan mode</span>
+      <span className="text-caption text-muted-foreground">
         {queueLen > 0 ? `· ${queueLen} queued` : "· no edits queued"}
       </span>
       <span className="flex-1" />
       <button
         type="button"
         onClick={() => disable()}
-        className="rounded px-1.5 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="rounded px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         Exit
       </button>
@@ -325,7 +325,7 @@ function ChatAreaInner({ sessionId }: { sessionId: string }) {
   });
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col [&_.text-sm]:text-[12px] [&_p]:leading-relaxed">
+    <div className="flex min-h-0 flex-1 flex-col [&_.text-sm]:text-ui [&_p]:leading-relaxed">
       <AiChatView
         messages={helpers.messages}
         status={helpers.status}
@@ -341,7 +341,7 @@ function ChatAreaInner({ sessionId }: { sessionId: string }) {
 function ChatArea({ sessionId }: { sessionId: string | null }) {
   if (!sessionId) {
     return (
-      <div className="flex flex-1 items-center justify-center text-[11px] text-muted-foreground">
+      <div className="flex flex-1 items-center justify-center text-caption text-muted-foreground">
         Loading…
       </div>
     );
@@ -395,7 +395,7 @@ const PanelHeader = memo(function PanelHeader({
 
       <div className="flex shrink-0 items-center gap-1">
         {isBusy && (
-          <span className="flex min-w-0 items-center gap-1 text-[10px] text-muted-foreground">
+          <span className="flex min-w-0 items-center gap-1 text-micro text-muted-foreground">
             <Spinner className="size-2.5" />
             <span className="max-w-32 truncate">{step ?? "Thinking…"}</span>
           </span>
@@ -648,7 +648,7 @@ export function FloatingAiPanel() {
       }}
       className={cn(
         "no-scrollbar-deep flex flex-col overflow-hidden",
-        "rounded-2xl border border-border/60 bg-card text-[12px]",
+        "rounded-2xl border border-border/60 bg-card text-ui",
         "shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_24px_48px_-12px_rgba(0,0,0,0.45),0_8px_16px_-8px_rgba(0,0,0,0.3)]",
         "ring-1 ring-black/5 dark:ring-white/5",
         "transition-shadow",
@@ -658,7 +658,7 @@ export function FloatingAiPanel() {
     >
       {/* snap-to-dock indicator */}
       {inSnapZone && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-8 items-center justify-center bg-primary/10 text-[10px] font-medium text-primary">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-8 items-center justify-center bg-primary/10 text-micro font-medium text-primary">
           Release to dock
         </div>
       )}

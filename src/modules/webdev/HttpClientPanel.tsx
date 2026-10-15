@@ -54,7 +54,7 @@ const STATUS_TONE: Record<ReturnType<typeof statusClass>, string> = {
 
 const FIELD =
   "w-full resize-none rounded-md border border-border/60 bg-card/60 px-2 py-1.5 " +
-  "font-mono text-[11px] leading-relaxed outline-none " +
+  "font-mono text-caption leading-relaxed outline-none " +
   "focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20";
 
 function storageKey(workspaceKey: string, part: string): string {
@@ -188,7 +188,7 @@ export function HttpClientPanel({ workspaceKey }: Props) {
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="network" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           HTTP Client
         </span>
         <button
@@ -209,7 +209,7 @@ export function HttpClientPanel({ workspaceKey }: Props) {
             aria-label="HTTP method"
             value={method}
             onChange={(e) => setMethod(e.target.value as HttpMethod)}
-            className="rounded-md border border-border/60 bg-card/60 px-1.5 py-1 font-mono text-[11px] outline-none focus-visible:border-primary/40"
+            className="rounded-md border border-border/60 bg-card/60 px-1.5 py-1 font-mono text-caption outline-none focus-visible:border-primary/40"
           >
             {HTTP_METHODS.map((m) => (
               <option key={m} value={m}>
@@ -233,7 +233,7 @@ export function HttpClientPanel({ workspaceKey }: Props) {
             onClick={() => void send()}
             disabled={!resolvedUrl || sending}
             className={cn(
-              "flex items-center gap-1 rounded-md bg-primary/90 px-2 py-1 text-[11px] font-medium text-primary-foreground transition-colors",
+              "flex items-center gap-1 rounded-md bg-primary/90 px-2 py-1 text-caption font-medium text-primary-foreground transition-colors",
               "hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
               "disabled:cursor-not-allowed disabled:opacity-50",
             )}
@@ -262,7 +262,7 @@ export function HttpClientPanel({ workspaceKey }: Props) {
 
         {/* ── Response ──────────────────────────────────────────────────── */}
         {error && (
-          <p className="flex items-start gap-1.5 rounded-md bg-destructive/10 px-2 py-1.5 text-[10.5px] leading-relaxed text-destructive">
+          <p className="flex items-start gap-1.5 rounded-md bg-destructive/10 px-2 py-1.5 text-caption leading-relaxed text-destructive">
             <Icon name="alert-circle" size="xs" className="mt-px shrink-0" />
             <span className="min-w-0 break-words">{error}</span>
           </p>
@@ -305,30 +305,30 @@ function ResponseView({
       <div className="flex flex-wrap items-center gap-1.5">
         <span
           className={cn(
-            "rounded px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+            "rounded px-1.5 py-0.5 text-micro font-bold tabular-nums",
             STATUS_TONE[statusClass(response.status)],
           )}
         >
           {response.status} {response.statusText}
         </span>
-        <span className="text-[10px] tabular-nums text-muted-foreground">
+        <span className="text-micro tabular-nums text-muted-foreground">
           {formatElapsed(response.elapsedMs)} · {formatSize(decoded.bytes)}
           {decoded.type ? ` · ${decoded.type}` : ""}
         </span>
       </div>
       {response.finalUrl !== requestedUrl && (
-        <p className="truncate font-mono text-[9.5px] text-muted-foreground/60">
+        <p className="truncate font-mono text-micro text-muted-foreground/60">
           redirected to {response.finalUrl}
         </p>
       )}
-      <pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-[10.5px] leading-relaxed whitespace-pre-wrap break-all">
+      <pre className="max-h-64 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-caption leading-relaxed whitespace-pre-wrap break-all">
         {decoded.text || "(empty body)"}
       </pre>
       <details>
-        <summary className="cursor-pointer text-[10px] text-muted-foreground/70">
+        <summary className="cursor-pointer text-micro text-muted-foreground/70">
           {Object.keys(response.headers).length} response headers
         </summary>
-        <pre className="mt-1 max-h-40 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-[10px] leading-relaxed">
+        <pre className="mt-1 max-h-40 overflow-auto rounded-md bg-muted/40 p-2 font-mono text-micro leading-relaxed">
           {Object.entries(response.headers)
             .map(([k, v]) => `${k}: ${v}`)
             .join("\n")}
@@ -355,7 +355,7 @@ function SavedRequests({
   if (saved.length === 0) return null;
   return (
     <div className="flex flex-col gap-1 border-t border-border/50 pt-2">
-      <span className="text-[9.5px] font-medium uppercase tracking-wide text-muted-foreground/60">
+      <span className="text-micro font-medium uppercase tracking-wide text-muted-foreground/60">
         Saved in this workspace
       </span>
       {saved.map((r) => (
@@ -365,10 +365,10 @@ function SavedRequests({
             onClick={() => onLoad(r)}
             className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1 text-left transition-colors hover:bg-primary/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            <span className="shrink-0 font-mono text-[9.5px] text-muted-foreground/70">
+            <span className="shrink-0 font-mono text-micro text-muted-foreground/70">
               {r.method}
             </span>
-            <span className="truncate font-mono text-[10.5px]">{r.name}</span>
+            <span className="truncate font-mono text-caption">{r.name}</span>
           </button>
           <button
             type="button"
@@ -398,12 +398,12 @@ function RequestHints({
   return (
     <>
       {resolvedUrl && resolvedUrl !== url && (
-        <p className="truncate font-mono text-[9.5px] text-muted-foreground/60">
+        <p className="truncate font-mono text-micro text-muted-foreground/60">
           {resolvedUrl}
         </p>
       )}
       {unresolved.length > 0 && (
-        <p className="flex items-start gap-1.5 text-[10px] leading-relaxed text-amber-600 dark:text-amber-400">
+        <p className="flex items-start gap-1.5 text-micro leading-relaxed text-amber-600 dark:text-amber-400">
           <Icon name="alert" size="xs" className="mt-px shrink-0" />
           Undefined {unresolved.length === 1 ? "variable" : "variables"}:{" "}
           {unresolved.join(", ")} — left as written, define them under Vars.
@@ -448,7 +448,7 @@ function RequestTabBody({
           onChange={(e) => onHeaderText(e.target.value)}
         />
         {invalidHeaderLines.length > 0 && (
-          <p className="text-[10px] leading-relaxed text-amber-600 dark:text-amber-400">
+          <p className="text-micro leading-relaxed text-amber-600 dark:text-amber-400">
             Ignored (no colon): {invalidHeaderLines.join(" · ")}
           </p>
         )}
@@ -480,7 +480,7 @@ function RequestTabBody({
           value={varsText}
           onChange={(e) => onVarsText(e.target.value)}
         />
-        <p className="text-[10px] leading-relaxed text-muted-foreground/70">
+        <p className="text-micro leading-relaxed text-muted-foreground/70">
           Per workspace, and referenced as <code>{"{{name}}"}</code> in the
           URL, headers or body. Stored in plain text on this machine — fine
           for a dev token, not for a production secret.

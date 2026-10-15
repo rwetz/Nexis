@@ -47,7 +47,7 @@ export function ResultsDashboard() {
               key={m.key}
               onClick={() => setMetricKey(m.key)}
               className={cn(
-                "rounded-full px-3 py-1 text-[12px] font-medium whitespace-nowrap transition-colors",
+                "rounded-full px-3 py-1 text-ui font-medium whitespace-nowrap transition-colors",
                 metricKey === m.key
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -58,7 +58,7 @@ export function ResultsDashboard() {
           ))}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <span className="mr-1 font-mono text-[11px] text-muted-foreground tabular-nums">
+          <span className="mr-1 font-mono text-caption text-muted-foreground tabular-nums">
             {completed}/{total} {running ? "running…" : "done"}
           </span>
           <HistoryMenu />
@@ -109,7 +109,7 @@ export function ResultsDashboard() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-semibold">{metric.label}</h2>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-caption text-muted-foreground">
                   {metric.better === "high" ? "Higher is better" : "Lower is better"} · ★ marks the
                   winner per model
                 </p>
@@ -130,7 +130,7 @@ export function ResultsDashboard() {
           <section className="rounded-2xl border border-border bg-card p-5 lg:p-6">
             <div className="mb-3">
               <h2 className="text-sm font-semibold">Efficiency map</h2>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 Throughput vs latency (log–log) · the dashed line is the Pareto frontier — points
                 where nothing else is both faster and higher-throughput. Top-left is ideal.
               </p>
@@ -140,7 +140,7 @@ export function ResultsDashboard() {
 
           {/* Per-cell detail */}
           <section className="flex flex-col gap-3">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <h2 className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
               Run matrix
             </h2>
             <RunMatrix />
@@ -160,7 +160,7 @@ function MetricsProvenance({ results }: { results: BenchResult[] }) {
   const realNotes = [...new Set(realDone.map((r) => r.note ?? "Measured from a live engine."))];
   if (!hasSim && !real) return null;
   return (
-    <div className="mt-4 flex flex-col gap-1.5 border-t border-border/60 pt-3 text-[11px] text-muted-foreground">
+    <div className="mt-4 flex flex-col gap-1.5 border-t border-border/60 pt-3 text-caption text-muted-foreground">
       {realNotes.map((note) => (
         <p key={note}>
           <span className="font-medium text-emerald-500">● Real.</span> {note}
@@ -185,7 +185,7 @@ function Legend({ backendIds }: { backendIds: BackendId[] }) {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {backendIds.map((b) => (
-        <span key={b} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <span key={b} className="flex items-center gap-1.5 text-caption text-muted-foreground">
           <span
             className="size-2.5 rounded-full"
             style={{ backgroundColor: BACKEND_COLOR[b] }}
@@ -243,10 +243,10 @@ function EmptyStep({
       <Icon name={icon} size="sm" className="text-primary" />
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
-          <span className="font-mono text-[10px] text-primary/80">{step}</span>
+          <span className="font-mono text-micro text-primary/80">{step}</span>
           <span className="text-xs font-medium">{title}</span>
         </div>
-        <p className="mt-0.5 text-[10px] text-muted-foreground">{detail}</p>
+        <p className="mt-0.5 text-micro text-muted-foreground">{detail}</p>
       </div>
     </div>
   );

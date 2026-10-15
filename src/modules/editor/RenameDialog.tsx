@@ -169,10 +169,10 @@ export function RenameDialog({
       <div className="w-[420px] rounded-xl border border-border/60 bg-card shadow-2xl">
         <div className="border-b border-border/40 px-4 py-3">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[12px] font-semibold text-foreground">Rename Symbol</p>
+            <p className="text-ui font-semibold text-foreground">Rename Symbol</p>
             <span
               className={cn(
-                "shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
+                "shrink-0 rounded-full px-1.5 py-0.5 text-micro font-semibold uppercase tracking-wide",
                 lspReady
                   ? "bg-primary/15 text-primary"
                   : "bg-muted text-muted-foreground",
@@ -186,14 +186,14 @@ export function RenameDialog({
               {lspReady ? "Semantic" : "Text"}
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Rename <span className="font-mono text-foreground">{symbol}</span> across the workspace
           </p>
         </div>
 
         <div className="p-4 flex flex-col gap-3">
           <div className="flex flex-col gap-1">
-            <label htmlFor="rename-new-name" className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wider">New name</label>
+            <label htmlFor="rename-new-name" className="text-caption font-medium text-muted-foreground uppercase tracking-wider">New name</label>
             <input
               id="rename-new-name"
               ref={inputRef}
@@ -203,11 +203,11 @@ export function RenameDialog({
                 if (e.key === "Enter" && isValid && !applying) void apply();
                 if (e.key === "Escape") onClose();
               }}
-              className="rounded border border-border/60 bg-muted/30 px-2.5 py-1.5 font-mono text-[13px] text-foreground outline-none focus:border-primary/60"
+              className="rounded border border-border/60 bg-muted/30 px-2.5 py-1.5 font-mono text-body text-foreground outline-none focus:border-primary/60"
             />
           </div>
 
-          <div className="rounded border border-border/30 bg-muted/10 p-2.5 text-[11px]">
+          <div className="rounded border border-border/30 bg-muted/10 p-2.5 text-caption">
             {loading ? (
               <span className="text-muted-foreground/60">Searching…</span>
             ) : error ? (
@@ -220,7 +220,7 @@ export function RenameDialog({
                   {totalOccurrences} occurrence{totalOccurrences !== 1 ? "s" : ""} in {fileSummaries.length} file{fileSummaries.length !== 1 ? "s" : ""}
                 </p>
                 {lspReady && (
-                  <p className="text-[10px] text-primary/70">
+                  <p className="text-micro text-primary/70">
                     Text preview — the language server renames only real
                     references.
                   </p>
@@ -238,14 +238,14 @@ export function RenameDialog({
           </div>
 
           {done && (
-            <div className="flex items-center gap-1.5 text-[11px] text-green-500">
+            <div className="flex items-center gap-1.5 text-caption text-green-500">
               <Icon name="success" />
               Renamed successfully
             </div>
           )}
 
           {error && !loading && (
-            <div className="flex items-center gap-1.5 text-[11px] text-destructive">
+            <div className="flex items-center gap-1.5 text-caption text-destructive">
               <Icon name="alert" />
               {error}
             </div>
@@ -256,7 +256,7 @@ export function RenameDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-border/60 px-3 py-1.5 text-[11.5px] text-muted-foreground hover:bg-muted"
+            className="rounded border border-border/60 px-3 py-1.5 text-ui text-muted-foreground hover:bg-muted"
           >
             Cancel
           </button>
@@ -265,7 +265,7 @@ export function RenameDialog({
             disabled={!isValid || applying || loading || done}
             onClick={() => void apply()}
             className={cn(
-              "rounded px-3 py-1.5 text-[11.5px] font-medium text-primary-foreground transition-colors",
+              "rounded px-3 py-1.5 text-ui font-medium text-primary-foreground transition-colors",
               "bg-primary/90 hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50",
             )}
           >

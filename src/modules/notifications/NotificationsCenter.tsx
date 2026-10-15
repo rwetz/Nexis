@@ -75,7 +75,7 @@ export function NotificationsCenter() {
         >
           <Icon name="notification" />
           {unread > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold leading-none text-primary-foreground tabular-nums">
+            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-micro font-bold leading-none text-primary-foreground tabular-nums">
               {unread > 99 ? "99" : unread}
             </span>
           )}
@@ -88,13 +88,13 @@ export function NotificationsCenter() {
         className="z-50 flex w-80 flex-col overflow-hidden rounded-xl border border-border bg-popover p-0 shadow-lg"
       >
           <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
-            <span className="text-[12px] font-semibold text-foreground">Notifications</span>
+            <span className="text-ui font-semibold text-foreground">Notifications</span>
             <div className="flex items-center gap-1">
               {items.length > 0 && (
                 <button
                   type="button"
                   onClick={clear}
-                  className="rounded px-1.5 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="rounded px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   Clear all
                 </button>
@@ -109,7 +109,7 @@ export function NotificationsCenter() {
                   size="lg"
                   className="text-muted-foreground/40"
                 />
-                <p className="text-[11.5px] text-muted-foreground">No notifications</p>
+                <p className="text-ui text-muted-foreground">No notifications</p>
               </div>
             ) : (
               items.map((n) => (
@@ -126,15 +126,15 @@ export function NotificationsCenter() {
                     className={cn("mt-0.5 shrink-0", typeColor(n.type))}
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[12px] font-medium leading-snug text-foreground">
+                    <p className="text-ui font-medium leading-snug text-foreground">
                       {n.title}
                     </p>
                     {n.message && (
-                      <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                      <p className="mt-0.5 text-caption leading-snug text-muted-foreground">
                         {n.message}
                       </p>
                     )}
-                    <p className="mt-1 text-[10px] text-muted-foreground/60">
+                    <p className="mt-1 text-micro text-muted-foreground/60">
                       {relTime(n.at)}
                     </p>
                   </div>

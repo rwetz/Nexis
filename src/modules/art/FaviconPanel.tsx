@@ -178,7 +178,7 @@ export function FaviconPanel({ workspaceRoot }: Props) {
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="rocket" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+        <span className="text-caption font-semibold tracking-wider text-muted-foreground uppercase">
           Favicon Set
         </span>
         <button
@@ -199,12 +199,12 @@ export function FaviconPanel({ workspaceRoot }: Props) {
               className="size-8 shrink-0 text-foreground [&>svg]:h-full [&>svg]:w-full"
               dangerouslySetInnerHTML={{ __html: safe }}
             />
-            <p className="text-[10px] leading-relaxed text-muted-foreground/70">
+            <p className="text-micro leading-relaxed text-muted-foreground/70">
               From the SVG playground.
             </p>
           </>
         ) : (
-          <p className="text-[10.5px] leading-relaxed text-muted-foreground">
+          <p className="text-caption leading-relaxed text-muted-foreground">
             Draw or paste a mark in the SVG playground first — this exports the
             document that panel is holding.
           </p>
@@ -219,26 +219,26 @@ export function FaviconPanel({ workspaceRoot }: Props) {
               value={outDir}
               onChange={(e) => setOutDir(e.target.value)}
               spellCheck={false}
-              className="w-full rounded-md border border-border/60 bg-background/60 px-1.5 py-0.5 font-mono text-[10px] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+              className="w-full rounded-md border border-border/60 bg-background/60 px-1.5 py-0.5 font-mono text-micro focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             />
           </Field>
           <Field label="App name">
             <input
               value={appName}
               onChange={(e) => setAppName(e.target.value)}
-              className="w-full rounded-md border border-border/60 bg-background/60 px-1.5 py-0.5 text-[10.5px] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+              className="w-full rounded-md border border-border/60 bg-background/60 px-1.5 py-0.5 text-caption focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             />
           </Field>
           <Field label="Short name" hint="Shown under a home-screen icon">
             <input
               value={shortName}
               onChange={(e) => setShortName(e.target.value)}
-              className="w-full rounded-md border border-border/60 bg-background/60 px-1.5 py-0.5 text-[10.5px] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+              className="w-full rounded-md border border-border/60 bg-background/60 px-1.5 py-0.5 text-caption focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             />
           </Field>
           <div className="flex items-center gap-3">
             {themed && (
-              <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <label className="flex items-center gap-1.5 text-micro text-muted-foreground">
                 <span title="A rasterized SVG is an isolated document: currentColor does not resolve in it, so the colour is baked in first.">
                   Mark
                 </span>
@@ -250,7 +250,7 @@ export function FaviconPanel({ workspaceRoot }: Props) {
                 />
               </label>
             )}
-            <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <label className="flex items-center gap-1.5 text-micro text-muted-foreground">
               <span title="iOS composites nothing behind a home-screen icon, so the apple-touch-icon is always rendered on this colour.">
                 iOS plate
               </span>
@@ -271,20 +271,20 @@ export function FaviconPanel({ workspaceRoot }: Props) {
               key={t.name}
               className="flex items-baseline gap-2 rounded border border-border/40 bg-card/30 px-2 py-1"
             >
-              <span className="w-9 shrink-0 text-right font-mono text-[9.5px] tabular-nums text-muted-foreground">
+              <span className="w-9 shrink-0 text-right font-mono text-micro tabular-nums text-muted-foreground">
                 {t.size}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-mono text-[10px]">
+                <span className="block truncate font-mono text-micro">
                   {t.name}
                 </span>
-                <span className="block text-[9px] leading-relaxed text-muted-foreground/60">
+                <span className="block text-micro leading-relaxed text-muted-foreground/60">
                   {t.why}
                 </span>
               </span>
               {needsOpaqueBackground(t) && (
                 <span
-                  className="shrink-0 rounded bg-muted px-1 text-[8.5px] text-muted-foreground"
+                  className="shrink-0 rounded bg-muted px-1 text-micro text-muted-foreground"
                   title="Rendered on the plate colour, because iOS will not"
                 >
                   opaque
@@ -297,19 +297,19 @@ export function FaviconPanel({ workspaceRoot }: Props) {
         {/* Head snippet */}
         <div className="mt-3">
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-muted-foreground/70">
+            <span className="text-micro text-muted-foreground/70">
               Markup for &lt;head&gt;
             </span>
             <button
               type="button"
               onClick={copyHead}
-              className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-[10px] transition-colors hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+              className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 py-0.5 text-micro transition-colors hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             >
               <Icon name={copied ? "check" : "copy"} size="xs" />
               {copied ? "Copied" : "Copy"}
             </button>
           </div>
-          <pre className="mt-1 max-h-24 overflow-auto rounded-md bg-muted/40 p-1.5 text-[9px] leading-relaxed text-muted-foreground">
+          <pre className="mt-1 max-h-24 overflow-auto rounded-md bg-muted/40 p-1.5 text-micro leading-relaxed text-muted-foreground">
             {buildHeadSnippet()}
           </pre>
         </div>
@@ -322,7 +322,7 @@ export function FaviconPanel({ workspaceRoot }: Props) {
           disabled={!valid || !targetDir || busy}
           title={targetDir ? `Write into ${targetDir}` : "Open a workspace first"}
           className={cn(
-            "flex w-full items-center justify-center gap-1.5 rounded-md bg-primary/90 py-1.5 text-[11.5px] font-medium text-primary-foreground transition-colors",
+            "flex w-full items-center justify-center gap-1.5 rounded-md bg-primary/90 py-1.5 text-ui font-medium text-primary-foreground transition-colors",
             "hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
             "disabled:cursor-not-allowed disabled:opacity-50",
           )}
@@ -333,7 +333,7 @@ export function FaviconPanel({ workspaceRoot }: Props) {
         {status && (
           <p
             className={cn(
-              "mt-1.5 text-[10px] break-words",
+              "mt-1.5 text-micro break-words",
               status.kind === "ok" ? "text-muted-foreground" : "text-destructive",
             )}
           >
@@ -356,7 +356,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-0.5" title={hint}>
-      <span className="text-[10px] text-muted-foreground">{label}</span>
+      <span className="text-micro text-muted-foreground">{label}</span>
       {children}
     </label>
   );

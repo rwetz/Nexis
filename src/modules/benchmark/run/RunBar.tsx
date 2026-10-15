@@ -28,7 +28,7 @@ export function RunBar() {
         </div>
         <div className="min-w-0">
           <div className="text-sm font-semibold">{running ? "Benchmark in progress" : "Ready to run"}</div>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
+          <p className="mt-0.5 text-caption text-muted-foreground">
             {cells.length > 0
               ? `${selectedModels.length} model${selectedModels.length === 1 ? "" : "s"} × ${selectedBackends.length} selected engine${selectedBackends.length === 1 ? "" : "s"} · ${cells.length} compatible cell${cells.length === 1 ? "" : "s"}`
               : "Choose a model and a compatible engine to create a run plan."}
@@ -37,7 +37,7 @@ export function RunBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <span className="hidden font-mono text-[11px] text-muted-foreground tabular-nums @md:inline">
+        <span className="hidden font-mono text-caption text-muted-foreground tabular-nums @md:inline">
           {cells.length} cell{cells.length === 1 ? "" : "s"}
         </span>
         {running ? (

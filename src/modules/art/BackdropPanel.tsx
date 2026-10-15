@@ -163,10 +163,10 @@ export function BackdropPanel({ workspaceRoot }: Props) {
     <div className="@container/backdrop flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="image" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+        <span className="text-caption font-semibold tracking-wider text-muted-foreground uppercase">
           Backdrop
         </span>
-        <span className="ml-auto text-[10px] tabular-nums text-muted-foreground/60">
+        <span className="ml-auto text-micro tabular-nums text-muted-foreground/60">
           {aspect.width}x{aspect.height}
         </span>
       </div>
@@ -180,7 +180,7 @@ export function BackdropPanel({ workspaceRoot }: Props) {
             aria-pressed={s.id === scene.id}
             onClick={() => setScene(s)}
             className={cn(
-              "rounded-md px-1.5 py-0.5 text-[10.5px] transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+              "rounded-md px-1.5 py-0.5 text-caption transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
               s.id === scene.id
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:text-foreground",
@@ -200,7 +200,7 @@ export function BackdropPanel({ workspaceRoot }: Props) {
             aria-pressed={a.id === aspectId}
             onClick={() => setAspectId(a.id)}
             className={cn(
-              "rounded px-1.5 py-0.5 text-[10px] transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+              "rounded px-1.5 py-0.5 text-micro transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
               a.id === aspectId
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:text-foreground",
@@ -226,7 +226,7 @@ export function BackdropPanel({ workspaceRoot }: Props) {
                   : "A single-hue ramp"
             }
             className={cn(
-              "rounded px-1.5 py-0.5 text-[10px] transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+              "rounded px-1.5 py-0.5 text-micro transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
               source === s
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:text-foreground",
@@ -261,7 +261,7 @@ export function BackdropPanel({ workspaceRoot }: Props) {
                 onClick={roll}
                 disabled={seedLocked}
                 className={cn(
-                  "flex items-center gap-1 rounded-md bg-primary/90 px-2 py-1 text-[11px] font-medium text-primary-foreground transition-colors",
+                  "flex items-center gap-1 rounded-md bg-primary/90 px-2 py-1 text-caption font-medium text-primary-foreground transition-colors",
                   "hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
                   "disabled:cursor-not-allowed disabled:opacity-50",
                 )}
@@ -296,7 +296,7 @@ export function BackdropPanel({ workspaceRoot }: Props) {
             onClick={() => setWithBackground((v) => !v)}
             title="Paint the first palette colour as a full-bleed background"
             className={cn(
-              "rounded px-1.5 py-0.5 text-[10px] transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+              "rounded px-1.5 py-0.5 text-micro transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
               withBackground
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:text-foreground",
@@ -308,7 +308,7 @@ export function BackdropPanel({ workspaceRoot }: Props) {
           <button
             type="button"
             onClick={reset}
-            className="ml-auto rounded px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+            className="ml-auto rounded px-1.5 py-0.5 text-micro text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
           >
             Reset
           </button>
@@ -319,7 +319,7 @@ export function BackdropPanel({ workspaceRoot }: Props) {
         <div className="flex flex-col gap-2">
           {scene.params.map((p) => (
             <label key={p.key} className="flex flex-col gap-0.5" title={p.hint}>
-              <span className="flex items-center justify-between text-[10.5px] text-muted-foreground">
+              <span className="flex items-center justify-between text-caption text-muted-foreground">
                 {p.label}
                 <span className="font-mono tabular-nums text-muted-foreground/70">
                   {Number(current[p.key].toFixed(3))}
@@ -339,7 +339,7 @@ export function BackdropPanel({ workspaceRoot }: Props) {
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-1">
-          <span className="text-[10px] text-muted-foreground/70">Colours</span>
+          <span className="text-micro text-muted-foreground/70">Colours</span>
           {palette.map((hex, i) => (
             <span
               key={`${hex}-${i}`}

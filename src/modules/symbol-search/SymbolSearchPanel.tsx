@@ -190,11 +190,11 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="code-box" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Symbol Search
         </span>
         {searching && (
-          <span className="ml-auto text-[10px] text-muted-foreground/60">
+          <span className="ml-auto text-micro text-muted-foreground/60">
             Searching…
           </span>
         )}
@@ -234,7 +234,7 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
 
         {/* Pattern hint */}
         {query && (
-          <p className="mt-1 text-[9.5px] text-muted-foreground/60">
+          <p className="mt-1 text-micro text-muted-foreground/60">
             Mode:{" "}
             <span className="font-semibold text-primary/70">{kindLabel}</span>
             {kind !== "plain" && (
@@ -278,7 +278,7 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
         ) : (
           <>
             {truncated && (
-              <p className="px-3 py-1.5 text-[10px] text-amber-500/80">
+              <p className="px-3 py-1.5 text-micro text-amber-500/80">
                 Showing first {MAX_RESULTS} results — refine the query for more precision
               </p>
             )}
@@ -291,13 +291,13 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
                     size="xs"
                     className="shrink-0 text-muted-foreground/60"
                   />
-                  <span className="truncate text-[10.5px] font-semibold">
+                  <span className="truncate text-caption font-semibold">
                     {basename(rel)}
                   </span>
-                  <span className="truncate text-[10px] text-muted-foreground/50">
+                  <span className="truncate text-micro text-muted-foreground/50">
                     {dirname(rel)}
                   </span>
-                  <span className="ml-auto shrink-0 text-[9px] text-muted-foreground/50">
+                  <span className="ml-auto shrink-0 text-micro text-muted-foreground/50">
                     {hits.length}
                   </span>
                 </div>
@@ -313,10 +313,10 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
                       !onOpenFile && "cursor-default",
                     )}
                   >
-                    <span className="shrink-0 pt-0.5 font-mono text-[9px] text-muted-foreground/40 tabular-nums">
+                    <span className="shrink-0 pt-0.5 font-mono text-micro text-muted-foreground/40 tabular-nums">
                       {hit.line}
                     </span>
-                    <span className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-foreground/80">
+                    <span className="min-w-0 flex-1 truncate font-mono text-caption text-foreground/80">
                       {hit.text.trimStart()}
                     </span>
                   </button>

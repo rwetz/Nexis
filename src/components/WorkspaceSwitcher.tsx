@@ -105,13 +105,13 @@ export function WorkspaceSwitcher({ currentPath, onSelect, onClose }: Props) {
             onKeyDown={handleKeyDown}
             aria-label="Switch workspace"
             placeholder="Switch workspace…"
-            className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
+            className="min-w-0 flex-1 bg-transparent text-body text-foreground outline-none placeholder:text-muted-foreground/60"
           />
         </div>
 
         <div className="max-h-[360px] overflow-y-auto">
           {filtered.length === 0 ? (
-            <div className="px-3 py-8 text-center text-[12px] text-muted-foreground">
+            <div className="px-3 py-8 text-center text-ui text-muted-foreground">
               {query ? "No matching workspaces" : "No recent workspaces"}
             </div>
           ) : (
@@ -138,20 +138,20 @@ export function WorkspaceSwitcher({ currentPath, onSelect, onClose }: Props) {
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="truncate text-[12.5px] font-medium leading-snug">
+                      <span className="truncate text-ui font-medium leading-snug">
                         {name}
                       </span>
                       {isCurrent && (
-                        <span className="shrink-0 rounded-sm bg-primary/15 px-1 py-px text-[9.5px] font-medium text-primary">
+                        <span className="shrink-0 rounded-sm bg-primary/15 px-1 py-px text-micro font-medium text-primary">
                           current
                         </span>
                       )}
                     </div>
-                    <div className="truncate text-[10.5px] text-muted-foreground/70">
+                    <div className="truncate text-caption text-muted-foreground/70">
                       {ws.path}
                     </div>
                   </div>
-                  <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/50">
+                  <span className="shrink-0 text-micro tabular-nums text-muted-foreground/50">
                     {relativeTime(ws.lastUsed)}
                   </span>
                 </button>

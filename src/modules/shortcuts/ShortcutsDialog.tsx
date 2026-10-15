@@ -51,7 +51,7 @@ export function ShortcutsDialog({ open, onOpenChange }: Props) {
           <Button
             variant="outline"
             size="sm"
-            className="h-8 gap-1.5 px-2.5 text-[11px] font-medium"
+            className="h-8 gap-1.5 px-2.5 text-caption font-medium"
             onClick={onOpenSettings}
           >
             <Icon name="settings" />

@@ -33,6 +33,25 @@
      * runtime, and they cannot share a source without shipping the chain
      * through a style property on every paint. */
     --font-mono: 'Geist Mono Variable', 'Geist Mono', 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
+    /* The UI type scale: four steps, whole pixels, one pixel apart. The
+     * chrome used to pick its own size per call site — fifteen values from
+     * 8px to 18px, half-pixels included, ~1,400 of them — which is why
+     * adjacent rows never quite matched. Every UI size now names a step:
+     *
+     *   text-micro    10px  badges, counters, key chips, overlines
+     *   text-caption  11px  metadata, status bar, secondary rows
+     *   text-ui       12px  panel rows, lists, menus — the default
+     *   text-body     13px  prose the user reads: chat, dialogs, docs
+     *
+     * Above 13px, use Tailwind's own text-sm/lg/xl. The steps set no
+     * line-height on purpose: rows keep inheriting theirs, so moving a call
+     * site onto the scale never changes its height. src/lib/utils.ts teaches
+     * tailwind-merge these names so cn() treats them as sizes, not colours.
+     * Guarded by pitfall 18 in src/lib/pitfall-guards.test.ts. */
+    --text-micro: 10px;
+    --text-caption: 11px;
+    --text-ui: 12px;
+    --text-body: 13px;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

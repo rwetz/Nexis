@@ -56,11 +56,11 @@ export function SystemMonitorPanel() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-1.5 text-center">
         <Icon name="cpu" size="lg" className="text-muted-foreground/40" />
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           {error ? "Resource sampling unavailable" : "Sampling…"}
         </p>
         {error && (
-          <p className="max-w-52 text-[10.5px] text-muted-foreground/60">{error}</p>
+          <p className="max-w-52 text-caption text-muted-foreground/60">{error}</p>
         )}
       </div>
     );
@@ -76,12 +76,12 @@ export function SystemMonitorPanel() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           System
         </span>
         <div className="flex items-center gap-2">
           <span
-            className="font-mono text-[10px] text-muted-foreground/70"
+            className="font-mono text-micro text-muted-foreground/70"
             title="Load average over 1, 5, and 15 minutes"
           >
             {sample.load_avg.map((n) => n.toFixed(2)).join("  ")}
@@ -112,8 +112,8 @@ export function SystemMonitorPanel() {
           <Chart series={history.mem} max={100} tone="text-primary/85" />
           {sample.swap_total > 0 && (
             <div className="mt-1 flex items-baseline justify-between">
-              <span className="text-[10px] text-muted-foreground/70">Swap</span>
-              <span className="font-mono text-[10px] text-muted-foreground">
+              <span className="text-micro text-muted-foreground/70">Swap</span>
+              <span className="font-mono text-micro text-muted-foreground">
                 {formatBytes(sample.swap_used)} / {formatBytes(sample.swap_total)} (
                 {swapPct.toFixed(0)}%)
               </span>
@@ -157,12 +157,12 @@ export function SystemMonitorPanel() {
                   className="flex items-baseline justify-between gap-2"
                 >
                   <span
-                    className="truncate text-[10px] text-muted-foreground/70"
+                    className="truncate text-micro text-muted-foreground/70"
                     title={`${d.name} → ${d.mount_point}`}
                   >
                     {d.mount_point}
                   </span>
-                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                  <span className="shrink-0 font-mono text-micro text-muted-foreground">
                     {formatBytes(used)} / {formatBytes(d.total)} ({pct.toFixed(0)}%)
                   </span>
                 </div>
@@ -174,10 +174,10 @@ export function SystemMonitorPanel() {
         {/* Processes */}
         <div className="border-b border-border/30 px-3 py-2">
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+            <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
               Processes
             </span>
-            <span className="font-mono text-[10px] text-muted-foreground/60">
+            <span className="font-mono text-micro text-muted-foreground/60">
               {rows.length === sample.process_count
                 ? sample.process_count
                 : `${rows.length} of ${sample.process_count}`}
@@ -188,7 +188,7 @@ export function SystemMonitorPanel() {
             onChange={(e) => setFilter(e.target.value)}
             aria-label="Filter processes by name or command"
             placeholder="Filter by name or command…"
-            className="mb-1.5 w-full rounded border border-border/50 bg-background px-1.5 py-1 text-[10.5px] outline-none placeholder:text-muted-foreground/50 focus:border-primary/50"
+            className="mb-1.5 w-full rounded border border-border/50 bg-background px-1.5 py-1 text-caption outline-none placeholder:text-muted-foreground/50 focus:border-primary/50"
           />
           <div className="flex items-center gap-1 border-b border-border/30 pb-1">
             <SortHeader active={sort} value="name" onSort={setSort} className="flex-1 text-left">
@@ -210,7 +210,7 @@ export function SystemMonitorPanel() {
               <ProcessRow key={p.pid} process={p} coreCount={coreCount} onKill={kill} />
             ))}
             {rows.length === 0 && (
-              <p className="py-3 text-center text-[10.5px] text-muted-foreground/60">
+              <p className="py-3 text-center text-caption text-muted-foreground/60">
                 No matching processes
               </p>
             )}
@@ -242,7 +242,7 @@ function RateSwitcher({ active }: { active: number }) {
           onClick={() => void setSysmonIntervalMs(ms)}
           title={`Sample every ${ms} ms — ${HISTORY_LENGTH} samples of history is ${formatSpan(ms)}`}
           className={cn(
-            "px-1 py-px font-mono text-[9.5px] leading-tight transition-colors",
+            "px-1 py-px font-mono text-micro leading-tight transition-colors",
             ms === active
               ? "bg-primary/15 text-foreground"
               : "text-muted-foreground/60 hover:text-foreground",
@@ -284,14 +284,14 @@ function Section({
   return (
     <div className="border-b border-border/30 px-3 py-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+        <span className="flex items-center gap-1.5 text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
           <Icon name={icon} size="xs" />
           {title}
         </span>
         <span className="flex items-baseline gap-1.5">
-          <span className="font-mono text-[11px] text-foreground">{value}</span>
+          <span className="font-mono text-caption text-foreground">{value}</span>
           {detail && (
-            <span className="font-mono text-[10px] text-muted-foreground/60">{detail}</span>
+            <span className="font-mono text-micro text-muted-foreground/60">{detail}</span>
           )}
         </span>
       </div>
@@ -319,7 +319,7 @@ function Chart({
     <pre
       aria-hidden="true"
       className={cn(
-        "overflow-hidden font-mono text-[10px] leading-[1.05] tracking-tighter",
+        "overflow-hidden font-mono text-micro leading-[1.05] tracking-tighter",
         tone,
       )}
     >
@@ -373,7 +373,7 @@ function SortHeader({
       type="button"
       onClick={() => onSort(value)}
       className={cn(
-        "text-[9.5px] font-semibold uppercase tracking-wider transition-colors",
+        "text-micro font-semibold uppercase tracking-wider transition-colors",
         active === value
           ? "text-foreground"
           : "text-muted-foreground/50 hover:text-muted-foreground",
@@ -401,24 +401,24 @@ function ProcessRow({
   return (
     <div className="group flex items-center gap-1 border-b border-border/20 py-[3px] hover:bg-muted/30">
       <span
-        className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-foreground"
+        className="min-w-0 flex-1 truncate font-mono text-caption text-foreground"
         title={p.cmd || p.name}
       >
         {p.name}
       </span>
-      <span className="w-12 shrink-0 text-right font-mono text-[10px] text-muted-foreground/70">
+      <span className="w-12 shrink-0 text-right font-mono text-micro text-muted-foreground/70">
         {p.pid}
       </span>
       <span
         className={cn(
-          "w-12 shrink-0 text-right font-mono text-[10px]",
+          "w-12 shrink-0 text-right font-mono text-micro",
           machinePct > 20 ? "text-foreground" : "text-muted-foreground",
         )}
         title={`${p.cpu.toFixed(1)}% of one core`}
       >
         {machinePct.toFixed(1)}%
       </span>
-      <span className="w-14 shrink-0 text-right font-mono text-[10px] text-muted-foreground">
+      <span className="w-14 shrink-0 text-right font-mono text-micro text-muted-foreground">
         {formatBytes(p.memory)}
       </span>
       <button

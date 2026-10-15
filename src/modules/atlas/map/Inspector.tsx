@@ -135,7 +135,7 @@ function Title({ name, sub }: { name: string; sub: string }) {
       <h2 className="truncate font-heading text-sm font-semibold" title={name}>
         {name}
       </h2>
-      <p className="truncate font-mono text-[11px] text-muted-foreground" title={sub}>
+      <p className="truncate font-mono text-caption text-muted-foreground" title={sub}>
         {sub}
       </p>
     </div>
@@ -176,7 +176,7 @@ function LangBars({ repo }: { repo: { langs: { lang: string; bytes: number }[]; 
       {repo.langs.slice(0, 6).map((slice) => {
         const pct = (slice.bytes / total) * 100;
         return (
-          <div key={slice.lang} className="flex items-center gap-2 text-[11px]">
+          <div key={slice.lang} className="flex items-center gap-2 text-caption">
             <span className="w-20 shrink-0 truncate text-muted-foreground">
               {slice.lang}
             </span>

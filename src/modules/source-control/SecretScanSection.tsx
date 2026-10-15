@@ -156,7 +156,7 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
-        className="flex h-7 w-full items-center gap-2 px-3 text-left text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+        className="flex h-7 w-full items-center gap-2 px-3 text-left text-caption font-medium text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
       >
         <Icon
           name="chevron-down"
@@ -174,11 +174,11 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
         {loading ? (
           <Spinner className="ml-auto size-2.5" />
         ) : live.length > 0 ? (
-          <span className="ml-auto rounded-sm bg-destructive/15 px-1 py-px text-[9.5px] tabular-nums text-destructive">
+          <span className="ml-auto rounded-sm bg-destructive/15 px-1 py-px text-micro tabular-nums text-destructive">
             {live.length}
           </span>
         ) : (
-          <span className="ml-auto text-[9.5px] text-muted-foreground/60">
+          <span className="ml-auto text-micro text-muted-foreground/60">
             clear
           </span>
         )}
@@ -187,9 +187,9 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
       {expanded && (
         <div className="space-y-1.5 px-2 pt-1 pb-2">
           {error ? (
-            <p className="px-1 text-[10.5px] text-destructive">{error}</p>
+            <p className="px-1 text-caption text-destructive">{error}</p>
           ) : live.length === 0 ? (
-            <p className="px-1 text-[10.5px] leading-relaxed text-muted-foreground">
+            <p className="px-1 text-caption leading-relaxed text-muted-foreground">
               Nothing flagged in the staged changes.
               {allowed.size > 0
                 ? ` ${allowed.size} finding${allowed.size === 1 ? " is" : "s are"} dismissed in this repo.`
@@ -197,7 +197,7 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
             </p>
           ) : (
             <>
-              <p className="px-1 text-[10.5px] leading-relaxed text-muted-foreground">
+              <p className="px-1 text-caption leading-relaxed text-muted-foreground">
                 Found in lines this commit <em>adds</em>. Committing is not
                 blocked — but after a push these have to be rotated, not
                 deleted.
@@ -208,14 +208,14 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
                   className="group rounded-md border border-destructive/25 bg-destructive/[0.06] px-2 py-1.5"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="min-w-0 flex-1 truncate text-[11px] font-medium">
+                    <span className="min-w-0 flex-1 truncate text-caption font-medium">
                       {f.kinds.map(describeKind).join(" + ")}
                     </span>
                     <button
                       type="button"
                       onClick={() => dismiss(f.fingerprint)}
                       title="Not a secret — ignore this in this repo"
-                      className="shrink-0 rounded px-1 py-px text-[9.5px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted/60 hover:text-foreground focus-visible:opacity-100"
+                      className="shrink-0 rounded px-1 py-px text-micro text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted/60 hover:text-foreground focus-visible:opacity-100"
                     >
                       Ignore
                     </button>
@@ -224,13 +224,13 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
                     type="button"
                     onClick={() => onOpenFile?.(f.file)}
                     disabled={!onOpenFile}
-                    className="mt-0.5 block w-full truncate text-left font-mono text-[10px] text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground"
+                    className="mt-0.5 block w-full truncate text-left font-mono text-micro text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground"
                   >
                     {f.file}:{f.fileLine}
                   </button>
                   {/* Redacted, always. Printing the match here would put the
                       secret into the render tree and any screenshot of it. */}
-                  <p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground/70">
+                  <p className="mt-0.5 truncate font-mono text-micro text-muted-foreground/70">
                     {f.context}
                   </p>
                 </div>
@@ -239,7 +239,7 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
           )}
 
           {truncated ? (
-            <p className="px-1 text-[10px] text-muted-foreground/70">
+            <p className="px-1 text-micro text-muted-foreground/70">
               The staged diff was too large to read in full, so this scan is
               partial.
             </p>
@@ -249,7 +249,7 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
             <Button
               size="xs"
               variant="ghost"
-              className="h-6 cursor-pointer gap-1.5 text-[10.5px]"
+              className="h-6 cursor-pointer gap-1.5 text-caption"
               onClick={() => void scan()}
               disabled={loading}
             >
@@ -260,7 +260,7 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
               <Button
                 size="xs"
                 variant="ghost"
-                className="h-6 cursor-pointer text-[10.5px] text-muted-foreground"
+                className="h-6 cursor-pointer text-caption text-muted-foreground"
                 onClick={restoreAll}
               >
                 Un-ignore {allowed.size}

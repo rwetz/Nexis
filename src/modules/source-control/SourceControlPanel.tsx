@@ -472,13 +472,13 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                 onSwitched={handleRefresh}
               />
             ) : (
-              <div className="inline-flex min-w-0 items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-[11.5px] font-medium leading-none text-foreground transition-colors hover:bg-foreground/10">
+              <div className="inline-flex min-w-0 items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-ui font-medium leading-none text-foreground transition-colors hover:bg-foreground/10">
                 <Icon name="folder-git" className="shrink-0 text-muted-foreground" />
                 <span className="max-w-[140px] truncate">{repoLabel}</span>
               </div>
             )}
             {scm.status && (scm.status.ahead > 0 || scm.status.behind > 0) ? (
-              <div className="flex shrink-0 items-center gap-0.5 text-[10px] font-semibold tabular-nums leading-none text-muted-foreground">
+              <div className="flex shrink-0 items-center gap-0.5 text-micro font-semibold tabular-nums leading-none text-muted-foreground">
                 {scm.status.ahead > 0 ? (
                   <span className="inline-flex items-center gap-0.5 rounded-md border border-border/60 px-1 py-0.5">
                     <Icon name="chevron-up" size="xs" />
@@ -494,7 +494,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
               </div>
             ) : null}
             {scm.status?.isDetached ? (
-              <span className="rounded bg-muted/55 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              <span className="rounded bg-muted/55 px-1.5 py-0.5 text-micro font-medium uppercase tracking-wider text-muted-foreground">
                 detached
               </span>
             ) : null}
@@ -560,7 +560,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
             className="group flex shrink-0 cursor-pointer items-center gap-2 border-b border-border/40 px-3 py-2 text-left text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
           >
             <Icon name="git-branch" className="shrink-0" />
-            <span className="flex-1 text-[12px] font-medium">Commit Graph</span>
+            <span className="flex-1 text-ui font-medium">Commit Graph</span>
             <Icon
               name="chevron-right"
               className="shrink-0 opacity-50 transition-transform group-hover:translate-x-0.5"
@@ -611,10 +611,10 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                   placeholder="Commit message"
                   rows={3}
                   className={cn(
-                    "min-h-[72px] border-  resize-none rounded-lg  bg-transparent px-3 pb-7 pt-2.5 text-[12.5px] leading-snug shadow-none placeholder:text-muted-foreground/65 focus-visible:ring-0 focus:border-0",
+                    "min-h-[72px] border-  resize-none rounded-lg  bg-transparent px-3 pb-7 pt-2.5 text-ui leading-snug shadow-none placeholder:text-muted-foreground/65 focus-visible:ring-0 focus:border-0",
                   )}
                 />
-                <div className="pointer-events-none absolute inset-x-3 bottom-1.5 flex items-center justify-between p-1 gap-2 text-[10px] tabular-nums text-muted-foreground/55">
+                <div className="pointer-events-none absolute inset-x-3 bottom-1.5 flex items-center justify-between p-1 gap-2 text-micro tabular-nums text-muted-foreground/55">
                   {scm.commitMessage.length > 0 ? (
                     <span>Ch: {scm.commitMessage.length}</span>
                   ) : (
@@ -648,7 +648,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                       side="left"
                       className={cn(
                         SOURCE_CONTROL_TOOLTIP_CLASS,
-                        "text-[10.5px]",
+                        "text-caption",
                       )}
                     >
                       {`${scm.generateCommitMessageHint} (${generateShortcut})`}
@@ -657,7 +657,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                 </div>
               </div>
 
-              <div className="flex min-w-0 items-center gap-1.5 text-[10.5px] text-muted-foreground">
+              <div className="flex min-w-0 items-center gap-1.5 text-caption text-muted-foreground">
                 <span
                   className={cn(
                     "size-1.5 shrink-0 rounded-full transition-colors",
@@ -683,7 +683,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                   <TooltipTrigger asChild>
                     <Button
                       size="xs"
-                      className="h-7 cursor-pointer text-[11.5px] font-semibold tracking-tight shadow-sm disabled:cursor-not-allowed disabled:shadow-none"
+                      className="h-7 cursor-pointer text-ui font-semibold tracking-tight shadow-sm disabled:cursor-not-allowed disabled:shadow-none"
                       disabled={!canCommit}
                       onClick={() => void scm.commit()}
                     >
@@ -694,7 +694,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                     side="bottom"
                     className={cn(
                       SOURCE_CONTROL_TOOLTIP_CLASS,
-                      "text-[10.5px]",
+                      "text-caption",
                     )}
                   >
                     {commitHint}
@@ -705,7 +705,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                     <Button
                       size="xs"
                       variant="secondary"
-                      className="h-7 cursor-pointer text-[11.5px] font-medium disabled:cursor-not-allowed"
+                      className="h-7 cursor-pointer text-ui font-medium disabled:cursor-not-allowed"
                       disabled={!scm.canPush || !!scm.actionBusy}
                       onClick={() => void scm.push()}
                     >
@@ -716,7 +716,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                     side="bottom"
                     className={cn(
                       SOURCE_CONTROL_TOOLTIP_CLASS,
-                      "max-w-64 text-[10.5px]",
+                      "max-w-64 text-caption",
                     )}
                   >
                     {pushDisabledReason}
@@ -729,7 +729,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                 <button
                   type="button"
                   onClick={() => setPrDialogOpen(true)}
-                  className="flex w-full items-center justify-center gap-1.5 rounded border border-border/50 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                  className="flex w-full items-center justify-center gap-1.5 rounded border border-border/50 py-1 text-caption text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
                 >
                   <Icon name="ai-generate" />
                   Generate PR Description
@@ -900,7 +900,7 @@ function PanelCenter({
     <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
       <div className="text-sm font-medium">{title}</div>
       {body ? (
-        <div className="max-w-64 text-[11px] leading-relaxed text-muted-foreground">
+        <div className="max-w-64 text-caption leading-relaxed text-muted-foreground">
           {body}
         </div>
       ) : null}
@@ -966,18 +966,18 @@ function BranchSwitcher({
         <button
           type="button"
           title="Switch branch"
-          className="inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-[11.5px] font-medium leading-none text-foreground transition-colors hover:bg-foreground/10"
+          className="inline-flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md bg-foreground/5 px-2 py-1 text-ui font-medium leading-none text-foreground transition-colors hover:bg-foreground/10"
         >
           <Icon name="git-branch" className="shrink-0 text-muted-foreground" />
           <span className="max-w-[140px] truncate">{label}</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-72 min-w-52 overflow-y-auto">
-        <DropdownMenuLabel className="text-[11px] text-muted-foreground">
+        <DropdownMenuLabel className="text-caption text-muted-foreground">
           Switch branch
         </DropdownMenuLabel>
         {branches === null && !error ? (
-          <div className="flex items-center gap-2 px-2 py-1.5 text-[12px] text-muted-foreground">
+          <div className="flex items-center gap-2 px-2 py-1.5 text-ui text-muted-foreground">
             <Spinner className="size-3" /> Loading branches…
           </div>
         ) : null}
@@ -989,7 +989,7 @@ function BranchSwitcher({
               e.preventDefault();
               void handleSelect(b);
             }}
-            className="text-[12px]"
+            className="text-ui"
           >
             <span className="w-3 shrink-0 text-center">
               {busy === b.name ? (
@@ -1004,14 +1004,14 @@ function BranchSwitcher({
           </DropdownMenuItem>
         ))}
         {branches?.length === 0 ? (
-          <div className="px-2 py-1.5 text-[12px] text-muted-foreground">
+          <div className="px-2 py-1.5 text-ui text-muted-foreground">
             No local branches
           </div>
         ) : null}
         {error ? (
           <>
             <DropdownMenuSeparator />
-            <div className="max-w-64 whitespace-pre-wrap px-2 py-1.5 text-[11px] text-red-400">
+            <div className="max-w-64 whitespace-pre-wrap px-2 py-1.5 text-caption text-red-400">
               {error}
             </div>
           </>
@@ -1027,10 +1027,10 @@ function CleanTreeHint({ repoLabel }: { repoLabel: string }) {
       <div className="flex size-8 items-center justify-center rounded-full border border-border/55 text-muted-foreground">
         <Icon name="success" size="md" />
       </div>
-      <div className="text-[12px] font-medium text-foreground">
+      <div className="text-ui font-medium text-foreground">
         Working tree clean
       </div>
-      <div className="text-[10.5px] leading-snug text-muted-foreground">
+      <div className="text-caption leading-snug text-muted-foreground">
         on <span className="font-mono text-foreground/80">{repoLabel}</span>
       </div>
     </div>
@@ -1064,7 +1064,7 @@ const RowRenderer = memo(function RowRenderer(props: RowRendererProps) {
 
 function DivergedBanner() {
   return (
-    <div className="mx-2 mt-1 flex h-7 items-center gap-1.5 rounded-md border border-border/60 bg-foreground/[0.04] px-2 text-[10.5px] leading-none text-muted-foreground">
+    <div className="mx-2 mt-1 flex h-7 items-center gap-1.5 rounded-md border border-border/60 bg-foreground/[0.04] px-2 text-caption leading-none text-muted-foreground">
       <Icon name="alert" size="xs" className="shrink-0" />
       <span className="min-w-0 flex-1 truncate">
         <span className="font-medium text-foreground/85">
@@ -1091,13 +1091,13 @@ function SectionHeader({
     >
       <span
         className={cn(
-          "text-[9.5px] font-semibold uppercase tracking-[0.18em]",
+          "text-micro font-semibold uppercase tracking-[0.18em]",
           isStaged ? "text-emerald-600/80 dark:text-emerald-400/70" : "text-muted-foreground/75",
         )}
       >
         {row.label}
       </span>
-      <span className="inline-flex h-[14px] min-w-[14px] items-center justify-center rounded-full border border-border/55 px-1 text-[9px] font-semibold tabular-nums text-muted-foreground/80">
+      <span className="inline-flex h-[14px] min-w-[14px] items-center justify-center rounded-full border border-border/55 px-1 text-micro font-semibold tabular-nums text-muted-foreground/80">
         {row.count}
       </span>
     </div>
@@ -1176,7 +1176,7 @@ const EntryRow = memo(function EntryRow({
         <div className="flex min-w-0 flex-1 items-baseline gap-1.5 leading-none">
           <span
             className={cn(
-              "truncate text-[12px] leading-tight",
+              "truncate text-ui leading-tight",
               isSelected || focused
                 ? "font-semibold text-foreground"
                 : "font-medium text-foreground/95",
@@ -1186,7 +1186,7 @@ const EntryRow = memo(function EntryRow({
             {fileName}
           </span>
           {pathLabel ? (
-            <span className="min-w-0 flex-1 truncate text-[10.5px] leading-tight text-muted-foreground/75">
+            <span className="min-w-0 flex-1 truncate text-caption leading-tight text-muted-foreground/75">
               {pathLabel}
             </span>
           ) : null}
@@ -1256,7 +1256,7 @@ function IconActionButton({
       </TooltipTrigger>
       <TooltipContent
         side={side}
-        className={cn(SOURCE_CONTROL_TOOLTIP_CLASS, "text-[10.5px]")}
+        className={cn(SOURCE_CONTROL_TOOLTIP_CLASS, "text-caption")}
       >
         {label}
       </TooltipContent>
@@ -1305,7 +1305,7 @@ function CommitFeedback({
   return (
     <div
       className={cn(
-        "absolute inset-x-3 top-[calc(100%-0.25rem)] z-20 flex min-w-0 gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] leading-snug shadow-lg shadow-black/15 backdrop-blur transition-all duration-200",
+        "absolute inset-x-3 top-[calc(100%-0.25rem)] z-20 flex min-w-0 gap-1.5 rounded-lg border px-2.5 py-1.5 text-caption leading-snug shadow-lg shadow-black/15 backdrop-blur transition-all duration-200",
         isVisible ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0",
         // A success is a passing notice and must not eat clicks on the
         // controls underneath it. An error is readable text with a dismiss

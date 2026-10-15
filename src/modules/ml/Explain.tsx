@@ -48,10 +48,10 @@ export function Explain({ term, info, children, className }: Props) {
         align="start"
         className="w-64 rounded-md p-2.5"
       >
-        <p className="mb-1 text-[11px] font-semibold text-foreground">
+        <p className="mb-1 text-caption font-semibold text-foreground">
           {entry.title}
         </p>
-        <p className="text-[10.5px] leading-snug text-muted-foreground">
+        <p className="text-caption leading-snug text-muted-foreground">
           {entry.body}
         </p>
       </HoverCardContent>

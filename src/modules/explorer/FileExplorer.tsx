@@ -779,7 +779,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, FileExplorerProps>(
               >
                 {pendingAtRoot ? (
                   <div
-                    className="flex h-6 w-full min-w-0 items-center gap-2 px-1.5 text-[13px]"
+                    className="flex h-6 w-full min-w-0 items-center gap-2 px-1.5 text-body"
                     style={{ paddingLeft: 6 }}
                   >
                     <span className="size-3.5 shrink-0" />
@@ -799,12 +799,12 @@ export const FileExplorer = forwardRef<FileExplorerHandle, FileExplorerProps>(
                   </div>
                 ) : null}
                 {root?.status === "loading" && (
-                  <div className="px-3 py-2 text-[11px] text-muted-foreground">
+                  <div className="px-3 py-2 text-caption text-muted-foreground">
                     Loading…
                   </div>
                 )}
                 {root?.status === "error" && (
-                  <div className="px-3 py-2 text-[11px] text-destructive">
+                  <div className="px-3 py-2 text-caption text-destructive">
                     {root.message}
                   </div>
                 )}

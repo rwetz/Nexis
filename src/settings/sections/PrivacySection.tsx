@@ -168,8 +168,8 @@ export function PrivacySection() {
           while keeping timings and exit codes is the right trade, and one
           shared cap could not express it. */}
       <div className="flex flex-col gap-0.5 pt-1">
-        <span className="text-[12.5px] font-medium">Retention</span>
-        <span className="text-[10.5px] leading-relaxed text-muted-foreground">
+        <span className="text-ui font-medium">Retention</span>
+        <span className="text-caption leading-relaxed text-muted-foreground">
           Applied when a workspace is opened. Command details and captured
           output are capped separately, and output is evicted first.
         </span>
@@ -185,12 +185,12 @@ export function PrivacySection() {
             void setCommandLedgerMaxAgeDays(coerceLedgerMaxAgeDays(Number(v)))
           }
         >
-          <SelectTrigger size="sm" className="h-8 w-36 text-[12px]">
+          <SelectTrigger size="sm" className="h-8 w-36 text-ui">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {LEDGER_MAX_AGE_DAYS_PRESETS.map((days) => (
-              <SelectItem key={days} value={String(days)} className="text-[12px]">
+              <SelectItem key={days} value={String(days)} className="text-ui">
                 {formatMaxAgeDays(days)}
               </SelectItem>
             ))}
@@ -208,12 +208,12 @@ export function PrivacySection() {
             void setCommandLedgerMaxRecords(coerceLedgerMaxRecords(Number(v)))
           }
         >
-          <SelectTrigger size="sm" className="h-8 w-36 text-[12px]">
+          <SelectTrigger size="sm" className="h-8 w-36 text-ui">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {LEDGER_MAX_RECORDS_PRESETS.map((n) => (
-              <SelectItem key={n} value={String(n)} className="text-[12px]">
+              <SelectItem key={n} value={String(n)} className="text-ui">
                 {formatMaxRecords(n)}
               </SelectItem>
             ))}
@@ -231,12 +231,12 @@ export function PrivacySection() {
             void setCommandLedgerMaxOutputMb(coerceLedgerMaxOutputMb(Number(v)))
           }
         >
-          <SelectTrigger size="sm" className="h-8 w-36 text-[12px]">
+          <SelectTrigger size="sm" className="h-8 w-36 text-ui">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {LEDGER_MAX_OUTPUT_MB_PRESETS.map((mb) => (
-              <SelectItem key={mb} value={String(mb)} className="text-[12px]">
+              <SelectItem key={mb} value={String(mb)} className="text-ui">
                 {formatMaxOutputMb(mb)}
               </SelectItem>
             ))}
@@ -248,8 +248,8 @@ export function PrivacySection() {
           first: "forget everything" with no indication of what is there is a
           button nobody can evaluate before pressing. */}
       <div className="flex flex-col gap-0.5 pt-1">
-        <span className="text-[12.5px] font-medium">Recorded history</span>
-        <span className="text-[10.5px] leading-relaxed text-muted-foreground">
+        <span className="text-ui font-medium">Recorded history</span>
+        <span className="text-caption leading-relaxed text-muted-foreground">
           {workspaceLabel
             ? `For the open workspace, ${workspaceLabel}. Each workspace keeps its own ledger.`
             : "No workspace is open, so there is no ledger to show. Open a folder to manage its history."}
@@ -259,10 +259,10 @@ export function PrivacySection() {
       <div className="flex flex-col gap-2.5 rounded-lg border border-border/60 bg-card/60 px-3 py-2.5">
         <div className="flex items-center gap-4">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[12.5px] font-medium">
+            <span className="text-ui font-medium">
               {stats ? formatSpan(stats) : "Reading…"}
             </span>
-            <span className="text-[10.5px] leading-relaxed text-muted-foreground">
+            <span className="text-caption leading-relaxed text-muted-foreground">
               {stats
                 ? `${formatBytes(stats.logBytes)} of command details, ${formatBytes(stats.blobBytes)} of captured output across ${stats.blobCount.toLocaleString()} file${stats.blobCount === 1 ? "" : "s"}.`
                 : "Counting what is on disk."}
@@ -271,7 +271,7 @@ export function PrivacySection() {
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto h-8 shrink-0 text-[12px]"
+            className="ml-auto h-8 shrink-0 text-ui"
             onClick={refresh}
             disabled={!root}
           >
@@ -281,13 +281,13 @@ export function PrivacySection() {
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2.5">
-          <span className="mr-1 text-[11px] text-muted-foreground">Forget</span>
+          <span className="mr-1 text-caption text-muted-foreground">Forget</span>
           {FORGET_WINDOWS.map((w) => (
             <Button
               key={w.label}
               variant="outline"
               size="sm"
-              className="h-7 text-[11.5px]"
+              className="h-7 text-ui"
               disabled={!root || stats?.records === 0}
               onClick={() => void onForgetSince(w.label, w.ms)}
             >
@@ -297,7 +297,7 @@ export function PrivacySection() {
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto h-7 border-destructive/40 text-[11.5px] text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="ml-auto h-7 border-destructive/40 text-ui text-destructive hover:bg-destructive/10 hover:text-destructive"
             disabled={!root || stats?.records === 0}
             onClick={() => setConfirmForgetAll(true)}
           >

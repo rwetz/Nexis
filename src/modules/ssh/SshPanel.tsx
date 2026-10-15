@@ -100,12 +100,12 @@ export function SshPanel({ onConnect }: Props) {
 
       {isEditing && (
         <div className="shrink-0 border-b border-border/50 bg-muted/20 px-3 py-3 space-y-2">
-          <p className="text-[11px] font-medium text-muted-foreground mb-1">
+          <p className="text-caption font-medium text-muted-foreground mb-1">
             {isNew ? "New connection" : "Edit connection"}
           </p>
           <div className="grid grid-cols-2 gap-2">
             <div className="col-span-2 space-y-1">
-              <Label className="text-[10px]">Label</Label>
+              <Label className="text-micro">Label</Label>
               <Input
                 className="h-7 text-xs"
                 placeholder="My Server"
@@ -114,7 +114,7 @@ export function SshPanel({ onConnect }: Props) {
               />
             </div>
             <div className="col-span-2 space-y-1">
-              <Label className="text-[10px]">Host *</Label>
+              <Label className="text-micro">Host *</Label>
               <Input
                 className="h-7 text-xs"
                 placeholder="192.168.1.1"
@@ -123,7 +123,7 @@ export function SshPanel({ onConnect }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px]">User</Label>
+              <Label className="text-micro">User</Label>
               <Input
                 className="h-7 text-xs"
                 placeholder="root"
@@ -132,7 +132,7 @@ export function SshPanel({ onConnect }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px]">Port</Label>
+              <Label className="text-micro">Port</Label>
               <Input
                 className="h-7 text-xs"
                 type="number"
@@ -143,7 +143,7 @@ export function SshPanel({ onConnect }: Props) {
               />
             </div>
             <div className="col-span-2 space-y-1">
-              <Label className="text-[10px]">Identity file (optional)</Label>
+              <Label className="text-micro">Identity file (optional)</Label>
               <Input
                 className="h-7 text-xs"
                 placeholder="~/.ssh/id_rsa"
@@ -189,7 +189,7 @@ export function SshPanel({ onConnect }: Props) {
                   <Icon name="terminal" className="shrink-0 text-muted-foreground/60" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium">{conn.label}</p>
-                    <p className="truncate text-[10px] text-muted-foreground font-mono">{cmd}</p>
+                    <p className="truncate text-micro text-muted-foreground font-mono">{cmd}</p>
                   </div>
                   <div className={cn(
                     "flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100",

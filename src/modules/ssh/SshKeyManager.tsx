@@ -146,11 +146,11 @@ export function SshKeyManager() {
           name={expanded ? "chevron-down" : "chevron-right"}
           className="shrink-0 text-muted-foreground"
         />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           SSH Keys
         </span>
         {keys.length > 0 && (
-          <span className="ml-auto text-[10px] text-muted-foreground/60">
+          <span className="ml-auto text-micro text-muted-foreground/60">
             {keys.length}
           </span>
         )}
@@ -160,11 +160,11 @@ export function SshKeyManager() {
         <div className="pb-2">
           {/* Key list */}
           {loading ? (
-            <div className="px-4 py-2 text-[11px] text-muted-foreground">
+            <div className="px-4 py-2 text-caption text-muted-foreground">
               Loading…
             </div>
           ) : keys.length === 0 ? (
-            <div className="px-4 py-2 text-[11px] text-muted-foreground">
+            <div className="px-4 py-2 text-caption text-muted-foreground">
               No public keys found in ~/.ssh
             </div>
           ) : (
@@ -178,7 +178,7 @@ export function SshKeyManager() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium">{k.label}</p>
                     {k.comment && k.comment !== k.label && (
-                      <p className="truncate text-[10px] text-muted-foreground">
+                      <p className="truncate text-micro text-muted-foreground">
                         {k.comment}
                       </p>
                     )}
@@ -205,7 +205,7 @@ export function SshKeyManager() {
           {/* Generate form */}
           {showGenForm ? (
             <div className="mx-3 mt-2 rounded-md border border-border/50 bg-muted/20 p-2.5 space-y-2">
-              <p className="text-[11px] font-medium text-muted-foreground">
+              <p className="text-caption font-medium text-muted-foreground">
                 New Ed25519 key
               </p>
               <div className="space-y-1.5">
@@ -233,7 +233,7 @@ export function SshKeyManager() {
                 />
               </div>
               {genError && (
-                <p className="text-[10px] text-destructive">{genError}</p>
+                <p className="text-micro text-destructive">{genError}</p>
               )}
               <div className="flex justify-end gap-1.5">
                 <Button
@@ -260,7 +260,7 @@ export function SshKeyManager() {
             <button
               type="button"
               onClick={() => setShowGenForm(true)}
-              className="mx-3 mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+              className="mx-3 mt-1.5 flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground"
             >
               <Icon name="add" size="xs" />
               Generate new key

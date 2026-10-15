@@ -250,7 +250,7 @@ export function ModelsSection() {
   };
 
   if (!keys) {
-    return <div className="text-[12px] text-muted-foreground">Loading…</div>;
+    return <div className="text-ui text-muted-foreground">Loading…</div>;
   }
 
   const configuredIds = new Set(
@@ -301,7 +301,7 @@ export function ModelsSection() {
           <div className="flex items-center gap-2">
             <Label>Providers</Label>
             {visibleProviders.length > 0 ? (
-              <span className="inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full border border-border/55 px-1 text-[9px] font-semibold tabular-nums text-muted-foreground/80">
+              <span className="inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full border border-border/55 px-1 text-micro font-semibold tabular-nums text-muted-foreground/80">
                 {visibleProviders.length}
               </span>
             ) : null}
@@ -317,10 +317,10 @@ export function ModelsSection() {
             <div className="mx-auto mb-2 flex size-8 items-center justify-center rounded-full border border-border/50 text-muted-foreground/50">
               <Icon name="add" size="md" />
             </div>
-            <p className="text-[12px] font-medium text-foreground/70">
+            <p className="text-ui font-medium text-foreground/70">
               No providers connected yet
             </p>
-            <p className="mt-1 text-[10.5px] leading-relaxed text-muted-foreground/65">
+            <p className="mt-1 text-caption leading-relaxed text-muted-foreground/65">
               Click &quot;Add provider&quot; to connect a cloud or local model source.
             </p>
           </div>
@@ -335,7 +335,7 @@ export function ModelsSection() {
                     <div className="flex flex-col gap-2">
                       {cloudProviders.length > 0 && localProviders.length > 0 ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                          <span className="text-micro font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
                             Cloud
                           </span>
                           <div className="h-px flex-1 bg-border/35" />
@@ -357,7 +357,7 @@ export function ModelsSection() {
                     <div className="flex flex-col gap-2">
                       {cloudProviders.length > 0 && localProviders.length > 0 ? (
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[9.5px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                          <span className="text-micro font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
                             Local & custom
                           </span>
                           <div className="h-px flex-1 bg-border/35" />
@@ -415,7 +415,7 @@ function AddProviderMenu({
           size="sm"
           variant="outline"
           disabled={disabled}
-          className="h-7 gap-1.5 px-2.5 text-[11px]"
+          className="h-7 gap-1.5 px-2.5 text-caption"
         >
           <Icon name="add" />
           Add provider
@@ -424,7 +424,7 @@ function AddProviderMenu({
       <DropdownMenuContent align="end" className="min-w-55 p-1">
         {cloud.length > 0 ? (
           <>
-            <DropdownMenuLabel className="px-2 text-[10px] tracking-wide text-muted-foreground uppercase">
+            <DropdownMenuLabel className="px-2 text-micro tracking-wide text-muted-foreground uppercase">
               Cloud
             </DropdownMenuLabel>
             {cloud.map((p) => (
@@ -434,7 +434,7 @@ function AddProviderMenu({
         ) : null}
         {local.length > 0 ? (
           <>
-            <DropdownMenuLabel className="px-2 text-[10px] tracking-wide text-muted-foreground uppercase">
+            <DropdownMenuLabel className="px-2 text-micro tracking-wide text-muted-foreground uppercase">
               Local & custom
             </DropdownMenuLabel>
             {local.map((p) => (
@@ -457,7 +457,7 @@ function ProviderMenuItem({
   return (
     <DropdownMenuItem
       onSelect={() => onAdd(provider.id)}
-      className="flex items-center gap-2 text-[12px]"
+      className="flex items-center gap-2 text-ui"
     >
       <ProviderIcon provider={provider.id} size={13} />
       <span>{provider.label}</span>
@@ -479,7 +479,7 @@ function DefaultsBlock({
       <div className="flex items-center gap-2">
         <Label>Defaults</Label>
         {configuredIds.size === 0 ? (
-          <span className="text-[10px] text-muted-foreground/60">
+          <span className="text-micro text-muted-foreground/60">
             — add a provider below first
           </span>
         ) : null}
@@ -517,7 +517,7 @@ function DefaultModelPicker({
         <Button
           variant="outline"
           disabled={!hasAny}
-          className="h-8 flex-1 justify-between gap-2 px-2.5 text-[11.5px]"
+          className="h-8 flex-1 justify-between gap-2 px-2.5 text-ui"
         >
           <span className="flex items-center gap-2 truncate">
             <ProviderIcon provider={m.provider} size={13} />
@@ -540,7 +540,7 @@ function DefaultModelPicker({
             if (models.length === 0) return null;
             return (
               <div key={p.id} className="px-1 pt-1.5 first:pt-1">
-                <div className="mb-0.5 flex items-center gap-1.5 px-2 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                <div className="mb-0.5 flex items-center gap-1.5 px-2 text-micro font-medium tracking-wide text-muted-foreground uppercase">
                   <ProviderIcon provider={p.id} size={11} />
                   <span>{p.label}</span>
                 </div>
@@ -549,13 +549,13 @@ function DefaultModelPicker({
                     key={mod.id}
                     onSelect={() => void setDefaultModel(mod.id as ModelId)}
                     className={cn(
-                      "flex items-start gap-2 text-[12px]",
+                      "flex items-start gap-2 text-ui",
                       mod.id === defaultModel && "bg-accent/50",
                     )}
                   >
                     <span className="flex flex-1 flex-col">
                       <span>{mod.label}</span>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-micro text-muted-foreground">
                         {mod.description}
                       </span>
                     </span>
@@ -629,7 +629,7 @@ function AutocompleteRow({
               <Button
                 variant="outline"
                 disabled={!enabled}
-                className="h-8 flex-1 justify-between gap-2 px-2.5 text-[11.5px]"
+                className="h-8 flex-1 justify-between gap-2 px-2.5 text-ui"
               >
                 <span className="flex items-center gap-2 truncate">
                   <ProviderIcon provider={currentModel.provider} size={12} />
@@ -652,11 +652,11 @@ function AutocompleteRow({
                 const pConfigured = configuredIds.has(p.id);
                 return (
                   <div key={p.id} className="px-1 pt-1.5 first:pt-1">
-                    <div className="mb-0.5 flex items-center gap-1.5 px-2 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                    <div className="mb-0.5 flex items-center gap-1.5 px-2 text-micro font-medium tracking-wide text-muted-foreground uppercase">
                       <ProviderIcon provider={p.id} size={11} />
                       <span>{p.label}</span>
                       {!pConfigured ? (
-                        <span className="ml-auto text-[9.5px] normal-case tracking-normal text-muted-foreground/70">
+                        <span className="ml-auto text-micro normal-case tracking-normal text-muted-foreground/70">
                           not connected
                         </span>
                       ) : null}
@@ -667,13 +667,13 @@ function AutocompleteRow({
                         disabled={!pConfigured}
                         onSelect={() => pConfigured && setModel(m.id, p.id)}
                         className={cn(
-                          "text-[11.5px]",
+                          "text-ui",
                           m.id === modelId && "bg-accent/50",
                         )}
                       >
                         <span className="flex flex-col">
                           <span>{m.label}</span>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-micro text-muted-foreground">
                             {m.description}
                           </span>
                         </span>
@@ -687,7 +687,7 @@ function AutocompleteRow({
         </div>
       </FieldRow>
       {enabled && !hasKey ? (
-        <p className="pl-19 text-[10.5px] text-muted-foreground">
+        <p className="pl-19 text-caption text-muted-foreground">
           {getProvider(provider).label} isn't connected — add it below.
         </p>
       ) : null}
@@ -744,11 +744,11 @@ function LocalProviderCard({
     <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-card/60 px-3 py-2.5">
       <div className="flex items-center gap-2">
         <ProviderIcon provider={provider.id} size={15} />
-        <span className="text-[12.5px] font-medium">{provider.label}</span>
+        <span className="text-ui font-medium">{provider.label}</span>
         {configured ? (
           <Badge
             variant="outline"
-            className="ml-1 h-4 gap-1 border-border/60 bg-muted/40 px-1.5 text-[10px] font-normal text-muted-foreground"
+            className="ml-1 h-4 gap-1 border-border/60 bg-muted/40 px-1.5 text-micro font-normal text-muted-foreground"
           >
             <Icon name="success" size="xs" />
             Connected
@@ -757,7 +757,7 @@ function LocalProviderCard({
         <button
           type="button"
           onClick={() => void openHostUrl(provider.consoleUrl)}
-          className="ml-auto inline-flex items-center gap-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground"
+          className="ml-auto inline-flex items-center gap-0.5 text-caption text-muted-foreground transition-colors hover:text-foreground"
         >
           Docs
           <Icon name="external" size="xs" />
@@ -773,7 +773,7 @@ function LocalProviderCard({
         </Button>
       </div>
 
-      <span className="text-[10.5px] leading-relaxed text-muted-foreground">
+      <span className="text-caption leading-relaxed text-muted-foreground">
         {meta.description}
       </span>
 
@@ -789,14 +789,14 @@ function LocalProviderCard({
               }}
               placeholder={meta.urlPlaceholder}
               spellCheck={false}
-              className="h-8 flex-1 font-mono text-[11.5px]"
+              className="h-8 flex-1 font-mono text-ui"
             />
             <Button
               size="sm"
               variant="outline"
               onClick={() => void test()}
               disabled={!urlDraft.trim()}
-              className="h-8 px-3 text-[11px]"
+              className="h-8 px-3 text-caption"
             >
               Test
             </Button>
@@ -813,7 +813,7 @@ function LocalProviderCard({
             }}
             placeholder={meta.modelPlaceholder}
             spellCheck={false}
-            className="h-8 font-mono text-[11.5px]"
+            className="h-8 font-mono text-ui"
           />
         </FieldRow>
 
@@ -830,9 +830,9 @@ function LocalProviderCard({
                 }}
                 placeholder="128000"
                 spellCheck={false}
-                className="h-8 w-28 font-mono text-[11.5px]"
+                className="h-8 w-28 font-mono text-ui"
               />
-              <span className="text-[10.5px] text-muted-foreground">tokens</span>
+              <span className="text-caption text-muted-foreground">tokens</span>
             </div>
           </FieldRow>
         ) : null}
@@ -841,7 +841,7 @@ function LocalProviderCard({
           <FieldRow label="API key">
             {compatKey ? (
               <div className="flex flex-1 items-center gap-1.5">
-                <code className="flex-1 truncate rounded bg-muted/40 px-2 py-1 font-mono text-[11px] text-muted-foreground">
+                <code className="flex-1 truncate rounded bg-muted/40 px-2 py-1 font-mono text-caption text-muted-foreground">
                   {`${compatKey.slice(0, 4)}${"•".repeat(8)}${compatKey.slice(-4)}`}
                 </code>
                 <Button
@@ -862,7 +862,7 @@ function LocalProviderCard({
                   onChange={(e) => setKeyDraft(e.target.value)}
                   placeholder="Optional — leave empty for unauthenticated endpoints"
                   spellCheck={false}
-                  className="h-8 flex-1 font-mono text-[11.5px]"
+                  className="h-8 flex-1 font-mono text-ui"
                 />
                 <Button
                   size="sm"
@@ -873,7 +873,7 @@ function LocalProviderCard({
                     setKeyDraft("");
                   }}
                   disabled={!keyDraft.trim()}
-                  className="h-8 px-3 text-[11px]"
+                  className="h-8 px-3 text-caption"
                 >
                   Save
                 </Button>
@@ -885,7 +885,7 @@ function LocalProviderCard({
         <StatusLine status={testStatus} />
 
         {!modelId.trim() && meta.modelHint ? (
-          <p className="text-[10.5px] leading-relaxed text-muted-foreground">
+          <p className="text-caption leading-relaxed text-muted-foreground">
             {meta.modelHint}
           </p>
         ) : null}
@@ -903,7 +903,7 @@ function FieldRow({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-16 shrink-0 text-[11px] tracking-tight text-muted-foreground">
+      <span className="w-16 shrink-0 text-caption tracking-tight text-muted-foreground">
         {label}
       </span>
       <div className="flex flex-1 items-center">{children}</div>
@@ -921,12 +921,12 @@ function StatusLine({ status }: { status: TestStatus }) {
       return null;
     case "testing":
       return (
-        <span className="text-[10.5px] text-muted-foreground">Testing…</span>
+        <span className="text-caption text-muted-foreground">Testing…</span>
       );
     case "ok":
     case "reachable":
       return (
-        <span className="flex items-center gap-1 text-[10.5px] text-muted-foreground">
+        <span className="flex items-center gap-1 text-caption text-muted-foreground">
           <Icon name="success" size="xs" />
           {status.kind === "ok"
             ? "Reachable — model found on the server."
@@ -935,7 +935,7 @@ function StatusLine({ status }: { status: TestStatus }) {
       );
     case "model-missing":
       return (
-        <span className="text-[10.5px] text-destructive/80">
+        <span className="text-caption text-destructive/80">
           Reachable, but the server doesn't list this model id.
           {status.available.length > 0
             ? ` Available: ${status.available.slice(0, 8).join(", ")}${status.available.length > 8 ? ", …" : ""}`
@@ -944,13 +944,13 @@ function StatusLine({ status }: { status: TestStatus }) {
       );
     case "http-error":
       return (
-        <span className="text-[10.5px] text-destructive/80">
+        <span className="text-caption text-destructive/80">
           Server responded with HTTP {status.status}.
         </span>
       );
     case "unreachable":
       return (
-        <span className="text-[10.5px] text-destructive/80">
+        <span className="text-caption text-destructive/80">
           Could not reach the server: {status.message}
         </span>
       );

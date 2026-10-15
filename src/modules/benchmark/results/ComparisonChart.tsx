@@ -70,9 +70,9 @@ export function ComparisonChart({ metric, models, backendIds, results, task }: P
         return (
           <div key={model.id} className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <span className="truncate text-[12px] font-medium">{model.name}</span>
+              <span className="truncate text-ui font-medium">{model.name}</span>
               {model.paramsLabel && (
-                <span className="font-mono text-[10px] text-muted-foreground">
+                <span className="font-mono text-micro text-muted-foreground">
                   {model.paramsLabel}
                 </span>
               )}
@@ -120,8 +120,8 @@ function EngineWorkload({
   return (
     <div className="flex flex-col gap-1.5 border-t border-border/60 pt-3">
       <div className="flex flex-col">
-        <span className="truncate text-[12px] font-medium">{ENGINE_WORKLOAD_LABEL}</span>
-        <span className="text-[10.5px] text-muted-foreground">
+        <span className="truncate text-ui font-medium">{ENGINE_WORKLOAD_LABEL}</span>
+        <span className="text-caption text-muted-foreground">
           {BACKEND_SHORT.nexis} trains a fixed synthetic task and does not run your model, so these
           numbers are not comparable with the bars above
           {metric.key === "accuracy" ? " (accuracy is the workload's validation accuracy)" : ""}.
@@ -166,7 +166,7 @@ function Bar({
   const pct = valid ? Math.max(2, (value / max) * 100) : 0;
   return (
     <div className="flex items-center gap-2">
-      <span className="w-20 shrink-0 truncate text-right font-mono text-[10px] text-muted-foreground">
+      <span className="w-20 shrink-0 truncate text-right font-mono text-micro text-muted-foreground">
         {label}
       </span>
       <div className="relative h-5 flex-1 overflow-hidden rounded-md bg-muted/40">
@@ -187,12 +187,12 @@ function Bar({
         />
         <span
           className={cn(
-            "absolute inset-y-0 right-2 flex items-center font-mono text-[10.5px] font-medium tabular-nums",
+            "absolute inset-y-0 right-2 flex items-center font-mono text-caption font-medium tabular-nums",
             valid ? "text-foreground" : "text-muted-foreground/50",
           )}
         >
           {text}
-          {isBest && <span className="ml-1 text-[9px]">★</span>}
+          {isBest && <span className="ml-1 text-micro">★</span>}
         </span>
       </div>
     </div>

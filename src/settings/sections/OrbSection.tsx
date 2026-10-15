@@ -32,7 +32,7 @@ const STATE_LABELS: Record<OrbState, string> = {
 /** Marks an orb that recolours with the theme. */
 function ThemeChip() {
   return (
-    <span className="inline-flex items-center gap-0.5 rounded-sm bg-muted px-1 py-px text-[9.5px] font-normal text-muted-foreground">
+    <span className="inline-flex items-center gap-0.5 rounded-sm bg-muted px-1 py-px text-micro font-normal text-muted-foreground">
       <Icon name="theme" size={10} />
       Theme
     </span>
@@ -57,11 +57,11 @@ export function OrbSection() {
           <LazyShaderOrb variant={current.key} state={previewState} size={96} />
           <div className="flex min-w-0 flex-col gap-2">
             <div>
-              <div className="flex items-center gap-1.5 text-[13px] font-semibold">
+              <div className="flex items-center gap-1.5 text-body font-semibold">
                 {current.label}
                 {current.themed ? <ThemeChip /> : null}
               </div>
-              <div className="text-[11px] leading-relaxed text-muted-foreground">{current.note}</div>
+              <div className="text-caption leading-relaxed text-muted-foreground">{current.note}</div>
             </div>
             <div role="radiogroup" aria-label="Preview state" className="flex gap-1">
               {ORB_STATES.map((st) => (
@@ -72,7 +72,7 @@ export function OrbSection() {
                   aria-checked={st === previewState}
                   onClick={() => setPreviewState(st)}
                   className={cn(
-                    "rounded-md border px-2 py-0.5 text-[11px] transition-colors",
+                    "rounded-md border px-2 py-0.5 text-caption transition-colors",
                     st === previewState
                       ? "border-primary/50 bg-primary/10 text-foreground"
                       : "border-border/60 text-muted-foreground hover:bg-muted/50",
@@ -110,7 +110,7 @@ export function OrbSection() {
                 still={!active && hovered !== v.key}
                 label={`${v.label} orb`}
               />
-              <span className="flex items-center gap-1 text-[11.5px] font-medium">
+              <span className="flex items-center gap-1 text-ui font-medium">
                 {v.label}
                 {active ? <Icon name="check" size="xs" className="text-primary" /> : null}
               </span>
@@ -134,13 +134,13 @@ export function OrbSection() {
           <span className="flex size-16 items-center justify-center">
             <img src="/nexis-logo.png" alt="" className="size-8 opacity-80" />
           </span>
-          <span className="flex items-center gap-1 text-[11.5px] font-medium">
+          <span className="flex items-center gap-1 text-ui font-medium">
             Off
             {selected === "off" ? <Icon name="check" size="xs" className="text-primary" /> : null}
           </span>
         </button>
       </div>
-      <p className="text-[10.5px] leading-relaxed text-muted-foreground">
+      <p className="text-caption leading-relaxed text-muted-foreground">
         Off keeps the Nexis mark in a new chat and the plain spinner while the agent works. With reduced motion on,
         orbs draw one still frame.
       </p>

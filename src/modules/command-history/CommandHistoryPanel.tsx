@@ -106,10 +106,10 @@ export function CommandHistoryPanel({ workspaceRoot }: Props) {
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="clock" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+        <span className="text-caption font-semibold tracking-wider text-muted-foreground uppercase">
           Command History
         </span>
-        <span className="ml-auto truncate text-[10px] text-muted-foreground/60">
+        <span className="ml-auto truncate text-micro text-muted-foreground/60">
           {basename(workspaceRoot) || workspaceRoot}
         </span>
       </div>
@@ -133,7 +133,7 @@ export function CommandHistoryPanel({ workspaceRoot }: Props) {
             aria-selected={tab === id}
             onClick={() => setTab(id)}
             className={cn(
-              "rounded-md px-2 py-0.5 text-[11px] transition-colors",
+              "rounded-md px-2 py-0.5 text-caption transition-colors",
               tab === id
                 ? "bg-accent/70 text-foreground"
                 : "text-muted-foreground hover:bg-muted/40",
@@ -166,10 +166,10 @@ function NotRecording({ hasWorkspace }: { hasWorkspace: boolean }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
       <Icon name="clock" size="lg" className="text-muted-foreground/40" />
-      <p className="text-[12px] font-medium">
+      <p className="text-ui font-medium">
         {hasWorkspace ? "Command recording is off" : "No workspace open"}
       </p>
-      <p className="text-[10.5px] leading-relaxed text-muted-foreground">
+      <p className="text-caption leading-relaxed text-muted-foreground">
         {hasWorkspace
           ? "Nexis can keep a local record of the commands you run here — what worked, how long it took, and what it printed. Nothing leaves your machine, and private terminals are never recorded."
           : "Open a folder to see the commands recorded in it. Each workspace keeps its own history."}
@@ -178,7 +178,7 @@ function NotRecording({ hasWorkspace }: { hasWorkspace: boolean }) {
         <button
           type="button"
           onClick={() => void openSettingsWindow("privacy")}
-          className="mt-1 rounded-md border border-border/60 px-2.5 py-1 text-[11px] hover:bg-muted/50"
+          className="mt-1 rounded-md border border-border/60 px-2.5 py-1 text-caption hover:bg-muted/50"
         >
           Open privacy settings
         </button>
@@ -281,7 +281,7 @@ function RecentTab({ root }: { root: string }) {
             inOutput ? "Search captured output" : "Search recorded commands"
           }
           placeholder={inOutput ? "Search output…" : "Search commands…"}
-          className="min-w-0 flex-1 bg-transparent font-mono text-[11px] outline-none placeholder:text-muted-foreground/50"
+          className="min-w-0 flex-1 bg-transparent font-mono text-caption outline-none placeholder:text-muted-foreground/50"
         />
         <button
           type="button"
@@ -308,7 +308,7 @@ function RecentTab({ root }: { root: string }) {
             disabled={inOutput}
             onClick={() => setExit(id)}
             className={cn(
-              "rounded px-1.5 py-0.5 text-[10.5px] transition-colors",
+              "rounded px-1.5 py-0.5 text-caption transition-colors",
               exit === id && !inOutput
                 ? "bg-accent/70 text-foreground"
                 : "text-muted-foreground hover:bg-muted/40",
@@ -324,7 +324,7 @@ function RecentTab({ root }: { root: string }) {
           onClick={() => setInOutput((v) => !v)}
           title="Search the text commands printed, not the commands themselves"
           className={cn(
-            "ml-auto rounded px-1.5 py-0.5 text-[10.5px] transition-colors",
+            "ml-auto rounded px-1.5 py-0.5 text-caption transition-colors",
             inOutput
               ? "bg-accent/70 text-foreground"
               : "text-muted-foreground hover:bg-muted/40",
@@ -336,11 +336,11 @@ function RecentTab({ root }: { root: string }) {
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading && rows.length === 0 ? (
-          <p className="px-3 py-4 text-center text-[11px] text-muted-foreground">
+          <p className="px-3 py-4 text-center text-caption text-muted-foreground">
             Reading…
           </p>
         ) : rows.length === 0 ? (
-          <p className="px-4 py-6 text-center text-[11px] leading-relaxed text-muted-foreground">
+          <p className="px-4 py-6 text-center text-caption leading-relaxed text-muted-foreground">
             {inOutput
               ? query.trim() === ""
                 ? "Type to search everything your commands have printed here."
@@ -366,7 +366,7 @@ function RecentTab({ root }: { root: string }) {
           ))
         )}
         {rows.length >= (inOutput ? OUTPUT_HIT_LIMIT : LIST_LIMIT) ? (
-          <p className="px-3 py-2 text-center text-[10px] text-muted-foreground/60">
+          <p className="px-3 py-2 text-center text-micro text-muted-foreground/60">
             Showing the newest {rows.length}. Narrow the search to see further
             back.
           </p>
@@ -431,10 +431,10 @@ function RecentRow({
               failed ? "bg-destructive" : "bg-emerald-500/80",
             )}
           />
-          <span className="min-w-0 flex-1 truncate font-mono text-[11.5px]">
+          <span className="min-w-0 flex-1 truncate font-mono text-ui">
             {record.argv}
           </span>
-          <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
+          <span className="shrink-0 font-mono text-micro text-muted-foreground/70">
             {failed ? `exit ${record.exitCode} · ` : ""}
             {shortDuration(record.durationMs)} · {relativeTime(record.startedAt)}
           </span>
@@ -451,7 +451,7 @@ function RecentRow({
       </div>
 
       {snippet ? (
-        <p className="truncate px-2 pb-1.5 pl-[22px] font-mono text-[10px] text-muted-foreground">
+        <p className="truncate px-2 pb-1.5 pl-[22px] font-mono text-micro text-muted-foreground">
           {snippet}
           {matches && matches > 1 ? (
             <span className="ml-1 text-muted-foreground/60">
@@ -463,23 +463,23 @@ function RecentRow({
 
       {expanded ? (
         <div className="space-y-1.5 border-t border-border/30 bg-background/40 px-2 py-2 pl-[22px]">
-          <p className="truncate font-mono text-[10px] text-muted-foreground">
+          <p className="truncate font-mono text-micro text-muted-foreground">
             {record.cwd || "(no directory recorded)"}
           </p>
           {record.outputId ? (
             loadingOutput ? (
-              <p className="text-[10px] text-muted-foreground">Reading output…</p>
+              <p className="text-micro text-muted-foreground">Reading output…</p>
             ) : output === null ? (
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-micro text-muted-foreground">
                 The captured output has been evicted by retention.
               </p>
             ) : (
-              <pre className="max-h-56 overflow-auto rounded border border-border/40 bg-background/60 p-1.5 font-mono text-[10px] leading-relaxed whitespace-pre-wrap">
+              <pre className="max-h-56 overflow-auto rounded border border-border/40 bg-background/60 p-1.5 font-mono text-micro leading-relaxed whitespace-pre-wrap">
                 {output}
               </pre>
             )
           ) : (
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-micro text-muted-foreground">
               No output was captured for this command.
             </p>
           )}
@@ -511,7 +511,7 @@ function TrendsTab({ root }: { root: string }) {
 
   if (records === null) {
     return (
-      <p className="px-3 py-4 text-center text-[11px] text-muted-foreground">
+      <p className="px-3 py-4 text-center text-caption text-muted-foreground">
         Reading…
       </p>
     );
@@ -519,7 +519,7 @@ function TrendsTab({ root }: { root: string }) {
 
   if (trends.length === 0) {
     return (
-      <p className="px-4 py-6 text-center text-[11px] leading-relaxed text-muted-foreground">
+      <p className="px-4 py-6 text-center text-caption leading-relaxed text-muted-foreground">
         Nothing to chart yet. A command needs to have run more than once, and to
         take longer than about a second, before its timings say anything.
       </p>
@@ -528,7 +528,7 @@ function TrendsTab({ root }: { root: string }) {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
-      <p className="px-2.5 py-1.5 text-[10px] leading-relaxed text-muted-foreground/70">
+      <p className="px-2.5 py-1.5 text-micro leading-relaxed text-muted-foreground/70">
         Ordered by total time spent, which is where the wall-clock actually
         goes. Drift compares each command's recent runs against its older ones.
       </p>
@@ -548,13 +548,13 @@ function TrendRow({ trend }: { trend: Trend }) {
   return (
     <div className="border-b border-border/30 px-2 py-1.5 last:border-b-0">
       <div className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 truncate font-mono text-[11.5px]">
+        <span className="min-w-0 flex-1 truncate font-mono text-ui">
           {trend.argv}
         </span>
         {notable ? (
           <span
             className={cn(
-              "shrink-0 rounded px-1 py-px font-mono text-[9.5px]",
+              "shrink-0 rounded px-1 py-px font-mono text-micro",
               worse
                 ? "bg-destructive/15 text-destructive"
                 : "bg-emerald-500/15 text-emerald-500",
@@ -566,7 +566,7 @@ function TrendRow({ trend }: { trend: Trend }) {
         ) : null}
         <Sparkline values={trend.series} />
       </div>
-      <div className="mt-0.5 flex items-center gap-2 font-mono text-[10px] text-muted-foreground/70">
+      <div className="mt-0.5 flex items-center gap-2 font-mono text-micro text-muted-foreground/70">
         <span>median {shortDuration(trend.medianMs)}</span>
         <span>·</span>
         <span>last {shortDuration(trend.lastMs)}</span>
@@ -663,7 +663,7 @@ function JournalTab({ root }: { root: string }) {
             aria-pressed={windowId === w.id}
             onClick={() => setWindowId(w.id)}
             className={cn(
-              "rounded px-1.5 py-0.5 text-[10.5px] transition-colors",
+              "rounded px-1.5 py-0.5 text-caption transition-colors",
               windowId === w.id
                 ? "bg-accent/70 text-foreground"
                 : "text-muted-foreground hover:bg-muted/40",
@@ -675,11 +675,11 @@ function JournalTab({ root }: { root: string }) {
       </div>
 
       {journal === null ? (
-        <p className="px-3 py-4 text-center text-[11px] text-muted-foreground">
+        <p className="px-3 py-4 text-center text-caption text-muted-foreground">
           Reading…
         </p>
       ) : journal.commands === 0 ? (
-        <p className="px-4 py-6 text-center text-[11px] leading-relaxed text-muted-foreground">
+        <p className="px-4 py-6 text-center text-caption leading-relaxed text-muted-foreground">
           Nothing recorded in this window.
         </p>
       ) : (
@@ -694,7 +694,7 @@ function JournalTab({ root }: { root: string }) {
             <Stat label="running" value={shortDuration(journal.activeMs)} />
           </div>
 
-          <p className="text-[10px] leading-relaxed text-muted-foreground/70">
+          <p className="text-micro leading-relaxed text-muted-foreground/70">
             {journal.firstAt !== null && journal.lastAt !== null
               ? `First command ${relativeTime(journal.firstAt)}, last ${relativeTime(journal.lastAt)}.`
               : null}{" "}
@@ -733,7 +733,7 @@ function Stat({
       >
         {value}
       </div>
-      <div className="mt-1 text-[9.5px] tracking-wide text-muted-foreground uppercase">
+      <div className="mt-1 text-micro tracking-wide text-muted-foreground uppercase">
         {label}
       </div>
     </div>
@@ -753,7 +753,7 @@ function JournalList({
   const busiest = entries[0].runs;
   return (
     <div className="space-y-1">
-      <div className="text-[9.5px] tracking-wide text-muted-foreground uppercase">
+      <div className="text-micro tracking-wide text-muted-foreground uppercase">
         {title}
       </div>
       {entries.slice(0, 10).map((e) => (
@@ -768,7 +768,7 @@ function JournalList({
             />
             <span
               className={cn(
-                "relative block truncate px-1 py-0.5 text-[10.5px]",
+                "relative block truncate px-1 py-0.5 text-caption",
                 mono && "font-mono",
               )}
               title={e.label}
@@ -776,7 +776,7 @@ function JournalList({
               {mono ? basename(e.label) || e.label : e.label}
             </span>
           </div>
-          <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
+          <span className="shrink-0 font-mono text-micro text-muted-foreground/70">
             {e.runs} · {shortDuration(e.totalMs)}
           </span>
         </div>

@@ -167,7 +167,7 @@ export function ExportBar({ source, valid, workspaceRoot }: Props) {
             aria-pressed={format === f}
             onClick={() => setFormat(f)}
             className={cn(
-              "rounded-md px-1.5 py-0.5 text-[10.5px] transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+              "rounded-md px-1.5 py-0.5 text-caption transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
               format === f
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:text-foreground",
@@ -182,7 +182,7 @@ export function ExportBar({ source, valid, workspaceRoot }: Props) {
           onClick={() => void copy()}
           disabled={!valid || busy}
           className={cn(
-            "ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-[10.5px] transition-colors",
+            "ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-caption transition-colors",
             "hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
             "disabled:cursor-not-allowed disabled:opacity-50",
           )}
@@ -194,7 +194,7 @@ export function ExportBar({ source, valid, workspaceRoot }: Props) {
 
       {isPng && (
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] text-muted-foreground/70">Scale</span>
+          <span className="text-micro text-muted-foreground/70">Scale</span>
           {SCALES.map((s) => (
             <button
               key={s}
@@ -202,7 +202,7 @@ export function ExportBar({ source, valid, workspaceRoot }: Props) {
               aria-pressed={scale === s}
               onClick={() => setScale(s)}
               className={cn(
-                "rounded px-1.5 py-0.5 text-[10px] tabular-nums transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+                "rounded px-1.5 py-0.5 text-micro tabular-nums transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
                 scale === s
                   ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:text-foreground",
@@ -211,12 +211,12 @@ export function ExportBar({ source, valid, workspaceRoot }: Props) {
               {s}x
             </button>
           ))}
-          <span className="text-[10px] tabular-nums text-muted-foreground/60">
+          <span className="text-micro tabular-nums text-muted-foreground/60">
             {Math.round(size.width * scale)}x{Math.round(size.height * scale)}
           </span>
 
           {themed && (
-            <label className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground/70">
+            <label className="ml-auto flex items-center gap-1 text-micro text-muted-foreground/70">
               <span title="A rasterized SVG is an isolated document: currentColor and var(--...) do not resolve in it, so the colour has to be baked in first.">
                 Colour
               </span>
@@ -238,9 +238,9 @@ export function ExportBar({ source, valid, workspaceRoot }: Props) {
             onChange={(e) => setStem(e.target.value)}
             spellCheck={false}
             aria-label="File name"
-            className="min-w-0 flex-1 rounded-md border border-border/60 bg-background/60 px-1.5 py-0.5 font-mono text-[10px] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+            className="min-w-0 flex-1 rounded-md border border-border/60 bg-background/60 px-1.5 py-0.5 font-mono text-micro focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
           />
-          <span className="shrink-0 font-mono text-[10px] text-muted-foreground/60">
+          <span className="shrink-0 font-mono text-micro text-muted-foreground/60">
             .{isPng ? "png" : "svg"}
           </span>
           <button
@@ -249,7 +249,7 @@ export function ExportBar({ source, valid, workspaceRoot }: Props) {
             disabled={!valid || busy}
             title={`Write into ${workspaceRoot}`}
             className={cn(
-              "flex shrink-0 items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-[10.5px] transition-colors",
+              "flex shrink-0 items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-caption transition-colors",
               "hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
               "disabled:cursor-not-allowed disabled:opacity-50",
             )}
@@ -263,7 +263,7 @@ export function ExportBar({ source, valid, workspaceRoot }: Props) {
       {status && (
         <p
           className={cn(
-            "mt-1.5 text-[10px] leading-relaxed break-words",
+            "mt-1.5 text-micro leading-relaxed break-words",
             status.kind === "ok" ? "text-muted-foreground" : "text-destructive",
           )}
         >
@@ -272,7 +272,7 @@ export function ExportBar({ source, valid, workspaceRoot }: Props) {
       )}
 
       {valid && !isPng && (
-        <pre className="mt-1.5 max-h-20 overflow-auto rounded-md bg-muted/40 p-1.5 text-[9.5px] leading-relaxed text-muted-foreground">
+        <pre className="mt-1.5 max-h-20 overflow-auto rounded-md bg-muted/40 p-1.5 text-micro leading-relaxed text-muted-foreground">
           {textOutput}
         </pre>
       )}

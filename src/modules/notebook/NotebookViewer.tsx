@@ -33,14 +33,14 @@ function joinSource(src: string | string[]): string {
 function OutputBlock({ output }: { output: CellOutput }) {
   if (output.output_type === "stream") {
     return (
-      <pre className="mt-1 whitespace-pre-wrap break-all rounded bg-muted/40 px-2 py-1.5 font-mono text-[11px] text-muted-foreground">
+      <pre className="mt-1 whitespace-pre-wrap break-all rounded bg-muted/40 px-2 py-1.5 font-mono text-caption text-muted-foreground">
         {joinSource(output.text)}
       </pre>
     );
   }
   if (output.output_type === "error") {
     return (
-      <pre className="mt-1 whitespace-pre-wrap break-all rounded bg-destructive/10 px-2 py-1.5 font-mono text-[11px] text-destructive">
+      <pre className="mt-1 whitespace-pre-wrap break-all rounded bg-destructive/10 px-2 py-1.5 font-mono text-caption text-destructive">
         {output.ename}: {output.evalue}
         {"\n"}
         {output.traceback.map((l) => l.replace(/\x1b\[[0-9;]*m/g, "")).join("\n")}
@@ -50,7 +50,7 @@ function OutputBlock({ output }: { output: CellOutput }) {
   const textPlain = output.data?.["text/plain"];
   if (textPlain) {
     return (
-      <pre className="mt-1 whitespace-pre-wrap break-all rounded bg-muted/40 px-2 py-1.5 font-mono text-[11px] text-muted-foreground">
+      <pre className="mt-1 whitespace-pre-wrap break-all rounded bg-muted/40 px-2 py-1.5 font-mono text-caption text-muted-foreground">
         {joinSource(textPlain)}
       </pre>
     );
@@ -60,7 +60,7 @@ function OutputBlock({ output }: { output: CellOutput }) {
 
 function MarkdownCell({ source }: { source: string }) {
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none px-3 py-2 text-[13px]">
+    <div className="prose prose-sm dark:prose-invert max-w-none px-3 py-2 text-body">
       <pre className="whitespace-pre-wrap font-sans text-foreground">{source}</pre>
     </div>
   );
@@ -80,13 +80,13 @@ function CodeCell({
   return (
     <div className="group">
       <div className="flex gap-2">
-        <span className="mt-1.5 shrink-0 font-mono text-[10px] text-muted-foreground/50 w-8 text-right select-none">
+        <span className="mt-1.5 shrink-0 font-mono text-micro text-muted-foreground/50 w-8 text-right select-none">
           {count != null ? `[${count}]` : "[ ]"}
         </span>
         <pre
           className={cn(
             "flex-1 overflow-x-auto rounded border border-border/40 bg-muted/30 px-3 py-2",
-            "font-mono text-[12px] leading-relaxed whitespace-pre text-foreground",
+            "font-mono text-ui leading-relaxed whitespace-pre text-foreground",
           )}
         >
           <code>{source}</code>
@@ -161,11 +161,11 @@ export function NotebookViewer({ path, visible }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-4 py-2">
-        <span className="text-[11px] font-medium text-muted-foreground">
+        <span className="text-caption font-medium text-muted-foreground">
           Kernel: {kernelName}
         </span>
         <span className="text-muted-foreground/40">·</span>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-caption text-muted-foreground">
           {notebook.cells.length} cells
         </span>
       </div>
@@ -190,7 +190,7 @@ export function NotebookViewer({ path, visible }: Props) {
           }
           return (
             // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
-            <pre key={i} className="rounded border border-border/30 bg-muted/20 px-3 py-2 font-mono text-[12px] text-muted-foreground">
+            <pre key={i} className="rounded border border-border/30 bg-muted/20 px-3 py-2 font-mono text-ui text-muted-foreground">
               {source}
             </pre>
           );

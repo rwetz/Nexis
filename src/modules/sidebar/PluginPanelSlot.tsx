@@ -50,10 +50,10 @@ export function PluginPanelSlot({ view, onShowExplorer }: Props) {
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <Icon name="layers" size="lg" className="text-muted-foreground/60" />
         <div className="flex flex-col gap-1">
-          <p className="text-[12.5px] font-medium text-foreground">
+          <p className="text-ui font-medium text-foreground">
             This panel isn’t available
           </p>
-          <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+          <p className="text-ui leading-relaxed text-muted-foreground">
             The plugin that provides it hasn’t loaded, or is no longer
             installed.
           </p>
@@ -61,7 +61,7 @@ export function PluginPanelSlot({ view, onShowExplorer }: Props) {
         <button
           type="button"
           onClick={onShowExplorer}
-          className="text-[11.5px] text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+          className="text-ui text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
         >
           Show Files
         </button>

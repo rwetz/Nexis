@@ -75,7 +75,7 @@ export function ChatCodeBlock({ code, lang }: ChatCodeBlockProps) {
 
 function GeneratingPlaceholder({ label }: { label: string }) {
   return (
-    <div className="not-prose my-2 flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+    <div className="not-prose my-2 flex items-center gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-caption text-muted-foreground">
       <span className="inline-block size-1.5 nexis-blink rounded-full bg-muted-foreground/60" />
       <Shimmer duration={1.2}>
         {label === "text" ? "Generating code…" : `Generating ${label}…`}
@@ -96,7 +96,7 @@ function BlockChrome({
   return (
     <div className="not-prose my-2 overflow-hidden rounded-lg border border-border/50 bg-muted/30">
       <div className="flex items-center justify-between gap-2 border-b border-border/40 bg-muted/20 px-3 py-1">
-        <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span className="font-mono text-micro uppercase tracking-wide text-muted-foreground">
           {label}
         </span>
         <CopyButton text={code} />
@@ -110,7 +110,7 @@ function FinalizedCodeBlock({ code, lang }: { code: string; lang: string }) {
   if (!isHighlightable(lang)) {
     return (
       <BlockChrome label={lang} code={code}>
-        <pre className="m-0 px-3 py-2.5 font-mono text-[11.5px] leading-relaxed text-foreground">
+        <pre className="m-0 px-3 py-2.5 font-mono text-ui leading-relaxed text-foreground">
           {code}
         </pre>
       </BlockChrome>
@@ -153,14 +153,14 @@ const HighlightedPre = memo(function HighlightedPre({
 
   if (!nodes) {
     return (
-      <pre className="m-0 px-3 py-2.5 font-mono text-[11.5px] leading-relaxed text-foreground">
+      <pre className="m-0 px-3 py-2.5 font-mono text-ui leading-relaxed text-foreground">
         {code}
       </pre>
     );
   }
 
   return (
-    <pre className="m-0 px-3 py-2.5 font-mono text-[11.5px] leading-relaxed text-foreground">
+    <pre className="m-0 px-3 py-2.5 font-mono text-ui leading-relaxed text-foreground">
       {nodes.map((node, i) =>
         node.kind === "break" ? (
           // eslint-disable-next-line react/no-array-index-key
@@ -182,7 +182,7 @@ function CommandCard({ code, lang }: { code: string; lang: string }) {
   return (
     <div className="not-prose my-2 overflow-hidden rounded-lg border border-border/50 bg-muted/40">
       <div className="flex items-center justify-between gap-2 px-3 py-1.5">
-        <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span className="font-mono text-micro uppercase tracking-wide text-muted-foreground">
           {normalizeLangLabel(lang)}
         </span>
         <div className="flex items-center gap-1">
@@ -193,7 +193,7 @@ function CommandCard({ code, lang }: { code: string; lang: string }) {
       <div className="border-t border-border/40 bg-background/40">
         <pre
           className={cn(
-            "m-0 overflow-x-auto px-3 py-2 font-mono text-[12px] leading-relaxed text-foreground",
+            "m-0 overflow-x-auto px-3 py-2 font-mono text-ui leading-relaxed text-foreground",
             isMultiline ? "whitespace-pre" : "whitespace-pre-wrap",
           )}
         >
@@ -228,7 +228,7 @@ function RunInTerminalButton({ command }: { command: string }) {
       size="sm"
       variant="ghost"
       onClick={onRun}
-      className="h-5 gap-1 px-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground"
+      className="h-5 gap-1 px-1.5 text-micro font-medium text-muted-foreground hover:text-foreground"
       aria-label="Run in active terminal"
       title="Run in active terminal"
     >

@@ -98,19 +98,19 @@ export function EditorPaneTreeView({
               <SelectTrigger
                 size="sm"
                 title="Syntax language for this file"
-                className="h-5 gap-1 rounded border-0 bg-transparent px-1.5 text-[11px] text-muted-foreground shadow-none hover:bg-muted hover:text-foreground"
+                className="h-5 gap-1 rounded border-0 bg-transparent px-1.5 text-caption text-muted-foreground shadow-none hover:bg-muted hover:text-foreground"
               >
                 {languageLabel(langOverride ?? detectedLang)}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="auto" className="text-[12px]">
+                <SelectItem value="auto" className="text-ui">
                   Auto ({languageLabel(detectedLang)})
                 </SelectItem>
-                <SelectItem value={PLAIN_LANGUAGE_ID} className="text-[12px]">
+                <SelectItem value={PLAIN_LANGUAGE_ID} className="text-ui">
                   Plain Text
                 </SelectItem>
                 {LANGUAGE_CHOICES.map((c) => (
-                  <SelectItem key={c.id} value={c.id} className="text-[12px]">
+                  <SelectItem key={c.id} value={c.id} className="text-ui">
                     {c.label}
                   </SelectItem>
                 ))}
@@ -121,7 +121,7 @@ export function EditorPaneTreeView({
               title={wordWrap ? "Disable word wrap" : "Enable word wrap"}
               onClick={() => void setWordWrap(!wordWrap)}
               className={cn(
-                "flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] transition-colors hover:bg-muted",
+                "flex items-center gap-1 rounded px-1.5 py-0.5 text-caption transition-colors hover:bg-muted",
                 wordWrap
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -134,7 +134,7 @@ export function EditorPaneTreeView({
                 type="button"
                 title={`Run: ${rc.command.trim()}`}
                 onClick={() => onRunFile(node.path, rc.cwd, rc.command)}
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 <Icon name="play" className="text-green-500" />
                 <span className="font-mono">{rc.command.trim()}</span>

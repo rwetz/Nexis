@@ -40,7 +40,7 @@ export function ModelLibrary() {
       <CardHeader className="pb-0">
         <div>
           <CardTitle className="text-sm">Models</CardTitle>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">The files to compare</p>
+          <p className="mt-0.5 text-caption text-muted-foreground">The files to compare</p>
         </div>
         <CardAction>
           <Button variant="ghost" size="icon-xs" onClick={onAdd} aria-label="Add models">
@@ -128,8 +128,8 @@ function ModelRow({
           className="shrink-0 text-muted-foreground"
         />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-medium leading-tight">{model.name}</div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10.5px] text-muted-foreground">
+          <div className="truncate text-body font-medium leading-tight">{model.name}</div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-caption text-muted-foreground">
             <span
               className={cn(
                 "rounded px-1 py-px font-semibold uppercase",

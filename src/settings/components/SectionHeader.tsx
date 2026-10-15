@@ -16,7 +16,7 @@ export function SectionHeader({ title, description }: Props) {
         {title}
       </h1>
       {description ? (
-        <p className="text-[12px] text-muted-foreground">{description}</p>
+        <p className="text-ui text-muted-foreground">{description}</p>
       ) : null}
     </div>
   );

@@ -103,7 +103,7 @@ export function BenchmarkPanel() {
                   Choose the models, engines, and workload you want to measure.
                 </p>
               </div>
-              <span className="hidden rounded-full border border-border bg-muted/40 px-2.5 py-1 font-mono text-[10px] text-muted-foreground tabular-nums @2xl:block">
+              <span className="hidden rounded-full border border-border bg-muted/40 px-2.5 py-1 font-mono text-micro text-muted-foreground tabular-nums @2xl:block">
                 {models.length} in library
               </span>
             </div>

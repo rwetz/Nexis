@@ -158,11 +158,11 @@ function CityLocReadout() {
   const stats = projectStats(city.root);
   return (
     <div className="nexis-scene-enter pointer-events-none absolute top-3 left-3 rounded-xl border border-primary/25 bg-card/90 px-3 py-2.5 shadow-sm backdrop-blur">
-      <div className="text-[10px] font-medium text-muted-foreground">Measured source lines</div>
+      <div className="text-micro font-medium text-muted-foreground">Measured source lines</div>
       <div className="mt-0.5 font-mono text-xl font-semibold text-primary tabular-nums">
         {formatCount(stats.lines)} LOC
       </div>
-      <div className="mt-0.5 text-[10px] text-muted-foreground">
+      <div className="mt-0.5 text-micro text-muted-foreground">
         {formatCount(stats.codeFiles)} readable files
       </div>
     </div>
@@ -252,7 +252,7 @@ function Incomplete() {
   if (truncated) parts.push("stopped at the configured max_files");
   if (omitted > 0) parts.push(`${formatCount(omitted)} too small to draw`);
   return (
-    <div className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 rounded-full border border-border/60 bg-card/85 px-2.5 py-0.5 text-[10px] text-muted-foreground backdrop-blur">
+    <div className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 rounded-full border border-border/60 bg-card/85 px-2.5 py-0.5 text-micro text-muted-foreground backdrop-blur">
       Partial view — {parts.join(", ")}.
     </div>
   );
@@ -275,7 +275,7 @@ function StatusLine() {
   const openConfig = useOpenConfig();
 
   return (
-    <footer className="flex h-6 shrink-0 items-center gap-2 border-t border-border/40 px-2 text-[10px] text-muted-foreground">
+    <footer className="flex h-6 shrink-0 items-center gap-2 border-t border-border/40 px-2 text-micro text-muted-foreground">
       <span className="tabular-nums">
         {scanning
           ? "scanning…"

@@ -165,7 +165,7 @@ export const PreviewPane = forwardRef<PreviewPaneHandle, Props>(
             aria-pressed={!multi}
             onClick={() => setSelected([])}
             className={
-              "rounded px-1.5 py-0.5 text-[10.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 " +
+              "rounded px-1.5 py-0.5 text-caption transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 " +
               (!multi
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:text-foreground")
@@ -183,7 +183,7 @@ export const PreviewPane = forwardRef<PreviewPaneHandle, Props>(
                 title={`${v.label} — ${v.width}x${v.height} CSS px`}
                 onClick={() => toggleViewport(v.id)}
                 className={
-                  "rounded px-1.5 py-0.5 text-[10.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 " +
+                  "rounded px-1.5 py-0.5 text-caption transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 " +
                   (on
                     ? "bg-primary/15 text-primary"
                     : "text-muted-foreground hover:text-foreground")
@@ -194,7 +194,7 @@ export const PreviewPane = forwardRef<PreviewPaneHandle, Props>(
             );
           })}
           {multi && (
-            <span className="ml-auto text-[9.5px] tabular-nums text-muted-foreground/60">
+            <span className="ml-auto text-micro tabular-nums text-muted-foreground/60">
               {chosen.length} {chosen.length === 1 ? "frame" : "frames"} · one
               load each
             </span>
@@ -202,7 +202,7 @@ export const PreviewPane = forwardRef<PreviewPaneHandle, Props>(
         </div>
 
         {showXfoHint ? (
-          <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border/60 bg-amber-500/8 px-3 text-[11px] text-amber-600 dark:text-amber-400">
+          <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border/60 bg-amber-500/8 px-3 text-caption text-amber-600 dark:text-amber-400">
             <Icon name="alert" className="shrink-0" />
             <span className="truncate">
               Many public sites refuse to embed (X-Frame-Options). If the page
@@ -258,7 +258,7 @@ export const PreviewPane = forwardRef<PreviewPaneHandle, Props>(
                           allow="clipboard-read; clipboard-write; fullscreen"
                         />
                       </div>
-                      <span className="text-[9.5px] tabular-nums text-muted-foreground/70">
+                      <span className="text-micro tabular-nums text-muted-foreground/70">
                         {viewport.label} · {viewport.width}
                         {layout.scale < 1
                           ? ` · ${Math.round(layout.scale * 100)}%`
@@ -303,17 +303,17 @@ function SuspendedState({ onReload }: { onReload: () => void }) {
         <Icon name="globe" size="lg" />
       </div>
       <div className="space-y-1">
-        <p className="text-[12.5px] font-medium text-foreground">
+        <p className="text-ui font-medium text-foreground">
           Preview suspended
         </p>
-        <p className="max-w-xs text-[11px] leading-relaxed text-muted-foreground">
+        <p className="max-w-xs text-caption leading-relaxed text-muted-foreground">
           Released to free memory after sitting in the background.
         </p>
       </div>
       <button
         type="button"
         onClick={onReload}
-        className="rounded-md border border-border/60 bg-card px-3 py-1 text-[11px] hover:bg-accent/50"
+        className="rounded-md border border-border/60 bg-card px-3 py-1 text-caption hover:bg-accent/50"
       >
         Reload
       </button>
@@ -333,7 +333,7 @@ function EmptyState() {
         </p>
         <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
           Type a URL above, or open the{" "}
-          <span className="rounded bg-muted px-1 py-0.5 font-mono text-[10.5px]">
+          <span className="rounded bg-muted px-1 py-0.5 font-mono text-caption">
             Ports
           </span>{" "}
           dropdown to jump straight to your running dev server. Public sites

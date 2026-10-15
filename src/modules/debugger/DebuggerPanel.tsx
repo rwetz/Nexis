@@ -19,7 +19,7 @@ export function DebuggerPanel() {
   if (status === "idle") return <LaunchForm />;
 
   return (
-    <div className="flex h-full flex-col border-t border-border/40 bg-card text-[11px]">
+    <div className="flex h-full flex-col border-t border-border/40 bg-card text-caption">
       {/* Tab bar */}
       <div className="flex shrink-0 items-center gap-px border-b border-border/40 px-2 pt-1">
         {(["variables", "callstack", "console"] as PanelTab[]).map((t) => (
@@ -28,7 +28,7 @@ export function DebuggerPanel() {
             type="button"
             onClick={() => setTab(t)}
             className={cn(
-              "rounded-t px-2.5 py-1 text-[10.5px] capitalize font-medium transition-colors",
+              "rounded-t px-2.5 py-1 text-caption capitalize font-medium transition-colors",
               tab === t
                 ? "border-b-2 border-primary text-foreground"
                 : "text-muted-foreground hover:text-foreground",
@@ -88,7 +88,7 @@ function LaunchForm() {
   };
 
   return (
-    <div className="flex flex-col gap-3 p-3 text-[11px]">
+    <div className="flex flex-col gap-3 p-3 text-caption">
       <p className="text-muted-foreground">Start a debug session</p>
 
       <label className="flex flex-col gap-1">
@@ -96,7 +96,7 @@ function LaunchForm() {
         <select
           value={preset}
           onChange={(e) => setPreset(Number(e.target.value))}
-          className="rounded border border-border bg-muted px-2 py-1 text-[11px] text-foreground outline-none focus:ring-1 focus:ring-primary"
+          className="rounded border border-border bg-muted px-2 py-1 text-caption text-foreground outline-none focus:ring-1 focus:ring-primary"
         >
           {ADAPTER_PRESETS.map((p, i) => (
             <option key={p.id} value={i}>{p.label}</option>
@@ -112,7 +112,7 @@ function LaunchForm() {
             value={adapterCmd}
             onChange={(e) => setAdapterCmd(e.target.value)}
             placeholder="e.g. node /path/to/adapter/server.js"
-            className="rounded border border-border bg-muted px-2 py-1 font-mono text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:ring-1 focus:ring-primary"
+            className="rounded border border-border bg-muted px-2 py-1 font-mono text-caption text-foreground outline-none placeholder:text-muted-foreground/40 focus:ring-1 focus:ring-primary"
           />
         </label>
       )}
@@ -124,25 +124,25 @@ function LaunchForm() {
           onChange={(e) => setProgram(e.target.value)}
           placeholder="/path/to/program"
           spellCheck={false}
-          className="rounded border border-border bg-muted px-2 py-1 font-mono text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:ring-1 focus:ring-primary"
+          className="rounded border border-border bg-muted px-2 py-1 font-mono text-caption text-foreground outline-none placeholder:text-muted-foreground/40 focus:ring-1 focus:ring-primary"
         />
       </label>
 
       {error && (
-        <p className="text-[10.5px] text-destructive">{error}</p>
+        <p className="text-caption text-destructive">{error}</p>
       )}
 
       <button
         type="button"
         disabled={launching}
         onClick={() => void handleLaunch()}
-        className="rounded bg-primary px-3 py-1.5 text-[11px] font-medium text-primary-foreground transition-opacity disabled:opacity-50"
+        className="rounded bg-primary px-3 py-1.5 text-caption font-medium text-primary-foreground transition-opacity disabled:opacity-50"
       >
         {launching ? "Starting…" : "Launch"}
       </button>
 
       {breakpoints.size > 0 && (
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-micro text-muted-foreground">
           {[...breakpoints.values()].reduce((n, lines) => n + lines.length, 0)} breakpoint{[...breakpoints.values()].reduce((n, lines) => n + lines.length, 0) !== 1 ? "s" : ""} set
         </p>
       )}
@@ -205,7 +205,7 @@ function ScopeSection({
         onClick={toggle}
         className="flex w-full items-center gap-1 px-2 py-0.5 text-left font-medium text-foreground/80 hover:bg-muted/30"
       >
-        <span className="text-[9px]">{open ? "▼" : "▶"}</span>
+        <span className="text-micro">{open ? "▼" : "▶"}</span>
         {scope.name}
       </button>
       {open && vars && (
@@ -269,7 +269,7 @@ function VariableRow({
         onClick={toggle}
       >
         {hasChildren && (
-          <span className="shrink-0 text-[8px] text-muted-foreground pt-0.5">
+          <span className="shrink-0 text-micro text-muted-foreground pt-0.5">
             {open ? "▼" : "▶"}
           </span>
         )}
@@ -278,7 +278,7 @@ function VariableRow({
         <span className="text-muted-foreground mx-1">:</span>
         <span className="text-foreground/80 truncate min-w-0">{variable.value}</span>
         {variable.type && (
-          <span className="ml-auto shrink-0 text-[9px] text-muted-foreground/60">
+          <span className="ml-auto shrink-0 text-micro text-muted-foreground/60">
             {variable.type}
           </span>
         )}
@@ -349,14 +349,14 @@ function StackFrameRow({
     >
       <span
         className={cn(
-          "font-sans text-[10.5px] font-medium truncate",
+          "font-sans text-caption font-medium truncate",
           active ? "text-foreground" : "text-foreground/70",
         )}
       >
         {frame.name}
       </span>
       {fileName && (
-        <span className="ml-auto shrink-0 text-[9.5px] text-muted-foreground">
+        <span className="ml-auto shrink-0 text-micro text-muted-foreground">
           {fileName}:{frame.line}
         </span>
       )}
@@ -395,7 +395,7 @@ function ConsolePanel() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="min-h-0 flex-1 overflow-auto p-2 font-mono text-[10.5px]">
+      <div className="min-h-0 flex-1 overflow-auto p-2 font-mono text-caption">
         {output.map((o) => (
           <div
             key={o.id}
@@ -412,7 +412,7 @@ function ConsolePanel() {
         <div ref={bottomRef} />
       </div>
       <div className="flex shrink-0 items-center gap-1 border-t border-border/30 px-2 py-1">
-        <span className="text-muted-foreground text-[10px]">&gt;</span>
+        <span className="text-muted-foreground text-micro">&gt;</span>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -435,7 +435,7 @@ function ConsolePanel() {
           aria-label="Evaluate expression"
           placeholder="Evaluate expression…"
           spellCheck={false}
-          className="flex-1 bg-transparent font-mono text-[10.5px] text-foreground outline-none placeholder:text-muted-foreground/40"
+          className="flex-1 bg-transparent font-mono text-caption text-foreground outline-none placeholder:text-muted-foreground/40"
         />
       </div>
     </div>

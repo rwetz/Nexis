@@ -162,14 +162,14 @@ export function ReleasePanel({ workspaceRoot }: Props) {
 
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
         <div className="space-y-1">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Current version</p>
+          <p className="text-micro uppercase tracking-wider text-muted-foreground font-medium">Current version</p>
           <div className="flex items-center gap-2">
             <Icon name="tag" className="text-muted-foreground/60" />
             <span className="font-mono text-sm font-semibold text-foreground">
               {loading ? "…" : (currentVersion ?? "unknown")}
             </span>
             {lastTag && (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1 text-micro text-muted-foreground">
                 <Icon name="git-branch" size="xs" />
                 last tag: {lastTag}
               </span>
@@ -178,7 +178,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
         </div>
 
         <div className="space-y-1.5">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Bump version</p>
+          <p className="text-micro uppercase tracking-wider text-muted-foreground font-medium">Bump version</p>
           <div className="grid grid-cols-3 gap-1.5">
             {(["patch", "minor", "major"] as BumpKind[]).map((kind) => {
               const next = nextVersion(kind);
@@ -193,18 +193,18 @@ export function ReleasePanel({ workspaceRoot }: Props) {
                   >
                     {kind}
                   </Button>
-                  <span className="text-center font-mono text-[10px] text-muted-foreground">
+                  <span className="text-center font-mono text-micro text-muted-foreground">
                     {next ?? "…"}
                   </span>
                 </div>
               );
             })}
           </div>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-micro text-muted-foreground">
             Click a bump type to copy its changelog entry to clipboard.
           </p>
           {copied && (
-            <p className="flex items-center gap-1 text-[10px] text-green-500">
+            <p className="flex items-center gap-1 text-micro text-green-500">
               <Icon name="success" size="xs" />
               Copied to clipboard
             </p>
@@ -214,7 +214,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
         {commits.length > 0 && (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+              <p className="text-micro uppercase tracking-wider text-muted-foreground font-medium">
                 Changes since {lastTag ?? "beginning"}
               </p>
               <Button
@@ -230,7 +230,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
             <ul className="space-y-0.5">
               {commits.map((c, i) => (
                 // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
-                <li key={i} className="text-[11px] text-foreground/80 leading-relaxed font-mono">
+                <li key={i} className="text-caption text-foreground/80 leading-relaxed font-mono">
                   {c}
                 </li>
               ))}
@@ -242,7 +242,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
         )}
 
         <div className="space-y-1.5 border-t border-border/30 pt-3">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Create git tag</p>
+          <p className="text-micro uppercase tracking-wider text-muted-foreground font-medium">Create git tag</p>
           <div className="grid grid-cols-3 gap-1.5">
             {(["patch", "minor", "major"] as BumpKind[]).map((kind) => {
               const next = nextVersion(kind);
@@ -261,13 +261,13 @@ export function ReleasePanel({ workspaceRoot }: Props) {
             })}
           </div>
           {tagStatus === "done" && (
-            <p className="flex items-center gap-1 text-[10px] text-green-500">
+            <p className="flex items-center gap-1 text-micro text-green-500">
               <Icon name="success" size="xs" />
               Tag created successfully
             </p>
           )}
           {tagStatus === "error" && tagError && (
-            <p className="text-[10px] text-destructive">{tagError}</p>
+            <p className="text-micro text-destructive">{tagError}</p>
           )}
         </div>
       </div>

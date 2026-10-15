@@ -48,7 +48,7 @@ export function SelectionAskAi({ x, y, onAsk, onExplain, onDismiss }: SelectionA
         <Icon name="chat" size="xs" className="opacity-70" />
         <span>Ask Nexis</span>
         <KbdGroup>
-          <Kbd className="h-4 min-w-4 px-1 text-[10px]">{fmtShortcut(MOD_KEY, "L")}</Kbd>
+          <Kbd className="h-4 min-w-4 px-1 text-micro">{fmtShortcut(MOD_KEY, "L")}</Kbd>
         </KbdGroup>
       </button>
       <button

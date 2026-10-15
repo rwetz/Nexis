@@ -22,7 +22,7 @@ export function KbdHint({ keys, label, className }: Props) {
   return (
     <span
       className={cn(
-        "animate-in fade-in slide-in-from-bottom-0.5 duration-200 inline-flex items-center gap-1 text-[10px] text-muted-foreground/70",
+        "animate-in fade-in slide-in-from-bottom-0.5 duration-200 inline-flex items-center gap-1 text-micro text-muted-foreground/70",
         className,
       )}
     >
@@ -31,7 +31,7 @@ export function KbdHint({ keys, label, className }: Props) {
         {keys.map((k, i) => (
           <kbd
             key={`${k}-${i}`}
-            className="rounded border border-border/60 bg-muted/50 px-1 py-px font-mono text-[10px] leading-none text-muted-foreground"
+            className="rounded border border-border/60 bg-muted/50 px-1 py-px font-mono text-micro leading-none text-muted-foreground"
           >
             {k}
           </kbd>

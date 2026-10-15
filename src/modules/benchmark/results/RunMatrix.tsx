@@ -81,33 +81,33 @@ function Cell({
           className="size-2.5 shrink-0 rounded-full"
           style={{ backgroundColor: BACKEND_COLOR[backendId] }}
         />
-        <span className="font-mono text-[11px] font-medium">{BACKEND_SHORT[backendId]}</span>
+        <span className="font-mono text-caption font-medium">{BACKEND_SHORT[backendId]}</span>
         {done &&
           (result!.simulated ? (
-            <span className="rounded bg-muted px-1 py-px text-[9px] font-medium uppercase text-muted-foreground">
+            <span className="rounded bg-muted px-1 py-px text-micro font-medium uppercase text-muted-foreground">
               sim
             </span>
           ) : (
             <span
               title={result!.note ?? "Measured from a live engine"}
-              className="rounded bg-emerald-500/15 px-1 py-px text-[9px] font-medium uppercase text-emerald-500"
+              className="rounded bg-emerald-500/15 px-1 py-px text-micro font-medium uppercase text-emerald-500"
             >
               real
             </span>
           ))}
-        <span className="ml-auto truncate text-[10.5px] text-muted-foreground">
+        <span className="ml-auto truncate text-caption text-muted-foreground">
           {model?.paramsLabel ?? model?.format}
         </span>
       </div>
       {engineWorkload ? (
         <div className="flex flex-col leading-tight">
-          <span className="truncate text-[12px] font-medium">Synthetic training workload</span>
-          <span className="truncate text-[10px] text-muted-foreground">
+          <span className="truncate text-ui font-medium">Synthetic training workload</span>
+          <span className="truncate text-micro text-muted-foreground">
             engine throughput · does not run {model?.name ?? "this model"}
           </span>
         </div>
       ) : (
-        <div className="truncate text-[12px] font-medium leading-tight">{model?.name ?? "—"}</div>
+        <div className="truncate text-ui font-medium leading-tight">{model?.name ?? "—"}</div>
       )}
 
       {done ? (
@@ -137,7 +137,7 @@ function Cell({
             const noisy = st.cv > NOISY_CV;
             return (
               <div className="mt-1 flex flex-col gap-1">
-                <div className="flex items-center justify-between text-[9px] uppercase tracking-wide text-muted-foreground/60">
+                <div className="flex items-center justify-between text-micro uppercase tracking-wide text-muted-foreground/60">
                   <span>
                     {engineWorkload ? "epoch" : "latency"} spread · {samples.length} runs
                   </span>
@@ -156,7 +156,7 @@ function Cell({
           })()}
         </>
       ) : errored ? (
-        <div className="rounded-md bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive">
+        <div className="rounded-md bg-destructive/10 px-2 py-1.5 text-caption text-destructive">
           {result?.error ?? "Benchmark failed"}
         </div>
       ) : (
@@ -168,7 +168,7 @@ function Cell({
             phase === "queued" ? 0 : phase === "measuring" && !indeterminate ? pct : indeterminate ? 35 : 12;
           return (
             <div className="mt-1 flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[10.5px] text-muted-foreground">
+              <div className="flex items-center justify-between text-caption text-muted-foreground">
                 <span>{PHASE_LABELS[phase]}</span>
                 {phase === "measuring" && !indeterminate && (
                   <span className="font-mono">
@@ -196,8 +196,8 @@ function Cell({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[9.5px] uppercase tracking-wide text-muted-foreground/70">{label}</span>
-      <span className="font-mono text-[12px] font-medium tabular-nums">{value}</span>
+      <span className="text-micro uppercase tracking-wide text-muted-foreground/70">{label}</span>
+      <span className="font-mono text-ui font-medium tabular-nums">{value}</span>
     </div>
   );
 }

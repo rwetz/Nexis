@@ -67,13 +67,13 @@ export function SnippetsPanel() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Snippets
         </span>
         <button
           type="button"
           onClick={startNew}
-          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <Icon name="add" />
           New
@@ -83,34 +83,34 @@ export function SnippetsPanel() {
       {editing ? (
         <div className="flex flex-col gap-2 overflow-y-auto p-3">
           <div className="flex flex-col gap-1">
-            <label htmlFor="snippet-name" className="text-[10px] text-muted-foreground">Name</label>
+            <label htmlFor="snippet-name" className="text-micro text-muted-foreground">Name</label>
             <input
               id="snippet-name"
               ref={nameRef}
               value={editing.name}
               onChange={(e) => setEditing({ ...editing, name: e.target.value })}
               placeholder="My snippet"
-              className="rounded border border-border/60 bg-muted/40 px-2 py-1 text-[12px] text-foreground outline-none focus:border-primary/60"
+              className="rounded border border-border/60 bg-muted/40 px-2 py-1 text-ui text-foreground outline-none focus:border-primary/60"
             />
           </div>
           <div className="flex gap-2">
             <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="snippet-prefix" className="text-[10px] text-muted-foreground">Prefix (trigger)</label>
+              <label htmlFor="snippet-prefix" className="text-micro text-muted-foreground">Prefix (trigger)</label>
               <input
                 id="snippet-prefix"
                 value={editing.prefix}
                 onChange={(e) => setEditing({ ...editing, prefix: e.target.value })}
                 placeholder="cl"
-                className="rounded border border-border/60 bg-muted/40 px-2 py-1 font-mono text-[12px] text-foreground outline-none focus:border-primary/60"
+                className="rounded border border-border/60 bg-muted/40 px-2 py-1 font-mono text-ui text-foreground outline-none focus:border-primary/60"
               />
             </div>
             <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="snippet-language" className="text-[10px] text-muted-foreground">Language</label>
+              <label htmlFor="snippet-language" className="text-micro text-muted-foreground">Language</label>
               <select
                 id="snippet-language"
                 value={editing.language}
                 onChange={(e) => setEditing({ ...editing, language: e.target.value })}
-                className="rounded border border-border/60 bg-muted/40 px-2 py-1 text-[12px] text-foreground outline-none focus:border-primary/60"
+                className="rounded border border-border/60 bg-muted/40 px-2 py-1 text-ui text-foreground outline-none focus:border-primary/60"
               >
                 {LANGUAGE_OPTIONS.map((l) => (
                   <option key={l} value={l}>{l}</option>
@@ -119,7 +119,7 @@ export function SnippetsPanel() {
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="snippet-body" className="text-[10px] text-muted-foreground">
+            <label htmlFor="snippet-body" className="text-micro text-muted-foreground">
               Body <span className="text-muted-foreground/60">(use $1, $2… for tab stops, $0 for final cursor)</span>
             </label>
             <textarea
@@ -128,17 +128,17 @@ export function SnippetsPanel() {
               onChange={(e) => setEditing({ ...editing, body: e.target.value })}
               placeholder={"console.log($1);"}
               rows={5}
-              className="resize-none rounded border border-border/60 bg-muted/40 px-2 py-1 font-mono text-[12px] text-foreground outline-none focus:border-primary/60"
+              className="resize-none rounded border border-border/60 bg-muted/40 px-2 py-1 font-mono text-ui text-foreground outline-none focus:border-primary/60"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="snippet-description" className="text-[10px] text-muted-foreground">Description (optional)</label>
+            <label htmlFor="snippet-description" className="text-micro text-muted-foreground">Description (optional)</label>
             <input
               id="snippet-description"
               value={editing.description}
               onChange={(e) => setEditing({ ...editing, description: e.target.value })}
               placeholder="Short description"
-              className="rounded border border-border/60 bg-muted/40 px-2 py-1 text-[12px] text-foreground outline-none focus:border-primary/60"
+              className="rounded border border-border/60 bg-muted/40 px-2 py-1 text-ui text-foreground outline-none focus:border-primary/60"
             />
           </div>
           <div className="flex gap-2">
@@ -146,7 +146,7 @@ export function SnippetsPanel() {
               type="button"
               onClick={save}
               disabled={!editing.name.trim() || !editing.prefix.trim() || !editing.body.trim()}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded bg-primary/90 px-3 py-1.5 text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded bg-primary/90 px-3 py-1.5 text-ui font-medium text-primary-foreground transition-colors hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Icon name="success" />
               Save
@@ -154,7 +154,7 @@ export function SnippetsPanel() {
             <button
               type="button"
               onClick={cancel}
-              className="flex items-center gap-1.5 rounded border border-border/60 px-3 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex items-center gap-1.5 rounded border border-border/60 px-3 py-1.5 text-ui text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <Icon name="close" />
               Cancel
@@ -167,7 +167,7 @@ export function SnippetsPanel() {
             <div className="flex h-full items-center justify-center">
               <div className="flex flex-col items-center gap-2 text-center">
                 <Icon name="file-code" size="xl" className="text-muted-foreground/30" />
-                <p className="text-[11px] text-muted-foreground/60">No snippets yet</p>
+                <p className="text-caption text-muted-foreground/60">No snippets yet</p>
               </div>
             </div>
           ) : (
@@ -178,7 +178,7 @@ export function SnippetsPanel() {
                 return (
                   <div key={lang}>
                     <div className="border-b border-border/30 bg-muted/20 px-3 py-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                      <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
                         {lang}
                       </span>
                     </div>
@@ -191,7 +191,7 @@ export function SnippetsPanel() {
               {snippets.some((s) => !LANGUAGE_OPTIONS.includes(s.language)) && (
                 <div>
                   <div className="border-b border-border/30 bg-muted/20 px-3 py-1">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">other</span>
+                    <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">other</span>
                   </div>
                   {snippets
                     .filter((s) => !LANGUAGE_OPTIONS.includes(s.language))
@@ -221,12 +221,12 @@ function SnippetRow({
     <div className={cn("group flex items-start gap-2 border-b border-border/20 px-3 py-2 last:border-none hover:bg-muted/30")}>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="font-mono text-[11px] font-semibold text-primary/80">{snippet.prefix}</span>
-          <span className="text-[10px] text-muted-foreground/60">→</span>
-          <span className="text-[11px] text-foreground/80">{snippet.name}</span>
+          <span className="font-mono text-caption font-semibold text-primary/80">{snippet.prefix}</span>
+          <span className="text-micro text-muted-foreground/60">→</span>
+          <span className="text-caption text-foreground/80">{snippet.name}</span>
         </div>
         {snippet.description && (
-          <p className="mt-0.5 text-[10px] text-muted-foreground/60">{snippet.description}</p>
+          <p className="mt-0.5 text-micro text-muted-foreground/60">{snippet.description}</p>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">

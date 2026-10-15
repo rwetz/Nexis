@@ -84,7 +84,7 @@ export function DebugToolbar({ onRestart }: Props) {
       {/* Status indicator */}
       <span
         className={cn(
-          "ml-1 text-[10px] font-medium uppercase tracking-wider",
+          "ml-1 text-micro font-medium uppercase tracking-wider",
           status === "stopped" && "text-yellow-500",
           status === "running" && "text-green-500",
           status === "terminated" && "text-muted-foreground",
