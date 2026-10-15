@@ -9,7 +9,7 @@ import type { Theme } from "../types";
 export const halcyon: Theme = {
   id: "halcyon",
   name: "Halcyon",
-  description: "Indigo and violet — the Nexis signature palette.",
+  description: "Indigo and violet: the Nexis signature palette.",
   editorTheme: { dark: "aura", light: "github-light" },
   variants: {
     dark: {

@@ -45,7 +45,7 @@ export function FeaturesSection() {
     <div className="flex flex-col gap-4">
       <SectionHeader
         title="Features"
-        description="Choose which expansion packs are enabled. The terminal, editor, Files, Recent Files, Source Control, and AI chat are always available. Disabling a pack hides its panels — nothing is uninstalled, and your pinned sidebar items come back when you re-enable it."
+        description="Choose which expansion packs are enabled. The terminal, editor, Files, Recent Files, Source Control, and AI chat are always available. Disabling a pack hides its panels: nothing is uninstalled, and your pinned sidebar items come back when you re-enable it."
       />
 
       {/* Presets get the full width rather than the right-hand control column

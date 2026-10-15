@@ -279,7 +279,7 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
           <>
             {truncated && (
               <p className="px-3 py-1.5 text-micro text-amber-500/80">
-                Showing first {MAX_RESULTS} results — refine the query for more precision
+                Showing first {MAX_RESULTS} results: refine the query for more precision
               </p>
             )}
             {Object.entries(byFile).map(([rel, hits]) => (

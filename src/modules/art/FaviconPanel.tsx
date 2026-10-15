@@ -205,7 +205,7 @@ export function FaviconPanel({ workspaceRoot }: Props) {
           </>
         ) : (
           <p className="text-caption leading-relaxed text-muted-foreground">
-            Draw or paste a mark in the SVG playground first — this exports the
+            Draw or paste a mark in the SVG playground first: this exports the
             document that panel is holding.
           </p>
         )}

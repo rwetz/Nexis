@@ -69,7 +69,7 @@ if (pids.size === 0) {
 // Port check: anything still listening on 1420 is not ours — flag it.
 const lsof = run("lsof", ["-ti", ":1420", "-sTCP:LISTEN"]).trim();
 if (lsof) {
-  console.warn(`Port 1420 still in use by PID ${lsof} — not a tauri dev process; investigate manually.`);
+  console.warn(`Port 1420 still in use by PID ${lsof}: not a tauri dev process; investigate manually.`);
   process.exit(1);
 }
-console.log("Port 1420: FREE — safe to run pnpm tauri dev.");
+console.log("Port 1420: FREE, safe to run pnpm tauri dev.");

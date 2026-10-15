@@ -179,8 +179,8 @@ export function RenameDialog({
               )}
               title={
                 lspReady
-                  ? "Semantic rename via language server — only true references change"
-                  : "Text rename — word-boundary find/replace across files"
+                  ? "Semantic rename via language server, only true references change"
+                  : "Text rename: word-boundary find/replace across files"
               }
             >
               {lspReady ? "Semantic" : "Text"}
@@ -221,7 +221,7 @@ export function RenameDialog({
                 </p>
                 {lspReady && (
                   <p className="text-micro text-primary/70">
-                    Text preview — the language server renames only real
+                    Text preview: the language server renames only real
                     references.
                   </p>
                 )}

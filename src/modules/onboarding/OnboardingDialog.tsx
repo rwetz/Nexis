@@ -129,7 +129,7 @@ export function OnboardingDialog({ onRunAction, onStartTour }: Props) {
                 <p className="text-ui text-muted-foreground">
                   {done === total && total > 0
                     ? "That is the tour of the place. This screen stays in the command palette if you want it again."
-                    : "Each row is one thing Nexis does that a terminal does not. Pick any of them — they are not in order."}
+                    : "Each row is one thing Nexis does that a terminal does not. Pick any of them: they are not in order."}
                 </p>
               </div>
 

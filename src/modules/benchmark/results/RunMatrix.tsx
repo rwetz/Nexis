@@ -107,7 +107,7 @@ function Cell({
           </span>
         </div>
       ) : (
-        <div className="truncate text-ui font-medium leading-tight">{model?.name ?? "—"}</div>
+        <div className="truncate text-ui font-medium leading-tight">{model?.name ?? "–"}</div>
       )}
 
       {done ? (
@@ -126,7 +126,7 @@ function Cell({
               value={
                 result!.metrics!.accuracy != null
                   ? `${(result!.metrics!.accuracy * 100).toFixed(1)}%`
-                  : "—"
+                  : "–"
               }
             />
           </div>

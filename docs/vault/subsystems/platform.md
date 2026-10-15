@@ -9,15 +9,15 @@ description: Frontend platform policy for typed IPC, workspace scope, persistenc
 
 ## Key files
 
-- `ipc.ts`, `tauri.ts`, `events.ts` — typed command scope, raw Tauri transport and disposable event lifetimes
-- `workspace.ts`, `workspace-state.ts`, `workspaces.ts` — environment/root identity, authorization and the one workspace store
-- `storage.ts`, `persistence.ts` — one `LazyStore` handle per file and failure-recovering write queues
-- `filesystem.ts`, `process.ts`, `processes.ts` — host/workspace file scope and captured non-PTY session ownership
-- `secrets.ts`, `http-stream.ts` — host keychain scope and Tauri callback-channel ownership for provider streaming
-- `dialogs.ts`, `opener.ts` — native file selection/save and host reveal operations without capability-owned Tauri plugin imports
-- `windows.ts`, `notifications.ts` — concurrent named-window coalescing and the shared notification contract
-- `ledger-storage.ts`, `system-resources.ts` — host-owned command-ledger and system-monitor adapters
-- `src/domain/native-types.ts` — shared IPC result types with no capability ownership
+- `ipc.ts`, `tauri.ts`, `events.ts`: typed command scope, raw Tauri transport and disposable event lifetimes
+- `workspace.ts`, `workspace-state.ts`, `workspaces.ts`: environment/root identity, authorization and the one workspace store
+- `storage.ts`, `persistence.ts`: one `LazyStore` handle per file and failure-recovering write queues
+- `filesystem.ts`, `process.ts`, `processes.ts`: host/workspace file scope and captured non-PTY session ownership
+- `secrets.ts`, `http-stream.ts`: host keychain scope and Tauri callback-channel ownership for provider streaming
+- `dialogs.ts`, `opener.ts`: native file selection/save and host reveal operations without capability-owned Tauri plugin imports
+- `windows.ts`, `notifications.ts`: concurrent named-window coalescing and the shared notification contract
+- `ledger-storage.ts`, `system-resources.ts`: host-owned command-ledger and system-monitor adapters
+- `src/domain/native-types.ts`: shared IPC result types with no capability ownership
 
 ## Invariants / gotchas
 

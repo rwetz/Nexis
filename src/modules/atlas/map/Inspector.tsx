@@ -6,7 +6,7 @@ import { revealPath } from "@/modules/atlas/repos/api";
 import { useAtlasHost } from "@/modules/atlas/repos/host";
 import type { Block } from "./layout";
 import { loc } from "./layout";
-import { ProjectIntelligence } from "./ProjectIntelligence";
+import { ProjectIntelligence, ProjectIntelligenceSkeleton } from "./ProjectIntelligence";
 import { useAtlasStore } from "@/modules/atlas/repos/store";
 import {
   dirtyCount,
@@ -24,6 +24,7 @@ export function Inspector() {
   const selected = useAtlasStore((s) => s.selectedBlock);
   const city = useAtlasStore((s) => s.city);
   const view = useAtlasStore((s) => s.mapView);
+  const cityLoading = useAtlasStore((s) => s.cityLoading);
   const subject = hover ?? selected;
 
   return (
@@ -34,12 +35,18 @@ export function Inspector() {
         </span>
       </div>
       <div className="nexis-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
-        {city && <ProjectIntelligence city={city} />}
-        {city && subject && <div className="my-3 border-t border-border/60" />}
+        {/* While a new repo is read, the previous city's facts would be
+          * wrong, so the card holds its shape with a skeleton instead. */}
+        {view === "city" && cityLoading ? (
+          <ProjectIntelligenceSkeleton />
+        ) : (
+          city && <ProjectIntelligence city={city} />
+        )}
+        {city && <div className="my-4 border-t border-border/60" />}
         {subject ? (
           <BlockDetail block={subject} repoPath={city?.summary.path ?? null} />
         ) : (
-          <p className="text-xs leading-relaxed text-muted-foreground">
+          <p className="text-ui leading-relaxed text-muted-foreground">
             {view === "atlas"
               ? "Each plot is a repository; the towers on it are its languages, sized by how much code each holds. Double-click a plot to walk into it."
               : "Terraces are directories, buildings are files. Height is lines of code, colour is language, a coral edge means the working tree has changed it."}
@@ -73,7 +80,7 @@ function BlockDetail({ block, repoPath }: { block: Block; repoPath: string | nul
         ) : (
           <Rows
             rows={[
-              ["Branch", repo.branch || "—"],
+              ["Branch", repo.branch || "–"],
               ["Files", formatCount(repo.files)],
               ["Directories", formatCount(repo.dirs)],
               ["Size", formatBytes(repo.bytes)],

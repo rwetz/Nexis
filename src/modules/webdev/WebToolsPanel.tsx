@@ -186,7 +186,7 @@ export function WebToolsPanel() {
                 verifier is how `alg: none` bugs reach production. */}
             <p className="flex items-start gap-1.5 text-micro leading-relaxed text-muted-foreground/70">
               <Icon name="info" size="xs" className="mt-px shrink-0" />
-              Decoded, not verified — the signature is displayed but never
+              Decoded, not verified: the signature is displayed but never
               checked. Nothing here leaves your machine.
             </p>
             {jwt.trim() &&

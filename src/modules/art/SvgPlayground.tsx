@@ -402,7 +402,7 @@ export function SvgPlayground({ layout, workspaceRoot }: Props) {
             <p className="flex items-start gap-1.5 text-micro leading-relaxed text-amber-600 dark:text-amber-400">
               <Icon name="security" size="xs" className="mt-px shrink-0" />
               <span>
-                The preview is not rendering {safe.removed.join(", ")} — your
+                The preview is not rendering {safe.removed.join(", ")}: your
                 source is unchanged and exports keep it.
               </span>
             </p>

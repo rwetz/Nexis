@@ -136,7 +136,7 @@ function StatusMessage({ status }: { status: Exclude<Status, { kind: "ready" }> 
     status.kind === "error"
       ? `Failed to read file: ${status.message}`
       : status.kind === "binary"
-        ? "Binary file — cannot render as markdown."
+        ? "Binary file: cannot render as markdown."
         : `File is ${status.size} bytes; limit ${status.limit}.`;
   return (
     <div className="px-6 py-4">

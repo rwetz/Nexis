@@ -171,7 +171,7 @@ function NotRecording({ hasWorkspace }: { hasWorkspace: boolean }) {
       </p>
       <p className="text-caption leading-relaxed text-muted-foreground">
         {hasWorkspace
-          ? "Nexis can keep a local record of the commands you run here — what worked, how long it took, and what it printed. Nothing leaves your machine, and private terminals are never recorded."
+          ? "Nexis can keep a local record of the commands you run here: what worked, how long it took, and what it printed. Nothing leaves your machine, and private terminals are never recorded."
           : "Open a folder to see the commands recorded in it. Each workspace keeps its own history."}
       </p>
       {hasWorkspace ? (
@@ -698,7 +698,7 @@ function JournalTab({ root }: { root: string }) {
             {journal.firstAt !== null && journal.lastAt !== null
               ? `First command ${relativeTime(journal.firstAt)}, last ${relativeTime(journal.lastAt)}.`
               : null}{" "}
-            "Running" is wall-clock spent inside commands, not time worked — a
+            "Running" is wall-clock spent inside commands, not time worked: a
             dev server left running inflates it.
           </p>
 

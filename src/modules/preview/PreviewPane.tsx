@@ -180,7 +180,7 @@ export const PreviewPane = forwardRef<PreviewPaneHandle, Props>(
                 key={v.id}
                 type="button"
                 aria-pressed={on}
-                title={`${v.label} — ${v.width}x${v.height} CSS px`}
+                title={`${v.label} – ${v.width}x${v.height} CSS px`}
                 onClick={() => toggleViewport(v.id)}
                 className={
                   "rounded px-1.5 py-0.5 text-caption transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 " +
@@ -337,7 +337,7 @@ function EmptyState() {
             Ports
           </span>{" "}
           dropdown to jump straight to your running dev server. Public sites
-          often block embedding — open them in your browser via the link icon
+          often block embedding: open them in your browser via the link icon
           if you see a blank page.
         </p>
       </div>

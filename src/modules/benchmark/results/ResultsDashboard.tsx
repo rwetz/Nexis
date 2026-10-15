@@ -131,7 +131,7 @@ export function ResultsDashboard() {
             <div className="mb-3">
               <h2 className="text-sm font-semibold">Efficiency map</h2>
               <p className="text-caption text-muted-foreground">
-                Throughput vs latency (log–log) · the dashed line is the Pareto frontier — points
+                Throughput vs latency (log–log) · the dashed line is the Pareto frontier: points
                 where nothing else is both faster and higher-throughput. Top-left is ideal.
               </p>
             </div>
@@ -168,7 +168,7 @@ function MetricsProvenance({ results }: { results: BenchResult[] }) {
       ))}
       {hasSim && (
         <p>
-          <span className="font-medium text-foreground">● Simulated.</span> Synthetic metrics — the
+          <span className="font-medium text-foreground">● Simulated.</span> Synthetic metrics: the
           harness, protocol, and UI are real; ONNX Runtime drops in behind the same interface next.
         </p>
       )}

@@ -144,7 +144,7 @@ const TEMPLATE_OPTIONS: {
   {
     id: "blank",
     label: "Blank",
-    desc: "Start from scratch — design your own network in train.py.",
+    desc: "Start from scratch: design your own network in train.py.",
     defaultName: "my-network",
   },
 ];
@@ -419,7 +419,7 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
                             )
                           }
                           className="h-6 shrink-0 rounded border border-info/40 bg-info/[0.06] px-1.5 text-micro font-medium text-info"
-                          title="model.onnx — click to reveal"
+                          title="model.onnx: click to reveal"
                         >
                           ONNX
                         </button>
@@ -589,7 +589,7 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
                     <Playground run={viewedRun} />
                   ) : viewedRun ? (
                     <p className="mb-1 mt-3 text-micro leading-snug text-muted-foreground/70">
-                      This engine version can't serve models — update the
+                      This engine version can't serve models: update the
                       standalone engine (v0.8+) for in-panel inference, or
                       export to{" "}
                       <Explain term="onnx">
@@ -806,14 +806,14 @@ function SetupCard({
       <p className="mb-1 text-ui font-semibold">Set up the ML engine</p>
       <p className="mb-2 text-caption leading-snug text-muted-foreground">
         Nexis trains models with Axon, a small local engine. Everything runs
-        on your machine — no cloud, no accounts.
+        on your machine: no cloud, no accounts.
       </p>
       {wslDistro ? (
         <p className="mb-2 flex items-start gap-1.5 rounded border border-border/50 bg-background/50 p-1.5 text-caption leading-snug text-muted-foreground">
           <Icon name="server" size="xs" className="mt-px shrink-0" />
           <span>
             This workspace is <span className="font-mono">{wslDistro}</span>, so
-            the engine has to live inside the distro — a Windows install is a
+            the engine has to live inside the distro: a Windows install is a
             different machine as far as your project is concerned.
           </span>
         </p>
@@ -901,8 +901,8 @@ function SetupCard({
             One verified binary from the project&apos;s GitHub releases. No
             Python, no PyTorch, nothing else to install. Trains spreadsheet
             models (categories or numbers) and image models
-            {hostGpu ? ` on your ${hostGpu}` : " on your GPU"} through wgpu — no
-            CUDA toolchain — with the inference playground built in.
+            {hostGpu ? ` on your ${hostGpu}` : " on your GPU"} through wgpu, no
+            CUDA toolchain, with the inference playground built in.
           </p>
           {pin ? (
             <details className="mt-1.5">
@@ -991,7 +991,7 @@ function SetupCard({
         disabled={downloadingEngine}
         className="mt-1.5 text-caption text-primary underline-offset-2 hover:underline disabled:opacity-50"
       >
-        I installed it — check again
+        I installed it: check again
       </button>
     </div>
   );
@@ -1020,7 +1020,7 @@ function WslEngineSteps({ distro }: { distro: string }) {
       <p className="text-micro leading-snug text-muted-foreground/70">
         If the last command prints a version, hit “check again” below.{" "}
         <span className="font-mono">~/.local/bin</span> is on the default PATH
-        for most distros — if <span className="font-mono">axon</span> is
+        for most distros: if <span className="font-mono">axon</span> is
         not found, open a fresh terminal or add it to your shell profile.
       </p>
     </div>
@@ -1060,8 +1060,8 @@ function PythonEngineSteps({
           above is the supported engine. It still covers three things Axon
           cannot do yet: <strong>text generation</strong> (the{" "}
           <span className="font-mono">textgen</span> template), the{" "}
-          <span className="font-mono">blank</span> template — a{" "}
-          <span className="font-mono">train.py</span> you write yourself — and
+          <span className="font-mono">blank</span> template: a{" "}
+          <span className="font-mono">train.py</span> you write yourself, and
           the self-contained HTML run report. It costs a ~3 GB PyTorch download
           and a Python you maintain.
         </p>
@@ -1079,7 +1079,7 @@ function PythonEngineSteps({
             Python 3.{TORCH_MIN_MINOR}–3.{TORCH_MAX_MINOR} only.
           </strong>{" "}
           PyTorch publishes no wheels for a newer CPython until months after it
-          ships, and pip only says so after resolving — so a too-new
+          ships, and pip only says so after resolving, so a too-new
           interpreter downloads for minutes and ends at “No matching
           distribution found for torch”.
         </p>
@@ -1104,7 +1104,7 @@ function PythonEngineSteps({
           command={win ? ".venv\\Scripts\\nexis-ml --version" : ".venv/bin/nexis-ml --version"}
         />
         <p className="text-micro leading-snug text-muted-foreground/70">
-          For an NVIDIA card, install the CUDA build of torch first — otherwise
+          For an NVIDIA card, install the CUDA build of torch first. Otherwise
           pip resolves the CPU one and training stays on the CPU:
         </p>
         <CopyLine
@@ -1118,7 +1118,7 @@ function PythonEngineSteps({
           If <span className="font-mono">nexis-ml --version</span> prints a
           version, hit “check again” below. If pip cannot find{" "}
           <span className="font-mono">nexis-ml</span> at all, it is not on PyPI
-          for your platform yet — install it from source with{" "}
+          for your platform yet: install it from source with{" "}
           <span className="font-mono">
             pip install &quot;nexis-ml[torch] @ git+{ENGINE_PY_REPO}&quot;
           </span>
@@ -1146,7 +1146,7 @@ function GpuUpsell({
         <>
           <p className="mb-1 flex items-center gap-1.5 text-caption text-foreground/90">
             <span className="size-1.5 nexis-blink rounded-full bg-success" />
-            Installing the GPU build (~3 GB) — keep this window open…
+            Installing the GPU build (~3 GB): keep this window open…
           </p>
           <LogView logs={logs} />
         </>
@@ -1154,7 +1154,7 @@ function GpuUpsell({
         <div className="flex items-center gap-2">
           <p className="min-w-0 flex-1 text-caption leading-snug text-muted-foreground">
             Your <span className="text-foreground/90">{gpuName}</span> isn't
-            being used yet — the engine has the CPU-only build of PyTorch.
+            being used yet: the engine has the CPU-only build of PyTorch.
           </p>
           <Button
             variant="outline"
@@ -1382,7 +1382,7 @@ export function CreateCard({
       {templateOptions.length < TEMPLATE_OPTIONS.length ? (
         <p className="mt-2 text-micro leading-snug text-muted-foreground/70">
           Text generation and the code-your-own Blank project need the Python
-          engine — the standalone engine is config-driven.
+          engine: the standalone engine is config-driven.
         </p>
       ) : null}
         </section>
@@ -1779,7 +1779,7 @@ function ConfusionMatrixView() {
         </div>
       </div>
       <p className="mt-1 text-micro leading-snug text-muted-foreground/60">
-        Rows are the real answer, columns the model's guess — the green diagonal
+        Rows are the real answer, columns the model's guess: the green diagonal
         is correct.
       </p>
     </div>
@@ -1879,7 +1879,7 @@ function ResidualsView() {
         </div>
       </div>
       <p className="mt-1 text-micro leading-snug text-muted-foreground/60">
-        Across is the real value, up is the model's guess — dots on the dashed
+        Across is the real value, up is the model's guess: dots on the dashed
         line are exact.
       </p>
     </div>
@@ -1976,7 +1976,7 @@ function Playground({
       {!serve ? (
         <>
           <p className="mb-1.5 text-caption leading-snug text-muted-foreground">
-            Load this trained model and try it live — give it an input, get a
+            Load this trained model and try it live: give it an input, get a
             prediction back.
           </p>
           <Button
@@ -2142,7 +2142,7 @@ function TabularPlayground({
                 onChange={(e) => setValues((s) => ({ ...s, [col.name]: e.target.value }))}
                 className={fieldClass}
               >
-                <option value="">—</option>
+                <option value="">–</option>
                 {(col.categories ?? []).map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -2218,7 +2218,7 @@ function TabularResult({
       Predicted {target ?? "value"}:{" "}
       <span className="font-mono font-semibold text-foreground">
         {result.value === undefined
-          ? "—"
+          ? "–"
           : result.value.toLocaleString(undefined, { maximumSignificantDigits: 6 })}
       </span>
     </p>
@@ -2333,7 +2333,7 @@ function ProgressBlock({
       </div>
 
       <p className="mb-1.5 text-caption leading-snug text-foreground/90">
-        {run.paused ? "Paused — will resume at your command." : sentence}
+        {run.paused ? "Paused: will resume at your command." : sentence}
       </p>
 
       <div className="flex items-center gap-1.5">
@@ -2388,7 +2388,7 @@ function ResultCard({
     run.status === "ok"
       ? "Training complete"
       : run.status === "cancelled"
-        ? "Stopped early — progress saved"
+        ? "Stopped early: progress saved"
         : "Training failed";
 
   const metricNames = Object.keys(summary?.metrics ?? {});
@@ -2425,7 +2425,7 @@ function ResultCard({
         </p>
       ) : (
         <p className="mb-1.5 text-caption text-muted-foreground">
-          The model was saved — its checkpoint lives in the project's run
+          The model was saved: its checkpoint lives in the project's run
           folder.
         </p>
       )}
@@ -2479,7 +2479,7 @@ function EngineChip({
         ? `Standalone Rust engine (burn) · backend: ${envInfo?.backend ?? "?"}`
         : kind === "python"
           ? `Python engine (PyTorch${envInfo?.torch ? ` ${envInfo.torch}` : ""})`
-          : "Engine detected — probing capabilities…";
+          : "Engine detected: probing capabilities…";
   return (
     <span
       className="flex items-center gap-1 rounded bg-muted/40 px-1.5 py-px text-micro text-muted-foreground"
@@ -2605,7 +2605,7 @@ function RunRow({
             "flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-1 text-left",
             disabled && "cursor-default opacity-60",
           )}
-          title={`${run.id} — ${runStatusWord(run.status)}`}
+          title={`${run.id} – ${runStatusWord(run.status)}`}
         >
           <span className={cn("size-1.5 shrink-0 rounded-full", dot)} />
           <span className="min-w-0 flex-1 truncate text-caption text-foreground/85">

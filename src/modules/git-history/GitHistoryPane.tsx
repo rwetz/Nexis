@@ -782,7 +782,7 @@ const CommitRow = memo(function CommitRow({
             ) : null}
           </span>
         ) : commit.filesChanged === 0 ? (
-          <span className="text-muted-foreground/40">—</span>
+          <span className="text-muted-foreground/40">–</span>
         ) : null}
       </span>
     </button>

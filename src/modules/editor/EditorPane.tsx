@@ -704,7 +704,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
         {toolingDisabled && (
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
             <span>
-              Large file ({formatBytes(doc.size)}) — language server, linting,
+              Large file ({formatBytes(doc.size)}): language server, linting,
               folding, minimap, and AI completion are off for performance.
             </span>
             <button

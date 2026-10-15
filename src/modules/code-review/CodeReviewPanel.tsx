@@ -102,7 +102,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
       const text = diff.diffText.slice(0, 12_000);
       const scopeLabel = scope === "staged" ? "staged" : "all unstaged";
       const truncNote = diff.truncated
-        ? "\n\n> (diff truncated to 12k chars — some files may be missing)"
+        ? "\n\n> (diff truncated to 12k chars: some files may be missing)"
         : "";
       const prompt = `Please review the following ${scopeLabel} git diff:\n\n\`\`\`diff\n${text}\n\`\`\`${truncNote}\n\nFocus on:\n- Potential bugs or logic errors\n- Missing error handling or edge cases\n- Code style / readability improvements\n- Performance considerations\n\nProvide specific, actionable feedback with line references where possible.`;
       showAiChat();

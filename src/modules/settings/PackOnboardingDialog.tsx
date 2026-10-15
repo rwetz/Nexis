@@ -51,7 +51,7 @@ export function PackOnboardingDialog() {
           <DialogTitle>Choose your setup</DialogTitle>
           <DialogDescription>
             Nexis ships a lot of panels. Pick what you are building and it will
-            start with the ones that fit — you can enable or disable any pack
+            start with the ones that fit: you can enable or disable any pack
             later in Settings → Features. Nothing is downloaded or removed
             either way.
           </DialogDescription>

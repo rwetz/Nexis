@@ -406,7 +406,7 @@ function RequestHints({
         <p className="flex items-start gap-1.5 text-micro leading-relaxed text-amber-600 dark:text-amber-400">
           <Icon name="alert" size="xs" className="mt-px shrink-0" />
           Undefined {unresolved.length === 1 ? "variable" : "variables"}:{" "}
-          {unresolved.join(", ")} — left as written, define them under Vars.
+          {unresolved.join(", ")}: left as written, define them under Vars.
         </p>
       )}
     </>
@@ -482,7 +482,7 @@ function RequestTabBody({
         />
         <p className="text-micro leading-relaxed text-muted-foreground/70">
           Per workspace, and referenced as <code>{"{{name}}"}</code> in the
-          URL, headers or body. Stored in plain text on this machine — fine
+          URL, headers or body. Stored in plain text on this machine: fine
           for a dev token, not for a production secret.
         </p>
       </>

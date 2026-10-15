@@ -316,7 +316,7 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
             )}
             {truncated && results.length > 0 ? (
               <div className="px-3 py-1.5 text-micro text-muted-foreground">
-                Showing partial results — refine your query.
+                Showing partial results: refine your query.
               </div>
             ) : null}
           </div>

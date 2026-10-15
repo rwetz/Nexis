@@ -246,7 +246,7 @@ const TokensWithCost = ({
 }) => (
   <span>
     {tokens === undefined
-      ? "—"
+      ? "–"
       : COMPACT.format(tokens)}
     {costText ? (
       <span className="ml-2 text-muted-foreground">• {costText}</span>

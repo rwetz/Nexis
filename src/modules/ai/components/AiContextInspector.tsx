@@ -140,12 +140,12 @@ export function AiContextInspector({ messages }: Props) {
 
   return (
     <div className="flex max-h-72 flex-col overflow-y-auto border-b border-border/50 bg-muted/20 text-caption">
-      <Section title={`Model — ${model?.label ?? modelId}`}>
+      <Section title={`Model: ${model?.label ?? modelId}`}>
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-muted-foreground">
             <span>Provider</span>
             <span className="font-mono text-foreground capitalize">
-              {model?.provider ?? "—"}
+              {model?.provider ?? "–"}
             </span>
           </div>
           <div className="flex items-center justify-between text-muted-foreground">
@@ -180,7 +180,7 @@ export function AiContextInspector({ messages }: Props) {
         </div>
       </Section>
 
-      <Section title={`Conversation — ${messages.length} messages`}>
+      <Section title={`Conversation: ${messages.length} messages`}>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground">
           <span>
             <span className="font-mono text-foreground">{user}</span> user
@@ -196,7 +196,7 @@ export function AiContextInspector({ messages }: Props) {
         </div>
       </Section>
 
-      <Section title={`System prompt — ${systemSections.length} sections`}>
+      <Section title={`System prompt: ${systemSections.length} sections`}>
         <div className="space-y-0.5">
           {systemSections.map((s) => (
             <div key={s} className="flex items-center gap-1.5 text-muted-foreground">
@@ -213,7 +213,7 @@ export function AiContextInspector({ messages }: Props) {
         )}
       </Section>
 
-      <Section title={`Tools — ${APPROVAL_TOOLS.length + READ_TOOLS.length} available`}>
+      <Section title={`Tools: ${APPROVAL_TOOLS.length + READ_TOOLS.length} available`}>
         <div className="space-y-1">
           <div>
             <span className="text-micro uppercase tracking-wide text-muted-foreground/60">

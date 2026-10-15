@@ -89,7 +89,7 @@ function RepoRow({
       </span>
       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Icon name="git-branch" size="xs" />
-        <span className="truncate font-mono">{repo.branch || "—"}</span>
+        <span className="truncate font-mono">{repo.branch || "–"}</span>
         <span className="ml-auto shrink-0 tabular-nums">
           {formatCount(repo.files)} files
         </span>

@@ -298,7 +298,7 @@ export function AiChatView({
             onContinue={() => {
               patchAgentMeta({ hitStepCap: false });
               void sendMessage(
-                "Continue from where you stopped. Don't recap — just keep going.",
+                "Continue from where you stopped. Don't recap, just keep going.",
               );
             }}
           />
@@ -335,7 +335,7 @@ const CompactionNotice = memo(function CompactionNotice({
     <div className="flex items-center gap-2 rounded-md border border-border/40 bg-muted/30 px-2.5 py-1.5 text-caption text-muted-foreground">
       <span className="size-1.5 shrink-0 rounded-full bg-amber-500/80" />
       <span className="flex-1 truncate">
-        Context compacted — {droppedCount} older tool result
+        Context compacted: {droppedCount} older tool result
         {droppedCount === 1 ? "" : "s"} elided to save tokens.
       </span>
       <button

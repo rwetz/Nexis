@@ -82,7 +82,7 @@ const LOCAL_META: Partial<Record<ProviderId, LocalMeta>> = {
       "Run GGUF models via LM Studio's HTTP server (Developer tab → enable).",
     modelHint: (
       <>
-        The model id loaded in LM Studio — see the server's{" "}
+        The model id loaded in LM Studio: see the server's{" "}
         <span className="font-mono">/v1/models</span> page.
       </>
     ),
@@ -109,7 +109,7 @@ const LOCAL_META: Partial<Record<ProviderId, LocalMeta>> = {
       "High-throughput serving via a vLLM OpenAI-compatible server (--port 8000).",
     modelHint: (
       <>
-        The model id you launched vLLM with — see the server's{" "}
+        The model id you launched vLLM with: see the server's{" "}
         <span className="font-mono">/v1/models</span> page.
       </>
     ),
@@ -131,7 +131,7 @@ const LOCAL_META: Partial<Record<ProviderId, LocalMeta>> = {
   "openai-compatible": {
     urlPlaceholder: "https://api.example.com/v1",
     modelPlaceholder: "gpt-4o, qwen3-max, glm-4.6, …",
-    description: "Any OpenAI-compatible endpoint — vLLM, Z.AI, Fireworks, etc.",
+    description: "Any OpenAI-compatible endpoint: vLLM, Z.AI, Fireworks, etc.",
     modelHint: null,
   },
 };
@@ -479,8 +479,7 @@ function DefaultsBlock({
       <div className="flex items-center gap-2">
         <Label>Defaults</Label>
         {configuredIds.size === 0 ? (
-          <span className="text-micro text-muted-foreground/60">
-            — add a provider below first
+          <span className="text-micro text-muted-foreground/60">: add a provider below first
           </span>
         ) : null}
       </div>
@@ -688,7 +687,7 @@ function AutocompleteRow({
       </FieldRow>
       {enabled && !hasKey ? (
         <p className="pl-19 text-caption text-muted-foreground">
-          {getProvider(provider).label} isn't connected — add it below.
+          {getProvider(provider).label} isn't connected: add it below.
         </p>
       ) : null}
     </>
@@ -860,7 +859,7 @@ function LocalProviderCard({
                   type="password"
                   value={keyDraft}
                   onChange={(e) => setKeyDraft(e.target.value)}
-                  placeholder="Optional — leave empty for unauthenticated endpoints"
+                  placeholder="Optional: leave empty for unauthenticated endpoints"
                   spellCheck={false}
                   className="h-8 flex-1 font-mono text-ui"
                 />
@@ -929,8 +928,8 @@ function StatusLine({ status }: { status: TestStatus }) {
         <span className="flex items-center gap-1 text-caption text-muted-foreground">
           <Icon name="success" size="xs" />
           {status.kind === "ok"
-            ? "Reachable — model found on the server."
-            : "Reachable — server responded (model list unavailable)."}
+            ? "Reachable: model found on the server."
+            : "Reachable: server responded (model list unavailable)."}
         </span>
       );
     case "model-missing":

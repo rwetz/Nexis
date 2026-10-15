@@ -116,6 +116,17 @@ export function DocumentsWorkbench({ workspaceRoot, onEditRaw }: Props) {
             {docs.map((doc) => (
               <div
                 key={doc.id}
+                // Middle-click closes, as in the editor's tabs and every
+                // browser. mousedown is stopped too, or Windows starts
+                // autoscroll on the tab strip before the click lands.
+                onMouseDown={(e) => {
+                  if (e.button === 1) e.preventDefault();
+                }}
+                onAuxClick={(e) => {
+                  if (e.button !== 1) return;
+                  e.preventDefault();
+                  requestClose(doc);
+                }}
                 className={cn(
                   "group flex shrink-0 items-center rounded-md transition-colors",
                   doc.id === activeId ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:text-foreground",

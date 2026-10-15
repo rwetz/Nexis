@@ -339,7 +339,7 @@ export function GeneralSection() {
                     xterm's WebGL renderer caches glyphs in a GPU texture
                     atlas. On some macOS setups (especially with Nerd Fonts),
                     the atlas corrupts and terminal text becomes unreadable.
-                    Turn this off as a fallback — performance dips slightly,
+                    Turn this off as a fallback: performance dips slightly,
                     but text renders correctly via the DOM renderer.
                   </TooltipContent>
                 </Tooltip>
@@ -639,7 +639,7 @@ export function GeneralSection() {
           title="Diagnostics bundle"
           description={
             diagResult ??
-            "Export a zip of logs, versions, redacted settings, recent crash reports, and the newest recording — for attaching to bug reports. Nothing leaves this machine."
+            "Export a zip of logs, versions, redacted settings, recent crash reports, and the newest recording: for attaching to bug reports. Nothing leaves this machine."
           }
         >
           <Button

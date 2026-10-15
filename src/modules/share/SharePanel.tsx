@@ -42,12 +42,12 @@ const BIND_LABELS: Array<{ value: ShareBindChoice; label: string; hint: string }
   {
     value: "lan",
     label: "LAN only",
-    hint: "Bind just the primary LAN interface — not exposed on VPN or other networks",
+    hint: "Bind just the primary LAN interface, not exposed on VPN or other networks",
   },
   {
     value: "localhost",
     label: "This device only",
-    hint: "Bind 127.0.0.1 — for browsers on this machine (e.g. OBS, a second monitor)",
+    hint: "Bind 127.0.0.1: for browsers on this machine (e.g. OBS, a second monitor)",
   },
 ];
 
@@ -276,7 +276,7 @@ export function SharePanel() {
                 </button>
               </div>
               <p className="mt-1.5 text-micro text-muted-foreground/60">
-                Only people with this exact link can view — the{" "}
+                Only people with this exact link can view: the{" "}
                 <code className="text-micro">?k=</code> token is the key.
                 Sharing continues while this panel is closed; stop it here or
                 from the status-bar pill.
@@ -321,7 +321,7 @@ export function SharePanel() {
         {!isRunning && (
           <div className="rounded-md border border-border/30 bg-muted/10 p-2.5">
             <p className="text-micro leading-relaxed text-muted-foreground/70">
-              Starts a local HTTP server and generates a tokenized link — only
+              Starts a local HTTP server and generates a tokenized link. Only
               people you give the link to can view your{" "}
               {target === "conversation" ? "AI conversation" : "terminal"}{" "}
               read-only.{" "}

@@ -339,7 +339,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
                       background: entry.hex,
                       color: readableOn(entry.hex),
                     }}
-                    title={`${formatRatio(verdict.ratio)} against ${reference} — body ${verdict.normal}, large ${verdict.large}, UI ${verdict.ui}`}
+                    title={`${formatRatio(verdict.ratio)} against ${reference}: body ${verdict.normal}, large ${verdict.large}, UI ${verdict.ui}`}
                   >
                     {formatRatio(verdict.ratio)}
                   </span>

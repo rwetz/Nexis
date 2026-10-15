@@ -88,7 +88,7 @@ export function ComparisonChart({ metric, models, backendIds, results, task }: P
                     color={BACKEND_COLOR[b]}
                     value={v}
                     max={max}
-                    text={v != null ? metric.format(v, task, b) : res?.status === "error" ? "error" : "—"}
+                    text={v != null ? metric.format(v, task, b) : res?.status === "error" ? "error" : "–"}
                     isBest={v != null && v === best && cellVals.length > 1}
                   />
                 );
@@ -137,7 +137,7 @@ function EngineWorkload({
               color={BACKEND_COLOR[r.backendId]}
               value={v}
               max={max}
-              text={v != null ? metric.format(v, task, r.backendId) : r.status === "error" ? "error" : "—"}
+              text={v != null ? metric.format(v, task, r.backendId) : r.status === "error" ? "error" : "–"}
               isBest={false}
             />
           );

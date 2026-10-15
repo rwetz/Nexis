@@ -9,7 +9,7 @@ import type { Theme } from "../types";
 export const thicket: Theme = {
   id: "thicket",
   name: "Thicket",
-  description: "Forest greens with a moss accent — quiet and matte.",
+  description: "Forest greens with a moss accent: quiet and matte.",
   editorTheme: { dark: "atomone", light: "github-light" },
   variants: {
     dark: {

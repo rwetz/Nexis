@@ -155,7 +155,7 @@ export function PrivacySection() {
 
       <SettingRow
         title="Record commands"
-        description="Keeps a local history of finished commands — the command line, cwd, exit code, duration and output — per workspace, under ~/.cache/nexis. Nothing leaves your machine. Private terminals are never recorded regardless of this setting, and API keys and tokens are stripped before anything is written."
+        description="Keeps a local history of finished commands, the command line, cwd, exit code, duration and output, per workspace, under ~/.cache/nexis. Nothing leaves your machine. Private terminals are never recorded regardless of this setting, and API keys and tokens are stripped before anything is written."
       >
         <Switch
           checked={enabled}

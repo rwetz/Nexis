@@ -191,7 +191,7 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
             />
           </h1>
           <p className="text-[14px] text-muted-foreground">
-            Open a terminal or file to get started — or press {MOD_KEY}+I to ask the AI agent.
+            Open a terminal or file to get started, or press {MOD_KEY}+I to ask the AI agent.
           </p>
         </div>
 

@@ -92,7 +92,7 @@ export function TitlebarTools({
           >
             <button
               type="button"
-              title={`Open ${tool.label} — drag to reorder`}
+              title={`Open ${tool.label}: drag to reorder`}
               aria-label={`Open ${tool.label}`}
               onClick={() => {
                 // The click that ends a drag is not a request to open.

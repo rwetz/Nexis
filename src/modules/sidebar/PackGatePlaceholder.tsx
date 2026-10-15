@@ -69,7 +69,7 @@ export function PackGatePlaceholder({ view, pack: packProp, onShowExplorer }: Pr
         </Button>
       </div>
       <p className="max-w-56 text-caption leading-relaxed text-muted-foreground/70">
-        Nothing gets installed — packs only show or hide features. Manage them
+        Nothing gets installed: packs only show or hide features. Manage them
         any time in Settings&nbsp;→&nbsp;Features.
       </p>
     </div>

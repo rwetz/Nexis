@@ -240,7 +240,7 @@ function RateSwitcher({ active }: { active: number }) {
           type="button"
           aria-pressed={ms === active}
           onClick={() => void setSysmonIntervalMs(ms)}
-          title={`Sample every ${ms} ms — ${HISTORY_LENGTH} samples of history is ${formatSpan(ms)}`}
+          title={`Sample every ${ms} ms: ${HISTORY_LENGTH} samples of history is ${formatSpan(ms)}`}
           className={cn(
             "px-1 py-px font-mono text-micro leading-tight transition-colors",
             ms === active
@@ -427,7 +427,7 @@ function ProcessRow({
         // the process gets to clean up; escalation stays deliberate rather
         // than being the default.
         onClick={(e) => void onKill(p.pid, e.shiftKey ? "kill" : "term")}
-        title={`Terminate ${p.name} (${p.pid}) — shift-click to force kill`}
+        title={`Terminate ${p.name} (${p.pid}): shift-click to force kill`}
         className="w-4 shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-[opacity,color,background-color] hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
       >
         <Icon name="close" size="xs" />

@@ -199,7 +199,7 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
             <>
               <p className="px-1 text-caption leading-relaxed text-muted-foreground">
                 Found in lines this commit <em>adds</em>. Committing is not
-                blocked — but after a push these have to be rotated, not
+                blocked, but after a push these have to be rotated, not
                 deleted.
               </p>
               {live.map((f) => (
@@ -214,7 +214,7 @@ export function SecretScanSection({ repoRoot, stagedKey, onOpenFile }: Props) {
                     <button
                       type="button"
                       onClick={() => dismiss(f.fingerprint)}
-                      title="Not a secret — ignore this in this repo"
+                      title="Not a secret: ignore this in this repo"
                       className="shrink-0 rounded px-1 py-px text-micro text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted/60 hover:text-foreground focus-visible:opacity-100"
                     >
                       Ignore

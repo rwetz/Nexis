@@ -89,7 +89,7 @@ function RepoRow({ repo, selected }: { repo: RepoSummary; selected: boolean }) {
       <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
         <Icon name="git-branch" size="sm" className="shrink-0" />
         <span className="truncate font-mono text-xs">
-          {repo.branch || "—"}
+          {repo.branch || "–"}
           {repo.detached && " (detached)"}
         </span>
       </span>

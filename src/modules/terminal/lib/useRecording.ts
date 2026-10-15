@@ -77,7 +77,7 @@ export function useRecording(leafId: number) {
         state.events.push([
           elapsed,
           "o",
-          "\r\n[nexis: recording truncated — size limit reached]\r\n",
+          "\r\n[nexis: recording truncated, size limit reached]\r\n",
         ]);
         return;
       }

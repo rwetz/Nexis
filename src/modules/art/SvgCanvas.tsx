@@ -524,7 +524,7 @@ export function SvgCanvas({ source, onChange }: Props) {
         <p className="max-w-64 text-center text-caption leading-relaxed text-muted-foreground">
           The canvas needs a complete, well-formed{" "}
           <code className="text-caption">&lt;svg&gt;</code> document. Keep
-          typing in Source — it appears as soon as the markup parses.
+          typing in Source: it appears as soon as the markup parses.
         </p>
       </div>
     );
@@ -720,7 +720,7 @@ export function SvgCanvas({ source, onChange }: Props) {
           <p className="flex items-start gap-1.5 text-micro leading-relaxed text-amber-600 dark:text-amber-400">
             <Icon name="security" size="xs" className="mt-px shrink-0" />
             <span>
-              The canvas is not rendering {preview.removed.join(", ")} — your
+              The canvas is not rendering {preview.removed.join(", ")}: your
               source is unchanged.
             </span>
           </p>
@@ -729,7 +729,7 @@ export function SvgCanvas({ source, onChange }: Props) {
 
       <div className="shrink-0 border-t border-border/50 px-3 py-1.5">
         <p className="text-micro leading-relaxed text-muted-foreground/70">
-          Drag to move. Dots are points — filled ones sit on the shape, hollow
+          Drag to move. Dots are points: filled ones sit on the shape, hollow
           ones pull a curve. Corner squares scale (hold Shift to stretch).
           Arrows nudge, Delete removes.
         </p>

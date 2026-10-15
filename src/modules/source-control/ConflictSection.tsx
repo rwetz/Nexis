@@ -63,9 +63,9 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
         if (readResult.kind === "text") {
           content = readResult.content;
         } else if (readResult.kind === "toolarge") {
-          content = "(file too large to inline — please review manually)";
+          content = "(file too large to inline: please review manually)";
         } else {
-          content = "(binary file — cannot resolve automatically)";
+          content = "(binary file: cannot resolve automatically)";
         }
 
         const type = conflictTypeLabel(f);

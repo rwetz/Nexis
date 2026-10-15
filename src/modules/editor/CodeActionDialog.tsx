@@ -210,13 +210,13 @@ export function CodeActionDialog({
             <p className="px-2 py-3 text-caption text-muted-foreground">
               No language server is available for this file. Semantic
               refactorings (extract function, inline variable) need a running
-              LSP server — the AI Refactor panel (Alt+Shift+X) works without
+              LSP server: the AI Refactor panel (Alt+Shift+X) works without
               one.
             </p>
           ) : actions.length === 0 ? (
             <p className="px-2 py-3 text-caption text-muted-foreground">
               The language server offers no refactorings for this selection.
-              Try selecting a complete expression or statement — extract
+              Try selecting a complete expression or statement: extract
               function needs a selection, inline variable needs the cursor on
               a variable.
             </p>

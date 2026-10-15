@@ -128,7 +128,7 @@ export function AgentQueuePanel() {
               No tasks queued yet.
             </p>
             <p className="text-micro text-muted-foreground/60">
-              Add prompts below — they run sequentially while you work.
+              Add prompts below: they run sequentially while you work.
             </p>
           </div>
         ) : (

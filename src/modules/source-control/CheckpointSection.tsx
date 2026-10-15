@@ -157,7 +157,7 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
                     className="h-5 shrink-0 cursor-pointer px-1.5 text-micro opacity-0 transition-opacity group-hover:opacity-100"
                     disabled={busy === cp.refName}
                     onClick={() => void handleRestore(cp)}
-                    title="Restore tracked files to this snapshot. Overwrites changes made since — but takes a new checkpoint first, so this is undoable."
+                    title="Restore tracked files to this snapshot. Overwrites changes made since, but takes a new checkpoint first, so this is undoable."
                   >
                     {busy === cp.refName ? (
                       <Spinner className="size-2.5" />

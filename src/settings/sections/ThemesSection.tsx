@@ -323,7 +323,7 @@ export function ThemesSection() {
         {workspaceStatus ? <div className="text-ui text-muted-foreground">{workspaceStatus}</div> : null}
         <ThemeGroup
           label="Nexis"
-          hint="Designed as a set — one contrast ramp across six hue families."
+          hint="Designed as a set: one contrast ramp across six hue families."
           themes={nexisThemes}
           themeId={themeId}
           resolvedMode={resolvedMode}

@@ -361,7 +361,7 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
                 : query.trim()
                   ? "No matches"
                   : source === "ledger"
-                    ? "Nothing recorded here yet — commands appear once they finish"
+                    ? "Nothing recorded here yet: commands appear once they finish"
                     : "No shell history found"}
             </div>
           )}

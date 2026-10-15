@@ -517,7 +517,7 @@ export const SourceControlPanel = memo(function SourceControlPanel({
                 pullBusy
                   ? "Pulling…"
                   : isDiverged
-                    ? "Branch diverged — resolve in terminal"
+                    ? "Branch diverged: resolve in terminal"
                     : !hasUpstream
                       ? "No upstream configured"
                       : (scm.status?.behind ?? 0) === 0
@@ -1070,7 +1070,7 @@ function DivergedBanner() {
         <span className="font-medium text-foreground/85">
           Diverged from upstream
         </span>
-        <span className="ml-1 opacity-75">— resolve in terminal</span>
+        <span className="ml-1 opacity-75">: resolve in terminal</span>
       </span>
     </div>
   );

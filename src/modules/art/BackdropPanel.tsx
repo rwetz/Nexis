@@ -275,7 +275,7 @@ export function BackdropPanel({ workspaceRoot }: Props) {
                 onClick={() => setSeedLocked((v) => !v)}
                 title={
                   seedLocked
-                    ? "Seed locked — Roll will not change it"
+                    ? "Seed locked: Roll will not change it"
                     : "Lock the seed so tuning a slider keeps this form"
                 }
                 className={cn(

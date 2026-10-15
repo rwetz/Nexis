@@ -96,7 +96,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
     (version: string) => {
       const date = new Date().toISOString().slice(0, 10);
       const lines = [
-        `## [${version}] — ${date}`,
+        `## [${version}]: ${date}`,
         "",
         "### Added",
         ...commits,

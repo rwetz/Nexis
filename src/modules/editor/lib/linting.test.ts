@@ -41,7 +41,7 @@ describe("scanDelimiters", () => {
 
   it("flags a mismatched closer", () => {
     const problems = scanDelimiters("foo(a]", noSkip);
-    expect(messages(problems)).toEqual(["Mismatched ']' — expected ')'"]);
+    expect(messages(problems)).toEqual(["Mismatched ']': expected ')'"]);
   });
 
   it("handles nesting across all three pairs", () => {

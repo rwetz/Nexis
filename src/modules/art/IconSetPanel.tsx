@@ -245,7 +245,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
           <p className="p-4 text-center text-caption leading-relaxed text-muted-foreground/60">
             {state.kind === "ready"
               ? "No .svg files in that folder."
-              : "Point this at a folder of icons and scan. It compares the set against itself — canvas sizes, stroke weights, baked-in colour."}
+              : "Point this at a folder of icons and scan. It compares the set against itself: canvas sizes, stroke weights, baked-in colour."}
           </p>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-1.5">

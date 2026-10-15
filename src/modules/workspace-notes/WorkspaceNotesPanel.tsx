@@ -156,7 +156,7 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
           value={text}
           onChange={handleChange}
           aria-label="Workspace notes"
-          placeholder={`# Workspace notes\n\nWrite anything here — saved to .nexis/NOTES.md\n\nSupports Markdown.`}
+          placeholder={`# Workspace notes\n\nWrite anything here: saved to .nexis/NOTES.md\n\nSupports Markdown.`}
           spellCheck={false}
           className={cn(
             "flex-1 resize-none bg-transparent px-3 py-2 font-mono text-ui",

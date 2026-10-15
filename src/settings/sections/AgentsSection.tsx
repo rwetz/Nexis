@@ -393,7 +393,7 @@ function AgentEditorDialog({
               onChange={(e) =>
                 setDraft({ ...draft, description: e.target.value })
               }
-              placeholder="One line — shown in the agent picker"
+              placeholder="One line: shown in the agent picker"
               className="h-8 text-ui"
             />
           </div>
@@ -512,7 +512,7 @@ function SnippetEditorDialog({
               onChange={(e) =>
                 setDraft({ ...draft, description: e.target.value })
               }
-              placeholder="One line — shown in the # picker"
+              placeholder="One line: shown in the # picker"
               className="h-8 text-ui"
             />
           </div>
@@ -613,9 +613,8 @@ function ToolPoliciesBlock() {
       <Label>Tool approval policies</Label>
       <p className="text-caption text-muted-foreground leading-relaxed">
         Per-tool approval behavior. "Auto-approve" lets the AI run the tool without pausing.
-        For shell commands, "Auto-approve read-only" auto-runs only a narrow allowlist —
-        read-only git subcommands, ls, cat, and similar, with no pipes, redirects, or
-        substitutions, and secret-file guards on every path — and still asks for everything
+        For shell commands, "Auto-approve read-only" auto-runs only a narrow allowlist, read-only git subcommands, ls, cat, and similar, with no pipes, redirects, or
+        substitutions, and secret-file guards on every path, and still asks for everything
         else. Every command lands in the audit log either way.
       </p>
       <div className="flex flex-col gap-1 rounded-lg border border-border/60 bg-card/40 overflow-hidden">

@@ -1,17 +1,17 @@
 ---
 type: runbook
-description: Cutting a tagged release — the four version files that must move together, the CHANGELOG rename, and what the tag push actually triggers.
+description: Cutting a tagged release, the four version files that must move together, the CHANGELOG rename, and what the tag push actually triggers.
 ---
 
 # Cutting a release
 
-A release is one commit that bumps the version and renames the CHANGELOG's `[Unreleased]` heading, plus an annotated tag. Pushing the tag is what builds and publishes — nothing else does.
+A release is one commit that bumps the version and renames the CHANGELOG's `[Unreleased]` heading, plus an annotated tag. Pushing the tag is what builds and publishes: nothing else does.
 
 ## Before anything else
 
 Run the **pre-push checklist in AGENTS.md** in full. A release tag that fails CI has already published a broken build by the time you find out, because `.github/workflows/release.yml` fires on the tag, not on a green check.
 
-## 1. Version — four files, one number
+## 1. Version: four files, one number
 
 The version lives in four places and they must never disagree:
 
@@ -22,37 +22,37 @@ The version lives in four places and they must never disagree:
 
 SemVer, pre-1.0 conventions per the CHANGELOG's own header. A release carrying any user-facing feature or behaviour change is a minor bump.
 
-## 2. CHANGELOG — rename, don't move
+## 2. CHANGELOG: rename, don't move
 
 Insert the new heading **below** the `[Unreleased]` heading and leave `[Unreleased]` in place and empty:
 
 ```markdown
 ## [Unreleased]
 
-## [1.24.0] — 2026-08-18
+## [1.24.0] - 2026-08-18
 ```
 
 Everything that was under `[Unreleased]` now belongs to the new version by position. There are no link definitions at the bottom of the file to maintain.
 
 ## 3. Sweep for stale `[Unreleased]` pointers
 
-This is the step that gets skipped. `ROADMAP.md` and the vault both cite shipped work as "see CHANGELOG `[Unreleased]`" — those citations silently start pointing at the *next* release's empty section the moment you do step 2. Grep and repoint them at the version that actually carried the work:
+This is the step that gets skipped. `ROADMAP.md` and the vault both cite shipped work as "see CHANGELOG `[Unreleased]`": those citations silently start pointing at the *next* release's empty section the moment you do step 2. Grep and repoint them at the version that actually carried the work:
 
 ```sh
 grep -rn 'CHANGELOG `\[Unreleased\]`\|`\[Unreleased\]` CHANGELOG' ROADMAP.md docs/
 ```
 
-Also prune `ROADMAP.md` of anything this release landed — it tracks only what's planned, never what shipped (see [[Home]] and the record-keeping rule in AGENTS.md).
+Also prune `ROADMAP.md` of anything this release landed: it tracks only what's planned, never what shipped (see [[Home]] and the record-keeping rule in AGENTS.md).
 
 ## 4. Commit and tag
 
 ```sh
-git commit -m "release: v1.24.0 — <short theme>"
-git tag -a v1.24.0 -m "v1.24.0 — <short theme>"   # annotated, `v` prefix
+git commit -m "release: v1.24.0: <short theme>"
+git tag -a v1.24.0 -m "v1.24.0: <short theme>"   # annotated, `v` prefix
 git push origin main --follow-tags
 ```
 
-The subject line's theme is reused as the tag subject and reads as the release title. The commit body is a few prose paragraphs describing the release as a whole — not a changelog copy, which the release notes already link to.
+The subject line's theme is reused as the tag subject and reads as the release title. The commit body is a few prose paragraphs describing the release as a whole, not a changelog copy, which the release notes already link to.
 
 ## What the tag triggers
 

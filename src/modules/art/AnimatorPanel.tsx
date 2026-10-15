@@ -161,7 +161,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
 
       {!valid ? (
         <p className="p-4 text-center text-caption leading-relaxed text-muted-foreground">
-          Draw or paste a mark in the SVG playground first — this animates the
+          Draw or paste a mark in the SVG playground first: this animates the
           document that panel is holding.
         </p>
       ) : (

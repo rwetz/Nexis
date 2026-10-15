@@ -119,7 +119,7 @@ function ProcessRow({
           {p.command}
         </p>
         <p className="truncate text-micro text-muted-foreground" title={p.cwd ?? ""}>
-          {p.cwd ?? "—"} · {relativeTime(p.started_at_ms)}
+          {p.cwd ?? "–"} · {relativeTime(p.started_at_ms)}
           {p.exited ? ` · exit ${p.exit_code ?? "?"}` : ""}
         </p>
       </div>

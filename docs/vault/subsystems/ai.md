@@ -1,6 +1,6 @@
 ---
 type: subsystem
-description: AI module — agent loop, providers, tool registry, subagents, compaction, key storage.
+description: AI module, agent loop, providers, tool registry, subagents, compaction, key storage.
 ---
 
 # AI subsystem (`src/modules/ai/`)
@@ -11,14 +11,14 @@ The chat/agent feature. Built on the Vercel AI SDK (`ai` package); everything ru
 
 `lib/agent.ts:runAgentStream` is the single entry point for a chat turn. Order matters:
 
-1. `buildConfiguredLanguageModel` — resolves provider + model (cloud keys or local endpoints: LM Studio, Ollama, vLLM, MLX, SGLang, xLLM, OpenAI-compatible)
-2. `convertToModelMessages` → `pruneMessages({reasoning: "all", emptyMessages: "remove"})` — **must stay before compaction** (AGENTS.md pitfall #3; Cerebras rejects reasoning blocks in history)
-3. `compactModelMessagesDetailed` (`lib/compact.ts`) — context-limit compaction; byte estimation goes through `safeJsonLength` (pitfall #11 — tool outputs are untrusted, may be circular)
+1. `buildConfiguredLanguageModel`, resolves provider + model (cloud keys or local endpoints: LM Studio, Ollama, vLLM, MLX, SGLang, xLLM, OpenAI-compatible)
+2. `convertToModelMessages` → `pruneMessages({reasoning: "all", emptyMessages: "remove"})`, **must stay before compaction** (AGENTS.md pitfall #3; Cerebras rejects reasoning blocks in history)
+3. `compactModelMessagesDetailed` (`lib/compact.ts`), context-limit compaction; byte estimation goes through `safeJsonLength` (pitfall #11, tool outputs are untrusted, may be circular)
 4. system prompt assembly (`buildStableSystem` + optional plan-mode prompt) → `applyCacheBreakpoints` → `streamText` with `buildTools`, capped at `MAX_AGENT_STEPS`
 
 ## Tools
 
-`tools/tools.ts:buildTools` composes seven families: fs, edit, search, shell, subagent, terminal, todo — all taking a shared `ToolContext` (`tools/context.ts`, owns `resolvePath`).
+`tools/tools.ts:buildTools` composes seven families: fs, edit, search, shell, subagent, terminal, todo, all taking a shared `ToolContext` (`tools/context.ts`, owns `resolvePath`).
 
 - `tools/shell.ts` memoizes session shells in `sessionShells`; the rejection-eviction in its `.catch()` is load-bearing (pitfall #10)
 - AI-only canonical read policy lives in `lib/filesystem.ts`; shared file, git and process access goes through `platform/filesystem.ts`, `capabilities/git/api.ts` and `platform/processes.ts` (see [[platform]], [[ipc-surface]])
@@ -26,24 +26,24 @@ The chat/agent feature. Built on the Vercel AI SDK (`ai` package); everything ru
 
 ## Tool approval
 
-Per-tool policies (`toolApprovalPolicies` pref, Settings → Agents): `prompt` (default) / `auto` / `deny`, plus `auto-safe` on `bash_run` only — auto-approves commands passing `checkAutoApprove` (`lib/security.ts`), a strict read-only allowlist (curated binaries + read-only git subcommands, no shell metacharacters, every path arg through `checkReadable` — including `--flag=value` values and git `rev:path` colon segments). Dispatch happens in `AiChat.tsx`'s `RenderedTool` via `resolveApprovalPolicy` (also `lib/security.ts` — pure, tested); `auto-safe` on any other tool or a non-string command degrades to `prompt`. Audit entries record how the gate was passed (`approval: user | auto | auto-safe`), recomputed from the live policy in `tools/shell.ts` (advisory — the SDK's execute path can't see who answered the approval).
+Per-tool policies (`toolApprovalPolicies` pref, Settings → Agents): `prompt` (default) / `auto` / `deny`, plus `auto-safe` on `bash_run` only, auto-approves commands passing `checkAutoApprove` (`lib/security.ts`), a strict read-only allowlist (curated binaries + read-only git subcommands, no shell metacharacters, every path arg through `checkReadable`, including `--flag=value` values and git `rev:path` colon segments). Dispatch happens in `AiChat.tsx`'s `RenderedTool` via `resolveApprovalPolicy` (also `lib/security.ts`: pure, tested); `auto-safe` on any other tool or a non-string command degrades to `prompt`. Audit entries record how the gate was passed (`approval: user | auto | auto-safe`), recomputed from the live policy in `tools/shell.ts` (advisory, the SDK's execute path can't see who answered the approval).
 
 ## Subagents
 
-`agents/runSubagent.ts` runs typed subagents from `agents/registry.ts` (read-only fs+search tools, `generateText`, max 12 steps). It passes a **single prompt string, no message history** — which is why it doesn't call `pruneMessages`. If subagents ever gain conversation history, pitfall #3 applies to them too.
+`agents/runSubagent.ts` runs typed subagents from `agents/registry.ts` (read-only fs+search tools, `generateText`, max 12 steps). It passes a **single prompt string, no message history**, which is why it doesn't call `pruneMessages`. If subagents ever gain conversation history, pitfall #3 applies to them too.
 
 ## Supporting pieces
 
-- `lib/proxyFetch.ts` — turns provider HTTP events into a web `ReadableStream`; `platform/http-stream.ts` owns Tauri's callback channel and the host-scoped `ai_http_stream` invocation
-- `lib/keyring.ts` — API keys in the OS keychain via the host-scoped `platform/secrets.ts` adapter; cross-window change signal is `nexis://ai-keys-changed`
-- `lib/audit.ts` — best-effort typed host append; it must stay non-throwing and must not delay or reorder a tool call
-- `lib/security.ts` — hardened path checks; keeps a **deliberate private basename** (do not consolidate into `lib/path.ts` — pitfall #12 exception)
-- `lib/compact.ts`, `lib/redact.ts`, `lib/sessions.ts`, `lib/slashCommands.ts`, `lib/todos.ts` — compaction, secret redaction, session persistence, slash commands, todo state
-- `lib/nlCommand.ts` — natural-language → command for the terminal's AI command bar (`terminal/components/AiCommandBar.tsx`, opened via the `terminal.aiCommand` shortcut → `nexis:terminal-ai-command` event). Insert-only contract: the parser rejects multi-line/control-char suggestions because the result is written into the PTY input line, where a stray `\r` would self-execute — keep `sanitizeCommand` strict
-- `store/` — five Zustand stores ([[zustand-stores]]); `chatStore.ts` is the big one
-- `components/AiInputBar.tsx` — composer; **never re-add `disabled={c.isBusy}`** (pitfall #5)
-- `components/AiMiniWindow.tsx` — floating chat's empty state is a context-aware launchpad. Its starter tiles only pre-fill the shared composer and focus it; keep that single submit path rather than creating a separate quick-action execution flow.
-- `src/components/ai-elements/context.tsx` — token-cost rows; with AI SDK 7, reasoning lives at `usage.outputTokenDetails.reasoningTokens` and cache reads at `usage.inputTokenDetails.cacheReadTokens`, not the removed flat fields.
+- `lib/proxyFetch.ts`: turns provider HTTP events into a web `ReadableStream`; `platform/http-stream.ts` owns Tauri's callback channel and the host-scoped `ai_http_stream` invocation
+- `lib/keyring.ts`: API keys in the OS keychain via the host-scoped `platform/secrets.ts` adapter; cross-window change signal is `nexis://ai-keys-changed`
+- `lib/audit.ts`: best-effort typed host append; it must stay non-throwing and must not delay or reorder a tool call
+- `lib/security.ts`: hardened path checks; keeps a **deliberate private basename** (do not consolidate into `lib/path.ts`: pitfall #12 exception)
+- `lib/compact.ts`, `lib/redact.ts`, `lib/sessions.ts`, `lib/slashCommands.ts`, `lib/todos.ts`: compaction, secret redaction, session persistence, slash commands, todo state
+- `lib/nlCommand.ts`: natural-language → command for the terminal's AI command bar (`terminal/components/AiCommandBar.tsx`, opened via the `terminal.aiCommand` shortcut → `nexis:terminal-ai-command` event). Insert-only contract: the parser rejects multi-line/control-char suggestions because the result is written into the PTY input line, where a stray `\r` would self-execute, keep `sanitizeCommand` strict
+- `store/`: five Zustand stores ([[zustand-stores]]); `chatStore.ts` is the big one
+- `components/AiInputBar.tsx`: composer; **never re-add `disabled={c.isBusy}`** (pitfall #5)
+- `components/AiMiniWindow.tsx`: floating chat's empty state is a context-aware launchpad. Its starter tiles only pre-fill the shared composer and focus it; keep that single submit path rather than creating a separate quick-action execution flow.
+- `src/components/ai-elements/context.tsx`: token-cost rows; with AI SDK 7, reasoning lives at `usage.outputTokenDetails.reasoningTokens` and cache reads at `usage.inputTokenDetails.cacheReadTokens`, not the removed flat fields.
 
 ## The window and its tools
 

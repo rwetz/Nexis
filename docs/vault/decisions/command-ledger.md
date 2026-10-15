@@ -6,7 +6,7 @@ description: A per-workspace command ledger stored as an append-only NDJSON meta
 # The command ledger is an NDJSON log plus content-addressed output blobs
 
 **Date:** 2026-09
-**Status:** active — partially implemented.
+**Status:** active, partially implemented.
 
 Shipped so far, and where it lives:
 
@@ -19,21 +19,21 @@ Shipped so far, and where it lives:
 | Forget + retention UI (§5, §7) | `src/settings/sections/PrivacySection.tsx` | Global toggle, three caps, the three time windows, and the per-workspace wipe. |
 | Prune on workspace open (§7) | `src/app/App.tsx` | Keyed on the caps as well as the root, so a changed cap applies without a folder switch. |
 | Tripwires | `src/lib/pitfall-guards.test.ts` | Redaction before IPC; private terminals excluded at the source. |
-| The read side (`ledger_query`, `ledger_search_output`) | `src-tauri/src/modules/ledger.rs` | One options struct rather than four commands — see below. |
+| The read side (`ledger_query`, `ledger_search_output`) | `src-tauri/src/modules/ledger.rs` | One options struct rather than four commands: see below. |
 | Command History panel | `src/modules/command-history/` | Recent + per-entry forget, output archive, trends, journal. |
 | Success-filtered history | `src/components/ShellHistoryOverlay.tsx` | A source toggle on the existing Ctrl+R overlay, not a new surface. |
 
-**Four gated features have shipped**: success-filtered history, the searchable output archive, build-time trends, and the work journal. **Not built yet:** command provenance, the failure-to-fix loop, "while you were away", "where was I?", and the git-root-commit re-association offer (§6 — identity is the path hash alone today, so a moved workspace starts fresh).
+**Four gated features have shipped**: success-filtered history, the searchable output archive, build-time trends, and the work journal. **Not built yet:** command provenance, the failure-to-fix loop, "while you were away", "where was I?", and the git-root-commit re-association offer (§6, identity is the path hash alone today, so a moved workspace starts fresh).
 
 ### What the read side had to decide
 
 **One query command, not four.** The overlay wants successes deduplicated; the panel's list wants every run in order; its failure filter wants the opposite exit predicate. Those are the same scan, so `ledger_query` takes an options struct (`query`, `exit`, `dedupe`, `limit`) rather than growing a positional flag per caller or three commands with three copies of the loop.
 
-**Rust reads two fields and rewrites none.** `ledger_query` parses each line to test `argv` and `exitCode`, then returns the **original line**. That keeps §1's rule intact — the frontend owns the record schema — while still filtering where the data is. Substring matching is against `argv` only: matching the raw record would let a search for `src` hit every command that merely *ran* in a directory containing it.
+**Rust reads two fields and rewrites none.** `ledger_query` parses each line to test `argv` and `exitCode`, then returns the **original line**. That keeps §1's rule intact, the frontend owns the record schema, while still filtering where the data is. Substring matching is against `argv` only: matching the raw record would let a search for `src` hit every command that merely *ran* in a directory containing it.
 
 **A missing `exitCode` is an unknown, not a failure.** The failure filter excludes it. Reporting unknowns as failures would make the filter lie about what it is showing, and the count beside it is something a person acts on.
 
-**The output archive is a scan, and stays one.** §2 already rejected a relational store; content search over blobs is what ripgrep solves at the same cost class. It is bounded twice — it stops at the hit limit, and it only opens blobs a surviving record names, newest first. An unreferenced blob is unreachable by design and the next prune deletes it.
+**The output archive is a scan, and stays one.** §2 already rejected a relational store; content search over blobs is what ripgrep solves at the same cost class. It is bounded twice: it stops at the hit limit, and it only opens blobs a surviving record names, newest first. An unreferenced blob is unreachable by design and the next prune deletes it.
 
 **Trends rank by total time, not by the slowest run**, and withhold drift below six runs. A command run 200 times for 2s costs more of the day than one 40s outlier; a drift figure from two samples is a number nobody should act on, so the panel shows a gap instead.
 
@@ -49,33 +49,33 @@ The reason no IDE has this is structural: they treat the terminal as a dumb outp
 
 ### 1. Two stores, split by size and by deletion cost
 
-**Metadata** — one append-only NDJSON file per workspace, one JSON object per line: id, monotonic sequence, start/end timestamps, cwd, argv, exit code, duration, shell, workspace env, and an optional `outputId`.
+**Metadata**: one append-only NDJSON file per workspace, one JSON object per line: id, monotonic sequence, start/end timestamps, cwd, argv, exit code, duration, shell, workspace env, and an optional `outputId`.
 
-**Output** — each block's captured output in its own file under a blobs directory, named by `outputId`, referenced from the metadata line. Never inline.
+**Output**: each block's captured output in its own file under a blobs directory, named by `outputId`, referenced from the metadata line. Never inline.
 
 The split is not about performance, it is about **deletion**. See §5.
 
-### 2. No new dependency — deliberately not SQLite
+### 2. No new dependency: deliberately not SQLite
 
 Storage is `~/.cache/nexis/command-ledger/<workspaceId>/`, matching the layout `src-tauri/src/modules/snapshots.rs` already uses for scrollback snapshots (`~/.cache/nexis/session-snapshots/`), including its `validate_id` charset restriction so a frontend-minted id can never traverse.
 
-SQLite (`rusqlite`, bundled) was the obvious answer and is rejected. The Database panel shells out to the `sqlite3`/`psql`/`mysql` CLIs (`src/modules/database/databaseRunner.ts`) — there is **no in-process database in this repo today**, so this would be a genuinely new dependency with bundled C, a new `deny.toml` license entry, and a schema-migration story, in exchange for query shapes that a scan over small records handles fine.
+SQLite (`rusqlite`, bundled) was the obvious answer and is rejected. The Database panel shells out to the `sqlite3`/`psql`/`mysql` CLIs (`src/modules/database/databaseRunner.ts`): there is **no in-process database in this repo today**, so this would be a genuinely new dependency with bundled C, a new `deny.toml` license entry, and a schema-migration story, in exchange for query shapes that a scan over small records handles fine.
 
-Concretely: metadata records are ~200 bytes, the cap below bounds the file to a few tens of MB, and every gated feature except one is a filter or an aggregate over that — a full scan in Rust is milliseconds. The exception is the **searchable output archive**, which is a content search across blob files; that is the same problem ripgrep solves, at the same cost class, and it does not want a relational index.
+Concretely: metadata records are ~200 bytes, the cap below bounds the file to a few tens of MB, and every gated feature except one is a filter or an aggregate over that, a full scan in Rust is milliseconds. The exception is the **searchable output archive**, which is a content search across blob files; that is the same problem ripgrep solves, at the same cost class, and it does not want a relational index.
 
 **If FTS ever becomes the bottleneck, an index is an additive, rebuildable decision later.** The NDJSON log stays the source of truth precisely so a derived index can be deleted and rebuilt without data loss.
 
 ### 3. Redaction happens frontend-side, before IPC
 
-`redactSensitive()` (`src/modules/ai/lib/redact.ts`) is TypeScript and has no Rust counterpart. Rather than port the pattern list — two copies of a security-critical regex set is how they drift — the ledger follows the precedent already set by the share server and the diagnostics bundle: **the frontend redacts, then calls the IPC command.**
+`redactSensitive()` (`src/modules/ai/lib/redact.ts`) is TypeScript and has no Rust counterpart. Rather than port the pattern list, two copies of a security-critical regex set is how they drift, the ledger follows the precedent already set by the share server and the diagnostics bundle: **the frontend redacts, then calls the IPC command.**
 
-`src/lib/pitfall-guards.test.ts` already asserts that outbound surfaces route through `redactSensitive` (the `http_share_*` entries). **The ledger write must be added to that guard in the same change that introduces it** — a command line is precisely where an API key ends up, and this store is durable by design.
+`src/lib/pitfall-guards.test.ts` already asserts that outbound surfaces route through `redactSensitive` (the `http_share_*` entries). **The ledger write must be added to that guard in the same change that introduces it**: a command line is precisely where an API key ends up, and this store is durable by design.
 
 Redaction applies to `argv` **and** to output blobs.
 
 ### 4. Private terminals never enter the ledger, and it is enforced at the source
 
-`TerminalTab.private` already means "the AI agent cannot read this buffer" (`src/modules/tabs/lib/tabTypes.ts`), and `snapshotId` is already documented as never set on a private tab. The ledger holds the identical rule, checked where the OSC 133 event is handled rather than downstream — a filter applied at write time is a filter someone later moves.
+`TerminalTab.private` already means "the AI agent cannot read this buffer" (`src/modules/tabs/lib/tabTypes.ts`), and `snapshotId` is already documented as never set on a private tab. The ledger holds the identical rule, checked where the OSC 133 event is handled rather than downstream: a filter applied at write time is a filter someone later moves.
 
 Add a pitfall-guard assertion alongside the redaction one. A ledger that records private terminals is a silent privacy failure, and silent failures need tripwires, not review.
 
@@ -83,24 +83,24 @@ Add a pitfall-guard assertion alongside the redaction one. A ledger that records
 
 This is the constraint that chose the storage shape.
 
-- **Per entry** — from the block's gutter context menu. Rewrites the NDJSON file without that line (atomic write, then rename) and unlinks the blob.
-- **Per workspace** — removes the whole `<workspaceId>/` directory.
-- **Globally** — a preference to stop recording, routed through `writePref()` so it syncs across windows (AGENTS.md pitfall #2).
-- **"Forget the last N minutes"** — the escape hatch for a redaction miss. Redaction is a pattern list; it will miss something, and when it does the user needs a gesture that does not require finding every affected entry.
+- **Per entry**: from the block's gutter context menu. Rewrites the NDJSON file without that line (atomic write, then rename) and unlinks the blob.
+- **Per workspace**: removes the whole `<workspaceId>/` directory.
+- **Globally**: a preference to stop recording, routed through `writePref()` so it syncs across windows (AGENTS.md pitfall #2).
+- **"Forget the last N minutes"**: the escape hatch for a redaction miss. Redaction is a pattern list; it will miss something, and when it does the user needs a gesture that does not require finding every affected entry.
 
 An append-only store with tombstones was rejected for exactly this: a tombstoned secret is still on disk until a compaction you cannot promise ran. If the contract says forget, the bytes go now. Rewriting a few tens of MB is sub-second and complete.
 
-**Rename note:** on Windows the rewrite is a rename, so if a ledger ever lives inside a WSL workspace it needs pitfall #17's `wsl.exe --exec mv` fallback. Keeping the store in **host** app-data (like `snapshots.rs`, `autosave.rs`, `secrets.rs`) avoids that entirely — do not move it into the workspace tree.
+**Rename note:** on Windows the rewrite is a rename, so if a ledger ever lives inside a WSL workspace it needs pitfall #17's `wsl.exe --exec mv` fallback. Keeping the store in **host** app-data (like `snapshots.rs`, `autosave.rs`, `secrets.rs`) avoids that entirely: do not move it into the workspace tree.
 
 ### 6. Workspace identity is a normalized path, with git as the re-association key
 
-Pitfall #23 is explicit that path strings are not stable identity, and `workspaceScopeKey()` in `src/platform/workspace-state.ts` does **not** help here — it returns only `local` or `wsl:<distro>`, which is an *environment* key, not a project key. Anything scoped with it is shared across every local project.
+Pitfall #23 is explicit that path strings are not stable identity, and `workspaceScopeKey()` in `src/platform/workspace-state.ts` does **not** help here, it returns only `local` or `wsl:<distro>`, which is an *environment* key, not a project key. Anything scoped with it is shared across every local project.
 
 So:
 
 - `workspaceId` = a hash of the workspace root path, normalized through `stripVerbatimPrefix`, slash-flipped, and case-folded on Windows.
 - When the workspace is a git repo, the ledger header also records the **root commit SHA**.
-- Opening a workspace whose path-hash has no ledger, where a git root commit matches an existing ledger under a different path, **offers to adopt it**. Never merges silently — a wrong guess grafts one project's history onto another.
+- Opening a workspace whose path-hash has no ledger, where a git root commit matches an existing ledger under a different path, **offers to adopt it**. Never merges silently: a wrong guess grafts one project's history onto another.
 
 This accepts that a non-git workspace moved to a new path starts fresh. That is the honest outcome; inventing a stronger identity would mean inventing a claim.
 
@@ -109,28 +109,28 @@ This accepts that a non-git workspace moved to a new path starts fresh. That is 
 - **Metadata:** whichever binds first of an age limit (default 90 days) or a record count (default 50,000).
 - **Output blobs:** a hard byte cap per workspace (default 256 MB), evicting oldest first.
 
-Blobs dominate the footprint and are the least valuable per byte, so they are capped separately and evicted first — losing old output while keeping the timings and exit codes that build-time trends and the work journal need is the right trade. Eviction runs on workspace open, bounded so it cannot stall startup. Both caps are user-configurable; the cap is a real setting, not a constant, because "this grows forever by construction" is true and the right ceiling is a matter of taste and disk.
+Blobs dominate the footprint and are the least valuable per byte, so they are capped separately and evicted first: losing old output while keeping the timings and exit codes that build-time trends and the work journal need is the right trade. Eviction runs on workspace open, bounded so it cannot stall startup. Both caps are user-configurable; the cap is a real setting, not a constant, because "this grows forever by construction" is true and the right ceiling is a matter of taste and disk.
 
 ## Alternatives rejected
 
-- **SQLite** — a new bundled-C dependency and a migration story, for query shapes a scan already answers. Revisit only if profiling says the scan is the bottleneck, and then as a rebuildable index rather than as the source of truth.
-- **One NDJSON file with output inlined** — makes the log enormous, makes per-entry deletion a rewrite of everything, and makes the byte cap evict metadata and output together when only output is expensive.
-- **Tombstones instead of compaction** — leaves forgotten secrets on disk. Incompatible with §5.
-- **Storing the ledger inside the workspace** — puts it in git's way, and inside WSL it lands on the 9P share where every rename needs pitfall #17's fallback.
-- **Reusing `workspaceScopeKey()` for identity** — it is environment-scoped, not project-scoped. Named here because it reads like the right helper and is not.
-- **A Rust-side copy of `redactSensitive`** — two copies of a security-critical pattern list drift, and the frontend already redacts on every other outbound surface.
+- **SQLite**: a new bundled-C dependency and a migration story, for query shapes a scan already answers. Revisit only if profiling says the scan is the bottleneck, and then as a rebuildable index rather than as the source of truth.
+- **One NDJSON file with output inlined**: makes the log enormous, makes per-entry deletion a rewrite of everything, and makes the byte cap evict metadata and output together when only output is expensive.
+- **Tombstones instead of compaction**: leaves forgotten secrets on disk. Incompatible with §5.
+- **Storing the ledger inside the workspace**: puts it in git's way, and inside WSL it lands on the 9P share where every rename needs pitfall #17's fallback.
+- **Reusing `workspaceScopeKey()` for identity**: it is environment-scoped, not project-scoped. Named here because it reads like the right helper and is not.
+- **A Rust-side copy of `redactSensitive`**: two copies of a security-critical pattern list drift, and the frontend already redacts on every other outbound surface.
 
 ## Consequences
 
 **Makes easy:** all eight gated features read one store with one shape. Success-filtered history and build-time trends are filters and aggregates over the metadata log. The output archive is a content search over blobs. Provenance joins fswatch events against the block that was open, and the honest "probably" it has to report is a property of that correlation, not of the storage.
 
-**Makes hard:** cross-workspace queries (each workspace is its own directory — deliberate, since it also makes "forget this workspace" a directory removal). Full-text search over output is a scan, so a very large archive will be slower than an indexed store.
+**Makes hard:** cross-workspace queries (each workspace is its own directory, deliberate, since it also makes "forget this workspace" a directory removal). Full-text search over output is a scan, so a very large archive will be slower than an indexed store.
 
 **A future change must respect:** private terminals never recorded; redaction before IPC with a tripwire; forget means compaction, not tombstones; the store stays in host app-data; identity is a normalized path plus an offered git re-association, never a bare path string.
 
 **Two things §7 left open that the implementation had to decide.** The caps are preset steps rather than free numbers, because these answer "how much of my own history am I comfortable keeping" and a typed value is wrong in a way nothing surfaces; and the age steps deliberately exclude zero and "forever", because the prune reads the cap as `now - days` and a stored zero would delete the whole log on the next workspace open. The coercion that enforces that is tested, not assumed.
 
-**The windowed forget does not confirm, and that is deliberate.** §5 calls it the escape hatch for a redaction miss: a key just went to disk and the user wants it gone now. A confirmation step buys nothing there — nobody regrets deleting their own last fifteen minutes — and costs the seconds that make it feel like a remedy. The per-workspace wipe does confirm, because that one is months.
+**The windowed forget does not confirm, and that is deliberate.** §5 calls it the escape hatch for a redaction miss: a key just went to disk and the user wants it gone now. A confirmation step buys nothing there, nobody regrets deleting their own last fifteen minutes, and costs the seconds that make it feel like a remedy. The per-workspace wipe does confirm, because that one is months.
 
 **Known follow-up, unrelated to the ledger itself:** the HTTP client (`src/modules/webdev/HttpClientPanel.tsx`) scopes its saved requests with `currentWorkspaceScopeKey()` and therefore shares them across all local projects. It should use the §6 workspace id. Tracked as a fix, not a design change.
 

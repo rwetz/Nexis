@@ -164,7 +164,7 @@ async function processNext(get: () => QueueState) {
 
     if (!sent) {
       throw new Error(
-        "sendMessage returned false — check AI provider configuration",
+        "sendMessage returned false: check AI provider configuration",
       );
     }
 

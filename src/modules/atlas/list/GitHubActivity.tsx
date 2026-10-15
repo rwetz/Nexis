@@ -148,7 +148,7 @@ export function GitHubActivity({ days, className }: Props) {
   if (days === undefined) {
     return (
       <div className={cn("text-caption text-muted-foreground", className)}>
-        Restart Nexis to load commit history — this view needs a newer build
+        Restart Nexis to load commit history: this view needs a newer build
         of the backend than the one currently running.
       </div>
     );

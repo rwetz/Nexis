@@ -1,81 +1,94 @@
-import { Icon } from "@/components/icon";
-import { formatBytes, formatCount, relativeTime, type RepoCity } from "@/modules/atlas/repos/types";
-import { formatSoloTime, formatTypingTime, projectStats } from "./projectStats";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  dirtyCount,
+  formatBytes,
+  formatCount,
+  relativeTime,
+  type RepoCity,
+} from "@/modules/atlas/repos/types";
+import { formatSoloTime, projectStats } from "./projectStats";
 
-/** Project context for a city view: facts first, then clearly-labelled fun. */
+/**
+ * A city's facts at a glance: one number, a few rows, one honest aside.
+ *
+ * It used to be a card of cards: a headline box, four estimate tiles (typing
+ * time, a solo-build guess, coffee) and a paragraph excusing them. The
+ * languages already have the canvas legend, so this keeps to what the walk
+ * actually measured plus the git state, and lets the single estimate say
+ * what it assumes in the same sentence.
+ */
 export function ProjectIntelligence({ city }: { city: RepoCity }) {
   const stats = projectStats(city.root);
   const { summary } = city;
+  const changed = dirtyCount(summary);
 
   return (
-    <section className="rounded-xl border border-primary/20 bg-primary/[0.045] p-3">
-      <div className="flex items-start gap-2">
-        <div className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-          <Icon name="activity" size="sm" />
+    <section aria-label="Project at a glance" className="flex flex-col gap-3">
+      <div>
+        <div className="font-heading text-2xl font-semibold tracking-tight tabular-nums">
+          {formatCount(stats.lines)}
+          <span className="ml-1.5 font-sans text-caption font-normal text-muted-foreground">
+            lines
+          </span>
         </div>
-        <div className="min-w-0">
-          <h2 className="text-xs font-semibold">Project intelligence</h2>
-          <p className="mt-0.5 text-caption leading-relaxed text-muted-foreground">
-            Measured source, then a little size-based perspective.
-          </p>
+        <div className="mt-0.5 text-caption text-muted-foreground">
+          {formatCount(stats.codeFiles)} source files · {formatBytes(stats.codeBytes)}
         </div>
       </div>
+
+      <dl className="flex flex-col gap-1.5 text-caption">
+        <Row label="Branch" value={summary.detached ? "detached" : summary.branch} />
+        {stats.codeFiles > 0 && (
+          <Row label="Average file" value={`${formatCount(Math.round(stats.averageLines))} lines`} />
+        )}
+        <Row label="Last commit" value={relativeTime(summary.last_commit?.time ?? null)} />
+        <Row
+          label="Working tree"
+          value={changed === 0 ? "clean" : `${formatCount(changed)} changed`}
+          tone={changed === 0 ? undefined : "text-brand"}
+        />
+      </dl>
 
       {stats.lines > 0 ? (
-        <>
-          <div className="mt-3 rounded-lg border border-primary/15 bg-background/50 px-3 py-2.5">
-            <div className="text-micro font-medium text-muted-foreground">Measured source lines</div>
-            <div className="mt-0.5 font-mono text-2xl font-semibold tracking-tight text-primary tabular-nums">
-              {formatCount(stats.lines)}
-            </div>
-            <div className="mt-1 text-micro text-muted-foreground">
-              {formatCount(stats.codeFiles)} readable source files · {formatBytes(stats.codeBytes)} counted
-            </div>
-          </div>
-
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Signal icon="file-code" label="Code density" value={`${formatCount(Math.round(stats.averageLines))} LOC/file`} />
-            <Signal icon="clock" label="Typing only" value={formatTypingTime(stats.typingMinutes)} />
-            <Signal icon="wrench" label="Solo build guess" value={formatSoloTime(stats.soloDays)} />
-            <Signal icon="activity" label="Coffee hypothesis" value={`${formatCount(stats.coffeeCups)} cups`} />
-          </div>
-          <p className="mt-3 border-t border-primary/15 pt-2 text-micro leading-relaxed text-muted-foreground">
-            Playful estimates assume 80 finished lines per focused day and 40 words per minute.
-            Architecture, review, and debugging are gloriously not predictable.
-          </p>
-        </>
+        <p className="text-micro leading-relaxed text-muted-foreground">
+          At 80 finished lines a day, one person would need {formatSoloTime(stats.soloDays).replace("~", "about ")}.
+        </p>
       ) : (
-        <p className="mt-3 text-caption leading-relaxed text-muted-foreground">
-          No readable source lines were counted. This project may be assets, binaries, or generated files.
+        <p className="text-micro leading-relaxed text-muted-foreground">
+          No readable source was counted. This may be assets, binaries or generated files.
         </p>
       )}
-
-      <div className="mt-3 flex items-center gap-1.5 border-t border-primary/15 pt-2 text-micro text-muted-foreground">
-        <Icon name="clock" size="xs" />
-        Last commit {relativeTime(summary.last_commit?.time ?? null)}
-      </div>
     </section>
   );
 }
 
-function Signal({
-  icon,
-  label,
-  value,
-}: {
-  icon: "activity" | "clock" | "file-code" | "wrench";
-  label: string;
-  value: string;
-}) {
+/** The same layout while a repo is still being read. */
+export function ProjectIntelligenceSkeleton() {
   return (
-    <div className="rounded-lg border border-border/60 bg-background/40 px-2.5 py-2">
-      <div className="flex items-center gap-1 text-micro text-muted-foreground">
-        <Icon name={icon} size="xs" />
-        <span className="truncate">{label}</span>
+    <div aria-hidden className="flex flex-col gap-3">
+      <div>
+        <Skeleton className="h-7 w-32 rounded-md" />
+        <Skeleton className="mt-1.5 h-3 w-40 rounded-md" />
       </div>
-      <div className="mt-1 truncate font-mono text-xs font-medium tabular-nums" title={value}>
+      <div className="flex flex-col gap-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="flex justify-between">
+            <Skeleton className="h-3 w-20 rounded-md" />
+            <Skeleton className="h-3 w-14 rounded-md" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className={tone ?? "truncate text-foreground/90"} title={value}>
         {value}
-      </div>
+      </dd>
     </div>
   );
 }

@@ -41,7 +41,7 @@ export function FormattersSection() {
     <div className="flex flex-col gap-6">
       <SectionHeader
         title="Formatters"
-        description="Run external tools to format your code. Use {file} as a placeholder for the filename — the command runs in the file's directory."
+        description="Run external tools to format your code. Use {file} as a placeholder for the filename: the command runs in the file's directory."
       />
 
       <div className="flex flex-col gap-2">

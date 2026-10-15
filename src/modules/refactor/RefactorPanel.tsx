@@ -56,7 +56,7 @@ const OPERATIONS: Operation[] = [
     id: "types",
     label: "Add Types",
     prompt: (code) =>
-      `Please add TypeScript type annotations to the following code:\n\n\`\`\`\n${code}\n\`\`\`\n\nProvide the fully typed version. Infer types from usage — avoid \`any\`.`,
+      `Please add TypeScript type annotations to the following code:\n\n\`\`\`\n${code}\n\`\`\`\n\nProvide the fully typed version. Infer types from usage: avoid \`any\`.`,
   },
   {
     id: "simplify",

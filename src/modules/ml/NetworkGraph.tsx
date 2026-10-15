@@ -149,7 +149,7 @@ export function NetworkGraph({
     return (
       <div className="flex h-full items-center justify-center px-6 text-center">
         <p className="max-w-md text-ui leading-snug text-muted-foreground">
-          No architecture to draw for this project — its{" "}
+          No architecture to draw for this project: its{" "}
           <span className="font-mono">train.toml</span> has no recognizable{" "}
           <span className="font-mono">[net]</span> section yet. Create or train
           a model and this updates on its own.

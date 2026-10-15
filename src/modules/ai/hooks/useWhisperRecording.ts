@@ -93,7 +93,7 @@ export function useWhisperRecording({
           const text = await transcribeBlob(blob, apiKey);
           if (text.trim()) onResult(text.trim());
         } catch (e) {
-          onError?.("Transcription failed — check your OpenAI key and try again.");
+          onError?.("Transcription failed: check your OpenAI key and try again.");
         } finally {
           setState("idle");
         }
@@ -102,7 +102,7 @@ export function useWhisperRecording({
       rec.start();
       setState("recording");
     } catch (e) {
-      onError?.("Microphone access denied — allow access in system settings.");
+      onError?.("Microphone access denied: allow access in system settings.");
       teardownStream();
       setState("idle");
     }
