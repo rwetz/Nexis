@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 /**
- * `nexis://` links from companion apps (Epoch's "Open in Synapse" and
+ * `nexis://` links from the standalone Epoch app ("Open in Synapse" and
  * "Benchmark in Pulse"), on the main window.
  *
  * Rust validates every link before it gets here (modules/links.rs: known

@@ -12,8 +12,10 @@ description: Synapse, Pulse and Epoch link through tool host actions inside Nexi
 
 The three ML tools are Synapse (ML Lab, id `ml-lab`), Pulse (Benchmark, id
 `benchmark`) and Nexis Epoch. They needed to open each other on a specific
-project, run, model or dataset. Synapse and Pulse are Nexis windows; Epoch is
-a separate app (github.com/rwetz/nexis-epoch). Display names live in
+project, run, model or dataset. All three are Nexis windows; Epoch's runs
+the standalone Epoch app's own UI and backend (github.com/rwetz/nexis-epoch),
+pinned by commit (`src/windows/epoch.tsx`, `capabilities/epoch/`), and the
+standalone app still exists. Display names live in
 `src/lib/toolNames.ts`; ids never change.
 
 ## Decision
@@ -22,18 +24,18 @@ a separate app (github.com/rwetz/nexis-epoch). Display names live in
   (`window/toolWindowHost.ts`). Any window emits it; the main window calls
   `launchTool`, which adds the workspace root. Tools read parameters with
   `useToolWindowLaunch`: Synapse takes `project` and `run`
-  (`ml/links.ts`), Pulse takes `model` (`benchmark/PulseWindow.tsx`).
-- **Between apps:** each running app listens on `127.0.0.1:0` and writes
+  (`ml/links.ts`), Pulse takes `model` (`benchmark/PulseWindow.tsx`), Epoch
+  takes `project`, `run` and `dataset` (`windows/epochLinks.ts`; the
+  workspace root counts only on the open that creates the window).
+- **Between apps** (the standalone Epoch and Nexis): each running app listens on `127.0.0.1:0` and writes
   `{port, token, pid}` to `<data_local_dir>/nexis/links/<app>.json`
   (`nexis`, `epoch`). A sender connects and writes one JSON line
   `{token, url}`. If nothing answers, it launches the app with
   `--link <url>`. A launch carrying a link forwards it and exits before any
-  window exists. Code: `src-tauri/src/modules/links.rs`, `modules/epoch.rs`,
-  and `apps/desktop/src-tauri/src/links.rs` in the Epoch repo. Keep the two
-  `links.rs` files in step.
-- **Epoch as a launcher:** `ToolWindowContribution.launch` marks a title-bar
-  tool that starts an app instead of opening a webview
-  (`capabilities/epoch/`).
+  window exists. Code: `src-tauri/src/modules/links.rs` and
+  `apps/desktop/src-tauri/src/links.rs` in the Epoch repo. Keep the two
+  `links.rs` files in step. Nexis no longer sends links to the standalone
+  Epoch: its own Epoch window replaced that (`modules/epoch.rs` removed).
 
 ## Alternatives rejected
 

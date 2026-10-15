@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "epoch",
+  "description": "The Epoch window's commands (tauri-plugin-epoch). Each confines its paths to the project open in Epoch; the window gets no general filesystem or shell access. Window chrome, the folder picker and OS facts come from the default capability, which covers every nexis-* window.",
+  "windows": ["nexis-epoch"],
+  "permissions": ["epoch:default"]
+}

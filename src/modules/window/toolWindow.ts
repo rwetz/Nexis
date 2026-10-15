@@ -90,7 +90,7 @@ export async function openToolWindow(
   const query = new URLSearchParams({ tool: tool.id, ...params });
 
   await openOrFocusWindow(`nexis-${tool.id}`, {
-    url: `/?${query.toString()}`,
+    url: tool.page ? `/${tool.page}?${query.toString()}` : `/?${query.toString()}`,
     title: tool.title,
     center: true,
     ...fitToWorkArea(tool, await currentWorkArea()),

@@ -19,9 +19,9 @@ pub mod bench_internals {
 }
 
 use modules::{
-    ai_audit, atlas, autosave, benchmark, crash, dap, diagnostics, epoch, fs, fswatch, git,
-    http_share, ledger, links, lsp, ml, net, pty, python, recording, secrets, shell, snapshots,
-    sysmon, tools, winstate, workspace,
+    ai_audit, atlas, autosave, benchmark, crash, dap, diagnostics, fs, fswatch, git, http_share,
+    ledger, links, lsp, ml, net, pty, python, recording, secrets, shell, snapshots, sysmon, tools,
+    winstate, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -163,6 +163,10 @@ pub fn run() {
         // the workspace by definition, so the explorer cannot stand in.
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        // Nexis Epoch's backend, the same plugin the standalone Epoch app
+        // registers; the Epoch window (epoch.html) calls it as
+        // `plugin:epoch|…` under capabilities/epoch.json.
+        .plugin(tauri_plugin_epoch::init())
         .manage(pty::PtyState::default())
         .manage(shell::ShellState::default())
         .manage(secrets::SecretsState::default())
@@ -273,8 +277,6 @@ pub fn run() {
             workspace::workspace_current_dir,
             get_launch_dir,
             links::links_take_pending,
-            epoch::epoch_locate,
-            epoch::epoch_open,
             secrets::secrets_get,
             secrets::secrets_set,
             secrets::secrets_delete,

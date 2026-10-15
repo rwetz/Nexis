@@ -110,6 +110,14 @@ chrono = { version = "0.4", features = ["serde"] }
 # explorer cannot stand in for them.
 tauri-plugin-dialog = "2"
 
+# ── Epoch window (epoch.html) ────────────────────────────────────────────────
+# Nexis Epoch's whole backend as a Tauri plugin: the same crate the standalone
+# Epoch app registers, pinned to the commit whose frontend package.json pins
+# too (`@nexis-epoch/desktop`), so the window and its backend always match.
+# Bump both revs together. It links DuckDB, compiled from source here
+# (`bundled-duckdb`); that is most of Epoch's cost to the binary.
+tauri-plugin-epoch = { git = "https://github.com/rwetz/nexis-epoch", rev = "52bb8346dd1cae340bde4e86546c577c33f06528", features = ["bundled-duckdb"] }
+
 [dev-dependencies]
 # Benchmarks only — never compiled into shipping builds (dev-dependency +
 # the bench target requires the non-default `bench-internals` feature).

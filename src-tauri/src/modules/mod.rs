@@ -11,7 +11,6 @@ pub mod benchmark;
 pub mod crash;
 pub mod dap;
 pub mod diagnostics;
-pub mod epoch;
 pub mod fs;
 pub mod fswatch;
 pub mod git;

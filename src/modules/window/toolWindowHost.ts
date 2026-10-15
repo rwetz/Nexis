@@ -31,7 +31,7 @@ export type ToolHostAction =
   | { kind: "file"; path: string }
   | { kind: "preview"; url: string }
   | { kind: "ssh"; command: string; label: string }
-  /** Open another tool window (or a companion app) with launch parameters:
+  /** Open another tool window with launch parameters:
    * how Synapse, Pulse and Epoch link to each other (window/toolLinks.ts). */
   | { kind: "tool"; tool: string; params: Record<string, string> };
 

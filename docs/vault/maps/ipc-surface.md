@@ -32,7 +32,8 @@ The full command registry is `tauri::generate_handler![...]` in `src-tauri/src/l
 | Diagnostics | `diagnostics_export` | `modules/diagnostics.rs` (hand-rolled store-only zip) | `settings/sections/GeneralSection.tsx` |
 | Atlas | `atlas_*` | `modules/atlas/mod.rs` | `atlas/repos/api.ts` — host-scoped; see [[atlas]] |
 | Benchmark | `bench_*` | `modules/benchmark/commands.rs` | `benchmark/lib/api.ts` — see [[benchmark]] |
-| Links / Epoch | `links_take_pending`, `epoch_locate`, `epoch_open` | `modules/links.rs`, `modules/epoch.rs` | `window/deepLinks.ts`, `window/toolLinks.ts` — see [[ml-tool-links]] |
+| Links | `links_take_pending` | `modules/links.rs` | `window/deepLinks.ts`, `window/toolLinks.ts` — see [[ml-tool-links]] |
+| Epoch window | `plugin:epoch\|*` (tauri-plugin-epoch, pinned git dep) | Epoch repo `crates/tauri-plugin-epoch` | `src/windows/epoch.tsx` (Epoch's own `lib/ipc.ts`) — `capabilities/epoch.json` grants it to `nexis-epoch` only |
 | Command ledger | `ledger_*` | `modules/ledger.rs` | `platform/ledger-storage.ts` → `terminal/lib/ledger.ts` — see [[command-ledger]] |
 | AI audit | `ai_audit_append`, `ai_audit_log_path` | `modules/ai_audit.rs` | typed host descriptor in `ai/lib/audit.ts`; settings log reveal remains on the integration queue |
 | Tool probing | `tool_probe` | `modules/tools.rs` | typed environment-specific calls in `lib/missingTools.ts` |

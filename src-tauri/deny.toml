@@ -64,3 +64,6 @@ wildcards = "warn"
 # unexpected git/registry source from being introduced.
 unknown-registry = "deny"
 unknown-git = "deny"
+# Nexis Epoch's backend (tauri-plugin-epoch and the epoch-* crates), pinned
+# by rev in Cargo.toml. Same author; the Epoch window runs it.
+allow-git = ["https://github.com/rwetz/nexis-epoch"]

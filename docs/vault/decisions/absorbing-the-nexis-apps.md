@@ -107,14 +107,22 @@ when it grew a debugger, an LSP client and a database panel.
 
 **What is not absorbed, and why.**
 
-- `nexis-design` stays a dependency of nothing inside Nexis — Nexis has its own
-  design layer, and the package exists for apps that are not Nexis.
+- `nexis-design` is not Nexis's design layer: Nexis has its own, and the
+  package exists for apps that are not Nexis. Since 2026-10 it is installed
+  only for the Epoch window, whose UI is built on it (see the Epoch entry
+  below); nothing in Nexis's own sources imports it.
 - `nexis-ml` / `nexis-ml-rs` stay external processes. That is the position
   `docs/ML_SUITE.md` argues and it still holds: a *training* engine brings a
   per-backend build matrix and a GPU-driver support surface. Inference through
   ONNX Runtime is a fixed-size dependency with none of that shape, which is
   precisely why it was the one that could come in.
 - `nexis-wiki` and `nexis-website` are sites, not panels.
+- **Nexis Epoch is hosted, not absorbed** (2026-10). Its UI and backend run
+  in a Nexis window, but from Epoch's repository, pinned by commit (the
+  `@nexis-epoch/desktop` package and the `tauri-plugin-epoch` crate), and
+  the standalone app keeps shipping. That is not dual-shipping in the sense
+  rejected above: there is one copy of the code, consumed by two hosts, and
+  Epoch's `host.ts` is the only place they may differ.
 
 ## See also
 

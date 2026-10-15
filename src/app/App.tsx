@@ -1433,10 +1433,6 @@ function MainApp() {
       const tool = CAPABILITY_TOOL_WINDOWS.find((t) => t.id === id);
       if (!tool) return;
       const withRoot = { ...(explorerRoot ? { root: explorerRoot } : {}), ...params };
-      if (tool.launch) {
-        tool.launch(withRoot);
-        return;
-      }
       void openToolWindow(tool, withRoot).catch((e: unknown) => {
         toast.error(`Could not open ${tool.label}`, { description: e instanceof Error ? e.message : String(e) });
       });

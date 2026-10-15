@@ -17,7 +17,13 @@ export default defineConfig(async ({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Epoch's sources import each other as `@epoch/…` (its own alias).
+      "@epoch": path.resolve(__dirname, "node_modules/@nexis-epoch/desktop/src"),
     },
+    // The Epoch window builds Epoch's source from node_modules, which brings
+    // its own dependency tree; one React (and one copy of what holds React
+    // state) for the whole bundle.
+    dedupe: ["react", "react-dom", "motion", "zustand"],
   },
   esbuild: {
     drop: mode === "production" ? (["debugger"] as ["debugger"]) : [],
@@ -33,6 +39,8 @@ export default defineConfig(async ({ mode }) => ({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),
+        // Nexis Epoch's own UI (src/windows/epoch.tsx).
+        epoch: path.resolve(__dirname, "epoch.html"),
       },
       output: {
         manualChunks(id: string) {

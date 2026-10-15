@@ -9,13 +9,14 @@ import { openInEpoch } from "@/modules/window/toolLinks";
 import type { CapabilityDefinition } from "@/workbench/capability";
 
 /**
- * Nexis Epoch beside Synapse and Pulse in the title bar. Epoch is a companion
- * app (github.com/rwetz/nexis-epoch), not a Nexis window: the launcher hands
- * it the open workspace (or the project a link names) and Epoch opens on it.
- * Synapse and Pulse link into it per project and per run (window/toolLinks.ts).
+ * Nexis Epoch beside Synapse and Pulse in the title bar: Epoch's own UI in a
+ * Nexis window (`epoch.html`, src/windows/epoch.tsx), over the same
+ * `tauri-plugin-epoch` backend as the standalone app. The launcher hands it
+ * the workspace root, which Epoch opens as its project the first time; Synapse
+ * and Pulse link into it per project and per run (window/toolLinks.ts).
  */
 export const epochCapability: CapabilityDefinition = {
-  id: "epoch.companion",
+  id: "epoch.window",
   panels: [],
   toolWindows: [{
     id: "epoch",
@@ -23,13 +24,13 @@ export const epochCapability: CapabilityDefinition = {
     title: `${TOOL_NAMES.epoch} — Nexis`,
     icon: "clock",
     pack: "ml-lab",
-    width: 0,
+    // Epoch's Studio is five panels wide; it is laid out for a big window.
+    width: 1440,
+    height: 900,
+    minWidth: 960,
+    minHeight: 600,
+    page: "epoch.html",
     render: () => null,
-    launch: (params) => {
-      const project = params.project ?? params.root;
-      if (!project) return;
-      void openInEpoch({ project, run: params.run, dataset: params.dataset });
-    },
   }],
   commands: (context) => [{
     id: "epoch.open",
@@ -37,7 +38,7 @@ export const epochCapability: CapabilityDefinition = {
     category: "View",
     pack: "ml-lab",
     icon: "clock",
-    keywords: ["epoch", "dataset", "duckdb", "sql", "experiments", "runs", "parquet", "csv"],
+    keywords: ["epoch", "dataset", "duckdb", "sql", "experiments", "runs", "parquet", "csv", "onnx", "safetensors"],
     handler: () => {
       const host = context();
       const root = host.workspace.snapshot().roots[0];
@@ -45,7 +46,7 @@ export const epochCapability: CapabilityDefinition = {
         host.notify("No workspace open", `Open a folder before showing it in ${TOOL_NAMES.epoch}.`);
         return;
       }
-      void openInEpoch({ project: root });
+      openInEpoch({ project: root });
     },
   }],
 };
