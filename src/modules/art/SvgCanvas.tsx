@@ -320,6 +320,11 @@ export function SvgCanvas({ source, onChange }: Props) {
   const beginDrag = useCallback(
     (drag: Drag, e: React.PointerEvent) => {
       dragRef.current = drag;
+      // Every caller preventDefaults the pointerdown so a drag never selects
+      // text, and in WebView2 that also cancels the focus the click would
+      // have given the canvas, leaving the arrow/Delete/Escape keys dead
+      // after clicking a shape. Focus it by hand instead.
+      containerRef.current?.focus({ preventScroll: true });
       // Capture on the container, never on the art: the art node under the
       // pointer is destroyed and rebuilt on the first committed change, and a
       // capture held by a removed element ends the gesture mid-drag.
