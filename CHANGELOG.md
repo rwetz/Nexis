@@ -23,6 +23,7 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 
 ### Fixed
 
+- **Vellum's canvas keys work after clicking a shape.** Selecting a shape and pressing an arrow key (nudge), Delete or Escape did nothing unless empty canvas had been clicked first. The shape's pointer-down cancels its default action so a drag never selects text, and in WebView2 that also cancels the focus the click would give the canvas, so its key handler never ran. Starting a drag (on a shape, a point handle or a resize corner) now focuses the canvas itself, without scrolling (`SvgCanvas.tsx`).
 - **AI chat works again with every provider.** Since the AI SDK moved to v7, each chat message failed before reaching the model, because v7 rejects the system prompt inside the message list. The system prompt now goes through `instructions`.
 - **Chat errors say what went wrong.** The error card shows the provider's own message, HTTP status and URL, with a hint for a missing model id, a bad key or an unreachable server, instead of "An error occurred."
 - **Test in Settings → Models checks the model id.** For local and custom providers it now confirms the server lists the configured model and shows the ids it does list, instead of only checking that the server answers.
