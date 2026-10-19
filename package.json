@@ -59,7 +59,7 @@
     "@nexis/design": "github:rwetz/nexis-design#5804c3241719ca1e838296e5b1276327c7756cea",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-use-controllable-state": "^1.2.6",
-    "@replit/codemirror-vim": "^6.3.0",
+    "@replit/codemirror-vim": "^6.4.0",
     "@tanstack/react-virtual": "^3.14.10",
     "@tauri-apps/api": "^2.12.2",
     "@tauri-apps/plugin-autostart": "~2.7.0",
