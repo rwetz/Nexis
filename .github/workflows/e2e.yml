@@ -67,7 +67,7 @@ jobs:
       # Share the same cache key as test-rust so incremental builds are fast
       # when both workflows run in the same repo.
       - name: Cache Rust build artifacts
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: "src-tauri -> target"
 
