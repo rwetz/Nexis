@@ -6,6 +6,7 @@
 
   <p>
     <a href="https://github.com/rwetz/Nexis/releases"><img src="https://img.shields.io/github/v/release/rwetz/Nexis" alt="latest release" /></a>
+    <a href="https://github.com/rwetz/Nexis/actions/workflows/ci.yml"><img src="https://github.com/rwetz/Nexis/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
     <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="license" />
     <img src="https://img.shields.io/badge/releases-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey" alt="release platforms" />
   </p>
@@ -131,6 +132,13 @@ PRs and issues are welcome. Check [CONTRIBUTING.md](CONTRIBUTING.md) before open
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+## Keys
+
+| Keys | |
+|---|---|
+| <kbd>Ctrl</kbd>+<kbd>P</kbd> <kbd>Cmd</kbd>+<kbd>P</kbd> | Spotlight: files and commands |
+| <kbd>Ctrl</kbd>+<kbd>J</kbd> <kbd>Cmd</kbd>+<kbd>J</kbd> | Bottom panel |
 
 ---
 
