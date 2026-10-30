@@ -35,6 +35,8 @@ Per-tool policies (`toolApprovalPolicies` pref, Settings → Agents): `prompt` (
 ## Supporting pieces
 
 - `lib/proxyFetch.ts` — turns provider HTTP events into a web `ReadableStream`; `platform/http-stream.ts` owns Tauri's callback channel and the host-scoped `ai_http_stream` invocation
+  - **Every provider must be built with a proxy `fetch`** (pitfall #25): `cloudProxyFetch` (exported here, no private networks) for cloud providers, `localProxyFetch` in `agent.ts` (private networks allowed) for local runtimes. The CSP's `connect-src` admits only the updater endpoint and localhost, so the SDK's default webview `fetch` fails with "Failed to fetch" for any provider host. That is how all cloud chat broke from July until 2026-10-15 while local providers kept working. Request bodies other than strings and byte arrays (FormData for Whisper) are serialized by `Response` and sent as raw bytes with that content type.
+- `lib/modelFallback.ts` — `usableModelId`: when the default model's provider has no key, App's live selection switches to the same label through a connected provider, then any keyed provider, then a configured local runtime. The saved `defaultModelId` is never rewritten.
 - `lib/keyring.ts` — API keys in the OS keychain via the host-scoped `platform/secrets.ts` adapter; cross-window change signal is `nexis://ai-keys-changed`
 - `lib/audit.ts` — best-effort typed host append; it must stay non-throwing and must not delay or reorder a tool call
 - `lib/security.ts` — hardened path checks; keeps a **deliberate private basename** (do not consolidate into `lib/path.ts` — pitfall #12 exception)

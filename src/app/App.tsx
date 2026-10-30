@@ -55,6 +55,8 @@ import {
   useChatStore,
 } from "@/modules/ai";
 import { AiComposerProvider } from "@/modules/ai/lib/composer";
+import type { ProviderId } from "@/modules/ai/config";
+import { usableModelId } from "@/modules/ai/lib/modelFallback";
 import { redactSensitive } from "@/modules/ai/lib/redact";
 
 import { useAgentsStore } from "@/modules/ai/store/agentsStore";
@@ -612,10 +614,31 @@ function MainApp() {
   useEffect(() => {
     void initPrefs();
   }, [initPrefs]);
+  // Follow what is connected: a default whose provider has no key falls back
+  // to the same model through a connected provider (lib/modelFallback.ts).
+  const configuredLocal = useMemo(() => {
+    const ready = (base: string, model: string) =>
+      base.trim().length > 0 && model.trim().length > 0;
+    const out: ProviderId[] = [];
+    if (ready(lmstudioBaseURL, lmstudioModelId)) out.push("lmstudio");
+    if (ready(mlxBaseURL, mlxModelId)) out.push("mlx");
+    if (ready(ollamaBaseURL, ollamaModelId)) out.push("ollama");
+    if (ready(vllmBaseURL, vllmModelId)) out.push("vllm");
+    if (ready(xllmBaseURL, xllmModelId)) out.push("xllm");
+    if (ready(sglangBaseURL, sglangModelId)) out.push("sglang");
+    if (ready(openaiCompatibleBaseURL, openaiCompatibleModelId))
+      out.push("openai-compatible");
+    return out;
+  }, [
+    lmstudioBaseURL, lmstudioModelId, mlxBaseURL, mlxModelId,
+    ollamaBaseURL, ollamaModelId, vllmBaseURL, vllmModelId,
+    xllmBaseURL, xllmModelId, sglangBaseURL, sglangModelId,
+    openaiCompatibleBaseURL, openaiCompatibleModelId,
+  ]);
   useEffect(() => {
     if (!prefsHydrated) return;
-    setSelectedModelId(prefDefaultModel);
-  }, [prefsHydrated, prefDefaultModel, setSelectedModelId]);
+    setSelectedModelId(usableModelId(prefDefaultModel, apiKeys, configuredLocal));
+  }, [prefsHydrated, prefDefaultModel, apiKeys, configuredLocal, setSelectedModelId]);
   // Keep the localStorage restore-tabs flag in sync with the Tauri preference.
   // When disabled, this also clears any saved tab state — and the scrollback
   // snapshots on disk, which are useless without tab restore and would

@@ -142,6 +142,46 @@ describe("AGENTS.md pitfall tripwires (frontend)", () => {
     ).toBe(true);
   });
 
+  // Pitfall #25: the CSP's connect-src admits only the updater endpoint and
+  // localhost, so an AI SDK provider built without a `fetch` option calls its
+  // host from the webview and every request dies with "Failed to fetch". It
+  // shipped that way for three months. Each create<Provider>({...}) must pass
+  // a proxy fetch (cloudProxyFetch / localProxyFetch from lib/proxyFetch.ts).
+  it("pitfall 25: every AI SDK provider routes through the Rust proxy", () => {
+    const ctor =
+      /\bcreate(OpenAI|Anthropic|GoogleGenerativeAI|Xai|Cerebras|Groq|OpenAICompatible|Mistral|DeepSeek|Vertex|Bedrock|Azure|TogetherAI|Fireworks|Perplexity)\s*\(/g;
+    const offenders: string[] = [];
+    let calls = 0;
+    for (const [rel, text] of sourceFiles()) {
+      for (const m of text.matchAll(ctor)) {
+        // Read the balanced argument list of this call.
+        const start = (m.index ?? 0) + m[0].length;
+        let depth = 1;
+        let i = start;
+        while (i < text.length && depth > 0) {
+          if (text[i] === "(") depth += 1;
+          else if (text[i] === ")") depth -= 1;
+          i += 1;
+        }
+        const args = text.slice(start, i - 1);
+        if (!args.trim().startsWith("{")) continue; // a type or import mention
+        calls += 1;
+        if (!/\bfetch\s*:/.test(args)) {
+          const line = text.slice(0, m.index).split(/\r?\n/).length;
+          offenders.push(`${rel}:${line} create${m[1]}`);
+        }
+      }
+    }
+    expect(calls, "no provider construction found; did the regex rot?").toBeGreaterThan(10);
+    expect(
+      offenders,
+      "these AI SDK providers have no `fetch:` option, so they call the provider " +
+        "from the webview and the CSP blocks them. Pass cloudProxyFetch (cloud) or " +
+        "localProxyFetch (local) from modules/ai/lib/proxyFetch.ts; never widen " +
+        "connect-src (AGENTS.md pitfall #25)",
+    ).toEqual([]);
+  });
+
   // Pitfall #14: a Zustand selector that returns a fresh array/object on every
   // getSnapshot call loops useSyncExternalStore forever → blank screen. This
   // catches the common single-line forms; use useShallow (zustand/react/shallow)
