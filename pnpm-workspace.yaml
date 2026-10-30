@@ -14,6 +14,9 @@ minimumReleaseAge: 1440
 # transitives have moved to provenance-attested releases.
 
 allowBuilds:
+  # Epoch's postinstall copies @nexis/design assets into its own tree; Nexis
+  # builds Epoch's source through its own alias and never reads them.
+  "@nexis-epoch/desktop": false
   edgedriver: false
   esbuild: true
   geckodriver: false
