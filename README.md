@@ -41,8 +41,8 @@ This README is the short version. The **[wiki](https://wiki.nexisdev.org)** has 
 - **Quill** (formerly Documents): rich-text editing for Markdown and Word (`.docx`) files in its own window, with local PDF export. Plain markdown saves back byte for byte; Word files are rebuilt on save, and Nexis warns first about anything the rebuild would drop.
 - **Web**: Ports, an SSRF-guarded HTTP client, and JSON/JWT/codec/regex tools in one window.
 - **[Themes](https://wiki.nexisdev.org/features/themes/)**: 22 built-in themes (17 Nexis palettes and five credited community palettes), custom `.nexis-theme` files with live preview, background images with opacity and blur, a high-contrast mode that works on top of any theme, and palette exchange with Lumen.
-- **Epoch**: [Nexis Epoch](https://github.com/rwetz/nexis-epoch), the standalone data-and-experiments app, launches from the title bar beside Synapse and Pulse. The three link to each other: benchmark a Synapse model in Pulse, inspect its runs and data in Epoch, and jump back from Epoch to Synapse or Pulse.
-- **Workbench**: Vellum, Synapse, Portal (web), Quill, Atlas and Pulse each open in their own window from a reorderable title-bar row. The sidebar keeps the six panels you use with a file open; build, tests, debugger, activity, REPL, database, SSH, command history and system monitor live in a bottom panel (Ctrl/Cmd+J).
+- **Epoch**: [Nexis Epoch](https://github.com/rwetz/nexis-epoch)'s data-and-experiments workspace, built into Nexis and opened in its own window from the title bar beside Synapse and Pulse. No separate install is needed; it runs Epoch's own UI and backend at a pinned commit and shares state with the standalone app. The three link to each other: benchmark a Synapse model in Pulse, inspect its runs and data in Epoch, and jump back from Epoch to Synapse or Pulse.
+- **Workbench**: Vellum, Synapse, Portal (web), Quill, Atlas, Pulse and Epoch each open in their own window from a reorderable title-bar row. The sidebar keeps the six panels you use with a file open; build, tests, debugger, activity, REPL, database, SSH, command history and system monitor live in a bottom panel (Ctrl/Cmd+J).
 - **Private by design**: API keys live in the OS keychain (never on disk), AI tools use an approval-gated, workspace-confined surface with secret and system-path defenses, outbound HTTP has SSRF and DNS-rebinding protection, and there is no telemetry. This is defense in depth, not an OS sandbox.
 
 ## Install
@@ -92,7 +92,7 @@ Everything contributor-facing lives in **[docs/](docs/)**.
 - **[docs/vault/](docs/vault/Home.md)**: a linked navigational map of the codebase (module maps, subsystem notes, flows, decisions)
 - **[CHANGELOG.md](CHANGELOG.md)**: the canonical record of everything that shipped
 - **[ROADMAP.md](ROADMAP.md)**: what's planned, and the hard limits on what won't be built
-- **[docs/ML_LAB_GUIDE.md](docs/ML_LAB_GUIDE.md)** / **[docs/ML_SUITE.md](docs/ML_SUITE.md)**: ML Lab usage guide and architecture
+- **[docs/ML_LAB_GUIDE.md](docs/ML_LAB_GUIDE.md)** / **[docs/ML_SUITE.md](docs/ML_SUITE.md)**: Synapse (ML Lab) usage guide and architecture
 - **[SECURITY.md](SECURITY.md)**: security posture and reporting
 
 ### Reading the vault in Obsidian
