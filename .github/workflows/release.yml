@@ -28,7 +28,7 @@ jobs:
         # then switches to the pinned one, and that switch cannot verify the
         # darwin-x64 binary (ERR_PNPM_PNPM_ENGINE_IDENTITY_UNVERIFIABLE), which
         # left v1.30.0 without an Intel Mac DMG. Move up once that is fixed.
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
         with:
           version: "11.10.0"
 
@@ -147,7 +147,7 @@ jobs:
         # then switches to the pinned one, and that switch cannot verify the
         # darwin-x64 binary (ERR_PNPM_PNPM_ENGINE_IDENTITY_UNVERIFIABLE), which
         # left v1.30.0 without an Intel Mac DMG. Move up once that is fixed.
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
         with:
           version: "11.10.0"
 
@@ -245,7 +245,7 @@ jobs:
         # then switches to the pinned one, and that switch cannot verify the
         # darwin-x64 binary (ERR_PNPM_PNPM_ENGINE_IDENTITY_UNVERIFIABLE), which
         # left v1.30.0 without an Intel Mac DMG. Move up once that is fixed.
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
         with:
           version: "11.10.0"
 
