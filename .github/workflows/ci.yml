@@ -3,8 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore: ["**.md", "docs/**"]
   pull_request:
     branches: [main]
+    paths-ignore: ["**.md", "docs/**"]
+  workflow_dispatch:
 
 # Cancel an in-progress run for the same ref so stacked pushes don't pile up.
 concurrency:
@@ -155,6 +158,8 @@ jobs:
   # too (unlike a non-admin Windows dev machine).
   test-rust-macos:
     name: Rust tests (macOS)
+    # macOS bills at 10x: main and manual runs only, not every PR.
+    if: github.event_name != 'pull_request'
     runs-on: macos-latest
 
     steps:
