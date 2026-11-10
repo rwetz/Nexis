@@ -18,8 +18,21 @@ yanked = "deny"
 # No advisory ignores: the quick-xml 0.39.4 DoS advisories (RUSTSEC-2026-0194/
 # 0195) that used to live here are resolved for real — `plist` moved 1.9.0 →
 # 1.10.0 (permitted by Tauri's `plist = "^1"`), pulling quick-xml 0.41.0.
-# Keep this empty; prefer a real dependency bump over suppressing a vuln.
-ignore = []
+# Prefer a real dependency bump over suppressing a vuln. The entries below can't
+# be bumped from this repo: both arrive through the pinned nexis-epoch git
+# dependency, so the fix lives there.
+ignore = [
+  # zip 6.0.0 (fixed >=9.0.0). Only a *build-dependency* of libduckdb-sys
+  # (epoch-data > duckdb), used to unpack duckdb's own bundled source at compile
+  # time. The extract bugs need an attacker-supplied archive; none reaches it.
+  { id = "RUSTSEC-2026-0367", reason = "zip: build-dep of libduckdb-sys only, unpacks its own bundled archive" },
+  { id = "RUSTSEC-2026-0368", reason = "zip: build-dep of libduckdb-sys only, unpacks its own bundled archive" },
+  { id = "RUSTSEC-2026-0369", reason = "zip: build-dep of libduckdb-sys only, unpacks its own bundled archive" },
+  { id = "RUSTSEC-2026-0429", reason = "zip: build-dep of libduckdb-sys only, unpacks its own bundled archive" },
+  # libsqlite3-sys 0.38.2 (fixed >=0.39.0) via epoch-store > rusqlite 0.40.
+  # TEMPORARY: bump rusqlite in nexis-epoch, bump the epoch rev here, delete this.
+  { id = "RUSTSEC-2026-0459", reason = "via nexis-epoch rusqlite 0.40; remove once epoch bumps rusqlite" },
+]
 
 [licenses]
 # Permissive + weak-copyleft licenses we accept. Anything not on this list
