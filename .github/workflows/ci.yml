@@ -45,8 +45,7 @@ jobs:
       - name: Typecheck (tsc --noEmit)
         run: pnpm exec tsc --noEmit
 
-      # Run the suite with coverage so the thresholds in vitest.config.ts gate
-      # CI — a drop below the configured floor fails the build (IDEAS D4).
+      # Run the suite with a coverage report. Coverage is reported, not gated.
       - name: Run Vitest with coverage
         run: pnpm test:coverage
 

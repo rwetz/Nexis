@@ -376,7 +376,7 @@ First, **update `CHANGELOG.md`**: every user-facing change in this push must hav
 
 Then run these — they mirror the CI gates in `.github/workflows/ci.yml`, so a clean local run means a green CI:
 - `pnpm exec tsc --noEmit` — TypeScript must typecheck (CI gates on this; a type error that doesn't break a test still fails CI)
-- `pnpm test:coverage` — all Vitest tests must pass **and** coverage must stay above the floor in `vitest.config.ts` (CI runs this, not bare `pnpm test`; dropping below the threshold fails the build). Ratchet the thresholds up as coverage grows; never lower them to get green.
+- `pnpm test:coverage` — Vitest with a coverage report (CI runs this). Coverage is a report, not a gate: no thresholds. Follow the Testing budget in `Dev/AGENTS.md`; what is worth testing here is parsers, IPC/API edges, persistence, security checks and the pitfall tripwires.
 - `cargo test` in `src-tauri/` — all Rust tests must pass (the `authorize_spawn_cwd_blocks_symlink_escape` test fails locally on non-admin Windows with code 1314; that's expected — see Build/dev notes)
 - `cargo fmt --check` in `src-tauri/` — formatting must be clean. **Run this last**, after any `clippy` fixes: a clippy change that shortens a signature can leave the file unformatted even though `fmt` ran earlier.
 - `cargo clippy -- -D warnings` in `src-tauri/` — zero clippy warnings. Note `src-tauri/clippy.toml` plus `#![warn(clippy::unwrap_used, clippy::expect_used)]` on `net.rs`/`secrets.rs`/`recording.rs` make a new `.unwrap()`/`.expect()` in those modules' production code a CI failure (tests are exempt).
