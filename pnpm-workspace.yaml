@@ -14,6 +14,11 @@ minimumReleaseAge: 1440
 # transitives have moved to provenance-attested releases.
 
 allowBuilds:
+  # Its only build script is a postinstall that copies @nexis/design cursor PNGs
+  # into the epoch package's own public/ inside node_modules. Nexis serves its own
+  # assets, so skip it. Keyed by name (not commit) so an epoch bump can't re-break
+  # `pnpm install` with ERR_PNPM_IGNORED_BUILDS, which failed nightly E2E.
+  '@nexis-epoch/desktop': false
   edgedriver: false
   esbuild: true
   geckodriver: false
@@ -28,3 +33,9 @@ overrides:
   # the vulnerable uuid@11.1.0 (GHSA-w5hq-g745-h8pq, patched >=11.1.1). Lift the
   # floor; resolves to uuid@14.0.0, which mermaid explicitly accepts (^14.0.0).
   uuid: '>=11.1.1'
+  # undici 7.x <7.30.1 carries four high advisories (GHSA-xjj6-f33q-929c,
+  # -4w7w-5xrc-9h26, -2m5v-pch6-74hx, -qrxm-fqhp-jwvm). It arrives through
+  # @ai-sdk/*>@ai-sdk/provider-utils; lift only the 7.x line, leave 6.x/8.x alone.
+  'undici@^7': '^7.30.1'
+  # dompurify <=3.4.16: GHSA-mrv2-3pqr-j5jr (high), patched in 3.4.17.
+  dompurify: '>=3.4.17'

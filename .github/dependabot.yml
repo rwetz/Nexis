@@ -1,4 +1,10 @@
 version: 2
+# One grouped PR per ecosystem per week. Ungrouped, Dependabot opened ~25 PRs a
+# week, each running the full CI matrix (and E2E on Windows), and a shared
+# pre-existing failure turned every one of them red. One PR per ecosystem keeps
+# coupled packages together (react + react-dom must match exactly; the many
+# @codemirror/* and @ai-sdk/* packages move as a set) without a group per family.
+# Security updates still arrive as their own PRs, outside this schedule.
 updates:
   # ── npm (frontend) ───────────────────────────────────────────────────────────
   - package-ecosystem: "npm"
@@ -6,37 +12,10 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 2
     groups:
-      # Keep the many @codemirror/* and @lezer/* packages in one PR.
-      codemirror:
-        patterns:
-          - "@codemirror/*"
-          - "@lezer/*"
-          - "cm6-graphql"
-      # Tauri JS APIs together.
-      tauri:
-        patterns:
-          - "@tauri-apps/*"
-      # React and its types must move together: react and react-dom validate
-      # that they are the *exact* same version at runtime and throw
-      # "Incompatible React versions" otherwise. Ungrouped, dependabot opened
-      # a react-without-react-dom PR (#17) that could never have gone green.
-      react:
-        patterns:
-          - "react"
-          - "react-dom"
-          - "@types/react"
-          - "@types/react-dom"
-      # AI SDK providers together.
-      ai-sdk:
-        patterns:
-          - "@ai-sdk/*"
-          - "ai"
-      # Editor themes together.
-      codemirror-themes:
-        patterns:
-          - "@uiw/*"
+      npm:
+        patterns: ["*"]
 
   # ── Cargo (Rust backend) ─────────────────────────────────────────────────────
   - package-ecosystem: "cargo"
@@ -44,7 +23,10 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 2
+    groups:
+      cargo:
+        patterns: ["*"]
 
   # ── GitHub Actions ───────────────────────────────────────────────────────────
   - package-ecosystem: "github-actions"
@@ -52,4 +34,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
+    groups:
+      github-actions:
+        patterns: ["*"]

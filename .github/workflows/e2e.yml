@@ -7,10 +7,12 @@ name: E2E
 # covering the drift the suite does not control (a WebView2 runtime roll, a
 # newer release turning on UpdaterDialog).
 on:
-  # Nightly sweep against the default branch (06:17 UTC ≈ off-peak). The odd
-  # minute avoids the top-of-hour congestion when GitHub defers scheduled jobs.
+  # Weekly sweep against the default branch (Monday 06:17 UTC). It was nightly,
+  # which meant a single broken install produced a failure email every day for
+  # weeks. Weekly still catches WebView2/runtime drift. The odd minute avoids the
+  # top-of-hour congestion when GitHub defers scheduled jobs.
   schedule:
-    - cron: "17 6 * * *"
+    - cron: "17 6 * * 1"
 
   # PR gate, scoped by path. A docs-only or workflow-unrelated PR has no way to
   # break a running app, and making it wait ~20 min for a release build to say
@@ -39,6 +41,11 @@ jobs:
   e2e:
     name: E2E tests (Windows)
     runs-on: windows-latest
+    # Dependabot bumps touch package.json/pnpm-lock.yaml, which would start a
+    # ~20 min Windows release build per bump. ci.yml (typecheck, Vitest, Rust)
+    # already gates them; the weekly sweep covers integration drift.
+    if: github.actor != 'dependabot[bot]'
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
