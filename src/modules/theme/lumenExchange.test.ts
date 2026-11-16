@@ -4,7 +4,7 @@ import { exportLumenPalette, importLumenPalette } from "./lumenExchange";
 vi.mock("@/styles/tokens", () => ({
   resolveCssColor: (expr: string) => ({
     "var(--background)": "rgb(16, 32, 48)",
-    "var(--primary)": "rgb(170, 187, 204)",
+    "var(--brand)": "rgb(170, 187, 204)",
     "var(--secondary)": "rgb(1, 2, 3)",
     "var(--muted)": "rgb(4, 5, 6)",
     "var(--foreground)": "rgb(255, 255, 255)",

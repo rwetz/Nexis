@@ -142,7 +142,7 @@ export function AiCommandBar({ cwd, onInsert, onClose }: Props) {
                 </p>
               )}
               {phase.result.warning && (
-                <p className="mt-1 text-caption leading-relaxed text-amber-500">
+                <p className="mt-1 text-caption leading-relaxed text-warning">
                   ⚠ {phase.result.warning}
                 </p>
               )}
@@ -173,7 +173,7 @@ export function AiCommandBar({ cwd, onInsert, onClose }: Props) {
 
       {phase.kind === "error" && (
         <div className="border-t border-border/60 px-3 py-2">
-          <p className="text-caption leading-relaxed text-rose-400">
+          <p className="text-caption leading-relaxed text-destructive">
             {phase.message}
           </p>
           <div className="mt-1.5 flex justify-end">

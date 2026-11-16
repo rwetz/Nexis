@@ -54,9 +54,9 @@ export function SharingPill() {
               new CustomEvent("nexis:open-sidebar-view", { detail: "share" }),
             );
           }}
-          className="flex shrink-0 items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-caption font-medium text-red-600 transition-colors hover:bg-red-500/25 dark:text-red-400"
+          className="flex shrink-0 items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-caption font-medium text-destructive transition-colors hover:bg-destructive/25 dark:text-destructive"
         >
-          <span className="h-1.5 w-1.5 nexis-blink rounded-full bg-red-500" />
+          <span className="h-1.5 w-1.5 nexis-blink rounded-full bg-destructive" />
           <span>Sharing on</span>
         </button>
       </TooltipTrigger>

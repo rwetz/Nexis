@@ -321,7 +321,7 @@ export function BackdropPanel({ workspaceRoot }: Props) {
             <label key={p.key} className="flex flex-col gap-0.5" title={p.hint}>
               <span className="flex items-center justify-between text-caption text-muted-foreground">
                 {p.label}
-                <span className="font-mono tabular-nums text-muted-foreground/70">
+                <span className="tabular-nums text-muted-foreground/70">
                   {Number(current[p.key].toFixed(3))}
                 </span>
               </span>

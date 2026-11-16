@@ -428,7 +428,7 @@ function RecentRow({
             aria-hidden="true"
             className={cn(
               "size-1.5 shrink-0 rounded-full",
-              failed ? "bg-destructive" : "bg-emerald-500/80",
+              failed ? "bg-destructive" : "bg-success/80",
             )}
           />
           <span className="min-w-0 flex-1 truncate font-mono text-ui">
@@ -557,7 +557,7 @@ function TrendRow({ trend }: { trend: Trend }) {
               "shrink-0 rounded px-1 py-px font-mono text-micro",
               worse
                 ? "bg-destructive/15 text-destructive"
-                : "bg-emerald-500/15 text-emerald-500",
+                : "bg-success/15 text-success",
             )}
           >
             {worse ? "+" : ""}
@@ -727,7 +727,7 @@ function Stat({
     <div className="rounded-md border border-border/50 bg-card/50 px-2 py-1.5">
       <div
         className={cn(
-          "font-mono text-[15px] leading-none",
+          "text-lg font-semibold tabular-nums leading-none",
           tone === "bad" && "text-destructive",
         )}
       >

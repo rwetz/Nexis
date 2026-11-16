@@ -55,7 +55,7 @@ function formatK(n: number): string {
 function ProgressBar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
   const color =
-    pct > 85 ? "bg-rose-500" : pct > 65 ? "bg-amber-500" : "bg-emerald-500";
+    pct > 85 ? "bg-destructive" : pct > 65 ? "bg-warning" : "bg-success";
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-border/60">
@@ -223,7 +223,7 @@ export function AiContextInspector({ messages }: Props) {
               {APPROVAL_TOOLS.map((t) => (
                 <span
                   key={t}
-                  className="rounded bg-amber-500/15 px-1 py-0.5 font-mono text-micro text-amber-600 dark:text-amber-400"
+                  className="rounded bg-warning/15 px-1 py-0.5 font-mono text-micro text-warning"
                 >
                   {t}
                 </span>

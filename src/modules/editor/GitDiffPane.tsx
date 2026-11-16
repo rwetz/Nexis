@@ -105,11 +105,11 @@ function DiffPatchView({ patch }: { patch: string }) {
       {lines.map((line, i) => {
         let cls = "text-muted-foreground/75";
         if (line.startsWith("+") && !line.startsWith("+++")) {
-          cls = "text-emerald-600 dark:text-emerald-400 bg-emerald-500/[0.06] block";
+          cls = "text-success bg-success/[0.06] block";
         } else if (line.startsWith("-") && !line.startsWith("---")) {
-          cls = "text-rose-600 dark:text-rose-400 bg-rose-500/[0.06] block";
+          cls = "text-destructive bg-destructive/[0.06] block";
         } else if (line.startsWith("@@")) {
-          cls = "text-sky-600/90 dark:text-sky-400/90 block";
+          cls = "text-info/90 block";
         } else if (
           line.startsWith("diff ") ||
           line.startsWith("index ") ||
@@ -328,10 +328,10 @@ export function GitDiffPane({ source, chipLabel, active }: Props) {
           <span className="truncate max-w-80 font-mono">{repoRoot}</span>
           {useFallback ? (
             <>
-              <span className="text-emerald-600 dark:text-emerald-400">
+              <span className="text-success">
                 +{stats.added}
               </span>
-              <span className="text-rose-600 dark:text-rose-400">
+              <span className="text-destructive">
                 −{stats.removed}
               </span>
             </>

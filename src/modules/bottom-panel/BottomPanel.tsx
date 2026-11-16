@@ -130,7 +130,7 @@ export function BottomPanel({ renderBuiltin }: Props) {
                   <span
                     className={cn(
                       "tabular-nums",
-                      errorCount > 0 ? "text-destructive" : "text-amber-500",
+                      errorCount > 0 ? "text-destructive" : "text-warning",
                     )}
                   >
                     {problemCount > 99 ? "99+" : problemCount}

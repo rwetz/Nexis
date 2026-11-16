@@ -238,7 +238,7 @@ export function RenameDialog({
           </div>
 
           {done && (
-            <div className="flex items-center gap-1.5 text-caption text-green-500">
+            <div className="flex items-center gap-1.5 text-caption text-success">
               <Icon name="success" />
               Renamed successfully
             </div>

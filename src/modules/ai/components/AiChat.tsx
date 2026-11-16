@@ -74,7 +74,7 @@ function AutoApprovalEffect({
       <span
         className={cn(
           "shrink-0",
-          approved ? "text-emerald-500" : "text-rose-500",
+          approved ? "text-success" : "text-destructive",
         )}
       >
         {approved
@@ -228,7 +228,7 @@ function WorkingRow({ orb, step }: { orb: string; step: string | null }) {
   const state = useAgentOrbState();
   const label = step ?? (state === "speaking" ? "Responding" : "Thinking…");
   return (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="flex items-center gap-2 text-ui text-muted-foreground">
       <LazyShaderOrb variant={orb} state={state} size={22} className="-my-1 -ml-0.5" />
       <span className="truncate">{label}</span>
     </div>
@@ -287,7 +287,7 @@ export function AiChatView({
           isBusy && <WorkingRow orb={orb} step={step} />
         ) : (
           showSpinner && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-ui text-muted-foreground">
               <Spinner />
               <span className="truncate">{step ?? "Thinking…"}</span>
             </div>
@@ -304,7 +304,7 @@ export function AiChatView({
           />
         )}
         {error && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-ui text-destructive">
             <div className="font-medium">Something went wrong.</div>
             <div className="mt-0.5 leading-relaxed opacity-90">
               {error.message}
@@ -333,7 +333,7 @@ const CompactionNotice = memo(function CompactionNotice({
 }) {
   return (
     <div className="flex items-center gap-2 rounded-md border border-border/40 bg-muted/30 px-2.5 py-1.5 text-caption text-muted-foreground">
-      <span className="size-1.5 shrink-0 rounded-full bg-amber-500/80" />
+      <span className="size-1.5 shrink-0 rounded-full bg-warning/80" />
       <span className="flex-1 truncate">
         Context compacted: {droppedCount} older tool result
         {droppedCount === 1 ? "" : "s"} elided to save tokens.

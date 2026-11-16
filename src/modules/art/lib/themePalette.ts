@@ -37,7 +37,7 @@ export type ThemeSwatch = { name: string; hex: string };
 const UI_TOKENS: readonly [string, string][] = [
   ["--background", "Background"],
   ["--foreground", "Foreground"],
-  ["--primary", "Primary"],
+  ["--brand", "Brand"],
   ["--accent", "Accent"],
   ["--muted", "Muted"],
   ["--border", "Border"],

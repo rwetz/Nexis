@@ -73,7 +73,7 @@ function Cell({
       className={cn(
         "flex flex-col gap-2 rounded-xl border bg-card p-3 transition-colors",
         done && "nexis-result-arrival",
-        running ? "border-brand/30" : "border-border",
+        running ? "border-foreground/20" : "border-border",
       )}
     >
       <div className="flex items-center gap-2">
@@ -90,7 +90,7 @@ function Cell({
           ) : (
             <span
               title={result!.note ?? "Measured from a live engine"}
-              className="rounded bg-emerald-500/15 px-1 py-px text-micro font-medium uppercase text-emerald-500"
+              className="rounded bg-success/15 px-1 py-px text-micro font-medium uppercase text-success"
             >
               real
             </span>
@@ -144,7 +144,7 @@ function Cell({
                   <span
                     className={cn(
                       "font-mono normal-case tracking-normal",
-                      noisy ? "text-amber-500" : "text-muted-foreground/60",
+                      noisy ? "text-warning" : "text-muted-foreground/60",
                     )}
                   >
                     CV {(st.cv * 100).toFixed(1)}%{noisy ? " · noisy" : ""}
@@ -180,7 +180,7 @@ function Cell({
                 <div
                   className={cn(
                     "h-full rounded-full bg-brand transition-[width] duration-300",
-                    phase === "loading" || phase === "warmup" || indeterminate ? "animate-pulse" : "",
+                    phase === "loading" || phase === "warmup" || indeterminate ? "nexis-blink" : "",
                   )}
                   style={{ width: `${width}%` }}
                 />
@@ -197,7 +197,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col">
       <span className="text-micro uppercase tracking-wide text-muted-foreground/70">{label}</span>
-      <span className="font-mono text-ui font-medium tabular-nums">{value}</span>
+      <span className="text-ui font-medium tabular-nums">{value}</span>
     </div>
   );
 }

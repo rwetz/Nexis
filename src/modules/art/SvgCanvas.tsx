@@ -716,8 +716,8 @@ export function SvgCanvas({ source, onChange }: Props) {
       </div>
 
       {preview.removed.length > 0 && (
-        <div className="shrink-0 border-t border-border/50 bg-amber-500/[0.08] px-3 py-1.5">
-          <p className="flex items-start gap-1.5 text-micro leading-relaxed text-amber-600 dark:text-amber-400">
+        <div className="shrink-0 border-t border-border/50 bg-warning/[0.08] px-3 py-1.5">
+          <p className="flex items-start gap-1.5 text-micro leading-relaxed text-warning">
             <Icon name="security" size="xs" className="mt-px shrink-0" />
             <span>
               The canvas is not rendering {preview.removed.join(", ")}: your

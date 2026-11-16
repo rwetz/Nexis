@@ -91,13 +91,13 @@ export function StatusBar({
                 )}
               >
                 {errorCount > 0 && (
-                  <span className="flex items-center gap-1 text-red-400">
+                  <span className="flex items-center gap-1 text-destructive">
                     <ErrorDot />
                     {errorCount}
                   </span>
                 )}
                 {warningCount > 0 && (
-                  <span className="flex items-center gap-1 text-yellow-400">
+                  <span className="flex items-center gap-1 text-warning">
                     <WarnDot />
                     {warningCount}
                   </span>
@@ -128,7 +128,7 @@ export function StatusBar({
         {privateActive ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="flex shrink-0 cursor-default items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-caption font-medium text-amber-700 dark:text-amber-400">
+              <span className="flex shrink-0 cursor-default items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-caption font-medium text-warning">
                 <Icon name="incognito" size="xs" />
                 <span>Private: hidden from AI</span>
               </span>

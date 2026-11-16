@@ -17,3 +17,18 @@ const twMerge = extendTailwindMerge({
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+/**
+ * Open focus lands on the surface itself, not its first control (nexis-design
+ * RULES R5.4): focusing the first control popped its tooltip over the surface
+ * the moment it opened. Keyboard users are one Tab from the first control, and
+ * a caller's own handler still runs first and can take over.
+ */
+export function focusSurfaceOnOpen(handler?: (e: Event) => void) {
+  return (e: Event) => {
+    handler?.(e)
+    if (e.defaultPrevented) return
+    e.preventDefault()
+    ;(e.currentTarget as HTMLElement | null)?.focus({ preventScroll: true })
+  }
+}

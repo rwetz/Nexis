@@ -32,9 +32,9 @@ function envLabel(env: PythonEnv): string {
 function kindDot(kind: PythonEnv["kind"]): string {
   switch (kind) {
     case "venv":
-      return "bg-emerald-500";
+      return "bg-success";
     case "conda":
-      return "bg-sky-500";
+      return "bg-info";
     case "system":
       return "bg-muted-foreground/50";
   }

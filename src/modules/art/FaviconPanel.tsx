@@ -271,7 +271,7 @@ export function FaviconPanel({ workspaceRoot }: Props) {
               key={t.name}
               className="flex items-baseline gap-2 rounded border border-border/40 bg-card/30 px-2 py-1"
             >
-              <span className="w-9 shrink-0 text-right font-mono text-micro tabular-nums text-muted-foreground">
+              <span className="w-9 shrink-0 text-right text-micro tabular-nums text-muted-foreground">
                 {t.size}
               </span>
               <span className="min-w-0 flex-1">

@@ -12,6 +12,7 @@
  * sixteen, evicting the oldest past that. So only the selected tile and the
  * one under the pointer animate; the rest draw one settled frame and stop.
  */
+import { NexisMark } from "@/components/ui/nexis-mark";
 import { useState } from "react";
 import { Icon } from "@/components/icon";
 import { LazyShaderOrb } from "@/components/orbs/LazyShaderOrb";
@@ -132,7 +133,7 @@ export function OrbSection() {
           )}
         >
           <span className="flex size-16 items-center justify-center">
-            <img src="/nexis-logo.png" alt="" className="size-8 opacity-80" />
+            <NexisMark className="size-8 text-muted-foreground" />
           </span>
           <span className="flex items-center gap-1 text-ui font-medium">
             Off

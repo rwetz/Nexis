@@ -130,7 +130,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                   >
                     {/* Line gutter */}
                     {bm.line > 0 && (
-                      <span className="w-8 shrink-0 font-mono text-micro text-muted-foreground/40 tabular-nums">
+                      <span className="w-8 shrink-0 text-micro text-muted-foreground/40 tabular-nums">
                         :{bm.line}
                       </span>
                     )}
@@ -144,7 +144,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                         onKeyDown={(e) => handleEditKey(e, bm.id)}
                         onBlur={() => commitEdit(bm.id)}
                         aria-label="Bookmark label"
-                        className="flex-1 rounded border border-primary/60 bg-background/60 px-1.5 py-0.5 text-xs text-foreground outline-none"
+                        className="flex-1 rounded border border-primary/60 bg-background/60 px-1.5 py-0.5 text-ui text-foreground outline-none"
                       />
                     ) : (
                       <button
@@ -167,7 +167,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                           type="button"
                           onClick={() => commitEdit(bm.id)}
                           aria-label="Save bookmark label"
-                          className="flex h-5 w-5 items-center justify-center rounded text-green-500 hover:bg-green-500/10"
+                          className="flex h-5 w-5 items-center justify-center rounded text-success hover:bg-success/10"
                         >
                           <Icon name="check" size="xs" />
                         </button>
@@ -185,7 +185,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                         type="button"
                         title="Remove bookmark"
                         onClick={() => removeBookmark(bm.id)}
-                        className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+                        className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                       >
                         <Icon name="bookmark-remove" size="xs" />
                       </button>
@@ -202,7 +202,7 @@ export function BookmarksPanel({ onNavigate }: Props) {
                 onClick={() => {
                   for (const bm of bookmarks) removeBookmark(bm.id);
                 }}
-                className="flex items-center gap-1 text-micro text-muted-foreground/50 hover:text-red-500"
+                className="flex items-center gap-1 text-micro text-muted-foreground/50 hover:text-destructive"
               >
                 <Icon name="delete" size="xs" />
                 Clear all

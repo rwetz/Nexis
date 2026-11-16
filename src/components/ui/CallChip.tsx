@@ -68,7 +68,7 @@ export function CallChip({
           happening now" rhythm. */}
       <span
         aria-hidden
-        className="nexis-blink size-1.5 shrink-0 rounded-full bg-emerald-500"
+        className="nexis-blink size-1.5 shrink-0 rounded-full bg-success"
       />
       <button
         type="button"

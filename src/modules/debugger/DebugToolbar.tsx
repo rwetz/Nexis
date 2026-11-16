@@ -85,10 +85,10 @@ export function DebugToolbar({ onRestart }: Props) {
       <span
         className={cn(
           "ml-1 text-micro font-medium uppercase tracking-wider",
-          status === "stopped" && "text-yellow-500",
-          status === "running" && "text-green-500",
+          status === "stopped" && "text-warning",
+          status === "running" && "text-success",
           status === "terminated" && "text-muted-foreground",
-          status === "starting" && "text-blue-400",
+          status === "starting" && "text-info",
           status === "idle" && "hidden",
         )}
       >

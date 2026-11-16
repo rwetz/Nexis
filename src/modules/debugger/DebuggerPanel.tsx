@@ -274,7 +274,7 @@ function VariableRow({
           </span>
         )}
         {!hasChildren && <span className="w-2 shrink-0" />}
-        <span className="text-blue-400 truncate min-w-0">{variable.name}</span>
+        <span className="text-info truncate min-w-0">{variable.name}</span>
         <span className="text-muted-foreground mx-1">:</span>
         <span className="text-foreground/80 truncate min-w-0">{variable.value}</span>
         {variable.type && (

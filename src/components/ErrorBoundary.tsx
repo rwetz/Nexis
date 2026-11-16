@@ -53,18 +53,18 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex h-full w-full items-center justify-center p-8 text-sm text-muted-foreground">
           <div className="flex flex-col items-center gap-3 text-center max-w-sm">
-            <span className="text-base font-medium text-foreground">
+            <span className="text-sm font-medium text-foreground">
               Something went wrong
             </span>
             {this.state.error?.message && (
-              <span className="font-mono text-xs opacity-60 break-all">
+              <span className="font-mono text-ui opacity-60 break-all">
                 {this.state.error.message}
               </span>
             )}
             <button
               type="button"
               onClick={() => this.setState({ hasError: false, error: null })}
-              className="mt-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted transition-colors"
+              className="mt-1 rounded-md border border-border px-3 py-1.5 text-ui hover:bg-muted transition-colors"
             >
               Try again
             </button>

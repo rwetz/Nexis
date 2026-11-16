@@ -109,7 +109,7 @@ export function PrDescriptionDialog({ open, onClose, repoRoot, selectedModelId }
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[80vh] max-w-2xl flex-col gap-0 p-0">
         <DialogHeader className="border-b border-border/50 px-5 py-4">
-          <DialogTitle className="text-base">AI PR Description</DialogTitle>
+          <DialogTitle>AI PR Description</DialogTitle>
           <DialogDescription className="text-ui">
             Generate a pull request title and description from recent commits.
           </DialogDescription>

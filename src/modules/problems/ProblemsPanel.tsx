@@ -67,13 +67,13 @@ export function ProblemsPanel({ onNavigate }: Props) {
         {/* Counts */}
         <div className="flex items-center gap-2">
           {errorCount > 0 && (
-            <span className="flex items-center gap-1 text-caption text-red-400">
+            <span className="flex items-center gap-1 text-caption text-destructive">
               <ErrorIcon />
               {errorCount}
             </span>
           )}
           {warningCount > 0 && (
-            <span className="flex items-center gap-1 text-caption text-yellow-400">
+            <span className="flex items-center gap-1 text-caption text-warning">
               <WarnIcon />
               {warningCount}
             </span>
@@ -170,13 +170,13 @@ function FileGroup({
         </span>
         <span className="ml-auto shrink-0 flex items-center gap-1.5">
           {errCount > 0 && (
-            <span className="flex items-center gap-0.5 text-red-400">
+            <span className="flex items-center gap-0.5 text-destructive">
               <ErrorIcon size={9} />
               <span className="text-micro">{errCount}</span>
             </span>
           )}
           {warnCount > 0 && (
-            <span className="flex items-center gap-0.5 text-yellow-400">
+            <span className="flex items-center gap-0.5 text-warning">
               <WarnIcon size={9} />
               <span className="text-micro">{warnCount}</span>
             </span>
@@ -224,9 +224,9 @@ function DiagRow({
       <span
         className={cn(
           "mt-px shrink-0",
-          isError && "text-red-400",
-          isWarn && "text-yellow-400",
-          !isError && !isWarn && "text-blue-400",
+          isError && "text-destructive",
+          isWarn && "text-warning",
+          !isError && !isWarn && "text-info",
         )}
       >
         {isError ? <ErrorIcon size={10} /> : isWarn ? <WarnIcon size={10} /> : <InfoIcon size={10} />}

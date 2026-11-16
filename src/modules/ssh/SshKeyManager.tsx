@@ -176,7 +176,7 @@ export function SshKeyManager() {
                 >
                   <Icon name="key" className="shrink-0 text-muted-foreground/60" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium">{k.label}</p>
+                    <p className="truncate text-ui font-medium">{k.label}</p>
                     {k.comment && k.comment !== k.label && (
                       <p className="truncate text-micro text-muted-foreground">
                         {k.comment}
@@ -189,7 +189,7 @@ export function SshKeyManager() {
                     onClick={() => void handleCopy(k)}
                     className={cn(
                       "flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                      copiedKey === k.filename && "text-green-500",
+                      copiedKey === k.filename && "text-success",
                     )}
                   >
                     <Icon
@@ -210,7 +210,7 @@ export function SshKeyManager() {
               </p>
               <div className="space-y-1.5">
                 <Input
-                  className="h-7 text-xs"
+                  className="h-7 text-ui"
                   placeholder="Key name (e.g. my_server)"
                   value={genLabel}
                   onChange={(e) => setGenLabel(e.target.value)}
@@ -221,7 +221,7 @@ export function SshKeyManager() {
                   autoFocus
                 />
                 <Input
-                  className="h-7 text-xs"
+                  className="h-7 text-ui"
                   type="password"
                   placeholder="Passphrase (leave empty for none)"
                   value={genPassphrase}
@@ -239,7 +239,7 @@ export function SshKeyManager() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 text-xs"
+                  className="h-6 text-ui"
                   onClick={() => { setShowGenForm(false); setGenError(null); }}
                   disabled={generating}
                 >
@@ -248,7 +248,7 @@ export function SshKeyManager() {
                 </Button>
                 <Button
                   size="sm"
-                  className="h-6 text-xs"
+                  className="h-6 text-ui"
                   onClick={() => void handleGenerate()}
                   disabled={generating}
                 >

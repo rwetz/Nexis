@@ -4,6 +4,7 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
+import { NexisMark } from "@/components/ui/nexis-mark";
 import { Icon, type IconName } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import {
@@ -204,7 +205,7 @@ function PlanModeStrip() {
   if (!active) return null;
   return (
     <div className="flex shrink-0 items-center gap-2 border-b border-border/40 bg-muted/40 px-3 py-1.5">
-      <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
+      <span className="size-1.5 shrink-0 rounded-full bg-warning" />
       <span className="text-caption font-medium text-foreground">Plan mode</span>
       <span className="text-caption text-muted-foreground">
         {queueLen > 0 ? `· ${queueLen} queued` : "· no edits queued"}
@@ -322,7 +323,7 @@ function SessionPicker() {
       <DropdownMenuContent align="start" className="min-w-56">
         <DropdownMenuItem
           onSelect={() => newSession()}
-          className="gap-2 text-xs"
+          className="gap-2 text-ui"
         >
           <Icon name="add" />
           New session
@@ -365,7 +366,7 @@ function SessionRow({
         onSelect();
       }}
       className={cn(
-        "group flex items-center justify-between gap-2 text-xs",
+        "group flex items-center justify-between gap-2 text-ui",
         active && "bg-accent/40",
       )}
     >
@@ -400,7 +401,7 @@ function EmptyStateMark() {
   }
   return (
     <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card shadow-sm">
-      <img src="/nexis-logo.png" alt="" className="size-6 opacity-90" />
+      <NexisMark className="size-[18px] text-foreground" />
     </div>
   );
 }

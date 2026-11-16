@@ -115,7 +115,7 @@ export function ShortcutsSection() {
 
           return (
             <div key={group} className="flex flex-col gap-3">
-              <h3 className="text-xs font-semibold text-foreground/70">
+              <h3 className="text-ui font-semibold text-foreground/70">
                 {group}
               </h3>
               <div className="flex flex-col divide-y divide-border/40 rounded-lg border border-border/60 bg-card/40 overflow-hidden">

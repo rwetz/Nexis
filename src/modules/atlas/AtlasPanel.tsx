@@ -112,12 +112,12 @@ function Toolbar() {
       <button
         type="button"
         onClick={backToAtlas}
-        className="text-xs font-medium hover:text-foreground"
+        className="text-ui font-medium hover:text-foreground"
       >
         Atlas
       </button>
       {mapView === "city" && city && (
-        <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+        <span className="flex min-w-0 items-center gap-1.5 text-ui text-muted-foreground">
           <span aria-hidden>/</span>
           <span className="truncate text-foreground">{city.summary.name}</span>
         </span>
@@ -159,7 +159,7 @@ function CityLocReadout() {
   return (
     <div className="nexis-scene-enter pointer-events-none absolute top-3 left-3 rounded-xl border border-primary/25 bg-card/90 px-3 py-2.5 shadow-sm backdrop-blur">
       <div className="text-micro font-medium text-muted-foreground">Measured source lines</div>
-      <div className="mt-0.5 font-mono text-xl font-semibold text-primary tabular-nums">
+      <div className="mt-0.5 text-2xl font-semibold text-foreground tabular-nums">
         {formatCount(stats.lines)} LOC
       </div>
       <div className="mt-0.5 text-micro text-muted-foreground">
@@ -184,14 +184,14 @@ function EmptyState() {
         ) : scanError ? (
           <>
             <p className="text-sm font-medium text-destructive">Scan failed</p>
-            <p className="mt-2 break-all font-mono text-xs text-muted-foreground">
+            <p className="mt-2 break-all font-mono text-ui text-muted-foreground">
               {scanError}
             </p>
           </>
         ) : (
           <>
             <p className="text-sm font-medium">No git repos found</p>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-ui leading-relaxed text-muted-foreground">
               {scanRoot
                 ? `Nothing under ${scanRoot}. Add explicit paths or point scan_root somewhere else.`
                 : "Add repo paths or a scan_root to atlas.toml."}
@@ -293,7 +293,7 @@ function CitySkeleton() {
         return (
           <g
             key={i}
-            className="animate-pulse"
+            className="nexis-blink"
             style={{ animationDelay: `${(gx + gy) * 140}ms` }}
           >
             <path d={left} fill="currentColor" opacity={0.16} />

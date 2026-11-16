@@ -184,7 +184,7 @@ export function PromptTemplatesPanel() {
             onChange={(e) => setEditing((prev) => prev && { ...prev, name: e.target.value })}
             aria-label="Template name"
             placeholder="Template name"
-            className="w-full rounded border border-border/60 bg-background/60 px-2.5 py-1.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/60"
+            className="w-full rounded border border-border/60 bg-background/60 px-2.5 py-1.5 text-ui text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/60"
           />
           <textarea
             ref={promptRef}
@@ -195,7 +195,7 @@ export function PromptTemplatesPanel() {
             aria-label="Prompt text"
             placeholder="Prompt text…"
             rows={5}
-            className="w-full rounded border border-border/60 bg-background/60 px-2.5 py-1.5 text-xs text-foreground outline-none resize-none placeholder:text-muted-foreground/50 focus:border-primary/60"
+            className="w-full rounded border border-border/60 bg-background/60 px-2.5 py-1.5 text-ui text-foreground outline-none resize-none placeholder:text-muted-foreground/50 focus:border-primary/60"
           />
           <div className="flex gap-1.5">
             <button
@@ -245,7 +245,7 @@ export function PromptTemplatesPanel() {
                   className={cn(
                     "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors",
                     fired === t.id
-                      ? "text-green-500"
+                      ? "text-success"
                       : "text-muted-foreground hover:bg-primary/10 hover:text-primary",
                   )}
                 >
@@ -276,7 +276,7 @@ export function PromptTemplatesPanel() {
                     type="button"
                     title="Delete"
                     onClick={() => deleteTemplate(t.id)}
-                    className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+                    className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   >
                     <Icon name="delete" size="xs" />
                   </button>

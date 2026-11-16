@@ -25,8 +25,8 @@ function typeIcon(type: NotificationType) {
 
 function typeColor(type: NotificationType): string {
   switch (type) {
-    case "success": return "text-green-500";
-    case "warning": return "text-amber-500";
+    case "success": return "text-success";
+    case "warning": return "text-warning";
     case "error":   return "text-destructive";
     default:        return "text-primary";
   }
@@ -75,7 +75,7 @@ export function NotificationsCenter() {
         >
           <Icon name="notification" />
           {unread > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-micro font-bold leading-none text-primary-foreground tabular-nums">
+            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-micro font-semibold leading-none text-primary-foreground tabular-nums">
               {unread > 99 ? "99" : unread}
             </span>
           )}

@@ -136,7 +136,7 @@ export function EditorPaneTreeView({
                 onClick={() => onRunFile(node.path, rc.cwd, rc.command)}
                 className="flex items-center gap-1 rounded px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
-                <Icon name="play" className="text-green-500" />
+                <Icon name="play" className="text-success" />
                 <span className="font-mono">{rc.command.trim()}</span>
               </button>
             )}
@@ -150,7 +150,7 @@ export function EditorPaneTreeView({
                   e.stopPropagation();
                   b.onClose();
                 }}
-                className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-red-400"
+                className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
               >
                 <Icon name="close" size="xs" />
               </button>

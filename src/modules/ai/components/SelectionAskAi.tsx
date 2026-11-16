@@ -43,7 +43,7 @@ export function SelectionAskAi({ x, y, onAsk, onExplain, onDismiss }: SelectionA
           e.stopPropagation();
           onAsk();
         }}
-        className="flex h-7 items-center gap-1.5 rounded-md border border-border/60 bg-card/95 px-2 text-xs shadow-lg backdrop-blur-md hover:border-border hover:bg-accent"
+        className="flex h-7 items-center gap-1.5 rounded-md border border-border/60 bg-card/95 px-2 text-ui shadow-lg backdrop-blur-md hover:border-border hover:bg-accent"
       >
         <Icon name="chat" size="xs" className="opacity-70" />
         <span>Ask Nexis</span>
@@ -58,7 +58,7 @@ export function SelectionAskAi({ x, y, onAsk, onExplain, onDismiss }: SelectionA
           onExplain();
         }}
         title="Explain this selection with AI"
-        className="flex h-7 items-center gap-1.5 rounded-md border border-border/60 bg-card/95 px-2 text-xs shadow-lg backdrop-blur-md hover:border-border hover:bg-accent"
+        className="flex h-7 items-center gap-1.5 rounded-md border border-border/60 bg-card/95 px-2 text-ui shadow-lg backdrop-blur-md hover:border-border hover:bg-accent"
       >
         <Icon name="chat-ai" size="xs" className="opacity-70" />
         <span>Explain</span>

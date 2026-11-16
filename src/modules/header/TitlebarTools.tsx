@@ -103,7 +103,7 @@ export function TitlebarTools({
                 onOpenTool(tool.id);
               }}
               className={cn(
-                "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground transition-[color,background-color,transform] duration-150 active:scale-95",
+                "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md text-ui font-medium text-muted-foreground transition-[color,background-color,transform] duration-150 active:scale-95",
                 "hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]",
                 "focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
                 compact ? "size-7" : "h-7 px-2",

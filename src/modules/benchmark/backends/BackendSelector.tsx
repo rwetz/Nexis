@@ -37,7 +37,7 @@ export function BackendSelector() {
               b.id === "llama" ? (
                 <button
                   onClick={locateLlama}
-                  className="shrink-0 rounded-md px-1.5 py-0.5 text-caption font-medium text-brand hover:bg-brand/10"
+                  className="shrink-0 rounded-md px-1.5 py-0.5 text-caption font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 >
                   {b.available ? "Change" : "Locate…"}
                 </button>

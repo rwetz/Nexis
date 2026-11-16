@@ -30,6 +30,7 @@ import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { FileTypeIcon } from "@/modules/explorer/lib/FileTypeIcon";
 import { useRecentFiles } from "@/modules/recent-files/useRecentFiles";
 import { Kbd } from "@/components/ui/kbd";
+import { Spinner } from "@/components/ui/spinner";
 import { SpotlightPreview, type PreviewTarget } from "./spotlight/SpotlightPreview";
 import {
   memo,
@@ -170,7 +171,7 @@ function RotatingHint({ reduceMotion }: { reduceMotion: boolean }) {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -14, opacity: 0 }}
           transition={{ type: "spring", stiffness: 380, damping: 30 }}
-          className="whitespace-nowrap text-[17px] text-muted-foreground/50"
+          className="whitespace-nowrap text-lg text-muted-foreground/50"
         >
           {HINTS[i]}
         </m.span>
@@ -254,8 +255,10 @@ function SearchGlyph({ loading, expanded, spring }: { loading: boolean; expanded
             initial={{ opacity: 0, scale: 0.6 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.6 }}
-            className="size-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary"
-          />
+            className="flex size-4 items-center justify-center text-muted-foreground"
+          >
+            <Spinner className="size-4" />
+          </m.span>
         ) : (
           <m.span
             key="search"
@@ -687,7 +690,7 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onKey}
-              className="relative w-full bg-transparent text-[17px] text-foreground outline-none placeholder:text-muted-foreground/50"
+              className="relative w-full bg-transparent text-lg text-foreground outline-none placeholder:text-muted-foreground/50"
             />
           </span>
           {expanded ? <CountBadge files={fileCount} commands={commandCount} spring={spring} /> : null}

@@ -37,7 +37,7 @@ Dither alone is not theme-tinted: it ships the grey-on-black BG Studio settings 
 - `src/components/ui/backgrounds/`: the five backgrounds plus the shared `rafLoop` visibility gate
 - `src/modules/theme/types.ts`: `Theme`, `ThemeColors`, `TerminalPalette`, `DEFAULT_THEME_ID`
 - `src/modules/theme/themes/index.ts`: the three lists, `getBuiltinTheme`, and `migrateThemeId` (retired ids → survivors)
-- `src/modules/theme/applyTheme.ts`: the only writer of theme CSS variables; also derives `--brand` from `ring ?? primary`
+- `src/modules/theme/applyTheme.ts`: the only writer of theme CSS variables; derives `--brand` from `ring ?? primary` and `--brand-foreground` from the theme (`brandOf`). A theme's `primary` is its *accent*, so it never reaches `--primary`: that is set to the theme's foreground on its background, keeping `--primary` neutral on every theme (nexis-design R6.2). In dark mode a popover that equals the card is lifted a step (`POPOVER_LIFT`, R6.6). Code that wants "the theme's colour" uses `bg-brand`/`text-brand` (only for the primary action, focus or live progress), or reads `variant.colors.primary` from theme data as `SurfaceLayer` and the theme swatches do
 - `src/modules/theme/ThemeProvider.tsx`: id/mode resolution, localStorage fast path, the `editorTheme` nudge, and the `html[data-theme]` stamp
 - `src/modules/theme/rainbowAccent.ts`, the default theme's rainbow hover: scope, the four variants, and the per-hover cycle
 - `src/modules/theme/RainbowDefs.tsx`: the same four gradients as SVG paint servers, for icon glyphs

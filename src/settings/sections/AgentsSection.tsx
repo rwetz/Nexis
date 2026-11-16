@@ -344,7 +344,7 @@ function AgentEditorDialog({
     <Dialog open={!!agent} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-[14px]">
+          <DialogTitle>
             {isNew ? "New agent" : "Edit agent"}
           </DialogTitle>
         </DialogHeader>
@@ -463,7 +463,7 @@ function SnippetEditorDialog({
     <Dialog open={!!snippet} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-[14px]">
+          <DialogTitle>
             {existing.some((s) => s.id === draft.id)
               ? "Edit snippet"
               : "New snippet"}
@@ -655,7 +655,7 @@ function ToolPoliciesBlock() {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-xs font-semibold text-foreground/70">
+    <span className="text-ui font-semibold text-foreground/70">
       {children}
     </span>
   );

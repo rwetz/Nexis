@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { ThoughtLine } from "@/components/ui/ThoughtLine";
 import { formatBytes } from "@/lib/format";
 import { openHostUrl } from "@/platform/opener";
 import { useState } from "react";
@@ -113,7 +114,7 @@ export function UpdaterDialog() {
           <Progress value={progress} className="mt-2" />
         )}
         {downloading && progress === null && (
-          <Progress value={undefined} className="mt-2 animate-pulse" />
+          <ThoughtLine width="100%" className="mt-2" />
         )}
 
         {manual && (

@@ -169,8 +169,8 @@ export function MetricChart({
         {typeof last === "number" ? (
           <span
             className={cn(
-              "font-mono tabular-nums text-foreground/90",
-              hero ? "text-[15px] font-semibold" : "text-micro",
+              "tabular-nums text-foreground/90",
+              hero ? "text-lg font-semibold" : "text-micro",
             )}
           >
             {display.format(last)}

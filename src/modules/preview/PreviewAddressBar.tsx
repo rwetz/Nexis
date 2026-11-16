@@ -151,7 +151,7 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
                 }}
               >
                 <span className="flex-1">{p.label}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-ui text-muted-foreground">
                   {checkingPort === p.port ? "checking…" : `:${p.port}`}
                 </span>
               </DropdownMenuItem>
@@ -165,7 +165,7 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
             placeholder="http://localhost:3000"
             spellCheck={false}
             autoComplete="off"
-            className="h-7 w-full bg-muted/60 px-2 text-xs placeholder:text-muted-foreground/70 focus-visible:ring-0"
+            className="h-7 w-full bg-muted/60 px-2 text-ui placeholder:text-muted-foreground/70 focus-visible:ring-0"
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -194,7 +194,7 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
         </Button>
       </div>
       {notice ? (
-        <div className="flex items-center gap-1.5 bg-amber-500/8 px-3 py-1 text-caption text-amber-600 dark:text-amber-400">
+        <div className="flex items-center gap-1.5 bg-warning/8 px-3 py-1 text-caption text-warning">
           <span className="truncate">{notice}</span>
           <button
             type="button"

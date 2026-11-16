@@ -112,25 +112,6 @@ function authorInitials(name: string): string {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-const AUTHOR_TINTS = [
-  "#7aa2f7", // soft blue
-  "#bb9af7", // soft purple
-  "#9ece6a", // soft green
-  "#e0af68", // soft amber
-  "#f7768e", // soft rose
-  "#73daca", // soft teal
-  "#ff9e64", // soft orange
-  "#b4f9f8", // pale cyan
-];
-
-function authorTint(key: string): string {
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash * 31 + key.charCodeAt(i)) | 0;
-  }
-  return AUTHOR_TINTS[Math.abs(hash) % AUTHOR_TINTS.length];
-}
-
 function compactDate(secs: number): string {
   if (!secs) return "";
   const d = new Date(secs * 1000);
@@ -149,14 +130,14 @@ function compactDate(secs: number): string {
 function statusTone(code: string): string {
   switch (code.toUpperCase()) {
     case "A":
-      return "text-emerald-600 dark:text-emerald-400";
+      return "text-success";
     case "M":
-      return "text-amber-600 dark:text-amber-300";
+      return "text-warning";
     case "D":
-      return "text-rose-600 dark:text-rose-400";
+      return "text-destructive";
     case "R":
     case "C":
-      return "text-sky-600 dark:text-sky-300";
+      return "text-info";
     default:
       return "text-muted-foreground";
   }
@@ -715,7 +696,7 @@ const CommitRow = memo(function CommitRow({
           />
         ) : null}
       </div>
-      <span className="pl-px font-mono text-caption tabular-nums text-muted-foreground/80">
+      <span className="pl-px font-mono text-caption text-muted-foreground/80">
         {commit.shortSha}
       </span>
       <span
@@ -738,10 +719,7 @@ const CommitRow = memo(function CommitRow({
         title={commit.authorEmail || commit.author}
       >
         <span
-          className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-[3px] font-mono text-micro font-bold uppercase tabular-nums text-background"
-          style={{
-            backgroundColor: authorTint(commit.authorEmail || commit.author),
-          }}
+          className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-[3px] bg-foreground/15 text-micro font-semibold uppercase text-foreground"
         >
           {initials}
         </span>
@@ -749,10 +727,10 @@ const CommitRow = memo(function CommitRow({
           {commit.author ? highlight(commit.author, query) : "Unknown"}
         </span>
       </span>
-      <span className="text-right font-mono text-caption tabular-nums text-muted-foreground/75">
+      <span className="text-right text-caption tabular-nums text-muted-foreground/75">
         {date}
       </span>
-      <span className="flex min-w-0 items-center justify-end gap-1.5 font-mono text-micro tabular-nums">
+      <span className="flex min-w-0 items-center justify-end gap-1.5 text-micro tabular-nums">
         {commit.filesChanged > 0 ? (
           <span
             className="inline-flex items-center gap-1 text-muted-foreground/75"
@@ -771,12 +749,12 @@ const CommitRow = memo(function CommitRow({
         {totalStat > 0 ? (
           <span className="inline-flex items-center gap-1">
             {commit.insertions > 0 ? (
-              <span className="font-semibold text-emerald-600/85 dark:text-emerald-400/85">
+              <span className="font-semibold text-success/85">
                 +{commit.insertions}
               </span>
             ) : null}
             {commit.deletions > 0 ? (
-              <span className="font-semibold text-rose-600/85 dark:text-rose-400/85">
+              <span className="font-semibold text-destructive/85">
                 −{commit.deletions}
               </span>
             ) : null}
@@ -826,7 +804,7 @@ function CommitDetail({
     <div className="flex max-h-[60vh] min-h-0 flex-col">
       <div className="shrink-0 border-b border-border/45 p-3">
         <div className="flex items-start gap-2">
-          <span className="mt-px shrink-0 rounded bg-muted/65 px-1.5 py-0.5 font-mono text-caption leading-none tabular-nums text-muted-foreground">
+          <span className="mt-px shrink-0 rounded bg-muted/65 px-1.5 py-0.5 font-mono text-caption leading-none text-muted-foreground">
             {commit.shortSha}
           </span>
           <div className="min-w-0 flex-1 text-ui font-semibold leading-snug text-foreground">
@@ -1020,12 +998,12 @@ const FileRow = memo(function FileRow({
         ) : (
           <>
             {file.added > 0 ? (
-              <span className="text-emerald-600 dark:text-emerald-400">
+              <span className="text-success">
                 +{file.added}
               </span>
             ) : null}
             {file.removed > 0 ? (
-              <span className="text-rose-600 dark:text-rose-400">
+              <span className="text-destructive">
                 −{file.removed}
               </span>
             ) : null}
@@ -1034,7 +1012,7 @@ const FileRow = memo(function FileRow({
       </div>
       <span
         className={cn(
-          "inline-flex w-4 shrink-0 justify-center text-micro font-bold leading-none tabular-nums",
+          "inline-flex w-4 shrink-0 justify-center text-micro font-semibold leading-none tabular-nums",
           statusTone(file.status),
         )}
         title={file.statusLabel}

@@ -144,8 +144,8 @@ export function SharePanel() {
           Share
         </span>
         {isRunning && (
-          <span className="ml-auto flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-micro font-bold text-red-500">
-            <span className="h-1.5 w-1.5 nexis-blink rounded-full bg-red-500" />
+          <span className="ml-auto flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-micro font-semibold text-destructive">
+            <span className="h-1.5 w-1.5 nexis-blink rounded-full bg-destructive" />
             {runningLive && runningTarget === "terminal" ? "Live" : "Sharing"}
           </span>
         )}
@@ -188,7 +188,7 @@ export function SharePanel() {
               className={cn(
                 "flex items-center gap-1.5 rounded px-2 py-1 text-caption font-medium transition-colors",
                 liveMode
-                  ? "bg-green-500/15 text-green-500"
+                  ? "bg-success/15 text-success"
                   : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
               )}
             >
@@ -271,7 +271,7 @@ export function SharePanel() {
                   <Icon
                     name={copied ? "check" : "copy"}
                     size="xs"
-                    className={copied ? "text-green-500" : ""}
+                    className={copied ? "text-success" : ""}
                   />
                 </button>
               </div>
@@ -302,7 +302,7 @@ export function SharePanel() {
               <button
                 type="button"
                 onClick={() => void stopShare()}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded border border-red-500/30 py-1 text-caption text-red-500/80 transition-colors hover:bg-red-500/10 hover:text-red-500"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded border border-destructive/30 py-1 text-caption text-destructive/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
               >
                 <Icon name="close" size="xs" />
                 Stop sharing

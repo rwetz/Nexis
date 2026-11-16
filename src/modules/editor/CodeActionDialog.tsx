@@ -249,7 +249,7 @@ export function CodeActionDialog({
         {(done || error) && (
           <div className="px-4 pb-1">
             {done && (
-              <div className="flex items-center gap-1.5 text-caption text-green-500">
+              <div className="flex items-center gap-1.5 text-caption text-success">
                 <Icon name="success" />
                 Applied “{done}”
               </div>

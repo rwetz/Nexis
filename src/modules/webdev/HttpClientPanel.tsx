@@ -45,9 +45,9 @@ type Props = {
 };
 
 const STATUS_TONE: Record<ReturnType<typeof statusClass>, string> = {
-  "success": "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  "redirect": "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-  "client-error": "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  "success": "bg-success/15 text-success",
+  "redirect": "bg-info/15 text-info",
+  "client-error": "bg-warning/15 text-warning",
   "server-error": "bg-destructive/15 text-destructive",
   "info": "bg-muted text-muted-foreground",
 };
@@ -305,7 +305,7 @@ function ResponseView({
       <div className="flex flex-wrap items-center gap-1.5">
         <span
           className={cn(
-            "rounded px-1.5 py-0.5 text-micro font-bold tabular-nums",
+            "rounded px-1.5 py-0.5 text-micro font-semibold tabular-nums",
             STATUS_TONE[statusClass(response.status)],
           )}
         >
@@ -403,7 +403,7 @@ function RequestHints({
         </p>
       )}
       {unresolved.length > 0 && (
-        <p className="flex items-start gap-1.5 text-micro leading-relaxed text-amber-600 dark:text-amber-400">
+        <p className="flex items-start gap-1.5 text-micro leading-relaxed text-warning">
           <Icon name="alert" size="xs" className="mt-px shrink-0" />
           Undefined {unresolved.length === 1 ? "variable" : "variables"}:{" "}
           {unresolved.join(", ")}: left as written, define them under Vars.
@@ -448,7 +448,7 @@ function RequestTabBody({
           onChange={(e) => onHeaderText(e.target.value)}
         />
         {invalidHeaderLines.length > 0 && (
-          <p className="text-micro leading-relaxed text-amber-600 dark:text-amber-400">
+          <p className="text-micro leading-relaxed text-warning">
             Ignored (no colon): {invalidHeaderLines.join(" · ")}
           </p>
         )}

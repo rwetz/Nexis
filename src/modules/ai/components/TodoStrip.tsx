@@ -43,7 +43,7 @@ export function TodoStrip({ sessionId }: Props) {
       <div className="my-1.5 flex items-center gap-2 shrink-0">
         <span className="text-caption font-medium text-foreground">Todos</span>
         <Progress value={pct} className="h-1 flex-1" />
-        <span className="text-caption tabular-nums font-mono text-muted-foreground">
+        <span className="text-caption tabular-nums text-muted-foreground">
           {completed}/{todos.length}
         </span>
       </div>

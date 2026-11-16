@@ -134,7 +134,7 @@ function PlanRow({
               {basename(item.path)}
             </span>
             {isNew ? (
-              <span className="text-micro text-emerald-600 dark:text-emerald-400">
+              <span className="text-micro text-success">
                 new
               </span>
             ) : null}
@@ -144,7 +144,7 @@ function PlanRow({
           </div>
           {stats ? (
             <div className="mt-0.5 flex items-center gap-2 text-micro tabular-nums">
-              <span className="text-emerald-600 dark:text-emerald-400">
+              <span className="text-success">
                 +{stats.added}
               </span>
               <span className="text-destructive">−{stats.removed}</span>
@@ -222,7 +222,7 @@ function UnifiedDiffPreview({
             className={cn(
               "flex whitespace-pre",
               l.kind === "add"
-                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                ? "bg-success/10 text-success"
                 : "bg-destructive/10 text-destructive",
             )}
           >

@@ -227,7 +227,7 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
               <span className="text-caption text-muted-foreground">No results</span>
             )}
             {replacedFiles > 0 && (
-              <span className="ml-auto flex items-center gap-1 text-caption text-green-600 dark:text-green-400">
+              <span className="ml-auto flex items-center gap-1 text-caption text-success">
                 <Icon name="success" />
                 Replaced in {replacedFiles} file{replacedFiles !== 1 ? "s" : ""}
               </span>
@@ -330,7 +330,7 @@ function HitRow({
       onClick={() => onOpenFile?.(hit.path)}
       className="flex items-start gap-3 px-3 py-1 text-left hover:bg-muted/30"
     >
-      <span className="w-8 shrink-0 text-right font-mono text-micro tabular-nums text-muted-foreground/60">
+      <span className="w-8 shrink-0 text-right text-micro tabular-nums text-muted-foreground/60">
         {hit.line}
       </span>
       <span
@@ -353,7 +353,7 @@ function highlightMatch(
     const flags = caseSensitive ? "g" : "gi";
     const re = new RegExp(pattern, flags);
     return text.replace(re, (m) =>
-      `<mark class="rounded-sm bg-yellow-400/30 text-foreground">${escapeHtml(m)}</mark>`,
+      `<mark class="rounded-sm bg-warning/30 text-foreground">${escapeHtml(m)}</mark>`,
     );
   } catch {
     return escapeHtml(text);

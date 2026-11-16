@@ -4,20 +4,19 @@
 // ║  2026                                ║
 // ╚══════════════════════════════════════╝
 
-// One type family across the whole app: Geist for the interface, Geist Mono
-// for code and the terminal. They are drawn as siblings by one designer, so
-// the chrome and the content share a skeleton, x-height and rhythm instead
-// of being two unrelated faces sharing a window.
+// Two faces, as the whole Nexis family (nexis-design RULES R1.1): Inter for
+// everything a person reads (chrome, rows, numbers, headings, prose) and
+// Geist Mono for code, paths and the terminal. The opsz build carries Inter's
+// optical-size axis, so the 10-13px steps get the open, wide-spaced cut and
+// titles the tight one, from one file. There is no display face.
 //
 // Variable builds, not static weights: Settings offers five terminal weights
 // (300-700), and static 400+700 would leave Light, Medium and Semibold to
-// rasterizer synthesis — which on a monospace grid is where faux weights
+// rasterizer synthesis, which on a monospace grid is where faux weights
 // look worst.
 import { domAnimation, LazyMotion } from "motion/react";
-import "@fontsource-variable/geist/wght.css";
+import "@fontsource-variable/inter/opsz.css";
 import "@fontsource-variable/geist-mono/wght.css";
-// The display voice, for the handful of places Nexis introduces itself.
-import "@fontsource-variable/space-grotesk/wght.css";
 // Kept as the fallback link in the mono chain: its bundled subsets cover
 // Cyrillic, which Geist Mono's do not.
 import "@fontsource/jetbrains-mono/latin-400.css";

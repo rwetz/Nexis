@@ -163,8 +163,8 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
         onDrop={handleDrop}
       >
         {isDragOver && (
-          <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center rounded-md border-2 border-dashed border-brand bg-brand/10 backdrop-blur-[1px]">
-            <span className="brand-glow rounded-md bg-card/90 px-3 py-1.5 text-xs font-medium text-brand shadow">
+          <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center rounded-md border-2 border-dashed border-foreground/40 bg-muted/40 backdrop-blur-[1px]">
+            <span className="rounded-md bg-card/90 px-3 py-1.5 text-ui font-medium text-foreground shadow">
               Drop to paste path
             </span>
           </div>
@@ -203,20 +203,20 @@ export const TerminalPane = forwardRef<TerminalPaneHandle, Props>(
                   type="button"
                   onClick={() => void handleRecordToggle()}
                   aria-label={isRecording ? "Stop recording" : "Start recording"}
-                  className={`flex h-5 w-5 items-center justify-center rounded-full border text-micro font-bold shadow-sm transition-colors ${
+                  className={`flex h-5 w-5 items-center justify-center rounded-full border text-micro font-semibold shadow-sm transition-colors ${
                     isRecording
-                      ? "border-red-500/70 bg-red-500/10 text-red-500 hover:bg-red-500/20"
-                      : "border-border/60 bg-card/80 text-muted-foreground hover:bg-muted hover:border-red-400/60 hover:text-red-400"
+                      ? "border-destructive/70 bg-destructive/10 text-destructive hover:bg-destructive/20"
+                      : "border-border/60 bg-card/80 text-muted-foreground hover:bg-muted hover:border-destructive/60 hover:text-destructive"
                   }`}
                 >
                   {isRecording ? (
-                    <span className="h-2 w-2 rounded-sm bg-red-500" />
+                    <span className="h-2 w-2 rounded-sm bg-destructive" />
                   ) : (
                     <span className="h-2 w-2 rounded-full bg-current" />
                   )}
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="left" className="text-xs">
+              <TooltipContent side="left" className="text-ui">
                 {isRecording ? "Stop recording" : "Record terminal session"}
               </TooltipContent>
             </Tooltip>

@@ -701,7 +701,7 @@ export const FileExplorer = forwardRef<FileExplorerHandle, FileExplorerProps>(
           )}
         >
           <span
-            className="flex flex-1 items-center truncate text-xs font-medium text-foreground/80"
+            className="flex flex-1 items-center truncate text-ui font-medium text-foreground/80"
             title={rootPath}
           >
             <FileTypeIcon

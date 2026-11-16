@@ -34,10 +34,10 @@ function statusIcon(status: BuildStatus) {
 
 function statusColor(status: BuildStatus): string {
   switch (status) {
-    case "success": return "text-green-500";
-    case "failed": return "text-red-500";
-    case "error": return "text-red-400";
-    case "running": return "text-yellow-500";
+    case "success": return "text-success";
+    case "failed": return "text-destructive";
+    case "error": return "text-destructive";
+    case "running": return "text-warning";
     default: return "text-muted-foreground";
   }
 }
@@ -205,7 +205,7 @@ export function BuildPanel({ workspaceRoot }: Props) {
             <button
               type="button"
               onClick={() => void stopBuild()}
-              className="flex shrink-0 items-center gap-1.5 rounded bg-red-500/10 px-2.5 py-1 text-ui font-medium text-red-500 transition-colors hover:bg-red-500/20"
+              className="flex shrink-0 items-center gap-1.5 rounded bg-destructive/10 px-2.5 py-1 text-ui font-medium text-destructive transition-colors hover:bg-destructive/20"
             >
               <Icon name="close" />
               Stop

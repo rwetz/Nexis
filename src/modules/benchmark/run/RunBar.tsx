@@ -37,7 +37,7 @@ export function RunBar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <span className="hidden font-mono text-caption text-muted-foreground tabular-nums @md:inline">
+        <span className="hidden text-caption text-muted-foreground tabular-nums @md:inline">
           {cells.length} cell{cells.length === 1 ? "" : "s"}
         </span>
         {running ? (

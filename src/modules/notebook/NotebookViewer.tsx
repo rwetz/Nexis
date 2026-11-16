@@ -138,7 +138,7 @@ export function NotebookViewer({ path, visible }: Props) {
 
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center text-xs text-destructive">
+      <div className="flex h-full items-center justify-center text-ui text-destructive">
         {error}
       </div>
     );
@@ -146,7 +146,7 @@ export function NotebookViewer({ path, visible }: Props) {
 
   if (!notebook) {
     return (
-      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+      <div className="flex h-full items-center justify-center text-ui text-muted-foreground">
         Loading…
       </div>
     );

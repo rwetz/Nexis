@@ -42,7 +42,7 @@ function statusColor(status: QueueTaskStatus): string {
     case "running":
       return "text-primary";
     case "done":
-      return "text-green-500";
+      return "text-success";
     case "failed":
       return "text-destructive";
     case "cancelled":
@@ -97,7 +97,7 @@ export function AgentQueuePanel() {
           Agent Queue
         </span>
         {(queuedCount > 0 || runningCount > 0) && (
-          <span className="ml-auto rounded-full bg-primary/15 px-1.5 py-0.5 text-micro font-bold text-primary">
+          <span className="ml-auto rounded-full bg-primary/15 px-1.5 py-0.5 text-micro font-semibold text-primary">
             {runningCount > 0
               ? `${runningCount} running`
               : `${queuedCount} queued`}
@@ -124,7 +124,7 @@ export function AgentQueuePanel() {
         {tasks.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-8 text-center">
             <Icon name="queue" size="xl" className="text-muted-foreground/30" />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-ui text-muted-foreground">
               No tasks queued yet.
             </p>
             <p className="text-micro text-muted-foreground/60">
@@ -151,7 +151,7 @@ export function AgentQueuePanel() {
 
                 {/* Content */}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium">{task.label}</p>
+                  <p className="truncate text-ui font-medium">{task.label}</p>
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
@@ -224,7 +224,7 @@ export function AgentQueuePanel() {
               onChange={(e) => setLabel(e.target.value)}
               aria-label="Task label (optional)"
               placeholder="Task label (optional)"
-              className="w-full rounded border border-border/60 bg-muted/30 px-2 py-1 text-xs text-foreground outline-none focus:border-primary/60"
+              className="w-full rounded border border-border/60 bg-muted/30 px-2 py-1 text-ui text-foreground outline-none focus:border-primary/60"
             />
             <textarea
               ref={textareaRef}
@@ -244,7 +244,7 @@ export function AgentQueuePanel() {
                   handleAdd();
                 }
               }}
-              className="w-full resize-none rounded border border-border/60 bg-muted/30 px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary/60"
+              className="w-full resize-none rounded border border-border/60 bg-muted/30 px-2 py-1.5 text-ui text-foreground outline-none focus:border-primary/60"
             />
             <p className="text-micro text-muted-foreground/60">
               Ctrl+Enter to add · Esc to cancel
@@ -257,7 +257,7 @@ export function AgentQueuePanel() {
                   setPrompt("");
                   setLabel("");
                 }}
-                className="flex-1 rounded border border-border/60 py-1 text-xs text-muted-foreground hover:bg-muted/40"
+                className="flex-1 rounded border border-border/60 py-1 text-ui text-muted-foreground hover:bg-muted/40"
               >
                 Cancel
               </button>
@@ -265,7 +265,7 @@ export function AgentQueuePanel() {
                 type="button"
                 onClick={handleAdd}
                 disabled={!prompt.trim()}
-                className="flex-1 rounded bg-primary/90 py-1 text-xs font-medium text-primary-foreground hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded bg-primary/90 py-1 text-ui font-medium text-primary-foreground hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Add to Queue
               </button>

@@ -136,7 +136,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
 
   if (!workspaceRoot) {
     return (
-      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+      <div className="flex h-full items-center justify-center text-ui text-muted-foreground">
         No workspace open.
       </div>
     );
@@ -145,7 +145,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-ui font-semibold uppercase tracking-wider text-muted-foreground">
           Release Tooling
         </span>
         <Button
@@ -187,7 +187,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs w-full"
+                    className="h-7 text-ui w-full"
                     disabled={!next || loading}
                     onClick={() => next && copyChangelog(next)}
                   >
@@ -204,7 +204,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
             Click a bump type to copy its changelog entry to clipboard.
           </p>
           {copied && (
-            <p className="flex items-center gap-1 text-micro text-green-500">
+            <p className="flex items-center gap-1 text-micro text-success">
               <Icon name="success" size="xs" />
               Copied to clipboard
             </p>
@@ -238,7 +238,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
           </div>
         )}
         {commits.length === 0 && !loading && (
-          <p className="text-xs text-muted-foreground">No commits since last tag.</p>
+          <p className="text-ui text-muted-foreground">No commits since last tag.</p>
         )}
 
         <div className="space-y-1.5 border-t border-border/30 pt-3">
@@ -251,7 +251,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
                   key={kind}
                   size="sm"
                   variant="outline"
-                  className={cn("h-7 text-xs", tagStatus === "done" && "border-green-500/50 text-green-600 dark:text-green-400")}
+                  className={cn("h-7 text-ui", tagStatus === "done" && "border-success/50 text-success")}
                   disabled={!next || loading || tagStatus === "running"}
                   onClick={() => next && void createTag(next)}
                 >
@@ -261,7 +261,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
             })}
           </div>
           {tagStatus === "done" && (
-            <p className="flex items-center gap-1 text-micro text-green-500">
+            <p className="flex items-center gap-1 text-micro text-success">
               <Icon name="success" size="xs" />
               Tag created successfully
             </p>

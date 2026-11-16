@@ -174,7 +174,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
         ) : loadState === "no-repo" ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
             <Icon name="git-branch" size="xl" className="text-muted-foreground/40" />
-            <p className="text-xs text-muted-foreground">Not a git repository</p>
+            <p className="text-ui text-muted-foreground">Not a git repository</p>
             <p className="max-w-[220px] text-caption leading-relaxed text-muted-foreground/60">
               Code review reads a git diff. Open a workspace inside a repository,
               or run <span className="font-mono">git init</span> here.
@@ -193,8 +193,8 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
           <EmptyState message="Loading diff…" />
         ) : !hasChanges ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-            <Icon name="success" size="xl" className="text-green-500/60" />
-            <p className="text-xs text-muted-foreground">
+            <Icon name="success" size="xl" className="text-success/60" />
+            <p className="text-ui text-muted-foreground">
               No {scope === "staged" ? "staged" : ""} changes to review
             </p>
           </div>
@@ -208,14 +208,14 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
                 </span>{" "}
                 file{stats.files !== 1 ? "s" : ""}
               </span>
-              <span className="text-caption text-green-500">
+              <span className="text-caption text-success">
                 +{stats.additions}
               </span>
-              <span className="text-caption text-red-500">
+              <span className="text-caption text-destructive">
                 −{stats.deletions}
               </span>
               {diff?.truncated && (
-                <span className="ml-auto text-micro text-amber-500/80">
+                <span className="ml-auto text-micro text-warning/80">
                   truncated
                 </span>
               )}

@@ -100,11 +100,11 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
           name={expanded ? "chevron-down" : "chevron-right"}
           className="shrink-0 text-muted-foreground"
         />
-        <Icon name="alert" size="xs" className="shrink-0 text-amber-500" />
+        <Icon name="alert" size="xs" className="shrink-0 text-warning" />
         <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Conflicts
         </span>
-        <span className="ml-auto rounded-full bg-amber-500/15 px-1.5 py-0.5 text-micro font-bold text-amber-500">
+        <span className="ml-auto rounded-full bg-warning/15 px-1.5 py-0.5 text-micro font-semibold text-warning">
           {conflicts.length}
         </span>
       </button>
@@ -119,12 +119,12 @@ export function ConflictSection({ repoRoot, changedFiles }: Props) {
                 className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/20"
               >
                 {/* Conflict type badge */}
-                <span className="shrink-0 rounded bg-amber-500/10 px-1 py-0.5 font-mono text-micro font-bold text-amber-500">
+                <span className="shrink-0 rounded bg-warning/10 px-1 py-0.5 font-mono text-micro font-semibold text-warning">
                   {conflictTypeLabel(f)}
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium">
+                  <p className="truncate text-ui font-medium">
                     {basename(f.path)}
                   </p>
                   <p className="truncate text-micro text-muted-foreground">

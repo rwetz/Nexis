@@ -87,14 +87,14 @@ function RepoRow({
           />
         )}
       </span>
-      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span className="flex items-center gap-1.5 text-ui text-muted-foreground">
         <Icon name="git-branch" size="xs" />
         <span className="truncate font-mono">{repo.branch || "–"}</span>
         <span className="ml-auto shrink-0 tabular-nums">
           {formatCount(repo.files)} files
         </span>
       </span>
-      <span className="text-xs text-muted-foreground/65">
+      <span className="text-ui text-muted-foreground/65">
         {relativeTime(repo.last_commit?.time ?? null)}
         {repo.ahead > 0 && ` · ↑${repo.ahead}`}
         {repo.behind > 0 && ` · ↓${repo.behind}`}

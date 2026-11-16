@@ -58,7 +58,7 @@ export function ToolWindowShell({ tool }: { tool: ToolWindowContribution }) {
               <Icon name={tool.icon} size="md" className="text-muted-foreground" />
             </span>
             <span className="text-lg font-semibold tracking-tight">{tool.label}</span>
-            {!featured && <span className="text-xs text-muted-foreground">Nexis</span>}
+            {!featured && <span className="text-ui text-muted-foreground">Nexis</span>}
             <div data-tauri-drag-region className="min-w-2 flex-1" />
             {tool.renderActions?.()}
             {USE_CUSTOM_WINDOW_CONTROLS && <WindowControls />}

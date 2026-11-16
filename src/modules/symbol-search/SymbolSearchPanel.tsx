@@ -213,7 +213,7 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search symbols"
             placeholder='fn:name · class:Foo · hook:useBar · import:react'
-            className="w-full rounded-md border border-border/60 bg-muted/30 py-1.5 pl-7 pr-7 text-xs text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/60"
+            className="w-full rounded-md border border-border/60 bg-muted/30 py-1.5 pl-7 pr-7 text-ui text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/60"
             // A search panel the user has just opened in order to type a query;
             // requiring a further Tab to reach the only input would make the
             // panel slower for keyboard users, not safer.
@@ -278,7 +278,7 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
         ) : (
           <>
             {truncated && (
-              <p className="px-3 py-1.5 text-micro text-amber-500/80">
+              <p className="px-3 py-1.5 text-micro text-warning/80">
                 Showing first {MAX_RESULTS} results: refine the query for more precision
               </p>
             )}
@@ -313,7 +313,7 @@ export function SymbolSearchPanel({ workspaceRoot, onOpenFile }: Props) {
                       !onOpenFile && "cursor-default",
                     )}
                   >
-                    <span className="shrink-0 pt-0.5 font-mono text-micro text-muted-foreground/40 tabular-nums">
+                    <span className="shrink-0 pt-0.5 text-micro text-muted-foreground/40 tabular-nums">
                       {hit.line}
                     </span>
                     <span className="min-w-0 flex-1 truncate font-mono text-caption text-foreground/80">

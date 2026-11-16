@@ -349,7 +349,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
                     "w-7 shrink-0 text-center text-micro font-semibold",
                     verdict.normal === "fail"
                       ? "text-muted-foreground/40"
-                      : "text-green-500",
+                      : "text-success",
                   )}
                   title="WCAG level for body text"
                 >

@@ -178,7 +178,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
                   className={cn(
                     "flex items-start gap-1.5 text-caption leading-relaxed",
                     f.severity === "warn"
-                      ? "text-amber-600 dark:text-amber-400"
+                      ? "text-warning"
                       : "text-muted-foreground",
                   )}
                 >
@@ -200,7 +200,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
 
       {state.kind === "ready" && findings.length === 0 && entries.length > 0 && (
         <div className="shrink-0 border-b border-border/50 px-3 py-1.5">
-          <p className="flex items-center gap-1.5 text-caption text-green-500">
+          <p className="flex items-center gap-1.5 text-caption text-success">
             <Icon name="success" size="xs" />
             Consistent: one canvas size, one stroke weight, no baked-in colour.
           </p>
@@ -228,7 +228,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
             </button>
           ))}
           {state.kind === "ready" && state.truncated && (
-            <span className="ml-auto text-micro text-amber-500">
+            <span className="ml-auto text-micro text-warning">
               first {MAX_FILES}
             </span>
           )}

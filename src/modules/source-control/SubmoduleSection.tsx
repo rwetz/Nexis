@@ -29,7 +29,7 @@ function statusBadge(
     case "modified":
       return {
         label: "modified",
-        cls: "bg-amber-500/20 text-amber-600 dark:text-amber-400",
+        cls: "bg-warning/20 text-warning",
       };
     case "uninitialized":
       return {
@@ -44,7 +44,7 @@ function statusBadge(
     default:
       return {
         label: "ok",
-        cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+        cls: "bg-success/15 text-success",
       };
   }
 }
@@ -166,7 +166,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
                       <div className="flex items-center gap-1 text-micro text-muted-foreground/65">
                         <span className="truncate">{entry.path}</span>
                         <span>·</span>
-                        <span className="shrink-0 font-mono tabular-nums">
+                        <span className="shrink-0 font-mono">
                           {entry.sha.slice(0, 7)}
                         </span>
                       </div>

@@ -148,7 +148,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
             <div className="space-y-1">
               <Label className="text-micro">Name</Label>
               <Input
-                className="h-7 text-xs"
+                className="h-7 text-ui"
                 placeholder="My Profile"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -157,7 +157,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
             <div className="space-y-1">
               <Label className="text-micro">Root path *</Label>
               <Input
-                className="h-7 font-mono text-xs"
+                className="h-7 font-mono text-ui"
                 placeholder="/home/user/project"
                 value={form.rootPath}
                 onChange={(e) => setForm((f) => ({ ...f, rootPath: e.target.value }))}
@@ -176,7 +176,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
             <div className="space-y-1">
               <Label className="text-micro">Startup command (optional)</Label>
               <Input
-                className="h-7 font-mono text-xs"
+                className="h-7 font-mono text-ui"
                 placeholder="pnpm dev"
                 value={form.startupCommand}
                 onChange={(e) => setForm((f) => ({ ...f, startupCommand: e.target.value }))}
@@ -184,13 +184,13 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
             </div>
           </div>
           <div className="flex justify-end gap-1.5 pt-1">
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={cancelEdit}>
+            <Button size="sm" variant="ghost" className="h-6 text-ui" onClick={cancelEdit}>
               <Icon name="close" size="xs" className="mr-1" />
               Cancel
             </Button>
             <Button
               size="sm"
-              className="h-6 text-xs"
+              className="h-6 text-ui"
               onClick={saveEdit}
               disabled={!form.rootPath.trim()}
             >
@@ -205,11 +205,11 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
         {profiles.length === 0 && !isEditing ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
             <Icon name="settings" size="xl" className="text-muted-foreground/30" />
-            <p className="text-xs text-muted-foreground">No profiles yet.</p>
+            <p className="text-ui text-muted-foreground">No profiles yet.</p>
             <p className="text-micro text-muted-foreground/60">
               Save a named configuration to quickly switch contexts.
             </p>
-            <Button size="sm" variant="outline" className="mt-1 h-6 text-xs" onClick={startNew}>
+            <Button size="sm" variant="outline" className="mt-1 h-6 text-ui" onClick={startNew}>
               Create profile
             </Button>
           </div>
@@ -232,7 +232,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
                     className={cn( "mt-0.5 shrink-0", isActive ? "text-primary/70" : "text-muted-foreground/60", )}
                   />
                   <div className="min-w-0 flex-1">
-                    <p className={cn("truncate text-xs font-medium", isActive && "text-primary")}>
+                    <p className={cn("truncate text-ui font-medium", isActive && "text-primary")}>
                       {p.name}
                     </p>
                     <p className="truncate font-mono text-micro text-muted-foreground/70">
@@ -275,7 +275,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
                       </Button>
                     </div>
                     {activated ? (
-                      <div className="flex items-center gap-1 text-micro text-green-500">
+                      <div className="flex items-center gap-1 text-micro text-success">
                         <Icon name="success" size="xs" />
                         Activated
                       </div>

@@ -228,7 +228,7 @@ export function FolderPreview({
       </div>
 
       {label && (
-        <div className="mt-2 text-center text-xs text-muted-foreground">
+        <div className="mt-2 text-center text-ui text-muted-foreground">
           {label}
         </div>
       )}

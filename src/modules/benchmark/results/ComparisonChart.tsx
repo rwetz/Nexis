@@ -187,7 +187,7 @@ function Bar({
         />
         <span
           className={cn(
-            "absolute inset-y-0 right-2 flex items-center font-mono text-caption font-medium tabular-nums",
+            "absolute inset-y-0 right-2 flex items-center text-caption font-medium tabular-nums",
             valid ? "text-foreground" : "text-muted-foreground/50",
           )}
         >

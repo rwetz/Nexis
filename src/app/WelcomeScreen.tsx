@@ -165,11 +165,11 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
           {/* The wordmark, at display scale. Settings match the BG Studio
               pass; `highlight` is what the particles take as the pointer
               pushes through them, which is the whole reason it reacts. */}
-          <h1 className="font-heading">
+          <h1>
             <ParticleText
               text="Welcome to Nexis"
               fontSize={72}
-              fontWeight={800}
+              fontWeight={600}
               // Follows the theme like every other coloured mark in the
               // app: the theme's own accent normally, and the full rainbow
               // spread across the glyphs when the default theme's spectrum
@@ -190,7 +190,7 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
               idleDrift={0.8}
             />
           </h1>
-          <p className="text-[14px] text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Open a terminal or file to get started, or press {MOD_KEY}+I to ask the AI agent.
           </p>
         </div>

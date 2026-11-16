@@ -242,7 +242,7 @@ function SnippetRow({
           type="button"
           onClick={() => onRemove(snippet.id)}
           aria-label={`Delete snippet ${snippet.name}`}
-          className="rounded p-0.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+          className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
         >
           <Icon name="delete" />
         </button>

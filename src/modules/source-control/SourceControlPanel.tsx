@@ -81,7 +81,7 @@ export type SourceControlPanelProps = {
 };
 
 const SOURCE_CONTROL_TOOLTIP_CLASS =
-  "border border-border/70 bg-zinc-950 text-zinc-100 shadow-lg shadow-black/30 dark:border-border/60 dark:bg-zinc-950 dark:text-zinc-100";
+  "border border-border/70 bg-foreground text-background shadow-lg shadow-black/30 dark:border-border/60";
 
 const ROW_HEIGHTS = {
   banner: 32,
@@ -115,15 +115,15 @@ function upstreamBadgeLabel(upstream: string | null | undefined): string {
 function statusAccent(code: string): string {
   switch (code) {
     case "A":
-      return "bg-emerald-500/85";
+      return "bg-success/85";
     case "U":
-      return "bg-teal-500/85";
+      return "bg-success/85";
     case "M":
-      return "bg-amber-500/85";
+      return "bg-warning/85";
     case "D":
-      return "bg-rose-500/85";
+      return "bg-destructive/85";
     case "R":
-      return "bg-sky-500/85";
+      return "bg-info/85";
     default:
       return "bg-muted-foreground/40";
   }
@@ -1011,7 +1011,7 @@ function BranchSwitcher({
         {error ? (
           <>
             <DropdownMenuSeparator />
-            <div className="max-w-64 whitespace-pre-wrap px-2 py-1.5 text-caption text-red-400">
+            <div className="max-w-64 whitespace-pre-wrap px-2 py-1.5 text-caption text-destructive">
               {error}
             </div>
           </>
@@ -1092,7 +1092,7 @@ function SectionHeader({
       <span
         className={cn(
           "text-micro font-semibold uppercase tracking-[0.18em]",
-          isStaged ? "text-emerald-600/80 dark:text-emerald-400/70" : "text-muted-foreground/75",
+          isStaged ? "text-success/80 dark:text-success/70" : "text-muted-foreground/75",
         )}
       >
         {row.label}

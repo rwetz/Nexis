@@ -53,7 +53,7 @@ export function AgentSwitcher({ isMiniWindow }: { isMiniWindow?: boolean }) {
           className={cn(
             !isMiniWindow
               ? "flex h-6 items-center gap-1 rounded-md border border-border/60 bg-card px-1.5 text-caption text-muted-foreground transition-colors hover:border-border hover:bg-accent hover:text-foreground"
-              : "text-xs mr-1",
+              : "text-ui mr-1",
           )}
           title={`Agent: ${active.name}`}
         >

@@ -91,7 +91,7 @@ function BlockDetail({ block, repoPath }: { block: Block; repoPath: string | nul
           />
         )}
         {repo.last_commit?.summary && (
-          <p className="border-l-2 border-border pl-2 text-xs leading-relaxed text-muted-foreground">
+          <p className="border-l-2 border-border pl-2 text-ui leading-relaxed text-muted-foreground">
             {repo.last_commit?.summary}
           </p>
         )}
@@ -139,7 +139,7 @@ function BlockDetail({ block, repoPath }: { block: Block; repoPath: string | nul
 function Title({ name, sub }: { name: string; sub: string }) {
   return (
     <div className="min-w-0">
-      <h2 className="truncate font-heading text-sm font-semibold" title={name}>
+      <h2 className="truncate text-sm font-medium" title={name}>
         {name}
       </h2>
       <p className="truncate font-mono text-caption text-muted-foreground" title={sub}>
@@ -157,7 +157,7 @@ function Rows({
   accent?: string;
 }) {
   return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-ui">
       {rows.map(([label, value]) => (
         <div key={label} className="col-span-2 flex items-baseline justify-between gap-3">
           <dt className="shrink-0 text-muted-foreground">{label}</dt>

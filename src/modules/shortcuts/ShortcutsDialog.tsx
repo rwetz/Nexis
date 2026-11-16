@@ -68,7 +68,7 @@ export function ShortcutsDialog({ open, onOpenChange }: Props) {
               if (items.length === 0) return null;
               return (
                 <section key={group} className="flex flex-col gap-2">
-                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  <h3 className="text-ui font-medium text-muted-foreground uppercase tracking-wide">
                     {group}
                   </h3>
                   <ul className="flex flex-col divide-y divide-border/60">
@@ -99,7 +99,7 @@ export function ShortcutsDialog({ open, onOpenChange }: Props) {
                               })}
                             </KbdGroup>
                           ) : (
-                            <span className="text-xs text-muted-foreground italic">
+                            <span className="text-ui text-muted-foreground italic">
                               Unassigned
                             </span>
                           )}

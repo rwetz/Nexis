@@ -148,7 +148,7 @@ export function PortsPanel({ onOpenPreview }: Props) {
         {ports.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
             <Icon name="globe" size="xl" className="text-muted-foreground/30" />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-ui text-muted-foreground">
               No listening ports detected.
             </p>
             <p className="text-micro text-muted-foreground/60">
@@ -201,7 +201,7 @@ function PortRow({
         <Icon name="globe" size="xs" className="text-primary/70" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium tabular-nums">:{port.port}</p>
+        <p className="text-ui font-medium tabular-nums">:{port.port}</p>
         {port.process && (
           <p className="truncate font-mono text-micro text-muted-foreground">
             {port.process}

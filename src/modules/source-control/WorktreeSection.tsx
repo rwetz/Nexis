@@ -138,7 +138,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
                   </button>
                   <p className="truncate text-micro text-muted-foreground/50">
                     {wt.isDetached ? (
-                      <span className="text-amber-500/70">detached {wt.sha}</span>
+                      <span className="text-warning/70">detached {wt.sha}</span>
                     ) : (
                       <>
                         <span className="text-primary/60">{wt.branch}</span>
@@ -147,7 +147,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
                       </>
                     )}
                     {wt.isPrunable && (
-                      <span className="ml-1 text-red-500/70">(prunable)</span>
+                      <span className="ml-1 text-destructive/70">(prunable)</span>
                     )}
                   </p>
                 </div>
@@ -157,7 +157,7 @@ export function WorktreeSection({ repoRoot, onOpenWorktree }: Props) {
                     type="button"
                     title="Remove worktree"
                     onClick={() => void handleRemove(wt.path)}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-red-500/10 hover:text-red-500 group-hover:opacity-100"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                   >
                     <Icon name="delete" size="xs" />
                   </button>

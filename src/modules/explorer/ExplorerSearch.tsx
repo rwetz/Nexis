@@ -208,7 +208,7 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
               }
             }}
             placeholder="Search files…"
-            className="h-7 pr-7 pl-6.5 text-xs"
+            className="h-7 pr-7 pl-6.5 text-ui"
           />
           {query ? (
             <button
@@ -250,7 +250,7 @@ export const ExplorerSearch = forwardRef<ExplorerSearchHandle, Props>(function E
                           }
                         }}
                         className={cn(
-                          "flex w-full items-center gap-1.5 px-2 py-1 text-left text-xs transition-colors",
+                          "flex w-full items-center gap-1.5 px-2 py-1 text-left text-ui transition-colors",
                           isSelected ? "bg-accent text-foreground" : "hover:bg-accent/50 text-foreground/80"
                         )}
                         title={hit.path}

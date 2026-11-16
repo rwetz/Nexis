@@ -109,9 +109,9 @@ export function WorkspaceNotesPanel({ workspaceRoot }: Props) {
   const statusIcon = saveStatus === "saving"
     ? <span className="text-micro text-muted-foreground/50">Saving…</span>
     : saveStatus === "saved"
-    ? <Icon name="check" size="xs" className="text-green-500" />
+    ? <Icon name="check" size="xs" className="text-success" />
     : saveStatus === "error"
-    ? <span className="text-micro text-red-500">Save failed</span>
+    ? <span className="text-micro text-destructive">Save failed</span>
     : null;
 
   return (
@@ -194,7 +194,7 @@ function MarkdownPreview({ text }: { text: string }) {
   const html = mdToHtml(text);
   return (
     <div
-      className="prose prose-sm prose-invert max-w-none text-ui [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:text-caption [&_h1]:text-[14px] [&_h2]:text-body [&_h3]:text-ui [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-muted/40 [&_pre]:p-2"
+      className="prose prose-sm prose-invert max-w-none text-ui [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:text-caption [&_h1]:text-sm [&_h2]:text-body [&_h3]:text-ui [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-muted/40 [&_pre]:p-2"
       // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: html }}
     />

@@ -173,7 +173,7 @@ export const ContextContentHeader = ({
     <div className={cn("w-full space-y-2 p-3", className)} {...props}>
       {children ?? (
         <>
-          <div className="flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center justify-between gap-3 text-ui">
             <p>{displayPct}</p>
             <p className="font-mono text-muted-foreground">
               {used} / {total}
@@ -222,7 +222,7 @@ export const ContextContentFooter = ({
   return (
     <div
       className={cn(
-        "flex w-full items-center justify-between gap-3 bg-secondary p-3 text-xs",
+        "flex w-full items-center justify-between gap-3 bg-secondary p-3 text-ui",
         className
       )}
       {...props}
@@ -282,7 +282,7 @@ export const ContextInputUsage = ({
 
   return (
     <div
-      className={cn("flex items-center justify-between text-xs", className)}
+      className={cn("flex items-center justify-between text-ui", className)}
       {...props}
     >
       <span className="text-muted-foreground">Input</span>
@@ -319,7 +319,7 @@ export const ContextOutputUsage = ({
 
   return (
     <div
-      className={cn("flex items-center justify-between text-xs", className)}
+      className={cn("flex items-center justify-between text-ui", className)}
       {...props}
     >
       <span className="text-muted-foreground">Output</span>
@@ -356,7 +356,7 @@ export const ContextReasoningUsage = ({
 
   return (
     <div
-      className={cn("flex items-center justify-between text-xs", className)}
+      className={cn("flex items-center justify-between text-ui", className)}
       {...props}
     >
       <span className="text-muted-foreground">Reasoning</span>
@@ -393,7 +393,7 @@ export const ContextCacheUsage = ({
 
   return (
     <div
-      className={cn("flex items-center justify-between text-xs", className)}
+      className={cn("flex items-center justify-between text-ui", className)}
       {...props}
     >
       <span className="text-muted-foreground">Cache</span>

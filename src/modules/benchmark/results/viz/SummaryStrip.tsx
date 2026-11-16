@@ -26,7 +26,7 @@ export function SummaryStrip({
               <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
                 {t.label}
               </span>
-              <span className="font-mono text-xl font-semibold tabular-nums leading-none">{t.value}</span>
+              <span className="text-2xl font-semibold tabular-nums leading-none">{t.value}</span>
               <span className="mt-0.5 flex items-center gap-1.5 text-caption text-muted-foreground">
                 <span className="size-2 shrink-0 rounded-full" style={{ background: BACKEND_COLOR[t.backendId] }} />
                 <span className="truncate">{t.modelName}</span>

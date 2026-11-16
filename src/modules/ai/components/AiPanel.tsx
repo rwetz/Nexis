@@ -298,7 +298,7 @@ function PlanModeStrip() {
   if (!active) return null;
   return (
     <div className="flex shrink-0 items-center gap-2 border-b border-border/40 bg-muted/40 px-3 py-1.5">
-      <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
+      <span className="size-1.5 shrink-0 rounded-full bg-warning" />
       <span className="text-caption font-medium text-foreground">Plan mode</span>
       <span className="text-caption text-muted-foreground">
         {queueLen > 0 ? `· ${queueLen} queued` : "· no edits queued"}
@@ -653,7 +653,7 @@ export function FloatingAiPanel() {
         "ring-1 ring-black/5 dark:ring-white/5",
         "transition-shadow",
         inSnapZone &&
-          "ring-2 ring-primary/40 shadow-[0_0_0_2px_hsl(var(--primary)/0.2)]",
+          "ring-2 ring-primary/40 shadow-[0_0_0_2px_color-mix(in_oklab,var(--primary)_20%,transparent)]",
       )}
     >
       {/* snap-to-dock indicator */}

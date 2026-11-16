@@ -40,18 +40,22 @@ Tokens live in `:root` in `src/styles/globals.css`:
 - `--dur-tap` 90ms / `--dur-panel` 140ms / `--dur-window` 200ms / `--dur-scene` 420ms: scaled by how far the element actually travels. The scene budget is only for a data visualization or completed work arriving; do not use it for a button or menu.
 - `--live-cadence` 1600ms: the deliberately slow scan of a long-running operation, currently Benchmark's run plan.
 - `--blink-cadence` 1060ms: a VT100 cursor's period, for live and pending indicators.
-- `--tick-cadence` 640ms + `--tick-steps` 4: for indeterminate progress.
+- `--loader-cadence` 1400ms: one lap of the heptagram loader's comet, and one turn of `.nexis-spin`. Replaced `--tick-cadence`/`--tick-steps` in the nexis-design sync.
+- `--ease-spring`: overshoots once; reserved for a content card lifting under the pointer (nexis-design R8.3). Never chrome or data.
 
 `--default-transition-duration` and `--default-transition-timing-function` are pointed at the first two inside `@theme`, which is what makes this a system rather than a palette: every bare `transition-*` utility inherits the house curve, including the hundreds of call sites that never named a duration. An explicit `duration-*`/`ease-*` still wins.
 
 Two utility classes replace the stock Tailwind animations on the app's most-seen moving parts:
 
-- `.nexis-spin`: indeterminate progress, stepped through four quarter-turns rather than swept. A terminal spinner is a character cycling in its cell and can only ever be discrete.
+- `.nexis-loader-*` (the `Spinner`): a comet running along the {7/2} heptagram, the brand mark's star, while the star turns slowly the other way. Continuous at the display's refresh rate; the old stepped quarter-turn read as low-resolution beside everything else that moves. Under reduced motion the comet parks and breathes at caret cadence.
+- `.nexis-spin`: a smooth turn on `--loader-cadence`, for a refresh glyph that turns while work is in flight.
+- `.nexis-skeleton`: the `Skeleton` sheen, one gradient fixed to the viewport so every placeholder on screen shares one sweep instead of each pulsing on its own clock. `SkeletonText`/`SkeletonRow`/`SkeletonCard`/`SkeletonGroup` give the shapes.
+- `.nexis-icon-swap` (`<Icon swap>`): a glyph that a user action changes comes up out of a 2px blur on `--dur-panel` (nexis-design R8.4).
 - `.nexis-blink`: live/pending indicators, a near-square wave at caret cadence rather than `animate-pulse`'s sine-eased breathe.
 
 `.nexis-thought-head` travels the rail in `ThoughtLine` at `calc(--blink-cadence * 1.6)`, so a reasoning stream in progress pulses on the same clock as the caret rather than introducing a fourth tempo.
 
-`animate-pulse` deliberately survives on `Skeleton` and on indeterminate progress *bars*: a content placeholder is a different idiom from a status caret, and blinking a large filled surface is visually heavy.
+`animate-pulse` is gone from the app: `Skeleton` uses the sheen above, an indeterminate bar uses `ThoughtLine` (it takes `width="100%"`), and a loading glyph uses `.nexis-blink`.
 
 `.nexis-scene-enter`, `.nexis-stagger`, `.nexis-result-arrival`, and `.nexis-run-live` are the opt-in data-motion primitives. They are not general decoration: companion windows and result canvases enter once, setup cards stagger once, a finished benchmark cell gets one accent flash, and a running plan gets a slow live scan. The shared reduced-motion rule disables all four. Canvas scenes cannot consume CSS animation, so Atlas's renderer has the same 420ms budget in `CityCanvas.tsx`; it schedules only the short assembly run and draws the complete city in its first frame under reduced motion.
 

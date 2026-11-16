@@ -202,7 +202,7 @@ export const PreviewPane = forwardRef<PreviewPaneHandle, Props>(
         </div>
 
         {showXfoHint ? (
-          <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border/60 bg-amber-500/8 px-3 text-caption text-amber-600 dark:text-amber-400">
+          <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border/60 bg-warning/8 px-3 text-caption text-warning">
             <Icon name="alert" className="shrink-0" />
             <span className="truncate">
               Many public sites refuse to embed (X-Frame-Options). If the page
@@ -331,7 +331,7 @@ function EmptyState() {
         <p className="text-sm font-medium text-foreground">
           Nothing to preview yet
         </p>
-        <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
+        <p className="max-w-sm text-ui leading-relaxed text-muted-foreground">
           Type a URL above, or open the{" "}
           <span className="rounded bg-muted px-1 py-0.5 font-mono text-caption">
             Ports

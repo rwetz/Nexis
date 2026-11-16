@@ -183,7 +183,7 @@ export function SidebarRail({
                 <Icon name="git-commit" size="md" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">Commit history</TooltipContent>
+            <TooltipContent side="top" className="text-ui">Commit history</TooltipContent>
           </Tooltip>
         </>
       ) : null}
@@ -244,7 +244,7 @@ function RailButton({
           {badge ? (
             <span className={cn(
               "absolute -right-0.5 -top-0.5 flex h-[14px] min-w-[14px] items-center justify-center rounded-full px-0.5",
-              "text-micro font-bold leading-none tabular-nums",
+              "text-micro font-semibold leading-none tabular-nums",
               isActive
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted-foreground/70 text-background",
@@ -254,7 +254,7 @@ function RailButton({
           ) : null}
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="text-xs">{item.label}</TooltipContent>
+      <TooltipContent side="top" className="text-ui">{item.label}</TooltipContent>
     </Tooltip>
   );
 }

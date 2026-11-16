@@ -124,7 +124,7 @@ function ConnectionItem({ conn, isActive, onSelect, onRemove }: {
         type="button"
         onClick={onRemove}
         aria-label={`Remove connection ${conn.name}`}
-        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 focus-visible:opacity-100"
+        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
       >
         <Icon name="delete" size="xs" />
       </button>

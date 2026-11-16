@@ -25,7 +25,7 @@ export function ProjectIntelligence({ city }: { city: RepoCity }) {
   return (
     <section aria-label="Project at a glance" className="flex flex-col gap-3">
       <div>
-        <div className="font-heading text-2xl font-semibold tracking-tight tabular-nums">
+        <div className="text-2xl font-semibold tracking-tight tabular-nums">
           {formatCount(stats.lines)}
           <span className="ml-1.5 font-sans text-caption font-normal text-muted-foreground">
             lines

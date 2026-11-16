@@ -54,12 +54,12 @@ export function ModelLibrary() {
             onClick={onAdd}
             className={cn(
               "flex min-h-32 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-5 text-center transition-colors hover:border-primary/50 hover:bg-primary/5",
-              dragging && "border-brand bg-brand/10",
+              dragging && "border-foreground/40 bg-muted",
             )}
           >
             <Icon name="folder-open" size="lg" className="text-primary/75" />
             <div className="text-sm font-medium">Add a model to begin</div>
-            <div className="text-xs text-muted-foreground">Drop ONNX or GGUF files, or browse.</div>
+            <div className="text-ui text-muted-foreground">Drop ONNX or GGUF files, or browse.</div>
           </button>
         ) : (
           <div className="-mr-1.5 flex max-h-[34vh] flex-col gap-1.5 overflow-y-auto pr-1.5 nexis-scrollbar">

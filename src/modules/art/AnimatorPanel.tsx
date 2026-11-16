@@ -299,7 +299,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                     key={track.id}
                     className={cn(
                       "rounded-md border bg-card/40 px-2 py-1.5",
-                      hasMotion(track) ? "border-border/50" : "border-amber-500/40",
+                      hasMotion(track) ? "border-border/50" : "border-warning/40",
                     )}
                   >
                     <div className="flex items-center gap-1.5">
@@ -311,7 +311,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                       </span>
                       {!hasMotion(track) && (
                         <span
-                          className="text-micro text-amber-500"
+                          className="text-micro text-warning"
                           title="A track needs at least two keyframes to animate"
                         >
                           no motion
@@ -343,7 +343,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                             aria-label={`Keyframe ${i + 1} position`}
                             className="h-1 min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-border accent-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
                           />
-                          <span className="w-7 shrink-0 text-right font-mono text-micro tabular-nums text-muted-foreground/60">
+                          <span className="w-7 shrink-0 text-right text-micro tabular-nums text-muted-foreground/60">
                             {Math.round(key.at * 100)}%
                           </span>
                           {isColor(track.property) ? (

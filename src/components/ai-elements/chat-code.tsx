@@ -273,7 +273,7 @@ function CopyButton({ text }: { text: string }) {
         <Icon
           name={copied ? "success" : "copy"}
           size="xs"
-          className={copied ? "text-emerald-500" : undefined}
+          className={copied ? "text-success" : undefined}
         />
       </span>
     </Button>

@@ -58,7 +58,7 @@ export function ResultsDashboard() {
           ))}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <span className="mr-1 font-mono text-caption text-muted-foreground tabular-nums">
+          <span className="mr-1 text-caption text-muted-foreground tabular-nums">
             {completed}/{total} {running ? "running…" : "done"}
           </span>
           <HistoryMenu />
@@ -163,7 +163,7 @@ function MetricsProvenance({ results }: { results: BenchResult[] }) {
     <div className="mt-4 flex flex-col gap-1.5 border-t border-border/60 pt-3 text-caption text-muted-foreground">
       {realNotes.map((note) => (
         <p key={note}>
-          <span className="font-medium text-emerald-500">● Real.</span> {note}
+          <span className="font-medium text-success">● Real.</span> {note}
         </p>
       ))}
       {hasSim && (
@@ -208,11 +208,11 @@ function EmptyState() {
           <Icon name="activity" size="lg" />
         </div>
         <div className="text-center">
-          <p className="text-xs font-medium text-muted-foreground">
+          <p className="text-ui font-medium text-muted-foreground">
             Results canvas
           </p>
-          <h2 className="mt-1 text-base font-semibold tracking-tight">Your comparison will land here</h2>
-          <p className="mx-auto mt-1.5 max-w-md text-xs leading-relaxed text-muted-foreground">
+          <h2 className="mt-1 text-lg font-semibold tracking-tight">Your comparison will land here</h2>
+          <p className="mx-auto mt-1.5 max-w-md text-ui leading-relaxed text-muted-foreground">
             Add models, choose the engines that can run them, then start the benchmark. Live
             throughput, latency, memory, and accuracy will appear as each cell finishes.
           </p>
@@ -244,7 +244,7 @@ function EmptyStep({
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="font-mono text-micro text-primary/80">{step}</span>
-          <span className="text-xs font-medium">{title}</span>
+          <span className="text-ui font-medium">{title}</span>
         </div>
         <p className="mt-0.5 text-micro text-muted-foreground">{detail}</p>
       </div>

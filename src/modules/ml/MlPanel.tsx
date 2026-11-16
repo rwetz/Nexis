@@ -174,7 +174,7 @@ const cell = (label: ReactNode, value: ReactNode, key: string) => (
     <span className="truncate text-micro uppercase tracking-wide text-muted-foreground/60">
       {label}
     </span>
-    <span className="truncate font-mono text-caption tabular-nums text-foreground/90">
+    <span className="truncate text-caption tabular-nums text-foreground/90">
       {value}
     </span>
   </div>
@@ -1731,7 +1731,7 @@ function ConfusionMatrixView() {
         </span>
         <span className="flex items-center gap-1.5 text-micro text-muted-foreground">
           {total > 0 ? (
-            <span className="font-mono tabular-nums text-foreground/80">
+            <span className="tabular-nums text-foreground/80">
               {(accuracy * 100).toFixed(1)}% correct
             </span>
           ) : null}
@@ -1767,7 +1767,7 @@ function ConfusionMatrixView() {
               {row.map((v, c) => (
                 <div
                   key={`c-${labels[c]}`}
-                  className="flex h-6 items-center justify-center rounded-sm font-mono text-micro tabular-nums text-foreground/85"
+                  className="flex h-6 items-center justify-center rounded-sm text-micro tabular-nums text-foreground/85"
                   style={{ backgroundColor: cellColor(v, r === c) }}
                   title={`actual ${labels[r]} → predicted ${labels[c]}: ${v}`}
                 >
@@ -1844,7 +1844,7 @@ function ResidualsView() {
           Predicted vs actual{data.target ? ` · ${data.target}` : ""}
         </span>
         <span className="flex items-center gap-1.5 text-micro text-muted-foreground">
-          <span className="font-mono tabular-nums text-foreground/80">
+          <span className="tabular-nums text-foreground/80">
             off by {shortNum(absErr / actual.length)} on average
           </span>
           {artifact?.epoch != null ? <span>after pass {artifact.epoch}</span> : null}
@@ -2069,7 +2069,7 @@ function TextgenPlayground({
           aria-label="Temperature (wildness)"
           className="min-w-0 flex-1 accent-primary"
         />
-        <span className="w-6 font-mono text-micro tabular-nums text-muted-foreground">
+        <span className="w-6 text-micro tabular-nums text-muted-foreground">
           {temperature.toFixed(1)}
         </span>
         <Button
@@ -2204,7 +2204,7 @@ function TabularResult({
                   style={{ width: `${Math.round(p * 100)}%` }}
                 />
               </div>
-              <span className="w-10 shrink-0 text-right font-mono tabular-nums text-muted-foreground">
+              <span className="w-10 shrink-0 text-right tabular-nums text-muted-foreground">
                 {(p * 100).toFixed(1)}%
               </span>
             </div>
@@ -2304,7 +2304,7 @@ function ProgressBlock({
             </span>
           ) : null}
         </span>
-        <span className="font-mono text-micro tabular-nums text-muted-foreground">
+        <span className="text-micro tabular-nums text-muted-foreground">
           {formatElapsed(Date.now() - run.startedAtMs)}
         </span>
       </div>
@@ -2329,7 +2329,7 @@ function ProgressBlock({
               : `pass ${run.epoch}`}
           </span>
         </Explain>
-        {pct !== null ? <span className="font-mono tabular-nums">{pct}%</span> : null}
+        {pct !== null ? <span className="tabular-nums">{pct}%</span> : null}
       </div>
 
       <p className="mb-1.5 text-caption leading-snug text-foreground/90">
@@ -2616,7 +2616,7 @@ function RunRow({
             </span>
           </span>
           {metric ? (
-            <span className="shrink-0 font-mono text-micro tabular-nums text-muted-foreground">
+            <span className="shrink-0 text-micro tabular-nums text-muted-foreground">
               {metric}
             </span>
           ) : null}

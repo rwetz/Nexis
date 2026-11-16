@@ -316,7 +316,7 @@ export function ShellSnippetsPanel() {
                   className={cn(
                     "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors",
                     fired === s.id
-                      ? "text-green-500"
+                      ? "text-success"
                       : "text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-30",
                   )}
                 >
@@ -352,7 +352,7 @@ export function ShellSnippetsPanel() {
                     type="button"
                     title="Delete"
                     onClick={() => del(s.id)}
-                    className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+                    className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   >
                     <Icon name="delete" size="xs" />
                   </button>

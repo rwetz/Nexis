@@ -45,9 +45,9 @@ type ReplConfig = {
 };
 
 const REPL_CONFIGS: ReplConfig[] = [
-  { id: "python", label: "Python", command: "python3", color: "text-blue-400" },
-  { id: "node", label: "Node.js", command: "node", color: "text-green-400" },
-  { id: "ruby", label: "Ruby", command: "irb", color: "text-red-400" },
+  { id: "python", label: "Python", command: "python3", color: "text-info" },
+  { id: "node", label: "Node.js", command: "node", color: "text-success" },
+  { id: "ruby", label: "Ruby", command: "irb", color: "text-destructive" },
   { id: "shell", label: "Shell", command: "", color: "text-muted-foreground" },
 ];
 
@@ -120,7 +120,7 @@ export function ReplPanel() {
               type="button"
               onClick={stopRepl}
               title="Stop REPL"
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-micro text-red-400 hover:bg-red-500/10"
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-micro text-destructive hover:bg-destructive/10"
             >
               <Icon name="close" size="xs" />
               Stop
@@ -189,7 +189,7 @@ export function ReplPanel() {
       {sessionState === "idle" && (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
           <Icon name="terminal" size="xl" className="text-muted-foreground/30" />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-ui text-muted-foreground">
             Select a REPL and press <span className="font-semibold">Start</span>.
           </p>
           <p className="text-micro text-muted-foreground/60">

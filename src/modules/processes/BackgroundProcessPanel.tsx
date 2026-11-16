@@ -100,7 +100,7 @@ function ProcessRow({
           <span
             className={cn(
               "h-2 w-2 rounded-full",
-              p.exit_code === 0 ? "bg-green-500/60" : "bg-destructive/60",
+              p.exit_code === 0 ? "bg-success/60" : "bg-destructive/60",
             )}
             title={`Exited ${p.exit_code ?? "?"}`}
           />

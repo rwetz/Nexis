@@ -117,7 +117,7 @@ export function FormattersSection() {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-xs font-semibold text-foreground/70">
+    <span className="text-ui font-semibold text-foreground/70">
       {children}
     </span>
   );

@@ -30,15 +30,10 @@ function kindIcon(kind: SymbolKind) {
   }
 }
 
-function kindColor(kind: SymbolKind): string {
-  switch (kind) {
-    case "function": return "text-blue-500/80";
-    case "class":    return "text-orange-500/80";
-    case "interface":return "text-purple-500/80";
-    case "type":     return "text-cyan-500/80";
-    case "enum":     return "text-amber-500/80";
-    default:         return "text-muted-foreground/60";
-  }
+function kindColor(_kind: SymbolKind): string {
+  // One flat colour (nexis-design RULES R6.4): the glyph already says the
+  // kind, so a hue per kind only added a second, theme-blind code.
+  return "text-muted-foreground";
 }
 
 const SYMBOL_PATTERNS: { re: RegExp; kind: SymbolKind }[] = [
