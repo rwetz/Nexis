@@ -14,6 +14,7 @@ minimumReleaseAge: 1440
 # transitives have moved to provenance-attested releases.
 
 allowBuilds:
+  '@nexis-epoch/desktop@https://codeload.github.com/rwetz/nexis-epoch/tar.gz/e03b852ede4043b154735b05e3ea28b721b9042e#path:/apps/desktop': false
   edgedriver: false
   esbuild: true
   geckodriver: false
