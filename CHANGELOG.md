@@ -54,6 +54,10 @@ All notable changes to Nexis. Format loosely follows [Keep a Changelog](https://
 - **Chat errors say what went wrong.** The error card shows the provider's own message, HTTP status and URL, with a hint for a missing model id, a bad key or an unreachable server, instead of "An error occurred."
 - **Test in Settings → Models checks the model id.** For local and custom providers it now confirms the server lists the configured model and shows the ids it does list, instead of only checking that the server answers.
 
+### Security
+
+- **Patched two high advisories in transitive dependencies.** `dompurify` is lifted to `^3.4.17` (GHSA-mrv2-3pqr-j5jr: with `IN_PLACE`, a hook that removed a parent or sibling left the detached subtree's event handlers armed; reached through streamdown's mermaid, which renders AI chat diagrams) and the `undici` 7.x line to `^7.30.1` (GHSA-xjj6-f33q-929c: a denial of service on excessive content-encodings; reached through the `@ai-sdk/*` providers). Both are `overrides` in `pnpm-workspace.yaml`; the 6.x and 8.x `undici` copies were never affected and are left alone. This also turns CI's `pnpm audit --prod --audit-level high` gate green again.
+
 ## [1.32.0] - 2026-10-14
 
 ### Added
