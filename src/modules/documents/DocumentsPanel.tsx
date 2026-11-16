@@ -94,7 +94,7 @@ function DocumentRow({
       />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium text-foreground">{basename(row.path)}</span>
-        {dir ? <span className="block truncate text-[10.5px] text-muted-foreground/60">{dir}</span> : null}
+        {dir ? <span className="block truncate text-caption text-muted-foreground/60">{dir}</span> : null}
       </span>
     </button>
   );
@@ -148,7 +148,7 @@ function DocumentList({
         <DocumentRow key={row.path} row={row} active={row.path === activePath} onOpen={onOpen} />
       ))}
       {truncated ? (
-        <p className="px-3 py-2 text-[10.5px] text-muted-foreground">
+        <p className="px-3 py-2 text-caption text-muted-foreground">
           Showing the first {LIST_CAP}. Filter to narrow the list.
         </p>
       ) : null}
@@ -198,9 +198,9 @@ export function DocumentsPanel({ workspaceRoot, onOpenDocument, activePath = nul
   }, [onOpenDocument]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden text-[12px]">
+    <div className="flex h-full flex-col overflow-hidden text-ui">
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground/70">
           In this workspace
         </span>
         <Button
@@ -238,7 +238,7 @@ export function DocumentsPanel({ workspaceRoot, onOpenDocument, activePath = nul
             aria-label="Filter documents"
             placeholder="Filter documents"
             spellCheck={false}
-            className="w-full rounded-md border border-transparent bg-muted/40 px-2 py-1 text-[11px] outline-none placeholder:text-muted-foreground/40 focus:border-border/60 focus:ring-1 focus:ring-primary/40"
+            className="w-full rounded-md border border-transparent bg-muted/40 px-2 py-1 text-caption outline-none placeholder:text-muted-foreground/40 focus:border-border/60 focus:ring-1 focus:ring-primary/40"
           />
         </div>
       ) : null}

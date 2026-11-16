@@ -488,7 +488,7 @@ fn verify_pinned_bytes(bytes: &[u8], asset: &EngineAsset) -> Result<(), String> 
     let actual = sha256_hex(bytes);
     if actual != asset.sha256 {
         return Err(format!(
-            "engine integrity check failed: expected sha256 {} ({} v{}), got {} — \
+            "engine integrity check failed: expected sha256 {} ({} v{}), got {}, \
              refusing to install. If you built this binary yourself, keep it on \
              PATH or in a venv instead; Nexis only manages pin-verified engines.",
             asset.sha256, asset.name, ENGINE_VERSION, actual
@@ -540,7 +540,7 @@ fn install_verified_bytes(app: &AppHandle, bytes: &[u8]) -> Result<MlDetectResul
         Ok(version) => {
             let _ = std::fs::remove_file(&exe);
             Err(format!(
-                "engine reported version {version}, expected {ENGINE_VERSION} — removed"
+                "engine reported version {version}, expected {ENGINE_VERSION}: removed"
             ))
         }
         Err(e) => {

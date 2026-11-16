@@ -159,7 +159,7 @@ export function MetricChart({
           <span
             className={cn(
               "truncate text-muted-foreground",
-              hero ? "text-[11px] font-medium" : "text-[10px]",
+              hero ? "text-caption font-medium" : "text-micro",
             )}
             title={name}
           >
@@ -169,8 +169,8 @@ export function MetricChart({
         {typeof last === "number" ? (
           <span
             className={cn(
-              "font-mono tabular-nums text-foreground/90",
-              hero ? "text-[15px] font-semibold" : "text-[10px]",
+              "tabular-nums text-foreground/90",
+              hero ? "text-lg font-semibold" : "text-micro",
             )}
           >
             {display.format(last)}
@@ -183,7 +183,7 @@ export function MetricChart({
         className="w-full rounded-sm bg-muted/30"
       />
       {hero && display.hint ? (
-        <p className="mt-0.5 px-0.5 text-[10px] leading-snug text-muted-foreground/70">
+        <p className="mt-0.5 px-0.5 text-micro leading-snug text-muted-foreground/70">
           {display.hint}
         </p>
       ) : null}
@@ -294,7 +294,7 @@ export function CompareChart({
   return (
     <div ref={wrapRef} className="w-full">
       <div className="mb-0.5 px-0.5">
-        <span className="text-[10px] text-muted-foreground" title={metric}>
+        <span className="text-micro text-muted-foreground" title={metric}>
           {displayMetric(metric).label}
         </span>
       </div>

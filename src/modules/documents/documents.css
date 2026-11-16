@@ -31,7 +31,7 @@
 .nx-doc .ProseMirror h2,
 .nx-doc .ProseMirror h3,
 .nx-doc .ProseMirror h4 {
-  font-family: var(--font-heading);
+  font-family: var(--font-sans);
   font-weight: 600;
   line-height: 1.25;
   margin-top: 1.4em;

@@ -420,7 +420,7 @@ function logMissingIntegration(leafId: number): void {
   if (loggedMissingIntegration) return;
   loggedMissingIntegration = true;
   console.info(
-    `[nexis] leaf ${leafId}: no shell-integration markers after ${INTEGRATION_CHECK_MS}ms — ` +
+    `[nexis] leaf ${leafId}: no shell-integration markers after ${INTEGRATION_CHECK_MS}ms: ` +
       "falling back to OS-level cwd tracking (prompt navigation and cwd-spoofing " +
       "protection unavailable without integration)",
   );

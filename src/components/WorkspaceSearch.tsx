@@ -150,14 +150,14 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
               onKeyDown={handleKeyDown}
               aria-label="Find in project"
               placeholder="Find in project…"
-              className="flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
+              className="flex-1 bg-transparent text-body text-foreground outline-none placeholder:text-muted-foreground/60"
             />
             <button
               type="button"
               title="Use regular expression"
               onClick={() => setIsRegex((v) => !v)}
               className={cn(
-                "rounded px-1.5 py-0.5 text-[11px] font-mono transition-colors",
+                "rounded px-1.5 py-0.5 text-caption font-mono transition-colors",
                 isRegex
                   ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -170,7 +170,7 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
               title="Match case"
               onClick={() => setCaseSensitive((v) => !v)}
               className={cn(
-                "rounded px-1.5 py-0.5 text-[11px] transition-colors",
+                "rounded px-1.5 py-0.5 text-caption transition-colors",
                 caseSensitive
                   ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -195,14 +195,14 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
               onKeyDown={handleKeyDown}
               aria-label="Replace with"
               placeholder="Replace with…"
-              className="flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
+              className="flex-1 bg-transparent text-body text-foreground outline-none placeholder:text-muted-foreground/60"
             />
             {groups.length > 0 && (
               <button
                 type="button"
                 disabled={replacing}
                 onClick={() => void doReplaceAll()}
-                className="flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                className="flex items-center gap-1 rounded px-2 py-1 text-caption font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
               >
                 Replace all
               </button>
@@ -214,20 +214,20 @@ export function WorkspaceSearch({ root, onOpenFile, onClose }: Props) {
         {(searching || truncated || replacedFiles > 0 || totalHits > 0) && (
           <div className="flex shrink-0 items-center gap-2 border-b border-border/30 px-3 py-1.5">
             {searching && (
-              <span className="text-[11px] text-muted-foreground">Searching…</span>
+              <span className="text-caption text-muted-foreground">Searching…</span>
             )}
             {!searching && totalHits > 0 && (
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-caption text-muted-foreground">
                 {totalHits} result{totalHits !== 1 ? "s" : ""} in{" "}
                 {groups.length} file{groups.length !== 1 ? "s" : ""}
                 {truncated ? " (truncated)" : ""}
               </span>
             )}
             {!searching && totalHits === 0 && query && (
-              <span className="text-[11px] text-muted-foreground">No results</span>
+              <span className="text-caption text-muted-foreground">No results</span>
             )}
             {replacedFiles > 0 && (
-              <span className="ml-auto flex items-center gap-1 text-[11px] text-green-600 dark:text-green-400">
+              <span className="ml-auto flex items-center gap-1 text-caption text-success">
                 <Icon name="success" />
                 Replaced in {replacedFiles} file{replacedFiles !== 1 ? "s" : ""}
               </span>
@@ -277,16 +277,16 @@ function FileGroupRow({
       >
         <span
           className={cn(
-            "shrink-0 text-[9px] text-muted-foreground transition-transform",
+            "shrink-0 text-micro text-muted-foreground transition-transform",
             collapsed ? "-rotate-90" : "rotate-0",
           )}
         >
           ▼
         </span>
-        <span className="min-w-0 flex-1 truncate font-mono text-[12px] font-medium text-foreground">
+        <span className="min-w-0 flex-1 truncate font-mono text-ui font-medium text-foreground">
           {basename(group.rel)}
         </span>
-        <span className="shrink-0 text-[10px] text-muted-foreground">
+        <span className="shrink-0 text-micro text-muted-foreground">
           {relDir(group.rel)} · {group.hits.length}
         </span>
       </button>
@@ -330,11 +330,11 @@ function HitRow({
       onClick={() => onOpenFile?.(hit.path)}
       className="flex items-start gap-3 px-3 py-1 text-left hover:bg-muted/30"
     >
-      <span className="w-8 shrink-0 text-right font-mono text-[10px] tabular-nums text-muted-foreground/60">
+      <span className="w-8 shrink-0 text-right text-micro tabular-nums text-muted-foreground/60">
         {hit.line}
       </span>
       <span
-        className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-foreground"
+        className="min-w-0 flex-1 truncate font-mono text-ui text-foreground"
         dangerouslySetInnerHTML={{ __html: highlighted }}
       />
     </button>
@@ -353,7 +353,7 @@ function highlightMatch(
     const flags = caseSensitive ? "g" : "gi";
     const re = new RegExp(pattern, flags);
     return text.replace(re, (m) =>
-      `<mark class="rounded-sm bg-yellow-400/30 text-foreground">${escapeHtml(m)}</mark>`,
+      `<mark class="rounded-sm bg-warning/30 text-foreground">${escapeHtml(m)}</mark>`,
     );
   } catch {
     return escapeHtml(text);

@@ -132,7 +132,7 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
               variant="ghost"
               size="sm"
               title="Common dev-server ports"
-              className="h-7 shrink-0 gap-1 rounded-md px-1.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
+              className="h-7 shrink-0 gap-1 rounded-md px-1.5 text-caption text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <Icon name="globe" />
               <span className="hidden sm:inline">Ports</span>
@@ -151,7 +151,7 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
                 }}
               >
                 <span className="flex-1">{p.label}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-ui text-muted-foreground">
                   {checkingPort === p.port ? "checking…" : `:${p.port}`}
                 </span>
               </DropdownMenuItem>
@@ -165,7 +165,7 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
             placeholder="http://localhost:3000"
             spellCheck={false}
             autoComplete="off"
-            className="h-7 w-full bg-muted/60 px-2 text-xs placeholder:text-muted-foreground/70 focus-visible:ring-0"
+            className="h-7 w-full bg-muted/60 px-2 text-ui placeholder:text-muted-foreground/70 focus-visible:ring-0"
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -194,12 +194,12 @@ export const PreviewAddressBar = forwardRef<PreviewAddressBarHandle, Props>(
         </Button>
       </div>
       {notice ? (
-        <div className="flex items-center gap-1.5 bg-amber-500/8 px-3 py-1 text-[11px] text-amber-600 dark:text-amber-400">
+        <div className="flex items-center gap-1.5 bg-warning/8 px-3 py-1 text-caption text-warning">
           <span className="truncate">{notice}</span>
           <button
             type="button"
             onClick={() => setNotice(null)}
-            className="ml-auto rounded px-1 text-[10px] opacity-80 hover:bg-accent hover:opacity-100"
+            className="ml-auto rounded px-1 text-micro opacity-80 hover:bg-accent hover:opacity-100"
           >
             Dismiss
           </button>

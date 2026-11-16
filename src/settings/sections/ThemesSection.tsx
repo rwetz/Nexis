@@ -281,7 +281,7 @@ export function ThemesSection() {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 gap-1.5 px-2 text-[11px]"
+              className="h-7 gap-1.5 px-2 text-caption"
               onClick={onCreateTheme}
             >
               <Icon name="add" size="xs" />
@@ -290,15 +290,15 @@ export function ThemesSection() {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 px-2 text-[11px]"
+              className="h-7 px-2 text-caption"
               onClick={onPickThemeFile}
             >
               Import theme / Lumen palette
             </Button>
-            <Button variant="outline" size="sm" className="h-7 px-2 text-[11px]" onClick={() => void onExportLumenPalette()}>
+            <Button variant="outline" size="sm" className="h-7 px-2 text-caption" onClick={() => void onExportLumenPalette()}>
               Export for Lumen
             </Button>
-            <Button variant="outline" size="sm" className="h-7 px-2 text-[11px]" onClick={() => workspaceInputRef.current?.click()}>
+            <Button variant="outline" size="sm" className="h-7 px-2 text-caption" onClick={() => workspaceInputRef.current?.click()}>
               Import Lumen handoff
             </Button>
           </div>
@@ -316,14 +316,14 @@ export function ThemesSection() {
             onChange={(e) => { void handleWorkspaceHandoff(e.target.files?.[0]); e.target.value = ""; }} />
         </div>
         {importError ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-1.5 text-[11.5px] text-destructive">
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-1.5 text-ui text-destructive">
             {importError}
           </div>
         ) : null}
-        {workspaceStatus ? <div className="text-[11.5px] text-muted-foreground">{workspaceStatus}</div> : null}
+        {workspaceStatus ? <div className="text-ui text-muted-foreground">{workspaceStatus}</div> : null}
         <ThemeGroup
           label="Nexis"
-          hint="Designed as a set — one contrast ramp across six hue families."
+          hint="Designed as a set: one contrast ramp across six hue families."
           themes={nexisThemes}
           themeId={themeId}
           resolvedMode={resolvedMode}
@@ -383,7 +383,7 @@ export function ThemesSection() {
               key={mode}
               type="button"
               className={cn(
-                "flex-1 cursor-pointer rounded-sm py-1 text-[11px] font-medium capitalize transition-all",
+                "flex-1 cursor-pointer rounded-sm py-1 text-caption font-medium capitalize transition-all",
                 backgroundKind === mode
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
@@ -400,7 +400,7 @@ export function ThemesSection() {
         </div>
 
         {bgError ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-1.5 text-[11.5px] text-destructive">
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-1.5 text-ui text-destructive">
             {bgError}
           </div>
         ) : null}
@@ -412,7 +412,7 @@ export function ThemesSection() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 px-2 text-[11px]"
+                className="h-7 px-2 text-caption"
                 onClick={onPickBgFile}
               >
                 {backgroundImageId ? "Change image" : "Choose image"}
@@ -421,7 +421,7 @@ export function ThemesSection() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 px-2 text-[11px] text-muted-foreground hover:text-destructive"
+                  className="h-7 px-2 text-caption text-muted-foreground hover:text-destructive"
                   onClick={() => void onRemoveBackground()}
                 >
                   Remove
@@ -441,10 +441,10 @@ export function ThemesSection() {
             {backgroundImageId ? (
               <div className="flex flex-col gap-3 rounded-lg border border-border/60 p-3">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[11.5px] text-muted-foreground">
+                  <span className="text-ui text-muted-foreground">
                     Opacity
                   </span>
-                  <span className="tabular-nums text-[11px] text-muted-foreground">
+                  <span className="tabular-nums text-caption text-muted-foreground">
                     {Math.round(backgroundOpacity * 100)}%
                   </span>
                 </div>
@@ -456,10 +456,10 @@ export function ThemesSection() {
                   onValueChange={(v) => void setBackgroundOpacity(v[0] ?? 0)}
                 />
                 <div className="flex items-center justify-between gap-3 pt-1">
-                  <span className="text-[11.5px] text-muted-foreground">
+                  <span className="text-ui text-muted-foreground">
                     Blur
                   </span>
-                  <span className="tabular-nums text-[11px] text-muted-foreground">
+                  <span className="tabular-nums text-caption text-muted-foreground">
                     {backgroundBlur}px
                   </span>
                 </div>
@@ -472,7 +472,7 @@ export function ThemesSection() {
                 />
               </div>
             ) : (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-caption text-muted-foreground">
                 Drop an image here or pick one. Stored locally; doesn't affect
                 the default look until set.
               </p>
@@ -503,10 +503,10 @@ export function ThemesSection() {
                       className="h-9 w-full rounded-md"
                       style={{ background: preview }}
                     />
-                    <span className="w-full text-center text-[11.5px] font-medium">
+                    <span className="w-full text-center text-ui font-medium">
                       {opt.label}
                     </span>
-                    <span className="w-full text-center text-[10.5px] leading-tight text-muted-foreground">
+                    <span className="w-full text-center text-caption leading-tight text-muted-foreground">
                       {opt.description}
                     </span>
                   </button>
@@ -515,10 +515,10 @@ export function ThemesSection() {
             </div>
             <div className="flex flex-col gap-3 rounded-lg border border-border/60 p-3">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[11.5px] text-muted-foreground">
+                <span className="text-ui text-muted-foreground">
                   Opacity
                 </span>
-                <span className="tabular-nums text-[11px] text-muted-foreground">
+                <span className="tabular-nums text-caption text-muted-foreground">
                   {Math.round(backgroundOpacity * 100)}%
                 </span>
               </div>
@@ -569,7 +569,7 @@ export function ThemesSection() {
                     ),
                   }}
                 />
-                <span className="w-full text-center text-[11.5px] font-medium">
+                <span className="w-full text-center text-ui font-medium">
                   {WELCOME_BG_LABELS[id]}
                 </span>
               </button>
@@ -578,8 +578,8 @@ export function ThemesSection() {
 
           <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
             <div className="flex flex-col gap-0.5">
-              <span className="text-[11.5px]">Cycle backgrounds</span>
-              <span className="text-[10.5px] leading-tight text-muted-foreground">
+              <span className="text-ui">Cycle backgrounds</span>
+              <span className="text-caption leading-tight text-muted-foreground">
                 Show the next background each time the welcome screen appears.
               </span>
             </div>
@@ -623,11 +623,11 @@ function ThemeGroup({
   return (
     <div className="flex flex-col gap-1.5 pt-1">
       <div className="flex items-baseline gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wide text-muted-foreground">
           {label}
         </span>
         {hint ? (
-          <span className="truncate text-[10.5px] text-muted-foreground/70">
+          <span className="truncate text-caption text-muted-foreground/70">
             {hint}
           </span>
         ) : null}
@@ -684,11 +684,11 @@ function ThemeGroup({
                   />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-[12.5px] font-medium">
+                  <span className="truncate text-ui font-medium">
                     {t.name}
                   </span>
                   {subtitle ? (
-                    <span className="truncate text-[11px] text-muted-foreground">
+                    <span className="truncate text-caption text-muted-foreground">
                       {subtitle}
                     </span>
                   ) : null}
@@ -724,7 +724,7 @@ function ThemeGroup({
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-xs font-semibold text-foreground/70">
+    <span className="text-ui font-semibold text-foreground/70">
       {children}
     </span>
   );

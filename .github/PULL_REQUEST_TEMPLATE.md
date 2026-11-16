@@ -12,7 +12,7 @@
 
 ## Related issue
 
-<!-- Closes #... / Fixes #... / Ref #... — or "no issue" -->
+<!-- Closes #... / Fixes #... / Ref #..., or "no issue" -->
 
 ## Checklist
 

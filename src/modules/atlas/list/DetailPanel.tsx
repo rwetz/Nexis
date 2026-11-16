@@ -74,12 +74,12 @@ function DetailBody({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className={cn("size-2 shrink-0 rounded-full", meta.dot)} />
-            <h2 className="truncate font-heading text-base font-semibold">
+            <h2 className="truncate text-lg font-semibold">
               {summary.name}
             </h2>
-            <span className={cn("text-xs", meta.text)}>{meta.label}</span>
+            <span className={cn("text-ui", meta.text)}>{meta.label}</span>
           </div>
-          <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+          <p className="mt-0.5 truncate font-mono text-ui text-muted-foreground">
             {summary.path}
           </p>
         </div>
@@ -89,7 +89,7 @@ function DetailBody({
         <section className="space-y-1.5 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Icon name="git-branch" size="sm" />
-            <span className="font-mono text-xs">
+            <span className="font-mono text-ui">
               {summary.branch}
               {summary.detached && " (detached)"}
               {summary.upstream && (
@@ -98,13 +98,13 @@ function DetailBody({
             </span>
           </div>
           {summary.upstream && (summary.ahead > 0 || summary.behind > 0) && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-ui text-muted-foreground">
               {summary.ahead > 0 && (
-                <span className="text-sky-400">{summary.ahead} ahead</span>
+                <span className="text-info">{summary.ahead} ahead</span>
               )}
               {summary.ahead > 0 && summary.behind > 0 && " · "}
               {summary.behind > 0 && (
-                <span className="text-orange-400">{summary.behind} behind</span>
+                <span className="text-warning">{summary.behind} behind</span>
               )}
             </p>
           )}
@@ -115,11 +115,11 @@ function DetailBody({
             <SectionTitle icon="git-commit">Last commit</SectionTitle>
             <div className="mt-1.5 rounded-xl border border-border/60 bg-background/60 p-3">
               <p className="text-sm">{summary.last_commit.summary}</p>
-              <p className="mt-1.5 font-mono text-xs text-muted-foreground">
+              <p className="mt-1.5 font-mono text-ui text-muted-foreground">
                 {summary.last_commit.hash} · {summary.last_commit.author}
               </p>
               <p
-                className="mt-0.5 text-xs text-muted-foreground"
+                className="mt-0.5 text-ui text-muted-foreground"
                 title={absoluteTime(summary.last_commit.time)}
               >
                 {relativeTime(summary.last_commit.time)}
@@ -144,7 +144,7 @@ function DetailBody({
             Changed files{files.length > 0 && ` (${files.length})`}
           </SectionTitle>
           {files.length === 0 ? (
-            <p className="mt-1.5 text-xs text-emerald-500/80">Working tree clean</p>
+            <p className="mt-1.5 text-ui text-success/80">Working tree clean</p>
           ) : (
             <ul className="mt-1.5 space-y-0.5">
               {files.map((f) => (
@@ -159,12 +159,12 @@ function DetailBody({
             Stashes{stashes.length > 0 && ` (${stashes.length})`}
           </SectionTitle>
           {stashes.length === 0 ? (
-            <p className="mt-1.5 text-xs text-muted-foreground">None</p>
+            <p className="mt-1.5 text-ui text-muted-foreground">None</p>
           ) : (
             <ul className="mt-1.5 space-y-0.5">
               {stashes.map((msg, i) => (
                 // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
-                <li key={i} className="truncate font-mono text-xs text-muted-foreground">
+                <li key={i} className="truncate font-mono text-ui text-muted-foreground">
                   stash@{"{"}
                   {i}
                   {"}"}: {msg}
@@ -212,7 +212,7 @@ function SectionTitle({
   children: React.ReactNode;
 }) {
   return (
-    <h3 className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+    <h3 className="flex items-center gap-1.5 text-ui font-medium text-muted-foreground">
       <Icon name={icon} size="xs" />
       {children}
     </h3>
@@ -221,14 +221,14 @@ function SectionTitle({
 
 function FileRow({ file }: { file: FileChange }) {
   return (
-    <li className="flex items-center gap-2 font-mono text-xs">
+    <li className="flex items-center gap-2 font-mono text-ui">
       <span className="w-6 shrink-0 text-right tabular-nums">
         {file.conflicted ? (
           <span className="text-destructive">!!</span>
         ) : (
           <>
-            <span className="text-emerald-500">{file.index ?? " "}</span>
-            <span className="text-amber-400">{file.worktree ?? " "}</span>
+            <span className="text-success">{file.index ?? " "}</span>
+            <span className="text-warning">{file.worktree ?? " "}</span>
           </>
         )}
       </span>

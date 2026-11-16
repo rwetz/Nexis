@@ -85,18 +85,18 @@ export function FpsPill() {
       <TooltipTrigger asChild>
         <span
           className={cn(
-            "shrink-0 cursor-default rounded bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] tabular-nums",
+            "shrink-0 cursor-default text-caption tabular-nums",
             stats.fps < 30 ? "text-destructive" : "text-muted-foreground",
           )}
         >
           {stats.fps} fps
         </span>
       </TooltipTrigger>
-      <TooltipContent side="top" className="font-mono text-[11px] leading-relaxed">
+      <TooltipContent side="top" className="font-mono text-caption leading-relaxed">
         <div>frame time: {stats.avgMs.toFixed(1)} ms avg</div>
         <div>worst frame: {Math.round(stats.worstMs)} ms (last 5 s)</div>
         <div className="text-muted-foreground">
-          rAF-based — measures main-thread jank, not GPU stalls
+          rAF-based: measures main-thread jank, not GPU stalls
         </div>
       </TooltipContent>
     </Tooltip>

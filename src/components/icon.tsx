@@ -41,6 +41,7 @@
  * idle→active pair consistent everywhere.
  */
 
+import * as React from "react";
 import type { Icon as PhosphorIcon, IconWeight } from "@phosphor-icons/react";
 import {
   AppleLogoIcon,
@@ -196,6 +197,21 @@ import {
   XIcon,
   XLogoIcon,
   MapTrifoldIcon,
+  CalendarBlankIcon,
+  TrendUpIcon,
+  TrendDownIcon,
+  ChartBarIcon,
+  ChartLineIcon,
+  UserIcon,
+  LockSimpleIcon,
+  UploadSimpleIcon,
+  TrayIcon,
+  StarIcon,
+  ShoppingCartIcon,
+  ShoppingBagIcon,
+  HeartIcon,
+  StorefrontIcon,
+  PackageIcon,
 } from "@phosphor-icons/react";
 
 import type { ArtProps } from "@/components/icon-art";
@@ -417,9 +433,29 @@ const REGISTRY = {
   "wrench": WrenchIcon,
   "zoom-in": MagnifyingGlassPlusIcon,
   "zoom-out": MagnifyingGlassMinusIcon,
+  // Names @nexis/design added for its shared components, kept in step so the
+  // two registries name the same ideas the same way.
+  "calendar": CalendarBlankIcon,
+  "trend-up": TrendUpIcon,
+  "trend-down": TrendDownIcon,
+  "chart-bar": ChartBarIcon,
+  "chart-line": ChartLineIcon,
+  "user": UserIcon,
+  "lock": LockSimpleIcon,
+  "upload": UploadSimpleIcon,
+  "inbox": TrayIcon,
+  "star": StarIcon,
+  "cart": ShoppingCartIcon,
+  "bag": ShoppingBagIcon,
+  "heart": HeartIcon,
+  "store": StorefrontIcon,
+  "package": PackageIcon,
 } as const satisfies Record<string, IconGlyph>;
 
 export type IconName = keyof typeof REGISTRY;
+
+/** Every registered name, sorted, for pickers. */
+export const ICON_NAMES = (Object.keys(REGISTRY) as IconName[]).sort();
 
 /**
  * Glyphs whose `fill` weight is a different drawing, not a heavier one.
@@ -444,16 +480,58 @@ export type IconProps = Omit<
   active?: boolean;
   /** Escape hatch for the remaining Phosphor weights. */
   weight?: IconWeight;
+  /**
+   * The glyph changes on a user action (copy to check, maximise to restore, a
+   * sort direction): the new one arrives out of a short blur instead of
+   * popping (nexis-design RULES R8.4). Never on live data, and never the
+   * first glyph: only a change of `name` animates.
+   */
+  swap?: boolean;
 };
+
+/** The weight an icon takes from the text around it (nexis-design R7.5). */
+const IconWeightContext = React.createContext<IconWeight | null>(null);
+
+/**
+ * Sets the weight of every `Icon` inside, so an icon matches the text it sits
+ * beside (nexis-design RULES R7.5). Phosphor's regular stroke is lighter than
+ * Inter at 400; its bold is Inter Medium's stem at 13 to 14px. So a control
+ * whose label is `font-medium` (buttons, badges, menu items, tabs, toggles)
+ * wraps its children in `weight="bold"`; text at 400 keeps regular. An icon's
+ * own `weight` or `active` still wins.
+ */
+export function IconWeightProvider({
+  weight,
+  children,
+}: {
+  weight: IconWeight;
+  children?: React.ReactNode;
+}) {
+  return <IconWeightContext.Provider value={weight}>{children}</IconWeightContext.Provider>;
+}
 
 export function Icon({
   name,
   size = "sm",
   active = false,
   weight,
+  swap = false,
+  className,
   ...rest
 }: IconProps) {
   const Glyph = REGISTRY[name];
+  const inherited = React.useContext(IconWeightContext);
+  // A swap is a change of name since the last render, kept until the next
+  // change, so the class stays on the glyph that arrived (React's "store
+  // information from previous renders" pattern, no effect).
+  const [shown, setShown] = React.useState(name);
+  const [swapped, setSwapped] = React.useState(false);
+  if (swap && shown !== name) {
+    setShown(name);
+    setSwapped(true);
+  }
+  // px, not rem: Nexis scales its chrome with CSS zoom, not a root font size
+  // (the design package's R2 migration is tracked separately).
   const px = typeof size === "number" ? size : ICON_SIZE[size];
   // An icon is decorative unless the call site gave it a name of its own.
   // Icon-only buttons label the *button*, so announcing the glyph too would
@@ -465,10 +543,12 @@ export function Icon({
   return (
     <Glyph
       size={px}
-      weight={weight ?? (active && !FILL_CHANGES_SHAPE.has(name) ? "fill" : "regular")}
+      weight={weight ?? (active && !FILL_CHANGES_SHAPE.has(name) ? "fill" : (inherited ?? "regular"))}
       aria-hidden={labelled ? undefined : true}
       focusable={false}
       {...rest}
+      key={swap ? name : undefined}
+      className={swapped ? (className ? `nexis-icon-swap ${className}` : "nexis-icon-swap") : className}
     />
   );
 }

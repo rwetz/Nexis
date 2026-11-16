@@ -196,7 +196,7 @@ pub fn sanitize_saved_state<R: Runtime>(app: &AppHandle<R>) {
         };
         eprintln!(
             "[nexis] window '{label}' saved as {}x{} @ ({},{}) does not fit the \
-             current displays — restoring as {}x{} @ ({},{})",
+             current displays: restoring as {}x{} @ ({},{})",
             saved.w, saved.h, saved.x, saved.y, fixed.w, fixed.h, fixed.x, fixed.y
         );
         obj.insert("width".into(), fixed.w.into());

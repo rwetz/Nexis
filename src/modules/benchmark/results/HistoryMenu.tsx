@@ -24,7 +24,7 @@ export function HistoryMenu() {
       >
         <Icon name="clock" size="sm" />
         History
-        <span className="font-mono text-[11px] text-muted-foreground">{history.length}</span>
+        <span className="font-mono text-caption text-muted-foreground">{history.length}</span>
       </Button>
 
       {open && (
@@ -32,7 +32,7 @@ export function HistoryMenu() {
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 z-50 mt-1.5 w-80 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
             <div className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
                 Run history
               </span>
               <button
@@ -40,7 +40,7 @@ export function HistoryMenu() {
                   clearHistory();
                   setOpen(false);
                 }}
-                className="text-[11px] text-muted-foreground hover:text-destructive"
+                className="text-caption text-muted-foreground hover:text-destructive"
               >
                 Clear all
               </button>
@@ -53,7 +53,7 @@ export function HistoryMenu() {
                     key={h.id}
                     className={cn(
                       "group flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors",
-                      h.id === currentId ? "bg-brand/10" : "hover:bg-muted",
+                      h.id === currentId ? "bg-muted text-foreground" : "hover:bg-muted/60",
                     )}
                   >
                     <button
@@ -64,7 +64,7 @@ export function HistoryMenu() {
                       }}
                       className="flex min-w-0 flex-1 flex-col text-left disabled:opacity-50"
                     >
-                      <span className="truncate text-[12px] font-medium">
+                      <span className="truncate text-ui font-medium">
                         {new Date(h.createdAt).toLocaleString([], {
                           month: "short",
                           day: "numeric",
@@ -72,7 +72,7 @@ export function HistoryMenu() {
                           minute: "2-digit",
                         })}
                       </span>
-                      <span className="font-mono text-[10px] text-muted-foreground">
+                      <span className="font-mono text-micro text-muted-foreground">
                         {done}/{h.matrix.length} cells · {h.config.task} · {h.config.runs}×
                       </span>
                     </button>

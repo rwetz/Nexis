@@ -26,8 +26,8 @@
 import { cn } from "@/lib/utils";
 
 type Props = {
-  /** Track length in CSS pixels. */
-  width?: number;
+  /** Track length: CSS pixels, or any CSS length ("100%" to fill). */
+  width?: number | string;
   className?: string;
 };
 
@@ -41,7 +41,7 @@ export function ThoughtLine({ width = 28, className }: Props) {
       )}
       style={{ width }}
     >
-      <span className="nexis-thought-head absolute inset-y-0 left-0 w-1/3 rounded-full bg-primary" />
+      <span className="nexis-thought-head absolute inset-y-0 left-0 w-1/3 rounded-full bg-brand" />
     </span>
   );
 }

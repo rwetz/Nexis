@@ -25,6 +25,7 @@ import {
   type ReactNode,
 } from "react";
 import { Icon } from "@/components/icon";
+import { Button } from "@/components/ui/button";
 import { IS_WINDOWS } from "@/lib/platform";
 import { assetUrl } from "@/platform/desktop";
 import { cn } from "@/lib/utils";
@@ -143,7 +144,7 @@ const TEMPLATE_OPTIONS: {
   {
     id: "blank",
     label: "Blank",
-    desc: "Start from scratch — design your own network in train.py.",
+    desc: "Start from scratch: design your own network in train.py.",
     defaultName: "my-network",
   },
 ];
@@ -170,10 +171,10 @@ const BUSY_STATES = ["starting", "running", "cancelling"];
  *  so it is built once rather than per render. */
 const cell = (label: ReactNode, value: ReactNode, key: string) => (
   <div key={key} className="flex min-w-0 flex-col">
-    <span className="truncate text-[9.5px] uppercase tracking-wide text-muted-foreground/60">
+    <span className="truncate text-micro uppercase tracking-wide text-muted-foreground/60">
       {label}
     </span>
-    <span className="truncate font-mono text-[10.5px] tabular-nums text-foreground/90">
+    <span className="truncate text-caption tabular-nums text-foreground/90">
       {value}
     </span>
   </div>
@@ -272,12 +273,22 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
         ? { projectDir: selectedProject, runId: chartSource.runId }
         : null;
 
+  // What the body is showing; a change of phase (folder opened, engine
+  // found, setup finished) plays the view entrance, the way Epoch's pages do.
+  const phase = !workspaceRoot
+    ? "no-folder"
+    : engineStatus === "missing"
+      ? "setup"
+      : engineStatus === "detecting" || engineStatus === "idle"
+        ? "detecting"
+        : "ready";
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-2.5 py-1.5">
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold tracking-wide">{TOOL_NAMES.mlLab}</span>
+          <span className="text-caption font-semibold tracking-wide">{TOOL_NAMES.mlLab}</span>
           <EngineChip
             status={engineStatus}
             version={engineVersion}
@@ -287,7 +298,7 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
           {engineStatus === "ready" &&
           (envInfo?.cudaAvailable || envInfo?.backend === "wgpu") ? (
             <span
-              className="flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-px text-[10px] text-emerald-500"
+              className="flex items-center gap-1 rounded bg-success/10 px-1.5 py-px text-micro text-success"
               title={
                 envInfo?.gpuName ??
                 (envInfo?.backend === "wgpu" ? "GPU via wgpu" : "CUDA available")
@@ -298,7 +309,9 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
             </span>
           ) : null}
         </div>
-        <button
+        <Button
+          variant="ghost"
+          size="icon-xs"
           type="button"
           aria-label="Refresh"
           onClick={() => {
@@ -307,408 +320,428 @@ export function MlPanel({ workspaceRoot, onOpenNetworkTab }: Props) {
               if (selectedProject) void refreshRuns(selectedProject);
             }
           }}
-          className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+          className="text-muted-foreground"
         >
           <Icon name="refresh" size="xs" />
-        </button>
+        </Button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2">
-        {!workspaceRoot ? (
-          <p className="text-[11px] text-muted-foreground">
-            Open a folder to start training models in it.
-          </p>
-        ) : engineStatus === "missing" ? (
-          <SetupCard
-            installPythonVersion={installPythonVersion}
-            downloadingEngine={downloadingEngine}
-            pin={enginePin}
-            wslDistro={wslDistro}
-            candidates={engineCandidates}
-            hostGpu={hostGpu}
-            logs={logs}
-            error={engineError}
-            onDownloadEngine={() => void downloadStandaloneEngine()}
-            onInstallLocal={(path) => void installLocalCopy(path)}
-            onRetry={() => void redetect(workspaceRoot)}
-          />
-        ) : engineStatus === "detecting" || engineStatus === "idle" ? (
-          <p className="text-[11px] text-muted-foreground">
-            Looking for the training engine…
-          </p>
-        ) : (
-          <>
-            {/* GPU available on the machine but the engine can't use it.
-                Python-engine only: the upsell installs the CUDA torch build,
-                which is meaningless for the Rust engine (it uses wgpu). */}
-            {hostGpu &&
-            envInfo &&
-            !envInfo.cudaAvailable &&
-            installPython &&
-            engineKind === "python" ? (
-              <GpuUpsell
-                gpuName={hostGpu}
-                installing={installing}
-                logs={logs}
-                onUpgrade={() => void upgradeToGpu(workspaceRoot)}
-              />
-            ) : null}
-            {/* A newer pinned Axon than the one in use (an older managed
-                install, or one on PATH). */}
-            {engineKind === "rust" &&
-            enginePin &&
-            engineVersion &&
-            versionOlder(engineVersion, enginePin.version) ? (
-              <div className="mb-2 flex items-center gap-2 rounded-md border border-sky-500/30 bg-sky-500/[0.05] px-2.5 py-1.5">
-                <p className="flex-1 text-[10.5px] leading-snug text-muted-foreground">
-                  Axon {enginePin.version} is available (you have {engineVersion}). It can
-                  predict numbers, read text columns as categories, and handle blank cells.
-                </p>
-                <button
-                  type="button"
-                  disabled={downloadingEngine}
-                  onClick={() => void downloadStandaloneEngine()}
-                  className="shrink-0 rounded-md bg-primary px-2 py-0.5 text-[10.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-                >
-                  {downloadingEngine ? "Updating…" : "Update"}
-                </button>
-              </div>
-            ) : null}
-            {/* Models discovered in this folder */}
-            {projects.length > 0 ? (
-              <div className="mb-2">
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                  Models
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <select
-                    value={selectedProject ?? ""}
-                    onChange={(e) => selectProject(e.target.value)}
-                    aria-label="Select project"
-                    disabled={busy}
-                    className="h-6 min-w-0 flex-1 truncate rounded border border-border bg-background px-1.5 text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+        <div key={phase} className="nexis-view-enter">
+          {!workspaceRoot ? (
+            <p className="text-caption text-muted-foreground">
+              Open a folder to start training models in it.
+            </p>
+          ) : engineStatus === "missing" ? (
+            <SetupCard
+              installPythonVersion={installPythonVersion}
+              downloadingEngine={downloadingEngine}
+              pin={enginePin}
+              wslDistro={wslDistro}
+              candidates={engineCandidates}
+              hostGpu={hostGpu}
+              logs={logs}
+              error={engineError}
+              onDownloadEngine={() => void downloadStandaloneEngine()}
+              onInstallLocal={(path) => void installLocalCopy(path)}
+              onRetry={() => void redetect(workspaceRoot)}
+            />
+          ) : engineStatus === "detecting" || engineStatus === "idle" ? (
+            <p className="text-caption text-muted-foreground">
+              Looking for the training engine…
+            </p>
+          ) : (
+            <>
+              {/* GPU available on the machine but the engine can't use it.
+                  Python-engine only: the upsell installs the CUDA torch build,
+                  which is meaningless for the Rust engine (it uses wgpu). */}
+              {hostGpu &&
+              envInfo &&
+              !envInfo.cudaAvailable &&
+              installPython &&
+              engineKind === "python" ? (
+                <GpuUpsell
+                  gpuName={hostGpu}
+                  installing={installing}
+                  logs={logs}
+                  onUpgrade={() => void upgradeToGpu(workspaceRoot)}
+                />
+              ) : null}
+              {/* A newer pinned Axon than the one in use (an older managed
+                  install, or one on PATH). */}
+              {engineKind === "rust" &&
+              enginePin &&
+              engineVersion &&
+              versionOlder(engineVersion, enginePin.version) ? (
+                <div className="mb-2 flex items-center gap-2 rounded-md border border-info/30 bg-info/[0.05] px-2.5 py-1.5">
+                  <p className="flex-1 text-caption leading-snug text-muted-foreground">
+                    Axon {enginePin.version} is available (you have {engineVersion}). It can
+                    predict numbers, read text columns as categories, and handle blank cells.
+                  </p>
+                  <Button
+                    size="xs"
+                    type="button"
+                    disabled={downloadingEngine}
+                    onClick={() => void downloadStandaloneEngine()}
+                    className="shrink-0"
                   >
-                    {projects.map((p) => (
-                      <option key={p.dir} value={p.dir}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                  {projects.find((p) => p.dir === selectedProject)?.hasOnnx ? (
-                    <Explain term="onnx">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void revealPathInHost(`${selectedProject}/model.onnx`).catch(
-                            () => {},
-                          )
-                        }
-                        className="h-6 shrink-0 rounded border border-sky-500/40 bg-sky-500/[0.06] px-1.5 text-[10px] font-medium text-sky-500"
-                        title="model.onnx — click to reveal"
-                      >
-                        ONNX
-                      </button>
-                    </Explain>
-                  ) : null}
-                  <button
+                    {downloadingEngine ? "Updating…" : "Update"}
+                  </Button>
+                </div>
+              ) : null}
+              {/* Models discovered in this folder */}
+              {projects.length > 0 ? (
+                <div className="mb-2">
+                  <p className="mb-1 text-micro font-semibold uppercase tracking-wider text-muted-foreground/60">
+                    Models
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={selectedProject ?? ""}
+                      onChange={(e) => selectProject(e.target.value)}
+                      aria-label="Select project"
+                      disabled={busy}
+                      className="h-6 min-w-0 flex-1 truncate rounded border border-border bg-background px-1.5 text-caption text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                    >
+                      {projects.map((p) => (
+                        <option key={p.dir} value={p.dir}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                    {projects.find((p) => p.dir === selectedProject)?.hasOnnx ? (
+                      <Explain term="onnx">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void revealPathInHost(`${selectedProject}/model.onnx`).catch(
+                              () => {},
+                            )
+                          }
+                          className="h-6 shrink-0 rounded border border-info/40 bg-info/[0.06] px-1.5 text-micro font-medium text-info"
+                          title="model.onnx: click to reveal"
+                        >
+                          ONNX
+                        </button>
+                      </Explain>
+                    ) : null}
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      type="button"
+                      onClick={() => setShowCreate(true)}
+                      disabled={busy}
+                      className="shrink-0"
+                      title="Create a new model"
+                    >
+                      <Icon name="add" size="xs" />
+                      New
+                    </Button>
+                  </div>
+                </div>
+              ) : !showCreate && !pendingCreate ? (
+                <div className="mb-2 rounded-md border border-border/60 bg-muted/20 p-2.5">
+                  <p className="text-caption font-medium text-foreground/90">
+                    No models in this folder.
+                  </p>
+                  <p className="mt-0.5 text-micro leading-snug text-muted-foreground/70">
+                    A model lives in a project folder with a{" "}
+                    <span className="font-mono">train.toml</span>. Models trained
+                    here (or by <span className="font-mono">axon</span> in a
+                    terminal) show up automatically.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="xs"
                     type="button"
                     onClick={() => setShowCreate(true)}
-                    disabled={busy}
-                    className="h-6 shrink-0 rounded border border-border px-2 text-[11px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                    title="Create a new model"
+                    className="mt-1.5"
                   >
-                    + New
-                  </button>
+                    New model…
+                  </Button>
                 </div>
-              </div>
-            ) : !showCreate && !pendingCreate ? (
-              <div className="mb-2 rounded-md border border-border/60 bg-muted/20 p-2.5">
-                <p className="text-[11px] font-medium text-foreground/90">
-                  No models in this folder.
-                </p>
-                <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground/70">
-                  A model lives in a project folder with a{" "}
-                  <span className="font-mono">train.toml</span>. Models trained
-                  here (or by <span className="font-mono">axon</span> in a
-                  terminal) show up automatically.
-                </p>
-                <button
+              ) : null}
+              {showCreate || pendingCreate ? (
+                <CreateCard
+                  creating={pendingCreate != null}
+                  createError={createError}
+                  engineKind={engineKind}
+                  onCreate={(template, name, autoTrain, purpose, scale, stockId) => {
+                    setShowCreate(false);
+                    const stock = stockId ? stockModel(stockId) ?? null : null;
+                    void createProject(
+                      workspaceRoot,
+                      template,
+                      name,
+                      autoTrain,
+                      stock ? stockBrief(stock, purpose) : purpose,
+                      planCreation(template, scale, stock),
+                      stock?.dataset ? STARTER_DATASETS[stock.dataset].build() : [],
+                    );
+                  }}
+                  onDismiss={() => setShowCreate(false)}
+                />
+              ) : null}
+
+              {/* Train hero / progress / result */}
+              {busy && activeRun ? (
+                <ProgressBlock
+                  run={activeRun}
+                  onCancel={() => void cancelActive()}
+                  onPause={() => void pauseActive()}
+                  onResume={() => void resumeActive()}
+                />
+              ) : finished && activeRun ? (
+                <ResultCard
+                  run={activeRun}
+                  summary={lastSummary}
+                  onTrainAgain={() => void startTrain(activeRun.projectDir)}
+                />
+              ) : selectedProject && projects.length > 0 && !pendingCreate ? (
+                <Button
+                  variant="brand"
+                  size="sm"
                   type="button"
-                  onClick={() => setShowCreate(true)}
-                  className="mt-1.5 rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+                  onClick={() => void startTrain(selectedProject)}
+                  className="mb-2 w-full"
                 >
-                  New model…
-                </button>
-              </div>
-            ) : null}
-            {showCreate || pendingCreate ? (
-              <CreateCard
-                creating={pendingCreate != null}
-                createError={createError}
-                engineKind={engineKind}
-                onCreate={(template, name, autoTrain, purpose, scale, stockId) => {
-                  setShowCreate(false);
-                  const stock = stockId ? stockModel(stockId) ?? null : null;
-                  void createProject(
-                    workspaceRoot,
-                    template,
-                    name,
-                    autoTrain,
-                    stock ? stockBrief(stock, purpose) : purpose,
-                    planCreation(template, scale, stock),
-                    stock?.dataset ? STARTER_DATASETS[stock.dataset].build() : [],
-                  );
-                }}
-                onDismiss={() => setShowCreate(false)}
-              />
-            ) : null}
+                  <Icon name="play" size="xs" />
+                  Train model
+                </Button>
+              ) : null}
 
-            {/* Train hero / progress / result */}
-            {busy && activeRun ? (
-              <ProgressBlock
-                run={activeRun}
-                onCancel={() => void cancelActive()}
-                onPause={() => void pauseActive()}
-                onResume={() => void resumeActive()}
-              />
-            ) : finished && activeRun ? (
-              <ResultCard
-                run={activeRun}
-                summary={lastSummary}
-                onTrainAgain={() => void startTrain(activeRun.projectDir)}
-              />
-            ) : selectedProject && projects.length > 0 && !pendingCreate ? (
-              <button
-                type="button"
-                onClick={() => void startTrain(selectedProject)}
-                className="mb-2 w-full rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-              >
-                ▶ Train model
-              </button>
-            ) : null}
+              {/* Training data — choose [data] path + target without editing train.toml */}
+              {selectedProject && !busy && !pendingCreate && projects.length > 0 ? (
+                <DataSourceForm
+                  key={`data-${selectedProject}`}
+                  workspaceRoot={workspaceRoot}
+                  projectDir={selectedProject}
+                  onSaveTrain={() => void startTrain(selectedProject)}
+                />
+              ) : null}
 
-            {/* Training data — choose [data] path + target without editing train.toml */}
-            {selectedProject && !busy && !pendingCreate && projects.length > 0 ? (
-              <DataSourceForm
-                key={`data-${selectedProject}`}
-                workspaceRoot={workspaceRoot}
-                projectDir={selectedProject}
-                onSaveTrain={() => void startTrain(selectedProject)}
-              />
-            ) : null}
+              {/* Hyperparameters — tweak train.toml without leaving the panel */}
+              {selectedProject && !busy && !pendingCreate && projects.length > 0 ? (
+                <HyperparamForm
+                  key={selectedProject}
+                  projectDir={selectedProject}
+                  onSaveTrain={() => void startTrain(selectedProject)}
+                />
+              ) : null}
 
-            {/* Hyperparameters — tweak train.toml without leaving the panel */}
-            {selectedProject && !busy && !pendingCreate && projects.length > 0 ? (
-              <HyperparamForm
-                key={selectedProject}
-                projectDir={selectedProject}
-                onSaveTrain={() => void startTrain(selectedProject)}
-              />
-            ) : null}
+              {/* The model itself — architecture graph (weights overlay once
+                  the engine emits a `weights` artifact; ML_SUITE.md contract) */}
+              {selectedProject && !pendingCreate && projects.length > 0 ? (
+                <NetworkGraph
+                  key={`net-${selectedProject}`}
+                  projectDir={selectedProject}
+                  onOpenAsTab={
+                    onOpenNetworkTab
+                      ? () => onOpenNetworkTab({ projectDir: selectedProject })
+                      : undefined
+                  }
+                />
+              ) : null}
 
-            {/* The model itself — architecture graph (weights overlay once
-                the engine emits a `weights` artifact; ML_SUITE.md contract) */}
-            {selectedProject && !pendingCreate && projects.length > 0 ? (
-              <NetworkGraph
-                key={`net-${selectedProject}`}
-                projectDir={selectedProject}
-                onOpenAsTab={
-                  onOpenNetworkTab
-                    ? () => onOpenNetworkTab({ projectDir: selectedProject })
-                    : undefined
-                }
-              />
-            ) : null}
+              {comparing ? (
+                /* Overlay several runs on shared charts */
+                <ComparisonView runs={compareRuns} onClear={clearCompare} />
+              ) : (
+                <>
+                  {/* Facts about the run in view — id, device, duration, best/last metrics */}
+                  <RunDetails />
 
-            {comparing ? (
-              /* Overlay several runs on shared charts */
-              <ComparisonView runs={compareRuns} onClear={clearCompare} />
-            ) : (
-              <>
-                {/* Facts about the run in view — id, device, duration, best/last metrics */}
-                <RunDetails />
+                  {/* Generated text (textgen) — the payoff, above the charts */}
+                  <SamplesView />
 
-                {/* Generated text (textgen) — the payoff, above the charts */}
-                <SamplesView />
+                  {/* Charts */}
+                  {metricNames.length > 0 ? (
+                    <div
+                      key={chartSource?.kind === "historical" ? chartSource.runId : "live"}
+                      className="nexis-content-enter mb-2 mt-2 flex flex-col gap-2"
+                    >
+                      {chartSource?.kind === "historical" ? (
+                        <p className="text-micro text-muted-foreground">
+                          Viewing a past run ({friendlyRunName(chartSource.runId)})
+                        </p>
+                      ) : null}
+                      {hero ? <MetricChart name={hero} hero /> : null}
+                      {restMetrics.map((name) => (
+                        <MetricChart key={name} name={name} />
+                      ))}
+                    </div>
+                  ) : null}
 
-                {/* Charts */}
-                {metricNames.length > 0 ? (
-                  <div className="mb-2 mt-2 flex flex-col gap-2">
-                    {chartSource?.kind === "historical" ? (
-                      <p className="text-[10px] text-muted-foreground">
-                        Viewing a past run ({friendlyRunName(chartSource.runId)})
-                      </p>
+                  {/* Confusion matrix (classification) — per-epoch artifact grid */}
+                  <ConfusionMatrixView />
+
+                  {/* Predicted vs actual (regression) — per-epoch scatter */}
+                  <ResidualsView />
+
+                  {/* Sample-prediction grid (image template) */}
+                  <ImageGridView />
+
+                  {/* Inference playground — try the trained model live.
+                      Capability-gated: the Python engine has always had
+                      `serve`; the standalone Rust engine implements it from
+                      v0.8 and reports it via the env probe's `serve` flag. */}
+                  {engineKind !== "rust" || envInfo?.serve ? (
+                    <Playground run={viewedRun} />
+                  ) : viewedRun ? (
+                    <p className="mb-1 mt-3 text-micro leading-snug text-muted-foreground/70">
+                      This engine version can't serve models: update the
+                      standalone engine (v0.8+) for in-panel inference, or
+                      export to{" "}
+                      <Explain term="onnx">
+                        <span>ONNX</span>
+                      </Explain>{" "}
+                      below and run the model with onnxruntime anywhere.
+                    </p>
+                  ) : null}
+
+                  {/* Exports: HTML report (Python engine) / ONNX (Rust engine) */}
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {viewedRun && engineKind !== "rust" ? (
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        type="button"
+                        disabled={pendingExport != null}
+                        onClick={() =>
+                          void exportReport(viewedRun.projectDir, viewedRun.runId)
+                        }
+                      >
+                        <Icon name="download" size="xs" />
+                        {pendingExport ? "Exporting…" : "Export HTML report"}
+                      </Button>
                     ) : null}
-                    {hero ? <MetricChart name={hero} hero /> : null}
-                    {restMetrics.map((name) => (
-                      <MetricChart key={name} name={name} />
+                    {selectedProject && engineKind === "rust" ? (
+                      <Explain term="onnx">
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          type="button"
+                          disabled={pendingOnnx != null || busy}
+                          onClick={() =>
+                            void exportOnnx(
+                              selectedProject,
+                              viewedRun?.projectDir === selectedProject ? viewedRun.runId : null,
+                            )
+                          }
+                        >
+                          <Icon name="download" size="xs" />
+                          {pendingOnnx ? "Exporting ONNX…" : "Export ONNX model"}
+                        </Button>
+                      </Explain>
+                    ) : null}
+                    {selectedProject ? (
+                      <MlLinks
+                        projectDir={selectedProject}
+                        runId={viewedRun?.runId ?? null}
+                        hasOnnx={projects.find((p) => p.dir === selectedProject)?.hasOnnx ?? false}
+                      />
+                    ) : null}
+                  </div>
+                </>
+              )}
+
+              {/* Details (logs, raw output) — collapsed so novices never see it */}
+              {logs.length > 0 ? (
+                <details className="mt-2">
+                  <summary className="cursor-pointer select-none text-micro font-medium uppercase tracking-wider text-muted-foreground/60 hover:text-muted-foreground">
+                    Details
+                  </summary>
+                  <LogView logs={logs} />
+                </details>
+              ) : null}
+
+              {/* Past runs */}
+              <div className="mt-3">
+                <p className="mb-1 flex items-center justify-between text-micro font-semibold uppercase tracking-wider text-muted-foreground/60">
+                  <span>Past runs {runsLoading ? "…" : ""}</span>
+                  {runs.length > 1 ? (
+                    <span className="font-normal normal-case tracking-normal text-muted-foreground/50">
+                      check 2+ to compare
+                    </span>
+                  ) : null}
+                </p>
+                {runs.length === 0 && !runsLoading ? (
+                  <p className="text-caption text-muted-foreground/70">
+                    Runs you train will show up here.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-0.5">
+                    {runs.map((run) => (
+                      <RunRow
+                        key={run.id}
+                        run={run}
+                        selected={
+                          chartSource?.kind === "historical" &&
+                          chartSource.runId === run.id
+                        }
+                        comparing={compareRuns.some((r) => r.id === run.id)}
+                        compareColor={compareRuns.find((r) => r.id === run.id)?.color}
+                        disabled={busy}
+                        onClick={() => void loadHistoricalRun(run)}
+                        onToggleCompare={() => void toggleCompare(run)}
+                        onSaveMeta={(patch) => void setRunMeta(run, patch)}
+                      />
                     ))}
                   </div>
-                ) : null}
-
-                {/* Confusion matrix (classification) — per-epoch artifact grid */}
-                <ConfusionMatrixView />
-
-                {/* Predicted vs actual (regression) — per-epoch scatter */}
-                <ResidualsView />
-
-                {/* Sample-prediction grid (image template) */}
-                <ImageGridView />
-
-                {/* Inference playground — try the trained model live.
-                    Capability-gated: the Python engine has always had
-                    `serve`; the standalone Rust engine implements it from
-                    v0.8 and reports it via the env probe's `serve` flag. */}
-                {engineKind !== "rust" || envInfo?.serve ? (
-                  <Playground run={viewedRun} />
-                ) : viewedRun ? (
-                  <p className="mb-1 mt-3 text-[10px] leading-snug text-muted-foreground/70">
-                    This engine version can't serve models — update the
-                    standalone engine (v0.8+) for in-panel inference, or
-                    export to{" "}
-                    <Explain term="onnx">
-                      <span>ONNX</span>
-                    </Explain>{" "}
-                    below and run the model with onnxruntime anywhere.
-                  </p>
-                ) : null}
-
-                {/* Exports: HTML report (Python engine) / ONNX (Rust engine) */}
-                <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                  {viewedRun && engineKind !== "rust" ? (
-                    <button
-                      type="button"
-                      disabled={pendingExport != null}
-                      onClick={() =>
-                        void exportReport(viewedRun.projectDir, viewedRun.runId)
-                      }
-                      className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-                    >
-                      {pendingExport ? "Exporting…" : "⤓ Export HTML report"}
-                    </button>
-                  ) : null}
-                  {selectedProject && engineKind === "rust" ? (
-                    <Explain term="onnx">
-                      <button
-                        type="button"
-                        disabled={pendingOnnx != null || busy}
-                        onClick={() =>
-                          void exportOnnx(
-                            selectedProject,
-                            viewedRun?.projectDir === selectedProject ? viewedRun.runId : null,
-                          )
-                        }
-                        className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-                      >
-                        {pendingOnnx ? "Exporting ONNX…" : "⤓ Export ONNX model"}
-                      </button>
-                    </Explain>
-                  ) : null}
-                  {selectedProject ? (
-                    <MlLinks
-                      projectDir={selectedProject}
-                      runId={viewedRun?.runId ?? null}
-                      hasOnnx={projects.find((p) => p.dir === selectedProject)?.hasOnnx ?? false}
-                    />
-                  ) : null}
-                </div>
-              </>
-            )}
-
-            {/* Details (logs, raw output) — collapsed so novices never see it */}
-            {logs.length > 0 ? (
-              <details className="mt-2">
-                <summary className="cursor-pointer select-none text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 hover:text-muted-foreground">
-                  Details
-                </summary>
-                <LogView logs={logs} />
-              </details>
-            ) : null}
-
-            {/* Past runs */}
-            <div className="mt-3">
-              <p className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                <span>Past runs {runsLoading ? "…" : ""}</span>
-                {runs.length > 1 ? (
-                  <span className="font-normal normal-case tracking-normal text-muted-foreground/50">
-                    check 2+ to compare
-                  </span>
-                ) : null}
-              </p>
-              {runs.length === 0 && !runsLoading ? (
-                <p className="text-[11px] text-muted-foreground/70">
-                  Runs you train will show up here.
-                </p>
-              ) : (
-                <div className="flex flex-col gap-0.5">
-                  {runs.map((run) => (
-                    <RunRow
-                      key={run.id}
-                      run={run}
-                      selected={
-                        chartSource?.kind === "historical" &&
-                        chartSource.runId === run.id
-                      }
-                      comparing={compareRuns.some((r) => r.id === run.id)}
-                      compareColor={compareRuns.find((r) => r.id === run.id)?.color}
-                      disabled={busy}
-                      onClick={() => void loadHistoricalRun(run)}
-                      onToggleCompare={() => void toggleCompare(run)}
-                      onSaveMeta={(patch) => void setRunMeta(run, patch)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Settings */}
-            <label className="mt-3 flex cursor-pointer items-center gap-1.5 text-[10px] text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={autoOpenOnTrain}
-                onChange={(e) => void setMlAutoOpenOnTrain(e.target.checked)}
-                className="size-3 accent-primary"
-              />
-              Open this panel automatically when training starts
-            </label>
-
-            {/* Managed (downloaded) engine footprint + uninstall. Engines
-                found in venvs/PATH are not Nexis's to remove. */}
-            {managedEngine?.installed ? (
-              <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
-                <span>
-                  Downloaded engine on disk:{" "}
-                  {Math.max(
-                    1,
-                    Math.round(managedEngine.sizeBytes / (1024 * 1024)),
-                  )}{" "}
-                  MB
-                </span>
-                <button
-                  type="button"
-                  disabled={
-                    busy || downloadingEngine || installing || uninstallingEngine
-                  }
-                  onClick={() => void uninstallManagedEngine(workspaceRoot)}
-                  title="Deletes the downloaded engine binary and frees the disk space. Engines installed in a venv or on PATH are unaffected; you can re-download any time."
-                  className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] transition-colors hover:border-destructive/50 hover:text-destructive disabled:opacity-50"
-                >
-                  {uninstallingEngine ? "Removing…" : "Remove"}
-                </button>
+                )}
               </div>
-            ) : null}
-            {/* Engine errors used to be rendered only by SetupCard, which is
-                gone once an engine is detected — so a failed uninstall (or any
-                other post-setup engine failure) was swallowed and the click
-                looked like it had done nothing at all. */}
-            {engineError ? (
-              <p className="mt-1.5 flex items-start gap-1.5 text-[10.5px] leading-snug text-red-400">
-                <Icon name="alert-circle" size="xs" className="mt-px shrink-0" />
-                <span>{engineError}</span>
-              </p>
-            ) : null}
-          </>
-        )}
+
+              {/* Settings */}
+              <label className="mt-3 flex cursor-pointer items-center gap-1.5 text-micro text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={autoOpenOnTrain}
+                  onChange={(e) => void setMlAutoOpenOnTrain(e.target.checked)}
+                  className="size-3 accent-primary"
+                />
+                Open this panel automatically when training starts
+              </label>
+
+              {/* Managed (downloaded) engine footprint + uninstall. Engines
+                  found in venvs/PATH are not Nexis's to remove. */}
+              {managedEngine?.installed ? (
+                <div className="mt-1.5 flex items-center justify-between text-micro text-muted-foreground">
+                  <span>
+                    Downloaded engine on disk:{" "}
+                    {Math.max(
+                      1,
+                      Math.round(managedEngine.sizeBytes / (1024 * 1024)),
+                    )}{" "}
+                    MB
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    type="button"
+                    disabled={
+                      busy || downloadingEngine || installing || uninstallingEngine
+                    }
+                    onClick={() => void uninstallManagedEngine(workspaceRoot)}
+                    title="Deletes the downloaded engine binary and frees the disk space. Engines installed in a venv or on PATH are unaffected; you can re-download any time."
+                    className="hover:border-destructive/40 hover:text-destructive"
+                  >
+                    {uninstallingEngine ? "Removing…" : "Remove"}
+                  </Button>
+                </div>
+              ) : null}
+              {/* Engine errors used to be rendered only by SetupCard, which is
+                  gone once an engine is detected — so a failed uninstall (or any
+                  other post-setup engine failure) was swallowed and the click
+                  looked like it had done nothing at all. */}
+              {engineError ? (
+                <p className="mt-1.5 flex items-start gap-1.5 text-caption leading-snug text-destructive">
+                  <Icon name="alert-circle" size="xs" className="mt-px shrink-0" />
+                  <span>{engineError}</span>
+                </p>
+              ) : null}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -769,18 +802,18 @@ function SetupCard({
   const pinMb = pin ? Math.max(1, Math.round(pin.sizeBytes / (1024 * 1024))) : null;
   const pinAsset = pin?.url.split("/").pop() ?? "the release binary";
   return (
-    <div className="rounded-md border border-border/60 bg-muted/20 p-2.5">
-      <p className="mb-1 text-[12px] font-semibold">Set up the ML engine</p>
-      <p className="mb-2 text-[11px] leading-snug text-muted-foreground">
+    <div className="nexis-scene-enter rounded-md border border-border/60 bg-muted/20 p-2.5">
+      <p className="mb-1 text-ui font-semibold">Set up the ML engine</p>
+      <p className="mb-2 text-caption leading-snug text-muted-foreground">
         Nexis trains models with Axon, a small local engine. Everything runs
-        on your machine — no cloud, no accounts.
+        on your machine: no cloud, no accounts.
       </p>
       {wslDistro ? (
-        <p className="mb-2 flex items-start gap-1.5 rounded border border-border/50 bg-background/50 p-1.5 text-[10.5px] leading-snug text-muted-foreground">
+        <p className="mb-2 flex items-start gap-1.5 rounded border border-border/50 bg-background/50 p-1.5 text-caption leading-snug text-muted-foreground">
           <Icon name="server" size="xs" className="mt-px shrink-0" />
           <span>
             This workspace is <span className="font-mono">{wslDistro}</span>, so
-            the engine has to live inside the distro — a Windows install is a
+            the engine has to live inside the distro: a Windows install is a
             different machine as far as your project is concerned.
           </span>
         </p>
@@ -788,8 +821,8 @@ function SetupCard({
 
       {downloadingEngine ? (
         <>
-          <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
-            <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
+          <p className="mb-1 flex items-center gap-1.5 text-caption text-foreground/90">
+            <span className="size-1.5 nexis-blink rounded-full bg-info" />
             Downloading and verifying the standalone engine
             {pinMb ? ` (~${pinMb} MB)` : ""}…
           </p>
@@ -802,10 +835,10 @@ function SetupCard({
         <WslEngineSteps distro={wslDistro} />
       ) : confirmingDownload && pin ? (
         <div className="rounded-md border border-border/60 bg-background/60 p-2">
-          <p className="mb-1 text-[11px] font-semibold">
+          <p className="mb-1 text-caption font-semibold">
             Download Axon {pin.version}?
           </p>
-          <dl className="mb-1.5 flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+          <dl className="mb-1.5 flex flex-col gap-0.5 text-micro text-muted-foreground">
             <div className="flex gap-1">
               <dt className="shrink-0 text-muted-foreground/60">From</dt>
               <dd className="min-w-0 truncate font-mono" title={pin.url}>
@@ -823,56 +856,60 @@ function SetupCard({
               </dd>
             </div>
           </dl>
-          <p className="mb-1.5 text-[10px] leading-snug text-muted-foreground/70">
+          <p className="mb-1.5 text-micro leading-snug text-muted-foreground/70">
             Nexis verifies the download against this pinned checksum before it
             can run. This is the only thing {TOOL_NAMES.mlLab} ever downloads.
           </p>
           <div className="flex gap-1.5">
-            <button
+            <Button
+              size="xs"
               type="button"
               onClick={() => {
                 setConfirmingDownload(false);
                 onDownloadEngine();
               }}
-              className="flex-1 rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              className="flex-1"
             >
               Download &amp; verify
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="xs"
               type="button"
               onClick={() => setConfirmingDownload(false)}
-              className="rounded-md border border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <>
-          <button
+          <Button
+            variant="brand"
+            size="sm"
             type="button"
             onClick={() =>
               // No pin = no prebuilt for this platform; let the store surface
               // its "not available" error instead of consenting to nothing.
               pin ? setConfirmingDownload(true) : onDownloadEngine()
             }
-            className="mb-1.5 w-full rounded-md bg-primary px-3 py-1.5 text-[12px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            className="mb-1.5 w-full"
           >
             Download engine{pinMb ? ` (~${pinMb} MB)` : ""}
-          </button>
-          <p className="text-[10px] leading-snug text-muted-foreground/70">
+          </Button>
+          <p className="text-micro leading-snug text-muted-foreground/70">
             One verified binary from the project&apos;s GitHub releases. No
             Python, no PyTorch, nothing else to install. Trains spreadsheet
             models (categories or numbers) and image models
-            {hostGpu ? ` on your ${hostGpu}` : " on your GPU"} through wgpu — no
-            CUDA toolchain — with the inference playground built in.
+            {hostGpu ? ` on your ${hostGpu}` : " on your GPU"} through wgpu, no
+            CUDA toolchain, with the inference playground built in.
           </p>
           {pin ? (
             <details className="mt-1.5">
-              <summary className="cursor-pointer select-none text-[10px] text-muted-foreground/70 hover:text-muted-foreground">
+              <summary className="cursor-pointer select-none text-micro text-muted-foreground/70 hover:text-muted-foreground">
                 Offline? Install from a local copy
               </summary>
-              <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">
+              <p className="mt-1 text-micro leading-snug text-muted-foreground/70">
                 Download <span className="font-mono">{pinAsset}</span> from the{" "}
                 {pin.version} release on another machine, bring it over, and
                 point Nexis at the file. The same checksum check applies.
@@ -883,16 +920,17 @@ function SetupCard({
                   value={localPath}
                   onChange={(e) => setLocalPath(e.target.value)}
                   placeholder={`/path/to/${pinAsset}`}
-                  className="min-w-0 flex-1 rounded border border-border/60 bg-background px-2 py-1 font-mono text-[10px] outline-none placeholder:text-muted-foreground/40 focus:border-foreground/40"
+                  className="min-w-0 flex-1 rounded border border-border/60 bg-background px-2 py-1 font-mono text-micro outline-none placeholder:text-muted-foreground/40 focus:border-foreground/40"
                 />
-                <button
+                <Button
+                  variant="outline"
+                  size="xs"
                   type="button"
                   disabled={!localPath.trim()}
                   onClick={() => onInstallLocal(localPath)}
-                  className="rounded border border-border/60 px-2 py-1 text-[10px] font-medium text-foreground/90 transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   Verify &amp; install
-                </button>
+                </Button>
               </div>
             </details>
           ) : null}
@@ -901,14 +939,14 @@ function SetupCard({
 
       {error && !downloadingEngine ? (
         <div className="mt-1.5">
-          <p className="text-[10.5px] leading-snug text-red-400">{error}</p>
+          <p className="text-caption leading-snug text-destructive">{error}</p>
           {/* Where it looked. "No engine found" is only actionable if you can
               see the search path — the usual cause is an engine installed in
               an environment the scan never visits, which is invisible
               otherwise. */}
           {candidates.length > 0 ? (
             <details className="mt-1">
-              <summary className="cursor-pointer select-none text-[10px] text-muted-foreground/70 hover:text-muted-foreground">
+              <summary className="cursor-pointer select-none text-micro text-muted-foreground/70 hover:text-muted-foreground">
                 Where Nexis looked ({candidates.length})
               </summary>
               {/* `leading-none` is inherited here from the card's tight type
@@ -920,14 +958,14 @@ function SetupCard({
                 {candidates.map((c) => (
                   <li
                     key={c}
-                    className="truncate font-mono text-[9.5px] leading-[1.6] text-muted-foreground/60"
+                    className="truncate font-mono text-micro leading-[1.6] text-muted-foreground/60"
                     title={c}
                   >
                     {c}
                   </li>
                 ))}
               </ul>
-              <p className="mt-1 text-[10px] leading-snug text-muted-foreground/70">
+              <p className="mt-1 text-micro leading-snug text-muted-foreground/70">
                 An engine outside these paths is not found. Put it on{" "}
                 <span className="font-mono">PATH</span>, or install it into a{" "}
                 <span className="font-mono">.venv</span> in this folder or one
@@ -951,9 +989,9 @@ function SetupCard({
         type="button"
         onClick={onRetry}
         disabled={downloadingEngine}
-        className="mt-1.5 text-[10.5px] text-primary underline-offset-2 hover:underline disabled:opacity-50"
+        className="mt-1.5 text-caption text-primary underline-offset-2 hover:underline disabled:opacity-50"
       >
-        I installed it — check again
+        I installed it: check again
       </button>
     </div>
   );
@@ -972,17 +1010,17 @@ function SetupCard({
 function WslEngineSteps({ distro }: { distro: string }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <p className="text-[11px] leading-snug text-muted-foreground">
+      <p className="text-caption leading-snug text-muted-foreground">
         In a <span className="font-mono">{distro}</span> terminal, put the
         Linux build of the engine on your PATH:
       </p>
       <CopyLine command={`mkdir -p ~/.local/bin && curl -fL -o ~/.local/bin/axon ${ENGINE_RELEASES_URL}/latest/download/axon-linux-x64`} />
       <CopyLine command="chmod +x ~/.local/bin/axon" />
       <CopyLine command="axon --version" />
-      <p className="text-[10px] leading-snug text-muted-foreground/70">
+      <p className="text-micro leading-snug text-muted-foreground/70">
         If the last command prints a version, hit “check again” below.{" "}
         <span className="font-mono">~/.local/bin</span> is on the default PATH
-        for most distros — if <span className="font-mono">axon</span> is
+        for most distros: if <span className="font-mono">axon</span> is
         not found, open a fresh terminal or add it to your shell profile.
       </p>
     </div>
@@ -1013,21 +1051,21 @@ function PythonEngineSteps({
   const win = !wslDistro && IS_WINDOWS;
   return (
     <details>
-      <summary className="cursor-pointer select-none text-[10.5px] font-medium text-muted-foreground hover:text-foreground">
+      <summary className="cursor-pointer select-none text-caption font-medium text-muted-foreground hover:text-foreground">
         Need text generation? The legacy Python engine
       </summary>
       <div className="mt-1.5 flex flex-col gap-1.5">
-        <p className="text-[10.5px] leading-snug text-muted-foreground">
+        <p className="text-caption leading-snug text-muted-foreground">
           The Python engine is phased out and no longer maintained; Axon
           above is the supported engine. It still covers three things Axon
           cannot do yet: <strong>text generation</strong> (the{" "}
           <span className="font-mono">textgen</span> template), the{" "}
-          <span className="font-mono">blank</span> template — a{" "}
-          <span className="font-mono">train.py</span> you write yourself — and
+          <span className="font-mono">blank</span> template: a{" "}
+          <span className="font-mono">train.py</span> you write yourself, and
           the self-contained HTML run report. It costs a ~3 GB PyTorch download
           and a Python you maintain.
         </p>
-        <p className="text-[10.5px] leading-snug text-muted-foreground">
+        <p className="text-caption leading-snug text-muted-foreground">
           <strong className="text-foreground/90">
             Use a virtualenv, not your system Python.
           </strong>{" "}
@@ -1036,22 +1074,22 @@ function PythonEngineSteps({
           <span className="font-mono">.venv</span> in this folder and the six
           above it, so a venv here is found automatically.
         </p>
-        <p className="text-[10.5px] leading-snug text-muted-foreground">
+        <p className="text-caption leading-snug text-muted-foreground">
           <strong className="text-foreground/90">
             Python 3.{TORCH_MIN_MINOR}–3.{TORCH_MAX_MINOR} only.
           </strong>{" "}
           PyTorch publishes no wheels for a newer CPython until months after it
-          ships, and pip only says so after resolving — so a too-new
+          ships, and pip only says so after resolving, so a too-new
           interpreter downloads for minutes and ends at “No matching
           distribution found for torch”.
         </p>
         {warning ? (
-          <p className="flex items-start gap-1.5 text-[10px] leading-snug text-amber-500">
+          <p className="flex items-start gap-1.5 text-micro leading-snug text-warning">
             <Icon name="alert" size="xs" className="mt-px shrink-0" />
             <span>{warning}</span>
           </p>
         ) : null}
-        <p className="text-[10.5px] leading-snug text-muted-foreground">
+        <p className="text-caption leading-snug text-muted-foreground">
           In a terminal at this folder:
         </p>
         <CopyLine command={win ? "py -3.13 -m venv .venv" : "python3.13 -m venv .venv"} />
@@ -1065,8 +1103,8 @@ function PythonEngineSteps({
         <CopyLine
           command={win ? ".venv\\Scripts\\nexis-ml --version" : ".venv/bin/nexis-ml --version"}
         />
-        <p className="text-[10px] leading-snug text-muted-foreground/70">
-          For an NVIDIA card, install the CUDA build of torch first — otherwise
+        <p className="text-micro leading-snug text-muted-foreground/70">
+          For an NVIDIA card, install the CUDA build of torch first. Otherwise
           pip resolves the CPU one and training stays on the CPU:
         </p>
         <CopyLine
@@ -1076,11 +1114,11 @@ function PythonEngineSteps({
               : ".venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cu130"
           }
         />
-        <p className="text-[10px] leading-snug text-muted-foreground/70">
+        <p className="text-micro leading-snug text-muted-foreground/70">
           If <span className="font-mono">nexis-ml --version</span> prints a
           version, hit “check again” below. If pip cannot find{" "}
           <span className="font-mono">nexis-ml</span> at all, it is not on PyPI
-          for your platform yet — install it from source with{" "}
+          for your platform yet: install it from source with{" "}
           <span className="font-mono">
             pip install &quot;nexis-ml[torch] @ git+{ENGINE_PY_REPO}&quot;
           </span>
@@ -1103,28 +1141,30 @@ function GpuUpsell({
   onUpgrade: () => void;
 }) {
   return (
-    <div className="mb-2 rounded-md border border-emerald-500/30 bg-emerald-500/[0.05] p-2">
+    <div className="mb-2 rounded-md border border-success/30 bg-success/[0.05] p-2">
       {installing ? (
         <>
-          <p className="mb-1 flex items-center gap-1.5 text-[11px] text-foreground/90">
-            <span className="size-1.5 nexis-blink rounded-full bg-emerald-500" />
-            Installing the GPU build (~3 GB) — keep this window open…
+          <p className="mb-1 flex items-center gap-1.5 text-caption text-foreground/90">
+            <span className="size-1.5 nexis-blink rounded-full bg-success" />
+            Installing the GPU build (~3 GB): keep this window open…
           </p>
           <LogView logs={logs} />
         </>
       ) : (
         <div className="flex items-center gap-2">
-          <p className="min-w-0 flex-1 text-[10.5px] leading-snug text-muted-foreground">
+          <p className="min-w-0 flex-1 text-caption leading-snug text-muted-foreground">
             Your <span className="text-foreground/90">{gpuName}</span> isn't
-            being used yet — the engine has the CPU-only build of PyTorch.
+            being used yet: the engine has the CPU-only build of PyTorch.
           </p>
-          <button
+          <Button
+            variant="outline"
+            size="xs"
             type="button"
             onClick={onUpgrade}
-            className="shrink-0 rounded border border-emerald-500/40 px-2 py-0.5 text-[10.5px] font-medium text-emerald-500 transition-colors hover:bg-emerald-500/10"
+            className="shrink-0 border-success/40 text-success hover:bg-success/10 hover:text-success"
           >
             Enable GPU
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -1135,20 +1175,22 @@ function CopyLine({ command }: { command: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex items-center gap-1">
-      <code className="flex-1 truncate rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[10px]">
+      <code className="flex-1 truncate rounded bg-muted/60 px-1.5 py-0.5 font-mono text-micro">
         {command}
       </code>
-      <button
+      <Button
+        variant="outline"
+        size="xs"
         type="button"
         onClick={() => {
           void navigator.clipboard.writeText(command);
           setCopied(true);
           window.setTimeout(() => setCopied(false), 1500);
         }}
-        className="shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+        className="shrink-0"
       >
         {copied ? "Copied" : "Copy"}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -1230,11 +1272,11 @@ export function CreateCard({
   const tabs = STOCK_TABS.filter((t) => t.id === "starter" || engineSupportsTemplate(t.id, engineKind));
 
   return (
-    <div className="mb-3 rounded-xl border border-primary/25 bg-primary/[0.035] p-4 shadow-sm">
+    <div className="nexis-scene-enter mb-3 rounded-xl border border-primary/25 bg-primary/[0.035] p-4 shadow-sm">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold">Build a model</p>
-          <p className="mt-0.5 max-w-2xl text-[11px] leading-snug text-muted-foreground">
+          <p className="mt-0.5 max-w-2xl text-caption leading-snug text-muted-foreground">
             Choose a job, tune the starting configuration, then create an editable project.
           </p>
         </div>
@@ -1251,7 +1293,7 @@ export function CreateCard({
       </div>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(19rem,0.85fr)]">
         <section className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">1. Pick a stock network</p>
+          <p className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">1. Pick a stock network</p>
           <div role="tablist" aria-label="Stock networks" className="mt-2 flex flex-wrap gap-1">
             {tabs.map((t) => (
               <button
@@ -1261,7 +1303,7 @@ export function CreateCard({
                 aria-selected={stockTab === t.id}
                 onClick={() => setStockTab(t.id)}
                 className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] transition-colors",
+                  "rounded-full border px-2 py-0.5 text-micro transition-colors",
                   stockTab === t.id
                     ? "border-primary/50 bg-primary/[0.10] text-primary"
                     : "border-border text-muted-foreground hover:text-foreground",
@@ -1289,20 +1331,20 @@ export function CreateCard({
                   )}
                 >
                   <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-[11px] font-semibold text-foreground/90">{m.label}</span>
+                    <span className="truncate text-caption font-semibold text-foreground/90">{m.label}</span>
                     {m.dataset ? (
-                      <span className="shrink-0 rounded bg-emerald-500/10 px-1 text-[9px] text-emerald-600 dark:text-emerald-400">
+                      <span className="shrink-0 rounded bg-success/10 px-1 text-micro text-success">
                         data included
                       </span>
                     ) : null}
                   </span>
-                  <span className="mt-0.5 block truncate font-mono text-[9.5px] text-muted-foreground/80">{m.shape}</span>
-                  <span className="mt-0.5 block text-[10px] leading-snug text-muted-foreground">{m.blurb}</span>
+                  <span className="mt-0.5 block truncate font-mono text-micro text-muted-foreground/80">{m.shape}</span>
+                  <span className="mt-0.5 block text-micro leading-snug text-muted-foreground">{m.blurb}</span>
                 </button>
               );
             })}
           </div>
-          <p className="mt-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Or choose the model family</p>
+          <p className="mt-4 text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">Or choose the model family</p>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
         {templateOptions.map((opt) => {
           const selected = opt.id === template;
@@ -1319,7 +1361,7 @@ export function CreateCard({
                   : "border-border hover:bg-foreground/[0.04]",
               )}
             >
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/90">
+              <span className="flex items-center gap-1.5 text-caption font-semibold text-foreground/90">
                 <span
                   className={cn(
                     "size-1.5 rounded-full",
@@ -1328,7 +1370,7 @@ export function CreateCard({
                 />
                 {opt.label}
               </span>
-              <span className="mt-1 block text-[10px] leading-snug text-muted-foreground">
+              <span className="mt-1 block text-micro leading-snug text-muted-foreground">
                 {opt.desc}
               </span>
             </button>
@@ -1338,23 +1380,23 @@ export function CreateCard({
 
       {/* Factual note when the standalone engine hides templates. */}
       {templateOptions.length < TEMPLATE_OPTIONS.length ? (
-        <p className="mt-2 text-[10px] leading-snug text-muted-foreground/70">
+        <p className="mt-2 text-micro leading-snug text-muted-foreground/70">
           Text generation and the code-your-own Blank project need the Python
-          engine — the standalone engine is config-driven.
+          engine: the standalone engine is config-driven.
         </p>
       ) : null}
         </section>
 
         <section className="rounded-lg border border-border/70 bg-background/45 p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">2. Configure it</p>
+          <p className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">2. Configure it</p>
       {creating ? (
-        <p className="flex items-center gap-1.5 text-[11px] text-foreground/90">
-          <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
+        <p className="flex items-center gap-1.5 text-caption text-foreground/90">
+          <span className="size-1.5 nexis-blink rounded-full bg-info" />
           Creating project…
         </p>
       ) : (
         <>
-          <label className="mt-2 block text-[10px] text-muted-foreground">
+          <label className="mt-2 block text-micro text-muted-foreground">
             Project name
             <input
               value={name}
@@ -1364,11 +1406,11 @@ export function CreateCard({
               }}
               aria-label="New project name"
               spellCheck={false}
-              className="mt-1 h-8 w-full rounded border border-border bg-background px-2 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+              className="mt-1 h-8 w-full rounded border border-border bg-background px-2 font-mono text-caption text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
             />
           </label>
           <fieldset className="mt-3">
-            <legend className="text-[10px] text-muted-foreground">Starting configuration</legend>
+            <legend className="text-micro text-muted-foreground">Starting configuration</legend>
             <div className="mt-1 grid grid-cols-3 gap-1.5">
               {(["starter", "balanced", "ambitious"] as const).map((option) => (
                 <button
@@ -1377,7 +1419,7 @@ export function CreateCard({
                   aria-pressed={scale === option}
                   onClick={() => setScale(option)}
                   className={cn(
-                    "rounded-md border px-1 py-2 text-[10px] font-medium capitalize transition-colors",
+                    "rounded-md border px-1 py-2 text-micro font-medium capitalize transition-colors",
                     scale === option ? "border-primary/50 bg-primary/[0.10] text-primary" : "border-border bg-background/50 text-muted-foreground hover:bg-muted",
                   )}
                 >
@@ -1386,33 +1428,33 @@ export function CreateCard({
               ))}
             </div>
             {stock ? (
-              <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+              <p className="mt-2 text-micro leading-snug text-muted-foreground">
                 {stock.label} sets the network ({stock.shape}); the size here sets the training budget.
                 {stock.dataset
                   ? ` Writes synthetic starter data to ${STARTER_DATASETS[stock.dataset].path}, so it can train right away.`
                   : ""}
               </p>
             ) : template === "textgen" ? (
-              <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+              <p className="mt-2 text-micro leading-snug text-muted-foreground">
                 This creates a local GPT-style character model. Size controls context, width, heads, layers, and training defaults; you can edit every value before training.
               </p>
             ) : (
-              <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
+              <p className="mt-2 text-micro leading-snug text-muted-foreground">
                 Sets a sensible training budget now; all values remain editable in the hyperparameters form.
               </p>
             )}
           </fieldset>
-          <label className="mt-3 block text-[10px] text-muted-foreground">
+          <label className="mt-3 block text-micro text-muted-foreground">
             What should this model help with? <span className="text-muted-foreground/60">Optional, saved in PROJECT.md.</span>
             <textarea
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
               placeholder="For example: flag invoices that need a human review"
               rows={2}
-              className="mt-1 w-full resize-y rounded border border-border bg-background px-1.5 py-1 text-[10.5px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+              className="mt-1 w-full resize-y rounded border border-border bg-background px-1.5 py-1 text-caption text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
             />
           </label>
-          <label className="mt-3 flex cursor-pointer items-center gap-1.5 text-[10px] text-muted-foreground">
+          <label className="mt-3 flex cursor-pointer items-center gap-1.5 text-micro text-muted-foreground">
             <input
               type="checkbox"
               checked={autoTrain}
@@ -1422,18 +1464,20 @@ export function CreateCard({
             Start training right away (otherwise review the hyperparameters
             first)
           </label>
-          <button
+          <Button
+            variant="brand"
+            size="sm"
             type="button"
             disabled={!name.trim()}
             onClick={create}
-            className="mt-3 h-8 w-full rounded-md bg-primary px-3 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-3 w-full"
           >
             Create {stock ? stock.label : template === "textgen" ? "GPT-style model" : "model"}
-          </button>
+          </Button>
         </>
       )}
       {createError && !creating ? (
-        <p className="mt-1.5 text-[10.5px] leading-snug text-red-400">
+        <p className="mt-1.5 text-caption leading-snug text-destructive">
           {createError}
         </p>
       ) : null}
@@ -1517,10 +1561,10 @@ function RunDetails() {
   return (
     <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+        <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
           Run details
         </span>
-        <span className="truncate font-mono text-[9.5px] text-muted-foreground/60" title={facts.id}>
+        <span className="truncate font-mono text-micro text-muted-foreground/60" title={facts.id}>
           {facts.id}
         </span>
       </div>
@@ -1585,10 +1629,10 @@ function SamplesView() {
   return (
     <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+        <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
           Generated text
         </span>
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-micro text-muted-foreground">
           {sample.epoch != null ? (
             <span>after pass {sample.epoch}</span>
           ) : null}
@@ -1619,7 +1663,7 @@ function SamplesView() {
           ) : null}
         </div>
       </div>
-      <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded bg-background/50 px-2 py-1.5 font-mono text-[11px] leading-snug text-foreground/90">
+      <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded bg-background/50 px-2 py-1.5 font-mono text-caption leading-snug text-foreground/90">
         {sample.text.trim() || "…"}
       </pre>
     </div>
@@ -1682,12 +1726,12 @@ function ConfusionMatrixView() {
   return (
     <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+        <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
           Confusion matrix
         </span>
-        <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-micro text-muted-foreground">
           {total > 0 ? (
-            <span className="font-mono tabular-nums text-foreground/80">
+            <span className="tabular-nums text-foreground/80">
               {(accuracy * 100).toFixed(1)}% correct
             </span>
           ) : null}
@@ -1705,7 +1749,7 @@ function ConfusionMatrixView() {
           {labels.map((l) => (
             <div
               key={`h-${l}`}
-              className="flex h-4 items-center justify-center truncate px-0.5 text-[9.5px] font-medium text-muted-foreground"
+              className="flex h-4 items-center justify-center truncate px-0.5 text-micro font-medium text-muted-foreground"
               title={`predicted ${l}`}
             >
               {l}
@@ -1715,7 +1759,7 @@ function ConfusionMatrixView() {
           {matrix.map((row, r) => (
             <Fragment key={`r-${labels[r]}`}>
               <div
-                className="flex max-w-16 items-center justify-end truncate pr-1 text-[9.5px] font-medium text-muted-foreground"
+                className="flex max-w-16 items-center justify-end truncate pr-1 text-micro font-medium text-muted-foreground"
                 title={`actual ${labels[r]}`}
               >
                 {labels[r]}
@@ -1723,7 +1767,7 @@ function ConfusionMatrixView() {
               {row.map((v, c) => (
                 <div
                   key={`c-${labels[c]}`}
-                  className="flex h-6 items-center justify-center rounded-sm font-mono text-[10px] tabular-nums text-foreground/85"
+                  className="flex h-6 items-center justify-center rounded-sm text-micro tabular-nums text-foreground/85"
                   style={{ backgroundColor: cellColor(v, r === c) }}
                   title={`actual ${labels[r]} → predicted ${labels[c]}: ${v}`}
                 >
@@ -1734,8 +1778,8 @@ function ConfusionMatrixView() {
           ))}
         </div>
       </div>
-      <p className="mt-1 text-[9.5px] leading-snug text-muted-foreground/60">
-        Rows are the real answer, columns the model's guess — the green diagonal
+      <p className="mt-1 text-micro leading-snug text-muted-foreground/60">
+        Rows are the real answer, columns the model's guess: the green diagonal
         is correct.
       </p>
     </div>
@@ -1796,11 +1840,11 @@ function ResidualsView() {
   return (
     <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+        <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
           Predicted vs actual{data.target ? ` · ${data.target}` : ""}
         </span>
-        <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-          <span className="font-mono tabular-nums text-foreground/80">
+        <span className="flex items-center gap-1.5 text-micro text-muted-foreground">
+          <span className="tabular-nums text-foreground/80">
             off by {shortNum(absErr / actual.length)} on average
           </span>
           {artifact?.epoch != null ? <span>after pass {artifact.epoch}</span> : null}
@@ -1819,7 +1863,7 @@ function ResidualsView() {
             y1={py(lo)}
             x2={px(hi)}
             y2={py(hi)}
-            className="stroke-emerald-500/60"
+            className="stroke-success/60"
             strokeWidth={1}
             strokeDasharray="3 3"
           />
@@ -1827,15 +1871,15 @@ function ResidualsView() {
             <circle key={i} cx={px(a)} cy={py(predicted[i])} r={1.8} className="fill-primary/60" />
           ))}
         </svg>
-        <div className="flex flex-col gap-0.5 text-[9.5px] text-muted-foreground">
+        <div className="flex flex-col gap-0.5 text-micro text-muted-foreground">
           <span>
             range {shortNum(lo)} – {shortNum(hi)}
           </span>
           <span>{actual.length} validation rows</span>
         </div>
       </div>
-      <p className="mt-1 text-[9.5px] leading-snug text-muted-foreground/60">
-        Across is the real value, up is the model's guess — dots on the dashed
+      <p className="mt-1 text-micro leading-snug text-muted-foreground/60">
+        Across is the real value, up is the model's guess: dots on the dashed
         line are exact.
       </p>
     </div>
@@ -1859,11 +1903,11 @@ function ImageGridView() {
   return (
     <div className="mb-2 mt-2 rounded-md border border-border/60 bg-muted/20 p-2">
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+        <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
           Sample predictions
         </span>
         {artifact.epoch != null ? (
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-micro text-muted-foreground">
             after pass {artifact.epoch}
           </span>
         ) : null}
@@ -1874,7 +1918,7 @@ function ImageGridView() {
         onError={() => setFailed(true)}
         className="w-full rounded bg-background/50"
       />
-      <p className="mt-1 text-[9.5px] leading-snug text-muted-foreground/60">
+      <p className="mt-1 text-micro leading-snug text-muted-foreground/60">
         Green border = correct, red = wrong.
       </p>
     </div>
@@ -1902,14 +1946,14 @@ function Playground({
   return (
     <div className="mb-2 mt-3 rounded-md border border-border/60 bg-muted/20 p-2.5">
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold">
+        <span className="flex items-center gap-1.5 text-caption font-semibold">
           Playground
           {serve?.status === "ready" && serve.device ? (
             <span
               className={cn(
-                "rounded px-1 py-px text-[9px] font-medium",
+                "rounded px-1 py-px text-micro font-medium",
                 serve.device.startsWith("cuda")
-                  ? "bg-emerald-500/10 text-emerald-500"
+                  ? "bg-success/10 text-success"
                   : "bg-muted/60 text-muted-foreground",
               )}
               title={`device: ${serve.device}`}
@@ -1922,7 +1966,7 @@ function Playground({
           <button
             type="button"
             onClick={() => void stopServe()}
-            className="text-[10px] text-muted-foreground hover:text-foreground"
+            className="text-micro text-muted-foreground hover:text-foreground"
           >
             Close
           </button>
@@ -1931,47 +1975,50 @@ function Playground({
 
       {!serve ? (
         <>
-          <p className="mb-1.5 text-[11px] leading-snug text-muted-foreground">
-            Load this trained model and try it live — give it an input, get a
+          <p className="mb-1.5 text-caption leading-snug text-muted-foreground">
+            Load this trained model and try it live: give it an input, get a
             prediction back.
           </p>
-          <button
+          <Button
+            size="xs"
             type="button"
             onClick={open}
-            className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
           >
             Try this model
-          </button>
+          </Button>
         </>
       ) : serve.status === "starting" ? (
-        <p className="flex items-center gap-1.5 text-[11px] text-foreground/90">
-          <span className="size-1.5 nexis-blink rounded-full bg-sky-500" />
+        <p className="flex items-center gap-1.5 text-caption text-foreground/90">
+          <span className="size-1.5 nexis-blink rounded-full bg-info" />
           Loading the model…
         </p>
       ) : serve.status === "error" ? (
         <div className="flex flex-col gap-1.5">
-          <p className="text-[11px] text-destructive">
+          <p className="text-caption text-destructive">
             {serve.error ?? "Couldn't load the model."}
           </p>
-          <button
+          <Button
+            variant="outline"
+            size="xs"
             type="button"
             onClick={open}
-            className="self-start rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground hover:text-foreground"
+            className="self-start"
           >
             Try again
-          </button>
+          </Button>
         </div>
       ) : serve.status === "stopped" ? (
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[11px] text-muted-foreground">Playground closed.</p>
+          <p className="text-caption text-muted-foreground">Playground closed.</p>
           {run ? (
-            <button
+            <Button
+              variant="outline"
+              size="xs"
               type="button"
               onClick={open}
-              className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground hover:text-foreground"
             >
               Reopen
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : serve.template === "tabular" ? (
@@ -2006,11 +2053,11 @@ function TextgenPlayground({
         spellCheck={false}
         aria-label="Prompt text"
         placeholder="Start of the text…"
-        className="w-full resize-none rounded border border-border bg-background px-1.5 py-1 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+        className="w-full resize-none rounded border border-border bg-background px-1.5 py-1 font-mono text-caption text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
       />
       <div className="flex items-center gap-2">
         <Explain term="temperature">
-          <span className="text-[10px] text-muted-foreground">wildness</span>
+          <span className="text-micro text-muted-foreground">wildness</span>
         </Explain>
         <input
           type="range"
@@ -2022,23 +2069,24 @@ function TextgenPlayground({
           aria-label="Temperature (wildness)"
           className="min-w-0 flex-1 accent-primary"
         />
-        <span className="w-6 font-mono text-[10px] tabular-nums text-muted-foreground">
+        <span className="w-6 text-micro tabular-nums text-muted-foreground">
           {temperature.toFixed(1)}
         </span>
-        <button
+        <Button
+          size="xs"
           type="button"
           onClick={submit}
           disabled={serve.busy}
-          className="shrink-0 rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="shrink-0"
         >
           {serve.busy ? "Writing…" : "Generate"}
-        </button>
+        </Button>
       </div>
       {serve.error ? (
-        <p className="text-[10px] text-destructive">{serve.error}</p>
+        <p className="text-micro text-destructive">{serve.error}</p>
       ) : null}
       {result ? (
-        <pre className="max-h-44 overflow-y-auto whitespace-pre-wrap break-words rounded bg-background/50 px-2 py-1.5 font-mono text-[11px] leading-snug">
+        <pre className="max-h-44 overflow-y-auto whitespace-pre-wrap break-words rounded bg-background/50 px-2 py-1.5 font-mono text-caption leading-snug">
           <span className="text-muted-foreground">{result.input}</span>
           <span className="text-foreground/90">{result.continuation}</span>
         </pre>
@@ -2062,7 +2110,7 @@ function TabularPlayground({
   const [values, setValues] = useState<Record<string, string>>({});
   const result = serve.result?.kind === "tabular" ? serve.result : null;
   const fieldClass =
-    "h-6 min-w-0 flex-1 rounded border border-border bg-background px-1 font-mono text-[10px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40";
+    "h-6 min-w-0 flex-1 rounded border border-border bg-background px-1 font-mono text-micro text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40";
 
   const submit = () => {
     // Blank fields are left out: the engine treats them as missing.
@@ -2078,13 +2126,13 @@ function TabularPlayground({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <p className="text-[10px] text-muted-foreground">
+      <p className="text-micro text-muted-foreground">
         Fill in what you know. A blank number uses the training average; a
         blank choice counts as missing.
       </p>
       <div className="grid grid-cols-2 gap-1.5">
         {columns.map((col) => (
-          <label key={col.name} className="flex items-center gap-1 text-[10px]">
+          <label key={col.name} className="flex items-center gap-1 text-micro">
             <span className="w-12 shrink-0 truncate text-muted-foreground" title={col.name}>
               {col.name}
             </span>
@@ -2094,7 +2142,7 @@ function TabularPlayground({
                 onChange={(e) => setValues((s) => ({ ...s, [col.name]: e.target.value }))}
                 className={fieldClass}
               >
-                <option value="">—</option>
+                <option value="">–</option>
                 {(col.categories ?? []).map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -2114,16 +2162,17 @@ function TabularPlayground({
           </label>
         ))}
       </div>
-      <button
+      <Button
+        size="xs"
         type="button"
         onClick={submit}
         disabled={serve.busy}
-        className="self-start rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+        className="self-start"
       >
         {serve.busy ? "Predicting…" : "Predict"}
-      </button>
+      </Button>
       {serve.error ? (
-        <p className="text-[10px] text-destructive">{serve.error}</p>
+        <p className="text-micro text-destructive">{serve.error}</p>
       ) : null}
       {result ? <TabularResult result={result} target={serve.meta?.target ?? null} /> : null}
     </div>
@@ -2141,13 +2190,13 @@ function TabularResult({
     const entries = Object.entries(result.probs ?? {}).sort((a, b) => b[1] - a[1]);
     return (
       <div className="mt-0.5">
-        <p className="text-[12px]">
+        <p className="text-ui">
           Prediction:{" "}
           <span className="font-semibold text-foreground">{result.label}</span>
         </p>
         <div className="mt-1 flex flex-col gap-0.5">
           {entries.map(([cls, p]) => (
-            <div key={cls} className="flex items-center gap-1.5 text-[10px]">
+            <div key={cls} className="flex items-center gap-1.5 text-micro">
               <span className="w-8 shrink-0 text-right text-muted-foreground">{cls}</span>
               <div className="h-2 flex-1 overflow-hidden rounded bg-muted/60">
                 <div
@@ -2155,7 +2204,7 @@ function TabularResult({
                   style={{ width: `${Math.round(p * 100)}%` }}
                 />
               </div>
-              <span className="w-10 shrink-0 text-right font-mono tabular-nums text-muted-foreground">
+              <span className="w-10 shrink-0 text-right tabular-nums text-muted-foreground">
                 {(p * 100).toFixed(1)}%
               </span>
             </div>
@@ -2165,11 +2214,11 @@ function TabularResult({
     );
   }
   return (
-    <p className="mt-0.5 text-[12px]">
+    <p className="mt-0.5 text-ui">
       Predicted {target ?? "value"}:{" "}
       <span className="font-mono font-semibold text-foreground">
         {result.value === undefined
-          ? "—"
+          ? "–"
           : result.value.toLocaleString(undefined, { maximumSignificantDigits: 6 })}
       </span>
     </p>
@@ -2226,17 +2275,22 @@ function ProgressBlock({
   });
 
   return (
-    <div className="mb-2 rounded-md border border-border/60 bg-muted/20 p-2.5">
+    <div
+      className={cn(
+        "mb-2 rounded-md border border-border/60 bg-muted/20 p-2.5",
+        !run.paused && "nexis-run-live",
+      )}
+    >
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold">
-          <span className="size-1.5 nexis-blink rounded-full bg-emerald-500" />
+        <span className="flex items-center gap-1.5 text-caption font-semibold">
+          <span className="size-1.5 nexis-blink rounded-full bg-success" />
           Training
           {run.device ? (
             <span
               className={cn(
-                "rounded px-1 py-px text-[9px] font-medium",
+                "rounded px-1 py-px text-micro font-medium",
                 run.device.startsWith("cuda")
-                  ? "bg-emerald-500/10 text-emerald-500"
+                  ? "bg-success/10 text-success"
                   : "bg-muted/60 text-muted-foreground",
               )}
               title={`device: ${run.device}`}
@@ -2245,12 +2299,12 @@ function ProgressBlock({
             </span>
           ) : null}
           {run.paused ? (
-            <span className="rounded bg-amber-500/10 px-1 py-px text-[9px] font-medium text-amber-500">
+            <span className="rounded bg-warning/10 px-1 py-px text-micro font-medium text-warning">
               paused
             </span>
           ) : null}
         </span>
-        <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+        <span className="text-micro tabular-nums text-muted-foreground">
           {formatElapsed(Date.now() - run.startedAtMs)}
         </span>
       </div>
@@ -2259,13 +2313,15 @@ function ProgressBlock({
       <div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
         <div
           className={cn(
-            "h-full rounded-full bg-emerald-500/80 transition-[width] duration-500",
-            pct === null && "w-1/4 animate-pulse",
+            "h-full rounded-full transition-[width] duration-(--dur-scene) ease-(--ease-enter)",
+            pct === null
+              ? "nexis-shimmer w-full bg-[linear-gradient(90deg,transparent,var(--brand),transparent)] bg-size-[200%_100%]"
+              : "bg-brand",
           )}
           style={pct !== null ? { width: `${Math.max(pct, 3)}%` } : undefined}
         />
       </div>
-      <div className="mb-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+      <div className="mb-1.5 flex items-center justify-between text-micro text-muted-foreground">
         <Explain term="epochs">
           <span>
             {run.totalEpochs
@@ -2273,30 +2329,33 @@ function ProgressBlock({
               : `pass ${run.epoch}`}
           </span>
         </Explain>
-        {pct !== null ? <span className="font-mono tabular-nums">{pct}%</span> : null}
+        {pct !== null ? <span className="tabular-nums">{pct}%</span> : null}
       </div>
 
-      <p className="mb-1.5 text-[11px] leading-snug text-foreground/90">
-        {run.paused ? "Paused — will resume at your command." : sentence}
+      <p className="mb-1.5 text-caption leading-snug text-foreground/90">
+        {run.paused ? "Paused: will resume at your command." : sentence}
       </p>
 
       <div className="flex items-center gap-1.5">
         {run.status === "running" ? (
-          <button
+          <Button
+            variant="outline"
+            size="xs"
             type="button"
             onClick={run.paused ? onResume : onPause}
-            className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground"
           >
             {run.paused ? "Resume" : "Pause"}
-          </button>
+          </Button>
         ) : null}
-        <button
+        <Button
+          variant="outline"
+          size="xs"
           type="button"
           onClick={onCancel}
-          className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
+          className="hover:border-destructive/40 hover:text-destructive"
         >
           {run.status === "cancelling" ? "Force stop" : "Stop (keeps progress)"}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -2321,15 +2380,15 @@ function ResultCard({
 }) {
   const tone =
     run.status === "ok"
-      ? "border-emerald-500/40 bg-emerald-500/[0.06]"
+      ? "border-success/40 bg-success/[0.06]"
       : run.status === "cancelled"
-        ? "border-amber-500/40 bg-amber-500/[0.06]"
-        : "border-red-500/40 bg-red-500/[0.06]";
+        ? "border-warning/40 bg-warning/[0.06]"
+        : "border-destructive/40 bg-destructive/[0.06]";
   const title =
     run.status === "ok"
       ? "Training complete"
       : run.status === "cancelled"
-        ? "Stopped early — progress saved"
+        ? "Stopped early: progress saved"
         : "Training failed";
 
   const metricNames = Object.keys(summary?.metrics ?? {});
@@ -2346,14 +2405,14 @@ function ResultCard({
   if (summary?.device?.startsWith("cuda")) chips.push("trained on GPU");
 
   return (
-    <div className={cn("mb-2 rounded-md border p-2.5", tone)}>
-      <p className="mb-1 text-[12px] font-semibold">{title}</p>
+    <div className={cn("nexis-result-arrival mb-2 rounded-md border p-2.5", tone)}>
+      <p className="mb-1 text-ui font-semibold">{title}</p>
       {chips.length > 0 ? (
         <div className="mb-1.5 flex flex-wrap gap-1">
           {chips.map((c) => (
             <span
               key={c}
-              className="rounded bg-background/60 px-1.5 py-0.5 text-[10.5px] text-foreground/90"
+              className="rounded bg-background/60 px-1.5 py-0.5 text-caption text-foreground/90"
             >
               {c}
             </span>
@@ -2361,22 +2420,24 @@ function ResultCard({
         </div>
       ) : null}
       {run.status === "error" ? (
-        <p className="mb-1.5 text-[11px] text-muted-foreground">
+        <p className="mb-1.5 text-caption text-muted-foreground">
           Open Details below for the full output.
         </p>
       ) : (
-        <p className="mb-1.5 text-[11px] text-muted-foreground">
-          The model was saved — its checkpoint lives in the project's run
+        <p className="mb-1.5 text-caption text-muted-foreground">
+          The model was saved: its checkpoint lives in the project's run
           folder.
         </p>
       )}
-      <button
+      <Button
+        variant="brand"
+        size="xs"
         type="button"
         onClick={onTrainAgain}
-        className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
       >
-        ▶ Train again
-      </button>
+        <Icon name="play" size="xs" />
+        Train again
+      </Button>
     </div>
   );
 }
@@ -2396,9 +2457,9 @@ function EngineChip({
 }) {
   const dot =
     status === "ready"
-      ? "bg-emerald-500"
+      ? "bg-success"
       : status === "missing"
-        ? "bg-red-500/80"
+        ? "bg-destructive/80"
         : "bg-muted-foreground/50";
   // Which engine is answering, not just that one exists: the standalone
   // Rust/burn binary and the Python/PyTorch package share the name
@@ -2418,10 +2479,10 @@ function EngineChip({
         ? `Standalone Rust engine (burn) · backend: ${envInfo?.backend ?? "?"}`
         : kind === "python"
           ? `Python engine (PyTorch${envInfo?.torch ? ` ${envInfo.torch}` : ""})`
-          : "Engine detected — probing capabilities…";
+          : "Engine detected: probing capabilities…";
   return (
     <span
-      className="flex items-center gap-1 rounded bg-muted/40 px-1.5 py-px text-[10px] text-muted-foreground"
+      className="flex items-center gap-1 rounded bg-muted/40 px-1.5 py-px text-micro text-muted-foreground"
       title={detail}
     >
       <span className={cn("size-1.5 rounded-full", dot)} />
@@ -2439,7 +2500,7 @@ function LogView({ logs }: { logs: string[] }) {
   return (
     <div
       ref={ref}
-      className="mt-1 max-h-32 overflow-y-auto rounded bg-muted/30 px-1.5 py-1 font-mono text-[10px] leading-4 text-muted-foreground"
+      className="mt-1 max-h-32 overflow-y-auto rounded bg-muted/30 px-1.5 py-1 font-mono text-micro leading-4 text-muted-foreground"
     >
       {logs.map((line, i) => (
         // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
@@ -2490,11 +2551,11 @@ function RunRow({
 
   const dot =
     run.status === "ok"
-      ? "bg-emerald-500"
+      ? "bg-success"
       : run.status === "error"
-        ? "bg-red-500/80"
+        ? "bg-destructive/80"
         : run.status === "cancelled"
-          ? "bg-amber-500/80"
+          ? "bg-warning/80"
           : "bg-muted-foreground/40";
 
   const metricNames = Object.keys(run.metrics ?? {});
@@ -2544,10 +2605,10 @@ function RunRow({
             "flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-1 text-left",
             disabled && "cursor-default opacity-60",
           )}
-          title={`${run.id} — ${runStatusWord(run.status)}`}
+          title={`${run.id} – ${runStatusWord(run.status)}`}
         >
           <span className={cn("size-1.5 shrink-0 rounded-full", dot)} />
-          <span className="min-w-0 flex-1 truncate text-[10.5px] text-foreground/85">
+          <span className="min-w-0 flex-1 truncate text-caption text-foreground/85">
             {friendlyRunName(run.id)}
             <span className="text-muted-foreground/60">
               {" "}
@@ -2555,7 +2616,7 @@ function RunRow({
             </span>
           </span>
           {metric ? (
-            <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+            <span className="shrink-0 text-micro tabular-nums text-muted-foreground">
               {metric}
             </span>
           ) : null}
@@ -2568,7 +2629,7 @@ function RunRow({
           className={cn(
             "shrink-0 px-1 leading-none",
             run.pinned
-              ? "text-amber-500"
+              ? "text-warning"
               : "text-muted-foreground/40 hover:text-foreground",
           )}
         >
@@ -2592,7 +2653,7 @@ function RunRow({
               {run.tags.map((t) => (
                 <span
                   key={t}
-                  className="rounded bg-muted/60 px-1 py-px text-[9px] text-muted-foreground"
+                  className="rounded bg-muted/60 px-1 py-px text-micro text-muted-foreground"
                 >
                   {t}
                 </span>
@@ -2600,7 +2661,7 @@ function RunRow({
             </div>
           ) : null}
           {run.note?.trim() ? (
-            <p className="truncate text-[10px] text-muted-foreground/70" title={run.note}>
+            <p className="truncate text-micro text-muted-foreground/70" title={run.note}>
               {run.note}
             </p>
           ) : null}
@@ -2616,7 +2677,7 @@ function RunRow({
             placeholder="Note for this run…"
             rows={2}
             spellCheck={false}
-            className="w-full resize-none rounded border border-border bg-background px-1.5 py-1 text-[10.5px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+            className="w-full resize-none rounded border border-border bg-background px-1.5 py-1 text-caption text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
           />
           <input
             value={tags}
@@ -2624,23 +2685,24 @@ function RunRow({
             aria-label="Tags, comma separated"
             placeholder="tags, comma, separated"
             spellCheck={false}
-            className="h-6 rounded border border-border bg-background px-1.5 text-[10.5px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+            className="h-6 rounded border border-border bg-background px-1.5 text-caption text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
           />
           <div className="flex gap-1.5">
-            <button
+            <Button
+              size="xs"
               type="button"
               onClick={saveMeta}
-              className="rounded-md bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground hover:opacity-90"
             >
               Save
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="xs"
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded border border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
@@ -2674,13 +2736,13 @@ function ComparisonView({
   return (
     <div className="mb-2 mt-2">
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-[11px] font-semibold">
+        <span className="text-caption font-semibold">
           Comparing {runs.length} runs
         </span>
         <button
           type="button"
           onClick={onClear}
-          className="text-[10px] text-muted-foreground hover:text-foreground"
+          className="text-micro text-muted-foreground hover:text-foreground"
         >
           Clear
         </button>
@@ -2689,7 +2751,7 @@ function ComparisonView({
         {runs.map((r) => (
           <span
             key={r.id}
-            className="flex items-center gap-1 text-[10px] text-muted-foreground"
+            className="flex items-center gap-1 text-micro text-muted-foreground"
           >
             <span
               className="size-2 shrink-0 rounded-sm"
@@ -2706,7 +2768,7 @@ function ComparisonView({
           ))}
         </div>
       ) : (
-        <p className="text-[11px] text-muted-foreground/70">
+        <p className="text-caption text-muted-foreground/70">
           These runs have no metrics to chart.
         </p>
       )}
@@ -2790,16 +2852,16 @@ function HyperparamForm({
       className="mb-2 rounded-md border border-border/60 bg-muted/20"
       onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
     >
-      <summary className="cursor-pointer select-none px-2.5 py-1.5 text-[11px] font-semibold text-foreground/90">
+      <summary className="cursor-pointer select-none px-2.5 py-1.5 text-caption font-semibold text-foreground/90">
         Hyperparameters
       </summary>
       <div className="px-2.5 pb-2.5">
         {text == null ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             No train.toml in this project.
           </p>
         ) : fields.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             No editable settings found.
           </p>
         ) : (
@@ -2808,7 +2870,7 @@ function HyperparamForm({
               {fields.map((f) => (
                 <label
                   key={fieldId(f)}
-                  className="flex flex-col gap-0.5 text-[10px] text-muted-foreground"
+                  className="flex flex-col gap-0.5 text-micro text-muted-foreground"
                 >
                   <Explain term={f.key}>
                     <span className="truncate" title={`[${f.section}] ${f.key}`}>
@@ -2821,7 +2883,7 @@ function HyperparamForm({
                       onChange={(e) =>
                         setValues((s) => ({ ...s, [fieldId(f)]: e.target.value }))
                       }
-                      className="h-6 rounded border border-border bg-background px-1 text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                      className="h-6 rounded border border-border bg-background px-1 text-caption text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                     >
                       {(f.options ?? []).map((o) => (
                         <option key={o} value={o}>
@@ -2836,31 +2898,32 @@ function HyperparamForm({
                         setValues((s) => ({ ...s, [fieldId(f)]: e.target.value }))
                       }
                       spellCheck={false}
-                      className="h-6 rounded border border-border bg-background px-1 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+                      className="h-6 rounded border border-border bg-background px-1 font-mono text-caption text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
                     />
                   )}
                 </label>
               ))}
             </div>
             <div className="mt-2 flex items-center gap-1.5">
-              <button
+              <Button
+                variant="outline"
+                size="xs"
                 type="button"
                 disabled={saving}
                 onClick={() => void save(false)}
-                className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
               >
                 Save
-              </button>
-              <button
+              </Button>
+              <Button
+                size="xs"
                 type="button"
                 disabled={saving}
                 onClick={() => void save(true)}
-                className="rounded-md bg-primary px-2.5 py-0.5 text-[10.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 Save &amp; train
-              </button>
+              </Button>
               {status ? (
-                <span className="text-[10px] text-muted-foreground">{status}</span>
+                <span className="text-micro text-muted-foreground">{status}</span>
               ) : null}
             </div>
           </>
@@ -3018,11 +3081,11 @@ function DataSourceForm({
   };
 
   const selectClass =
-    "h-6 w-full rounded border border-border bg-background px-1 font-mono text-[11px] text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40";
+    "h-6 w-full rounded border border-border bg-background px-1 font-mono text-caption text-foreground outline-none focus-visible:ring-1 focus-visible:ring-primary/40";
 
   return (
     <details open={!saved.path} className="mb-2 rounded-md border border-border/60 bg-muted/20">
-      <summary className="cursor-pointer select-none px-2.5 py-1.5 text-[11px] font-semibold text-foreground/90">
+      <summary className="cursor-pointer select-none px-2.5 py-1.5 text-caption font-semibold text-foreground/90">
         Training data
         <span className="ml-1.5 font-normal text-muted-foreground">
           {saved.path
@@ -3032,12 +3095,12 @@ function DataSourceForm({
       </summary>
       <div className="flex flex-col gap-1.5 px-2.5 pb-2.5">
         {!saved.path ? (
-          <p className="text-[10.5px] text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             This project trains on made-up practice points until you choose a spreadsheet
             (CSV) from your workspace.
           </p>
         ) : null}
-        <label className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+        <label className="flex flex-col gap-0.5 text-micro text-muted-foreground">
           Spreadsheet (CSV)
           <select
             value={path}
@@ -3062,13 +3125,13 @@ function DataSourceForm({
           </select>
         </label>
         {preview?.kind === "unreadable" ? (
-          <p className="text-[10.5px] text-destructive">
+          <p className="text-caption text-destructive">
             Could not read this file (missing, too large, or not text).
           </p>
         ) : null}
         {preview?.kind === "ok" ? (
           <>
-            <label className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+            <label className="flex flex-col gap-0.5 text-micro text-muted-foreground">
               Column to predict
               <select
                 value={target}
@@ -3085,7 +3148,7 @@ function DataSourceForm({
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-0.5 text-[10px] text-muted-foreground">
+            <label className="flex flex-col gap-0.5 text-micro text-muted-foreground">
               Predict
               <select
                 value={task}
@@ -3104,7 +3167,7 @@ function DataSourceForm({
                 </option>
               </select>
             </label>
-            <div className="rounded border border-border/50 bg-background/50 px-2 py-1.5 text-[10.5px] text-muted-foreground">
+            <div className="rounded border border-border/50 bg-background/50 px-2 py-1.5 text-caption text-muted-foreground">
               <p>
                 {preview.rows.toLocaleString()} rows. The model learns from{" "}
                 <span className="text-foreground/90">
@@ -3132,7 +3195,7 @@ function DataSourceForm({
                   {targetInfo.classes.map(([label, n]) => `${label} (${n})`).join(", ")}
                 </p>
               ) : effectiveTask === "classification" && targetInfo ? (
-                <p className="mt-0.5 text-amber-600 dark:text-amber-400">
+                <p className="mt-0.5 text-warning">
                   {targetInfo.distinct} different values in {target} is a lot of categories;
                   if it is a quantity, predict a number instead.
                 </p>
@@ -3143,7 +3206,7 @@ function DataSourceForm({
                 </p>
               ) : null}
               {targetInfo && targetInfo.missing > 0 ? (
-                <p className="mt-0.5 text-amber-600 dark:text-amber-400">
+                <p className="mt-0.5 text-warning">
                   {targetInfo.missing} rows have no {target} value and are skipped.
                 </p>
               ) : null}
@@ -3151,23 +3214,24 @@ function DataSourceForm({
           </>
         ) : null}
         <div className="flex items-center gap-1.5">
-          <button
+          <Button
+            variant="outline"
+            size="xs"
             type="button"
             disabled={!canSave || !dirty}
             onClick={() => void save(false)}
-            className="rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
           >
             Save
-          </button>
-          <button
+          </Button>
+          <Button
+            size="xs"
             type="button"
             disabled={!canSave}
             onClick={() => void save(true)}
-            className="rounded-md bg-primary px-2.5 py-0.5 text-[10.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             Save &amp; train
-          </button>
-          {status ? <span className="text-[10px] text-muted-foreground">{status}</span> : null}
+          </Button>
+          {status ? <span className="text-micro text-muted-foreground">{status}</span> : null}
         </div>
       </div>
     </details>

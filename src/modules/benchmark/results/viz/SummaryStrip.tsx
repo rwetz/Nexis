@@ -23,11 +23,11 @@ export function SummaryStrip({
         <div className="grid grid-cols-2 gap-2.5 @2xl:grid-cols-4">
           {tiles.map((t) => (
             <div key={t.label} className="flex flex-col gap-1 rounded-xl border border-border bg-card px-3.5 py-3">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+              <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
                 {t.label}
               </span>
-              <span className="font-mono text-xl font-semibold tabular-nums leading-none">{t.value}</span>
-              <span className="mt-0.5 flex items-center gap-1.5 text-[10.5px] text-muted-foreground">
+              <span className="text-2xl font-semibold tabular-nums leading-none">{t.value}</span>
+              <span className="mt-0.5 flex items-center gap-1.5 text-caption text-muted-foreground">
                 <span className="size-2 shrink-0 rounded-full" style={{ background: BACKEND_COLOR[t.backendId] }} />
                 <span className="truncate">{t.modelName}</span>
                 <span className="shrink-0 text-muted-foreground/50">· {BACKEND_SHORT[t.backendId]}</span>
@@ -37,7 +37,7 @@ export function SummaryStrip({
         </div>
       )}
       {engineOnly && (
-        <p className="text-[10.5px] text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           {BACKEND_SHORT.nexis} results are not ranked here: it trains a synthetic workload rather
           than running your model. They appear under engine training throughput below.
         </p>

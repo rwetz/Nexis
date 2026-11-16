@@ -48,28 +48,28 @@ export function PackGatePlaceholder({ view, pack: packProp, onShowExplorer }: Pr
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
       <Icon name="layers" size="lg" className="text-muted-foreground/60" />
       <div className="flex flex-col gap-1">
-        <p className="text-[12.5px] font-medium text-foreground">
+        <p className="text-ui font-medium text-foreground">
           This panel is part of the {def.label} pack
         </p>
-        <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+        <p className="text-ui leading-relaxed text-muted-foreground">
           {def.description}
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <Button size="sm" className="h-7 px-3 text-[11.5px]" onClick={enable}>
+        <Button size="sm" className="h-7 px-3 text-ui" onClick={enable}>
           Enable {def.label}
         </Button>
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 px-3 text-[11.5px] text-muted-foreground"
+          className="h-7 px-3 text-ui text-muted-foreground"
           onClick={onShowExplorer}
         >
           Show Files
         </Button>
       </div>
-      <p className="max-w-56 text-[10.5px] leading-relaxed text-muted-foreground/70">
-        Nothing gets installed — packs only show or hide features. Manage them
+      <p className="max-w-56 text-caption leading-relaxed text-muted-foreground/70">
+        Nothing gets installed: packs only show or hide features. Manage them
         any time in Settings&nbsp;→&nbsp;Features.
       </p>
     </div>

@@ -19,7 +19,9 @@ export function exportLumenPalette(name: string): LumenPaletteExchange {
   return {
     format: "nexis-lumen-palette",
     version: 1,
-    palette: { name, colors: ["background", "primary", "secondary", "muted", "foreground"].map(color) },
+    // The palette's primary role is the accent, which lives in --brand
+    // (nexis-design RULES R6.2); --primary is a neutral on every theme.
+    palette: { name, colors: ["background", "brand", "secondary", "muted", "foreground"].map(color) },
   };
 }
 

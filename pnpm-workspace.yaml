@@ -14,6 +14,7 @@ minimumReleaseAge: 1440
 # transitives have moved to provenance-attested releases.
 
 allowBuilds:
+  '@nexis-epoch/desktop@https://codeload.github.com/rwetz/nexis-epoch/tar.gz/e03b852ede4043b154735b05e3ea28b721b9042e#path:/apps/desktop': false
   edgedriver: false
   esbuild: true
   geckodriver: false
@@ -28,3 +29,10 @@ overrides:
   # the vulnerable uuid@11.1.0 (GHSA-w5hq-g745-h8pq, patched >=11.1.1). Lift the
   # floor; resolves to uuid@14.0.0, which mermaid explicitly accepts (^14.0.0).
   uuid: '>=11.1.1'
+  # GHSA-mrv2-3pqr-j5jr (high): DOMPurify <=3.4.16 leaves a detached subtree's
+  # handlers armed. Reached via streamdown>mermaid; lift the floor within 3.x.
+  dompurify: '^3.4.17'
+  # GHSA-xjj6-f33q-929c (high): undici >=7.18.0 <7.30.1 DoS on excessive
+  # content-encodings, via the @ai-sdk/* provider-utils. Only the 7.x line is
+  # affected; the 6.x and 8.x copies are left alone.
+  'undici@>=7.18.0 <7.30.1': '^7.30.1'

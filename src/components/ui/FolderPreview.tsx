@@ -146,6 +146,7 @@ export function FolderPreview({
         <m.div
           className="absolute inset-0 rounded-[10px] rounded-tl-none"
           style={{ backgroundColor: back }}
+          initial={false}
           animate={{ y: open ? -6 * size : 0 }}
           transition={spring}
         >
@@ -171,6 +172,12 @@ export function FolderPreview({
               backgroundImage:
                 "repeating-linear-gradient(transparent, transparent 11px, rgba(0,0,0,0.07) 11px, rgba(0,0,0,0.07) 12px)",
             }}
+            // Render the resting pose on the very first frame. Without this
+            // the sheets mount with no transform (centred on their left edge,
+            // half outside the folder) until motion applies the pose a frame
+            // or more later, which showed as loose pages for a moment
+            // whenever a panel with this empty state was switched to.
+            initial={false}
             animate={
               open
                 ? {
@@ -202,6 +209,7 @@ export function FolderPreview({
             backgroundColor: color,
             transformOrigin: "bottom center",
           }}
+          initial={false}
           animate={{ rotateX: open ? -42 : 0, y: open ? -6 * size : 0 }}
           // Critically damped: a lid that overshoots "closed" swings through
           // the folder for a frame. The sheets keep their bouncier spring.
@@ -220,7 +228,7 @@ export function FolderPreview({
       </div>
 
       {label && (
-        <div className="mt-2 text-center text-xs text-muted-foreground">
+        <div className="mt-2 text-center text-ui text-muted-foreground">
           {label}
         </div>
       )}

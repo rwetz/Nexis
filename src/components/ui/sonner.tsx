@@ -30,7 +30,7 @@ export function Toaster(props: ToasterProps) {
           cancelButton:
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
           error: "group-[.toaster]:border-destructive/40",
-          success: "group-[.toaster]:border-emerald-500/30",
+          success: "group-[.toaster]:border-success/30",
         },
       }}
       style={
@@ -44,3 +44,6 @@ export function Toaster(props: ToasterProps) {
     />
   );
 }
+
+/** Re-exported so apps call toasts through the package, like everything else. */
+export { toast } from "sonner";

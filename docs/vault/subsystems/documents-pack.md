@@ -9,11 +9,11 @@ Added 2026-09-29. The `documents` pack puts a Tiptap editor behind a `document` 
 
 ## Key files
 
-- `src/modules/documents/lib/extensions.ts` — the single schema. The docx and PDF mappers walk JSON shaped by it; a node added here needs a case in both (unknown nodes fall back to their text, never vanish).
-- `lib/markdownFormat.ts` — hazard detection plus output normalisation.
-- `lib/docxInspect.ts` / `lib/docxFormat.ts` — what a rebuild would lose; mammoth in, `docx` out.
+- `src/modules/documents/lib/extensions.ts`: the single schema. The docx and PDF mappers walk JSON shaped by it; a node added here needs a case in both (unknown nodes fall back to their text, never vanish).
+- `lib/markdownFormat.ts`: hazard detection plus output normalisation.
+- `lib/docxInspect.ts` / `lib/docxFormat.ts`: what a rebuild would lose; mammoth in, `docx` out.
 - `lib/pdfDocument.tsx` (pure tree) / `lib/pdfExport.ts` (engine load) / `lib/pdfThemes.ts` (from pdfcn).
-- `DocumentEditor.tsx` — load, banners, save flow, export. `SaveDocxDialog.tsx`. `DocumentStack.tsx`, `DocumentsPanel.tsx`.
+- `DocumentEditor.tsx`: load, banners, save flow, export. `SaveDocxDialog.tsx`. `DocumentStack.tsx`, `DocumentsPanel.tsx`.
 - Routing is in `App.tsx:handleOpenFile`. `.docx` goes to a document tab, or to `persistSidebarView("documents")` when the pack is off, which renders `PackGatePlaceholder`.
 
 ## Invariants / gotchas

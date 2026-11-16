@@ -9,7 +9,7 @@ import type { Theme } from "../types";
 export const aurelian: Theme = {
   id: "aurelian",
   name: "Aurelian",
-  description: "Warm gold over deep umber — low glare, long sessions.",
+  description: "Warm gold over deep umber: low glare, long sessions.",
   editorTheme: { dark: "atomone", light: "xcode-light" },
   variants: {
     dark: {

@@ -5,31 +5,31 @@ description: Inventory of Rust backend modules under src-tauri/src/modules/ with
 
 # Rust backend modules (`src-tauri/src/modules/`)
 
-As of 2026-07. One-liners are orientation, not spec — verify in code, and fix here if wrong.
+As of 2026-07. One-liners are orientation, not spec: verify in code, and fix here if wrong.
 
-- `pty/` — the heart of the terminal. `session.rs` (session lifecycle, `CONPTY_LIFECYCLE_LOCK`, `MAX_PENDING` 4 MiB buffer), `shell_init.rs` (profile injection, `write_if_changed` cache), `job.rs`, `da_filter.rs`, `scripts/`. Dense with invariants — read [[pty]] and AGENTS.md pitfalls #1, #6–#9 before touching.
-- `proc.rs` — **the only sanctioned way to build a subprocess**: `proc::command()` pre-applies `CREATE_NO_WINDOW`. Raw `Command::new` is banned by clippy + tripwire (AGENTS.md pitfall #4).
-- `workspace.rs` — workspace root authorization (`authorize_spawn_cwd`); gates every user-supplied cwd (pitfall #1C)
-- `git/` — git operations; output parsing must use `from_utf8_lossy` (pitfall #13)
-- `fs/` — file I/O commands
-- `shell/` — one-shot / session shell execution for AI tools
-- `lsp/` / `dap/` — language server and debug adapter process management
-- `net.rs` / `secrets.rs` / `recording.rs` — network, secret storage, recording; `#![warn(clippy::unwrap_used, clippy::expect_used)]` — no unwrap/expect in production code here
-- `http_share.rs` — local HTTP sharing (stdlib-only server; every route token-gated `?k=`, constant-time compare; caller-chosen bind address)
-- `fswatch.rs` — native filesystem watching for the explorer (`notify`), replacing a 3 s poll. `fs_watch_start` returns **false** when the watch can't be established (inotify limit on big trees) — the frontend must keep polling in that case. Events are debounced 250 ms and filtered against `IGNORED_DIRS` in Rust
-- `sysmon.rs` — system resource sampling for the System Monitor panel (`sysinfo`, feature-minimal). Process-global stateful `Sampler` — rates are deltas between refreshes. See [[system-monitor]].
-- `ml.rs` / `python.rs` — ML engine and python probing
-- `crash.rs` — crash handling
-- `atlas/` — configured host-repository discovery and read-only libgit2 inspection; see [[atlas]]
-- `benchmark/` — host model/backend discovery and benchmark job services; see [[benchmark]]
-- `autosave.rs` / `snapshots.rs` — host app-data staging for unsaved editor content and terminal snapshots
-- `ledger.rs` / `ai_audit.rs` — command-history records/output and AI audit storage
-- `diagnostics.rs` / `tools.rs` / `winstate.rs` / `job.rs` — diagnostic export, tool probing, saved window policy and Windows process job containment
+- `pty/`: the heart of the terminal. `session.rs` (session lifecycle, `CONPTY_LIFECYCLE_LOCK`, `MAX_PENDING` 4 MiB buffer), `shell_init.rs` (profile injection, `write_if_changed` cache), `job.rs`, `da_filter.rs`, `scripts/`. Dense with invariants: read [[pty]] and AGENTS.md pitfalls #1, #6–#9 before touching.
+- `proc.rs`, **the only sanctioned way to build a subprocess**: `proc::command()` pre-applies `CREATE_NO_WINDOW`. Raw `Command::new` is banned by clippy + tripwire (AGENTS.md pitfall #4).
+- `workspace.rs`: workspace root authorization (`authorize_spawn_cwd`); gates every user-supplied cwd (pitfall #1C)
+- `git/`: git operations; output parsing must use `from_utf8_lossy` (pitfall #13)
+- `fs/`: file I/O commands
+- `shell/`: one-shot / session shell execution for AI tools
+- `lsp/` / `dap/`: language server and debug adapter process management
+- `net.rs` / `secrets.rs` / `recording.rs`, network, secret storage, recording; `#![warn(clippy::unwrap_used, clippy::expect_used)]`, no unwrap/expect in production code here
+- `http_share.rs`: local HTTP sharing (stdlib-only server; every route token-gated `?k=`, constant-time compare; caller-chosen bind address)
+- `fswatch.rs`: native filesystem watching for the explorer (`notify`), replacing a 3 s poll. `fs_watch_start` returns **false** when the watch can't be established (inotify limit on big trees): the frontend must keep polling in that case. Events are debounced 250 ms and filtered against `IGNORED_DIRS` in Rust
+- `sysmon.rs`: system resource sampling for the System Monitor panel (`sysinfo`, feature-minimal). Process-global stateful `Sampler`: rates are deltas between refreshes. See [[system-monitor]].
+- `ml.rs` / `python.rs`: ML engine and python probing
+- `crash.rs`: crash handling
+- `atlas/`: configured host-repository discovery and read-only libgit2 inspection; see [[atlas]]
+- `benchmark/`: host model/backend discovery and benchmark job services; see [[benchmark]]
+- `autosave.rs` / `snapshots.rs`: host app-data staging for unsaved editor content and terminal snapshots
+- `ledger.rs` / `ai_audit.rs`: command-history records/output and AI audit storage
+- `diagnostics.rs` / `tools.rs` / `winstate.rs` / `job.rs`: diagnostic export, tool probing, saved window policy and Windows process job containment
 
 The 2026-09-14 boundary census is linked from [[architecture-boundaries]]. Current `modules/` combines platform policies, services and Tauri adapters; moving directories alone will not separate them.
 
 ## Guard rails
 
-- `src-tauri/tests/pitfall_invariants.rs` — tripwire suite enforcing the invariants above; **fix code, never the tripwire**
-- `src-tauri/clippy.toml` — `disallowed-methods` bans `std::process::Command::new`
-- `src-tauri/deny.toml` — dependency license/source policy (`cargo deny check` when touching deps)
+- `src-tauri/tests/pitfall_invariants.rs`: tripwire suite enforcing the invariants above; **fix code, never the tripwire**
+- `src-tauri/clippy.toml`, `disallowed-methods` bans `std::process::Command::new`
+- `src-tauri/deny.toml`: dependency license/source policy (`cargo deny check` when touching deps)

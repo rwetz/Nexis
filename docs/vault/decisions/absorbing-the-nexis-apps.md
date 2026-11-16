@@ -6,7 +6,7 @@ description: Atlas and Benchmark stop being separate desktop apps and become Nex
 # The Nexis apps become Nexis panels
 
 **Date:** 2026-09
-**Status:** active — Atlas and Benchmark absorbed in v1.27.0; the remaining family members are listed under "What is not absorbed" below
+**Status:** active, Atlas and Benchmark absorbed in v1.27.0; the remaining family members are listed under "What is not absorbed" below
 
 ## Context
 
@@ -33,7 +33,7 @@ specific way:
    emulator. All three of those problems disappear rather than get fixed.
 2. **They could not share a selection.** "Show me this repo" needed a
    `nexis-atlas://` URL scheme, a deep-link plugin, a single-instance plugin,
-   and a validated URL parser — roughly 400 lines of Rust and TS whose entire
+   and a validated URL parser: roughly 400 lines of Rust and TS whose entire
    job was to move one path between two processes on the same machine.
 3. **The design layer had already proved the point.** `nexis-design` exists
    because four apps carrying a copied `_design/` blueprint drifted into four
@@ -48,7 +48,7 @@ when it grew a debugger, an LSP client and a database panel.
 ## Decision
 
 1. **Absorb, don't launch.** Atlas and Benchmark become sidebar views inside
-   Nexis — one binary, one window, one theme, one workspace. The alternative
+   Nexis: one binary, one window, one theme, one workspace. The alternative
    considered and rejected was a "hub": Nexis detects installed siblings and
    deep-links to them. That keeps every cost above and adds a launcher.
 
@@ -60,16 +60,16 @@ when it grew a debugger, an LSP client and a database panel.
 
 3. **Absorbed code adopts the host's invariants, not the other way round.**
    Every vendored file was brought to Nexis's rules rather than exempted from
-   them — `proc::command` for subprocesses, `modules::heavy` for anything that
+   them, `proc::command` for subprocesses, `modules::heavy` for anything that
    touches the disk, poison-recovering mutexes, `@/components/icon` instead of
    a direct icon-vendor import, CSS motion tokens instead of an animation
    library. The tripwire suites made this non-optional, which is the argument
    for having them.
 
 4. **Delete the second implementation every time.** Where an absorbed app
-   carried its own version of something Nexis has — `formatBytes`, a byte
+   carried its own version of something Nexis has: `formatBytes`, a byte
    formatter; `write_text_file`, a file write; a browser-mode simulator behind
-   `IS_TAURI`; a theme provider — the absorbed one goes. Carrying both is the
+   `IS_TAURI`; a theme provider: the absorbed one goes. Carrying both is the
    drift this whole exercise exists to end.
 
 5. **Graft the history, then archive the repo.** Each repository's history is
@@ -84,7 +84,7 @@ when it grew a debugger, an LSP client and a database panel.
 **Accepted costs.**
 
 - **The binary carries a prebuilt ONNX Runtime.** This is the significant one
-  and it has its own note — see [[bundling-onnx-runtime]]. The release
+  and it has its own note: see [[bundling-onnx-runtime]]. The release
   tripwire moved 40 MB → 150 MB to accommodate it.
 - **libgit2 is now linked in.** Atlas's scan uses `git2` while the source
   control panel drives the `git` CLI. That is a deliberate split, not an
@@ -126,6 +126,6 @@ when it grew a debugger, an LSP client and a database panel.
 
 ## See also
 
-- [[bundling-onnx-runtime]] — the size decision this one forced
-- [[expansion-packs]] — why the panels are filed the way they are
+- [[bundling-onnx-runtime]]: the size decision this one forced
+- [[expansion-packs]]: why the panels are filed the way they are
 - `docs/vault/subsystems/atlas.md`, `docs/vault/subsystems/benchmark.md`

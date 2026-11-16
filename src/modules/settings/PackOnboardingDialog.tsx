@@ -51,7 +51,7 @@ export function PackOnboardingDialog() {
           <DialogTitle>Choose your setup</DialogTitle>
           <DialogDescription>
             Nexis ships a lot of panels. Pick what you are building and it will
-            start with the ones that fit — you can enable or disable any pack
+            start with the ones that fit: you can enable or disable any pack
             later in Settings → Features. Nothing is downloaded or removed
             either way.
           </DialogDescription>
@@ -81,14 +81,14 @@ export function PackOnboardingDialog() {
                   size="xl"
                   className="text-muted-foreground"
                 />
-                <span className="text-[12.5px] font-medium">
+                <span className="text-ui font-medium">
                   {preset.label}
                 </span>
-                <span className="text-[10.5px] leading-relaxed text-muted-foreground">
+                <span className="text-caption leading-relaxed text-muted-foreground">
                   {preset.blurb}
                 </span>
                 {named.length > 0 && (
-                  <span className="mt-0.5 text-[10px] text-muted-foreground/70">
+                  <span className="mt-0.5 text-micro text-muted-foreground/70">
                     {named.map((p) => PACKS[p].label).join(" · ")}
                   </span>
                 )}

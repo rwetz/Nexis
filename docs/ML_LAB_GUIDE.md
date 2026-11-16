@@ -1,4 +1,4 @@
-# Synapse (ML Lab) — Complete Guide
+# Synapse (ML Lab): Complete Guide
 
 **Synapse** is Nexis's ML lab (its code and pack id are still `ml-lab` / `ml`).
 It turns Nexis into a place where you can **train a small model on your own
@@ -138,7 +138,7 @@ commands that put the Linux build on the distro's `PATH`.
 **macOS.** There is no prebuilt macOS build yet; build Axon from source
 (`cargo build --release`) and put it on your `PATH`.
 
-To re-scan after installing, use **I installed it — check again**.
+To re-scan after installing, use **I installed it: check again**.
 
 ---
 
@@ -152,7 +152,7 @@ A **project** is a folder with a `train.toml`. Create one from the panel's
 axon new tabular my-model      # or: axon new image my-images
 ```
 
-### `tabular` — "my spreadsheet, what predicts what"
+### `tabular`: "my spreadsheet, what predicts what"
 An **MLP** over a CSV (or built-in synthetic data until you choose one). It
 predicts a **category** ("will this customer churn?") or a **number** ("what
 will this house sell for?"). See [§6](#your-data).
@@ -160,7 +160,7 @@ will this house sell for?"). See [§6](#your-data).
   [confusion matrix](#confusion-matrix), or average error plus a
   predicted-vs-actual plot.
 
-### `image` — a small CNN over folders of images
+### `image`: a small CNN over folders of images
 A convolutional classifier over a folder-per-class image directory.
 - **Data:** `data/<class>/*.png|jpg|jpeg|bmp`, one folder per class. `axon new
   image` ships four example pattern classes so it trains out of the box.
@@ -225,17 +225,17 @@ The catalog is `src/modules/ml/lib/stock-models.ts`, the generators
 The **Training data** section of a tabular project chooses the data without
 editing `train.toml`:
 
-- **Spreadsheet (CSV)** — any `.csv` in the workspace.
-- **Column to predict** — guessed from a label-ish name, else the last column.
-- **Predict** — *Decide for me*, *A category*, or *A number*.
+- **Spreadsheet (CSV)**: any `.csv` in the workspace.
+- **Column to predict**: guessed from a label-ish name, else the last column.
+- **Predict**: *Decide for me*, *A category*, or *A number*.
 
 The preview underneath says what training will actually do, using the same
 rules as Axon:
 
 - **Which columns the model learns from.** Numeric columns are used as
   numbers. A text column with up to 50 different values (a city, a plan, a
-  yes/no) becomes a **category**. A text column with more than that — IDs,
-  names, free-text notes — is **left out**, and the preview names it.
+  yes/no) becomes a **category**. A text column with more than that: IDs,
+  names, free-text notes: is **left out**, and the preview names it.
 - **Blank cells.** Empty, `NA`, `N/A`, `NaN`, `null`, `none`, `?` and `-`
   all count as missing. A missing number is filled with the column's
   training average, and the model also learns *that* it was missing. A
@@ -317,12 +317,12 @@ quietly fall back to defaults.
 When you train, the panel shows:
 
 - **A progress bar and plain-language status** ("pass 7 of 20", "finished").
-- **The hero chart** — the most meaningful metric: *Accuracy* for a category
+- **The hero chart**: the most meaningful metric: *Accuracy* for a category
   model, *Average error* for a number model. Long runs are decimated so the
   chart stays smooth without losing spikes.
-- **The run log** (under Details) — what the model reads, which columns were
+- **The run log** (under Details): what the model reads, which columns were
   left out, how many rows were skipped, and whether classes were rebalanced.
-- **The hyperparameter form** — epochs, learning rate, batch size, `hidden`,
+- **The hyperparameter form**: epochs, learning rate, batch size, `hidden`,
   the CNN's filters, and so on.
 
 | metric | label | meaning |
@@ -345,10 +345,10 @@ elsewhere.
 
 Set `[train] device`:
 
-- **`auto`** (default) and **`cpu`** — the CPU. For the model sizes Axon
+- **`auto`** (default) and **`cpu`**: the CPU. For the model sizes Axon
   builds, the CPU is faster: the GPU backend's start-up (adapter probe,
   kernel tuning) takes seconds, which dwarfs training at these sizes.
-- **`gpu`** — the GPU through **wgpu** (Vulkan/DX12/Metal/OpenGL), on any
+- **`gpu`**: the GPU through **wgpu** (Vulkan/DX12/Metal/OpenGL), on any
   modern GPU with no vendor toolchain. Falls back to the CPU, with a warning,
   if there is no usable adapter.
 
@@ -469,14 +469,14 @@ so it is there on past runs too.
 
 **⤓ Export ONNX model** writes the run you are viewing (or the project's
 newest trained run) to `model.onnx` in the project folder, plus `model.json`
-describing its inputs. It exports the trained weights — it does not retrain —
+describing its inputs. It exports the trained weights: it does not retrain,
 so the exported model is exactly the one the run browser shows.
 
 ```sh
 axon export --onnx [--run <id>] [dir]
 ```
 
-- **Input** (`input`): one row of the encoded inputs listed in `model.json` —
+- **Input** (`input`): one row of the encoded inputs listed in `model.json`:
   numeric columns as raw values (a missing value: the training average, and
   set its `<col> missing` slot to 1), category columns one-hot (all zeros for
   a category training never saw). Standardization is inside the graph.
@@ -492,9 +492,9 @@ axon export --onnx [--run <id>] [dir]
 
 Each run carries lightweight metadata (`notes.json`, travels with the run):
 
-- **Note** — free text ("first try with a wider net").
-- **Tags** — short labels.
-- **Pinned baseline** — pinned runs sort to the top and are what the AI-chat
+- **Note**: free text ("first try with a wider net").
+- **Tags**: short labels.
+- **Pinned baseline**: pinned runs sort to the top and are what the AI-chat
   tools serve by default.
 
 ---
@@ -504,8 +504,8 @@ Each run carries lightweight metadata (`notes.json`, travels with the run):
 
 While a run is training:
 
-- **Pause / Resume** — the engine halts at the next pass boundary and waits.
-- **Stop** — a graceful cancel: the run keeps its best checkpoint and is
+- **Pause / Resume**: the engine halts at the next pass boundary and waits.
+- **Stop**: a graceful cancel: the run keeps its best checkpoint and is
   finalized as `cancelled`. (A hard kill is available if a stuck process
   doesn't respond.)
 
@@ -628,7 +628,7 @@ notice at the top of the panel.
 - **Why wgpu.** CUDA ties you to NVIDIA and a toolchain; wgpu uses the GPU on
   essentially any modern machine from the same binary.
 - **Why hand-rolled ONNX.** burn (the Rust ML framework under Axon) imports
-  ONNX but doesn't export it, so Axon hand-encodes the protobuf for the MLP —
+  ONNX but doesn't export it, so Axon hand-encodes the protobuf for the MLP:
   no heavy dependency, and verified against onnxruntime.
 
 ---

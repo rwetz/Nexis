@@ -115,7 +115,7 @@ fn watchdog_loop() {
                 Verdict::Prune => false,
                 Verdict::Report => {
                     log::error!(
-                        "pty watchdog: session stalled (reader dead: {}, flusher dead: {}) — surfacing notice",
+                        "pty watchdog: session stalled (reader dead: {}, flusher dead: {}), surfacing notice",
                         entry.reader_finished.load(Ordering::Acquire),
                         entry.flusher_finished.load(Ordering::Acquire),
                     );

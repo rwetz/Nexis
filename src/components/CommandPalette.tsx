@@ -70,24 +70,24 @@ export function CommandPalette({ commands, onClose }: Props) {
             value={query}
             onValueChange={setQuery}
             placeholder="Type a command…"
-            className="flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground/60"
+            className="flex-1 bg-transparent text-body text-foreground outline-none placeholder:text-muted-foreground/60"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="text-[10.5px] text-muted-foreground hover:text-foreground"
+              className="text-caption text-muted-foreground hover:text-foreground"
             >
               Clear
             </button>
           )}
-          <kbd className="rounded border border-border/60 bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          <kbd className="rounded border border-border/60 bg-muted px-1.5 py-0.5 text-micro text-muted-foreground">
             Esc
           </kbd>
         </div>
 
         <Command.List className="flex-1 overflow-y-auto py-1">
-          <Command.Empty className="px-4 py-6 text-center text-[12px] text-muted-foreground">
+          <Command.Empty className="px-4 py-6 text-center text-ui text-muted-foreground">
             No commands found
           </Command.Empty>
 
@@ -97,7 +97,7 @@ export function CommandPalette({ commands, onClose }: Props) {
               <Command.Group
                 key={cat}
                 heading={cat}
-                className="[&>[cmdk-group-heading]]:px-3 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:text-[10px] [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-wider [&>[cmdk-group-heading]]:text-muted-foreground/70"
+                className="[&>[cmdk-group-heading]]:px-3 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:text-micro [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-wider [&>[cmdk-group-heading]]:text-muted-foreground/70"
               >
                 {catCommands.map((cmd) => (
                   <Command.Item
@@ -108,7 +108,7 @@ export function CommandPalette({ commands, onClose }: Props) {
                       cmd.action();
                     }}
                     className={cn(
-                      "flex cursor-pointer items-center gap-3 px-3 py-2 text-[12.5px] outline-none",
+                      "flex cursor-pointer items-center gap-3 px-3 py-2 text-ui outline-none",
                       "data-[selected=true]:bg-muted/60 data-[selected=true]:text-foreground",
                       "rounded-lg mx-1",
                     )}
@@ -123,7 +123,7 @@ export function CommandPalette({ commands, onClose }: Props) {
                     <div className="min-w-0 flex-1">
                       <span className="text-foreground">{cmd.label}</span>
                       {cmd.description && (
-                        <span className="ml-1.5 text-[11px] text-muted-foreground">
+                        <span className="ml-1.5 text-caption text-muted-foreground">
                           {cmd.description}
                         </span>
                       )}

@@ -43,12 +43,12 @@ const TOOL_META: Record<string, { label: string; icon: IconName }> = {
 };
 
 const STATUS_DOT: Record<ToolPart["state"], string> = {
-  "approval-requested": "bg-amber-500",
-  "approval-responded": "bg-sky-500",
+  "approval-requested": "bg-warning",
+  "approval-responded": "bg-info",
   "input-streaming": "bg-muted-foreground/40",
-  "input-available": "bg-amber-500",
+  "input-available": "bg-warning",
   "output-available": "bg-transparent border border-muted-foreground/40",
-  "output-denied": "bg-orange-500",
+  "output-denied": "bg-warning",
   "output-error": "bg-destructive",
 };
 
@@ -158,7 +158,7 @@ const ToolImpl = ({
         disabled={!hasDetails}
         className={cn(
           "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left",
-          "text-[12px] transition-colors",
+          "text-ui transition-colors",
           "hover:bg-muted/60 disabled:cursor-default disabled:hover:bg-transparent",
           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         )}
@@ -170,14 +170,14 @@ const ToolImpl = ({
         <Icon name={iconName} className="shrink-0 text-muted-foreground" />
         <span className="shrink-0 font-medium text-foreground">{label}</span>
         {summary ? (
-          <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground">
+          <span className="min-w-0 flex-1 truncate font-mono text-caption text-muted-foreground">
             {summary}
           </span>
         ) : (
           <span className="flex-1" />
         )}
         {isError && (
-          <span className="shrink-0 text-[10px] font-medium text-destructive">
+          <span className="shrink-0 text-micro font-medium text-destructive">
             failed
           </span>
         )}
@@ -226,7 +226,7 @@ function ToolInput({ toolName, input }: { toolName: string; input: unknown }) {
   if (preview) {
     return (
       <div className="space-y-1">
-        <div className="text-[10px] font-medium text-muted-foreground">
+        <div className="text-micro font-medium text-muted-foreground">
           Input
         </div>
         {preview}
@@ -235,7 +235,7 @@ function ToolInput({ toolName, input }: { toolName: string; input: unknown }) {
   }
   return (
     <div className="space-y-1">
-      <div className="text-[10px] font-medium text-muted-foreground">Input</div>
+      <div className="text-micro font-medium text-muted-foreground">Input</div>
       <CodeBlockMini
         code={
           typeof input === "string" ? input : JSON.stringify(input, null, 2)
@@ -262,11 +262,11 @@ function renderInputPreview(
     return (
       <div className="space-y-1">
         {cwd ? (
-          <div className="font-mono text-[10px] text-muted-foreground">
+          <div className="font-mono text-micro text-muted-foreground">
             {cwd}
           </div>
         ) : null}
-        <pre className="overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-relaxed">
+        <pre className="overflow-auto rounded bg-muted/40 p-2 font-mono text-caption leading-relaxed">
           {cmd}
         </pre>
       </div>
@@ -281,7 +281,7 @@ function renderInputPreview(
     const path = str("path") ?? str("url");
     if (!path) return null;
     return (
-      <div className="font-mono text-[11px] text-muted-foreground">{path}</div>
+      <div className="font-mono text-caption text-muted-foreground">{path}</div>
     );
   }
   if (toolName === "grep") {
@@ -289,7 +289,7 @@ function renderInputPreview(
     const path = str("path") ?? str("root");
     if (!pat) return null;
     return (
-      <div className="space-y-0.5 font-mono text-[11px]">
+      <div className="space-y-0.5 font-mono text-caption">
         <div className="text-foreground">{pat}</div>
         {path ? <div className="text-muted-foreground">{path}</div> : null}
       </div>
@@ -310,8 +310,8 @@ function ToolOutput({
   if (errorText) {
     return (
       <div className="space-y-1">
-        <div className="text-[10px] font-medium text-destructive">Error</div>
-        <div className="rounded bg-destructive/10 px-2 py-1.5 font-mono text-[11px] text-destructive whitespace-pre-wrap">
+        <div className="text-micro font-medium text-destructive">Error</div>
+        <div className="rounded bg-destructive/10 px-2 py-1.5 font-mono text-caption text-destructive whitespace-pre-wrap">
           {errorText}
         </div>
       </div>
@@ -330,12 +330,12 @@ function ToolOutput({
       <CodeBlockMini code={JSON.stringify(output, null, 2)} language="json" />
     );
   } else {
-    body = <div className="text-[12px]">{output as ReactNode}</div>;
+    body = <div className="text-ui">{output as ReactNode}</div>;
   }
 
   return (
     <div className="space-y-1">
-      <div className="text-[10px] font-medium text-muted-foreground">
+      <div className="text-micro font-medium text-muted-foreground">
         Output
       </div>
       {body}
@@ -353,8 +353,8 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
     const content = typeof o.content === "string" ? o.content : "";
     const lines = content ? content.split("\n").length : null;
     return (
-      <div className="flex items-center gap-1.5 font-mono text-[11px]">
-        <span className="text-emerald-600 dark:text-emerald-400">✓</span>
+      <div className="flex items-center gap-1.5 font-mono text-caption">
+        <span className="text-success">✓</span>
         <span className="text-foreground">read</span>
         {path ? <span className="text-muted-foreground">· {path}</span> : null}
         {lines != null ? (
@@ -373,7 +373,7 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
       : [];
     if (entries.length === 0) {
       return (
-        <div className="text-[11px] italic text-muted-foreground">empty</div>
+        <div className="text-caption italic text-muted-foreground">empty</div>
       );
     }
     const dirs = entries.filter(
@@ -383,7 +383,7 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
       (e) => !(e.kind === "directory" || e.kind === "dir"),
     );
     return (
-      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-[11px]">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-caption">
         {dirs.map((e) => (
           <div
             key={`d-${e.name}`}
@@ -438,7 +438,7 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
 
     if (hits.length === 0) {
       return (
-        <div className="text-[11px] italic text-muted-foreground">
+        <div className="text-caption italic text-muted-foreground">
           no matches
           {filesScanned != null ? ` · ${filesScanned} files scanned` : ""}
         </div>
@@ -447,7 +447,7 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
 
     return (
       <div className="space-y-1">
-        <div className="max-h-72 overflow-auto rounded bg-muted/30 font-mono text-[11px]">
+        <div className="max-h-72 overflow-auto rounded bg-muted/30 font-mono text-caption">
           {hits.slice(0, 200).map((h, idx) => (
             <div
               // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
@@ -463,13 +463,13 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+        <div className="flex items-center justify-between text-micro text-muted-foreground">
           <span>
             {hits.length} hit{hits.length === 1 ? "" : "s"}
             {filesScanned != null ? ` · ${filesScanned} files` : ""}
           </span>
           {truncated ? (
-            <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-700 dark:text-amber-400">
+            <span className="rounded bg-warning/15 px-1.5 py-0.5 text-warning">
               truncated
             </span>
           ) : null}
@@ -486,13 +486,13 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
         : [];
     if (matches.length === 0) {
       return (
-        <div className="text-[11px] italic text-muted-foreground">
+        <div className="text-caption italic text-muted-foreground">
           no matches
         </div>
       );
     }
     return (
-      <div className="max-h-60 overflow-auto rounded bg-muted/30 px-2 py-1 font-mono text-[11px]">
+      <div className="max-h-60 overflow-auto rounded bg-muted/30 px-2 py-1 font-mono text-caption">
         {matches.slice(0, 300).map((p) => (
           <div key={p} className="truncate text-muted-foreground">
             {p}
@@ -508,8 +508,8 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
       const reps = typeof o.replacements === "number" ? o.replacements : null;
       const path = typeof o.path === "string" ? o.path : "";
       return (
-        <div className="flex items-center gap-1.5 font-mono text-[11px]">
-          <span className="text-emerald-600 dark:text-emerald-400">✓</span>
+        <div className="flex items-center gap-1.5 font-mono text-caption">
+          <span className="text-success">✓</span>
           {reps != null ? (
             <span className="text-foreground">
               {reps} replacement{reps === 1 ? "" : "s"}
@@ -527,8 +527,8 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
     const path = typeof o.path === "string" ? o.path : "";
     const bytes = typeof o.bytesWritten === "number" ? o.bytesWritten : null;
     return (
-      <div className="flex items-center gap-1.5 font-mono text-[11px]">
-        <span className="text-emerald-600 dark:text-emerald-400">✓</span>
+      <div className="flex items-center gap-1.5 font-mono text-caption">
+        <span className="text-success">✓</span>
         <span className="text-foreground">
           {toolName === "create_directory" ? "created" : "wrote"}
         </span>
@@ -544,9 +544,9 @@ function renderToolOutput(toolName: string, output: unknown): ReactNode | null {
     const handle = typeof o.handle === "string" ? o.handle : null;
     const cmd = typeof o.command === "string" ? o.command : "";
     return (
-      <div className="space-y-0.5 font-mono text-[11px]">
+      <div className="space-y-0.5 font-mono text-caption">
         <div className="flex items-center gap-1.5">
-          <span className="size-1.5 rounded-full bg-emerald-500 nexis-blink" />
+          <span className="size-1.5 rounded-full bg-success nexis-blink" />
           {handle ? <span className="text-foreground">{handle}</span> : null}
           <span className="text-muted-foreground">running</span>
         </div>
@@ -591,7 +591,7 @@ function BashRunOutput({ data }: { data: Record<string, unknown> }) {
             type="button"
             onClick={() => setTab(t.key)}
             className={cn(
-              "rounded px-1.5 py-0.5 font-mono text-[10px] transition-colors",
+              "rounded px-1.5 py-0.5 font-mono text-micro transition-colors",
               tab === t.key
                 ? "bg-foreground/10 text-foreground"
                 : "text-muted-foreground hover:text-foreground",
@@ -609,9 +609,9 @@ function BashRunOutput({ data }: { data: Record<string, unknown> }) {
         {exit != null ? (
           <span
             className={cn(
-              "rounded px-1.5 py-0.5 font-mono text-[10px]",
+              "rounded px-1.5 py-0.5 font-mono text-micro",
               exit === 0
-                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                ? "bg-success/15 text-success"
                 : "bg-destructive/15 text-destructive",
             )}
           >
@@ -619,21 +619,21 @@ function BashRunOutput({ data }: { data: Record<string, unknown> }) {
           </span>
         ) : null}
         {timedOut ? (
-          <span className="rounded bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] text-amber-700 dark:text-amber-400">
+          <span className="rounded bg-warning/15 px-1.5 py-0.5 font-mono text-micro text-warning">
             timed out
           </span>
         ) : null}
         {truncated ? (
-          <span className="rounded bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] text-amber-700 dark:text-amber-400">
+          <span className="rounded bg-warning/15 px-1.5 py-0.5 font-mono text-micro text-warning">
             truncated
           </span>
         ) : null}
       </div>
-      <pre className="max-h-72 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap">
+      <pre className="max-h-72 overflow-auto rounded bg-muted/40 p-2 font-mono text-caption leading-relaxed whitespace-pre-wrap">
         {tab === "stdout" ? stdout || " " : stderr || " "}
       </pre>
       {cwdAfter ? (
-        <div className="font-mono text-[10px] text-muted-foreground">
+        <div className="font-mono text-micro text-muted-foreground">
           cwd → {cwdAfter}
         </div>
       ) : null}
@@ -656,7 +656,7 @@ function highlightMatch(text: string, pattern: string): ReactNode {
   return parts.map((p, i) =>
     i % 2 === 1 ? (
       // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
-      <mark key={i} className="rounded bg-amber-500/30 px-0.5 text-foreground">
+      <mark key={i} className="rounded bg-warning/30 px-0.5 text-foreground">
         {p}
       </mark>
     ) : (
@@ -671,7 +671,7 @@ function CodeBlockMini({ code }: { code: string; language: string }) {
   // file content is shown in the editor diff tab. Highlighting here is not
   // worth the parser hop.
   return (
-    <pre className="max-h-60 overflow-auto rounded bg-muted/40 p-2 font-mono text-[11px] leading-relaxed text-foreground whitespace-pre-wrap">
+    <pre className="max-h-60 overflow-auto rounded bg-muted/40 p-2 font-mono text-caption leading-relaxed text-foreground whitespace-pre-wrap">
       {code}
     </pre>
   );
@@ -694,10 +694,10 @@ function SuggestCommandCard({
   return (
     <div className="space-y-1.5">
       {explanation ? (
-        <div className="text-[11px] text-muted-foreground">{explanation}</div>
+        <div className="text-caption text-muted-foreground">{explanation}</div>
       ) : null}
       <div className="flex items-stretch gap-1.5 rounded bg-muted/40 overflow-hidden">
-        <pre className="flex-1 overflow-auto p-2 font-mono text-[11px] leading-relaxed">
+        <pre className="flex-1 overflow-auto p-2 font-mono text-caption leading-relaxed">
           {command}
         </pre>
         <button
@@ -705,7 +705,7 @@ function SuggestCommandCard({
           onClick={onInsert}
           disabled={inserted}
           className={cn(
-            "shrink-0 flex items-center gap-1 px-2.5 text-[11px] font-medium",
+            "shrink-0 flex items-center gap-1 px-2.5 text-caption font-medium",
             "border-l border-border/60",
             "hover:bg-muted/80 active:bg-muted",
             "disabled:opacity-60 disabled:cursor-default disabled:hover:bg-transparent",

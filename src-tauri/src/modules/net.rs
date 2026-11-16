@@ -627,7 +627,7 @@ mod tests {
                 assert_ne!(
                     ip_kind(IpAddr::V4(ip)),
                     IpKind::Public,
-                    "reserved IPv4 {ip} was classified Public — SSRF hole"
+                    "reserved IPv4 {ip} was classified Public: SSRF hole"
                 );
             }
         }

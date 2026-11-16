@@ -126,11 +126,11 @@ export function ImageViewerPane({ path, visible }: Props) {
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-card/60 px-3 py-1">
         <div className="flex min-w-0 items-center gap-2">
           <Icon name="image" className="shrink-0 text-muted-foreground/60" />
-          <span className="truncate font-mono text-[10.5px] text-muted-foreground/70">
+          <span className="truncate font-mono text-caption text-muted-foreground/70">
             {filename}
           </span>
           {dims && (
-            <span className="shrink-0 text-[10px] text-muted-foreground/40">
+            <span className="shrink-0 text-micro text-muted-foreground/40">
               {dims.w} × {dims.h} · {ext}
             </span>
           )}
@@ -144,7 +144,7 @@ export function ImageViewerPane({ path, visible }: Props) {
             onClick={toggleFit}
             className={cn(
               "flex h-6 min-w-[46px] cursor-pointer items-center justify-center rounded px-1.5",
-              "text-[10.5px] font-medium tabular-nums outline-none transition-colors",
+              "text-caption font-medium tabular-nums outline-none transition-colors",
               "focus-visible:ring-1 focus-visible:ring-primary/40",
               fitMode === "fit"
                 ? "bg-primary/10 text-primary"
@@ -171,7 +171,7 @@ export function ImageViewerPane({ path, visible }: Props) {
       >
         {loadErr ? (
           <div className="flex h-full items-center justify-center">
-            <p className="text-[12px] text-destructive">
+            <p className="text-ui text-destructive">
               Failed to load image: {filename}
             </p>
           </div>
@@ -202,15 +202,15 @@ export function ImageViewerPane({ path, visible }: Props) {
       <div className="flex shrink-0 items-center gap-3 border-t border-border/40 bg-card/40 px-3 py-0.5">
         {dims ? (
           <>
-            <span className="text-[10px] text-muted-foreground/50">
+            <span className="text-micro text-muted-foreground/50">
               {dims.w} × {dims.h} px
             </span>
-            <span className="text-[10px] text-muted-foreground/50">
+            <span className="text-micro text-muted-foreground/50">
               {fmtZoom(zoom)}
             </span>
           </>
         ) : (
-          <span className="text-[10px] text-muted-foreground/40">Loading…</span>
+          <span className="text-micro text-muted-foreground/40">Loading…</span>
         )}
       </div>
     </div>
@@ -235,7 +235,7 @@ function ToolbarBtn({
       title={label}
       onClick={onClick}
       className={cn(
-        "flex h-6 w-6 cursor-pointer items-center justify-center rounded text-[10.5px] outline-none transition-colors",
+        "flex h-6 w-6 cursor-pointer items-center justify-center rounded text-caption outline-none transition-colors",
         "focus-visible:ring-1 focus-visible:ring-primary/40",
         active
           ? "bg-primary/10 text-primary"

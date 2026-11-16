@@ -1,6 +1,6 @@
 ---
 type: subsystem
-description: Language-server integration — sessions, typed native protocol, diagnostics and server-initiated edits.
+description: Language-server integration, sessions, typed native protocol, diagnostics and server-initiated edits.
 ---
 
 # LSP integration

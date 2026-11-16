@@ -30,7 +30,7 @@ export const benchmarkCapability: CapabilityDefinition = {
   toolWindows: [{
     id: "benchmark",
     label: TOOL_NAMES.benchmark,
-    title: `${TOOL_NAMES.benchmark} — Nexis`,
+    title: `${TOOL_NAMES.benchmark} · Nexis`,
     icon: "activity",
     width: 1280,
     height: 860,

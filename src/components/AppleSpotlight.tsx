@@ -30,6 +30,7 @@ import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { FileTypeIcon } from "@/modules/explorer/lib/FileTypeIcon";
 import { useRecentFiles } from "@/modules/recent-files/useRecentFiles";
 import { Kbd } from "@/components/ui/kbd";
+import { Spinner } from "@/components/ui/spinner";
 import { SpotlightPreview, type PreviewTarget } from "./spotlight/SpotlightPreview";
 import {
   memo,
@@ -170,7 +171,7 @@ function RotatingHint({ reduceMotion }: { reduceMotion: boolean }) {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -14, opacity: 0 }}
           transition={{ type: "spring", stiffness: 380, damping: 30 }}
-          className="whitespace-nowrap text-[17px] text-muted-foreground/50"
+          className="whitespace-nowrap text-lg text-muted-foreground/50"
         >
           {HINTS[i]}
         </m.span>
@@ -225,11 +226,11 @@ const SpotlightRow = memo(function SpotlightRow({
         </span>
       )}
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[12.5px] font-medium">
+        <span className="block truncate text-ui font-medium">
           {hit.title}
         </span>
         {hit.subtitle && (
-          <span className="block truncate text-[10.5px] text-muted-foreground">
+          <span className="block truncate text-caption text-muted-foreground">
             {hit.subtitle}
           </span>
         )}
@@ -254,8 +255,10 @@ function SearchGlyph({ loading, expanded, spring }: { loading: boolean; expanded
             initial={{ opacity: 0, scale: 0.6 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.6 }}
-            className="size-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary"
-          />
+            className="flex size-4 items-center justify-center text-muted-foreground"
+          >
+            <Spinner className="size-4" />
+          </m.span>
         ) : (
           <m.span
             key="search"
@@ -288,7 +291,7 @@ function CountBadge({ files, commands, spring }: { files: number; commands: numb
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
           transition={spring}
-          className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10.5px] tabular-nums text-muted-foreground"
+          className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-caption tabular-nums text-muted-foreground"
         >
           {parts.join(" · ")}
         </m.span>
@@ -299,7 +302,7 @@ function CountBadge({ files, commands, spring }: { files: number; commands: numb
 
 function KeyHints() {
   return (
-    <div className="flex items-center gap-3 border-t border-border/60 px-4 py-1.5 text-[10.5px] text-muted-foreground">
+    <div className="flex items-center gap-3 border-t border-border/60 px-4 py-1.5 text-caption text-muted-foreground">
       <span className="flex items-center gap-1">
         <Kbd>↑</Kbd>
         <Kbd>↓</Kbd>
@@ -508,7 +511,7 @@ function ResultsPane({
   if (results.length === 0) {
     if (loading || !expanded) return null;
     return (
-      <div className="border-t border-border/60 px-4 py-8 text-center text-[12px] text-muted-foreground">
+      <div className="border-t border-border/60 px-4 py-8 text-center text-ui text-muted-foreground">
         {hasRoot ? "No results" : "No workspace open"}
       </div>
     );
@@ -518,7 +521,7 @@ function ResultsPane({
     <div className="flex min-h-0 border-t border-border/60">
       <div className="flex min-w-0 flex-1 flex-col">
         {!expanded ? (
-          <div className="px-4 pt-2 text-[10px] font-medium tracking-wide text-muted-foreground/70 uppercase">
+          <div className="px-4 pt-2 text-micro font-medium tracking-wide text-muted-foreground/70 uppercase">
             {hasRecent ? "Recent" : "In this workspace"}
           </div>
         ) : null}
@@ -687,7 +690,7 @@ export function AppleSpotlight({ root, onSelect, onClose, commands }: Props) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onKey}
-              className="relative w-full bg-transparent text-[17px] text-foreground outline-none placeholder:text-muted-foreground/50"
+              className="relative w-full bg-transparent text-lg text-foreground outline-none placeholder:text-muted-foreground/50"
             />
           </span>
           {expanded ? <CountBadge files={fileCount} commands={commandCount} spring={spring} /> : null}

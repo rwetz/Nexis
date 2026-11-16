@@ -1,38 +1,38 @@
 ---
 type: subsystem
-description: Borderless window chrome — decorations config, drag region, min/max/close controls, edge resize, rounded corners, per-platform quirks
+description: Borderless window chrome, decorations config, drag region, min/max/close controls, edge resize, rounded corners, per-platform quirks
 ---
 
 # Window chrome
 
 Nexis draws its own window chrome on Windows and Linux: the OS provides an
 undecorated transparent window, and the app paints rounded corners, the
-header (drag region + controls), and — on Linux — its own resize edges.
+header (drag region + controls), and, on Linux, its own resize edges.
 macOS keeps native decorations (overlay title bar, traffic lights).
 
 ## Key files
 
-- `src-tauri/tauri.linux.conf.json` / `tauri.windows.conf.json` — `decorations: false, transparent: true, shadow: false` for the main window (base `tauri.conf.json` has the macOS overlay config)
-- `src-tauri/src/lib.rs:tune_linux_webkit` — sets `GTK_CSD=1` so KWin doesn't draw a second server-side title bar; the `setup` hook re-asserts `set_decorations(false)` after webview init (webkit2gtk can reset the hint)
-- `src/main.tsx` — sets `data-chrome="borderless"` on `<html>` when custom controls are in use; keyed CSS lives in `src/styles/globals.css` (12px `border-radius` on `#root`)
-- `src/lib/platform.ts:USE_CUSTOM_WINDOW_CONTROLS` — the "are we drawing our own chrome" switch
-- `src/modules/header/Header.tsx` — `data-tauri-drag-region` for window move
-- `src/components/WindowControls.tsx` — custom min/max/close buttons
-- `src/components/WindowResizeEdges.tsx` — Linux-only invisible edge/corner strips that call `startResizeDragging()`; see gotcha below
-- `src/modules/window/openNewWindow.ts` — secondary windows must repeat the platform chrome options; they don't inherit the config-file overrides
-- `src/modules/window/toolWindow.ts` / `ToolWindowShell.tsx` — capability-declared singleton companion windows, opened from the permanent titlebar launchers. The `?tool=` route is admitted only when its id matches a current capability contribution; the generic shell renders the declared panel and actions without importing a capability.
-- `src/modules/window/quickTerminal.ts` — the quick-terminal drop-down window (create / toggle / hide); `quickTerminalConfig.ts` holds its pure geometry + accelerator logic, `useQuickTerminal.ts` the hotkey registration and dismiss-on-blur hooks
+- `src-tauri/tauri.linux.conf.json` / `tauri.windows.conf.json`, `decorations: false, transparent: true, shadow: false` for the main window (base `tauri.conf.json` has the macOS overlay config)
+- `src-tauri/src/lib.rs:tune_linux_webkit`, sets `GTK_CSD=1` so KWin doesn't draw a second server-side title bar; the `setup` hook re-asserts `set_decorations(false)` after webview init (webkit2gtk can reset the hint)
+- `src/main.tsx`: sets `data-chrome="borderless"` on `<html>` when custom controls are in use; keyed CSS lives in `src/styles/globals.css` (12px `border-radius` on `#root`)
+- `src/lib/platform.ts:USE_CUSTOM_WINDOW_CONTROLS`, the "are we drawing our own chrome" switch
+- `src/modules/header/Header.tsx`: `data-tauri-drag-region` for window move
+- `src/components/WindowControls.tsx`: custom min/max/close buttons
+- `src/components/WindowResizeEdges.tsx`: Linux-only invisible edge/corner strips that call `startResizeDragging()`; see gotcha below
+- `src/modules/window/openNewWindow.ts`: secondary windows must repeat the platform chrome options; they don't inherit the config-file overrides
+- `src/modules/window/toolWindow.ts` / `ToolWindowShell.tsx`: capability-declared singleton companion windows, opened from the permanent titlebar launchers. The `?tool=` route is admitted only when its id matches a current capability contribution; the generic shell renders the declared panel and actions without importing a capability.
+- `src/modules/window/quickTerminal.ts`: the quick-terminal drop-down window (create / toggle / hide); `quickTerminalConfig.ts` holds its pure geometry + accelerator logic, `useQuickTerminal.ts` the hotkey registration and dismiss-on-blur hooks
 
 ## Invariants / gotchas
 
-- **An undecorated GTK window has no resize borders.** The grab zone around a normal Linux window belongs to the CSD shadow; `decorations: false` removes it, so edge resize + resize cursors must come from `WindowResizeEdges` in the webview. Windows needs no equivalent — tao gives undecorated windows native `WM_NCHITTEST` resize borders. Don't remove the component or scope it wider than Linux.
+- **An undecorated GTK window has no resize borders.** The grab zone around a normal Linux window belongs to the CSD shadow; `decorations: false` removes it, so edge resize + resize cursors must come from `WindowResizeEdges` in the webview. Windows needs no equivalent: tao gives undecorated windows native `WM_NCHITTEST` resize borders. Don't remove the component or scope it wider than Linux.
 - `WindowResizeEdges` must mount **outside `.zoom-content`** (app zoom would scale the hit strips off the window edges) and keeps `pointer-events-auto` so Radix modals (`pointer-events: none` on `<body>`) don't disable resizing.
 - The double-title-bar / KWin story and why `GTK_CSD=1` + the `set_decorations` re-assert exist: see the 1.20.5 "borderless window chrome" entry in CHANGELOG.md.
-- **The quick terminal owns its own visibility — `main.tsx` must not auto-show it.** Every other window starts hidden and is shown by a `setTimeout` in `main.tsx` once React has painted. The quick terminal is explicitly excluded by label: it is shown only after `toggleQuickTerminal` has positioned it on the active monitor, so auto-showing flashes it at the default centred position, and it would also re-summon itself uninvited if the webview reloaded while hidden. If you add another window that manages its own visibility, exclude it there too.
+- **The quick terminal owns its own visibility: `main.tsx` must not auto-show it.** Every other window starts hidden and is shown by a `setTimeout` in `main.tsx` once React has painted. The quick terminal is explicitly excluded by label: it is shown only after `toggleQuickTerminal` has positioned it on the active monitor, so auto-showing flashes it at the default centred position, and it would also re-summon itself uninvited if the webview reloaded while hidden. If you add another window that manages its own visibility, exclude it there too.
 - **Dismiss hides, never closes.** Destroying the quick-terminal webview would kill its shell and make every summon a cold start. `hideQuickTerminal` is the only dismiss path.
 - **The global accelerator is registered from the main window only.** A global shortcut is process-wide; registering from every window either fails as a duplicate or fires the handler once per open window. `useQuickTerminalHotkey` guards on the `main` label.
-- **A Tauri plugin's `:default` permission can grant nothing.** `global-shortcut:default` is deliberately empty upstream ("shortcuts can be inherently dangerous and it is application specific"), so listing it in `capabilities/default.json` silently grants no commands and the ACL tree-shakes `register`/`unregister`/`is_registered` out of the binary — the failure only appears at the first IPC call, at runtime. The quick terminal needs `global-shortcut:allow-register`, `allow-unregister`, and `allow-is-registered` named individually. **How to check any new plugin:** run `pnpm tauri dev` and grep the build log for `Removed unused commands from <plugin>` — anything listed there is a command you thought you had and don't. `src-tauri/gen/schemas/acl-manifests.json` lists what each plugin actually offers.
-- Global-shortcut registration is best-effort: a conflicting accelerator (another app already owns it) throws, and that is logged, not propagated — the user gets an inert hotkey they can change in Settings rather than a failed startup.
+- **A Tauri plugin's `:default` permission can grant nothing.** `global-shortcut:default` is deliberately empty upstream ("shortcuts can be inherently dangerous and it is application specific"), so listing it in `capabilities/default.json` silently grants no commands and the ACL tree-shakes `register`/`unregister`/`is_registered` out of the binary, the failure only appears at the first IPC call, at runtime. The quick terminal needs `global-shortcut:allow-register`, `allow-unregister`, and `allow-is-registered` named individually. **How to check any new plugin:** run `pnpm tauri dev` and grep the build log for `Removed unused commands from <plugin>`, anything listed there is a command you thought you had and don't. `src-tauri/gen/schemas/acl-manifests.json` lists what each plugin actually offers.
+- Global-shortcut registration is best-effort: a conflicting accelerator (another app already owns it) throws, and that is logged, not propagated, the user gets an inert hotkey they can change in Settings rather than a failed startup.
 
 ## Debugging entry points
 

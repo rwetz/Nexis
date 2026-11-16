@@ -96,7 +96,7 @@ fn tune_linux_webkit() {
     }
     std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
     eprintln!(
-        "[nexis] NVIDIA driver detected — set WEBKIT_DISABLE_DMABUF_RENDERER=1 \
+        "[nexis] NVIDIA driver detected: set WEBKIT_DISABLE_DMABUF_RENDERER=1 \
          to avoid WebKitGTK render lag (override by exporting it yourself)"
     );
 }

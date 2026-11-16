@@ -48,7 +48,7 @@ export function PresetGallery({ onInsert }: Props) {
             aria-pressed={g === group}
             onClick={() => setGroup(g)}
             className={cn(
-              "rounded-md px-1.5 py-0.5 text-[10.5px] transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+              "rounded-md px-1.5 py-0.5 text-caption transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
               g === group
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:text-foreground",
@@ -73,7 +73,7 @@ export function PresetGallery({ onInsert }: Props) {
 
       <div className="flex shrink-0 items-center gap-1.5 border-t border-border/50 px-3 py-2">
         <Icon name="info" size="xs" className="text-muted-foreground/60" />
-        <span className="text-[9.5px] leading-relaxed text-muted-foreground/70">
+        <span className="text-micro leading-relaxed text-muted-foreground/70">
           Picking one replaces the editor. Tune it from Shapes, the canvas, or
           the source.
         </span>
@@ -110,7 +110,7 @@ function PresetTile({
         // Ours, and sanitized above — see the module note.
         dangerouslySetInnerHTML={{ __html: safe }}
       />
-      <span className="w-full truncate text-center text-[9.5px] text-muted-foreground">
+      <span className="w-full truncate text-center text-micro text-muted-foreground">
         {preset.label}
       </span>
     </button>

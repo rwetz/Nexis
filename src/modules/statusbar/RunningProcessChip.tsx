@@ -61,7 +61,7 @@ export function RunningProcessChip({ onOpenActivity }: Props) {
         <button
           type="button"
           onClick={onOpenActivity}
-          className="shrink-0 tabular-nums text-[10.5px] text-muted-foreground transition-colors hover:text-foreground"
+          className="shrink-0 tabular-nums text-caption text-muted-foreground transition-colors hover:text-foreground"
           title={`${live.length} background processes running`}
         >
           +{live.length - 1}

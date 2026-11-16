@@ -70,11 +70,11 @@ function AutoApprovalEffect({
     return () => clearTimeout(t);
   }, [approvalId, approved]);
   return (
-    <div className="flex min-w-0 items-center gap-1.5 py-0.5 text-[11px] text-muted-foreground">
+    <div className="flex min-w-0 items-center gap-1.5 py-0.5 text-caption text-muted-foreground">
       <span
         className={cn(
           "shrink-0",
-          approved ? "text-emerald-500" : "text-rose-500",
+          approved ? "text-success" : "text-destructive",
         )}
       >
         {approved
@@ -97,7 +97,7 @@ function CommandSnippet({ name }: { name: string }) {
   const meta = SLASH_COMMANDS[name];
   if (!meta) {
     return (
-      <div className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/40 px-2 py-1 font-mono text-[11px]">
+      <div className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/40 px-2 py-1 font-mono text-caption">
         /{name}
       </div>
     );
@@ -105,10 +105,10 @@ function CommandSnippet({ name }: { name: string }) {
   return (
     <div className="inline-flex max-w-full items-center gap-2 rounded-md border border-border/50 bg-muted/40 px-2 py-1">
       <Icon name={meta.icon} className="shrink-0 text-foreground" />
-      <span className="font-mono text-[11px] text-foreground">
+      <span className="font-mono text-caption text-foreground">
         {meta.invocation}
       </span>
-      <span className="truncate text-[11px] text-muted-foreground">
+      <span className="truncate text-caption text-muted-foreground">
         {meta.label}
       </span>
     </div>
@@ -170,7 +170,7 @@ const ContextChips = memo(function ContextChips({
       {chips.map((c) => (
         <span
           key={`${c.kind}:${chipLabel(c)}`}
-          className="inline-flex items-center gap-1 rounded-md border border-border/50 bg-card/60 px-1.5 py-0.5 text-[10.5px] text-muted-foreground"
+          className="inline-flex items-center gap-1 rounded-md border border-border/50 bg-card/60 px-1.5 py-0.5 text-caption text-muted-foreground"
         >
           {chipIcon(c)}
           <span className="font-medium text-foreground">{chipLabel(c)}</span>
@@ -228,7 +228,7 @@ function WorkingRow({ orb, step }: { orb: string; step: string | null }) {
   const state = useAgentOrbState();
   const label = step ?? (state === "speaking" ? "Responding" : "Thinking…");
   return (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="flex items-center gap-2 text-ui text-muted-foreground">
       <LazyShaderOrb variant={orb} state={state} size={22} className="-my-1 -ml-0.5" />
       <span className="truncate">{label}</span>
     </div>
@@ -287,7 +287,7 @@ export function AiChatView({
           isBusy && <WorkingRow orb={orb} step={step} />
         ) : (
           showSpinner && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-ui text-muted-foreground">
               <Spinner />
               <span className="truncate">{step ?? "Thinking…"}</span>
             </div>
@@ -298,13 +298,13 @@ export function AiChatView({
             onContinue={() => {
               patchAgentMeta({ hitStepCap: false });
               void sendMessage(
-                "Continue from where you stopped. Don't recap — just keep going.",
+                "Continue from where you stopped. Don't recap, just keep going.",
               );
             }}
           />
         )}
         {error && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-ui text-destructive">
             <div className="font-medium">Something went wrong.</div>
             <div className="mt-0.5 leading-relaxed opacity-90">
               {error.message}
@@ -332,16 +332,16 @@ const CompactionNotice = memo(function CompactionNotice({
   onDismiss: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-border/40 bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground">
-      <span className="size-1.5 shrink-0 rounded-full bg-amber-500/80" />
+    <div className="flex items-center gap-2 rounded-md border border-border/40 bg-muted/30 px-2.5 py-1.5 text-caption text-muted-foreground">
+      <span className="size-1.5 shrink-0 rounded-full bg-warning/80" />
       <span className="flex-1 truncate">
-        Context compacted — {droppedCount} older tool result
+        Context compacted: {droppedCount} older tool result
         {droppedCount === 1 ? "" : "s"} elided to save tokens.
       </span>
       <button
         type="button"
         onClick={onDismiss}
-        className="text-[10.5px] underline opacity-70 hover:opacity-100"
+        className="text-caption underline opacity-70 hover:opacity-100"
       >
         Dismiss
       </button>
@@ -355,14 +355,14 @@ const ContinueRow = memo(function ContinueRow({
   onContinue: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-border/50 bg-card/60 px-2.5 py-1.5 text-[11px]">
+    <div className="flex items-center gap-2 rounded-md border border-border/50 bg-card/60 px-2.5 py-1.5 text-caption">
       <span className="flex-1 text-muted-foreground">
         Hit the step limit. Continue to keep going.
       </span>
       <button
         type="button"
         onClick={onContinue}
-        className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
+        className="rounded-md border border-border/60 bg-background px-2 py-0.5 text-caption font-medium text-foreground transition-colors hover:bg-accent"
       >
         Continue
       </button>
@@ -542,7 +542,7 @@ const ReadGroup = memo(function ReadGroup({ parts }: { parts: AnyPart[] }) {
     <Collapsible className="group/read overflow-hidden rounded-md border border-border/50 bg-card/50">
       <CollapsibleTrigger
         className={cn(
-          "flex w-full items-center gap-2 px-2 py-1.5 text-left text-[12px]",
+          "flex w-full items-center gap-2 px-2 py-1.5 text-left text-ui",
           "transition-colors hover:bg-muted/50",
           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         )}
@@ -554,11 +554,11 @@ const ReadGroup = memo(function ReadGroup({ parts }: { parts: AnyPart[] }) {
         />
         <Icon name="file" className="shrink-0 text-muted-foreground" />
         <span className="shrink-0 font-medium text-foreground">Read</span>
-        <span className="shrink-0 text-[11px] text-muted-foreground">
+        <span className="shrink-0 text-caption text-muted-foreground">
           {count} file{count === 1 ? "" : "s"}
         </span>
         {paths.length > 0 ? (
-          <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground/80 group-data-[state=open]/read:invisible">
+          <span className="min-w-0 flex-1 truncate font-mono text-caption text-muted-foreground/80 group-data-[state=open]/read:invisible">
             · {preview}
           </span>
         ) : null}
@@ -568,7 +568,7 @@ const ReadGroup = memo(function ReadGroup({ parts }: { parts: AnyPart[] }) {
           {paths.map((path) => (
             <li
               key={path}
-              className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground"
+              className="flex items-center gap-1.5 font-mono text-caption text-muted-foreground"
             >
               <Icon name="file" size="xs" className="shrink-0 opacity-60" />
               <span className="truncate text-foreground">
@@ -600,7 +600,7 @@ const ReadRow = memo(function ReadRow({ part }: { part: AnyPart }) {
   const state = (part as { state?: string }).state ?? "";
   const isError = state === "output-error";
   return (
-    <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px]">
+    <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-ui">
       <span
         className={cn(
           "size-1.5 shrink-0 rounded-full",
@@ -611,7 +611,7 @@ const ReadRow = memo(function ReadRow({ part }: { part: AnyPart }) {
       />
       <Icon name="file" className="shrink-0 text-muted-foreground" />
       <span className="shrink-0 font-medium text-foreground">Read</span>
-      <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground">
+      <span className="min-w-0 flex-1 truncate font-mono text-caption text-muted-foreground">
         {path ?? ""}
       </span>
     </div>

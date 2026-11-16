@@ -236,22 +236,22 @@ export function PalettePanel({ workspaceRoot }: Props) {
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="theme" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+        <span className="text-caption font-semibold tracking-wider text-muted-foreground uppercase">
           Palette
         </span>
-        <span className="ml-auto text-[10px] text-muted-foreground/60">
+        <span className="ml-auto text-micro text-muted-foreground/60">
           {entries.length}
         </span>
       </div>
 
       {/* Seeding */}
       <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border/50 px-2 py-1.5">
-        <span className="text-[10px] text-muted-foreground/70">From theme</span>
+        <span className="text-micro text-muted-foreground/70">From theme</span>
         <button
           type="button"
           onClick={() => seedFromTheme("ui")}
           title="Load the active theme's interface colours"
-          className="rounded-md px-1.5 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+          className="rounded-md px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
         >
           Interface
         </button>
@@ -259,7 +259,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
           type="button"
           onClick={() => seedFromTheme("ansi")}
           title="Load the active theme's sixteen terminal colours"
-          className="rounded-md px-1.5 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+          className="rounded-md px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
         >
           Terminal
         </button>
@@ -268,7 +268,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
           type="button"
           onClick={add}
           title="Add a swatch"
-          className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+          className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
         >
           <Icon name="add" size="xs" />
           Add
@@ -277,7 +277,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
 
       {/* Harmony */}
       <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border/50 px-2 py-1.5">
-        <span className="text-[10px] text-muted-foreground/70">Harmony</span>
+        <span className="text-micro text-muted-foreground/70">Harmony</span>
         {HARMONIES.map((k) => (
           <button
             key={k}
@@ -285,7 +285,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
             aria-pressed={harmonyKind === k}
             onClick={() => setHarmonyKind(k)}
             className={cn(
-              "rounded px-1.5 py-0.5 text-[10px] transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+              "rounded px-1.5 py-0.5 text-micro transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
               harmonyKind === k
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:text-foreground",
@@ -319,9 +319,9 @@ export function PalettePanel({ workspaceRoot }: Props) {
                     value={entry.name}
                     onChange={(e) => update(i, { name: e.target.value })}
                     aria-label="Swatch name"
-                    className="min-w-0 bg-transparent text-[11px] focus-visible:outline-none"
+                    className="min-w-0 bg-transparent text-caption focus-visible:outline-none"
                   />
-                  <span className="font-mono text-[9.5px] text-muted-foreground/70">
+                  <span className="font-mono text-micro text-muted-foreground/70">
                     {entry.hex}
                   </span>
                 </div>
@@ -329,27 +329,27 @@ export function PalettePanel({ workspaceRoot }: Props) {
                 {/* Contrast against the reference. The reference itself shows
                     a marker instead of a 1:1 ratio, which says nothing. */}
                 {isReference ? (
-                  <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[9px] text-muted-foreground">
+                  <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-micro text-muted-foreground">
                     ref
                   </span>
                 ) : (
                   <span
-                    className="shrink-0 rounded px-1 py-0.5 text-[9px] font-medium tabular-nums"
+                    className="shrink-0 rounded px-1 py-0.5 text-micro font-medium tabular-nums"
                     style={{
                       background: entry.hex,
                       color: readableOn(entry.hex),
                     }}
-                    title={`${formatRatio(verdict.ratio)} against ${reference} — body ${verdict.normal}, large ${verdict.large}, UI ${verdict.ui}`}
+                    title={`${formatRatio(verdict.ratio)} against ${reference}: body ${verdict.normal}, large ${verdict.large}, UI ${verdict.ui}`}
                   >
                     {formatRatio(verdict.ratio)}
                   </span>
                 )}
                 <span
                   className={cn(
-                    "w-7 shrink-0 text-center text-[9px] font-semibold",
+                    "w-7 shrink-0 text-center text-micro font-semibold",
                     verdict.normal === "fail"
                       ? "text-muted-foreground/40"
-                      : "text-green-500",
+                      : "text-success",
                   )}
                   title="WCAG level for body text"
                 >
@@ -386,7 +386,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
         </ul>
 
         {entries.length === 0 && (
-          <p className="p-3 text-center text-[11px] text-muted-foreground/60">
+          <p className="p-3 text-center text-caption text-muted-foreground/60">
             No colours. Seed one from the theme, or add a swatch.
           </p>
         )}
@@ -402,7 +402,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
               aria-pressed={format === f}
               onClick={() => setFormat(f)}
               className={cn(
-                "rounded-md px-1.5 py-0.5 text-[10.5px] transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+                "rounded-md px-1.5 py-0.5 text-caption transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
                 format === f
                   ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:text-foreground",
@@ -414,7 +414,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
           <button
             type="button"
             onClick={() => void copy()}
-            className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-[10.5px] transition-colors hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+            className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-caption transition-colors hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
           >
             <Icon name="copy" size="xs" />
             Copy
@@ -424,7 +424,7 @@ export function PalettePanel({ workspaceRoot }: Props) {
               type="button"
               onClick={() => void save()}
               title={`Write palette.${PALETTE_FILE_EXTENSIONS[format]} into ${workspaceRoot}`}
-              className="flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-[10.5px] transition-colors hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+              className="flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-caption transition-colors hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             >
               <Icon name="download" size="xs" />
               Save
@@ -433,12 +433,12 @@ export function PalettePanel({ workspaceRoot }: Props) {
         </div>
 
         {status && (
-          <p className="mt-1.5 text-[10px] break-words text-muted-foreground">
+          <p className="mt-1.5 text-micro break-words text-muted-foreground">
             {status}
           </p>
         )}
 
-        <pre className="mt-1.5 max-h-24 overflow-auto rounded-md bg-muted/40 p-1.5 text-[9.5px] leading-relaxed text-muted-foreground">
+        <pre className="mt-1.5 max-h-24 overflow-auto rounded-md bg-muted/40 p-1.5 text-micro leading-relaxed text-muted-foreground">
           {output}
         </pre>
       </div>

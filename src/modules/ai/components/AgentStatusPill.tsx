@@ -27,7 +27,7 @@ export function AgentStatusPill({ onClick }: Props) {
       type="button"
       onClick={onClick}
       className={cn(
-        "animate-in fade-in slide-in-from-bottom-0.5 duration-150 flex h-6 items-center gap-1.5 rounded-md border px-1.5 text-[11px] transition-colors",
+        "animate-in fade-in slide-in-from-bottom-0.5 duration-150 flex h-6 items-center gap-1.5 rounded-md border px-1.5 text-caption transition-colors",
         tone,
       )}
       title="Open AI log"
@@ -46,7 +46,7 @@ function describe(meta: AgentMeta): {
   if (meta.status === "awaiting-approval") {
     return {
       tone:
-        "border-yellow-500/40 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-500/15",
+        "border-warning/40 bg-warning/10 text-warning hover:bg-warning/15",
       icon: (
         <Icon name="security" />
       ),

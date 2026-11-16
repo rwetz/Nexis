@@ -640,7 +640,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     if (downloadingEngine || installing) {
       set({
         engineError:
-          "Can't remove the engine while an install or download is running — wait for it to finish.",
+          "Can't remove the engine while an install or download is running: wait for it to finish.",
       });
       return;
     }
@@ -687,7 +687,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     if (!installPython || !flavor) return;
     const label =
       flavor === "cuda-torch"
-        ? "$ pip install torch (CUDA build, ~3 GB — this is the big one)"
+        ? "$ pip install torch (CUDA build, ~3 GB: this is the big one)"
         : flavor === "git"
           ? "$ pip install nexis-ml[torch] from GitHub (PyPI fallback)"
           : "$ pip install --upgrade nexis-ml[torch]";
@@ -734,7 +734,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
     if (pendingCreate) return; // already creating one
     // Surface why nothing would happen, instead of silently returning.
     if (!engineExe) {
-      set({ createError: "No engine is set up yet — install or download one above." });
+      set({ createError: "No engine is set up yet: install or download one above." });
       return;
     }
     // Belt-and-suspenders for the filtered card (the picker hides these on
@@ -744,12 +744,12 @@ export const useMlStore = create<MlStore>((set, get) => ({
     if (!engineSupportsTemplate(template, engineKind)) {
       set({
         createError:
-          "This template needs the Python engine — the standalone engine only does Spreadsheet and Image projects.",
+          "This template needs the Python engine: the standalone engine only does Spreadsheet and Image projects.",
       });
       return;
     }
     if (!workspaceRoot) {
-      set({ createError: "Open a folder first — the project is created inside it." });
+      set({ createError: "Open a folder first: the project is created inside it." });
       return;
     }
     const clean = name.trim().replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "");
@@ -1318,7 +1318,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
         set((s) => ({
           logs: pushLog(
             s.logs,
-            `ONNX export failed (exit ${payload.code ?? "?"}) — it supports tabular (CSV) models; see the log above`,
+            `ONNX export failed (exit ${payload.code ?? "?"}): it supports tabular (CSV) models; see the log above`,
           ),
         }));
       }
@@ -1384,7 +1384,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
         set((s) => ({
           installSid: null,
           installQueue: ["git"],
-          logs: pushLog(s.logs, "couldn't get nexis-ml from PyPI — trying GitHub…"),
+          logs: pushLog(s.logs, "couldn't get nexis-ml from PyPI: trying GitHub…"),
         }));
         void get()._startNextInstall();
         return;
@@ -1401,7 +1401,7 @@ export const useMlStore = create<MlStore>((set, get) => ({
         logs: pushLog(
           s.logs,
           ok
-            ? "install finished — checking the engine…"
+            ? "install finished: checking the engine…"
             : `install failed (exit ${payload.code ?? "?"})`,
         ),
       }));

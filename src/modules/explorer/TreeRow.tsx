@@ -110,7 +110,7 @@ function EntryRowImpl(props: EntryRowProps) {
       <ContextMenuTrigger asChild>
         {isRenaming ? (
           <div
-            className="flex h-6 w-full min-w-0 items-center gap-2 px-1.5 text-[13px]"
+            className="flex h-6 w-full min-w-0 items-center gap-2 px-1.5 text-body"
             style={{ paddingLeft }}
           >
             <span className="size-3.5 shrink-0" />
@@ -135,7 +135,7 @@ function EntryRowImpl(props: EntryRowProps) {
             onClick={handleClick}
             onDoubleClick={() => !isDir && tree.beginRename(path)}
             className={cn(
-              "group flex h-6 w-full min-w-0 cursor-pointer items-center gap-2 rounded-sm px-1.5 text-left text-[13px] text-foreground/85 transition-colors hover:bg-accent/70",
+              "group flex h-6 w-full min-w-0 cursor-pointer items-center gap-2 rounded-sm px-1.5 text-left text-body text-foreground/85 transition-colors hover:bg-accent/70",
               isSelected && "bg-accent text-foreground",
               isDragSource && "opacity-50",
               isDropTarget && "bg-primary/10 ring-1 ring-inset ring-primary",
@@ -279,7 +279,7 @@ export type PendingRowProps = {
 export function PendingRow({ depth, kind, onCommit, onCancel }: PendingRowProps) {
   return (
     <div
-      className="flex h-6 w-full min-w-0 items-center gap-2 px-1.5 text-[13px]"
+      className="flex h-6 w-full min-w-0 items-center gap-2 px-1.5 text-body"
       style={{ paddingLeft: 6 + depth * 12 }}
     >
       <span className="size-3.5 shrink-0" />
@@ -310,7 +310,7 @@ export function StatusRow({
   return (
     <div
       className={cn(
-        "h-6 truncate px-2 text-[11px] leading-6",
+        "h-6 truncate px-2 text-caption leading-6",
         tone === "error" ? "text-destructive" : "text-muted-foreground",
       )}
       style={{ paddingLeft: 6 + depth * 12 + 18 }}

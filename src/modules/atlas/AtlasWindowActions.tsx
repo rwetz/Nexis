@@ -86,7 +86,7 @@ export function AtlasModeSwitch() {
           title={`${option.label} view (v)`}
           onClick={() => setMode(option.id)}
           className={cn(
-            "relative z-10 flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors",
+            "relative z-10 flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-ui font-medium transition-colors",
             mode === option.id
               ? "text-foreground"
               : "text-muted-foreground hover:text-foreground",

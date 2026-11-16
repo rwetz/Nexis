@@ -94,22 +94,22 @@ const DIFF_THEME = EditorView.theme({
 function DiffPatchView({ patch }: { patch: string }) {
   if (!patch) {
     return (
-      <div className="flex h-full items-center justify-center text-[11.5px] text-muted-foreground">
+      <div className="flex h-full items-center justify-center text-ui text-muted-foreground">
         Diff preview is not available for this file.
       </div>
     );
   }
   const lines = patch.split("\n");
   return (
-    <pre className="min-h-full p-4 font-mono text-[12px] leading-relaxed">
+    <pre className="min-h-full p-4 font-mono text-ui leading-relaxed">
       {lines.map((line, i) => {
         let cls = "text-muted-foreground/75";
         if (line.startsWith("+") && !line.startsWith("+++")) {
-          cls = "text-emerald-600 dark:text-emerald-400 bg-emerald-500/[0.06] block";
+          cls = "text-success bg-success/[0.06] block";
         } else if (line.startsWith("-") && !line.startsWith("---")) {
-          cls = "text-rose-600 dark:text-rose-400 bg-rose-500/[0.06] block";
+          cls = "text-destructive bg-destructive/[0.06] block";
         } else if (line.startsWith("@@")) {
-          cls = "text-sky-600/90 dark:text-sky-400/90 block";
+          cls = "text-info/90 block";
         } else if (
           line.startsWith("diff ") ||
           line.startsWith("index ") ||
@@ -304,34 +304,34 @@ export function GitDiffPane({ source, chipLabel, active }: Props) {
         <div className="flex min-w-0 items-center gap-2">
           <Badge
             variant="outline"
-            className="text-[10px] uppercase tracking-wide"
+            className="text-micro uppercase tracking-wide"
           >
             {chipLabel ?? mode}
           </Badge>
           {isBinary ? (
-            <Badge variant="secondary" className="text-[10px]">
+            <Badge variant="secondary" className="text-micro">
               Binary / patch fallback
             </Badge>
           ) : isTooLarge ? (
-            <Badge variant="secondary" className="text-[10px]">
+            <Badge variant="secondary" className="text-micro">
               Large file / patch view
             </Badge>
           ) : null}
           <span
-            className="truncate font-mono text-[11px] text-muted-foreground"
+            className="truncate font-mono text-caption text-muted-foreground"
             title={path}
           >
             {path}
           </span>
         </div>
-        <div className="flex shrink-0 items-center gap-3 text-[10.5px] tabular-nums text-muted-foreground">
+        <div className="flex shrink-0 items-center gap-3 text-caption tabular-nums text-muted-foreground">
           <span className="truncate max-w-80 font-mono">{repoRoot}</span>
           {useFallback ? (
             <>
-              <span className="text-emerald-600 dark:text-emerald-400">
+              <span className="text-success">
                 +{stats.added}
               </span>
-              <span className="text-rose-600 dark:text-rose-400">
+              <span className="text-destructive">
                 −{stats.removed}
               </span>
             </>
@@ -341,12 +341,12 @@ export function GitDiffPane({ source, chipLabel, active }: Props) {
 
       <div className="min-h-0 flex-1 overflow-hidden">
         {state.kind === "loading" || state.kind === "idle" ? (
-          <div className="flex h-full items-center justify-center gap-2 text-[11px] text-muted-foreground">
+          <div className="flex h-full items-center justify-center gap-2 text-caption text-muted-foreground">
             <Spinner className="size-3" />
             Loading diff…
           </div>
         ) : state.kind === "error" ? (
-          <div className="flex h-full items-center justify-center px-6 text-center text-[11.5px] text-destructive">
+          <div className="flex h-full items-center justify-center px-6 text-center text-ui text-destructive">
             {state.message}
           </div>
         ) : useFallback ? (

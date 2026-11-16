@@ -1,6 +1,6 @@
 ---
 type: subsystem
-description: The Art pack's SVG playground — its four panes, the direct-manipulation canvas and its three coordinate spaces, the in-house optimizer and why it is not SVGO, and why every preview renders a sanitized copy.
+description: The Art pack's SVG playground, its four panes, the direct-manipulation canvas and its three coordinate spaces, the in-house optimizer and why it is not SVGO, and why every preview renders a sanitized copy.
 ---
 
 # Art pack
@@ -9,7 +9,7 @@ One surface, six tools. The SVG playground, added 2026-09-03, under the `art` pa
 
 ## The Studio's tool strip
 
-Palette, Backdrop, Icon Set, Favicon Set and Animator are **not sidebar views** (since 2026-09-20). They are tools in SVG Studio's header strip — `Draw | Palette | Backdrop | Icon Set | Favicon | Animate` — hosted by `SvgStudio.tsx`. The Studio has its own window (since 2026-09-30, `capabilities/workbenches/`). Which tool is in front lives in `studioStore.ts` (`useSvgStudioStore`); the window has its own copy of that store, so App's `openSvgStudio(tool)` passes the tool as a launch parameter (`studio=`) and the window applies it on every open. The pack's `views` is just `["svg-playground"]`, and the five old ids sit in `SidebarRail`'s `RETIRED_VIEWS` so old saved pins are stripped.
+Palette, Backdrop, Icon Set, Favicon Set and Animator are **not sidebar views** (since 2026-09-20). They are tools in SVG Studio's header strip, `Draw | Palette | Backdrop | Icon Set | Favicon | Animate`, hosted by `SvgStudio.tsx`. The Studio has its own window (since 2026-09-30, `capabilities/workbenches/`). Which tool is in front lives in `studioStore.ts` (`useSvgStudioStore`); the window has its own copy of that store, so App's `openSvgStudio(tool)` passes the tool as a launch parameter (`studio=`) and the window applies it on every open. The pack's `views` is just `["svg-playground"]`, and the five old ids sit in `SidebarRail`'s `RETIRED_VIEWS` so old saved pins are stripped.
 
 The rule behind the move: the sidebar is for panels you glance at while working, and these are somewhere you go and stay. Two decisions not to undo:
 
@@ -18,7 +18,7 @@ The rule behind the move: the sidebar is for panels you glance at while working,
 
 The panels still carry their own title headers and were laid out for a ~280px rail. At tab width they stretch to fill. Giving them wide layouts is open work.
 
-The left half is **four tabs over one document**: Source (CodeMirror), Canvas (direct manipulation), Shapes (parametric generators) and Presets (ready-made art). They are tabs, not modes — every pane reads and writes the same `source` string, so a shape can be generated, dragged on the canvas and then hand-tuned in code without any pane owning a copy. The right half (preview, optimize, export) is shared by all four.
+The left half is **four tabs over one document**: Source (CodeMirror), Canvas (direct manipulation), Shapes (parametric generators) and Presets (ready-made art). They are tabs, not modes: every pane reads and writes the same `source` string, so a shape can be generated, dragged on the canvas and then hand-tuned in code without any pane owning a copy. The right half (preview, optimize, export) is shared by all four.
 
 The tab holds **no document of its own**. The source lives in the playground's own `localStorage` key, so panel and tab are two views of one thing and closing the tab loses nothing.
 
@@ -26,18 +26,18 @@ The tab holds **no document of its own**. The source lives in the playground's o
 
 The itch is that browser-based SVG editors are bad at icon-scale art, and the preview is why: showing a mark at 300px answers none of the questions you have about it. So the same source renders at **16, 24, 32 and 64px at once**, over a pixel grid with centre guides. The question being answered is "does this 1.5-unit stroke land on a pixel boundary at 16px", and it is answerable by looking.
 
-The editor is CodeMirror, so **AGENTS.md pitfall #15 applies**: the `.zoom-content .cm-editor` exemption in `globals.css` is what keeps clicks landing on the right line under app zoom. It is inherited by being an ordinary `.cm-editor` — do not wrap this in anything that re-introduces a CSS `zoom`.
+The editor is CodeMirror, so **AGENTS.md pitfall #15 applies**: the `.zoom-content .cm-editor` exemption in `globals.css` is what keeps clicks landing on the right line under app zoom. It is inherited by being an ordinary `.cm-editor`: do not wrap this in anything that re-introduces a CSS `zoom`.
 
 ## The optimizer is deliberately not SVGO
 
 `lib/svgOptimize.ts`. The roadmap named SVGO; it was not used, and the reasoning is recorded here so it is not re-argued:
 
 - SVGO plus `css-select`/`css-tree` is a large dependency for one panel.
-- What this panel needs is the icon-scale subset — editor cruft, whitespace, coordinate precision, hex colours — which is a bounded problem with a testable answer.
+- What this panel needs is the icon-scale subset (editor cruft, whitespace, coordinate precision, hex colours) which is a bounded problem with a testable answer.
 
 **What it will not do:** no path-data rewriting, no transform collapsing, no element unwrapping, no style-to-attribute conversion. Those are where SVGO earns its size and where a naive implementation silently corrupts art. Every transform in there is one a human could do by hand and verify by eye.
 
-It is **idempotent**, and there is a test for that — otherwise the byte saving it reports would be a function of how many times you pressed the button.
+It is **idempotent**, and there is a test for that: otherwise the byte saving it reports would be a function of how many times you pressed the button.
 
 Swapping SVGO back in later is a change to `optimizeSvg` alone.
 
@@ -45,11 +45,11 @@ Swapping SVGO back in later is a change to `optimizeSvg` alone.
 
 `lib/svgSanitize.ts`. This is a real guard, not a formality.
 
-SVG is not an inert image format: it carries `<script>`, event-handler attributes, `javascript:` URLs and `<foreignObject>` (a hole straight through to arbitrary HTML). The preview **must** inline its markup, because `currentColor` and `var(--…)` do not resolve inside a `data:` URL — the same constraint that forces the file-tree art inline (pitfall #18, from the other direction). So that markup lands in a Tauri webview with `window.__TAURI__` in scope.
+SVG is not an inert image format: it carries `<script>`, event-handler attributes, `javascript:` URLs and `<foreignObject>` (a hole straight through to arbitrary HTML). The preview **must** inline its markup, because `currentColor` and `var(--…)` do not resolve inside a `data:` URL, the same constraint that forces the file-tree art inline (pitfall #18, from the other direction). So that markup lands in a Tauri webview with `window.__TAURI__` in scope.
 
 "The user pasted it themselves" is not a security model when the whole point of a playground is pasting art found elsewhere.
 
-The detail that matters most: **URL attributes are judged on the normalized value** — entities decoded, whitespace stripped — never on the raw text. A tab inside the scheme gives a live URL containing no literal `javascript:` for a substring check to find, and a test for exactly that case caught the first implementation. `<set attributeName="onload">`, which re-adds a handler at runtime after a naive pass has finished, is stripped too.
+The detail that matters most: **URL attributes are judged on the normalized value** (entities decoded, whitespace stripped) never on the raw text. A tab inside the scheme gives a live URL containing no literal `javascript:` for a substring check to find, and a test for exactly that case caught the first implementation. `<set attributeName="onload">`, which re-adds a handler at runtime after a naive pass has finished, is stripped too.
 
 The editor and every export keep the **original**; only the preview is sanitized, and the panel says what it withheld rather than silently showing different art.
 
@@ -59,7 +59,7 @@ The editor and every export keep the **original**; only the preview is sanitized
 
 **The indirection through `data-nx-id` is load-bearing and must not be "simplified".** The preview renders a *sanitized* copy (see below), so a click lands on a node in the sanitized render rather than in the user's document. `parseSvgSource` tags every element `data-nx-id` in document order before serializing for the preview; that id is what maps a hit back to the node to mutate, and `serializeSvg` strips it on the way out so it never reaches the user's source. Rendering the raw source to make selection easier would trade the pack's whole security posture for a saved lookup.
 
-**Formatting survives** because the document is parsed with `DOMParser` and every mutation writes an attribute rather than restructuring the tree — `XMLSerializer` hands back the same whitespace text nodes it was given, so element indentation and blank lines are preserved.
+**Formatting survives** because the document is parsed with `DOMParser` and every mutation writes an attribute rather than restructuring the tree: `XMLSerializer` hands back the same whitespace text nodes it was given, so element indentation and blank lines are preserved.
 
 Two normalizations it *does* impose, both pinned by tests rather than assumed: `<rect />` becomes `<rect/>`, and whitespace between attributes inside a start tag collapses to single spaces, so a hand-wrapped multi-line `<svg …>` header re-joins onto one line. Neither is paid until something is actually edited.
 
@@ -69,19 +69,19 @@ Mixing these produces a drag that drifts, which is the failure mode to recognise
 
 | Space | What lives there | How to get there |
 | --- | --- | --- |
-| Client pixels | pointer events | — |
+| Client pixels | pointer events | – |
 | Element's own user space | `x`, `cx`, `d`, `points` | `el.getScreenCTM().inverse()` |
 | Parent's space | the element's own `transform` | `el.parentElement.getScreenCTM().inverse()` |
 
 - A **move** measures its delta in the *parent's* frame. The element's own would double-count its transform every frame.
 - A **scale** freezes the screen matrix at pointerdown, because writing a transform changes the live matrix and reading it back feeds the scale into its own input. It also re-derives from the pointerdown source each move rather than compounding: twenty frames of 1.1x is not 2x, and a compounding drag can never be dragged back to its start.
-- Primitives move by rewriting **their own geometry**, not by accumulating a transform. Only groups, `<use>` and text fall back to one, and it merges into any existing translate — without the merge a drag appends one per pointer move.
+- Primitives move by rewriting **their own geometry**, not by accumulating a transform. Only groups, `<use>` and text fall back to one, and it merges into any existing translate, without the merge a drag appends one per pointer move.
 
 `pointer-events: all` on the rendered shapes is what makes unfilled icon art selectable at all; with the default only the stroke is a hit target.
 
 ### The overlay is not drawn in pixels
 
-The selection box and the handles go into a **second `<svg>` that mirrors the art's `viewBox` and `preserveAspectRatio`, in the same box**, so its user units *are* the art's user units and the browser does the mapping. Positions come from the matrix ratio `rootCTM.inverse() * nodeCTM`, in which any factor the two share — ancestor zoom, device pixel ratio, the viewBox fit — cancels.
+The selection box and the handles go into a **second `<svg>` that mirrors the art's `viewBox` and `preserveAspectRatio`, in the same box**, so its user units *are* the art's user units and the browser does the mapping. Positions come from the matrix ratio `rootCTM.inverse() * nodeCTM`, in which any factor the two share (ancestor zoom, device pixel ratio, the viewBox fit) cancels.
 
 The first version computed container-relative **client pixels** and drew them into the overlay's local space. Those are the same thing only when nothing between them applies a scale, and this app applies one: `zoom: var(--app-zoom)` on `.zoom-content`. The box and every handle sat offset from the shape and mis-scaled by the zoom factor, and grabbing a handle made its point jump to the cursor.
 
@@ -102,9 +102,9 @@ The cost, stated honestly: a re-serialized path is longer than a tight relative 
 
 `lib/presets.ts` plus `PresetGallery.tsx`, in a **Presets** tab. 27 documents in four groups (Marks, Shapes, Patterns, Dividers). A blank document is the worst starting point a drawing tool can offer.
 
-Half are hand-authored on the 24-unit grid with a 1.5 stroke — the geometry the 16/24/32/64 preview row exists to judge. Half are **generator output frozen at a parameter set**, so a preset over a generator is a name and four numbers rather than a second copy of the geometry, and improving a generator improves its presets. Unstated parameters fall back to the generator's defaults, so adding a slider later does not break the presets over it.
+Half are hand-authored on the 24-unit grid with a 1.5 stroke: the geometry the 16/24/32/64 preview row exists to judge. Half are **generator output frozen at a parameter set**, so a preset over a generator is a name and four numbers rather than a second copy of the geometry, and improving a generator improves its presets. Unstated parameters fall back to the generator's defaults, so adding a slider later does not break the presets over it.
 
-Picking one replaces the editor and lands on the canvas. **No preset is a special case** — it is a string in the editor, and nothing records where a document came from.
+Picking one replaces the editor and lands on the canvas. **No preset is a special case**: it is a string in the editor, and nothing records where a document came from.
 
 A test asserts every preset names `currentColor` and no literal hex: art with a baked-in colour cannot take the theme (pitfall #18's file-tree defect, same shape).
 
@@ -123,21 +123,21 @@ Grain is the odd one: raw `feTurbulence` is opaque RGB static that ignores fill,
 
 Three traps the radial generators share, each already paid for once:
 
-- **Angles are measured from twelve o'clock**, in one shared `polar` helper. SVG's own zero is three o'clock, which is right for maths and wrong for a control — nobody dialling "Rotation" on a star expects zero to mean "one point aimed right".
+- **Angles are measured from twelve o'clock**, in one shared `polar` helper. SVG's own zero is three o'clock, which is right for maths and wrong for a control: nobody dialling "Rotation" on a star expects zero to mean "one point aimed right".
 - **The polygon's corner rounding clamps its cut-back to half the shorter edge.** Without the clamp, a large radius on a triangle overshoots the edge and turns the shape inside out.
 - **The gear punches its bore with `fill-rule="evenodd"`**, not with a background-coloured circle on top. It stays one path, and it works on any background rather than only the one it was drawn against.
 
 ## Export, and the raster trap
 
-`ExportBar.tsx` plus `lib/raster.ts`. Four outputs: SVG, JSX, `data:` URI, PNG. Plus **Save**, which writes into the open workspace — the pack's only filesystem contact, and the reason the Art preset's "file manipulation" scope is not a lie.
+`ExportBar.tsx` plus `lib/raster.ts`. Four outputs: SVG, JSX, `data:` URI, PNG. Plus **Save**, which writes into the open workspace: the pack's only filesystem contact, and the reason the Art preset's "file manipulation" scope is not a lie.
 
-**PNG is a render, not a fourth string transform.** It goes through an `<img>` (the safe path: an SVG loaded as an image runs with no script and no external fetches), and an `<img>` is an **isolated document**. The page's custom properties do not cascade in. This is the same constraint as pitfall #18 seen from the other side: the file-tree art must be inlined because `var(--terminal-ansi-*)` cannot reach a `data:` URL, and `currentColor` cannot reach one here either — it falls back to the initial value of `color`, which is black.
+**PNG is a render, not a fourth string transform.** It goes through an `<img>` (the safe path: an SVG loaded as an image runs with no script and no external fetches), and an `<img>` is an **isolated document**. The page's custom properties do not cascade in. This is the same constraint as pitfall #18 seen from the other side: the file-tree art must be inlined because `var(--terminal-ansi-*)` cannot reach a `data:` URL, and `currentColor` cannot reach one here either, it falls back to the initial value of `color`, which is black.
 
 So **the colour is resolved into the markup before rasterizing**, and `svgToPngBlob` takes a colour rather than inferring one. Without that, every themed icon in this app exports black-on-transparent: correct-looking on white, invisible on the app's own background, and silent about it.
 
 **The intrinsic size is computed, not read.** An `<img>` with an SVG source has no intrinsic size unless the document carries absolute `width`/`height`; icon art usually carries only a `viewBox`, and Chromium falls back to 300x150. Two traps in that computation, both found by running it rather than reasoning about it, both now pinned by tests:
 
-- `\bwidth` **matches inside `stroke-width`** — a hyphen is a word boundary. An icon with `stroke-width="1.5"` measured itself as 1.5px wide.
+- `\bwidth` **matches inside `stroke-width`**: a hyphen is a word boundary. An icon with `stroke-width="1.5"` measured itself as 1.5px wide.
 - **Scanning the whole document** finds the first child with a `height`. A `<rect height="18">` inside a 24-unit icon is not the icon's size.
 
 Only the root `<svg …>` start tag is searched, and an attribute name must be preceded by whitespace or a quote.
@@ -150,15 +150,15 @@ Only the root `<svg …>` start tag is searched, and an attribute name must be p
 
 **Seeding from the live theme is the differentiator.** `applyTheme` puts every colour on the document root as a custom property, so the panel reads the *active* theme: Interface for the UI tokens, Terminal for the sixteen ANSI colours. No standalone palette tool can do this, because none of them know what Aurelian is. Same lever [[icon-and-motion-system]]'s file-tree retint pulls.
 
-**Colours resolve through a one-pixel canvas**, not through a parser of ours. A theme's computed value is whatever its author wrote — hex in one, `oklch(…)` in another — and `color.ts` refuses everything but hex and `rgb()` rather than half-parsing. The browser has a complete CSS Color 4 parser; paint a pixel and read the bytes. `fillStyle` round-tripping looks equivalent and is not: Chromium returns `oklab(…)` for wide-gamut input, so you end up parsing after all. A sentinel fill detects values the browser rejects, so an unresolvable token is dropped rather than reported as black.
+**Colours resolve through a one-pixel canvas**, not through a parser of ours. A theme's computed value is whatever its author wrote (hex in one, `oklch(…)` in another) and `color.ts` refuses everything but hex and `rgb()` rather than half-parsing. The browser has a complete CSS Color 4 parser; paint a pixel and read the bytes. `fillStyle` round-tripping looks equivalent and is not: Chromium returns `oklab(…)` for wide-gamut input, so you end up parsing after all. A sentinel fill detects values the browser rejects, so an unresolvable token is dropped rather than reported as black.
 
 Harmony feedback is emitted by the click handler, never from the `setEntries` updater. React may replay an updater, while a toast is an external effect that must fire once.
 
 ### Three decisions not to undo
 
-- **Ratios truncate, never round.** WCAG's thresholds sit exactly on one-decimal values, so rounding 4.47 to "4.5:1" shows a passing number beside a failing badge — and the number is what gets believed. Truncation can only understate. A property test sweeps the range to keep the figure and the grade consistent.
-- **Harmonies rotate in HSL.** Perceptual spaces are better for *interpolation*; harmonies are rotations on the classical wheel, and that wheel is HSL's hue circle. 120 degrees in OKLCH is a defensible colour that is not the triad anyone means. Monochromatic is the documented exception to "base first" — it is an ordered lightness ramp with the base mid-scale, because a ramp is only usable as a scale if it is ordered.
-- **Harmony appends, never replaces.** Entries persist on change, so replacing would let one mis-click destroy a sixteen-swatch palette with no undo. A palette is a collection you build up — unlike the playground's single document, where replacement *is* the point (see the ShapeGenerator note above). Duplicates are skipped.
+- **Ratios truncate, never round.** WCAG's thresholds sit exactly on one-decimal values, so rounding 4.47 to "4.5:1" shows a passing number beside a failing badge, and the number is what gets believed. Truncation can only understate. A property test sweeps the range to keep the figure and the grade consistent.
+- **Harmonies rotate in HSL.** Perceptual spaces are better for *interpolation*; harmonies are rotations on the classical wheel, and that wheel is HSL's hue circle. 120 degrees in OKLCH is a defensible colour that is not the triad anyone means. Monochromatic is the documented exception to "base first": it is an ordered lightness ramp with the base mid-scale, because a ramp is only usable as a scale if it is ordered.
+- **Harmony appends, never replaces.** Entries persist on change, so replacing would let one mis-click destroy a sixteen-swatch palette with no undo. A palette is a collection you build up: unlike the playground's single document, where replacement *is* the point (see the ShapeGenerator note above). Duplicates are skipped.
 
 **Contrast lives here, not in [[web-dev-pack]]**, where the roadmap originally parked it. Picking colours and judging them is one activity; splitting it across two packs puts neither where you are when the question arises.
 
@@ -172,29 +172,29 @@ Harmony feedback is emitted by the click handler, never from the `setEntries` up
 | --- | --- | --- |
 | Colour | `currentColor`, so art takes the theme | a palette, because a backdrop is *about* its colours |
 | Size | a 240 square | an aspect; a wave must know its own width |
-| Structure | one function, one document | layers — the stack *is* the generator |
+| Structure | one function, one document | layers: the stack *is* the generator |
 
 Everything else is unchanged and must stay so: pure function of its numbers, seeded randomness, output through the same optimizer/sanitizer/preview/exporter.
 
-**Colours come from the Palette panel's storage key**, read-only. That is why the two shipped in that order — they compose rather than each growing a colour picker.
+**Colours come from the Palette panel's storage key**, read-only. That is why the two shipped in that order: they compose rather than each growing a colour picker.
 
 ### Three decisions not to undo
 
 - **Depth is painted, not composited.** Bands are shaded by walking the palette, never by stacking translucent fills. Opacity stacking makes every layer depend on what is beneath it: a ten-layer wave goes muddy at the top and the palette stops meaning anything. A test asserts no scene emits a colour outside the palette it was given.
 - **Low-poly triangles carry a hairline stroke in their own fill.** Adjacent triangles share an edge and antialiasing leaves background showing through every seam. `shape-rendering: crispEdges` also fixes it and discards the antialiasing that makes the diagonals look right.
-- **The seeded PRNG lives in `lib/generative.ts`**, shared with `shapes.ts`. A second mulberry32 is pitfall #18's drift in miniature — identical at first, then one gets improved, and a seed means two different things depending on the panel.
+- **The seeded PRNG lives in `lib/generative.ts`**, shared with `shapes.ts`. A second mulberry32 is pitfall #18's drift in miniature: identical at first, then one gets improved, and a seed means two different things depending on the panel.
 
 ## Animator
 
 `AnimatorPanel.tsx` plus `lib/animate.ts`. Studio tool `animator`. A keyframe timeline over the playground's document, emitted as SMIL or CSS.
 
-**The hold paid off in a way that was not obvious in advance.** A timeline has to *address* elements, and the canvas's `data-nx-id` tagging already does that. Built before the canvas, this panel would have needed a second selection model — the genuinely large part.
+**The hold paid off in a way that was not obvious in advance.** A timeline has to *address* elements, and the canvas's `data-nx-id` tagging already does that. Built before the canvas, this panel would have needed a second selection model: the genuinely large part.
 
 **Both formats ship because they fail in opposite directions**, and SMIL is the default:
 
 | | Travels in the file | Reachable from CSS |
 | --- | --- | --- |
-| SMIL `<animate>` | yes — `<img>` and `background-image` animate | no |
+| SMIL `<animate>` | yes: `<img>` and `background-image` animate | no |
 | CSS `@keyframes` | only when the SVG is inline in a page | yes, incl. `prefers-reduced-motion` |
 
 The pack's output is a *file*, so the file-portable one wins by default. (Chromium's intent to remove SMIL was withdrawn in 2016; the folklore outlived the fact.)
@@ -202,14 +202,14 @@ The pack's output is a *file*, so the file-portable one wins by default. (Chromi
 ### Four decisions not to undo
 
 - **Keyframe positions are a fraction, never a millisecond.** Changing the duration is the edit people make over and over; absolute times would mean rewriting every key each time.
-- **`additive="sum"` on every animated transform.** Without it the animation *replaces* the element's existing transform and teleports the shape to the origin — the commonest way hand-written SMIL goes wrong.
+- **`additive="sum"` on every animated transform.** Without it the animation *replaces* the element's existing transform and teleports the shape to the origin: the commonest way hand-written SMIL goes wrong.
 - **Self-closing targets are reopened.** `<rect … />` cannot hold a child and SMIL nests inside its target. Most icon art is self-closing, so this is the common path.
-- **`data-nx-id` never reaches an exported file**, on any path — including an empty timeline, so a caller need not know whether anything animated before deciding the output is shippable. For CSS the tag on addressed elements is promoted to a real `data-nx-anim` first: a stylesheet pointing at an attribute the strip removed is a rule that silently does nothing.
+- **`data-nx-id` never reaches an exported file**, on any path, including an empty timeline, so a caller need not know whether anything animated before deciding the output is shippable. For CSS the tag on addressed elements is promoted to a real `data-nx-anim` first: a stylesheet pointing at an attribute the strip removed is a rule that silently does nothing.
 
 ## Not built yet
 
 Nothing in the original plan. The pack owns one surface, SVG Studio, with six tools: Draw (the playground), palette, backdrop, icon set, favicon set, animator.
 
-The rest of the panel set is **decided and written down** in ROADMAP.md, against [haikei.com](https://haikei.com) as the reference. The framing that settles it: *the playground is a precision tool and Haikei is a generative one, and those are two jobs* — so the plan adds panels beside the playground rather than growing it. In build order: raster/file export (done), the palette panel (done), the Backdrop scene generator (done), the icon-set review panel (done), and the favicon exporter (done). The library change that gates the Backdrop is a `SceneDef` sibling to `ShapeDef` carrying colour, aspect and layers — the three things `shapes.ts` structurally cannot express.
+The rest of the panel set is **decided and written down** in ROADMAP.md, against [haikei.com](https://haikei.com) as the reference. The framing that settles it: *the playground is a precision tool and Haikei is a generative one, and those are two jobs*, so the plan adds panels beside the playground rather than growing it. In build order: raster/file export (done), the palette panel (done), the Backdrop scene generator (done), the icon-set review panel (done), and the favicon exporter (done). The library change that gates the Backdrop is a `SceneDef` sibling to `ShapeDef` carrying colour, aspect and layers: the three things `shapes.ts` structurally cannot express.
 
 Related: [[icon-and-motion-system]], [[editor]], [[expansion-packs]].

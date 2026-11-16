@@ -1,6 +1,6 @@
 ---
 type: decision
-description: <one line — the decision, stated as an outcome>
+description: <one line, the decision, stated as an outcome>
 ---
 
 # <Decision title, e.g. "PTY output is capped at 4 MiB pending buffer">
@@ -18,7 +18,7 @@ description: <one line — the decision, stated as an outcome>
 
 ## Alternatives rejected
 
-- <Alternative> — <why not>
+- <Alternative>: <why not>
 
 ## Consequences
 

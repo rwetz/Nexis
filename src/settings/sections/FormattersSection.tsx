@@ -41,7 +41,7 @@ export function FormattersSection() {
     <div className="flex flex-col gap-6">
       <SectionHeader
         title="Formatters"
-        description="Run external tools to format your code. Use {file} as a placeholder for the filename — the command runs in the file's directory."
+        description="Run external tools to format your code. Use {file} as a placeholder for the filename: the command runs in the file's directory."
       />
 
       <div className="flex flex-col gap-2">
@@ -69,7 +69,7 @@ export function FormattersSection() {
                 className="flex items-center gap-3 bg-card/60 px-3 py-2.5"
               >
                 <div className="w-36 shrink-0">
-                  <span className="text-[12.5px] font-medium">
+                  <span className="text-ui font-medium">
                     {FORMATTER_LANGUAGE_LABELS[lang]}
                   </span>
                 </div>
@@ -80,13 +80,13 @@ export function FormattersSection() {
                     onChange={(e) => setCommand(lang, e.target.value)}
                     aria-label={`${FORMATTER_LANGUAGE_LABELS[lang]} formatter command`}
                     spellCheck={false}
-                    className="h-7 flex-1 min-w-0 rounded border border-border bg-background px-2 font-mono text-[11px] outline-none focus:border-foreground/40"
+                    className="h-7 flex-1 min-w-0 rounded border border-border bg-background px-2 font-mono text-caption outline-none focus:border-foreground/40"
                   />
                   {!isDefault && (
                     <button
                       type="button"
                       onClick={() => resetCommand(lang)}
-                      className="shrink-0 text-[10.5px] text-muted-foreground hover:text-foreground transition-colors"
+                      className="shrink-0 text-caption text-muted-foreground hover:text-foreground transition-colors"
                       title="Reset to default"
                     >
                       Reset
@@ -103,11 +103,11 @@ export function FormattersSection() {
             );
           })}
         </div>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           Formatter must be installed and available on your PATH.{" "}
-          <span className="font-mono text-[10.5px]">{"{"}</span>
-          <span className="font-mono text-[10.5px]">file</span>
-          <span className="font-mono text-[10.5px]">{"}"}</span>
+          <span className="font-mono text-caption">{"{"}</span>
+          <span className="font-mono text-caption">file</span>
+          <span className="font-mono text-caption">{"}"}</span>
           {" "}is replaced with the filename.
         </p>
       </div>
@@ -117,7 +117,7 @@ export function FormattersSection() {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-xs font-semibold text-foreground/70">
+    <span className="text-ui font-semibold text-foreground/70">
       {children}
     </span>
   );

@@ -96,7 +96,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
     (version: string) => {
       const date = new Date().toISOString().slice(0, 10);
       const lines = [
-        `## [${version}] — ${date}`,
+        `## [${version}]: ${date}`,
         "",
         "### Added",
         ...commits,
@@ -136,7 +136,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
 
   if (!workspaceRoot) {
     return (
-      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+      <div className="flex h-full items-center justify-center text-ui text-muted-foreground">
         No workspace open.
       </div>
     );
@@ -145,7 +145,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-ui font-semibold uppercase tracking-wider text-muted-foreground">
           Release Tooling
         </span>
         <Button
@@ -162,14 +162,14 @@ export function ReleasePanel({ workspaceRoot }: Props) {
 
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
         <div className="space-y-1">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Current version</p>
+          <p className="text-micro uppercase tracking-wider text-muted-foreground font-medium">Current version</p>
           <div className="flex items-center gap-2">
             <Icon name="tag" className="text-muted-foreground/60" />
             <span className="font-mono text-sm font-semibold text-foreground">
               {loading ? "…" : (currentVersion ?? "unknown")}
             </span>
             {lastTag && (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1 text-micro text-muted-foreground">
                 <Icon name="git-branch" size="xs" />
                 last tag: {lastTag}
               </span>
@@ -178,7 +178,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
         </div>
 
         <div className="space-y-1.5">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Bump version</p>
+          <p className="text-micro uppercase tracking-wider text-muted-foreground font-medium">Bump version</p>
           <div className="grid grid-cols-3 gap-1.5">
             {(["patch", "minor", "major"] as BumpKind[]).map((kind) => {
               const next = nextVersion(kind);
@@ -187,24 +187,24 @@ export function ReleasePanel({ workspaceRoot }: Props) {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs w-full"
+                    className="h-7 text-ui w-full"
                     disabled={!next || loading}
                     onClick={() => next && copyChangelog(next)}
                   >
                     {kind}
                   </Button>
-                  <span className="text-center font-mono text-[10px] text-muted-foreground">
+                  <span className="text-center font-mono text-micro text-muted-foreground">
                     {next ?? "…"}
                   </span>
                 </div>
               );
             })}
           </div>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-micro text-muted-foreground">
             Click a bump type to copy its changelog entry to clipboard.
           </p>
           {copied && (
-            <p className="flex items-center gap-1 text-[10px] text-green-500">
+            <p className="flex items-center gap-1 text-micro text-success">
               <Icon name="success" size="xs" />
               Copied to clipboard
             </p>
@@ -214,7 +214,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
         {commits.length > 0 && (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+              <p className="text-micro uppercase tracking-wider text-muted-foreground font-medium">
                 Changes since {lastTag ?? "beginning"}
               </p>
               <Button
@@ -230,7 +230,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
             <ul className="space-y-0.5">
               {commits.map((c, i) => (
                 // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
-                <li key={i} className="text-[11px] text-foreground/80 leading-relaxed font-mono">
+                <li key={i} className="text-caption text-foreground/80 leading-relaxed font-mono">
                   {c}
                 </li>
               ))}
@@ -238,11 +238,11 @@ export function ReleasePanel({ workspaceRoot }: Props) {
           </div>
         )}
         {commits.length === 0 && !loading && (
-          <p className="text-xs text-muted-foreground">No commits since last tag.</p>
+          <p className="text-ui text-muted-foreground">No commits since last tag.</p>
         )}
 
         <div className="space-y-1.5 border-t border-border/30 pt-3">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Create git tag</p>
+          <p className="text-micro uppercase tracking-wider text-muted-foreground font-medium">Create git tag</p>
           <div className="grid grid-cols-3 gap-1.5">
             {(["patch", "minor", "major"] as BumpKind[]).map((kind) => {
               const next = nextVersion(kind);
@@ -251,7 +251,7 @@ export function ReleasePanel({ workspaceRoot }: Props) {
                   key={kind}
                   size="sm"
                   variant="outline"
-                  className={cn("h-7 text-xs", tagStatus === "done" && "border-green-500/50 text-green-600 dark:text-green-400")}
+                  className={cn("h-7 text-ui", tagStatus === "done" && "border-success/50 text-success")}
                   disabled={!next || loading || tagStatus === "running"}
                   onClick={() => next && void createTag(next)}
                 >
@@ -261,13 +261,13 @@ export function ReleasePanel({ workspaceRoot }: Props) {
             })}
           </div>
           {tagStatus === "done" && (
-            <p className="flex items-center gap-1 text-[10px] text-green-500">
+            <p className="flex items-center gap-1 text-micro text-success">
               <Icon name="success" size="xs" />
               Tag created successfully
             </p>
           )}
           {tagStatus === "error" && tagError && (
-            <p className="text-[10px] text-destructive">{tagError}</p>
+            <p className="text-micro text-destructive">{tagError}</p>
           )}
         </div>
       </div>

@@ -42,7 +42,7 @@ if (!name) {
        "  --auto       run without asking for approval (read-only tools only)");
 }
 if (!NAME_RE.test(name)) {
-  fail(`"${name}" is not a valid tool name — 3-48 chars, lowercase snake_case, starting with a letter`);
+  fail(`"${name}" is not a valid tool name: 3-48 chars, lowercase snake_case, starting with a letter`);
 }
 
 // Mirror the runtime reserved list rather than importing it: this script runs
@@ -56,7 +56,7 @@ const RESERVED = [
   "todo_write",
 ];
 if (RESERVED.includes(name)) {
-  fail(`"${name}" is a built-in tool name — pick another (it would be rejected at runtime)`);
+  fail(`"${name}" is a built-in tool name: pick another (it would be rejected at runtime)`);
 }
 
 const toolFile = path.join(DIR, `${name}.ts`);
@@ -81,7 +81,7 @@ import { z } from "zod";
 import type { ToolContribution } from "@/modules/ai/tools/plugin-tools";
 
 /**
- * ${name} — describe what this tool does.
+ * ${name}: describe what this tool does.
  *
  * The description below is what the MODEL reads to decide whether to call
  * this tool, so say what it does *and when to use it*. A vague description is
@@ -93,7 +93,7 @@ export const ${camel}Tool: ToolContribution = {
   description:
     "Describe what this does and when the model should reach for it.",
   inputSchema: z.object({
-    // Every field's .describe() is visible to the model — use it.
+    // Every field's .describe() is visible to the model: use it.
     subject: z.string().describe("What to operate on."),
   }),${auto ? `
   // Runs without asking. Only correct for genuinely read-only work.
@@ -144,7 +144,7 @@ if (!fs.existsSync(pluginFile)) {
     pluginFile,
     `${header}
 /**
- * Custom tools plugin — registers every tool scaffolded by
+ * Custom tools plugin: registers every tool scaffolded by
  * \`pnpm tool:new\`. Generated entries are added below; edit freely.
  *
  * Remember to add \`customToolsPlugin\` to ALL_PLUGINS in src/plugins/index.ts
@@ -204,6 +204,6 @@ registered "${name}"${auto ? " (auto-approve)" : " (asks for approval)"} in ${re
 
 next:
   pnpm exec vitest run ${rel(testFile)}
-  # then edit the description and schema — the description is what decides
+  # then edit the description and schema: the description is what decides
   # whether the model ever calls your tool.
 `);

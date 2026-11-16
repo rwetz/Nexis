@@ -39,10 +39,10 @@ function statusIcon(status: TestStatus) {
 
 function statusColor(status: TestStatus): string {
   switch (status) {
-    case "passed": return "text-green-500";
-    case "failed": return "text-red-500";
-    case "error": return "text-red-400";
-    case "running": return "text-yellow-500";
+    case "passed": return "text-success";
+    case "failed": return "text-destructive";
+    case "error": return "text-destructive";
+    case "running": return "text-warning";
     default: return "text-muted-foreground";
   }
 }
@@ -192,17 +192,17 @@ export function TestRunnerPanel({ workspaceRoot }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Test Runner
         </span>
         {detecting && (
-          <span className="text-[10px] text-muted-foreground/60">Detecting…</span>
+          <span className="text-micro text-muted-foreground/60">Detecting…</span>
         )}
       </div>
 
       <div className="flex flex-col gap-2 border-b border-border/30 p-3">
         {framework && (
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-caption text-muted-foreground">
             <span className="font-medium text-foreground/80">{framework.name}</span>
             <span className="text-muted-foreground/50">detected</span>
           </div>
@@ -213,14 +213,14 @@ export function TestRunnerPanel({ workspaceRoot }: Props) {
             onChange={(e) => setCustomCommand(e.target.value)}
             aria-label="Test command"
             placeholder="Test command (e.g. pnpm vitest run)"
-            className="flex-1 rounded border border-border/60 bg-muted/30 px-2 py-1 font-mono text-[11.5px] text-foreground outline-none focus:border-primary/60"
+            className="flex-1 rounded border border-border/60 bg-muted/30 px-2 py-1 font-mono text-ui text-foreground outline-none focus:border-primary/60"
             onKeyDown={(e) => { if (e.key === "Enter" && !isRunning) void runTests(); }}
           />
           {isRunning ? (
             <button
               type="button"
               onClick={() => void stopTests()}
-              className="flex shrink-0 items-center gap-1.5 rounded bg-red-500/10 px-2.5 py-1 text-[11.5px] font-medium text-red-500 transition-colors hover:bg-red-500/20"
+              className="flex shrink-0 items-center gap-1.5 rounded bg-destructive/10 px-2.5 py-1 text-ui font-medium text-destructive transition-colors hover:bg-destructive/20"
             >
               <Icon name="close" />
               Stop
@@ -230,7 +230,7 @@ export function TestRunnerPanel({ workspaceRoot }: Props) {
               type="button"
               onClick={() => void runTests()}
               disabled={!customCommand.trim() && !framework}
-              className="flex shrink-0 items-center gap-1.5 rounded bg-primary/90 px-2.5 py-1 text-[11.5px] font-medium text-primary-foreground transition-colors hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex shrink-0 items-center gap-1.5 rounded bg-primary/90 px-2.5 py-1 text-ui font-medium text-primary-foreground transition-colors hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Icon name="play" />
               Run
@@ -239,7 +239,7 @@ export function TestRunnerPanel({ workspaceRoot }: Props) {
         </div>
 
         {result && (
-          <div className={cn("flex items-center gap-1.5 text-[11px]", statusColor(result.status))}>
+          <div className={cn("flex items-center gap-1.5 text-caption", statusColor(result.status))}>
             <Icon name={statusIcon(result.status)} />
             <span>{summary}</span>
           </div>
@@ -250,13 +250,13 @@ export function TestRunnerPanel({ workspaceRoot }: Props) {
         {result ? (
           <pre
             ref={outputRef}
-            className="h-full overflow-y-auto whitespace-pre-wrap break-words p-3 font-mono text-[11px] text-foreground/80"
+            className="h-full overflow-y-auto whitespace-pre-wrap break-words p-3 font-mono text-caption text-foreground/80"
           >
             {result.output || (isRunning ? "Starting…" : "")}
           </pre>
         ) : (
           <div className="flex h-full items-center justify-center">
-            <p className="text-[11px] text-muted-foreground/60">
+            <p className="text-caption text-muted-foreground/60">
               {workspaceRoot
                 ? framework
                   ? `Press Run to start ${framework.name}`

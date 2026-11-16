@@ -207,7 +207,7 @@ impl Engine for LlamaCpp {
         BackendInfo {
             id: BackendId::Llama,
             label: "llama.cpp".into(),
-            description: "GGUF inference via llama-bench (no cmake — locate the prebuilt binary)."
+            description: "GGUF inference via llama-bench (no cmake: locate the prebuilt binary)."
                 .into(),
             available: self.binary.is_some(),
             device: DeviceKind::Auto,
@@ -226,7 +226,7 @@ impl Engine for LlamaCpp {
         let bin = self
             .binary
             .as_ref()
-            .ok_or("llama-bench not found — locate it in the Backends panel")?;
+            .ok_or("llama-bench not found: locate it in the Backends panel")?;
         crate::modules::benchmark::llama::run(bin, job_id, model, config, emit, cancel)
     }
     fn simulated(&self) -> bool {
