@@ -23,7 +23,7 @@
 /** Milliseconds with adaptive precision: sub-millisecond timings are the whole
  *  point of a latency column, and `0.0 ms` says nothing. */
 export function formatMs(ms: number): string {
-  if (!Number.isFinite(ms)) return "—";
+  if (!Number.isFinite(ms)) return "–";
   if (ms < 1) return `${(ms * 1000).toFixed(0)} µs`;
   if (ms < 100) return `${ms.toFixed(1)} ms`;
   if (ms < 1000) return `${ms.toFixed(0)} ms`;
@@ -32,7 +32,7 @@ export function formatMs(ms: number): string {
 
 /** Compact number formatting (e.g. `12.4K`) for throughput readouts. */
 export function formatCompact(n: number, digits = 1): string {
-  if (!Number.isFinite(n)) return "—";
+  if (!Number.isFinite(n)) return "–";
   if (Math.abs(n) < 1000) return n.toFixed(n % 1 === 0 ? 0 : digits);
   return new Intl.NumberFormat("en", {
     notation: "compact",

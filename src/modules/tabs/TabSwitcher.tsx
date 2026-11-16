@@ -52,7 +52,7 @@ export function TabSwitcher({ tabs, order, index, onPick }: Props) {
               data-mru-index={i}
               onClick={() => onPick(id)}
               className={cn(
-                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs",
+                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-ui",
                 i === index
                   ? "bg-accent text-foreground"
                   : "text-muted-foreground hover:text-foreground",

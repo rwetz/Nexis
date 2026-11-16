@@ -35,12 +35,12 @@ function AiToolApprovalImpl({ part, toolName, onRespond }: Props) {
   return (
     <div className="rounded-lg border border-border bg-card shadow-sm">
       <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
-        <span className="size-1.5 shrink-0 rounded-full bg-amber-500 nexis-blink" />
+        <span className="size-1.5 shrink-0 rounded-full bg-warning nexis-blink" />
         <Icon name={iconName} className="shrink-0 text-muted-foreground" />
-        <span className="text-[12px] font-medium text-foreground">
+        <span className="text-ui font-medium text-foreground">
           {label}
         </span>
-        <span className="ml-auto text-[10px] text-muted-foreground">
+        <span className="ml-auto text-micro text-muted-foreground">
           needs approval
         </span>
       </div>
@@ -54,7 +54,7 @@ function AiToolApprovalImpl({ part, toolName, onRespond }: Props) {
           size="sm"
           variant="ghost"
           onClick={() => onRespond(false)}
-          className="h-7 gap-1.5 text-[11px]"
+          className="h-7 gap-1.5 text-caption"
         >
           <Icon name="close" />
           Deny
@@ -63,7 +63,7 @@ function AiToolApprovalImpl({ part, toolName, onRespond }: Props) {
           size="sm"
           variant="default"
           onClick={() => onRespond(true)}
-          className="h-7 gap-1.5 text-[11px]"
+          className="h-7 gap-1.5 text-caption"
         >
           <Icon name="check" />
           Approve
@@ -96,13 +96,13 @@ function PreviewBlock({
     return (
       <div className="space-y-1.5">
         {cwd && (
-          <div className="font-mono text-[10.5px] text-muted-foreground">
+          <div className="font-mono text-caption text-muted-foreground">
             {cwd}
           </div>
         )}
         <pre
           className={cn(
-            "max-h-40 overflow-auto rounded-md bg-muted/60 p-2 font-mono text-[11px] leading-relaxed",
+            "max-h-40 overflow-auto rounded-md bg-muted/60 p-2 font-mono text-caption leading-relaxed",
           )}
         >
           {String(input.command ?? "")}
@@ -118,9 +118,9 @@ function PreviewBlock({
     const content = typeof input.content === "string" ? input.content : "";
     const lines = content ? content.split("\n").length : 0;
     return (
-      <div className="space-y-0.5 font-mono text-[11px]">
+      <div className="space-y-0.5 font-mono text-caption">
         <div className="text-muted-foreground">{String(input.path ?? "")}</div>
-        <div className="text-[10.5px] text-muted-foreground/80">
+        <div className="text-caption text-muted-foreground/80">
           {lines} line{lines === 1 ? "" : "s"} · review in the diff tab
         </div>
       </div>
@@ -132,12 +132,12 @@ function PreviewBlock({
     const removed = oldStr ? oldStr.split("\n").length : 0;
     const added = newStr ? newStr.split("\n").length : 0;
     return (
-      <div className="space-y-0.5 font-mono text-[11px]">
+      <div className="space-y-0.5 font-mono text-caption">
         <div className="text-muted-foreground">
           {String(input.path ?? "")}
           {input.replace_all ? " · replace all" : ""}
         </div>
-        <div className="text-[10.5px] text-muted-foreground/80">
+        <div className="text-caption text-muted-foreground/80">
           −{removed} / +{added} line{added === 1 && removed === 1 ? "" : "s"} ·
           review in the diff tab
         </div>
@@ -149,9 +149,9 @@ function PreviewBlock({
       ? (input.edits as Array<{ old_string?: string; new_string?: string }>)
       : [];
     return (
-      <div className="space-y-0.5 font-mono text-[11px]">
+      <div className="space-y-0.5 font-mono text-caption">
         <div className="text-muted-foreground">{String(input.path ?? "")}</div>
-        <div className="text-[10.5px] text-muted-foreground/80">
+        <div className="text-caption text-muted-foreground/80">
           {edits.length} edit{edits.length === 1 ? "" : "s"} · review in the
           diff tab
         </div>
@@ -160,13 +160,13 @@ function PreviewBlock({
   }
   if (toolName === "create_directory") {
     return (
-      <div className="font-mono text-[11px] text-muted-foreground">
+      <div className="font-mono text-caption text-muted-foreground">
         {String(input.path ?? "")}
       </div>
     );
   }
   return (
-    <pre className="overflow-auto rounded-md bg-muted/60 p-2 font-mono text-[11px] leading-relaxed">
+    <pre className="overflow-auto rounded-md bg-muted/60 p-2 font-mono text-caption leading-relaxed">
       {JSON.stringify(input, null, 2)}
     </pre>
   );

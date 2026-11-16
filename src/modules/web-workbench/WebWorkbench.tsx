@@ -83,7 +83,7 @@ export function WebWorkbench({
               onClick={() => setTool(t.id)}
               onPointerEnter={() => rail.setHoverId(t.id)}
               className={cn(
-                "relative z-10 flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+                "relative z-10 flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-caption font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 active === t.id ? "text-primary" : "text-muted-foreground/80 hover:text-foreground",
               )}
@@ -116,7 +116,7 @@ export function WebWorkbench({
             </div>
           ))}
         {available.length === 0 && (
-          <p className="p-4 text-[12px] text-muted-foreground">
+          <p className="p-4 text-ui text-muted-foreground">
             Turn on the Web Dev or Dev Tools pack in Settings to use the Web workbench.
           </p>
         )}

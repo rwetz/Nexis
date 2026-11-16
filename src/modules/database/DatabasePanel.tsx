@@ -32,13 +32,13 @@ export function DatabasePanel() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Database
         </span>
         <button
           type="button"
           onClick={() => setShowAdd((v) => !v)}
-          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <Icon name="add" />
           Connect
@@ -56,8 +56,8 @@ export function DatabasePanel() {
         <div className="flex h-full items-center justify-center">
           <div className="flex flex-col items-center gap-2 text-center">
             <Icon name="database" size="xl" className="text-muted-foreground/30" />
-            <p className="text-[11px] text-muted-foreground/60">No connections</p>
-            <p className="text-[10px] text-muted-foreground/40">Click Connect to add one</p>
+            <p className="text-caption text-muted-foreground/60">No connections</p>
+            <p className="text-micro text-muted-foreground/40">Click Connect to add one</p>
           </div>
         </div>
       ) : (
@@ -80,7 +80,7 @@ export function DatabasePanel() {
             <QueryEditor connection={active} />
           ) : (
             <div className="flex h-full items-center justify-center">
-              <p className="text-[11px] text-muted-foreground/60">Select a connection</p>
+              <p className="text-caption text-muted-foreground/60">Select a connection</p>
             </div>
           )}
         </div>
@@ -115,16 +115,16 @@ function ConnectionItem({ conn, isActive, onSelect, onRemove }: {
           name="database"
           className={isActive ? "text-primary" : "text-muted-foreground/60"}
         />
-        <span className={cn("flex-1 text-[11px] truncate", isActive ? "text-foreground font-medium" : "text-foreground/80")}>
+        <span className={cn("flex-1 text-caption truncate", isActive ? "text-foreground font-medium" : "text-foreground/80")}>
           {conn.name}
         </span>
-        <span className="text-[9px] text-muted-foreground/50">{conn.type}</span>
+        <span className="text-micro text-muted-foreground/50">{conn.type}</span>
       </button>
       <button
         type="button"
         onClick={onRemove}
         aria-label={`Remove connection ${conn.name}`}
-        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100 focus-visible:opacity-100"
+        className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
       >
         <Icon name="delete" size="xs" />
       </button>
@@ -152,13 +152,13 @@ function AddConnectionForm({ onAdd, onCancel }: {
         onChange={(e) => setName(e.target.value)}
         aria-label="Connection name"
         placeholder="Connection name"
-        className="rounded border border-border/60 bg-muted/30 px-2 py-1 text-[12px] text-foreground outline-none focus:border-primary/60"
+        className="rounded border border-border/60 bg-muted/30 px-2 py-1 text-ui text-foreground outline-none focus:border-primary/60"
       />
       <select
         value={type}
         onChange={(e) => setType(e.target.value as DbType)}
         aria-label="Database type"
-        className="rounded border border-border/60 bg-muted/30 px-2 py-1 text-[12px] text-foreground outline-none"
+        className="rounded border border-border/60 bg-muted/30 px-2 py-1 text-ui text-foreground outline-none"
       >
         {DB_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
       </select>
@@ -166,21 +166,21 @@ function AddConnectionForm({ onAdd, onCancel }: {
         value={connStr}
         onChange={(e) => setConnStr(e.target.value)}
         placeholder={placeholder[type]}
-        className="rounded border border-border/60 bg-muted/30 px-2 py-1 font-mono text-[11px] text-foreground outline-none focus:border-primary/60"
+        className="rounded border border-border/60 bg-muted/30 px-2 py-1 font-mono text-caption text-foreground outline-none focus:border-primary/60"
       />
       <div className="flex gap-2">
         <button
           type="button"
           disabled={!name.trim() || !connStr.trim()}
           onClick={() => onAdd({ name: name.trim(), type, connectionString: connStr.trim() })}
-          className="flex-1 rounded bg-primary/90 px-2 py-1 text-[11.5px] font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
+          className="flex-1 rounded bg-primary/90 px-2 py-1 text-ui font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
         >
           Connect
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-border/60 px-2 py-1 text-[11.5px] text-muted-foreground hover:bg-muted"
+          className="rounded border border-border/60 px-2 py-1 text-ui text-muted-foreground hover:bg-muted"
         >
           Cancel
         </button>
@@ -225,7 +225,7 @@ function QueryEditor({ connection }: { connection: DbConnection }) {
                 key={t}
                 type="button"
                 onClick={() => setQuery(`SELECT * FROM "${t}" LIMIT 100;`)}
-                className="rounded bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] text-foreground/70 hover:bg-muted hover:text-foreground"
+                className="rounded bg-muted/40 px-1.5 py-0.5 font-mono text-micro text-foreground/70 hover:bg-muted hover:text-foreground"
               >
                 {t}
               </button>
@@ -241,7 +241,7 @@ function QueryEditor({ connection }: { connection: DbConnection }) {
           onChange={(e) => setQuery(e.target.value)}
           aria-label="SQL query"
           rows={4}
-          className="w-full resize-none bg-transparent p-3 font-mono text-[12px] text-foreground outline-none"
+          className="w-full resize-none bg-transparent p-3 font-mono text-ui text-foreground outline-none"
           onKeyDown={(e) => {
             if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
               e.preventDefault();
@@ -254,7 +254,7 @@ function QueryEditor({ connection }: { connection: DbConnection }) {
           onClick={() => void run()}
           disabled={running || !query.trim()}
           title="Run (Ctrl+Enter)"
-          className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-primary/90 px-2 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
+          className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-primary/90 px-2 py-1 text-caption font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
         >
           <Icon name="play" size="xs" />
           {running ? "Running…" : "Run"}
@@ -264,15 +264,15 @@ function QueryEditor({ connection }: { connection: DbConnection }) {
       <div className="min-h-0 flex-1 overflow-auto">
         {result === null ? (
           <div className="flex h-full items-center justify-center">
-            <p className="text-[11px] text-muted-foreground/60">Press Run or Ctrl+Enter to execute</p>
+            <p className="text-caption text-muted-foreground/60">Press Run or Ctrl+Enter to execute</p>
           </div>
         ) : result.kind === "error" ? (
           <div className="p-3">
-            <p className="font-mono text-[11px] text-destructive">{result.message}</p>
+            <p className="font-mono text-caption text-destructive">{result.message}</p>
           </div>
         ) : result.kind === "message" ? (
           <div className="p-3">
-            <p className="text-[11px] text-muted-foreground">{result.text}</p>
+            <p className="text-caption text-muted-foreground">{result.text}</p>
           </div>
         ) : (
           <ResultTable columns={result.columns} rows={result.rows} />
@@ -284,10 +284,10 @@ function QueryEditor({ connection }: { connection: DbConnection }) {
 
 function ResultTable({ columns, rows }: { columns: string[]; rows: string[][] }) {
   if (columns.length === 0) {
-    return <div className="p-3 text-[11px] text-muted-foreground">No results</div>;
+    return <div className="p-3 text-caption text-muted-foreground">No results</div>;
   }
   return (
-    <table className="w-full border-collapse text-[11px]">
+    <table className="w-full border-collapse text-caption">
       <thead className="sticky top-0 bg-card/80 backdrop-blur">
         <tr>
           {columns.map((col) => (

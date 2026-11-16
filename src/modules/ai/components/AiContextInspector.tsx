@@ -55,7 +55,7 @@ function formatK(n: number): string {
 function ProgressBar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
   const color =
-    pct > 85 ? "bg-rose-500" : pct > 65 ? "bg-amber-500" : "bg-emerald-500";
+    pct > 85 ? "bg-destructive" : pct > 65 ? "bg-warning" : "bg-success";
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-border/60">
@@ -64,7 +64,7 @@ function ProgressBar({ value, max }: { value: number; max: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+      <span className="shrink-0 font-mono text-micro text-muted-foreground">
         {pct}%
       </span>
     </div>
@@ -84,7 +84,7 @@ function Section({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-1.5 px-3 py-1.5 text-[10.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+        className="flex w-full items-center gap-1.5 px-3 py-1.5 text-caption font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <Icon
           name={open ? "chevron-down" : "chevron-right"}
@@ -139,13 +139,13 @@ export function AiContextInspector({ messages }: Props) {
   systemSections.push("NEXIS.md (if present)");
 
   return (
-    <div className="flex max-h-72 flex-col overflow-y-auto border-b border-border/50 bg-muted/20 text-[11px]">
-      <Section title={`Model — ${model?.label ?? modelId}`}>
+    <div className="flex max-h-72 flex-col overflow-y-auto border-b border-border/50 bg-muted/20 text-caption">
+      <Section title={`Model: ${model?.label ?? modelId}`}>
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-muted-foreground">
             <span>Provider</span>
             <span className="font-mono text-foreground capitalize">
-              {model?.provider ?? "—"}
+              {model?.provider ?? "–"}
             </span>
           </div>
           <div className="flex items-center justify-between text-muted-foreground">
@@ -180,7 +180,7 @@ export function AiContextInspector({ messages }: Props) {
         </div>
       </Section>
 
-      <Section title={`Conversation — ${messages.length} messages`}>
+      <Section title={`Conversation: ${messages.length} messages`}>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground">
           <span>
             <span className="font-mono text-foreground">{user}</span> user
@@ -196,7 +196,7 @@ export function AiContextInspector({ messages }: Props) {
         </div>
       </Section>
 
-      <Section title={`System prompt — ${systemSections.length} sections`}>
+      <Section title={`System prompt: ${systemSections.length} sections`}>
         <div className="space-y-0.5">
           {systemSections.map((s) => (
             <div key={s} className="flex items-center gap-1.5 text-muted-foreground">
@@ -206,24 +206,24 @@ export function AiContextInspector({ messages }: Props) {
           ))}
         </div>
         {customInstructions?.trim() && (
-          <div className="mt-2 max-h-20 overflow-y-auto rounded border border-border/40 bg-background/60 p-1.5 font-mono text-[10px] leading-relaxed text-muted-foreground whitespace-pre-wrap">
+          <div className="mt-2 max-h-20 overflow-y-auto rounded border border-border/40 bg-background/60 p-1.5 font-mono text-micro leading-relaxed text-muted-foreground whitespace-pre-wrap">
             {customInstructions.trim().slice(0, 400)}
             {customInstructions.trim().length > 400 && "…"}
           </div>
         )}
       </Section>
 
-      <Section title={`Tools — ${APPROVAL_TOOLS.length + READ_TOOLS.length} available`}>
+      <Section title={`Tools: ${APPROVAL_TOOLS.length + READ_TOOLS.length} available`}>
         <div className="space-y-1">
           <div>
-            <span className="text-[9.5px] uppercase tracking-wide text-muted-foreground/60">
+            <span className="text-micro uppercase tracking-wide text-muted-foreground/60">
               Require approval
             </span>
             <div className="mt-0.5 flex flex-wrap gap-1">
               {APPROVAL_TOOLS.map((t) => (
                 <span
                   key={t}
-                  className="rounded bg-amber-500/15 px-1 py-0.5 font-mono text-[9.5px] text-amber-600 dark:text-amber-400"
+                  className="rounded bg-warning/15 px-1 py-0.5 font-mono text-micro text-warning"
                 >
                   {t}
                 </span>
@@ -231,14 +231,14 @@ export function AiContextInspector({ messages }: Props) {
             </div>
           </div>
           <div>
-            <span className="text-[9.5px] uppercase tracking-wide text-muted-foreground/60">
+            <span className="text-micro uppercase tracking-wide text-muted-foreground/60">
               Auto-execute
             </span>
             <div className="mt-0.5 flex flex-wrap gap-1">
               {READ_TOOLS.map((t) => (
                 <span
                   key={t}
-                  className="rounded bg-muted px-1 py-0.5 font-mono text-[9.5px] text-muted-foreground"
+                  className="rounded bg-muted px-1 py-0.5 font-mono text-micro text-muted-foreground"
                 >
                   {t}
                 </span>

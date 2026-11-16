@@ -17,22 +17,36 @@
     --default-transition-duration: var(--dur-tap);
     --default-transition-timing-function: var(--ease-enter);
 
-    /* The display face. Used only where Nexis speaks in its own voice —
-     * dialog and sheet titles, empty states, Atlas panel headers, the
-     * welcome wordmark, Settings section headers. Everything else stays on
-     * --font-sans, because this face is not legible at the 9-12px the rest
-     * of the UI lives at. */
-    --font-heading: 'Space Grotesk Variable', 'Geist Variable', sans-serif;
-    /* The UI face, paired with --font-mono below: Geist and Geist Mono are
-     * one designer's sans and mono, so the interface and the code share a
-     * skeleton instead of being two families that happen to co-exist. */
-    --font-sans: 'Geist Variable', 'Geist', 'Inter Variable', sans-serif;
+    /* The one UI face (nexis-design RULES R1.1): Inter for everything a
+     * person reads, titles included, so a heading and the rows under it share
+     * a skeleton. There is no display face and no `font-heading`; a title is
+     * Inter at text-lg or text-2xl, weight 600. */
+    --font-sans: 'Inter Variable', 'Inter', system-ui, sans-serif;
     /* Mirrors FALLBACK_CHAIN in src/lib/fonts.ts, which is what the terminal
      * and CodeMirror resolve through. Kept in sync by hand on purpose: this
      * one is a static CSS value, that one probes installed Nerd Fonts at
      * runtime, and they cannot share a source without shipping the chain
      * through a style property on every paint. */
     --font-mono: 'Geist Mono Variable', 'Geist Mono', 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
+    /* The UI type scale: four steps, whole pixels, one pixel apart. The
+     * chrome used to pick its own size per call site — fifteen values from
+     * 8px to 18px, half-pixels included, ~1,400 of them — which is why
+     * adjacent rows never quite matched. Every UI size now names a step:
+     *
+     *   text-micro    10px  badges, counters, key chips, overlines
+     *   text-caption  11px  metadata, status bar, secondary rows
+     *   text-ui       12px  panel rows, lists, menus — the default
+     *   text-body     13px  prose the user reads: chat, dialogs, docs
+     *
+     * Above 13px, use Tailwind's own text-sm/lg/xl. The steps set no
+     * line-height on purpose: rows keep inheriting theirs, so moving a call
+     * site onto the scale never changes its height. src/lib/utils.ts teaches
+     * tailwind-merge these names so cn() treats them as sizes, not colours.
+     * Guarded by pitfall 18 in src/lib/pitfall-guards.test.ts. */
+    --text-micro: 10px;
+    --text-caption: 11px;
+    --text-ui: 12px;
+    --text-body: 13px;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -66,6 +80,9 @@
     --color-background: var(--background);
     --color-brand: var(--brand);
     --color-brand-foreground: var(--brand-foreground);
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+    --color-info: var(--info);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -73,6 +90,12 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+    /* Concentric corners (nexis-design RULES R3.6): something nested at a
+     * surface's padding gets the surface's radius minus that padding, so the
+     * two curves share a centre. Derived, so they follow --radius. */
+    --radius-menu-item: calc(var(--radius-3xl) - 0.375rem);    /* 3xl menu, p-1.5 */
+    --radius-palette-item: calc(var(--radius-4xl) - 0.625rem); /* 4xl palette, p-1 + group p-1.5 */
+    --radius-tab-item: calc(var(--radius-2xl) - 0.25rem);      /* 2xl vertical tab list, p-1 */
 }
 
 :root {
@@ -95,8 +118,8 @@
     --accent: oklch(0.963 0.002 197.1);
     --accent-foreground: oklch(0.218 0.008 223.9);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.925 0.005 214.3);
-    --input: oklch(0.925 0.005 214.3);
+    --border: oklch(0.148 0.004 228.8 / 10%);
+    --input: oklch(0.148 0.004 228.8 / 10%);
     --ring: oklch(0.723 0.014 214.4);
     --chart-1: oklch(0.872 0.007 219.6);
     --chart-2: oklch(0.56 0.021 213.5);
@@ -110,7 +133,7 @@
     --sidebar-primary-foreground: oklch(0.987 0.002 197.1);
     --sidebar-accent: oklch(0.963 0.002 197.1);
     --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
-    --sidebar-border: oklch(0.925 0.005 214.3);
+    --sidebar-border: oklch(0.148 0.004 228.8 / 10%);
     --sidebar-ring: oklch(0.723 0.014 214.4);
 }
 
@@ -121,7 +144,9 @@
     --foreground: oklch(0.987 0.002 197.1);
     --card: oklch(0.218 0.008 223.9);
     --card-foreground: oklch(0.987 0.002 197.1);
-    --popover: oklch(0.218 0.008 223.9);
+    /* A step above the card (nexis-design R6.6): a menu over a panel needs a
+     * surface of its own, since a shadow barely reads on a dark page. */
+    --popover: color-mix(in oklab, var(--card) 97%, var(--foreground));
     --popover-foreground: oklch(0.987 0.002 197.1);
     --primary: oklch(0.925 0.005 214.3);
     --primary-foreground: oklch(0.218 0.008 223.9);
@@ -205,9 +230,10 @@
    * rather than as a generic pulsing dot. */
   --blink-cadence: 1060ms;
 
-  /* Indeterminate progress advances in four discrete quarter-turns. */
-  --tick-cadence: 640ms;
-  --tick-steps: 4;
+  /* Settles past its mark once, then rests: for a card lifting under the
+   * pointer only. Data and chrome never overshoot. */
+  --ease-spring: linear(0, 0.18 7%, 0.62 16%, 1.1 27%, 1.23 34%, 1.21 40%, 1.04 54%, 0.97 63%, 0.98 73%, 1.01 85%, 1);
+  --loader-cadence: 1400ms; /* one lap of the loader's comet round the star */
 
   /* ── Terminal palette ──────────────────────────────────────────────────
    * The Nexis Default theme's terminal colours, and the fallback for any theme
@@ -269,6 +295,21 @@
   --terminal-ansi-bright-magenta: #eea4ff;
   --terminal-ansi-bright-cyan: #00e0e0;
   --terminal-ansi-bright-white: #eff2f4;
+}
+
+/* ── Status tones ─────────────────────────────────────────────────────────
+ * Success / warning / info are not new colours: they are the active theme's
+ * own ANSI green, yellow and blue, which every theme already generates
+ * against its backgrounds with contrast floors (see themes.contrast.test.ts).
+ * So a status pill re-tints with the theme instead of every app reaching for
+ * Tailwind's stock emerald-500/amber-500 — which ignore the theme entirely
+ * and were the commonest raw colours in Nexis itself. Error is
+ * `--destructive`, which already exists. These mark *state*; they are never
+ * the accent. */
+:root {
+  --success: var(--terminal-ansi-green);
+  --warning: var(--terminal-ansi-yellow);
+  --info: var(--terminal-ansi-blue);
 }
 
 .zoom-content {
@@ -435,25 +476,144 @@ html *::-webkit-scrollbar {
   animation-timing-function: var(--ease-exit);
 }
 
-/* ── Stepped spinner ────────────────────────────────────────────────────────
- * Indeterminate progress ticks through four quarter-turns rather than sweeping.
- * A terminal spinner has always been a character cycling in its cell — it can
- * only ever be discrete — and `steps()` is how that reads in a GUI. This is
- * also the single most-seen animation in the app, which is exactly why it
- * should not be Tailwind's stock `animate-spin`.
+/* ── Loader ─────────────────────────────────────────────────────────────────
+ * <Spinner>: a comet of light runs along the {7/2} heptagram (the brand
+ * mark's star) while the star turns slowly the other way. Linear and
+ * continuous, so it is fluid at the display's refresh rate; the old stepped
+ * quarter-turn read as low-resolution next to everything else that moves.
+ * The tail trails the head by sharing its leading edge: the tail's offset is
+ * the head's plus the difference in their lengths (26 - 9 = 17).
  *
- * `.nexis-spin` replaces `animate-spin` on the Spinner component and on the
- * refresh affordances that spin while a fetch is in flight. */
-@keyframes nexis-tick-spin {
+ * `.nexis-spin` is kept for an icon that turns while work is in flight (a
+ * refresh glyph): a smooth turn on the loader's cadence. Never Tailwind's
+ * `animate-spin`. */
+@keyframes nexis-loader-head {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+@keyframes nexis-loader-tail {
+  from {
+    stroke-dashoffset: 17;
+  }
+  to {
+    stroke-dashoffset: -83;
+  }
+}
+
+@keyframes nexis-loader-turn {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.nexis-loader-head {
+  stroke-dasharray: 9 91;
+  animation: nexis-loader-head var(--loader-cadence) linear infinite;
+}
+
+.nexis-loader-tail {
+  stroke-dasharray: 26 74;
+  animation: nexis-loader-tail var(--loader-cadence) linear infinite;
+}
+
+.nexis-loader-turn {
+  transform-box: view-box;
+  transform-origin: center;
+  animation: nexis-loader-turn calc(var(--loader-cadence) * 7) linear infinite;
+}
+
+@keyframes nexis-spin-turn {
   to {
     transform: rotate(360deg);
   }
 }
 
 .nexis-spin {
-  animation: nexis-tick-spin var(--tick-cadence)
-    steps(var(--tick-steps), end) infinite;
+  animation: nexis-spin-turn var(--loader-cadence) linear infinite;
   transform-origin: 50% 50%;
+}
+
+/* ── Skeleton sheen ─────────────────────────────────────────────────────────
+ * A soft band of light crossing the placeholders, left to right. The
+ * gradient is attached to the viewport (background-attachment: fixed), so
+ * every skeleton on screen shows one continuous sweep rather than each
+ * block pulsing on its own clock. */
+@keyframes nexis-sheen {
+  from {
+    background-position: -60vw 0;
+  }
+  to {
+    background-position: 160vw 0;
+  }
+}
+
+.nexis-skeleton {
+  background-color: var(--muted);
+  background-image: linear-gradient(
+    100deg in oklch,
+    transparent 0%,
+    color-mix(in oklab, var(--foreground) 7%, transparent) 40%,
+    color-mix(in oklab, var(--foreground) 11%, transparent) 50%,
+    color-mix(in oklab, var(--foreground) 7%, transparent) 60%,
+    transparent 100%
+  );
+  background-size: 50vw 100%;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  animation: nexis-sheen 1.8s var(--ease-enter) infinite;
+}
+
+/* ── Depth in the dark (nexis-design RULES R6.6) ────────────────────────────
+ * A shadow that works on a white page all but disappears on a near-black one,
+ * so dark surfaces are lit from above instead: a 1px highlight on the top
+ * edge, the hairline, and a deeper, wider shadow under anything that floats.
+ * Light mode keeps its own shadows. */
+.dark :is([data-slot="panel"], [data-slot="card"]) {
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklab, var(--foreground) 5%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 1px 2px 0 oklch(0 0 0 / 30%);
+}
+.dark
+  :is(
+    [data-slot="dropdown-menu-content"],
+    [data-slot="dropdown-menu-sub-content"],
+    [data-slot="context-menu-content"],
+    [data-slot="context-menu-sub-content"],
+    [data-slot="menubar-content"],
+    [data-slot="menubar-sub-content"],
+    [data-slot="popover-content"],
+    [data-slot="hover-card-content"],
+    [data-slot="select-content"],
+    [data-slot="dialog-content"],
+    [data-slot="alert-dialog-content"],
+    [data-slot="sheet-content"]
+  ) {
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklab, var(--foreground) 8%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--foreground) 10%, transparent),
+    0 4px 8px -2px oklch(0 0 0 / 35%),
+    0 16px 40px -8px oklch(0 0 0 / 55%);
+}
+
+/* An icon that swaps on a user action (`<Icon swap>`, nexis-design R8.4): the
+ * new glyph comes up out of a small blur, so the change reads as one mark
+ * turning into another rather than a pop. Short, on the panel duration;
+ * nothing overshoots. Off under reduced motion. */
+@keyframes nexis-icon-swap {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    scale: 0.6;
+  }
+}
+.nexis-icon-swap {
+  animation: nexis-icon-swap var(--dur-panel) var(--ease-enter);
 }
 
 /* ── Caret blink ────────────────────────────────────────────────────────────
@@ -503,8 +663,17 @@ html *::-webkit-scrollbar {
   /* Both indicators still have to signal "busy" without moving. The spinner
    * holds a static glyph; the blink settles at a dimmed-but-visible opacity so
    * a live indicator is still distinguishable from an idle one. */
-  .nexis-spin {
+  .nexis-skeleton,
+  .nexis-spin,
+  .nexis-loader-turn,
+  .nexis-loader-tail,
+  .nexis-icon-swap {
     animation: none;
+  }
+  /* The comet parks on one line and breathes at the caret cadence: busy,
+   * without travel. */
+  .nexis-loader-head {
+    animation: nexis-caret-blink var(--blink-cadence) linear infinite;
   }
   .nexis-blink {
     animation: none;
@@ -684,6 +853,49 @@ html *::-webkit-scrollbar {
   .nexis-window-enter,
   .nexis-window-header,
   .nexis-window-body {
+    animation: none;
+  }
+}
+
+/* App shells (from Epoch): the same arrival as a tool window, for an app
+ * that is the whole window — the title bar drops, the body rises behind it,
+ * the status bar fades in last. Views then fade up whenever they are
+ * switched to, and content fades in when it lands after a load. These use
+ * `backwards` fill, not `both`, so nothing keeps a transform once the
+ * animation ends: a lingering transform becomes the containing block for
+ * fixed overlays (docking drag previews, floating groups, popovers). */
+@keyframes nexis-view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+}
+@keyframes nexis-fade-enter {
+  from {
+    opacity: 0;
+  }
+}
+.nexis-shell-header {
+  animation: nexis-window-header-enter 380ms var(--ease-enter) 90ms backwards;
+}
+.nexis-shell-body {
+  animation: nexis-view-enter var(--dur-scene) var(--ease-enter) 150ms backwards;
+}
+.nexis-shell-status {
+  animation: nexis-fade-enter var(--dur-scene) var(--ease-enter) 260ms backwards;
+}
+.nexis-view-enter {
+  animation: nexis-view-enter 260ms var(--ease-enter) backwards;
+}
+.nexis-content-enter {
+  animation: nexis-fade-enter 220ms var(--ease-enter) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nexis-shell-header,
+  .nexis-shell-body,
+  .nexis-shell-status,
+  .nexis-view-enter,
+  .nexis-content-enter {
     animation: none;
   }
 }
@@ -935,7 +1147,7 @@ textarea,
   border-radius: inherit;
   padding: 1px;
   background: conic-gradient(
-    from var(--aurora-angle),
+    from var(--aurora-angle) in oklch,
     transparent 0%,
     var(--brand) 16%,
     transparent 34%,
@@ -956,7 +1168,7 @@ textarea,
   .aurora-border::before {
     animation: none;
     background: conic-gradient(
-      from 90deg,
+      from 90deg in oklch,
       transparent,
       var(--brand),
       transparent 50%
@@ -1004,7 +1216,7 @@ textarea,
  * field. Controls with an SVG use the glyph rule below instead. */
 html[data-rainbow-accent] [data-rainbow="text"]:is(:hover, :focus-visible) {
   background-image: linear-gradient(
-    var(--rainbow-angle, 100deg),
+    var(--rainbow-angle, 100deg) in oklch,
     oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 0)),
     oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 50)),
     oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(var(--rainbow-hue, 25) + 100)),
@@ -1045,7 +1257,7 @@ html[data-rainbow-accent]
  * visible at once and should not be the same colour. */
 html[data-rainbow-accent] .aurora-border::before {
   background: conic-gradient(
-    from var(--aurora-angle),
+    from var(--aurora-angle) in oklch,
       oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(25 + 0)),
       oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(25 + 45)),
       oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(25 + 90)),
@@ -1061,7 +1273,7 @@ html[data-rainbow-accent] .aurora-border::before {
 @media (prefers-reduced-motion: reduce) {
   html[data-rainbow-accent] .aurora-border::before {
     background: linear-gradient(
-      100deg,
+      100deg in oklch,
         oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(25 + 0)),
         oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(25 + 45)),
         oklch(var(--accent-rainbow-glyph-l) var(--accent-rainbow-c) calc(25 + 90)),

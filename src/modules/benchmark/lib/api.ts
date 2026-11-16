@@ -246,7 +246,7 @@ export function runToCsv(run: BenchRun, models: ModelInfo[]): string {
       measuresModel(r) ? "model" : "engine_synthetic_workload",
     ].join(",");
   });
-  return [`# Nexis ${TOOL_NAMES.benchmark} benchmark — run ${run.id} — ${run.createdAt}`, head, ...rows].join("\n");
+  return [`# Nexis ${TOOL_NAMES.benchmark} benchmark: run ${run.id} – ${run.createdAt}`, head, ...rows].join("\n");
 }
 
 export function runToMarkdown(run: BenchRun, models: ModelInfo[]): string {
@@ -259,16 +259,16 @@ export function runToMarkdown(run: BenchRun, models: ModelInfo[]): string {
     const cells = [
       engine ? "synthetic training workload" : modelName(r.modelId),
       engine ? `${r.backendId} (engine, not this model)` : r.backendId,
-      m ? `${m.tokensPerSec.toFixed(1)} ${throughputUnit(run.config.task, r.backendId).long}` : "—",
-      m ? m.firstTokenMs.toFixed(2) : "—",
-      m ? m.latencyMeanMs.toFixed(2) : "—",
-      m ? m.latencyP95Ms.toFixed(2) : "—",
-      m ? (m.peakMemBytes / 1e6).toFixed(0) : "—",
-      m?.accuracy != null ? `${(m.accuracy * 100).toFixed(1)}%` : "—",
+      m ? `${m.tokensPerSec.toFixed(1)} ${throughputUnit(run.config.task, r.backendId).long}` : "–",
+      m ? m.firstTokenMs.toFixed(2) : "–",
+      m ? m.latencyMeanMs.toFixed(2) : "–",
+      m ? m.latencyP95Ms.toFixed(2) : "–",
+      m ? (m.peakMemBytes / 1e6).toFixed(0) : "–",
+      m?.accuracy != null ? `${(m.accuracy * 100).toFixed(1)}%` : "–",
     ];
     return `| ${cells.join(" | ")} |`;
   });
-  return [`**Nexis ${TOOL_NAMES.benchmark} benchmark** — ${new Date(run.createdAt).toLocaleString()}`, "", head, sep, ...rows].join(
+  return [`**Nexis ${TOOL_NAMES.benchmark} benchmark**: ${new Date(run.createdAt).toLocaleString()}`, "", head, sep, ...rows].join(
     "\n",
   );
 }

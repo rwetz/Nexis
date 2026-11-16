@@ -25,6 +25,17 @@ export default defineConfig(async ({ mode }) => ({
     // state) for the whole bundle.
     dedupe: ["react", "react-dom", "motion", "zustand"],
   },
+  optimizeDeps: {
+    // Scan the Epoch page at startup too. Otherwise the dev server meets
+    // Epoch's imports the first time the window opens, re-optimizes and
+    // reloads it (a blank white window for a moment).
+    entries: ["index.html", "epoch.html"],
+    // Epoch is source, not a dependency. Pre-bundling it split its modules
+    // between the optimizer's bundle and plain source, so the dev build held
+    // two copies of Epoch's app store: a workspace registered its layout API
+    // in one and "Reset this layout" looked in the other.
+    exclude: ["@nexis-epoch/desktop", "@epoch"],
+  },
   esbuild: {
     drop: mode === "production" ? (["debugger"] as ["debugger"]) : [],
     pure:

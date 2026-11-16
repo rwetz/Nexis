@@ -1,6 +1,6 @@
 ---
 type: subsystem
-description: <one line — what this subsystem is; used to judge relevance without opening the note>
+description: <one line, what this subsystem is; used to judge relevance without opening the note>
 ---
 
 # <Subsystem name>
@@ -9,8 +9,8 @@ description: <one line — what this subsystem is; used to judge relevance witho
 
 ## Key files
 
-- `path/to/entry-point.ts` — <role>
-- `path/to/core.rs` — <role>
+- `path/to/entry-point.ts`: <role>
+- `path/to/core.rs`: <role>
 
 ## Invariants / gotchas
 

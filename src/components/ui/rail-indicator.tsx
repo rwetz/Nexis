@@ -23,7 +23,7 @@
 
 import { cn } from "@/lib/utils";
 import { m } from "motion/react";
-import type { GlidingRail, RailRect } from "./use-gliding-rail";
+import type { GlidingRail, RailRect } from "@/components/ui/use-gliding-rail";
 
 export function RailIndicator({
   rail,

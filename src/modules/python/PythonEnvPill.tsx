@@ -32,9 +32,9 @@ function envLabel(env: PythonEnv): string {
 function kindDot(kind: PythonEnv["kind"]): string {
   switch (kind) {
     case "venv":
-      return "bg-emerald-500";
+      return "bg-success";
     case "conda":
-      return "bg-sky-500";
+      return "bg-info";
     case "system":
       return "bg-muted-foreground/50";
   }
@@ -55,7 +55,7 @@ export function PythonEnvPill({
         <button
           type="button"
           className={cn(
-            "flex cursor-pointer items-center gap-1.5 rounded px-2 py-0.5 text-[10.5px] font-medium transition-colors",
+            "flex cursor-pointer items-center gap-1.5 rounded px-2 py-0.5 text-caption font-medium transition-colors",
             "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
           )}
@@ -85,11 +85,11 @@ export function PythonEnvPill({
         sideOffset={6}
         className="min-w-56 p-1"
       >
-        <DropdownMenuLabel className="px-2 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        <DropdownMenuLabel className="px-2 text-micro font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           Python environment
         </DropdownMenuLabel>
         {envs.length === 0 ? (
-          <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
+          <div className="px-2 py-1.5 text-caption text-muted-foreground">
             No environments detected
           </div>
         ) : (
@@ -98,7 +98,7 @@ export function PythonEnvPill({
               key={env.path}
               onSelect={() => onSelect(env)}
               className={cn(
-                "flex items-center gap-2 text-[11.5px]",
+                "flex items-center gap-2 text-ui",
                 activeEnv?.path === env.path && "bg-accent/60 font-medium",
               )}
             >
@@ -111,7 +111,7 @@ export function PythonEnvPill({
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate">{env.name}</span>
                 {env.version ? (
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-micro text-muted-foreground">
                     Python {env.version}
                   </span>
                 ) : null}
@@ -122,7 +122,7 @@ export function PythonEnvPill({
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onSelect={onRefresh}
-          className="flex items-center gap-2 text-[11.5px] text-muted-foreground"
+          className="flex items-center gap-2 text-ui text-muted-foreground"
         >
           <Icon name="refresh" size="xs" />
           Refresh

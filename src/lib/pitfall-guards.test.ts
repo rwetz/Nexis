@@ -424,6 +424,26 @@ describe("AGENTS.md pitfall tripwires (frontend)", () => {
         "cascade into them; render the art inline via <FileTypeIcon> instead",
     ).toBe(false);
   });
+  it("pitfall 18: UI text sizes come from the type scale, not raw pixels", () => {
+    // The text-size half of the same drift: before the scale, the chrome held
+    // ~1,450 hand-picked `text-[Npx]` sizes across eleven values from 8px to
+    // 13px, half-pixels included, so adjacent rows never quite matched and
+    // the app read as "a bit off" with no single culprit.
+    //
+    // If this fails: use text-micro (10) / text-caption (11) / text-ui (12) /
+    // text-body (13) from globals.css. Display sizes of 14px and up are
+    // deliberate one-offs (titles, the Spotlight input) and are not policed.
+    const offenders = sourceFiles().flatMap(([rel, src]) =>
+      [...src.matchAll(/text-\[(\d+(?:\.\d+)?)px\]/g)]
+        .filter((m) => Number(m[1]) < 14)
+        .map((m) => `${rel}: ${m[0]}`),
+    );
+    expect(
+      offenders,
+      "UI text below 14px must use a type-scale step (text-micro/caption/ui/body)",
+    ).toEqual([]);
+  });
+
   it("E2E config overlay stays in sync with the shipping window config", () => {
     // src-tauri/tauri.e2e.conf.json exists only to compile
     // --remote-debugging-port into the E2E build (wry sets

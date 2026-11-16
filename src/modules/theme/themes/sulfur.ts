@@ -9,7 +9,7 @@ import type { Theme } from "../types";
 export const sulfur: Theme = {
   id: "sulfur",
   name: "Sulfur",
-  description: "Citron and brimstone — acidic yellow-green.",
+  description: "Citron and brimstone: acidic yellow-green.",
   editorTheme: { dark: "atomone", light: "github-light" },
   variants: {
     dark: {

@@ -40,7 +40,7 @@ export function ModelLibrary() {
       <CardHeader className="pb-0">
         <div>
           <CardTitle className="text-sm">Models</CardTitle>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">The files to compare</p>
+          <p className="mt-0.5 text-caption text-muted-foreground">The files to compare</p>
         </div>
         <CardAction>
           <Button variant="ghost" size="icon-xs" onClick={onAdd} aria-label="Add models">
@@ -54,12 +54,12 @@ export function ModelLibrary() {
             onClick={onAdd}
             className={cn(
               "flex min-h-32 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-5 text-center transition-colors hover:border-primary/50 hover:bg-primary/5",
-              dragging && "border-brand bg-brand/10",
+              dragging && "border-foreground/40 bg-muted",
             )}
           >
             <Icon name="folder-open" size="lg" className="text-primary/75" />
             <div className="text-sm font-medium">Add a model to begin</div>
-            <div className="text-xs text-muted-foreground">Drop ONNX or GGUF files, or browse.</div>
+            <div className="text-ui text-muted-foreground">Drop ONNX or GGUF files, or browse.</div>
           </button>
         ) : (
           <div className="-mr-1.5 flex max-h-[34vh] flex-col gap-1.5 overflow-y-auto pr-1.5 nexis-scrollbar">
@@ -128,8 +128,8 @@ function ModelRow({
           className="shrink-0 text-muted-foreground"
         />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-medium leading-tight">{model.name}</div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10.5px] text-muted-foreground">
+          <div className="truncate text-body font-medium leading-tight">{model.name}</div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-caption text-muted-foreground">
             <span
               className={cn(
                 "rounded px-1 py-px font-semibold uppercase",

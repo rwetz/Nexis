@@ -9,7 +9,7 @@ import type { Theme } from "../types";
 export const vermillion: Theme = {
   id: "vermillion",
   name: "Vermillion",
-  description: "Clay and rose over charcoal — warm, high energy.",
+  description: "Clay and rose over charcoal: warm, high energy.",
   editorTheme: { dark: "aura", light: "xcode-light" },
   variants: {
     dark: {

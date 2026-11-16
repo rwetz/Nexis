@@ -147,8 +147,8 @@ export function GitHubActivity({ days, className }: Props) {
 
   if (days === undefined) {
     return (
-      <div className={cn("text-[11px] text-muted-foreground", className)}>
-        Restart Nexis to load commit history — this view needs a newer build
+      <div className={cn("text-caption text-muted-foreground", className)}>
+        Restart Nexis to load commit history: this view needs a newer build
         of the backend than the one currently running.
       </div>
     );
@@ -157,10 +157,10 @@ export function GitHubActivity({ days, className }: Props) {
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[11px] font-medium text-muted-foreground">
+        <span className="text-caption font-medium text-muted-foreground">
           Commit activity
         </span>
-        <span className="text-[10.5px] tabular-nums text-muted-foreground">
+        <span className="text-caption tabular-nums text-muted-foreground">
           {days === null
             ? "Reading"
             : `${grid.total} commit${grid.total === 1 ? "" : "s"} this year`}
@@ -173,7 +173,7 @@ export function GitHubActivity({ days, className }: Props) {
       <div ref={scrollRef} className="overflow-x-auto overscroll-contain pb-1">
         <div className="inline-flex flex-col gap-1">
           <div
-            className="grid gap-[3px] pl-[26px] text-[9px] text-muted-foreground"
+            className="grid gap-[3px] pl-[26px] text-micro text-muted-foreground"
             style={{
               gridTemplateColumns: `repeat(${WEEKS}, 10px)`,
             }}
@@ -191,7 +191,7 @@ export function GitHubActivity({ days, className }: Props) {
 
           <div className="flex gap-1">
             <div
-              className="grid shrink-0 gap-[3px] text-[9px] leading-[10px] text-muted-foreground"
+              className="grid shrink-0 gap-[3px] text-micro leading-[10px] text-muted-foreground"
               style={{ gridTemplateRows: `repeat(${DAYS_PER_WEEK}, 10px)` }}
             >
               {WEEKDAY_LABELS.map((label, i) => (
@@ -237,7 +237,7 @@ export function GitHubActivity({ days, className }: Props) {
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-1 text-[9.5px] text-muted-foreground">
+      <div className="flex items-center justify-end gap-1 text-micro text-muted-foreground">
         <span>Less</span>
         {STEP_OPACITY.map((op, i) => (
           <div

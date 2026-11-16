@@ -34,7 +34,7 @@ export function RepoTable() {
       <div
         className={cn(
           GRID,
-          "shrink-0 border-b border-border/60 px-4 py-2 text-xs font-medium text-muted-foreground select-none",
+          "shrink-0 border-b border-border/60 px-4 py-2 text-ui font-medium text-muted-foreground select-none",
         )}
       >
         <span className="pl-5">Repository</span>
@@ -70,13 +70,9 @@ function RepoRow({ repo, selected }: { repo: RepoSummary; selected: boolean }) {
       className={cn(
         GRID,
         "relative cursor-pointer px-4 py-2 text-sm transition-colors select-none",
-        selected ? "bg-accent" : "hover:bg-accent/50",
+        selected ? "bg-muted text-foreground" : "hover:bg-muted/60",
       )}
     >
-      {/* Selected-row indicator — the brand accent marks active state. */}
-      {selected && (
-        <span className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-brand" />
-      )}
 
       <span className="flex min-w-0 items-center gap-2">
         <span
@@ -88,8 +84,8 @@ function RepoRow({ repo, selected }: { repo: RepoSummary; selected: boolean }) {
 
       <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
         <Icon name="git-branch" size="sm" className="shrink-0" />
-        <span className="truncate font-mono text-xs">
-          {repo.branch || "—"}
+        <span className="truncate font-mono text-ui">
+          {repo.branch || "–"}
           {repo.detached && " (detached)"}
         </span>
       </span>
@@ -106,7 +102,7 @@ function RepoRow({ repo, selected }: { repo: RepoSummary; selected: boolean }) {
         )}
       </span>
 
-      <span className="text-right text-xs text-muted-foreground tabular-nums">
+      <span className="text-right text-ui text-muted-foreground tabular-nums">
         {repo.last_commit ? relativeTime(repo.last_commit.time) : ""}
       </span>
     </div>
@@ -116,19 +112,19 @@ function RepoRow({ repo, selected }: { repo: RepoSummary; selected: boolean }) {
 function SyncCell({ repo }: { repo: RepoSummary }) {
   if (repo.error) return <span />;
   if (!repo.upstream)
-    return <span className="text-xs text-muted-foreground/60">no remote</span>;
+    return <span className="text-ui text-muted-foreground/60">no remote</span>;
   if (repo.ahead === 0 && repo.behind === 0)
-    return <span className="text-xs text-muted-foreground/60">synced</span>;
+    return <span className="text-ui text-muted-foreground/60">synced</span>;
   return (
-    <span className="flex items-center gap-1.5 font-mono text-xs tabular-nums">
+    <span className="flex items-center gap-1.5 text-ui tabular-nums">
       {repo.ahead > 0 && (
-        <span className="flex items-center text-sky-400">
+        <span className="flex items-center text-info">
           <Icon name="chevron-up" size="xs" />
           {repo.ahead}
         </span>
       )}
       {repo.behind > 0 && (
-        <span className="flex items-center text-orange-400">
+        <span className="flex items-center text-warning">
           <Icon name="chevron-down" size="xs" />
           {repo.behind}
         </span>
@@ -140,8 +136,8 @@ function SyncCell({ repo }: { repo: RepoSummary }) {
 function ChangesCell({ repo }: { repo: RepoSummary }) {
   if (repo.error) return <span />;
   const parts: { n: number; code: string; cls: string }[] = [
-    { n: repo.staged, code: "staged", cls: "text-emerald-500" },
-    { n: repo.unstaged, code: "modified", cls: "text-amber-400" },
+    { n: repo.staged, code: "staged", cls: "text-success" },
+    { n: repo.unstaged, code: "modified", cls: "text-warning" },
     { n: repo.untracked, code: "untracked", cls: "text-muted-foreground" },
     { n: repo.conflicted, code: "conflicts", cls: "text-destructive" },
   ].filter((p) => p.n > 0);
@@ -156,13 +152,13 @@ function ChangesCell({ repo }: { repo: RepoSummary }) {
     ) : null;
   if (parts.length === 0)
     return (
-      <span className="flex items-center gap-1.5 font-mono text-xs tabular-nums">
-        <span className="text-emerald-500/80">clean</span>
+      <span className="flex items-center gap-1.5 text-ui tabular-nums">
+        <span className="text-success/80">clean</span>
         {stashes}
       </span>
     );
   return (
-    <span className="flex items-center gap-1.5 font-mono text-xs tabular-nums">
+    <span className="flex items-center gap-1.5 text-ui tabular-nums">
       {parts.map((p) => (
         <span key={p.code} className={p.cls} title={`${p.n} ${p.code}`}>
           {p.n}

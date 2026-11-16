@@ -48,7 +48,7 @@ export function Legend() {
     <div className="pointer-events-none absolute bottom-3 left-3 rounded-xl border border-border/60 bg-card/80 px-2.5 py-2 backdrop-blur">
       <ul className="flex flex-col gap-1">
         {entries.map(({ lang, bytes }) => (
-          <li key={lang} className="flex items-center gap-2 text-[11px] leading-none">
+          <li key={lang} className="flex items-center gap-2 text-caption leading-none">
             <span
               className="size-2.5 shrink-0 rounded-[3px]"
               style={{ backgroundColor: css(palette.lang(lang)) }}
@@ -59,7 +59,7 @@ export function Legend() {
             </span>
           </li>
         ))}
-        <li className="mt-0.5 flex items-center gap-2 border-t border-border/60 pt-1.5 text-[11px] leading-none">
+        <li className="mt-0.5 flex items-center gap-2 border-t border-border/60 pt-1.5 text-caption leading-none">
           <span
             className="size-2.5 shrink-0 rounded-[3px] border-2"
             style={{ borderColor: css(palette.brand) }}

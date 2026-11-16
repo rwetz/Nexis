@@ -69,11 +69,11 @@ export function MemoryReportPill() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className="shrink-0 cursor-default rounded bg-muted/40 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-muted-foreground">
+        <span className="shrink-0 cursor-default whitespace-nowrap text-caption tabular-nums text-muted-foreground">
           {summary}
         </span>
       </TooltipTrigger>
-      <TooltipContent side="top" className="font-mono text-[11px] leading-relaxed">
+      <TooltipContent side="top" className="font-mono text-caption leading-relaxed">
         <div>renderer slots: {stats.slots} ({stats.adopted} adopted, {stats.glContexts} WebGL contexts)</div>
         <div>scrollback: {stats.bufferedLines.toLocaleString()} lines buffered</div>
         <div>dormant output: {formatBytes(stats.dormantBytes)} · snapshots: {formatBytes(stats.snapshotBytes)} ({stats.sessions} sessions)</div>

@@ -27,7 +27,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   steps_per_epoch: {
     title: "Steps per pass",
-    body: "How many batches make up one pass. Usually derived from dataset size ÷ batch size; setting it explicitly caps how much of the data each pass sees — useful to shorten passes on big datasets.",
+    body: "How many batches make up one pass. Usually derived from dataset size ÷ batch size; setting it explicitly caps how much of the data each pass sees: useful to shorten passes on big datasets.",
   },
   batch_size: {
     title: "Batch size",
@@ -39,11 +39,11 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   val_split: {
     title: "Validation split",
-    body: "The fraction of data held back from training and used only to measure how the model does on examples it has never seen. 0.2 means 20% is reserved. Validation metrics are the honest score — training metrics always look better.",
+    body: "The fraction of data held back from training and used only to measure how the model does on examples it has never seen. 0.2 means 20% is reserved. Validation metrics are the honest score: training metrics always look better.",
   },
   seed: {
     title: "Seed",
-    body: "The starting point for all the random choices in training (weight init, data shuffling). The same seed on the same data gives a reproducible run — change it to check whether a result was luck.",
+    body: "The starting point for all the random choices in training (weight init, data shuffling). The same seed on the same data gives a reproducible run: change it to check whether a result was luck.",
   },
   device: {
     title: "Device",
@@ -71,7 +71,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   conv: {
     title: "Convolution layer",
-    body: "Slides small learned filters across the image to detect local patterns — edges and textures in early layers, shapes in later ones. The channel count is how many different patterns the layer can learn.",
+    body: "Slides small learned filters across the image to detect local patterns: edges and textures in early layers, shapes in later ones. The channel count is how many different patterns the layer can learn.",
   },
   conv1: {
     title: "First conv filters",
@@ -83,7 +83,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   temperature: {
     title: "Temperature",
-    body: "How adventurous sampling is when generating. Low (~0.3) keeps to the most likely next characters — safe and repetitive. High (~1.2) takes risks — creative but error-prone. 0.8 is a good default.",
+    body: "How adventurous sampling is when generating. Low (~0.3) keeps to the most likely next characters: safe and repetitive. High (~1.2) takes risks: creative but error-prone. 0.8 is a good default.",
   },
   length: {
     title: "Sample length",
@@ -101,7 +101,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   onnx: {
     title: "ONNX export",
-    body: "ONNX is a portable model format that runs anywhere onnxruntime does (Python, C++, Rust, the browser) — no training framework needed. The export retrains the tabular model from train.toml and writes model.onnx into the project. Preprocessing is baked in: raw feature values in, class scores out.",
+    body: "ONNX is a portable model format that runs anywhere onnxruntime does (Python, C++, Rust, the browser): no training framework needed. The export retrains the tabular model from train.toml and writes model.onnx into the project. Preprocessing is baked in: raw feature values in, class scores out.",
   },
   "confusion-matrix": {
     title: "Confusion matrix",
@@ -109,11 +109,11 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   duration: {
     title: "Duration",
-    body: "Wall-clock time from run start to finish, including data loading and per-epoch evaluation — not just the training math.",
+    body: "Wall-clock time from run start to finish, including data loading and per-epoch evaluation, not just the training math.",
   },
   best: {
     title: "Best value",
-    body: "The best this metric got at any point in the run — not necessarily the final value. The \"best\" checkpoint is saved at that moment.",
+    body: "The best this metric got at any point in the run, not necessarily the final value. The \"best\" checkpoint is saved at that moment.",
   },
 };
 

@@ -38,18 +38,18 @@ export function PanelToggle() {
           aria-pressed={open}
           aria-label={open ? "Hide bottom panel" : "Show bottom panel"}
           className={cn(
-            "flex h-5 shrink-0 items-center gap-1 rounded px-1.5 text-[10.5px] transition-colors",
+            "flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2 text-caption transition-colors",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
             open
-              ? "bg-primary/10 text-foreground"
-              : "text-muted-foreground hover:bg-accent hover:text-foreground",
+              ? "bg-accent text-foreground"
+              : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
           )}
         >
           <Icon name="panel-bottom" size="xs" active={open} />
           <span>Panel</span>
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="text-[11px]">
+      <TooltipContent side="top" className="text-caption">
         {open ? "Hide" : "Show"} the bottom panel{keys ? ` (${keys})` : ""}
       </TooltipContent>
     </Tooltip>

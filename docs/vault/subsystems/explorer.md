@@ -9,11 +9,11 @@ Explorer is the workspace-scoped file tree and search surface. The capability wo
 
 ## Key files
 
-- `src/capabilities/editor/index.tsx` / `context.tsx` — declarative Explorer panel/command and the narrow workbench callback contract
-- `src/modules/explorer/FileExplorer.tsx` — tree presentation, focus handle, file events, context actions, and search composition
-- `src/modules/explorer/lib/useFileTree.ts` — expanded-node state, loading, create/rename/delete/move orchestration
-- `src/modules/explorer/ExplorerSearch.tsx` — debounced `platform/filesystem.ts` search within the active workspace environment
-- `src/modules/explorer/lib/contextActions.ts` — clipboard and host file-manager reveal through `platform/opener.ts`
+- `src/capabilities/editor/index.tsx` / `context.tsx`: declarative Explorer panel/command and the narrow workbench callback contract
+- `src/modules/explorer/FileExplorer.tsx`: tree presentation, focus handle, file events, context actions, and search composition
+- `src/modules/explorer/lib/useFileTree.ts`: expanded-node state, loading, create/rename/delete/move orchestration
+- `src/modules/explorer/ExplorerSearch.tsx`: debounced `platform/filesystem.ts` search within the active workspace environment
+- `src/modules/explorer/lib/contextActions.ts`: clipboard and host file-manager reveal through `platform/opener.ts`
 
 ## Invariants / gotchas
 

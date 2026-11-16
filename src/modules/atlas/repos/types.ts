@@ -173,11 +173,11 @@ export const STATE_META: Record<
   RepoState,
   { label: string; dot: string; text: string }
 > = {
-  clean:    { label: "clean",    dot: "bg-emerald-500",  text: "text-emerald-500" },
-  dirty:    { label: "dirty",    dot: "bg-amber-400",    text: "text-amber-400" },
-  ahead:    { label: "ahead",    dot: "bg-sky-400",      text: "text-sky-400" },
-  behind:   { label: "behind",   dot: "bg-orange-400",   text: "text-orange-400" },
-  diverged: { label: "diverged", dot: "bg-red-400",      text: "text-red-400" },
+  clean:    { label: "clean",    dot: "bg-success",  text: "text-success" },
+  dirty:    { label: "dirty",    dot: "bg-warning",    text: "text-warning" },
+  ahead:    { label: "ahead",    dot: "bg-info",      text: "text-info" },
+  behind:   { label: "behind",   dot: "bg-warning",   text: "text-warning" },
+  diverged: { label: "diverged", dot: "bg-destructive",      text: "text-destructive" },
   conflict: { label: "conflict", dot: "bg-destructive",  text: "text-destructive" },
   error:    { label: "error",    dot: "bg-destructive",  text: "text-destructive" },
 };

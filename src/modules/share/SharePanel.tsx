@@ -42,12 +42,12 @@ const BIND_LABELS: Array<{ value: ShareBindChoice; label: string; hint: string }
   {
     value: "lan",
     label: "LAN only",
-    hint: "Bind just the primary LAN interface — not exposed on VPN or other networks",
+    hint: "Bind just the primary LAN interface, not exposed on VPN or other networks",
   },
   {
     value: "localhost",
     label: "This device only",
-    hint: "Bind 127.0.0.1 — for browsers on this machine (e.g. OBS, a second monitor)",
+    hint: "Bind 127.0.0.1: for browsers on this machine (e.g. OBS, a second monitor)",
   },
 ];
 
@@ -140,12 +140,12 @@ export function SharePanel() {
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="globe" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Share
         </span>
         {isRunning && (
-          <span className="ml-auto flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[9px] font-bold text-red-500">
-            <span className="h-1.5 w-1.5 nexis-blink rounded-full bg-red-500" />
+          <span className="ml-auto flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-micro font-semibold text-destructive">
+            <span className="h-1.5 w-1.5 nexis-blink rounded-full bg-destructive" />
             {runningLive && runningTarget === "terminal" ? "Live" : "Sharing"}
           </span>
         )}
@@ -154,7 +154,7 @@ export function SharePanel() {
       <div className="flex flex-col gap-3 p-3">
         {/* What to share */}
         <div className="space-y-1.5">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="text-micro font-medium uppercase tracking-wider text-muted-foreground">
             Share
           </p>
           <div className="flex gap-1">
@@ -165,7 +165,7 @@ export function SharePanel() {
                 onClick={() => setTarget(t)}
                 disabled={isRunning}
                 className={cn(
-                  "flex items-center gap-1.5 rounded px-2 py-1 text-[10.5px] font-medium transition-colors",
+                  "flex items-center gap-1.5 rounded px-2 py-1 text-caption font-medium transition-colors",
                   (isRunning ? runningTarget === t : target === t)
                     ? "bg-primary/15 text-primary"
                     : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
@@ -186,16 +186,16 @@ export function SharePanel() {
               type="button"
               onClick={() => setLiveMode((v) => !v)}
               className={cn(
-                "flex items-center gap-1.5 rounded px-2 py-1 text-[10.5px] font-medium transition-colors",
+                "flex items-center gap-1.5 rounded px-2 py-1 text-caption font-medium transition-colors",
                 liveMode
-                  ? "bg-green-500/15 text-green-500"
+                  ? "bg-success/15 text-success"
                   : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
               )}
             >
               <Icon name="activity" size="xs" />
               Live streaming
             </button>
-            <span className="text-[9.5px] text-muted-foreground/50">
+            <span className="text-micro text-muted-foreground/50">
               Instant updates over WebSocket
             </span>
           </div>
@@ -204,7 +204,7 @@ export function SharePanel() {
         {/* Bind-interface picker (pre-start) */}
         {!isRunning && (
           <div className="space-y-1.5">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <p className="text-micro font-medium uppercase tracking-wider text-muted-foreground">
               Visible on
             </p>
             <div className="flex gap-1">
@@ -218,7 +218,7 @@ export function SharePanel() {
                     disabled={unavailable}
                     onClick={() => setBindChoice(b.value)}
                     className={cn(
-                      "rounded px-2 py-1 text-[10.5px] font-medium transition-colors",
+                      "rounded px-2 py-1 text-caption font-medium transition-colors",
                       bindChoice === b.value
                         ? "bg-primary/15 text-primary"
                         : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
@@ -230,7 +230,7 @@ export function SharePanel() {
                 );
               })}
             </div>
-            <p className="text-[9.5px] text-muted-foreground/50">{bindMeta.hint}</p>
+            <p className="text-micro text-muted-foreground/50">{bindMeta.hint}</p>
           </div>
         )}
 
@@ -241,7 +241,7 @@ export function SharePanel() {
             onClick={() => void handleStart()}
             disabled={status === "starting"}
             className={cn(
-              "flex w-full items-center justify-center gap-2 rounded-md py-2 text-[11.5px] font-medium transition-colors",
+              "flex w-full items-center justify-center gap-2 rounded-md py-2 text-ui font-medium transition-colors",
               "bg-primary/90 text-primary-foreground hover:bg-primary",
               "disabled:cursor-wait disabled:opacity-60",
             )}
@@ -253,13 +253,13 @@ export function SharePanel() {
           <div className="space-y-2">
             {/* URL display */}
             <div className="rounded-md border border-border/50 bg-muted/20 p-2.5">
-              <p className="mb-1 text-[10px] font-medium text-muted-foreground">
+              <p className="mb-1 text-micro font-medium text-muted-foreground">
                 {bindChoice === "localhost"
                   ? "Open in a browser on this machine:"
                   : "Open in a browser on the same network:"}
               </p>
               <div className="flex items-center gap-2">
-                <code className="min-w-0 flex-1 truncate rounded bg-background/60 px-2 py-1 font-mono text-[11px] text-foreground">
+                <code className="min-w-0 flex-1 truncate rounded bg-background/60 px-2 py-1 font-mono text-caption text-foreground">
                   {url}
                 </code>
                 <button
@@ -271,13 +271,13 @@ export function SharePanel() {
                   <Icon
                     name={copied ? "check" : "copy"}
                     size="xs"
-                    className={copied ? "text-green-500" : ""}
+                    className={copied ? "text-success" : ""}
                   />
                 </button>
               </div>
-              <p className="mt-1.5 text-[9.5px] text-muted-foreground/60">
-                Only people with this exact link can view — the{" "}
-                <code className="text-[9px]">?k=</code> token is the key.
+              <p className="mt-1.5 text-micro text-muted-foreground/60">
+                Only people with this exact link can view: the{" "}
+                <code className="text-micro">?k=</code> token is the key.
                 Sharing continues while this panel is closed; stop it here or
                 from the status-bar pill.
                 {bindChoice !== "localhost" && !lanIp && (
@@ -293,7 +293,7 @@ export function SharePanel() {
                   type="button"
                   onClick={() => void handleUpdate()}
                   title="Push current content to the server"
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border/50 py-1 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border/50 py-1 text-caption text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
                 >
                   <Icon name="refresh" size="xs" />
                   Refresh content
@@ -302,7 +302,7 @@ export function SharePanel() {
               <button
                 type="button"
                 onClick={() => void stopShare()}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded border border-red-500/30 py-1 text-[10.5px] text-red-500/80 transition-colors hover:bg-red-500/10 hover:text-red-500"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded border border-destructive/30 py-1 text-caption text-destructive/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
               >
                 <Icon name="close" size="xs" />
                 Stop sharing
@@ -312,7 +312,7 @@ export function SharePanel() {
         )}
 
         {status === "error" && error && (
-          <p className="rounded-md bg-destructive/10 px-2.5 py-2 text-[10.5px] text-destructive">
+          <p className="rounded-md bg-destructive/10 px-2.5 py-2 text-caption text-destructive">
             {error}
           </p>
         )}
@@ -320,8 +320,8 @@ export function SharePanel() {
         {/* Info */}
         {!isRunning && (
           <div className="rounded-md border border-border/30 bg-muted/10 p-2.5">
-            <p className="text-[10px] leading-relaxed text-muted-foreground/70">
-              Starts a local HTTP server and generates a tokenized link — only
+            <p className="text-micro leading-relaxed text-muted-foreground/70">
+              Starts a local HTTP server and generates a tokenized link. Only
               people you give the link to can view your{" "}
               {target === "conversation" ? "AI conversation" : "terminal"}{" "}
               read-only.{" "}

@@ -29,7 +29,7 @@ function statusBadge(
     case "modified":
       return {
         label: "modified",
-        cls: "bg-amber-500/20 text-amber-600 dark:text-amber-400",
+        cls: "bg-warning/20 text-warning",
       };
     case "uninitialized":
       return {
@@ -44,7 +44,7 @@ function statusBadge(
     default:
       return {
         label: "ok",
-        cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+        cls: "bg-success/15 text-success",
       };
   }
 }
@@ -90,7 +90,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
       <button
         type="button"
         onClick={() => setExpanded((p) => !p)}
-        className="flex h-7 w-full items-center gap-2 px-3 text-left text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+        className="flex h-7 w-full items-center gap-2 px-3 text-left text-caption font-medium text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
       >
         <Icon
           name="chevron-down"
@@ -100,7 +100,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
         <Icon name="git-branch" className="shrink-0" />
         <span>Submodules</span>
         {submodules.length > 0 && (
-          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-[9.5px] tabular-nums text-muted-foreground/85">
+          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground/85">
             {submodules.length}
           </span>
         )}
@@ -112,7 +112,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
             <Button
               size="xs"
               variant="ghost"
-              className="ml-auto h-6 cursor-pointer text-[10.5px] text-muted-foreground"
+              className="ml-auto h-6 cursor-pointer text-caption text-muted-foreground"
               onClick={() => void load()}
             >
               {loading ? <Spinner className="size-2.5" /> : "Refresh"}
@@ -120,18 +120,18 @@ export function SubmoduleSection({ repoRoot }: Props) {
           </div>
 
           {error && (
-            <div className="mb-1 rounded bg-destructive/10 px-2 py-1 text-[10.5px] text-destructive">
+            <div className="mb-1 rounded bg-destructive/10 px-2 py-1 text-caption text-destructive">
               {error}
             </div>
           )}
 
           {loading && submodules.length === 0 ? (
-            <div className="flex items-center gap-2 py-2 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-2 py-2 text-caption text-muted-foreground">
               <Spinner className="size-3" />
               Loading submodules…
             </div>
           ) : submodules.length === 0 ? (
-            <div className="py-2 text-[11px] text-muted-foreground/65">
+            <div className="py-2 text-caption text-muted-foreground/65">
               No submodules found.
             </div>
           ) : (
@@ -142,7 +142,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
                 return (
                   <li
                     key={entry.path}
-                    className="group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[11px] hover:bg-accent/30"
+                    className="group flex items-center gap-1.5 rounded-md px-1.5 py-1 text-caption hover:bg-accent/30"
                   >
                     <Icon
                       name="git-branch"
@@ -156,17 +156,17 @@ export function SubmoduleSection({ repoRoot }: Props) {
                         </span>
                         <span
                           className={cn(
-                            "shrink-0 rounded-sm px-1 py-px text-[9px] font-medium",
+                            "shrink-0 rounded-sm px-1 py-px text-micro font-medium",
                             badge.cls,
                           )}
                         >
                           {badge.label}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground/65">
+                      <div className="flex items-center gap-1 text-micro text-muted-foreground/65">
                         <span className="truncate">{entry.path}</span>
                         <span>·</span>
-                        <span className="shrink-0 font-mono tabular-nums">
+                        <span className="shrink-0 font-mono">
                           {entry.sha.slice(0, 7)}
                         </span>
                       </div>
@@ -203,7 +203,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
                                 <Icon name="git-pr" size="xs" />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[10.5px]">
+                            <TooltipContent side="top" className="text-caption">
                               Init submodule
                             </TooltipContent>
                           </Tooltip>
@@ -237,7 +237,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
                                 <Icon name="loading" size="xs" />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="text-[10.5px]">
+                            <TooltipContent side="top" className="text-caption">
                               Update submodule
                             </TooltipContent>
                           </Tooltip>

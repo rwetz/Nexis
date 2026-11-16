@@ -39,7 +39,7 @@ type GroupProps = {
 export function BranchedGroup({ label, children, className }: GroupProps) {
   return (
     <div className={cn("relative", className)}>
-      <p className="mb-1 px-1 text-[10px] font-semibold tracking-wider text-muted-foreground/50 uppercase">
+      <p className="mb-1 px-1 text-micro font-semibold tracking-wider text-muted-foreground/50 uppercase">
         {label}
       </p>
       <div className="relative flex flex-col gap-0.5">

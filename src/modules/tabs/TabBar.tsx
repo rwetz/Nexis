@@ -253,7 +253,7 @@ export function TabBar({
                     // base TabsTrigger focus ring is suppressed because Radix
                     // tabs activate on focus, so the active style *is* the
                     // keyboard focus indicator.
-                    "group relative h-7 shrink-0 gap-1.5 rounded-md text-xs text-muted-foreground transition-colors data-[state=active]:bg-accent data-[state=active]:text-foreground hover:text-foreground/80 justify-between",
+                    "group relative h-7 shrink-0 gap-1.5 rounded-md text-ui text-muted-foreground transition-colors data-[state=active]:bg-accent data-[state=active]:text-foreground hover:text-foreground/80 justify-between",
                     "focus-visible:ring-0 focus-visible:outline-none",
                     compact ? "px-1.5!" : "ps-2! pe-1!",
                     onReorder && "cursor-grab",
@@ -326,28 +326,28 @@ export function TabBar({
             <DropdownMenuItem onSelect={() => onNew()}>
               <Icon name="terminal" size="md" />
               <span className="flex-1">Terminal</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-ui text-muted-foreground">
                 {fmtShortcut(MOD_KEY, "T")}
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onNewPrivate()}>
               <Icon name="incognito" size="md" />
               <span className="flex-1">Privacy</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-ui text-muted-foreground">
                 {fmtShortcut(MOD_KEY, "R")}
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onNewEditor()}>
               <Icon name="edit" size="md" />
               <span className="flex-1">Editor</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-ui text-muted-foreground">
                 {fmtShortcut(MOD_KEY, "E")}
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onNewPreview()}>
               <Icon name="globe" size="md" />
               <span className="flex-1">Preview</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-ui text-muted-foreground">
                 {fmtShortcut(MOD_KEY, "P")}
               </span>
             </DropdownMenuItem>
@@ -361,7 +361,7 @@ export function TabBar({
                 <DropdownMenuItem onSelect={onNewWindow}>
                   <Icon name="add-box" size="md" />
                   <span className="flex-1">New Window</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-ui text-muted-foreground">
                     {fmtShortcut(MOD_KEY, "⇧N")}
                   </span>
                 </DropdownMenuItem>

@@ -93,7 +93,7 @@ export function queryJsonPath(input: string, path: string): ToolResult {
   }
   if (consumed !== rest.length) {
     return err(
-      `unsupported path syntax at "${rest.slice(consumed) || rest}" — this ` +
+      `unsupported path syntax at "${rest.slice(consumed) || rest}": this ` +
         `subset understands $, .key, ['key'], [0] and [*]`,
     );
   }
@@ -172,7 +172,7 @@ export function decodeUrlComponent(input: string): ToolResult {
     return ok(decodeURIComponent(input));
   } catch (e) {
     // A lone "%" is the common case and URIError's own text does not say so.
-    return err(`${messageOf(e)} — check for a stray % or an incomplete escape`);
+    return err(`${messageOf(e)}: check for a stray % or an incomplete escape`);
   }
 }
 

@@ -146,7 +146,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="play" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+        <span className="text-caption font-semibold tracking-wider text-muted-foreground uppercase">
           Animator
         </span>
         <button
@@ -160,8 +160,8 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
       </div>
 
       {!valid ? (
-        <p className="p-4 text-center text-[11px] leading-relaxed text-muted-foreground">
-          Draw or paste a mark in the SVG playground first — this animates the
+        <p className="p-4 text-center text-caption leading-relaxed text-muted-foreground">
+          Draw or paste a mark in the SVG playground first: this animates the
           document that panel is holding.
         </p>
       ) : (
@@ -180,13 +180,13 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                 type="button"
                 onClick={() => setRunId((r) => r + 1)}
                 title="Restart the animation"
-                className="flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-[10.5px] transition-colors hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                className="flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-caption transition-colors hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
               >
                 <Icon name="refresh" size="xs" />
                 Replay
               </button>
 
-              <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <label className="flex items-center gap-1 text-micro text-muted-foreground">
                 Duration
                 <input
                   type="number"
@@ -200,7 +200,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                       duration: Math.max(0.1, Number(e.target.value) || 0.1),
                     }))
                   }
-                  className="w-12 rounded border border-border/60 bg-background/60 px-1 py-0.5 text-[10px] tabular-nums focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                  className="w-12 rounded border border-border/60 bg-background/60 px-1 py-0.5 text-micro tabular-nums focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
                 />
                 s
               </label>
@@ -210,7 +210,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                 aria-pressed={timeline.repeat}
                 onClick={() => setTimeline((t) => ({ ...t, repeat: !t.repeat }))}
                 className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+                  "rounded px-1.5 py-0.5 text-micro transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
                   timeline.repeat
                     ? "bg-primary/15 text-primary"
                     : "text-muted-foreground hover:text-foreground",
@@ -232,7 +232,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                         : "Only animates when the SVG is inline in a page, but a stylesheet can reach it"
                     }
                     className={cn(
-                      "rounded px-1.5 py-0.5 text-[10px] uppercase transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+                      "rounded px-1.5 py-0.5 text-micro uppercase transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
                       format === f
                         ? "bg-primary/15 text-primary"
                         : "text-muted-foreground hover:text-foreground",
@@ -253,7 +253,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                 setTarget(e.target.value === "" ? null : Number(e.target.value))
               }
               aria-label="Element to animate"
-              className="min-w-0 max-w-[45%] rounded border border-border/60 bg-background/60 px-1 py-0.5 text-[10px] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+              className="min-w-0 max-w-[45%] rounded border border-border/60 bg-background/60 px-1 py-0.5 text-micro focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             >
               <option value="">Whole document</option>
               {targets.map((t) => (
@@ -267,7 +267,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
               value={property}
               onChange={(e) => setProperty(e.target.value as Animatable)}
               aria-label="Property to animate"
-              className="rounded border border-border/60 bg-background/60 px-1 py-0.5 text-[10px] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+              className="rounded border border-border/60 bg-background/60 px-1 py-0.5 text-micro focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             >
               {ANIMATABLE.map((p) => (
                 <option key={p} value={p}>
@@ -279,7 +279,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
             <button
               type="button"
               onClick={addTrack}
-              className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-[10.5px] transition-colors hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+              className="ml-auto flex items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-caption transition-colors hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
             >
               <Icon name="add" size="xs" />
               Track
@@ -289,7 +289,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
           {/* Tracks */}
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
             {timeline.tracks.length === 0 ? (
-              <p className="p-4 text-center text-[11px] leading-relaxed text-muted-foreground/60">
+              <p className="p-4 text-center text-caption leading-relaxed text-muted-foreground/60">
                 No tracks. Pick an element and a property, then add one.
               </p>
             ) : (
@@ -299,19 +299,19 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                     key={track.id}
                     className={cn(
                       "rounded-md border bg-card/40 px-2 py-1.5",
-                      hasMotion(track) ? "border-border/50" : "border-amber-500/40",
+                      hasMotion(track) ? "border-border/50" : "border-warning/40",
                     )}
                   >
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10.5px] font-medium">
+                      <span className="text-caption font-medium">
                         {ANIMATABLE_LABELS[track.property]}
                       </span>
-                      <span className="font-mono text-[9.5px] text-muted-foreground/60">
+                      <span className="font-mono text-micro text-muted-foreground/60">
                         {track.target === null ? "svg" : `#${track.target}`}
                       </span>
                       {!hasMotion(track) && (
                         <span
-                          className="text-[9px] text-amber-500"
+                          className="text-micro text-warning"
                           title="A track needs at least two keyframes to animate"
                         >
                           no motion
@@ -343,7 +343,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                             aria-label={`Keyframe ${i + 1} position`}
                             className="h-1 min-w-0 flex-1 cursor-pointer appearance-none rounded-full bg-border accent-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
                           />
-                          <span className="w-7 shrink-0 text-right font-mono text-[9px] tabular-nums text-muted-foreground/60">
+                          <span className="w-7 shrink-0 text-right text-micro tabular-nums text-muted-foreground/60">
                             {Math.round(key.at * 100)}%
                           </span>
                           {isColor(track.property) ? (
@@ -363,7 +363,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                                 setKey(track.id, i, Number(e.target.value) || 0)
                               }
                               aria-label={`Keyframe ${i + 1} value`}
-                              className="w-14 shrink-0 rounded border border-border/60 bg-background/60 px-1 py-0.5 text-[10px] tabular-nums focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                              className="w-14 shrink-0 rounded border border-border/60 bg-background/60 px-1 py-0.5 text-micro tabular-nums focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
                             />
                           )}
                         </div>
@@ -383,7 +383,7 @@ export function AnimatorPanel({ workspaceRoot }: Props) {
                           ].sort((a, b) => a.at - b.at),
                         })
                       }
-                      className="mt-1 text-[9.5px] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+                      className="mt-1 text-micro text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
                     >
                       + keyframe
                     </button>

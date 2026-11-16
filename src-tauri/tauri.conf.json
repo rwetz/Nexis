@@ -79,6 +79,6 @@
     },
     "category": "DeveloperTool",
     "shortDescription": "AI-native terminal emulator",
-    "longDescription": "Nexis — an AI-native terminal emulator with multi-tab, file explorer, code editor, web preview, and AI agents."
+    "longDescription": "Nexis, an AI-native terminal emulator with multi-tab, file explorer, code editor, web preview, and AI agents."
   }
 }

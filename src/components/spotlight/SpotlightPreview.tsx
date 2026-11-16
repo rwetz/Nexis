@@ -81,7 +81,7 @@ async function loadInfo(path: string): Promise<FileInfo> {
 
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 text-[10.5px]">
+    <div className="flex items-baseline justify-between gap-3 text-caption">
       <span className="text-muted-foreground">{label}</span>
       <span className="truncate text-right text-foreground/85">{value}</span>
     </div>
@@ -93,7 +93,7 @@ function ExcerptLine({ line, markdown }: { line: string; markdown: boolean }) {
   const heading = markdown ? /^(#{1,6})\s+(.*)$/.exec(line) : null;
   if (heading) {
     return (
-      <div className={cn("truncate font-semibold text-foreground", heading[1].length === 1 ? "text-[12px]" : "text-[10.5px]")}>
+      <div className={cn("truncate font-semibold text-foreground", heading[1].length === 1 ? "text-ui" : "text-caption")}>
         {plainInline(heading[2])}
       </div>
     );
@@ -113,7 +113,7 @@ function TextExcerpt({ lines, markdown }: { lines: string[]; markdown: boolean }
   // An excerpt is a fixed slice of a file that never reorders, so the lines
   // have no identity beyond their position; Children.toArray keys them.
   return (
-    <div className="h-full overflow-hidden bg-card px-3 py-2.5 text-[9.5px] leading-[1.45] text-foreground/85">
+    <div className="h-full overflow-hidden bg-card px-3 py-2.5 text-micro leading-[1.45] text-foreground/85">
       {Children.toArray(lines.slice(0, 16).map((line) => <ExcerptLine line={line} markdown={markdown} />))}
     </div>
   );
@@ -138,7 +138,7 @@ function FileVisual({ path, name, info }: { path: string; name: string; info: Fi
           onError={() => setImgFailed(true)}
         />
         {dims ? (
-          <span className="absolute bottom-1.5 right-1.5 rounded bg-background/80 px-1 text-[9px] text-muted-foreground">
+          <span className="absolute bottom-1.5 right-1.5 rounded bg-background/80 px-1 text-micro text-muted-foreground">
             {dims.w} × {dims.h}
           </span>
         ) : null}
@@ -155,7 +155,7 @@ function FileVisual({ path, name, info }: { path: string; name: string; info: Fi
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 bg-card">
       <FileTypeIcon name={name} className="size-10" />
-      <span className="text-[10px] text-muted-foreground">
+      <span className="text-micro text-muted-foreground">
         {info === null ? "Loading" : kind === "binary" ? "No preview for this type" : "Too large to preview"}
       </span>
     </div>
@@ -199,8 +199,8 @@ export const SpotlightPreview = memo(function SpotlightPreview({ target }: { tar
           </div>
         </div>
         <div className="min-w-0">
-          <div className="truncate text-[13px] font-semibold">{target.title}</div>
-          <div className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{target.subtitle}</div>
+          <div className="truncate text-body font-semibold">{target.title}</div>
+          <div className="mt-0.5 text-caption leading-snug text-muted-foreground">{target.subtitle}</div>
         </div>
         <div className="mt-auto space-y-1 border-t border-border/60 pt-2.5">
           <MetaRow label="Kind" value="Command" />
@@ -222,8 +222,8 @@ export const SpotlightPreview = memo(function SpotlightPreview({ target }: { tar
       <div className="flex min-w-0 items-start gap-2">
         <FileTypeIcon name={target.title} className="mt-0.5 size-4 shrink-0" />
         <div className="min-w-0">
-          <div className="truncate text-[13px] font-semibold">{target.title}</div>
-          <div className="truncate text-[10.5px] text-muted-foreground" title={target.path}>
+          <div className="truncate text-body font-semibold">{target.title}</div>
+          <div className="truncate text-caption text-muted-foreground" title={target.path}>
             {target.subtitle || "Workspace root"}
           </div>
         </div>

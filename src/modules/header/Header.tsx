@@ -176,7 +176,7 @@ export function Header({
               <Icon name="split-vertical" size="md" />
               <span className="flex-1">Split right</span>
               {splitRightTokens && (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-ui text-muted-foreground">
                   {splitRightTokens}
                 </span>
               )}
@@ -185,7 +185,7 @@ export function Header({
               <Icon name="split-horizontal" size="md" />
               <span className="flex-1">Split down</span>
               {splitDownTokens && (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-ui text-muted-foreground">
                   {splitDownTokens}
                 </span>
               )}

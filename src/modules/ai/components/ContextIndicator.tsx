@@ -73,8 +73,8 @@ export function ContextIndicator({ messages }: { messages: UIMessage[] }) {
 
   return (
     <Context usedTokens={used} maxTokens={max} modelId={modelId}>
-      <ContextTrigger className="h-6 gap-1 px-0 text-[10.5px]" />
-      <ContextContent className="w-64 text-[11px]">
+      <ContextTrigger className="h-6 gap-1 px-0 text-caption" />
+      <ContextContent className="w-64 text-caption">
         <ContextContentHeader />
         <ContextContentBody>
           <div className="flex items-center justify-between text-muted-foreground">
@@ -133,7 +133,7 @@ export function ContextIndicator({ messages }: { messages: UIMessage[] }) {
           </div>
         </ContextContentBody>
         <ContextContentFooter>
-          <span className="text-[10px] italic text-muted-foreground">
+          <span className="text-micro italic text-muted-foreground">
             {lastInput > 0
               ? "Last request reflects current context size; session totals are cumulative."
               : "Token count is approximate (chars / 4)."}

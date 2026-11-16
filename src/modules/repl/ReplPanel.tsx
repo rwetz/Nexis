@@ -45,9 +45,9 @@ type ReplConfig = {
 };
 
 const REPL_CONFIGS: ReplConfig[] = [
-  { id: "python", label: "Python", command: "python3", color: "text-blue-400" },
-  { id: "node", label: "Node.js", command: "node", color: "text-green-400" },
-  { id: "ruby", label: "Ruby", command: "irb", color: "text-red-400" },
+  { id: "python", label: "Python", command: "python3", color: "text-info" },
+  { id: "node", label: "Node.js", command: "node", color: "text-success" },
+  { id: "ruby", label: "Ruby", command: "irb", color: "text-destructive" },
   { id: "shell", label: "Shell", command: "", color: "text-muted-foreground" },
 ];
 
@@ -111,7 +111,7 @@ export function ReplPanel() {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           REPL
         </span>
         <div className="flex items-center gap-1">
@@ -120,7 +120,7 @@ export function ReplPanel() {
               type="button"
               onClick={stopRepl}
               title="Stop REPL"
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-red-400 hover:bg-red-500/10"
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-micro text-destructive hover:bg-destructive/10"
             >
               <Icon name="close" size="xs" />
               Stop
@@ -130,7 +130,7 @@ export function ReplPanel() {
               type="button"
               onClick={() => void startRepl()}
               title={`Start ${selected.label} REPL`}
-              className="flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/20"
+              className="flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-micro font-medium text-primary hover:bg-primary/20"
             >
               <Icon name="play" size="xs" />
               Start
@@ -148,7 +148,7 @@ export function ReplPanel() {
               type="button"
               onClick={() => setSelectedId(r.id)}
               className={cn(
-                "rounded px-2 py-0.5 text-[10.5px] font-medium transition-colors",
+                "rounded px-2 py-0.5 text-caption font-medium transition-colors",
                 selectedId === r.id
                   ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
@@ -163,13 +163,13 @@ export function ReplPanel() {
       {/* Status bar when running */}
       {(isRunning || isExited) && (
         <div className="flex shrink-0 items-center gap-1.5 border-b border-border/30 px-3 py-1">
-          <span className={cn("text-[10px] font-medium", selected.color)}>
+          <span className={cn("text-micro font-medium", selected.color)}>
             {selected.label}
           </span>
           {isExited && (
-            <span className="text-[10px] text-muted-foreground">(exited)</span>
+            <span className="text-micro text-muted-foreground">(exited)</span>
           )}
-          <span className="ml-auto text-[9px] text-muted-foreground/50">
+          <span className="ml-auto text-micro text-muted-foreground/50">
             Ctrl+D to exit
           </span>
         </div>
@@ -189,11 +189,11 @@ export function ReplPanel() {
       {sessionState === "idle" && (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
           <Icon name="terminal" size="xl" className="text-muted-foreground/30" />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-ui text-muted-foreground">
             Select a REPL and press <span className="font-semibold">Start</span>.
           </p>
-          <p className="text-[10px] text-muted-foreground/60">
-            Use <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-[9px]">Alt+Shift+R</kbd> to send the editor selection here.
+          <p className="text-micro text-muted-foreground/60">
+            Use <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-micro">Alt+Shift+R</kbd> to send the editor selection here.
           </p>
         </div>
       )}

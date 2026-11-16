@@ -111,7 +111,7 @@ export function BottomPanel({ renderBuiltin }: Props) {
                 onPointerEnter={() => rail.setHoverId(t.id)}
                 onFocus={() => rail.setHoverId(t.id)}
                 className={cn(
-                  "relative z-10 flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2 text-[11px] font-medium whitespace-nowrap transition-colors",
+                  "relative z-10 flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2 text-caption font-medium whitespace-nowrap transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                   isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
@@ -130,7 +130,7 @@ export function BottomPanel({ renderBuiltin }: Props) {
                   <span
                     className={cn(
                       "tabular-nums",
-                      errorCount > 0 ? "text-destructive" : "text-amber-500",
+                      errorCount > 0 ? "text-destructive" : "text-warning",
                     )}
                   >
                     {problemCount > 99 ? "99+" : problemCount}

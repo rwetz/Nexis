@@ -34,31 +34,31 @@ const KNOWN_METRICS: Record<string, MetricDisplay> = {
   "acc/val": {
     label: "Accuracy",
     better: "up",
-    hint: "How often the model predicts correctly — higher is better",
+    hint: "How often the model predicts correctly: higher is better",
     format: percent,
   },
   "loss/train": {
     label: "Training loss",
     better: "down",
-    hint: "The model's error on data it's learning from — lower is better",
+    hint: "The model's error on data it's learning from: lower is better",
     format: formatValue,
   },
   "loss/val": {
     label: "Validation loss",
     better: "down",
-    hint: "Error on data the model has never seen — lower is better",
+    hint: "Error on data the model has never seen: lower is better",
     format: formatValue,
   },
   "mae/val": {
     label: "Average error",
     better: "down",
-    hint: "How far off a prediction is on average, in the column's own units — lower is better",
+    hint: "How far off a prediction is on average, in the column's own units: lower is better",
     format: formatValue,
   },
   "rmse/val": {
     label: "Prediction error",
     better: "down",
-    hint: "Typical miss, with big misses counting extra (RMSE) — lower is better",
+    hint: "Typical miss, with big misses counting extra (RMSE): lower is better",
     format: formatValue,
   },
   "r2/val": {
@@ -70,7 +70,7 @@ const KNOWN_METRICS: Record<string, MetricDisplay> = {
   "perplexity/val": {
     label: "Perplexity",
     better: "down",
-    hint: "How many characters the model is effectively choosing between — lower (toward 1) is better",
+    hint: "How many characters the model is effectively choosing between: lower (toward 1) is better",
     format: formatValue,
   },
   "mem/gpu_mb": {
@@ -158,20 +158,20 @@ export function statusSentence(args: {
         trend === "improving"
           ? " and improving"
           : trend === "worsening"
-            ? " — watch for overfitting"
+            ? ": watch for overfitting"
             : "";
-      return `Learning: ${where} — ${value}${trendText}.`;
+      return `Learning: ${where} – ${value}${trendText}.`;
     }
     case "cancelling":
-      return "Stopping — saving a checkpoint first…";
+      return "Stopping: saving a checkpoint first…";
     case "ok":
       return value
         ? `Done! Final ${value}.`
         : "Done! Training finished cleanly.";
     case "cancelled":
-      return `Stopped early — progress up to pass ${epoch} was saved.`;
+      return `Stopped early: progress up to pass ${epoch} was saved.`;
     case "error":
-      return "Something went wrong — open Details below for the full output.";
+      return "Something went wrong: open Details below for the full output.";
   }
 }
 

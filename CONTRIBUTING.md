@@ -4,7 +4,7 @@ Nexis is a personal project I maintain in my spare time. Contributions are genui
 
 ## How I run this
 
-One maintainer (me, [@rwetz](https://github.com/rwetz)), limited review time. PRs can sit for a bit. Not everything gets merged — code quality matters, but so does fit. Before doing anything significant, check [ROADMAP.md](ROADMAP.md) to understand where this is going.
+One maintainer (me, [@rwetz](https://github.com/rwetz)), limited review time. PRs can sit for a bit. Not everything gets merged: code quality matters, but so does fit. Before doing anything significant, check [ROADMAP.md](ROADMAP.md) to understand where this is going.
 
 A "no" isn't personal.
 
@@ -19,14 +19,14 @@ You'll need Rust (stable), Node 22+, pnpm 11+, and the [Tauri platform dependenc
 
 ## What to discuss first
 
-For anything beyond a small, obvious fix — open an issue before writing code. This covers:
+For anything beyond a small, obvious fix: open an issue before writing code. This covers:
 
 - New features or AI providers
 - UI/UX changes
 - Refactors touching multiple files
 - Architectural changes
 
-A quick conversation upfront is better than a big PR that doesn't fit where things are going. Small stuff (typos, narrow bug fixes, docs tweaks) — just open a PR, no issue needed.
+A quick conversation upfront is better than a big PR that doesn't fit where things are going. Small stuff (typos, narrow bug fixes, docs tweaks), just open a PR, no issue needed.
 
 ## Keeping PRs clean
 
@@ -46,10 +46,10 @@ Every PR gets checked against:
 
 ## What this project isn't trying to be
 
-- A VS Code replacement. LSP, DAP debugging, and refactoring exist, but the goal stays a focused terminal-first tool — not a feature-for-feature IDE clone.
+- A VS Code replacement. LSP, DAP debugging, and refactoring exist, but the goal stays a focused terminal-first tool, not a feature-for-feature IDE clone.
 - A web browser. The preview pane is for local dev servers only.
 - An extension platform. Not building a marketplace.
-- A good "first open source contribution" project — beginners are welcome but expect real feedback.
+- A good "first open source contribution" project: beginners are welcome but expect real feedback.
 
 ## Branch and commit conventions
 
@@ -64,7 +64,7 @@ Branch off `main`. Prefix your branch:
 | `perf/` | Performance |
 | `security/` | Security fix |
 
-PR titles should follow [Conventional Commits](https://www.conventionalcommits.org/) — they become the squash commit message:
+PR titles should follow [Conventional Commits](https://www.conventionalcommits.org/), they become the squash commit message:
 
 ```
 feat(terminal): add persistent session restore
@@ -102,7 +102,7 @@ src/modules/
   tabs/         Tab model, workspace cwd tracking
   ai/           Agents, sessions, tools, providers, UI
   lsp/          LSP client, editor extensions, workspace-edit applier
-  debugger/     DAP UI — breakpoints, stepping, variables
+  debugger/     DAP UI, breakpoints, stepping, variables
   share/        LAN share panel and live streaming
   git-history/  Commit graph and history viewer
   source-control/ Staging, commits, branches
@@ -113,7 +113,7 @@ src/modules/
 
 ## Security issues
 
-Don't open a public issue — see [SECURITY.md](SECURITY.md).
+Don't open a public issue: see [SECURITY.md](SECURITY.md).
 
 ## License
 

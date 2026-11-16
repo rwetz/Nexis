@@ -642,14 +642,14 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
 
     if (doc.status === "loading") {
       return (
-        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+        <div className="flex h-full items-center justify-center text-ui text-muted-foreground">
           Loading…
         </div>
       );
     }
     if (doc.status === "error") {
       return (
-        <div className="flex h-full items-center justify-center px-6 text-center text-xs text-destructive">
+        <div className="flex h-full items-center justify-center px-6 text-center text-ui text-destructive">
           {doc.message}
         </div>
       );
@@ -658,7 +658,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       return (
         <div className="flex h-full flex-col items-center justify-center gap-1 px-6 text-center">
           <div className="text-sm text-foreground">Binary file</div>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-ui text-muted-foreground">
             {formatBytes(doc.size)} · preview not supported
           </div>
         </div>
@@ -668,7 +668,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
       return (
         <div className="flex h-full flex-col items-center justify-center gap-1 px-6 text-center">
           <div className="text-sm text-foreground">File too large</div>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-ui text-muted-foreground">
             {formatBytes(doc.size)} exceeds the {formatBytes(doc.limit)} limit.
           </div>
         </div>
@@ -678,7 +678,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
     return (
       <div className="flex h-full min-h-0 flex-col">
         {doc.recovered !== null && (
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-ui text-muted-foreground">
             <span>
               Unsaved changes from a previous session were recovered for this
               file.
@@ -702,9 +702,9 @@ export const EditorPane = forwardRef<EditorPaneHandle, Props>(
           </div>
         )}
         {toolingDisabled && (
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5 text-ui text-muted-foreground">
             <span>
-              Large file ({formatBytes(doc.size)}) — language server, linting,
+              Large file ({formatBytes(doc.size)}): language server, linting,
               folding, minimap, and AI completion are off for performance.
             </span>
             <button

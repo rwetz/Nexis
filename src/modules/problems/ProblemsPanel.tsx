@@ -57,29 +57,29 @@ export function ProblemsPanel({ onNavigate }: Props) {
   const isEmpty = files.length === 0;
 
   return (
-    <div className="flex h-full flex-col bg-card text-[11px]">
+    <div className="flex h-full flex-col bg-card text-caption">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3 border-b border-border/40 px-3 py-1.5">
-        <span className="font-semibold uppercase tracking-wider text-muted-foreground text-[10px]">
+        <span className="font-semibold uppercase tracking-wider text-muted-foreground text-micro">
           Problems
         </span>
 
         {/* Counts */}
         <div className="flex items-center gap-2">
           {errorCount > 0 && (
-            <span className="flex items-center gap-1 text-[10.5px] text-red-400">
+            <span className="flex items-center gap-1 text-caption text-destructive">
               <ErrorIcon />
               {errorCount}
             </span>
           )}
           {warningCount > 0 && (
-            <span className="flex items-center gap-1 text-[10.5px] text-yellow-400">
+            <span className="flex items-center gap-1 text-caption text-warning">
               <WarnIcon />
               {warningCount}
             </span>
           )}
           {errorCount === 0 && warningCount === 0 && (
-            <span className="text-[10px] text-muted-foreground/50">No problems</span>
+            <span className="text-micro text-muted-foreground/50">No problems</span>
           )}
         </div>
 
@@ -91,7 +91,7 @@ export function ProblemsPanel({ onNavigate }: Props) {
               type="button"
               onClick={() => setFilter(f)}
               className={cn(
-                "rounded px-2 py-0.5 text-[10px] font-medium capitalize transition-colors",
+                "rounded px-2 py-0.5 text-micro font-medium capitalize transition-colors",
                 filter === f
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -106,7 +106,7 @@ export function ProblemsPanel({ onNavigate }: Props) {
       {/* Body */}
       <div className="min-h-0 flex-1 overflow-auto">
         {isEmpty ? (
-          <div className="flex h-full items-center justify-center text-[10.5px] text-muted-foreground/40">
+          <div className="flex h-full items-center justify-center text-caption text-muted-foreground/40">
             {filter === "all" ? "No problems detected" : `No ${filter}`}
           </div>
         ) : (
@@ -161,24 +161,24 @@ function FileGroup({
         onClick={onToggle}
         className="flex w-full items-center gap-1.5 px-3 py-0.5 text-left hover:bg-muted/30 group"
       >
-        <span className="text-[8px] text-muted-foreground/60 w-2 shrink-0">
+        <span className="text-micro text-muted-foreground/60 w-2 shrink-0">
           {collapsed ? "▶" : "▼"}
         </span>
         <span className="font-medium text-foreground/90 truncate">{fileName}</span>
-        <span className="truncate text-[10px] text-muted-foreground/50 min-w-0 flex-1">
+        <span className="truncate text-micro text-muted-foreground/50 min-w-0 flex-1">
           {dirPart}
         </span>
         <span className="ml-auto shrink-0 flex items-center gap-1.5">
           {errCount > 0 && (
-            <span className="flex items-center gap-0.5 text-red-400">
+            <span className="flex items-center gap-0.5 text-destructive">
               <ErrorIcon size={9} />
-              <span className="text-[9.5px]">{errCount}</span>
+              <span className="text-micro">{errCount}</span>
             </span>
           )}
           {warnCount > 0 && (
-            <span className="flex items-center gap-0.5 text-yellow-400">
+            <span className="flex items-center gap-0.5 text-warning">
               <WarnIcon size={9} />
-              <span className="text-[9.5px]">{warnCount}</span>
+              <span className="text-micro">{warnCount}</span>
             </span>
           )}
         </span>
@@ -224,16 +224,16 @@ function DiagRow({
       <span
         className={cn(
           "mt-px shrink-0",
-          isError && "text-red-400",
-          isWarn && "text-yellow-400",
-          !isError && !isWarn && "text-blue-400",
+          isError && "text-destructive",
+          isWarn && "text-warning",
+          !isError && !isWarn && "text-info",
         )}
       >
         {isError ? <ErrorIcon size={10} /> : isWarn ? <WarnIcon size={10} /> : <InfoIcon size={10} />}
       </span>
 
       {/* Message */}
-      <span className="min-w-0 flex-1 text-[10.5px] text-foreground/80 leading-snug">
+      <span className="min-w-0 flex-1 text-caption text-foreground/80 leading-snug">
         {diag.message}
         {diag.source && (
           <span className="ml-1 text-muted-foreground/50">({diag.source})</span>
@@ -241,7 +241,7 @@ function DiagRow({
       </span>
 
       {/* Location */}
-      <span className="ml-auto shrink-0 font-mono text-[9.5px] text-muted-foreground/50">
+      <span className="ml-auto shrink-0 font-mono text-micro text-muted-foreground/50">
         {diag.range.start.line + 1}:{diag.range.start.character + 1}
       </span>
     </button>

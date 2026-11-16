@@ -21,7 +21,7 @@
  * focus is inside it — see `onKeyDown` below rather than a window listener.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AtlasWindowActions } from "@/modules/atlas/AtlasWindowActions";
@@ -112,12 +112,12 @@ function Toolbar() {
       <button
         type="button"
         onClick={backToAtlas}
-        className="text-xs font-medium hover:text-foreground"
+        className="text-ui font-medium hover:text-foreground"
       >
         Atlas
       </button>
       {mapView === "city" && city && (
-        <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+        <span className="flex min-w-0 items-center gap-1.5 text-ui text-muted-foreground">
           <span aria-hidden>/</span>
           <span className="truncate text-foreground">{city.summary.name}</span>
         </span>
@@ -158,11 +158,11 @@ function CityLocReadout() {
   const stats = projectStats(city.root);
   return (
     <div className="nexis-scene-enter pointer-events-none absolute top-3 left-3 rounded-xl border border-primary/25 bg-card/90 px-3 py-2.5 shadow-sm backdrop-blur">
-      <div className="text-[10px] font-medium text-muted-foreground">Measured source lines</div>
-      <div className="mt-0.5 font-mono text-xl font-semibold text-primary tabular-nums">
+      <div className="text-micro font-medium text-muted-foreground">Measured source lines</div>
+      <div className="mt-0.5 text-2xl font-semibold text-foreground tabular-nums">
         {formatCount(stats.lines)} LOC
       </div>
-      <div className="mt-0.5 text-[10px] text-muted-foreground">
+      <div className="mt-0.5 text-micro text-muted-foreground">
         {formatCount(stats.codeFiles)} readable files
       </div>
     </div>
@@ -184,14 +184,14 @@ function EmptyState() {
         ) : scanError ? (
           <>
             <p className="text-sm font-medium text-destructive">Scan failed</p>
-            <p className="mt-2 break-all font-mono text-xs text-muted-foreground">
+            <p className="mt-2 break-all font-mono text-ui text-muted-foreground">
               {scanError}
             </p>
           </>
         ) : (
           <>
             <p className="text-sm font-medium">No git repos found</p>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-2 text-ui leading-relaxed text-muted-foreground">
               {scanRoot
                 ? `Nothing under ${scanRoot}. Add explicit paths or point scan_root somewhere else.`
                 : "Add repo paths or a scan_root to atlas.toml."}
@@ -224,15 +224,85 @@ function useOpenConfig(): () => void {
 function CityLoading() {
   const mapView = useAtlasStore((s) => s.mapView);
   const cityLoading = useAtlasStore((s) => s.cityLoading);
-  const city = useAtlasStore((s) => s.city);
-  if (!(mapView === "city" && cityLoading && !city)) return null;
+  const activeRepo = useAtlasStore((s) => s.activeRepo);
+  const repoName = useAtlasStore(
+    (s) => s.repos.find((r) => r.path === s.activeRepo)?.name ?? null,
+  );
+  const loading = mapView === "city" && cityLoading;
 
+  // Small repos read in a frame or two; only a walk that is still running
+  // after this long earns a skeleton, so quick switches never flash one.
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (!loading) {
+      setShown(false);
+      return;
+    }
+    const t = setTimeout(() => setShown(true), SKELETON_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [loading, activeRepo]);
+
+  if (!loading || !shown) return null;
+
+  // Covers the previous repo's city (switching keeps it on the canvas until
+  // the new walk lands) so nothing on screen claims to be a repo it is not.
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-      <div className="rounded-xl border border-border/60 bg-card/90 px-4 py-2 text-xs text-muted-foreground backdrop-blur">
-        Reading the repository…
+    <div
+      role="status"
+      aria-live="polite"
+      className="nexis-content-enter absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-background/70 backdrop-blur-sm"
+    >
+      <CitySkeleton />
+      <div className="text-caption text-muted-foreground">
+        Reading {repoName ?? "the repository"}…
       </div>
     </div>
+  );
+}
+
+const SKELETON_DELAY_MS = 120;
+
+/** An isometric city in outline: terraces and towers in the skeleton tone,
+ *  breathing in sequence so it reads as "being built", not as an error. */
+function CitySkeleton() {
+  // [x, y, height] on a small iso grid; drawn back to front.
+  const towers: Array<[number, number, number]> = [
+    [0, 0, 26], [1, 0, 14], [2, 0, 34],
+    [0, 1, 18], [1, 1, 40], [2, 1, 12],
+    [0, 2, 10], [1, 2, 22], [2, 2, 16],
+  ];
+  const W = 22; // half the tile width
+  const H = 11; // half the tile height
+  return (
+    <svg
+      aria-hidden
+      viewBox="-80 -70 160 130"
+      className="h-28 w-36 text-muted-foreground"
+    >
+      <path
+        d={`M0 ${-H * 0.5} L${W * 3.5} ${H * 3} L0 ${H * 6.5} L${-W * 3.5} ${H * 3} Z`}
+        transform="translate(0 -8)"
+        className="fill-muted/60"
+      />
+      {towers.map(([gx, gy, h], i) => {
+        const cx = (gx - gy) * W;
+        const cy = (gx + gy) * H - 8 + H;
+        const top = `M${cx} ${cy - H - h} L${cx + W * 0.8} ${cy - h - H * 0.2} L${cx} ${cy - h + H * 0.6} L${cx - W * 0.8} ${cy - h - H * 0.2} Z`;
+        const left = `M${cx - W * 0.8} ${cy - h - H * 0.2} L${cx} ${cy - h + H * 0.6} L${cx} ${cy + H * 0.6} L${cx - W * 0.8} ${cy - H * 0.2} Z`;
+        const right = `M${cx + W * 0.8} ${cy - h - H * 0.2} L${cx} ${cy - h + H * 0.6} L${cx} ${cy + H * 0.6} L${cx + W * 0.8} ${cy - H * 0.2} Z`;
+        return (
+          <g
+            key={i}
+            className="nexis-blink"
+            style={{ animationDelay: `${(gx + gy) * 140}ms` }}
+          >
+            <path d={left} fill="currentColor" opacity={0.16} />
+            <path d={right} fill="currentColor" opacity={0.1} />
+            <path d={top} fill="currentColor" opacity={0.24} />
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
@@ -252,8 +322,8 @@ function Incomplete() {
   if (truncated) parts.push("stopped at the configured max_files");
   if (omitted > 0) parts.push(`${formatCount(omitted)} too small to draw`);
   return (
-    <div className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 rounded-full border border-border/60 bg-card/85 px-2.5 py-0.5 text-[10px] text-muted-foreground backdrop-blur">
-      Partial view — {parts.join(", ")}.
+    <div className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 rounded-full border border-border/60 bg-card/85 px-2.5 py-0.5 text-micro text-muted-foreground backdrop-blur">
+      Partial view: {parts.join(", ")}.
     </div>
   );
 }
@@ -275,7 +345,7 @@ function StatusLine() {
   const openConfig = useOpenConfig();
 
   return (
-    <footer className="flex h-6 shrink-0 items-center gap-2 border-t border-border/40 px-2 text-[10px] text-muted-foreground">
+    <footer className="flex h-6 shrink-0 items-center gap-2 border-t border-border/40 px-2 text-micro text-muted-foreground">
       <span className="tabular-nums">
         {scanning
           ? "scanning…"

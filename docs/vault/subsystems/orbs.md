@@ -1,6 +1,6 @@
 ---
 type: subsystem
-description: The AI's shader orbs — a WebGL2 port of shadercn's MIT engine design with 26 Nexis-owned shaders; the drive/renderer split, the uniform contract, the context budget, and the canvas-reuse trap.
+description: The AI's shader orbs, a WebGL2 port of shadercn's MIT engine design with 26 Nexis-owned shaders; the drive/renderer split, the uniform contract, the context budget, and the canvas-reuse trap.
 ---
 
 # Orbs

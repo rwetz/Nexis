@@ -122,11 +122,11 @@ export function IconSetPanel({ workspaceRoot }: Props) {
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="grid" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+        <span className="text-caption font-semibold tracking-wider text-muted-foreground uppercase">
           Icon Set
         </span>
         {state.kind === "ready" && (
-          <span className="ml-auto truncate text-[10px] text-muted-foreground/60">
+          <span className="ml-auto truncate text-micro text-muted-foreground/60">
             {summarize(facts)}
           </span>
         )}
@@ -143,14 +143,14 @@ export function IconSetPanel({ workspaceRoot }: Props) {
           spellCheck={false}
           placeholder="Folder of .svg files"
           aria-label="Folder to scan"
-          className="min-w-0 flex-1 rounded-md border border-border/60 bg-background/60 px-1.5 py-0.5 font-mono text-[10px] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
+          className="min-w-0 flex-1 rounded-md border border-border/60 bg-background/60 px-1.5 py-0.5 font-mono text-micro focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none"
         />
         <button
           type="button"
           onClick={() => void scan()}
           disabled={state.kind === "loading" || dir.trim() === ""}
           className={cn(
-            "flex shrink-0 items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-[10.5px] transition-colors",
+            "flex shrink-0 items-center gap-1 rounded-md border border-border/60 bg-card px-2 py-0.5 text-caption transition-colors",
             "hover:border-border hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
             "disabled:cursor-not-allowed disabled:opacity-50",
           )}
@@ -162,7 +162,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
 
       {state.kind === "error" && (
         <div className="border-b border-border/50 px-3 py-2">
-          <p className="text-[10.5px] break-words text-destructive">
+          <p className="text-caption break-words text-destructive">
             {state.message}
           </p>
         </div>
@@ -176,9 +176,9 @@ export function IconSetPanel({ workspaceRoot }: Props) {
               <li key={f.kind} className="px-3 py-1.5">
                 <p
                   className={cn(
-                    "flex items-start gap-1.5 text-[10.5px] leading-relaxed",
+                    "flex items-start gap-1.5 text-caption leading-relaxed",
                     f.severity === "warn"
-                      ? "text-amber-600 dark:text-amber-400"
+                      ? "text-warning"
                       : "text-muted-foreground",
                   )}
                 >
@@ -188,7 +188,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
                     {f.message}
                   </span>
                 </p>
-                <p className="mt-0.5 pl-4 font-mono text-[9.5px] break-words text-muted-foreground/60">
+                <p className="mt-0.5 pl-4 font-mono text-micro break-words text-muted-foreground/60">
                   {f.files.slice(0, 8).join(", ")}
                   {f.files.length > 8 ? ` +${f.files.length - 8} more` : ""}
                 </p>
@@ -200,7 +200,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
 
       {state.kind === "ready" && findings.length === 0 && entries.length > 0 && (
         <div className="shrink-0 border-b border-border/50 px-3 py-1.5">
-          <p className="flex items-center gap-1.5 text-[10.5px] text-green-500">
+          <p className="flex items-center gap-1.5 text-caption text-success">
             <Icon name="success" size="xs" />
             Consistent: one canvas size, one stroke weight, no baked-in colour.
           </p>
@@ -210,7 +210,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
       {/* Size row */}
       {entries.length > 0 && (
         <div className="flex shrink-0 items-center gap-1 border-b border-border/50 px-2 py-1.5">
-          <span className="text-[10px] text-muted-foreground/70">Render at</span>
+          <span className="text-micro text-muted-foreground/70">Render at</span>
           {PREVIEW_SIZES.map((s) => (
             <button
               key={s}
@@ -218,7 +218,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
               aria-pressed={size === s}
               onClick={() => setSize(s)}
               className={cn(
-                "rounded px-1.5 py-0.5 text-[10px] tabular-nums transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+                "rounded px-1.5 py-0.5 text-micro tabular-nums transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
                 size === s
                   ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:text-foreground",
@@ -228,7 +228,7 @@ export function IconSetPanel({ workspaceRoot }: Props) {
             </button>
           ))}
           {state.kind === "ready" && state.truncated && (
-            <span className="ml-auto text-[9.5px] text-amber-500">
+            <span className="ml-auto text-micro text-warning">
               first {MAX_FILES}
             </span>
           )}
@@ -238,14 +238,14 @@ export function IconSetPanel({ workspaceRoot }: Props) {
       {/* Grid */}
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {state.kind === "loading" ? (
-          <p className="p-4 text-center text-[11px] text-muted-foreground/60">
+          <p className="p-4 text-center text-caption text-muted-foreground/60">
             Reading…
           </p>
         ) : entries.length === 0 ? (
-          <p className="p-4 text-center text-[11px] leading-relaxed text-muted-foreground/60">
+          <p className="p-4 text-center text-caption leading-relaxed text-muted-foreground/60">
             {state.kind === "ready"
               ? "No .svg files in that folder."
-              : "Point this at a folder of icons and scan. It compares the set against itself — canvas sizes, stroke weights, baked-in colour."}
+              : "Point this at a folder of icons and scan. It compares the set against itself: canvas sizes, stroke weights, baked-in colour."}
           </p>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-1.5">
@@ -265,10 +265,10 @@ export function IconSetPanel({ workspaceRoot }: Props) {
       {/* Selected detail */}
       {selectedEntry && (
         <div className="shrink-0 border-t border-border/50 px-3 py-2">
-          <p className="truncate font-mono text-[10.5px]">
+          <p className="truncate font-mono text-caption">
             {basename(selectedEntry.facts.name)}
           </p>
-          <p className="mt-0.5 text-[9.5px] leading-relaxed text-muted-foreground/70">
+          <p className="mt-0.5 text-micro leading-relaxed text-muted-foreground/70">
             {selectedEntry.facts.error
               ? selectedEntry.facts.error
               : [
@@ -336,7 +336,7 @@ function IconTile({
           />
         )}
       </div>
-      <span className="w-full truncate text-center text-[8.5px] text-muted-foreground/70">
+      <span className="w-full truncate text-center text-micro text-muted-foreground/70">
         {entry.facts.name.replace(/\.svg$/i, "")}
       </span>
     </button>

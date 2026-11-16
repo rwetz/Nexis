@@ -130,7 +130,7 @@ export function PortsPanel({ onOpenPreview }: Props) {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Forwarded Ports
         </span>
         <button
@@ -148,10 +148,10 @@ export function PortsPanel({ onOpenPreview }: Props) {
         {ports.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
             <Icon name="globe" size="xl" className="text-muted-foreground/30" />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-ui text-muted-foreground">
               No listening ports detected.
             </p>
-            <p className="text-[10px] text-muted-foreground/60">
+            <p className="text-micro text-muted-foreground/60">
               Start a dev server to see it here.
             </p>
           </div>
@@ -159,7 +159,7 @@ export function PortsPanel({ onOpenPreview }: Props) {
           <div className="divide-y divide-border/30">
             {webPorts.length > 0 && (
               <>
-                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                <p className="px-3 pt-2 pb-1 text-micro font-medium uppercase tracking-wider text-muted-foreground/60">
                   Web / Dev servers
                 </p>
                 {webPorts.map((p) => (
@@ -169,7 +169,7 @@ export function PortsPanel({ onOpenPreview }: Props) {
             )}
             {otherPorts.length > 0 && (
               <>
-                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                <p className="px-3 pt-2 pb-1 text-micro font-medium uppercase tracking-wider text-muted-foreground/60">
                   Other
                 </p>
                 {otherPorts.map((p) => (
@@ -201,9 +201,9 @@ function PortRow({
         <Icon name="globe" size="xs" className="text-primary/70" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium tabular-nums">:{port.port}</p>
+        <p className="text-ui font-medium tabular-nums">:{port.port}</p>
         {port.process && (
-          <p className="truncate font-mono text-[10px] text-muted-foreground">
+          <p className="truncate font-mono text-micro text-muted-foreground">
             {port.process}
           </p>
         )}
@@ -213,7 +213,7 @@ function PortRow({
           type="button"
           title={`Open ${url}`}
           onClick={() => onOpenPreview(url)}
-          className="flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
+          className="flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-micro font-medium text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
         >
           <Icon name="link-external" size="xs" />
           Open

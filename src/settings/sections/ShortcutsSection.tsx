@@ -86,7 +86,7 @@ export function ShortcutsSection() {
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-1.5 px-2.5 text-[11px]"
+          className="h-8 gap-1.5 px-2.5 text-caption"
           onClick={() => setResetDialogOpen(true)}
         >
           <Icon name="revert" />
@@ -104,7 +104,7 @@ export function ShortcutsSection() {
           placeholder="Search shortcuts..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-9 pl-9 text-[12.5px]"
+          className="h-9 pl-9 text-ui"
         />
       </div>
 
@@ -115,7 +115,7 @@ export function ShortcutsSection() {
 
           return (
             <div key={group} className="flex flex-col gap-3">
-              <h3 className="text-xs font-semibold text-foreground/70">
+              <h3 className="text-ui font-semibold text-foreground/70">
                 {group}
               </h3>
               <div className="flex flex-col divide-y divide-border/40 rounded-lg border border-border/60 bg-card/40 overflow-hidden">
@@ -189,7 +189,7 @@ function ShortcutRow({
   function renderKeyBadges() {
     if (!hasBindings) {
       return (
-        <span className="text-[11px] text-muted-foreground italic">
+        <span className="text-caption text-muted-foreground italic">
           Unassigned
         </span>
       );
@@ -204,7 +204,7 @@ function ShortcutRow({
             <Kbd key={i} className="group-hover:bg-accent group-hover:text-accent-foreground transition-colors">{t}</Kbd>
           ))}
           <Kbd className="group-hover:bg-accent group-hover:text-accent-foreground transition-colors">1</Kbd>
-          <span className="text-[10px] text-muted-foreground/60 px-0.5">–</span>
+          <span className="text-micro text-muted-foreground/60 px-0.5">–</span>
           <Kbd className="group-hover:bg-accent group-hover:text-accent-foreground transition-colors">9</Kbd>
         </KbdGroup>
       );
@@ -227,7 +227,7 @@ function ShortcutRow({
   return (
     <div className="group flex items-center justify-between px-3 py-2.5 transition-colors hover:bg-muted/30">
       <div className="flex flex-col gap-0.5">
-        <span className="text-[12.5px] font-medium">{shortcut.label}</span>
+        <span className="text-ui font-medium">{shortcut.label}</span>
       </div>
 
       <div className="flex items-center gap-2">
@@ -350,7 +350,7 @@ function Recorder({
   }, [onRecord, onCancel]);
 
   return (
-    <div className="flex items-center gap-2 rounded bg-accent/50 px-2 py-1 text-[11px] ring-1 ring-accent">
+    <div className="flex items-center gap-2 rounded bg-accent/50 px-2 py-1 text-caption ring-1 ring-accent">
       <span className="nexis-blink font-medium">Recording...</span>
       <span className="text-muted-foreground">(Esc to cancel)</span>
     </div>

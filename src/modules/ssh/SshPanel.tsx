@@ -81,7 +81,7 @@ export function SshPanel({ onConnect }: Props) {
 
   if (!hydrated) {
     return (
-      <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+      <div className="flex h-full items-center justify-center text-ui text-muted-foreground">
         Loading…
       </div>
     );
@@ -90,7 +90,7 @@ export function SshPanel({ onConnect }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-ui font-semibold uppercase tracking-wider text-muted-foreground">
           SSH Connections
         </span>
         <Button size="icon" variant="ghost" className="h-6 w-6" onClick={startNew} title="Add connection">
@@ -100,41 +100,41 @@ export function SshPanel({ onConnect }: Props) {
 
       {isEditing && (
         <div className="shrink-0 border-b border-border/50 bg-muted/20 px-3 py-3 space-y-2">
-          <p className="text-[11px] font-medium text-muted-foreground mb-1">
+          <p className="text-caption font-medium text-muted-foreground mb-1">
             {isNew ? "New connection" : "Edit connection"}
           </p>
           <div className="grid grid-cols-2 gap-2">
             <div className="col-span-2 space-y-1">
-              <Label className="text-[10px]">Label</Label>
+              <Label className="text-micro">Label</Label>
               <Input
-                className="h-7 text-xs"
+                className="h-7 text-ui"
                 placeholder="My Server"
                 value={form.label}
                 onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
               />
             </div>
             <div className="col-span-2 space-y-1">
-              <Label className="text-[10px]">Host *</Label>
+              <Label className="text-micro">Host *</Label>
               <Input
-                className="h-7 text-xs"
+                className="h-7 text-ui"
                 placeholder="192.168.1.1"
                 value={form.host}
                 onChange={(e) => setForm((f) => ({ ...f, host: e.target.value }))}
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px]">User</Label>
+              <Label className="text-micro">User</Label>
               <Input
-                className="h-7 text-xs"
+                className="h-7 text-ui"
                 placeholder="root"
                 value={form.user}
                 onChange={(e) => setForm((f) => ({ ...f, user: e.target.value }))}
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px]">Port</Label>
+              <Label className="text-micro">Port</Label>
               <Input
-                className="h-7 text-xs"
+                className="h-7 text-ui"
                 type="number"
                 min={1}
                 max={65535}
@@ -143,9 +143,9 @@ export function SshPanel({ onConnect }: Props) {
               />
             </div>
             <div className="col-span-2 space-y-1">
-              <Label className="text-[10px]">Identity file (optional)</Label>
+              <Label className="text-micro">Identity file (optional)</Label>
               <Input
-                className="h-7 text-xs"
+                className="h-7 text-ui"
                 placeholder="~/.ssh/id_rsa"
                 value={form.identityFile}
                 onChange={(e) => setForm((f) => ({ ...f, identityFile: e.target.value }))}
@@ -153,12 +153,12 @@ export function SshPanel({ onConnect }: Props) {
             </div>
           </div>
           <div className="flex justify-end gap-1.5 pt-1">
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={cancelEdit}>
+            <Button size="sm" variant="ghost" className="h-6 text-ui" onClick={cancelEdit}>
               Cancel
             </Button>
             <Button
               size="sm"
-              className="h-6 text-xs"
+              className="h-6 text-ui"
               onClick={saveEdit}
               disabled={!form.host.trim()}
             >
@@ -172,8 +172,8 @@ export function SshPanel({ onConnect }: Props) {
         {connections.length === 0 && !isEditing ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
             <Icon name="terminal" size="xl" className="text-muted-foreground/40" />
-            <p className="text-xs text-muted-foreground">No SSH connections saved.</p>
-            <Button size="sm" variant="outline" className="h-6 text-xs" onClick={startNew}>
+            <p className="text-ui text-muted-foreground">No SSH connections saved.</p>
+            <Button size="sm" variant="outline" className="h-6 text-ui" onClick={startNew}>
               Add connection
             </Button>
           </div>
@@ -188,8 +188,8 @@ export function SshPanel({ onConnect }: Props) {
                 >
                   <Icon name="terminal" className="shrink-0 text-muted-foreground/60" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium">{conn.label}</p>
-                    <p className="truncate text-[10px] text-muted-foreground font-mono">{cmd}</p>
+                    <p className="truncate text-ui font-medium">{conn.label}</p>
+                    <p className="truncate text-micro text-muted-foreground font-mono">{cmd}</p>
                   </div>
                   <div className={cn(
                     "flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100",
@@ -215,7 +215,7 @@ export function SshPanel({ onConnect }: Props) {
                   </div>
                   <Button
                     size="sm"
-                    className="h-6 shrink-0 text-xs"
+                    className="h-6 shrink-0 text-ui"
                     onClick={() => onConnect(cmd, conn.label)}
                   >
                     Connect

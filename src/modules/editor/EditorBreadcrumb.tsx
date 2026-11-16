@@ -32,7 +32,7 @@ export function EditorBreadcrumb({ path, root, onNavigate }: Props) {
   };
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden font-mono text-[11px] text-muted-foreground">
+    <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden font-mono text-caption text-muted-foreground">
       {parts.map((seg, i) => {
         const isLast = i === parts.length - 1;
         const folderPath = buildPathUpTo(i);

@@ -148,8 +148,8 @@ export function NetworkGraph({
     if (!isTab) return null;
     return (
       <div className="flex h-full items-center justify-center px-6 text-center">
-        <p className="max-w-md text-[12px] leading-snug text-muted-foreground">
-          No architecture to draw for this project — its{" "}
+        <p className="max-w-md text-ui leading-snug text-muted-foreground">
+          No architecture to draw for this project: its{" "}
           <span className="font-mono">train.toml</span> has no recognizable{" "}
           <span className="font-mono">[net]</span> section yet. Create or train
           a model and this updates on its own.
@@ -167,12 +167,12 @@ export function NetworkGraph({
       }
     >
       <div className="mb-1 flex items-center justify-between gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+        <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
           Network
         </span>
         <span className="flex items-center gap-1.5">
           {net.kind === "mlp" && weights ? (
-            <span className="text-[9.5px] text-muted-foreground/60">
+            <span className="text-micro text-muted-foreground/60">
               connection strength = learned weights
               {weightsArtifact?.epoch != null
                 ? ` · after pass ${weightsArtifact.epoch}`
@@ -401,7 +401,7 @@ function MlpGraph({
       <p
         className={cn(
           "mt-1 leading-snug text-muted-foreground/60",
-          isTab ? "text-[11px]" : "truncate text-[9.5px]",
+          isTab ? "text-caption" : "truncate text-micro",
         )}
       >
         <Explain term="hidden">
@@ -429,17 +429,17 @@ function BlockDiagram({
         {blocks.map((b, i) => (
           <span key={b.label} className="flex items-center gap-1">
             {i > 0 ? (
-              <span className="text-[10px] text-muted-foreground/50">→</span>
+              <span className="text-micro text-muted-foreground/50">→</span>
             ) : null}
             <Explain term={b.term}>
-              <span className="rounded border border-border/70 bg-background/50 px-1.5 py-0.5 font-mono text-[10px] text-foreground/85">
+              <span className="rounded border border-border/70 bg-background/50 px-1.5 py-0.5 font-mono text-micro text-foreground/85">
                 {b.label}
               </span>
             </Explain>
           </span>
         ))}
       </div>
-      <p className="mt-1 text-[9.5px] leading-snug text-muted-foreground/60">
+      <p className="mt-1 text-micro leading-snug text-muted-foreground/60">
         {caption}
       </p>
     </div>

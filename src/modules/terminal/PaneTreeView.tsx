@@ -82,7 +82,7 @@ export function PaneTreeView({
               e.stopPropagation();
               b.onClose();
             }}
-            className="absolute right-9 top-2 z-40 flex h-5 w-5 items-center justify-center rounded-full border border-border/60 bg-card/80 text-muted-foreground opacity-0 shadow-sm transition-opacity duration-150 hover:border-red-400/60 hover:bg-muted hover:text-red-400 group-hover/pane:opacity-100"
+            className="absolute right-9 top-2 z-40 flex h-5 w-5 items-center justify-center rounded-full border border-border/60 bg-card/80 text-muted-foreground opacity-0 shadow-sm transition-opacity duration-150 hover:border-destructive/60 hover:bg-muted hover:text-destructive group-hover/pane:opacity-100"
           >
             <Icon name="close" size="xs" />
           </button>

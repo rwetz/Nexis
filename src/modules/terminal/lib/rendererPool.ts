@@ -883,7 +883,7 @@ function attachWebglWith(
       if (slot.webglLossCount >= WEBGL_MAX_LOSSES) {
         slot.webglGaveUp = true;
         console.warn(
-          "[nexis-webgl] repeated context loss — staying on DOM renderer",
+          "[nexis-webgl] repeated context loss: staying on DOM renderer",
         );
         return;
       }

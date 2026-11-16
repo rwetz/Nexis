@@ -1,6 +1,6 @@
 ---
 type: subsystem
-description: ML Lab (Synapse) — the external Axon engine, its detection/spawn bridge, the training store, and the panel's charts and network diagram.
+description: ML Lab (Synapse), the external Axon engine, its detection/spawn bridge, the training store, and the panel's charts and network diagram.
 ---
 
 # ML Lab (Synapse)
@@ -13,44 +13,44 @@ The **AI / ML** preset turns on standard navigation and code tools, AI Extras, D
 
 **Axon is the supported engine; the Python engine is phased out.** Axon is a single pinned binary from GitHub releases (`rwetz/axon`) and the only thing the setup card installs. The legacy Python engine (`nexis-ml`, torch; still the only one with `textgen`, `blank` and the HTML report) is still detected in venvs and on PATH, and `PythonEngineSteps` documents it as legacy. `upgradeToGpu` is its one pip path still driven in-app.
 
-`engineKindFromEnv` tells the engines apart by the `backend` field only Axon reports (`"rust"`); treat `null` as "don't block" and let the engine raise its own error. Capability flags from `env` (`serve`, and from v0.9 `tasks` / `categorical`) gate features, never the version number — except the **Update** notice, which compares the detected version with the pin (`versionOlder`). The product spec lives in `docs/ML_SUITE.md` and `docs/ML_LAB_GUIDE.md` — this note is only the code map.
+`engineKindFromEnv` tells the engines apart by the `backend` field only Axon reports (`"rust"`); treat `null` as "don't block" and let the engine raise its own error. Capability flags from `env` (`serve`, and from v0.9 `tasks` / `categorical`) gate features, never the version number: except the **Update** notice, which compares the detected version with the pin (`versionOlder`). The product spec lives in `docs/ML_SUITE.md` and `docs/ML_LAB_GUIDE.md`: this note is only the code map.
 
 ## Key files
 
-- `src-tauri/src/modules/ml.rs` — every `ml_*` command: detect, env probe, spawn + reader/flusher threads, pip install, the pinned managed-engine download
-- `src/capabilities/python/api.ts` / `src-tauri/src/modules/python.rs:py_detect_envs` — typed workspace-scoped interpreter discovery, shared with the status-bar Python picker
-- `src/capabilities/ml/api.ts` — typed workspace/host command descriptors and event-scope ownership
-- `src/capabilities/ml/index.tsx` — the saved `ml` sidebar contribution; it receives only the current workspace root and network-tab action from the composition host
-- `src/modules/ml/lib/engine-bridge.ts` — domain bridge; candidate building, detection memo, captured authorization/spawn, event subscription
-- `src/modules/ml/store.ts` — engine state, the live run, historical runs, compare, serve/playground
-- `src/modules/ml/MlPanel.tsx` — the shared panel body (large; setup card, run browser, hyperparams, playground), lazy-loaded by the capability and reused by the full-workspace tab
-- `src/capabilities/workbenches/windows.tsx` (`MlLabWindow`) — the ML Lab window (a main-window `ml-lab` tab until 2026-09-30); renders the shared panel and opens the network diagram over it in the same window
-- `src/modules/ml/NetworkGraph.tsx` — the architecture drawing, canvas; also the `ml-network` tab body via `MlNetworkStack.tsx`
-- `src/modules/ml/lib/protocol.ts` / `series.ts` / `artifacts.ts` — event parsing, metric buffers, on-disk artifacts
-- `src/modules/ml/lib/stock-models.ts` / `starter-data.ts` / `model-blueprint.ts` — the stock-network catalog, the seeded starter-dataset generators, and the creation plan (`planCreation` / `applyOverrides`)
-- `src/modules/ml/lib/data-source.ts` — the panel's Training data picker: workspace CSV listing, project-relative `[data] path`, target and per-column previews (`summarizeTarget` / `summarizeColumns`, which mirror Axon's `tabular.rs` rules), and the `[data] path`/`target`/`task` upserts it writes through `applyOverrides`
-- `src/modules/ml/lib/artifacts.ts` — confusion-matrix, `residuals` (regression predicted-vs-actual) and `weights` artifact readers
-- `src/modules/ml/lib/projects.ts` — project discovery and run-store reads with no store state, shared by the store and the chat tools
-- `src/modules/ml/lib/headless.ts` / `model-tools.ts` — headless `serve` sessions and the `ml_list_models` / `ml_predict` / `ml_rank_csv` agent tools, registered by `src/plugins/ml/index.ts`
+- `src-tauri/src/modules/ml.rs`, every `ml_*` command: detect, env probe, spawn + reader/flusher threads, pip install, the pinned managed-engine download
+- `src/capabilities/python/api.ts` / `src-tauri/src/modules/python.rs:py_detect_envs`, typed workspace-scoped interpreter discovery, shared with the status-bar Python picker
+- `src/capabilities/ml/api.ts`: typed workspace/host command descriptors and event-scope ownership
+- `src/capabilities/ml/index.tsx`: the saved `ml` sidebar contribution; it receives only the current workspace root and network-tab action from the composition host
+- `src/modules/ml/lib/engine-bridge.ts`: domain bridge; candidate building, detection memo, captured authorization/spawn, event subscription
+- `src/modules/ml/store.ts`: engine state, the live run, historical runs, compare, serve/playground
+- `src/modules/ml/MlPanel.tsx`: the shared panel body (large; setup card, run browser, hyperparams, playground), lazy-loaded by the capability and reused by the full-workspace tab
+- `src/capabilities/workbenches/windows.tsx` (`MlLabWindow`): the ML Lab window (a main-window `ml-lab` tab until 2026-09-30); renders the shared panel and opens the network diagram over it in the same window
+- `src/modules/ml/NetworkGraph.tsx`: the architecture drawing, canvas; also the `ml-network` tab body via `MlNetworkStack.tsx`
+- `src/modules/ml/lib/protocol.ts` / `series.ts` / `artifacts.ts`: event parsing, metric buffers, on-disk artifacts
+- `src/modules/ml/lib/stock-models.ts` / `starter-data.ts` / `model-blueprint.ts`: the stock-network catalog, the seeded starter-dataset generators, and the creation plan (`planCreation` / `applyOverrides`)
+- `src/modules/ml/lib/data-source.ts`, the panel's Training data picker: workspace CSV listing, project-relative `[data] path`, target and per-column previews (`summarizeTarget` / `summarizeColumns`, which mirror Axon's `tabular.rs` rules), and the `[data] path`/`target`/`task` upserts it writes through `applyOverrides`
+- `src/modules/ml/lib/artifacts.ts`: confusion-matrix, `residuals` (regression predicted-vs-actual) and `weights` artifact readers
+- `src/modules/ml/lib/projects.ts`: project discovery and run-store reads with no store state, shared by the store and the chat tools
+- `src/modules/ml/lib/headless.ts` / `model-tools.ts`: headless `serve` sessions and the `ml_list_models` / `ml_predict` / `ml_rank_csv` agent tools, registered by `src/plugins/ml/index.ts`
 
 ## Invariants / gotchas
 
 - **Every engine command is workspace-scoped.** `ml_detect` / `ml_env` / `ml_spawn` / `ml_install` / `py_detect_envs` take `workspace` and build their child through `ml.rs:env_command`, which routes a WSL workspace through `wsl.exe`. `ml_spawn` authorizes the *host* view of the project dir but hands the child the *Linux* path. See AGENTS.md pitfall #20 before adding a command here.
 - ML project discovery, `train.toml`, `PROJECT.md`, run metadata, and metrics reads go through `platform/filesystem.ts`. Do not reconstruct `WorkspaceEnv` payloads in the store or UI.
-- **Anything host-scoped is hidden, not silently offered, in a WSL workspace** — the pinned download, the managed binary, its uninstall row. A Windows `.exe` in the host's app-data dir is unreachable from inside a distro. Hiding alone left WSL with no path at all, so `WslEngineSteps` gives the commands instead.
+- **Anything host-scoped is hidden, not silently offered, in a WSL workspace**: the pinned download, the managed binary, its uninstall row. A Windows `.exe` in the host's app-data dir is unreachable from inside a distro. Hiding alone left WSL with no path at all, so `WslEngineSteps` gives the commands instead.
 - **`lib/pythonSupport.ts` only ever warns.** Its torch version bounds are a heuristic that goes stale in one direction (a new CPython gains wheels later), so a stale bound must never block an environment that already works.
 - **Caches of engine facts must carry the workspace scope.** `detectCache` keys on `currentWorkspaceScopeKey()`; `MlStore.engineScope` records who answered and discards everything on a mismatch.
 - **`[data] path` / `target` / `task` are the only keys Nexis adds to a scaffold** (`upsert`), because Axon documents them. Every other form edit uses `tomlSet`, which no-ops on a missing key. The hyperparameter and data forms re-read `train.toml` before each save so one never writes back the other's stale copy.
-- **Metric buffers are NOT in the store** (pitfall #14) — they live in a module-level Map in `lib/series.ts`; components subscribe to the primitive `seriesTick` and read through `getSeriesMap()`.
+- **Metric buffers are NOT in the store** (pitfall #14): they live in a module-level Map in `lib/series.ts`; components subscribe to the primitive `seriesTick` and read through `getSeriesMap()`.
 - **`workspace_authorize` runs before every `ml_spawn`** (pitfall #1C), same as `pty-bridge` does for `pty_open`.
 - **Authorization and spawn reuse one captured workspace environment.** Switching from WSL to local, or between distros, while authorization is pending must not stamp the later environment onto `ml_spawn`.
-- **The detection promise is memoized and its `.catch()` deletes the entry** (pitfall #10) — a rejected promise left in a Map is indistinguishable from a resolved one.
-- **The candidate list is speculative, so an absent candidate is not an error.** `ml.rs:Probe` is three-valued: `Missing` is silent, `Failed` is a diagnosis. Reporting the last candidate's ENOENT instead made every "no engine" state show the managed engine's path and `os error 3`. Absolute host paths are ruled out with `exists()` rather than a spawn — the panel re-detects on every open.
-- **`installSid` is recorded only after `spawnInstall` resolves.** An exit inside that window matches nothing, and nothing else clears `installing` — which disables the setup card's buttons. `_applyExit`/`_applyStderr` treat an unmatched event during an in-flight install as that install's.
+- **The detection promise is memoized and its `.catch()` deletes the entry** (pitfall #10): a rejected promise left in a Map is indistinguishable from a resolved one.
+- **The candidate list is speculative, so an absent candidate is not an error.** `ml.rs:Probe` is three-valued: `Missing` is silent, `Failed` is a diagnosis. Reporting the last candidate's ENOENT instead made every "no engine" state show the managed engine's path and `os error 3`. Absolute host paths are ruled out with `exists()` rather than a spawn: the panel re-detects on every open.
+- **`installSid` is recorded only after `spawnInstall` resolves.** An exit inside that window matches nothing, and nothing else clears `installing`, which disables the setup card's buttons. `_applyExit`/`_applyStderr` treat an unmatched event during an in-flight install as that install's.
 - **`ALLOWED_SUBCOMMANDS` and `is_engine_exe` are the security boundary.** `ml_spawn` must never become a generic process launcher; the exe stem must be exactly `axon` or `nexis-ml` (`ENGINE_NAMES`) and the subcommand must be on the allowlist. Detection also requires `--version` to print exactly `<engine-name> <version>` (`parse_version`), because `axon` is a common enough name that an unrelated binary on PATH could share it.
 - **The managed dir can hold a pre-rename `nexis-ml(.exe)`.** `installed_managed_engine_exe` returns Axon if present, else that legacy file; installing Axon deletes the legacy file and `ml_uninstall` removes both. Detection probes the managed engine first, then `axon` on PATH, then the Python venv candidates.
 - **Pass `export --onnx --run <id>` only when `envInfo.tasks` is non-empty.** v0.8 had no `--run`; it would take the run id as its project dir.
-- **Canvas drawings size through `src/lib/canvas.ts:canvasBackingScale`** (`dpr × --app-zoom`) and take `zoomLevel` as a redraw dependency — a `ResizeObserver` never fires for a zoom change. Same family as pitfall #15.
+- **Canvas drawings size through `src/lib/canvas.ts:canvasBackingScale`** (`dpr × --app-zoom`) and take `zoomLevel` as a redraw dependency, a `ResizeObserver` never fires for a zoom change. Same family as pitfall #15.
 - **Stock networks are values on an engine template, not new templates.** Each entry in `STOCK_MODELS` names a family (`tabular` / `image` / `textgen`) and the documented `[model]` / `[train]` keys to set; starters add a generated dataset. The brief goes to `PROJECT.md` after scaffold success, never into `train.toml`: the engine owns that schema.
 - **Creation writes only keys the scaffold already owns, plus `[data] path`/`target`.** `applyOverrides` uses `tomlSet` (a no-op on an absent key) and reports what it skipped to the log; only overrides flagged `upsert` (the two documented `[data]` keys, which the standalone tabular scaffold omits) may add a key. A Rust engine may reject unknown keys, so never widen `upsert` to model knobs. With a stock network the scale contributes only the training budget (`budgetOnly`); the network's own shape wins.
 - **Starter datasets are synthetic, seeded, and say so.** Integer class ids (the standalone engine documents a numeric target), meanings in `PROJECT.md`. `writeStarterFiles` never overwrites an existing path. Do not add real-world figures to a generator: the Lab must not pass invented numbers off as facts.

@@ -173,7 +173,7 @@ export function ShellSnippetsPanel() {
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="terminal" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Shell Snippets
         </span>
         <button
@@ -194,19 +194,19 @@ export function ShellSnippetsPanel() {
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Filter snippets"
           placeholder="Filter snippets…"
-          className="w-full rounded border border-border/50 bg-muted/20 px-2.5 py-1 text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
+          className="w-full rounded border border-border/50 bg-muted/20 px-2.5 py-1 text-caption text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
         />
       </div>
 
       {/* Placeholder fill dialog */}
       {filling && (
         <div className="shrink-0 border-b border-border/40 bg-muted/10 p-3 space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="text-micro font-semibold uppercase tracking-wider text-muted-foreground">
             Fill placeholders for: <span className="text-foreground">{filling.snippet.name}</span>
           </p>
           {filling.placeholders.map((key) => (
             <div key={key} className="flex items-center gap-2">
-              <label htmlFor={`snippet-fill-${key}`} className="w-20 shrink-0 truncate text-[10.5px] text-muted-foreground">{"{" + key + "}"}</label>
+              <label htmlFor={`snippet-fill-${key}`} className="w-20 shrink-0 truncate text-caption text-muted-foreground">{"{" + key + "}"}</label>
               <input
                 id={`snippet-fill-${key}`}
                 value={filling.values[key] ?? ""}
@@ -220,7 +220,7 @@ export function ShellSnippetsPanel() {
                 // field is the point of opening it.
                 // react-doctor-disable-next-line react-doctor/no-autofocus
                 autoFocus
-                className="flex-1 rounded border border-border/60 bg-background/60 px-2 py-1 text-[11px] text-foreground outline-none focus:border-primary/60"
+                className="flex-1 rounded border border-border/60 bg-background/60 px-2 py-1 text-caption text-foreground outline-none focus:border-primary/60"
               />
             </div>
           ))}
@@ -228,7 +228,7 @@ export function ShellSnippetsPanel() {
             <button
               type="button"
               onClick={commitFill}
-              className="flex flex-1 items-center justify-center gap-1 rounded bg-primary/90 py-1 text-[10.5px] font-medium text-primary-foreground hover:bg-primary"
+              className="flex flex-1 items-center justify-center gap-1 rounded bg-primary/90 py-1 text-caption font-medium text-primary-foreground hover:bg-primary"
             >
               <Icon name="terminal" size="xs" />
               Run
@@ -237,7 +237,7 @@ export function ShellSnippetsPanel() {
               type="button"
               onClick={() => setFilling(null)}
               aria-label="Cancel"
-              className="flex items-center justify-center rounded border border-border/50 px-2 py-1 text-[10.5px] text-muted-foreground hover:bg-muted/40"
+              className="flex items-center justify-center rounded border border-border/50 px-2 py-1 text-caption text-muted-foreground hover:bg-muted/40"
             >
               <Icon name="close" size="xs" />
             </button>
@@ -248,7 +248,7 @@ export function ShellSnippetsPanel() {
       {/* Edit form */}
       {editing !== null && (
         <div className="shrink-0 border-b border-border/40 bg-muted/10 p-3 space-y-1.5" onKeyDown={handleEditKey}>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="text-micro font-semibold uppercase tracking-wider text-muted-foreground">
             {editing.id === null ? "New snippet" : "Edit snippet"}
           </p>
           <input
@@ -257,28 +257,28 @@ export function ShellSnippetsPanel() {
             onChange={(e) => setEditing((p) => p && { ...p, name: e.target.value })}
             aria-label="Snippet name"
             placeholder="Name"
-            className="w-full rounded border border-border/60 bg-background/60 px-2 py-1 text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
+            className="w-full rounded border border-border/60 bg-background/60 px-2 py-1 text-caption text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
           />
           <input
             value={editing.command}
             onChange={(e) => setEditing((p) => p && { ...p, command: e.target.value })}
             aria-label="Shell command (use {VAR} for placeholders)"
             placeholder="Shell command (use {VAR} for placeholders)"
-            className="w-full rounded border border-border/60 bg-background/60 px-2 py-1 font-mono text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
+            className="w-full rounded border border-border/60 bg-background/60 px-2 py-1 font-mono text-caption text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
           />
           <input
             value={editing.description}
             onChange={(e) => setEditing((p) => p && { ...p, description: e.target.value })}
             aria-label="Snippet description (optional)"
             placeholder="Description (optional)"
-            className="w-full rounded border border-border/60 bg-background/60 px-2 py-1 text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
+            className="w-full rounded border border-border/60 bg-background/60 px-2 py-1 text-caption text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-primary/60"
           />
           <div className="flex gap-1">
             <button
               type="button"
               onClick={saveEdit}
               disabled={!editing.name.trim() || !editing.command.trim()}
-              className="flex flex-1 items-center justify-center gap-1 rounded bg-primary/90 py-1.5 text-[10.5px] font-medium text-primary-foreground hover:bg-primary disabled:opacity-40"
+              className="flex flex-1 items-center justify-center gap-1 rounded bg-primary/90 py-1.5 text-caption font-medium text-primary-foreground hover:bg-primary disabled:opacity-40"
             >
               <Icon name="check" size="xs" />
               Save
@@ -287,7 +287,7 @@ export function ShellSnippetsPanel() {
               type="button"
               onClick={() => setEditing(null)}
               aria-label="Cancel editing"
-              className="flex items-center justify-center rounded border border-border/50 px-2 py-1.5 text-[10.5px] text-muted-foreground hover:bg-muted/40"
+              className="flex items-center justify-center rounded border border-border/50 px-2 py-1.5 text-caption text-muted-foreground hover:bg-muted/40"
             >
               <Icon name="close" size="xs" />
             </button>
@@ -299,7 +299,7 @@ export function ShellSnippetsPanel() {
       <div className="min-h-0 flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
-            <p className="text-[11px] text-muted-foreground/60">
+            <p className="text-caption text-muted-foreground/60">
               {query ? "No snippets match." : "No snippets yet."}
             </p>
           </div>
@@ -316,7 +316,7 @@ export function ShellSnippetsPanel() {
                   className={cn(
                     "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors",
                     fired === s.id
-                      ? "text-green-500"
+                      ? "text-success"
                       : "text-muted-foreground hover:bg-primary/10 hover:text-primary disabled:opacity-30",
                   )}
                 >
@@ -325,14 +325,14 @@ export function ShellSnippetsPanel() {
 
                 {/* Content */}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11.5px] font-medium text-foreground">
+                  <p className="truncate text-ui font-medium text-foreground">
                     {s.name}
                   </p>
-                  <code className="block truncate text-[10.5px] text-muted-foreground/70">
+                  <code className="block truncate text-caption text-muted-foreground/70">
                     {s.command}
                   </code>
                   {s.description && (
-                    <p className="mt-0.5 truncate text-[10px] text-muted-foreground/50">
+                    <p className="mt-0.5 truncate text-micro text-muted-foreground/50">
                       {s.description}
                     </p>
                   )}
@@ -352,7 +352,7 @@ export function ShellSnippetsPanel() {
                     type="button"
                     title="Delete"
                     onClick={() => del(s.id)}
-                    className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-red-500/10 hover:text-red-500"
+                    className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   >
                     <Icon name="delete" size="xs" />
                   </button>
@@ -364,7 +364,7 @@ export function ShellSnippetsPanel() {
       </div>
 
       <div className="shrink-0 border-t border-border/20 px-3 py-1.5">
-        <p className="text-[9.5px] text-muted-foreground/40">
+        <p className="text-micro text-muted-foreground/40">
           Use <code className="rounded bg-muted px-0.5">{"{VAR}"}</code> for interactive placeholders.
         </p>
       </div>

@@ -105,7 +105,7 @@ impl Display for GitError {
                  Set one in the terminal:\n\n  \
                  git config --global user.name \"Your Name\"\n  \
                  git config --global user.email \"you@example.com\"\n\n\
-                 Run it in the environment the repository lives in — a WSL workspace \
+                 Run it in the environment the repository lives in: a WSL workspace \
                  reads the distro's ~/.gitconfig, not the one on Windows. \
                  Omit --global to set the identity for this repository only."
             ),

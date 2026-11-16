@@ -113,10 +113,12 @@ export function SidebarRail({
         * either axis clips the other too — the Source Control count badge,
         * which sits above its button, was cut off by exactly that.
         *
-        * One accent rail for the whole strip, animated between items, rather
-        * than each button drawing its own indicator. `hoverRect` draws a
-        * dimmer second rail under whatever the pointer or keyboard is on, so
-        * the strip previews where the accent is about to go. */}
+        * One pill for the whole strip, gliding between items, rather than
+        * each button painting its own background — the same selection as
+        * Epoch's sidebar and the Settings nav. A dimmer pill previews the
+        * hovered item; the active one is solid and its icon takes the fill
+        * weight. (This replaced a 2px underline rail: the family marks
+        * selection with a filled pill everywhere else.) */}
       <div
         ref={stripRef}
         className="relative flex min-w-0 flex-1 items-center gap-0.5"
@@ -126,17 +128,15 @@ export function SidebarRail({
           <RailIndicator
             rail={rail}
             rect={rail.hoverRect}
-            radius={1}
-            className="bottom-0 h-[2px] bg-primary/30"
+            radius={8}
+            className="inset-y-0 bg-accent/50"
           />
         )}
-        {/* Solid: at 2px tall a dashed rail reads as a rendering artefact;
-            opacity already tells it apart from the hover rail. */}
         <RailIndicator
           rail={rail}
           rect={rail.activeRect}
-          radius={1}
-          className="bottom-0 h-[2px] bg-primary"
+          radius={8}
+          className="inset-y-0 bg-accent"
         />
         {railItems.map((item) => (
           <RailButton
@@ -172,9 +172,9 @@ export function SidebarRail({
                 aria-label="Open commit history"
                 onClick={onOpenHistory}
                 className={cn(
-                  "flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md",
-                  "text-muted-foreground outline-none transition-colors duration-150",
-                  "hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]",
+                  "flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg",
+                  "text-muted-foreground outline-none transition-colors",
+                  "hover:bg-accent/50 hover:text-foreground",
                   "focus-visible:ring-2 focus-visible:ring-primary/40",
                 )}
               >
@@ -183,7 +183,7 @@ export function SidebarRail({
                 <Icon name="git-commit" size="md" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">Commit history</TooltipContent>
+            <TooltipContent side="top" className="text-ui">Commit history</TooltipContent>
           </Tooltip>
         </>
       ) : null}
@@ -235,22 +235,16 @@ function RailButton({
           onPointerEnter={onHover}
           onFocus={onHover}
           className={cn(
-            "relative flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md outline-none transition-all duration-150",
+            "relative flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg outline-none transition-colors",
             "focus-visible:ring-2 focus-visible:ring-primary/40",
-            isActive
-              ? "bg-primary/[0.07] text-foreground dark:bg-primary/[0.1]"
-              : "text-muted-foreground hover:bg-primary/[0.07] hover:text-primary dark:hover:bg-primary/[0.1]",
+            isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
           )}
         >
-          <Icon
-            name={item.icon}
-            size="md"
-            className={cn("shrink-0 transition-[stroke-width,color] duration-150", isActive && "text-primary")}
-          />
+          <Icon name={item.icon} size="md" active={isActive} className="shrink-0" />
           {badge ? (
             <span className={cn(
               "absolute -right-0.5 -top-0.5 flex h-[14px] min-w-[14px] items-center justify-center rounded-full px-0.5",
-              "text-[8px] font-bold leading-none tabular-nums",
+              "text-micro font-semibold leading-none tabular-nums",
               isActive
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted-foreground/70 text-background",
@@ -260,7 +254,7 @@ function RailButton({
           ) : null}
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="text-xs">{item.label}</TooltipContent>
+      <TooltipContent side="top" className="text-ui">{item.label}</TooltipContent>
     </Tooltip>
   );
 }
