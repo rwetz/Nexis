@@ -153,7 +153,7 @@ export function OnboardingTour({ open, onClose, onRunAction }: Props) {
       >
         <div className="flex items-center gap-1.5">
           <Icon name={step.icon} size="sm" className="text-primary" />
-          <span className="text-[12.5px] font-medium">{step.label}</span>
+          <span className="text-ui font-medium">{step.label}</span>
           <button
             type="button"
             aria-label="Close the guided tour"
@@ -164,19 +164,19 @@ export function OnboardingTour({ open, onClose, onRunAction }: Props) {
           </button>
         </div>
 
-        <p className="text-[11px] leading-relaxed text-muted-foreground">
+        <p className="text-caption leading-relaxed text-muted-foreground">
           {step.why}
         </p>
 
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-muted-foreground/60">
+          <span className="text-micro text-muted-foreground/60">
             {index + 1} of {steps.length}
           </span>
 
           <button
             type="button"
             onClick={() => onRunAction(step.action)}
-            className="ml-auto rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="ml-auto rounded-md px-2 py-1 text-caption text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             Show me
           </button>
@@ -185,7 +185,7 @@ export function OnboardingTour({ open, onClose, onRunAction }: Props) {
             <button
               type="button"
               onClick={() => setIndex((i) => i - 1)}
-              className="rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="rounded-md px-2 py-1 text-caption text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               Back
             </button>
@@ -195,7 +195,7 @@ export function OnboardingTour({ open, onClose, onRunAction }: Props) {
             type="button"
             onClick={() => (isLast ? finish() : setIndex((i) => i + 1))}
             className={cn(
-              "rounded-md bg-primary/90 px-2.5 py-1 text-[11px] font-medium text-primary-foreground transition-colors",
+              "rounded-md bg-primary/90 px-2.5 py-1 text-caption font-medium text-primary-foreground transition-colors",
               "hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
             )}
           >

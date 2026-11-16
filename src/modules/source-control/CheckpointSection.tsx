@@ -88,7 +88,7 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
       <button
         type="button"
         onClick={() => setExpanded((p) => !p)}
-        className="flex h-7 w-full items-center gap-2 px-3 text-left text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
+        className="flex h-7 w-full items-center gap-2 px-3 text-left text-caption font-medium text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground"
       >
         <Icon
           name="chevron-down"
@@ -98,7 +98,7 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
         <Icon name="magic" className="shrink-0" />
         <span>AI checkpoints</span>
         {checkpoints.length > 0 && (
-          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-[9.5px] tabular-nums text-muted-foreground/85">
+          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground/85">
             {checkpoints.length}
           </span>
         )}
@@ -107,14 +107,14 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
       {expanded && (
         <div className="px-2 pb-2 pt-1">
           <div className="mb-1.5 flex items-center">
-            <p className="text-[10px] text-muted-foreground/70">
+            <p className="text-micro text-muted-foreground/70">
               Snapshots taken before each agent edit. Reverting is itself
               checkpointed.
             </p>
             <Button
               size="xs"
               variant="ghost"
-              className="ml-auto h-6 cursor-pointer text-[10.5px] text-muted-foreground"
+              className="ml-auto h-6 cursor-pointer text-caption text-muted-foreground"
               onClick={() => void load()}
               disabled={loading}
             >
@@ -127,13 +127,13 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
           </div>
 
           {error && (
-            <p className="mb-1.5 rounded bg-destructive/10 px-1.5 py-1 text-[10px] text-destructive">
+            <p className="mb-1.5 rounded bg-destructive/10 px-1.5 py-1 text-micro text-destructive">
               {error}
             </p>
           )}
 
           {checkpoints.length === 0 && !loading ? (
-            <p className="py-2 text-center text-[10.5px] text-muted-foreground/60">
+            <p className="py-2 text-center text-caption text-muted-foreground/60">
               No checkpoints yet
             </p>
           ) : (
@@ -144,20 +144,20 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
                   className="group flex items-center gap-1.5 rounded px-1.5 py-1 hover:bg-muted/40"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] text-foreground">
+                    <p className="truncate text-caption text-foreground">
                       {cp.label || "Agent edit"}
                     </p>
-                    <p className="text-[9.5px] text-muted-foreground/70">
+                    <p className="text-micro text-muted-foreground/70">
                       {relativeTime(cp.timestampSecs)} · {cp.sha.slice(0, 7)}
                     </p>
                   </div>
                   <Button
                     size="xs"
                     variant="secondary"
-                    className="h-5 shrink-0 cursor-pointer px-1.5 text-[10px] opacity-0 transition-opacity group-hover:opacity-100"
+                    className="h-5 shrink-0 cursor-pointer px-1.5 text-micro opacity-0 transition-opacity group-hover:opacity-100"
                     disabled={busy === cp.refName}
                     onClick={() => void handleRestore(cp)}
-                    title="Restore tracked files to this snapshot. Overwrites changes made since — but takes a new checkpoint first, so this is undoable."
+                    title="Restore tracked files to this snapshot. Overwrites changes made since, but takes a new checkpoint first, so this is undoable."
                   >
                     {busy === cp.refName ? (
                       <Spinner className="size-2.5" />

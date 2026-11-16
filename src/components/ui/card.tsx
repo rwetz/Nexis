@@ -18,7 +18,7 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card flex flex-col gap-6 overflow-hidden rounded-4xl bg-card py-6 text-sm text-card-foreground shadow-md ring-1 ring-foreground/5 has-[>img:first-child]:pt-0 data-[size=sm]:gap-4 data-[size=sm]:py-4 dark:ring-foreground/10 *:[img:first-child]:rounded-t-4xl *:[img:last-child]:rounded-b-4xl",
+        "group/card flex flex-col gap-(--card-inset) overflow-hidden rounded-(--card-radius) [--card-inset:calc(var(--spacing)*6)] [--card-radius:var(--radius-4xl)] bg-card py-6 text-sm text-card-foreground shadow-md ring-1 ring-foreground/5 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-inset:calc(var(--spacing)*4)] data-[size=sm]:py-4 dark:ring-foreground/10 *:[img:first-child]:rounded-t-4xl *:[img:last-child]:rounded-b-4xl",
         className
       )}
       {...props}
@@ -43,7 +43,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn("text-base font-medium", className)}
+      className={cn("text-sm font-medium", className)}
       {...props}
     />
   )
@@ -82,6 +82,20 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** Inset media follows the card's outer arc at the same distance on both axes. */
+function CardMedia({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-media"
+      className={cn(
+        "mx-(--card-inset) overflow-hidden rounded-[max(0px,calc(var(--card-radius)-var(--card-inset)))] bg-muted ring-1 ring-foreground/8",
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -103,4 +117,5 @@ export {
   CardAction,
   CardDescription,
   CardContent,
+  CardMedia,
 }

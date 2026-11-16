@@ -229,7 +229,22 @@ export function SettingsDialog() {
     (n, g) => n + g.tabs.length,
     0,
   );
-  const rail = useGlidingRail<SettingsTab>(activeTab, "vertical", visibleTabCount);
+  // The nav only exists while the dialog is open, and the portal mounts it a
+  // render after `isOpen` flips — so its arrival is a re-measure too, or the
+  // pill stays unpainted until a tab changes.
+  const [navEl, setNavEl] = useState<HTMLDivElement | null>(null);
+  const rail = useGlidingRail<SettingsTab>(
+    activeTab,
+    "vertical",
+    navEl ? visibleTabCount : -1,
+  );
+  const navRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      rail.containerRef.current = el;
+      setNavEl(el);
+    },
+    [rail.containerRef],
+  );
 
   // Enter jumps to the top hit so search is a keyboard-only path: open, type,
   // Enter. Selecting does not clear the query — the filtered nav stays put so
@@ -306,50 +321,51 @@ export function SettingsDialog() {
                   onKeyDown={onSearchKeyDown}
                   placeholder="Search settings"
                   aria-label="Search settings"
-                  className="h-7 rounded-md pr-2 pl-7 text-[11.5px] md:text-[11.5px]"
+                  className="h-7 rounded-md pr-2 pl-7 text-ui md:text-ui"
                 />
               </div>
             </div>
 
-            {/* A single hairline runs the height of the nav, with one solid
-              * segment marking the active row — the row itself carries no
-              * fill. The line is what makes a filtered list still read as
-              * one column: with per-row backgrounds, a nav that loses half
-              * its rows to a search query loses its spine too. */}
+            {/* The same selection Epoch's sidebar uses (and @nexis/design's
+              * SidebarNav): a filled pill glides to the hovered row, a solid
+              * one sits under the active row with a short brand bar on its
+              * leading edge, and the active icon switches to its fill weight.
+              * The rail is one element that moves, not a background per row,
+              * so a search that filters rows out never leaves a gap. */}
             <div
-              ref={rail.containerRef}
+              ref={navRef}
               className="relative min-h-0 flex-1 overflow-y-auto px-2 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               onPointerLeave={() => rail.setHoverId(null)}
             >
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-y-2 left-1 w-px bg-border/60"
+              <RailIndicator
+                rail={rail}
+                rect={rail.hoverRect}
+                radius={10}
+                className="inset-x-2 bg-accent/50"
               />
-              {rail.hoverId !== activeTab && (
-                <RailIndicator
-                  rail={rail}
-                  rect={rail.hoverRect}
-                  radius={1}
-                  className="left-1 w-px bg-foreground/25"
-                />
-              )}
               <RailIndicator
                 rail={rail}
                 rect={rail.activeRect}
-                radius={1}
-                className="left-[2px] w-[2px] bg-primary"
+                radius={10}
+                className="inset-x-2 bg-accent"
+              />
+              <RailIndicator
+                rail={rail}
+                rect={rail.activeRect}
+                radius={2}
+                className="left-2 w-[3px] bg-brand"
               />
               {visibleGroups.map((group, gi) => (
                 <div
                   key={group.label ?? "ungrouped"}
-                  className={gi > 0 ? "mt-3" : undefined}
+                  className={gi > 0 ? "mt-3 flex flex-col gap-0.5" : "flex flex-col gap-0.5"}
                 >
                   {group.label ? (
-                    <div className="px-2 pt-1 pb-1.5 text-[10px] font-medium tracking-wider text-muted-foreground/70 uppercase">
+                    <div className="relative z-10 px-2.5 pt-1 pb-1 text-caption font-medium tracking-wide text-muted-foreground/80 uppercase">
                       {group.label}
                     </div>
                   ) : (
-                    <div className="mx-2 mb-2 border-t border-border/50" />
+                    <div className="relative z-10 mx-2 mb-2 border-t border-border/50" />
                   )}
                   {group.tabs.map((t) => {
                     const isActive = t.id === activeTab;
@@ -363,15 +379,15 @@ export function SettingsDialog() {
                         onFocus={() => rail.setHoverId(t.id)}
                         aria-current={isActive ? "page" : undefined}
                         className={[
-                          "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px]",
+                          "relative z-10 flex h-8 w-full items-center gap-2.5 rounded-[10px] px-2.5 text-body",
                           "transition-colors outline-none",
                           "focus-visible:ring-2 focus-visible:ring-ring/40",
                           isActive
-                            ? "font-medium text-foreground"
-                            : "text-muted-foreground hover:text-foreground",
+                            ? "font-medium text-accent-foreground"
+                            : "text-foreground/70 hover:text-foreground",
                         ].join(" ")}
                       >
-                        <Icon name={t.icon} className="shrink-0" />
+                        <Icon name={t.icon} size="md" active={isActive} className="shrink-0" />
                         <span className="truncate">{t.label}</span>
                       </button>
                     );
@@ -380,7 +396,7 @@ export function SettingsDialog() {
               ))}
 
               {visibleGroups.length === 0 && (
-                <p className="px-2 py-3 text-[11.5px] text-muted-foreground">
+                <p className="px-2 py-3 text-ui text-muted-foreground">
                   No settings match “{query.trim()}”.
                 </p>
               )}
@@ -405,7 +421,9 @@ export function SettingsDialog() {
                 onScroll={handleScroll}
                 className="h-full overflow-y-auto px-8 pt-6 pb-7 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               >
-                <div className="mx-auto w-full max-w-160">
+                {/* Keyed on the tab so each switch replays Epoch's page
+                  * arrival (a short rise and fade) instead of swapping in place. */}
+                <div key={activeTab} className="nexis-view-enter mx-auto w-full max-w-160">
                   {ActiveSection && <ActiveSection />}
                 </div>
               </main>

@@ -74,7 +74,7 @@ export function CwdBreadcrumb({ cwd, filePath, home, onCd }: Props) {
 
   if (!cwd) {
     return (
-      <span className="text-xs text-muted-foreground/70">no directory</span>
+      <span className="text-ui text-muted-foreground/70">no directory</span>
     );
   }
 
@@ -165,7 +165,7 @@ function OneLineBreadcrumb({ children }: { children: ReactNode }) {
     <Breadcrumb className="min-w-0">
       <BreadcrumbList
         ref={listRef}
-        className="flex-nowrap justify-end gap-1 overflow-hidden whitespace-nowrap text-xs sm:gap-1.5 [&>*]:shrink-0"
+        className="flex-nowrap justify-end gap-1 overflow-hidden whitespace-nowrap text-ui sm:gap-1.5 [&>*]:shrink-0"
         style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
       >
         {children}
@@ -250,11 +250,11 @@ function CurrentSegmentDropdown({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
         {children === null ? (
-          <div className="px-2 py-1.5 text-xs text-muted-foreground">
+          <div className="px-2 py-1.5 text-ui text-muted-foreground">
             Loading…
           </div>
         ) : children.length === 0 ? (
-          <div className="px-2 py-1.5 text-xs text-muted-foreground">
+          <div className="px-2 py-1.5 text-ui text-muted-foreground">
             {error ?? "No subfolders"}
           </div>
         ) : (

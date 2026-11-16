@@ -70,7 +70,7 @@ fn default_config_contents() -> String {
         "~"
     };
     format!(
-        r#"# Nexis Atlas — repo configuration
+        r#"# Nexis Atlas: repo configuration
 #
 # Explicit repos to track (tilde is expanded). Always included.
 repos = []

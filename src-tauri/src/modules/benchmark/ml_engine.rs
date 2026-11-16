@@ -21,7 +21,7 @@ const WORKLOAD_SAMPLES: u32 = 4096;
 const WORKLOAD_HIDDEN: &str = "[128, 128]";
 
 pub const NEXIS_NOTE: &str =
-    "Real engine throughput — Axon trains a standardized workload on its wgpu/ndarray backend. It does not run inference on the dropped model (the engine has no such path yet).";
+    "Real engine throughput: Axon trains a standardized workload on its wgpu/ndarray backend. It does not run inference on the dropped model (the engine has no such path yet).";
 
 #[cfg(windows)]
 fn configure(cmd: &mut Command) {

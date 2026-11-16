@@ -1,10 +1,10 @@
 # Security
 
-Nexis runs real shells, reads and writes files, and talks to AI providers. Security issues matter here — please report them privately before going public.
+Nexis runs real shells, reads and writes files, and talks to AI providers. Security issues matter here: please report them privately before going public.
 
 ## How to report
 
-Email **rwetz00@gmail.com** — subject `[Nexis security]`.
+Email **rwetz00@gmail.com**: subject `[Nexis security]`.
 
 Tell me:
 - What the vulnerability is and what an attacker could do with it
@@ -21,28 +21,28 @@ Only the latest release is actively patched. That's currently `1.20.x`.
 
 ## In scope
 
-- Rust backend (`src-tauri/`) — PTY, FS access, IPC, plugins
-- Frontend (`src/`) — anywhere untrusted data lands: terminal output, file content, AI tool results, credentials
+- Rust backend (`src-tauri/`): PTY, FS access, IPC, plugins
+- Frontend (`src/`), anywhere untrusted data lands: terminal output, file content, AI tool results, credentials
 - Release binaries published to GitHub
 - The auto-updater pipeline
 
 ## Out of scope
 
-- Vulnerabilities in upstream dependencies (Tauri, xterm.js, CodeMirror, AI SDKs) — report those to the respective projects; I'll ship the fix once it lands upstream
+- Vulnerabilities in upstream dependencies (Tauri, xterm.js, CodeMirror, AI SDKs): report those to the respective projects; I'll ship the fix once it lands upstream
 - Issues that require an already-compromised machine or existing shell access
 - Versions older than `0.7`
 
 ## How Nexis handles security
 
 - **API keys** are stored in the OS keychain via the `keyring` crate. They never touch disk, localStorage, or logs.
-- **No telemetry.** Network calls only happen when you initiate them — AI requests, update checks, and web preview. Nothing else.
+- **No telemetry.** Network calls only happen when you initiate them: AI requests, update checks, and web preview. Nothing else.
 - **Tool approval.** The AI agent can't write files or run shell commands without you explicitly approving each action.
-- **IPC sandboxing.** The frontend can only call allow-listed Tauri commands — no direct OS access from the webview.
-- **Minimal capability surface.** The Tauri capability files (`src-tauri/capabilities/*.json`) are audited to grant the webview only the core/plugin permissions it actually uses — window controls, the event bus, and the opener/os/store/log/autostart/window-state/process plugins. There is no blanket `fs:`, `shell:`, or `http:` capability; all filesystem, shell, and network access goes through purpose-built custom commands that validate their input (path guards, SSRF/DNS-rebinding checks, header sanitization).
+- **IPC sandboxing.** The frontend can only call allow-listed Tauri commands: no direct OS access from the webview.
+- **Minimal capability surface.** The Tauri capability files (`src-tauri/capabilities/*.json`) are audited to grant the webview only the core/plugin permissions it actually uses: window controls, the event bus, and the opener/os/store/log/autostart/window-state/process plugins. There is no blanket `fs:`, `shell:`, or `http:` capability; all filesystem, shell, and network access goes through purpose-built custom commands that validate their input (path guards, SSRF/DNS-rebinding checks, header sanitization).
 - **Verified updates.** Release artifacts are signed; the updater checks signatures before applying anything.
 
 ## Honest limitations
 
 - Nexis runs whatever you or the agent tell it to run, with your user permissions. That's the whole point of a terminal.
 - AI providers receive the content of your messages. Check their data retention policies.
-- Local model endpoints (LM Studio, OpenAI-compatible) are trusted at the network level — only connect to servers you own or control.
+- Local model endpoints (LM Studio, OpenAI-compatible) are trusted at the network level, only connect to servers you own or control.

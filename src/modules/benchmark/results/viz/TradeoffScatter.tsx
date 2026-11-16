@@ -102,7 +102,7 @@ export function TradeoffScatter({
       {xticks.map((t, i) => (
         <g key={`x${i}`}>
           <line x1={sx(t)} y1={M.t} x2={sx(t)} y2={M.t + PH} className="stroke-border/50" strokeWidth={1} />
-          <text x={sx(t)} y={M.t + PH + 18} textAnchor="middle" className="fill-muted-foreground font-mono text-[10px]">
+          <text x={sx(t)} y={M.t + PH + 18} textAnchor="middle" className="fill-muted-foreground font-mono text-micro">
             {formatMs(t)}
           </text>
         </g>
@@ -110,21 +110,21 @@ export function TradeoffScatter({
       {yticks.map((t, i) => (
         <g key={`y${i}`}>
           <line x1={M.l} y1={sy(t)} x2={M.l + PW} y2={sy(t)} className="stroke-border/50" strokeWidth={1} />
-          <text x={M.l - 8} y={sy(t) + 3} textAnchor="end" className="fill-muted-foreground font-mono text-[10px]">
+          <text x={M.l - 8} y={sy(t) + 3} textAnchor="end" className="fill-muted-foreground font-mono text-micro">
             {formatCompact(t)}
           </text>
         </g>
       ))}
 
       {/* axis hints */}
-      <text x={M.l + PW} y={H - 6} textAnchor="end" className="fill-muted-foreground/70 text-[10px]">
+      <text x={M.l + PW} y={H - 6} textAnchor="end" className="fill-muted-foreground/70 text-micro">
         latency → slower
       </text>
       <text
         x={14}
         y={M.t + PH / 2}
         textAnchor="middle"
-        className="fill-muted-foreground/70 text-[10px]"
+        className="fill-muted-foreground/70 text-micro"
         transform={`rotate(-90 14 ${M.t + PH / 2})`}
       >
         throughput ({throughputUnit(task, "onnx").long}) → higher
@@ -165,7 +165,7 @@ export function TradeoffScatter({
               className="stroke-card"
               strokeWidth={1.5}
             />
-            <text x={cx} y={cy - 11} textAnchor="middle" className="fill-muted-foreground font-mono text-[9.5px]">
+            <text x={cx} y={cy - 11} textAnchor="middle" className="fill-muted-foreground font-mono text-micro">
               {BACKEND_SHORT[p.backendId]}
             </text>
           </g>

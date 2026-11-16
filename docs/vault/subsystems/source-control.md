@@ -9,12 +9,12 @@ Source Control is the write-capable Git view for the active workspace and the Gi
 
 ## Key files
 
-- `src/capabilities/git/index.tsx` / `context.tsx` — declarative Source Control panel and command plus workbench callbacks
-- `src/capabilities/git/api.ts` — typed workspace-scoped frontend command surface for status, diff, writes, history, stashes, checkpoints, submodules, and worktrees
-- `src/modules/source-control/useSourceControl.ts` — context-path repo resolution, status summary, focus refresh, remote throttling, and changed-file badge state
-- `src/modules/source-control/useSourceControlPanel.ts` — panel selection, stage/unstage/discard, commit, push, and diff orchestration
-- `src/modules/git-history/GitHistoryPane.tsx` — paged commit graph, commit files/diffs, and remote-web links
-- `src-tauri/src/modules/git/{commands,operations,process}.rs` — async handlers, Git behavior, workspace routing, and confined CLI construction
+- `src/capabilities/git/index.tsx` / `context.tsx`: declarative Source Control panel and command plus workbench callbacks
+- `src/capabilities/git/api.ts`: typed workspace-scoped frontend command surface for status, diff, writes, history, stashes, checkpoints, submodules, and worktrees
+- `src/modules/source-control/useSourceControl.ts`: context-path repo resolution, status summary, focus refresh, remote throttling, and changed-file badge state
+- `src/modules/source-control/useSourceControlPanel.ts`: panel selection, stage/unstage/discard, commit, push, and diff orchestration
+- `src/modules/git-history/GitHistoryPane.tsx`: paged commit graph, commit files/diffs, and remote-web links
+- `src-tauri/src/modules/git/{commands,operations,process}.rs`: async handlers, Git behavior, workspace routing, and confined CLI construction
 
 ## Invariants / gotchas
 

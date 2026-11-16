@@ -125,7 +125,7 @@ function LinkButton({ editor, active, disabled }: { editor: Editor; active: bool
             {href.trim() ? "Apply" : "Remove"}
           </Button>
         </div>
-        {error ? <p className="mt-1.5 text-xs text-destructive">{error}</p> : null}
+        {error ? <p className="mt-1.5 text-ui text-destructive">{error}</p> : null}
       </PopoverContent>
     </Popover>
   );
@@ -146,7 +146,7 @@ function Choice({
       aria-pressed={selected}
       onClick={onSelect}
       className={cn(
-        "rounded-md border px-2 py-1 text-xs transition-colors",
+        "rounded-md border px-2 py-1 text-ui transition-colors",
         selected
           ? "border-primary/50 bg-primary/10 text-foreground"
           : "border-border/60 text-muted-foreground hover:bg-muted",
@@ -177,7 +177,7 @@ function ExportButton({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 space-y-2.5 p-3">
         <div className="space-y-1">
-          <div className="text-xs font-medium">Theme</div>
+          <div className="text-ui font-medium">Theme</div>
           <div className="flex flex-wrap gap-1">
             {PDF_THEMES.map((t) => (
               <Choice key={t.id} selected={t.id === theme} onSelect={() => setTheme(t.id)}>
@@ -187,7 +187,7 @@ function ExportButton({
           </div>
         </div>
         <div className="space-y-1">
-          <div className="text-xs font-medium">Page</div>
+          <div className="text-ui font-medium">Page</div>
           <div className="flex gap-1">
             {(["A4", "Letter"] as const).map((s) => (
               <Choice key={s} selected={s === size} onSelect={() => setSize(s)}>

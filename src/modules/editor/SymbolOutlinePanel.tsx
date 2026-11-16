@@ -30,15 +30,10 @@ function kindIcon(kind: SymbolKind) {
   }
 }
 
-function kindColor(kind: SymbolKind): string {
-  switch (kind) {
-    case "function": return "text-blue-500/80";
-    case "class":    return "text-orange-500/80";
-    case "interface":return "text-purple-500/80";
-    case "type":     return "text-cyan-500/80";
-    case "enum":     return "text-amber-500/80";
-    default:         return "text-muted-foreground/60";
-  }
+function kindColor(_kind: SymbolKind): string {
+  // One flat colour (nexis-design RULES R6.4): the glyph already says the
+  // kind, so a hue per kind only added a second, theme-blind code.
+  return "text-muted-foreground";
 }
 
 const SYMBOL_PATTERNS: { re: RegExp; kind: SymbolKind }[] = [
@@ -115,11 +110,11 @@ export function SymbolOutlinePanel({ filePath }: Props) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center border-b border-border/50 px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Outline
         </span>
         {loading && (
-          <span className="ml-2 text-[10px] text-muted-foreground/60">Loading…</span>
+          <span className="ml-2 text-micro text-muted-foreground/60">Loading…</span>
         )}
       </div>
       <div className="flex-1 overflow-y-auto">
@@ -139,10 +134,10 @@ export function SymbolOutlinePanel({ filePath }: Props) {
                 name={kindIcon(s.kind)}
                 className={cn("shrink-0", kindColor(s.kind))}
               />
-              <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-foreground">
+              <span className="min-w-0 flex-1 truncate font-mono text-ui text-foreground">
                 {s.name}
               </span>
-              <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/50">
+              <span className="shrink-0 text-micro tabular-nums text-muted-foreground/50">
                 {s.line}
               </span>
             </div>

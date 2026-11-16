@@ -102,7 +102,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
       const text = diff.diffText.slice(0, 12_000);
       const scopeLabel = scope === "staged" ? "staged" : "all unstaged";
       const truncNote = diff.truncated
-        ? "\n\n> (diff truncated to 12k chars — some files may be missing)"
+        ? "\n\n> (diff truncated to 12k chars: some files may be missing)"
         : "";
       const prompt = `Please review the following ${scopeLabel} git diff:\n\n\`\`\`diff\n${text}\n\`\`\`${truncNote}\n\nFocus on:\n- Potential bugs or logic errors\n- Missing error handling or edge cases\n- Code style / readability improvements\n- Performance considerations\n\nProvide specific, actionable feedback with line references where possible.`;
       showAiChat();
@@ -119,11 +119,11 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="code-box" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Code Review
         </span>
         {loadState === "loading" && (
-          <span className="ml-auto text-[10px] text-muted-foreground/60">
+          <span className="ml-auto text-micro text-muted-foreground/60">
             Loading…
           </span>
         )}
@@ -141,14 +141,14 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
 
       {/* Scope toggle */}
       <div className="flex shrink-0 items-center gap-1 border-b border-border/30 px-3 py-2">
-        <span className="mr-1 text-[10px] text-muted-foreground">Review:</span>
+        <span className="mr-1 text-micro text-muted-foreground">Review:</span>
         {(["staged", "all"] as ReviewScope[]).map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => setScope(s)}
             className={cn(
-              "rounded px-2 py-0.5 text-[10.5px] font-medium transition-colors",
+              "rounded px-2 py-0.5 text-caption font-medium transition-colors",
               scope === s
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
@@ -160,7 +160,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
         {repoRoot && (
           <span
             title={repoRoot}
-            className="ml-auto max-w-[45%] truncate text-[10px] text-muted-foreground/60"
+            className="ml-auto max-w-[45%] truncate text-micro text-muted-foreground/60"
           >
             {basename(repoRoot)}
           </span>
@@ -174,15 +174,15 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
         ) : loadState === "no-repo" ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
             <Icon name="git-branch" size="xl" className="text-muted-foreground/40" />
-            <p className="text-xs text-muted-foreground">Not a git repository</p>
-            <p className="max-w-[220px] text-[10.5px] leading-relaxed text-muted-foreground/60">
+            <p className="text-ui text-muted-foreground">Not a git repository</p>
+            <p className="max-w-[220px] text-caption leading-relaxed text-muted-foreground/60">
               Code review reads a git diff. Open a workspace inside a repository,
               or run <span className="font-mono">git init</span> here.
             </p>
             <button
               type="button"
               onClick={() => void loadDiff()}
-              className="mt-1 text-[10px] text-primary hover:underline"
+              className="mt-1 text-micro text-primary hover:underline"
             >
               Check again
             </button>
@@ -193,8 +193,8 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
           <EmptyState message="Loading diff…" />
         ) : !hasChanges ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-            <Icon name="success" size="xl" className="text-green-500/60" />
-            <p className="text-xs text-muted-foreground">
+            <Icon name="success" size="xl" className="text-success/60" />
+            <p className="text-ui text-muted-foreground">
               No {scope === "staged" ? "staged" : ""} changes to review
             </p>
           </div>
@@ -202,27 +202,27 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
           <>
             {/* Stats summary */}
             <div className="flex shrink-0 items-center gap-3 border-b border-border/30 px-3 py-2.5">
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-caption text-muted-foreground">
                 <span className="font-semibold text-foreground">
                   {stats.files}
                 </span>{" "}
                 file{stats.files !== 1 ? "s" : ""}
               </span>
-              <span className="text-[11px] text-green-500">
+              <span className="text-caption text-success">
                 +{stats.additions}
               </span>
-              <span className="text-[11px] text-red-500">
+              <span className="text-caption text-destructive">
                 −{stats.deletions}
               </span>
               {diff?.truncated && (
-                <span className="ml-auto text-[9px] text-amber-500/80">
+                <span className="ml-auto text-micro text-warning/80">
                   truncated
                 </span>
               )}
             </div>
 
             {/* Diff preview (scrollable) */}
-            <pre className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words p-3 font-mono text-[10px] leading-relaxed text-foreground/70">
+            <pre className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words p-3 font-mono text-micro leading-relaxed text-foreground/70">
               {diff?.diffText}
             </pre>
 
@@ -233,7 +233,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
                 onClick={() => void reviewWithAi()}
                 disabled={sending}
                 className={cn(
-                  "flex w-full items-center justify-center gap-2 rounded-md py-2 text-[11.5px] font-medium transition-colors",
+                  "flex w-full items-center justify-center gap-2 rounded-md py-2 text-ui font-medium transition-colors",
                   "bg-primary/90 text-primary-foreground hover:bg-primary",
                   "disabled:cursor-wait disabled:opacity-60",
                 )}
@@ -252,7 +252,7 @@ export function CodeReviewPanel({ workspaceRoot }: Props) {
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex flex-1 items-center justify-center">
-      <p className="text-[11px] text-muted-foreground/60">{message}</p>
+      <p className="text-caption text-muted-foreground/60">{message}</p>
     </div>
   );
 }
@@ -278,7 +278,7 @@ function ErrorState({
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-3">
       <div className="flex items-start gap-2">
         <Icon name="alert" className="mt-px shrink-0 text-destructive" />
-        <p className="min-w-0 break-words text-[11px] leading-relaxed text-destructive">
+        <p className="min-w-0 break-words text-caption leading-relaxed text-destructive">
           {summary}
         </p>
       </div>
@@ -287,7 +287,7 @@ function ErrorState({
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="flex items-center gap-1 self-start text-[10px] text-muted-foreground hover:text-foreground"
+          className="flex items-center gap-1 self-start text-micro text-muted-foreground hover:text-foreground"
         >
           <Icon name={expanded ? "chevron-down" : "chevron-right"} size="xs" />
           {expanded ? "Hide details" : "Show details"}
@@ -295,7 +295,7 @@ function ErrorState({
       )}
 
       {expanded && hasDetail && (
-        <pre className="min-h-0 flex-1 overflow-auto rounded border border-border/50 bg-muted/30 p-2 font-mono text-[10px] leading-relaxed whitespace-pre-wrap break-words text-muted-foreground">
+        <pre className="min-h-0 flex-1 overflow-auto rounded border border-border/50 bg-muted/30 p-2 font-mono text-micro leading-relaxed whitespace-pre-wrap break-words text-muted-foreground">
           {text}
         </pre>
       )}
@@ -303,7 +303,7 @@ function ErrorState({
       <button
         type="button"
         onClick={onRetry}
-        className="self-start text-[10px] text-primary hover:underline"
+        className="self-start text-micro text-primary hover:underline"
       >
         Retry
       </button>

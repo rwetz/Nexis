@@ -13,7 +13,7 @@ export function buildTerminalTools(ctx: ToolContext) {
   return {
     suggest_command: tool({
       description:
-        "Propose a single shell command. Renders a card in chat with an 'Insert' button — the command is NOT written to any terminal automatically; only the user's click inserts it at the prompt without executing. Use this when the answer IS a command.",
+        "Propose a single shell command. Renders a card in chat with an 'Insert' button: the command is NOT written to any terminal automatically; only the user's click inserts it at the prompt without executing. Use this when the answer IS a command.",
       inputSchema: z.object({
         command: z
           .string()
@@ -68,7 +68,7 @@ export function buildTerminalTools(ctx: ToolContext) {
 
     open_preview: tool({
       description:
-        "Open a preview tab (in-app iframe) at the given URL — restricted to localhost/loopback addresses for the local dev server. Use this after starting a dev server (e.g. `pnpm dev`, `npm run dev`) to surface the rendered page next to the terminal. To preview external sites, the user should paste the URL into the preview address bar themselves.",
+        "Open a preview tab (in-app iframe) at the given URL: restricted to localhost/loopback addresses for the local dev server. Use this after starting a dev server (e.g. `pnpm dev`, `npm run dev`) to surface the rendered page next to the terminal. To preview external sites, the user should paste the URL into the preview address bar themselves.",
       inputSchema: z.object({
         url: z
           .url()

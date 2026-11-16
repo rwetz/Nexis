@@ -30,7 +30,7 @@ const DAY_S = 86_400;
 
 /** Compact relative time for a commit timestamp in epoch **seconds**. */
 export function relativeTime(unixSeconds: number): string {
-  if (!Number.isFinite(unixSeconds)) return "—";
+  if (!Number.isFinite(unixSeconds)) return "–";
   const diffS = Math.max(0, Date.now() / 1000 - unixSeconds);
   const days = Math.floor(diffS / DAY_S);
 

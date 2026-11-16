@@ -18,7 +18,7 @@ const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"] as const;
  * "31981.4 MB" — technically correct and unreadable.
  */
 export function formatBytes(n: number): string {
-  if (!Number.isFinite(n)) return "—";
+  if (!Number.isFinite(n)) return "–";
   const negative = n < 0;
   let value = Math.abs(n);
   let unit = 0;
@@ -50,7 +50,7 @@ export function formatBytesPerSec(n: number): string {
  */
 export function relativeTime(ms: number): string {
   const diff = Date.now() - ms;
-  if (!Number.isFinite(diff)) return "—";
+  if (!Number.isFinite(diff)) return "–";
   // A clock skew or a future timestamp reads as "just now" rather than as a
   // negative age, which is the least-wrong thing a relative label can say.
   if (diff < 60_000) return "just now";
@@ -67,7 +67,7 @@ export function relativeTime(ms: number): string {
  * values tick over.
  */
 export function formatDuration(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "—";
+  if (!Number.isFinite(seconds) || seconds < 0) return "–";
   const s = Math.floor(seconds);
   if (s < 60) return `${s}s`;
   const m = Math.floor(s / 60);

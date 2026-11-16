@@ -71,7 +71,7 @@ export function StatusBar({
   const rightItems = statusBarItems.filter((i) => i.side === "right");
 
   return (
-    <footer className="relative flex h-8 shrink-0 items-center justify-start gap-3 bg-card/60 px-3 text-[11px]">
+    <footer className="relative flex h-8 shrink-0 items-center justify-start gap-3 bg-card/60 px-3 text-caption">
       {/* Gradient top border */}
       <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
       <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -84,27 +84,27 @@ export function StatusBar({
                 type="button"
                 onClick={onToggleProblems}
                 className={cn(
-                  "flex shrink-0 items-center gap-2 rounded px-1.5 py-0.5 text-[10.5px] transition-colors",
+                  "flex shrink-0 items-center gap-2 rounded px-1.5 py-0.5 text-caption transition-colors",
                   problemsOpen
                     ? "bg-muted/60 text-foreground"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {errorCount > 0 && (
-                  <span className="flex items-center gap-1 text-red-400">
+                  <span className="flex items-center gap-1 text-destructive">
                     <ErrorDot />
                     {errorCount}
                   </span>
                 )}
                 {warningCount > 0 && (
-                  <span className="flex items-center gap-1 text-yellow-400">
+                  <span className="flex items-center gap-1 text-warning">
                     <WarnDot />
                     {warningCount}
                   </span>
                 )}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-[11px]">
+            <TooltipContent side="top" className="text-caption">
               {problemsOpen ? "Hide" : "Show"} Problems
             </TooltipContent>
           </Tooltip>
@@ -128,32 +128,62 @@ export function StatusBar({
         {privateActive ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="flex shrink-0 cursor-default items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10.5px] font-medium text-amber-700 dark:text-amber-400">
+              <span className="flex shrink-0 cursor-default items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-caption font-medium text-warning">
                 <Icon name="incognito" size="xs" />
                 <span>Private: hidden from AI</span>
               </span>
             </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-64 text-[11px] leading-relaxed">
+            <TooltipContent side="top" className="max-w-64 text-caption leading-relaxed">
               AI can't see this terminal's output. Use it for secrets, SSH, or
               anything you don't want sent to the model.
             </TooltipContent>
           </Tooltip>
         ) : null}
       </div>
+      {/* Right side, in two groups: tools and readouts, then a hairline, then
+        * the things that talk back (notifications, the agent). */}
       <div className="flex shrink-0 items-center gap-1.5">
         <PanelToggle />
-        {debugFpsMeter ? <FpsPill /> : null}
-        {debugMemoryReport ? <MemoryReportPill /> : null}
+        <DiagnosticsPill fps={debugFpsMeter} memory={debugMemoryReport} />
         {/* Plugin-contributed right items (e.g. Python env pill) */}
         {rightItems.map((item) => {
           const C = item.render;
           return <span key={item.id}><C /></span>;
         })}
+        <div aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-border/70" />
         <NotificationsCenter />
         <AgentStatusPill onClick={onOpenMini} />
         {hasComposer ? <AiOpenButton onOpen={toggleMini} /> : null}
       </div>
     </footer>
+  );
+}
+
+/**
+ * The opt-in debug readouts (Settings > Developer) as one quiet pill. At rest
+ * it shows only the frame rate; the memory summary slides out beside it while
+ * the pointer is over the pill. With only one readout enabled, that one shows.
+ * Each readout keeps its own detail tooltip.
+ */
+function DiagnosticsPill({ fps, memory }: { fps: boolean; memory: boolean }) {
+  if (!fps && !memory) return null;
+  const folded = fps && memory;
+  return (
+    <div className="group/diag flex h-6 shrink-0 items-center rounded-md bg-muted/40 px-2">
+      {fps ? <FpsPill /> : null}
+      {memory ? (
+        <div
+          className={cn(
+            folded &&
+              "grid grid-cols-[0fr] opacity-0 transition-[grid-template-columns,opacity] duration-(--dur-panel) group-hover/diag:grid-cols-[1fr] group-hover/diag:opacity-100",
+          )}
+        >
+          <div className={cn(folded && "min-w-0 overflow-hidden pl-2")}>
+            <MemoryReportPill />
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 # Writing a custom AI tool
 
-Nexis agents call *tools* — typed functions the model can invoke. The built-ins (`read_file`, `bash_run`, `edit`, …) cover general work; this guide is for adding your own, for something specific to your project or workflow.
+Nexis agents call *tools*: typed functions the model can invoke. The built-ins (`read_file`, `bash_run`, `edit`, …) cover general work; this guide is for adding your own, for something specific to your project or workflow.
 
 A tool is three things: a **name** the model calls, a **description** that tells it when to, and a **schema + function** that does the work.
 
@@ -12,7 +12,7 @@ A tool is three things: a **name** the model calls, a **description** that tells
 pnpm tool:new count_todos
 ```
 
-That writes `src/plugins/custom-tools/count_todos.ts` and a matching test, registers the tool in the custom-tools plugin, and — the first time — wires that plugin into `ALL_PLUGINS`. The generated tool works and its test passes immediately; edit from there rather than starting from a stub.
+That writes `src/plugins/custom-tools/count_todos.ts` and a matching test, registers the tool in the custom-tools plugin, and, the first time, wires that plugin into `ALL_PLUGINS`. The generated tool works and its test passes immediately; edit from there rather than starting from a stub.
 
 Add `--auto` if the tool is read-only and should run without a confirmation prompt (see [Approval](#approval)).
 
@@ -45,7 +45,7 @@ export const countTodosTool: ToolContribution = {
 };
 ```
 
-**The description is the most important field.** It is the entire basis on which the model decides whether to call your tool. A vague description ("does todo stuff") is the single most common reason a custom tool is never called. Say what it does *and when to reach for it*. The same applies to `.describe()` on each schema field — the model reads those too.
+**The description is the most important field.** It is the entire basis on which the model decides whether to call your tool. A vague description ("does todo stuff") is the single most common reason a custom tool is never called. Say what it does *and when to reach for it*. The same applies to `.describe()` on each schema field: the model reads those too.
 
 `execute` receives the validated input and a `ToolContext`, the same one built-ins get:
 
@@ -68,21 +68,21 @@ Contributed tools **require user approval by default**. Each call surfaces a con
 approval: "auto",   // runs without asking
 ```
 
-Only set `"auto"` for tools that cannot modify anything — no writes, no network, no process spawning. If in doubt, leave it out.
+Only set `"auto"` for tools that cannot modify anything: no writes, no network, no process spawning. If in doubt, leave it out.
 
 ---
 
 ## Rules the runtime enforces
 
-Admission happens in `buildPluginTools` (`src/modules/ai/tools/plugin-tools.ts`). A contribution that breaks a rule is **logged and skipped** — never thrown — so one bad tool can't disarm the others or break a turn.
+Admission happens in `buildPluginTools` (`src/modules/ai/tools/plugin-tools.ts`). A contribution that breaks a rule is **logged and skipped**, never thrown, so one bad tool can't disarm the others or break a turn.
 
 - **You cannot shadow a built-in.** `read_file`, `bash_run`, and the rest are reserved. Re-binding one would swap a guarded primitive for an unguarded one.
-- **Names must be lowercase snake_case**, 3–48 characters, starting with a letter. The name crosses into the provider's function-calling schema, and an invalid one fails the whole request — not just your tool.
+- **Names must be lowercase snake_case**, 3–48 characters, starting with a letter. The name crosses into the provider's function-calling schema, and an invalid one fails the whole request, not just your tool.
 - **First registration wins** if two plugins claim the same name.
 - **A description is mandatory.** The model cannot use an unlabelled tool.
 - **Throwing is safe.** An exception is converted to an error *result* the model can read and recover from.
 
-If your tool never shows up, check the devtools console — the rejection reason is logged with your tool's id.
+If your tool never shows up, check the devtools console: the rejection reason is logged with your tool's id.
 
 ---
 
@@ -101,13 +101,13 @@ const result = await runTool(
 expect(result).toEqual({ ok: true, output: { /* … */ } });
 ```
 
-`runTool` returns `{ ok: false, error }` rather than throwing, so failure paths are as easy to assert as success ones — worth doing, since a tool that throws in production comes back to the model as an error result, not an exception.
+`runTool` returns `{ ok: false, error }` rather than throwing, so failure paths are as easy to assert as success ones, worth doing, since a tool that throws in production comes back to the model as an error result, not an exception.
 
 ---
 
 ## Related
 
-- `src/modules/ai/tools/plugin-tools.ts` — admission rules and the `ToolContribution` type
-- `src/modules/ai/tools/harness.ts` — the test harness
-- `src/lib/plugins/types.ts` — the wider Plugin API
-- [`ai-subsystem.md`](./ai-subsystem.md) — how tools fit into the agent turn
+- `src/modules/ai/tools/plugin-tools.ts`: admission rules and the `ToolContribution` type
+- `src/modules/ai/tools/harness.ts`: the test harness
+- `src/lib/plugins/types.ts`: the wider Plugin API
+- [`ai-subsystem.md`](./ai-subsystem.md): how tools fit into the agent turn

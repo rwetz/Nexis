@@ -9,7 +9,7 @@ import type { Theme } from "../types";
 export const synthwave: Theme = {
   id: "synthwave",
   name: "Synthwave",
-  description: "Hot pink on deep purple — grid, horizon, sunset.",
+  description: "Hot pink on deep purple: grid, horizon, sunset.",
   editorTheme: { dark: "aura", light: "xcode-light" },
   variants: {
     dark: {

@@ -65,7 +65,7 @@ export function ShapeGenerator({ onInsert }: Props) {
             aria-pressed={s.id === shape.id}
             onClick={() => setShape(s)}
             className={cn(
-              "rounded-md px-1.5 py-0.5 text-[10.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+              "rounded-md px-1.5 py-0.5 text-caption transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
               s.id === shape.id
                 ? "bg-primary/15 text-primary"
                 : "text-muted-foreground hover:text-foreground",
@@ -91,9 +91,9 @@ export function ShapeGenerator({ onInsert }: Props) {
         <div className="flex flex-col gap-2">
           {shape.params.map((p) => (
             <label key={p.key} className="flex flex-col gap-0.5" title={p.hint}>
-              <span className="flex items-center justify-between text-[10.5px] text-muted-foreground">
+              <span className="flex items-center justify-between text-caption text-muted-foreground">
                 {p.label}
-                <span className="font-mono tabular-nums text-muted-foreground/70">
+                <span className="tabular-nums text-muted-foreground/70">
                   {Number(current[p.key].toFixed(2))}
                 </span>
               </span>
@@ -115,7 +115,7 @@ export function ShapeGenerator({ onInsert }: Props) {
         <button
           type="button"
           onClick={() => onInsert(svg)}
-          className="flex items-center gap-1.5 rounded-md bg-primary/90 px-2 py-1 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="flex items-center gap-1.5 rounded-md bg-primary/90 px-2 py-1 text-caption font-medium text-primary-foreground transition-colors hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <Icon name="add" size="xs" />
           Insert into editor
@@ -123,11 +123,11 @@ export function ShapeGenerator({ onInsert }: Props) {
         <button
           type="button"
           onClick={reset}
-          className="rounded-md px-1.5 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="rounded-md px-1.5 py-1 text-caption text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           Reset
         </button>
-        <span className="ml-auto text-[9.5px] text-muted-foreground/60">
+        <span className="ml-auto text-micro text-muted-foreground/60">
           replaces the editor
         </span>
       </div>

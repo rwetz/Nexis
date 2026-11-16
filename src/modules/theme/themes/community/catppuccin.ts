@@ -10,7 +10,7 @@ export const catppuccin: Theme = {
   id: "catppuccin",
   name: "Catppuccin",
   author: "Catppuccin org",
-  description: "Mocha + Latte — soothing pastel.",
+  description: "Mocha + Latte: soothing pastel.",
   editorTheme: { dark: "atomone", light: "xcode-light" },
   variants: {
     dark: {

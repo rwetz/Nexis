@@ -97,7 +97,7 @@ function PreviewToolbar({
 }) {
   return (
     <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-card/60 px-3 py-1">
-      <span className="truncate font-mono text-[10.5px] text-muted-foreground/70">
+      <span className="truncate font-mono text-caption text-muted-foreground/70">
         {path.split(/[\\/]/).pop()}
       </span>
       <div className="flex items-center gap-0.5">
@@ -111,7 +111,7 @@ function PreviewToolbar({
               type="button"
               onClick={() => onEdit(path)}
               title="Edit in the rich-text editor"
-              className="flex h-6 cursor-pointer items-center gap-1 rounded px-1.5 text-[10.5px] text-muted-foreground outline-none transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-1 focus-visible:ring-primary/40"
+              className="flex h-6 cursor-pointer items-center gap-1 rounded px-1.5 text-caption text-muted-foreground outline-none transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-1 focus-visible:ring-primary/40"
             >
               <Icon name="edit" size="xs" />
               Edit
@@ -128,7 +128,7 @@ function StatusMessage({ status }: { status: Exclude<Status, { kind: "ready" }> 
   if (status.kind === "loading") {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-[12px] text-muted-foreground">Loading…</p>
+        <p className="text-ui text-muted-foreground">Loading…</p>
       </div>
     );
   }
@@ -136,11 +136,11 @@ function StatusMessage({ status }: { status: Exclude<Status, { kind: "ready" }> 
     status.kind === "error"
       ? `Failed to read file: ${status.message}`
       : status.kind === "binary"
-        ? "Binary file — cannot render as markdown."
+        ? "Binary file: cannot render as markdown."
         : `File is ${status.size} bytes; limit ${status.limit}.`;
   return (
     <div className="px-6 py-4">
-      <p className={cn("text-[12px]", status.kind === "error" ? "text-destructive" : "text-muted-foreground")}>{text}</p>
+      <p className={cn("text-ui", status.kind === "error" ? "text-destructive" : "text-muted-foreground")}>{text}</p>
     </div>
   );
 }
@@ -166,7 +166,7 @@ function MarkdownBody({ content, mode }: { content: string; mode: ViewMode }) {
         <div className={cn("min-h-0 overflow-auto", split ? "flex-1" : "flex-1 px-6 py-4")}>
           <pre
             className={cn(
-              "h-full font-mono text-[12px] leading-relaxed text-foreground/90 whitespace-pre-wrap break-words",
+              "h-full font-mono text-ui leading-relaxed text-foreground/90 whitespace-pre-wrap break-words",
               split && "px-6 py-4",
             )}
           >
@@ -222,7 +222,7 @@ function ModeButton({
       title={label}
       onClick={onClick}
       className={cn(
-        "flex h-6 w-6 cursor-pointer items-center justify-center rounded text-[10.5px] outline-none transition-colors",
+        "flex h-6 w-6 cursor-pointer items-center justify-center rounded text-caption outline-none transition-colors",
         "focus-visible:ring-1 focus-visible:ring-primary/40",
         active
           ? "bg-primary/10 text-primary"

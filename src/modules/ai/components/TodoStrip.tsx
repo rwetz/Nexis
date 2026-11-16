@@ -41,9 +41,9 @@ export function TodoStrip({ sessionId }: Props) {
   return (
     <div className="flex flex-col min-h-0 shrink-0 border-t-2 border-border/40 bg-muted/80 px-3 py-1.5 max-h-[35%] shadow-[0_-4px_12px_-8px_rgba(0,0,0,0.2)]">
       <div className="my-1.5 flex items-center gap-2 shrink-0">
-        <span className="text-[11px] font-medium text-foreground">Todos</span>
+        <span className="text-caption font-medium text-foreground">Todos</span>
         <Progress value={pct} className="h-1 flex-1" />
-        <span className="text-[11px] tabular-nums font-mono text-muted-foreground">
+        <span className="text-caption tabular-nums text-muted-foreground">
           {completed}/{todos.length}
         </span>
       </div>
@@ -63,7 +63,7 @@ function TodoRow({ todo }: { todo: Todo }) {
   const row = (
     <li
       className={cn(
-        "flex items-start gap-2 rounded px-1.5 py-1 text-[11px] leading-snug",
+        "flex items-start gap-2 rounded px-1.5 py-1 text-caption leading-snug",
         isInProgress && "border-l-2 border-foreground/50 bg-muted/40",
       )}
     >
@@ -94,7 +94,7 @@ function TodoRow({ todo }: { todo: Todo }) {
     <TooltipProvider delayDuration={300}>
       <Tooltip>
         <TooltipTrigger asChild>{row}</TooltipTrigger>
-        <TooltipContent side="left" className="max-w-xs text-[11px]">
+        <TooltipContent side="left" className="max-w-xs text-caption">
           {todo.description}
         </TooltipContent>
       </Tooltip>

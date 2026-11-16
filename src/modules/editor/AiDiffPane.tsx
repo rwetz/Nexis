@@ -150,27 +150,27 @@ export function AiDiffPane({
       <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border/60 px-3">
         <div className="flex min-w-0 items-center gap-2">
           <Badge
-            className="text-[11px] px-2.5 py-2.5"
+            className="text-caption px-2.5 py-2.5"
             variant={STATUS_BADGE[status]}
           >
             {STATUS_LABEL[status]}
           </Badge>
           {isNewFile ? (
-            <span className="shrink-0 rounded-full border border-border/60 bg-accent/40 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="shrink-0 rounded-full border border-border/60 bg-accent/40 px-1.5 py-0.5 text-micro font-medium uppercase tracking-wide text-muted-foreground">
               New file
             </span>
           ) : null}
           <span
-            className="truncate font-mono text-[11px] text-muted-foreground"
+            className="truncate font-mono text-caption text-muted-foreground"
             title={path}
           >
             {path}
           </span>
-          <span className="flex shrink-0 items-center gap-1.5 text-[10.5px] tabular-nums">
-            <span className="text-emerald-600 dark:text-emerald-400">
+          <span className="flex shrink-0 items-center gap-1.5 text-caption tabular-nums">
+            <span className="text-success">
               +{stats.added}
             </span>
-            <span className="text-rose-600 dark:text-rose-400">
+            <span className="text-destructive">
               −{stats.removed}
             </span>
           </span>

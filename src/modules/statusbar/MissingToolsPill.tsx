@@ -79,7 +79,7 @@ export function MissingToolsPill() {
           type="button"
           aria-label={`${tools.length} tool${tools.length > 1 ? "s" : ""} not installed`}
           className={cn(
-            "flex items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] transition-colors",
+            "flex items-center gap-1 rounded px-1.5 py-0.5 text-caption transition-colors",
             "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
@@ -92,11 +92,11 @@ export function MissingToolsPill() {
 
       <PopoverContent side="top" align="end" sideOffset={6} className="w-80 p-2">
         <div className="mb-1.5 flex items-center gap-2 px-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+          <p className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/60">
             Not installed
           </p>
           {note ? (
-            <span className="text-[10px] text-muted-foreground/60">{note}</span>
+            <span className="text-micro text-muted-foreground/60">{note}</span>
           ) : null}
           <button
             type="button"
@@ -123,10 +123,10 @@ export function MissingToolsPill() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate text-[11.5px] font-medium text-foreground">
+                    <p className="truncate text-ui font-medium text-foreground">
                       {tool.name}
                     </p>
-                    <p className="text-[10.5px] leading-relaxed text-muted-foreground">
+                    <p className="text-caption leading-relaxed text-muted-foreground">
                       {tool.enables}.
                     </p>
                   </div>
@@ -145,7 +145,7 @@ export function MissingToolsPill() {
                     type="button"
                     onClick={() => copy(tool.id, cmd)}
                     title="Copy install command"
-                    className="mt-1.5 flex w-full items-center gap-1.5 rounded bg-muted/60 px-1.5 py-1 text-left font-mono text-[10px] text-foreground transition-colors hover:bg-muted"
+                    className="mt-1.5 flex w-full items-center gap-1.5 rounded bg-muted/60 px-1.5 py-1 text-left font-mono text-micro text-foreground transition-colors hover:bg-muted"
                   >
                     <Icon
                       name="copy"
@@ -157,7 +157,7 @@ export function MissingToolsPill() {
                     </span>
                   </button>
                 ) : tool.docsUrl ? (
-                  <p className="mt-1.5 truncate font-mono text-[10px] text-muted-foreground">
+                  <p className="mt-1.5 truncate font-mono text-micro text-muted-foreground">
                     {tool.docsUrl}
                   </p>
                 ) : null}

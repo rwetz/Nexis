@@ -185,8 +185,8 @@ export function CodeActionDialog({
     >
       <div className="w-[460px] rounded-xl border border-border/60 bg-card shadow-2xl">
         <div className="border-b border-border/40 px-4 py-3">
-          <p className="text-[12px] font-semibold text-foreground">Refactor</p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-ui font-semibold text-foreground">Refactor</p>
+          <p className="text-caption text-muted-foreground">
             Semantic refactorings from the language server for the current
             selection
           </p>
@@ -203,20 +203,20 @@ export function CodeActionDialog({
           className="max-h-[300px] overflow-y-auto p-2 outline-none"
         >
           {loading ? (
-            <p className="px-2 py-3 text-[11px] text-muted-foreground/60">
+            <p className="px-2 py-3 text-caption text-muted-foreground/60">
               Asking the language server…
             </p>
           ) : noServer ? (
-            <p className="px-2 py-3 text-[11px] text-muted-foreground">
+            <p className="px-2 py-3 text-caption text-muted-foreground">
               No language server is available for this file. Semantic
               refactorings (extract function, inline variable) need a running
-              LSP server — the AI Refactor panel (Alt+Shift+X) works without
+              LSP server: the AI Refactor panel (Alt+Shift+X) works without
               one.
             </p>
           ) : actions.length === 0 ? (
-            <p className="px-2 py-3 text-[11px] text-muted-foreground">
+            <p className="px-2 py-3 text-caption text-muted-foreground">
               The language server offers no refactorings for this selection.
-              Try selecting a complete expression or statement — extract
+              Try selecting a complete expression or statement: extract
               function needs a selection, inline variable needs the cursor on
               a variable.
             </p>
@@ -237,8 +237,8 @@ export function CodeActionDialog({
                     : "text-foreground/80 hover:bg-muted/40",
                 )}
               >
-                <span className="min-w-0 truncate text-[11.5px]">{a.title}</span>
-                <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <span className="min-w-0 truncate text-ui">{a.title}</span>
+                <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-micro font-semibold uppercase tracking-wide text-muted-foreground">
                   {kindBadge(a.kind)}
                 </span>
               </button>
@@ -249,13 +249,13 @@ export function CodeActionDialog({
         {(done || error) && (
           <div className="px-4 pb-1">
             {done && (
-              <div className="flex items-center gap-1.5 text-[11px] text-green-500">
+              <div className="flex items-center gap-1.5 text-caption text-success">
                 <Icon name="success" />
                 Applied “{done}”
               </div>
             )}
             {error && (
-              <div className="flex items-center gap-1.5 text-[11px] text-destructive">
+              <div className="flex items-center gap-1.5 text-caption text-destructive">
                 <Icon name="alert" />
                 {error}
               </div>
@@ -264,13 +264,13 @@ export function CodeActionDialog({
         )}
 
         <div className="flex items-center justify-between border-t border-border/40 px-4 py-3">
-          <span className="text-[9.5px] text-muted-foreground/50">
+          <span className="text-micro text-muted-foreground/50">
             ↑↓ to choose · Enter to apply
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-border/60 px-3 py-1.5 text-[11.5px] text-muted-foreground hover:bg-muted"
+            className="rounded border border-border/60 px-3 py-1.5 text-ui text-muted-foreground hover:bg-muted"
           >
             Cancel
           </button>

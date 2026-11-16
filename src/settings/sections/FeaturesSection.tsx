@@ -45,7 +45,7 @@ export function FeaturesSection() {
     <div className="flex flex-col gap-4">
       <SectionHeader
         title="Features"
-        description="Choose which expansion packs are enabled. The terminal, editor, Files, Recent Files, Source Control, and AI chat are always available. Disabling a pack hides its panels — nothing is uninstalled, and your pinned sidebar items come back when you re-enable it."
+        description="Choose which expansion packs are enabled. The terminal, editor, Files, Recent Files, Source Control, and AI chat are always available. Disabling a pack hides its panels: nothing is uninstalled, and your pinned sidebar items come back when you re-enable it."
       />
 
       {/* Presets get the full width rather than the right-hand control column
@@ -54,8 +54,8 @@ export function FeaturesSection() {
           says what each preset is actually for — with nowhere to go. */}
       <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-card/60 px-3 py-2.5">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[12.5px] font-medium">Presets</span>
-          <span className="text-[10.5px] leading-relaxed text-muted-foreground">
+          <span className="text-ui font-medium">Presets</span>
+          <span className="text-caption leading-relaxed text-muted-foreground">
             One-click bundles over the same toggles below.
           </span>
         </div>
@@ -84,7 +84,7 @@ export function FeaturesSection() {
                     active={active}
                     className={active ? "text-primary" : "text-muted-foreground"}
                   />
-                  <span className="min-w-0 truncate text-[11.5px] font-medium">
+                  <span className="min-w-0 truncate text-ui font-medium">
                     {PRESETS[id].label}
                   </span>
                   {active && (
@@ -95,7 +95,7 @@ export function FeaturesSection() {
                     />
                   )}
                 </span>
-                <span className="text-[10px] leading-snug text-muted-foreground/80">
+                <span className="text-micro leading-snug text-muted-foreground/80">
                   {PRESETS[id].blurb}
                 </span>
               </button>
@@ -117,7 +117,7 @@ export function FeaturesSection() {
                 <Icon name={pack.icon} size="sm" />
                 {pack.label}
                 {empty ? (
-                  <span className="rounded-sm bg-muted px-1 py-px text-[9.5px] font-normal text-muted-foreground">
+                  <span className="rounded-sm bg-muted px-1 py-px text-micro font-normal text-muted-foreground">
                     No panels yet
                   </span>
                 ) : null}

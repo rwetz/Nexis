@@ -204,17 +204,17 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden text-[12px]">
+    <div className="flex h-full flex-col overflow-hidden text-ui">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 bg-gradient-to-r from-primary/[0.04] to-transparent px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground/70">
           Recent Files
         </span>
         {files.length > 0 && (
           <button
             type="button"
             onClick={clear}
-            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-caption text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             title="Clear all"
           >
             <Icon name="delete" size="xs" />
@@ -241,7 +241,7 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
             placeholder="Filter files…"
             spellCheck={false}
             className={cn(
-              "w-full rounded-md bg-muted/40 py-1 pl-6 pr-2 text-[11px]",
+              "w-full rounded-md bg-muted/40 py-1 pl-6 pr-2 text-caption",
               "text-foreground placeholder:text-muted-foreground/40",
               "outline-none focus:ring-1 focus:ring-primary/40",
               "border border-transparent focus:border-border/60",
@@ -297,7 +297,7 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
                       <Highlighted text={name} ranges={f.nameMatch.ranges} />
                     </div>
                     {dir && (
-                      <div className="truncate text-[10.5px] text-muted-foreground/60">
+                      <div className="truncate text-caption text-muted-foreground/60">
                         {f.dirMatch ? (
                           <Highlighted text={dir} ranges={f.dirMatch.ranges} />
                         ) : (
@@ -308,7 +308,7 @@ export function RecentFilesPanel({ onOpenFile }: Props) {
                   </div>
                 </button>
                 <span className={cn(
-                  "shrink-0 text-[10px] text-muted-foreground/50",
+                  "shrink-0 text-micro text-muted-foreground/50",
                   isActive ? "hidden" : "group-hover:hidden",
                 )}>
                   {relativeTime(f.accessedAt)}

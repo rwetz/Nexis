@@ -146,7 +146,7 @@ export function scanDelimiters(
       problems.push({
         from: pos,
         to: pos + 1,
-        message: `Mismatched '${ch}' — expected '${OPEN_TO_CLOSE[top.ch]}'`,
+        message: `Mismatched '${ch}': expected '${OPEN_TO_CLOSE[top.ch]}'`,
       });
       stack.pop(); // recover by consuming the mismatched opener
     } else {

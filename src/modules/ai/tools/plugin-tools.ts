@@ -109,7 +109,7 @@ export function admitTool(
     return {
       ok: false,
       reason:
-        `invalid tool name "${name}" — must be 3-48 chars, lowercase ` +
+        `invalid tool name "${name}": must be 3-48 chars, lowercase ` +
         "snake_case, starting with a letter",
     };
   }
@@ -128,7 +128,7 @@ export function admitTool(
   if (!contribution.description?.trim()) {
     return {
       ok: false,
-      reason: `tool "${name}" needs a description — the model cannot use an unlabelled tool`,
+      reason: `tool "${name}" needs a description: the model cannot use an unlabelled tool`,
     };
   }
   return { ok: true };

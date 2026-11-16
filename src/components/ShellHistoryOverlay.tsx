@@ -288,9 +288,9 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
               setActiveIdx(0);
             }}
             onKeyDown={onKey}
-            className="flex-1 bg-transparent font-mono text-[12.5px] text-foreground outline-none placeholder:text-muted-foreground/60"
+            className="flex-1 bg-transparent font-mono text-ui text-foreground outline-none placeholder:text-muted-foreground/60"
           />
-          <span className="text-[10.5px] text-muted-foreground/60">
+          <span className="text-caption text-muted-foreground/60">
             {loading ? "…" : `${results.length} results`}
           </span>
         </div>
@@ -329,7 +329,7 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
                   setActiveIdx(0);
                 }}
                 className={cn(
-                  "rounded-md px-2 py-0.5 text-[11px] transition-colors",
+                  "rounded-md px-2 py-0.5 text-caption transition-colors",
                   active
                     ? "bg-accent/70 text-foreground"
                     : "text-muted-foreground hover:bg-muted/40",
@@ -340,7 +340,7 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
               </button>
             );
           })}
-          <span className="ml-auto pr-1 text-[10px] text-muted-foreground/60">
+          <span className="ml-auto pr-1 text-micro text-muted-foreground/60">
             {source === "ledger"
               ? "exit 0, this workspace"
               : ledgerAvailable
@@ -355,13 +355,13 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
           className="max-h-[360px] overflow-y-auto overscroll-contain"
         >
           {isEmpty && (
-            <div className="px-4 py-6 text-center text-[12px] text-muted-foreground">
+            <div className="px-4 py-6 text-center text-ui text-muted-foreground">
               {error
                 ? "Could not load history"
                 : query.trim()
                   ? "No matches"
                   : source === "ledger"
-                    ? "Nothing recorded here yet — commands appear once they finish"
+                    ? "Nothing recorded here yet: commands appear once they finish"
                     : "No shell history found"}
             </div>
           )}
@@ -382,11 +382,11 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
                   : "text-foreground hover:bg-muted/40",
               )}
             >
-              <span className="min-w-0 flex-1 truncate font-mono text-[12px]">
+              <span className="min-w-0 flex-1 truncate font-mono text-ui">
                 {row.command}
               </span>
               {row.meta ? (
-                <span className="shrink-0 font-mono text-[10.5px] text-muted-foreground/70">
+                <span className="shrink-0 font-mono text-caption text-muted-foreground/70">
                   {row.meta}
                 </span>
               ) : null}
@@ -395,7 +395,7 @@ export function ShellHistoryOverlay({ leafId, onClose }: Props) {
         </div>
 
         {/* Footer hints */}
-        <div className="flex items-center gap-4 border-t border-border/40 px-3 py-1.5 text-[10.5px] text-muted-foreground/70">
+        <div className="flex items-center gap-4 border-t border-border/40 px-3 py-1.5 text-caption text-muted-foreground/70">
           <span><kbd className="font-mono">↵</kbd> insert</span>
           <span><kbd className="font-mono">↑↓</kbd> navigate</span>
           <span><kbd className="font-mono">Esc</kbd> close</span>

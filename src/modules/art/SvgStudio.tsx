@@ -75,7 +75,7 @@ export function SvgStudio({
               onClick={() => setTool(id)}
               onPointerEnter={() => rail.setHoverId(id)}
               className={cn(
-                "relative z-10 flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+                "relative z-10 flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-caption font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 tool === id
                   ? "text-primary"

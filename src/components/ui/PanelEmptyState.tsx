@@ -53,12 +53,12 @@ export function PanelEmptyState({
     >
       {art}
       <div className="max-w-60 space-y-1">
-        <p className="text-[12px] font-medium text-foreground/80">{title}</p>
+        <p className="text-ui font-medium text-foreground/80">{title}</p>
         {description && (
-          <p className="text-[11px] leading-relaxed text-muted-foreground">{description}</p>
+          <p className="text-caption leading-relaxed text-muted-foreground">{description}</p>
         )}
         {hint && (
-          <p className="pt-1 text-[10.5px] leading-relaxed text-muted-foreground/70">{hint}</p>
+          <p className="pt-1 text-caption leading-relaxed text-muted-foreground/70">{hint}</p>
         )}
       </div>
     </div>

@@ -72,11 +72,11 @@ export function ProviderKeyCard({
     <div className="flex flex-col gap-2 rounded-lg border border-border/60 bg-card/60 px-3 py-2.5">
       <div className="flex items-center gap-2">
         <ProviderIcon provider={provider.id} size={15} />
-        <span className="text-[12.5px] font-medium">{provider.label}</span>
+        <span className="text-ui font-medium">{provider.label}</span>
         {currentKey ? (
           <Badge
             variant="outline"
-            className="ml-1 h-4 gap-1 border-border/60 bg-muted/40 px-1.5 text-[10px] font-normal text-muted-foreground"
+            className="ml-1 h-4 gap-1 border-border/60 bg-muted/40 px-1.5 text-micro font-normal text-muted-foreground"
           >
             <Icon name="success" size="xs" />
             Connected
@@ -85,7 +85,7 @@ export function ProviderKeyCard({
         <button
           type="button"
           onClick={() => void openHostUrl(provider.consoleUrl)}
-          className="ml-auto inline-flex items-center gap-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground"
+          className="ml-auto inline-flex items-center gap-0.5 text-caption text-muted-foreground transition-colors hover:text-foreground"
         >
           Get key
           <Icon name="external" size="xs" />
@@ -133,7 +133,7 @@ export function ProviderKeyCard({
                     setEditing(false);
                   }
                 }}
-                className="h-8 pr-7 font-mono text-[11.5px]"
+                className="h-8 pr-7 font-mono text-ui"
               />
               <button
                 type="button"
@@ -149,21 +149,21 @@ export function ProviderKeyCard({
               size="sm"
               onClick={() => void submit()}
               disabled={saving || !value.trim()}
-              className="h-8 gap-1 px-3 text-[11px]"
+              className="h-8 gap-1 px-3 text-caption"
             >
               {saving ? <Spinner className="size-3" /> : null}
               Save
             </Button>
           </div>
           {error ? (
-            <p className="text-[10.5px] text-destructive">{error}</p>
+            <p className="text-caption text-destructive">{error}</p>
           ) : null}
         </div>
       ) : (
         <div className="flex items-center gap-1.5">
           <code
             className={cn(
-              "flex-1 truncate rounded bg-muted/40 px-2 py-1 font-mono text-[11px] text-muted-foreground",
+              "flex-1 truncate rounded bg-muted/40 px-2 py-1 font-mono text-caption text-muted-foreground",
             )}
           >
             {maskKey(currentKey ?? "")}

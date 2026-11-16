@@ -6,7 +6,7 @@ description: Nexis links a prebuilt ONNX Runtime for the Benchmark panel, revers
 # Bundling ONNX Runtime
 
 **Date:** 2026-09
-**Status:** active — landed in v1.27.0 with [[absorbing-the-nexis-apps]]
+**Status:** active, landed in v1.27.0 with [[absorbing-the-nexis-apps]]
 
 ## Context
 
@@ -49,7 +49,7 @@ one optional backend.
 
 `default-features = false` drops exactly one thing: `copy-dylibs`. That feature
 copies whatever shared libraries the downloaded ORT ships next to the built
-binary, and on Windows that is `DirectML.dll` — a GPU execution provider the
+binary, and on Windows that is `DirectML.dll`: a GPU execution provider the
 panel never requests. It was found by building and looking at what landed in
 `target/`, not by reading the manifest, and it mattered: `tauri build` does not
 bundle a stray sibling DLL, so a dev build and an installed build would have
@@ -67,7 +67,7 @@ Three alternatives were considered:
 - **A cargo feature, off by default.** Rejected: the default build would
   advertise a backend in its UI that the binary cannot run. A capability the
   UI names and the binary lacks is worse than either having it or not.
-- **Drop the ONNX backend.** Rejected for the reason above — it makes the
+- **Drop the ONNX backend.** Rejected for the reason above: it makes the
   panel's default state a simulation.
 - **Keep Benchmark a separate app.** Rejected in [[absorbing-the-nexis-apps]]
   for reasons that have nothing to do with size.
@@ -80,7 +80,7 @@ than 60 MB against a 10 MB budget.
 
 The support-surface half is the interesting one, and it turns out to be an
 argument about **training**, not about inference. A training engine is where
-the per-backend matrix and the GPU-driver surface live — CUDA, ROCm, Metal,
+the per-backend matrix and the GPU-driver surface live: CUDA, ROCm, Metal,
 wgpu, each with its own build and its own failure modes. `ort` with
 `download-binaries` is a fixed-size, CPU-by-default, prebuilt artifact with
 one build path. It has the shape the original argument ruled out only if you
@@ -95,7 +95,7 @@ measurement is linked in.**
 
 - **The Windows release binary goes from ~9.5 MiB to 29.7 MiB** (31,106,048
   bytes, measured on the v1.27.0 branch). ORT is therefore ~20 MiB of it, and
-  is the single largest thing in the tree — the first suspect in any future
+  is the single largest thing in the tree: the first suspect in any future
   size investigation. The 150 MB tripwire leaves roughly the same headroom
   ratio the old 40 MB one did over 9.5 MiB, which is the point: it is a
   regression guard, not a target to grow into.
@@ -111,17 +111,17 @@ measurement is linked in.**
   simulated numbers.
 - **There is no GPU path, and adding one is real work rather than a flag.** It
   means the execution-provider feature, the dylibs it drags in, and per-platform
-  `bundle.resources` config to ship them — which is precisely the support
+  `bundle.resources` config to ship them, which is precisely the support
   surface the original no-bundled-engine argument was objecting to. If someone
   wants DirectML/CUDA/CoreML benchmarking, that is the shape of the task.
 - ORT's own license and the licenses of what it pulls now matter to
   `cargo deny`. If `audit.yml` fails on a license after this change, this is
   why.
-- `docs/ML_SUITE.md`'s hard-limits bullet is amended rather than deleted — the
+- `docs/ML_SUITE.md`'s hard-limits bullet is amended rather than deleted: the
   training conclusion there is still correct and still load-bearing.
 
 ## See also
 
-- [[absorbing-the-nexis-apps]] — the change that forced this one
-- `docs/ML_SUITE.md` — the position this narrows
+- [[absorbing-the-nexis-apps]]: the change that forced this one
+- `docs/ML_SUITE.md`: the position this narrows
 - `docs/vault/subsystems/benchmark.md`

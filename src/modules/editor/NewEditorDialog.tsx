@@ -123,10 +123,10 @@ export function NewEditorDialog({
           placeholder="example.ts"
         />
         {error ? (
-          <div className="text-xs text-destructive">{error}</div>
+          <div className="text-ui text-destructive">{error}</div>
         ) : (
-          <div className="text-xs text-muted-foreground truncate">
-            {rootPath ? joinPath(rootPath, name.trim() || "…") : "—"}
+          <div className="text-ui text-muted-foreground truncate">
+            {rootPath ? joinPath(rootPath, name.trim() || "…") : "–"}
           </div>
         )}
         <DialogFooter>

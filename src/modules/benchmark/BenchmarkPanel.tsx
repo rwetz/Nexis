@@ -60,15 +60,15 @@ export function BenchmarkPanel() {
               <Icon name="activity" size="md" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-ui font-medium text-muted-foreground">
                 Local model performance
               </div>
-              <h1 className="truncate text-base font-semibold tracking-tight @4xl:text-lg">
+              <h1 className="truncate text-lg font-semibold tracking-tight">
                 Benchmark workspace
               </h1>
             </div>
           </div>
-          <div className="hidden items-center gap-2 text-xs text-muted-foreground @md:flex">
+          <div className="hidden items-center gap-2 text-ui text-muted-foreground @md:flex">
             {running ? (
               // A benchmark sweep is long-lived work the user started and
               // can stop -- the same shape as a training run or a background
@@ -82,10 +82,10 @@ export function BenchmarkPanel() {
               />
             ) : (
               <>
-                <span className="font-mono tabular-nums">{selectedModelIds.length}</span>
+                <span className="tabular-nums">{selectedModelIds.length}</span>
                 <span>models</span>
                 <span className="text-border">/</span>
-                <span className="font-mono tabular-nums">{selectedBackendIds.length}</span>
+                <span className="tabular-nums">{selectedBackendIds.length}</span>
                 <span>backends</span>
               </>
             )}
@@ -99,11 +99,11 @@ export function BenchmarkPanel() {
             <div className="flex items-end justify-between gap-3 px-1">
               <div>
                 <h2 className="text-sm font-semibold">Set up a comparison</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-ui text-muted-foreground">
                   Choose the models, engines, and workload you want to measure.
                 </p>
               </div>
-              <span className="hidden rounded-full border border-border bg-muted/40 px-2.5 py-1 font-mono text-[10px] text-muted-foreground tabular-nums @2xl:block">
+              <span className="hidden rounded-full border border-border bg-muted/40 px-2.5 py-1 text-micro text-muted-foreground tabular-nums @2xl:block">
                 {models.length} in library
               </span>
             </div>

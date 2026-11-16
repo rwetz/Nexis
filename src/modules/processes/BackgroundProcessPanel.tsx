@@ -24,7 +24,7 @@ export function BackgroundProcessPanel() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Processes
         </span>
         <button
@@ -42,10 +42,10 @@ export function BackgroundProcessPanel() {
         {processes.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-1.5 text-center">
             <Icon name="terminal" size="lg" className="text-muted-foreground/40" />
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               No background processes
             </p>
-            <p className="max-w-48 text-[10.5px] text-muted-foreground/60">
+            <p className="max-w-48 text-caption text-muted-foreground/60">
               Processes spawned via{" "}
               <code className="rounded bg-muted px-0.5 font-mono">
                 bash_background
@@ -58,7 +58,7 @@ export function BackgroundProcessPanel() {
             {running.length > 0 && (
               <div className="flex flex-col gap-0">
                 <div className="px-3 py-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
                     Running ({running.length})
                   </span>
                 </div>
@@ -70,7 +70,7 @@ export function BackgroundProcessPanel() {
             {exited.length > 0 && (
               <div className="flex flex-col gap-0">
                 <div className="px-3 py-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  <span className="text-micro font-semibold uppercase tracking-wider text-muted-foreground/70">
                     Exited ({exited.length})
                   </span>
                 </div>
@@ -100,7 +100,7 @@ function ProcessRow({
           <span
             className={cn(
               "h-2 w-2 rounded-full",
-              p.exit_code === 0 ? "bg-green-500/60" : "bg-destructive/60",
+              p.exit_code === 0 ? "bg-success/60" : "bg-destructive/60",
             )}
             title={`Exited ${p.exit_code ?? "?"}`}
           />
@@ -113,13 +113,13 @@ function ProcessRow({
       </div>
       <div className="min-w-0 flex-1">
         <p
-          className="truncate font-mono text-[11px] text-foreground"
+          className="truncate font-mono text-caption text-foreground"
           title={p.command}
         >
           {p.command}
         </p>
-        <p className="truncate text-[10px] text-muted-foreground" title={p.cwd ?? ""}>
-          {p.cwd ?? "—"} · {relativeTime(p.started_at_ms)}
+        <p className="truncate text-micro text-muted-foreground" title={p.cwd ?? ""}>
+          {p.cwd ?? "–"} · {relativeTime(p.started_at_ms)}
           {p.exited ? ` · exit ${p.exit_code ?? "?"}` : ""}
         </p>
       </div>

@@ -69,7 +69,7 @@ export function EnvironmentSection() {
 
       <div className="flex flex-col gap-2">
         {entries.length === 0 && (
-          <p className="text-[11.5px] text-muted-foreground">
+          <p className="text-ui text-muted-foreground">
             No environment variables set.
           </p>
         )}
@@ -78,12 +78,12 @@ export function EnvironmentSection() {
             key={key}
             className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/60 px-3 py-2"
           >
-            <span className="w-40 shrink-0 truncate font-mono text-[12px] font-medium">
+            <span className="w-40 shrink-0 truncate font-mono text-ui font-medium">
               {key}
             </span>
-            <span className="text-[11px] text-muted-foreground">=</span>
+            <span className="text-caption text-muted-foreground">=</span>
             <Input
-              className="h-7 min-w-0 flex-1 font-mono text-[12px]"
+              className="h-7 min-w-0 flex-1 font-mono text-ui"
               value={value}
               onChange={(e) => void handleValueChange(key, e.target.value)}
               onBlur={(e) => void handleValueChange(key, e.target.value)}
@@ -101,11 +101,11 @@ export function EnvironmentSection() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-[11.5px] font-medium text-muted-foreground">Add variable</p>
+        <p className="text-ui font-medium text-muted-foreground">Add variable</p>
         <div className="flex items-start gap-2">
           <div className="flex flex-col gap-1">
             <Input
-              className="h-8 w-40 font-mono text-[12px]"
+              className="h-8 w-40 font-mono text-ui"
               placeholder="NAME"
               value={newKey}
               onChange={(e) => {
@@ -117,12 +117,12 @@ export function EnvironmentSection() {
               }}
             />
             {keyError && (
-              <span className="text-[10.5px] text-destructive">{keyError}</span>
+              <span className="text-caption text-destructive">{keyError}</span>
             )}
           </div>
-          <span className="mt-2 text-[11px] text-muted-foreground">=</span>
+          <span className="mt-2 text-caption text-muted-foreground">=</span>
           <Input
-            className="h-8 min-w-0 flex-1 font-mono text-[12px]"
+            className="h-8 min-w-0 flex-1 font-mono text-ui"
             placeholder="value"
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}

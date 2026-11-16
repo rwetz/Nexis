@@ -135,7 +135,7 @@ function OpenError({ title, message, onEditRaw }: { title: string; message: stri
     <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
       <Icon name="alert-circle" size="xl" className="text-muted-foreground" />
       <div className="text-sm">Could not open {title}</div>
-      <div className="max-w-md text-xs text-muted-foreground">{message}</div>
+      <div className="max-w-md text-ui text-muted-foreground">{message}</div>
       <Button variant="outline" size="sm" onClick={onEditRaw}>
         Open as source
       </Button>
@@ -154,7 +154,7 @@ function HazardBanner({
   onOverride: () => void;
 }) {
   return (
-    <div role="status" className="flex items-start gap-2 border-b border-border/60 bg-muted/50 px-3 py-2 text-xs">
+    <div role="status" className="flex items-start gap-2 border-b border-border/60 bg-muted/50 px-3 py-2 text-ui">
       <Icon name="alert" size="sm" className="mt-0.5 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         Read-only: this file uses {hazards.map((h) => HAZARD_LABELS[h]).join(", ")}, which the rich editor would
@@ -175,7 +175,7 @@ function LossReport({ losses, warnings }: { losses: readonly DocxLoss[]; warning
   const [open, setOpen] = useState(false);
   if (losses.length === 0 && warnings.length === 0) return null;
   return (
-    <div role="status" className="border-b border-border/60 bg-muted/50 px-3 py-2 text-xs">
+    <div role="status" className="border-b border-border/60 bg-muted/50 px-3 py-2 text-ui">
       <button
         type="button"
         className="flex w-full items-center gap-2 text-left"
@@ -342,7 +342,7 @@ export function DocumentEditor({ tab, visible, onDirtyChange, onRepoint, onEditR
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6">
         {load.status === "loading" ? (
-          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Opening...</div>
+          <div className="flex h-full items-center justify-center text-ui text-muted-foreground">Opening...</div>
         ) : null}
         <EditorContent editor={editor} className={load.status === "loading" ? "hidden" : "h-full"} />
       </div>

@@ -38,7 +38,7 @@ export function AboutSection() {
     status.kind === "uptodate"
       ? "You're up to date"
       : status.kind === "error"
-        ? "Check failed — retry"
+        ? "Check failed: retry"
         : checking
           ? "Checking…"
           : downloading
@@ -75,26 +75,26 @@ export function AboutSection() {
       <div className="flex items-center gap-4 rounded-xl border border-border/60 bg-card/60 p-5">
         <img src="/nexis-logo.png" alt="Nexis" className="size-12" draggable={false} />
         <div className="flex min-w-0 flex-col">
-          <span className="text-[15px] font-semibold tracking-tight">
+          <span className="text-lg font-semibold tracking-tight">
             {name}
           </span>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-caption text-muted-foreground">
             Open-source AI-native terminal emulator
           </span>
-          <span className="mt-1 font-mono text-[11px] text-muted-foreground">
-            v{version || "—"}
+          <span className="mt-1 font-mono text-caption text-muted-foreground">
+            v{version || "–"}
           </span>
         </div>
       </div>
 
-      <dl className="grid grid-cols-[110px_1fr] gap-y-2.5 text-[12px]">
+      <dl className="grid grid-cols-[110px_1fr] gap-y-2.5 text-ui">
         <dt className="text-muted-foreground">Build</dt>
-        <dd className="font-mono text-[11.5px]">
+        <dd className="font-mono text-ui">
           {build ? `${build} · v${version}` : `v${version}`}
         </dd>
 
         <dt className="text-muted-foreground">Bundle ID</dt>
-        <dd className="font-mono text-[11.5px]">app.nexis.nexis</dd>
+        <dd className="font-mono text-ui">app.nexis.nexis</dd>
 
         <dt className="text-muted-foreground">License</dt>
         <dd>Apache 2.0</dd>
@@ -104,7 +104,7 @@ export function AboutSection() {
           <button
             type="button"
             onClick={() => void openHostUrl(REPO_URL)}
-            className="inline-flex items-center gap-1.5 rounded-md text-[12px] underline-offset-2 hover:text-foreground hover:underline"
+            className="inline-flex items-center gap-1.5 rounded-md text-ui underline-offset-2 hover:text-foreground hover:underline"
           >
             <Icon name="brand-github" />
             rwetz00/nexis
@@ -115,7 +115,7 @@ export function AboutSection() {
           <button
             type="button"
             onClick={() => void openHostUrl(WEBSITE)}
-            className="inline-flex items-center gap-1.5 rounded-md text-[12px] underline-offset-2 hover:text-foreground hover:underline"
+            className="inline-flex items-center gap-1.5 rounded-md text-ui underline-offset-2 hover:text-foreground hover:underline"
           >
             <Icon name="globe" />
             nexis.app
@@ -150,12 +150,12 @@ export function AboutSection() {
           </Button>
         </div>
         {status.kind === "error" && (
-          <p className="font-mono text-[10.5px] break-all text-destructive/80">
+          <p className="font-mono text-caption break-all text-destructive/80">
             {status.message}
           </p>
         )}
         {downloading && status.contentLength ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             {Math.min(
               100,
               Math.round((status.downloaded / status.contentLength) * 100),

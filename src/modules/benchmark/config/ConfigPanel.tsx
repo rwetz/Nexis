@@ -15,7 +15,7 @@ export function ConfigPanel() {
       <CardHeader className="pb-0">
         <div>
           <CardTitle className="text-sm">Workload</CardTitle>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">A repeatable test protocol</p>
+          <p className="mt-0.5 text-caption text-muted-foreground">A repeatable test protocol</p>
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -26,7 +26,7 @@ export function ConfigPanel() {
               key={t}
               onClick={() => setConfig({ task: t })}
               className={cn(
-                "rounded-md px-1.5 py-1.5 text-[11px] font-medium transition-colors",
+                "rounded-md px-1.5 py-1.5 text-caption font-medium transition-colors",
                 config.task === t
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground",
@@ -106,9 +106,9 @@ function PresetBar() {
   return (
     <div className="flex flex-col gap-1.5 border-t border-border/60 pt-3">
       <div className="flex items-center justify-between">
-        <span className="text-[10.5px] font-medium text-muted-foreground">Presets</span>
+        <span className="text-caption font-medium text-muted-foreground">Presets</span>
         {name === null ? (
-          <button onClick={() => setName("")} className="text-[10.5px] text-brand hover:underline">
+          <button onClick={() => setName("")} className="text-caption text-brand hover:underline">
             + Save current
           </button>
         ) : (
@@ -122,7 +122,7 @@ function PresetBar() {
             }}
             onBlur={commit}
             placeholder="preset name…"
-            className="h-6 w-32 rounded-md border border-border bg-input/40 px-2 text-[11px] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+            className="h-6 w-32 rounded-md border border-border bg-input/40 px-2 text-caption outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
           />
         )}
       </div>
@@ -131,7 +131,7 @@ function PresetBar() {
           {presets.map((p) => (
             <span
               key={p.id}
-              className="group flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px]"
+              className="group flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-caption"
             >
               <button onClick={() => applyPreset(p.id)} className="hover:text-foreground" title="Apply preset">
                 {p.name}
@@ -174,7 +174,7 @@ function NumberField({
     <div className="flex flex-col gap-1">
       <label
         htmlFor={id}
-        className="flex items-baseline justify-between text-[10.5px] font-medium text-muted-foreground"
+        className="flex items-baseline justify-between text-caption font-medium text-muted-foreground"
       >
         {label}
         {hint && <span className="text-muted-foreground/50">{hint}</span>}

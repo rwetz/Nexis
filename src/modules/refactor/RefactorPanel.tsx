@@ -56,7 +56,7 @@ const OPERATIONS: Operation[] = [
     id: "types",
     label: "Add Types",
     prompt: (code) =>
-      `Please add TypeScript type annotations to the following code:\n\n\`\`\`\n${code}\n\`\`\`\n\nProvide the fully typed version. Infer types from usage — avoid \`any\`.`,
+      `Please add TypeScript type annotations to the following code:\n\n\`\`\`\n${code}\n\`\`\`\n\nProvide the fully typed version. Infer types from usage: avoid \`any\`.`,
   },
   {
     id: "simplify",
@@ -121,17 +121,17 @@ export function RefactorPanel() {
       {/* Header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-2">
         <Icon name="code-box" className="text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Refactor
         </span>
-        <span className="ml-auto text-[9.5px] text-muted-foreground/50">
+        <span className="ml-auto text-micro text-muted-foreground/50">
           Alt+Shift+X to capture selection
         </span>
       </div>
 
       {/* Operation selector */}
       <div className="shrink-0 border-b border-border/30 px-3 py-2">
-        <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        <p className="mb-1.5 text-micro font-medium uppercase tracking-wider text-muted-foreground">
           Operation
         </p>
         <div className="flex flex-wrap gap-1">
@@ -141,7 +141,7 @@ export function RefactorPanel() {
               type="button"
               onClick={() => setSelectedOp(o.id)}
               className={cn(
-                "rounded px-2 py-0.5 text-[10.5px] font-medium transition-colors",
+                "rounded px-2 py-0.5 text-caption font-medium transition-colors",
                 selectedOp === o.id
                   ? "bg-primary/15 text-primary"
                   : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
@@ -156,14 +156,14 @@ export function RefactorPanel() {
       {/* Code input */}
       <div className="flex min-h-0 flex-1 flex-col p-3">
         <div className="flex shrink-0 items-center justify-between pb-1.5">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="text-micro font-medium uppercase tracking-wider text-muted-foreground">
             Code to refactor
           </p>
           {code && (
             <button
               type="button"
               onClick={() => setCode("")}
-              className="flex items-center gap-0.5 text-[9.5px] text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-0.5 text-micro text-muted-foreground hover:text-foreground"
             >
               <Icon name="close" size="xs" />
               Clear
@@ -179,7 +179,7 @@ export function RefactorPanel() {
           placeholder="Paste code here, or use Alt+Shift+X to capture the active editor selection…"
           className={cn(
             "min-h-0 flex-1 resize-none rounded-md border border-border/60",
-            "bg-muted/20 p-2.5 font-mono text-[11px] leading-relaxed text-foreground",
+            "bg-muted/20 p-2.5 font-mono text-caption leading-relaxed text-foreground",
             "outline-none placeholder:text-muted-foreground/40 focus:border-primary/50",
           )}
           onKeyDown={(e) => {
@@ -195,7 +195,7 @@ export function RefactorPanel() {
           onClick={() => void handleRefactor()}
           className={cn(
             "mt-3 flex w-full items-center justify-center gap-2 rounded-md py-2",
-            "text-[11.5px] font-medium transition-colors",
+            "text-ui font-medium transition-colors",
             "bg-primary/90 text-primary-foreground hover:bg-primary",
             "disabled:cursor-not-allowed disabled:opacity-50",
           )}
@@ -203,7 +203,7 @@ export function RefactorPanel() {
           <Icon name="ai-chat" />
           {sending ? "Sending to AI…" : `${op.label} with AI`}
         </button>
-        <p className="mt-1.5 text-center text-[9.5px] text-muted-foreground/50">
+        <p className="mt-1.5 text-center text-micro text-muted-foreground/50">
           Ctrl+Enter to send
         </p>
       </div>

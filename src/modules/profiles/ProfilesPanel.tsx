@@ -130,7 +130,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-caption font-semibold uppercase tracking-wider text-muted-foreground">
           Workspace Profiles
         </span>
         <Button size="icon" variant="ghost" className="h-6 w-6" onClick={startNew} title="New profile">
@@ -141,32 +141,32 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
       {/* Edit form */}
       {isEditing && (
         <div className="shrink-0 border-b border-border/50 bg-muted/20 p-3 space-y-2">
-          <p className="text-[11px] font-medium text-muted-foreground">
+          <p className="text-caption font-medium text-muted-foreground">
             {isNew ? "New profile" : "Edit profile"}
           </p>
           <div className="space-y-1.5">
             <div className="space-y-1">
-              <Label className="text-[10px]">Name</Label>
+              <Label className="text-micro">Name</Label>
               <Input
-                className="h-7 text-xs"
+                className="h-7 text-ui"
                 placeholder="My Profile"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px]">Root path *</Label>
+              <Label className="text-micro">Root path *</Label>
               <Input
-                className="h-7 font-mono text-xs"
+                className="h-7 font-mono text-ui"
                 placeholder="/home/user/project"
                 value={form.rootPath}
                 onChange={(e) => setForm((f) => ({ ...f, rootPath: e.target.value }))}
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px]">Env vars (KEY=VALUE, one per line)</Label>
+              <Label className="text-micro">Env vars (KEY=VALUE, one per line)</Label>
               <textarea
-                className="h-16 w-full resize-none rounded border border-border/60 bg-muted/30 px-2 py-1 font-mono text-[11px] text-foreground outline-none focus:border-primary/60"
+                className="h-16 w-full resize-none rounded border border-border/60 bg-muted/30 px-2 py-1 font-mono text-caption text-foreground outline-none focus:border-primary/60"
                 aria-label="Env vars (KEY=VALUE, one per line)"
                 placeholder={"NODE_ENV=development\nPORT=3000"}
                 value={form.envVarsRaw}
@@ -174,9 +174,9 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-[10px]">Startup command (optional)</Label>
+              <Label className="text-micro">Startup command (optional)</Label>
               <Input
-                className="h-7 font-mono text-xs"
+                className="h-7 font-mono text-ui"
                 placeholder="pnpm dev"
                 value={form.startupCommand}
                 onChange={(e) => setForm((f) => ({ ...f, startupCommand: e.target.value }))}
@@ -184,13 +184,13 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
             </div>
           </div>
           <div className="flex justify-end gap-1.5 pt-1">
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={cancelEdit}>
+            <Button size="sm" variant="ghost" className="h-6 text-ui" onClick={cancelEdit}>
               <Icon name="close" size="xs" className="mr-1" />
               Cancel
             </Button>
             <Button
               size="sm"
-              className="h-6 text-xs"
+              className="h-6 text-ui"
               onClick={saveEdit}
               disabled={!form.rootPath.trim()}
             >
@@ -205,11 +205,11 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
         {profiles.length === 0 && !isEditing ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
             <Icon name="settings" size="xl" className="text-muted-foreground/30" />
-            <p className="text-xs text-muted-foreground">No profiles yet.</p>
-            <p className="text-[10px] text-muted-foreground/60">
+            <p className="text-ui text-muted-foreground">No profiles yet.</p>
+            <p className="text-micro text-muted-foreground/60">
               Save a named configuration to quickly switch contexts.
             </p>
-            <Button size="sm" variant="outline" className="mt-1 h-6 text-xs" onClick={startNew}>
+            <Button size="sm" variant="outline" className="mt-1 h-6 text-ui" onClick={startNew}>
               Create profile
             </Button>
           </div>
@@ -232,20 +232,20 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
                     className={cn( "mt-0.5 shrink-0", isActive ? "text-primary/70" : "text-muted-foreground/60", )}
                   />
                   <div className="min-w-0 flex-1">
-                    <p className={cn("truncate text-xs font-medium", isActive && "text-primary")}>
+                    <p className={cn("truncate text-ui font-medium", isActive && "text-primary")}>
                       {p.name}
                     </p>
-                    <p className="truncate font-mono text-[10px] text-muted-foreground/70">
+                    <p className="truncate font-mono text-micro text-muted-foreground/70">
                       {p.rootPath}
                     </p>
                     <div className="mt-0.5 flex flex-wrap gap-1">
                       {envCount > 0 && (
-                        <span className="rounded bg-muted/60 px-1 py-0.5 font-mono text-[9px] text-muted-foreground">
+                        <span className="rounded bg-muted/60 px-1 py-0.5 font-mono text-micro text-muted-foreground">
                           {envCount} env var{envCount !== 1 ? "s" : ""}
                         </span>
                       )}
                       {p.startupCommand && (
-                        <span className="rounded bg-muted/60 px-1 py-0.5 font-mono text-[9px] text-muted-foreground truncate max-w-[120px]">
+                        <span className="rounded bg-muted/60 px-1 py-0.5 font-mono text-micro text-muted-foreground truncate max-w-[120px]">
                           {p.startupCommand}
                         </span>
                       )}
@@ -275,7 +275,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
                       </Button>
                     </div>
                     {activated ? (
-                      <div className="flex items-center gap-1 text-[10px] text-green-500">
+                      <div className="flex items-center gap-1 text-micro text-success">
                         <Icon name="success" size="xs" />
                         Activated
                       </div>
@@ -283,7 +283,7 @@ export function ProfilesPanel({ currentPath, onActivate }: Props) {
                       <Button
                         size="sm"
                         variant={isActive ? "outline" : "default"}
-                        className="h-5 text-[10px] px-2"
+                        className="h-5 text-micro px-2"
                         onClick={() => handleActivate(p)}
                       >
                         {isActive ? "Reopen" : "Activate"}

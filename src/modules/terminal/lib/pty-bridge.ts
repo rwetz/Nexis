@@ -102,7 +102,7 @@ export async function openPty(
     // shell starts in its default directory instead of never starting.
     if (!cwd || !String(e).includes("cwd not accessible")) throw e;
     console.warn(
-      `[nexis] cwd ${cwd} is inaccessible — falling back to the default directory:`,
+      `[nexis] cwd ${cwd} is inaccessible, falling back to the default directory:`,
       e,
     );
     id = await ipc.call(openCommand, spawnArgs(null));

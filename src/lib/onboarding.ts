@@ -73,7 +73,7 @@ const STEPS: readonly OnboardingStep[] = [
   {
     id: "ai.open",
     label: "Open the AI agent",
-    why: "It reads your files and runs commands — this is the part that is not just a terminal.",
+    why: "It reads your files and runs commands: this is the part that is not just a terminal.",
     icon: "ai-chat",
     keys: ["MOD", "I"],
     action: { kind: "ai-panel" },
@@ -116,7 +116,7 @@ const STEPS: readonly OnboardingStep[] = [
   {
     id: "files.quickOpen",
     label: "Jump to a file",
-    why: "Fuzzy match on the whole workspace — faster than the tree once you know a filename.",
+    why: "Fuzzy match on the whole workspace: faster than the tree once you know a filename.",
     icon: "search",
     keys: ["MOD", "P"],
     action: { kind: "quick-open" },
@@ -161,7 +161,7 @@ const STEPS: readonly OnboardingStep[] = [
   {
     id: "ml.open",
     label: `Open ${TOOL_NAMES.mlLab}, the ML lab`,
-    why: "Train and inspect a small model locally — no notebook server, no cloud account.",
+    why: "Train and inspect a small model locally: no notebook server, no cloud account.",
     icon: "brain",
     action: { kind: "sidebar", view: "ml" },
     pack: "ml-lab",
@@ -169,7 +169,7 @@ const STEPS: readonly OnboardingStep[] = [
   {
     id: "packs.tune",
     label: "Tune which panels you see",
-    why: "Your preset was only a starting point — every pack is a switch you can flip later.",
+    why: "Your preset was only a starting point: every pack is a switch you can flip later.",
     icon: "settings",
     // No coach-mark: it pointed at the rail's overflow menu, which no longer
     // exists. The checklist row opens Settings -> Features directly.

@@ -448,7 +448,7 @@ mod tests {
         assert_eq!(
             second.cpu_per_core.len(),
             first.cpu_per_core.len(),
-            "core count must be stable between samples — the panel indexes history by core"
+            "core count must be stable between samples: the panel indexes history by core"
         );
         for (i, core) in second.cpu_per_core.iter().enumerate() {
             assert!(

@@ -9,7 +9,7 @@ import { TOOL_NAMES } from "@/lib/toolNames";
 import { joinPath, openInEpoch, openNexisTool } from "@/modules/window/toolLinks";
 
 const LINK =
-  "inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[10.5px] text-muted-foreground transition-colors hover:text-foreground";
+  "inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-caption text-muted-foreground transition-colors hover:text-foreground";
 
 /**
  * Synapse's way out to the other two ML tools, beside the export buttons:

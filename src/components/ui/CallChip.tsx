@@ -60,7 +60,7 @@ export function CallChip({
   return (
     <span
       className={cn(
-        "flex h-6 items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 pr-1 pl-2 text-[11px]",
+        "flex h-6 items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 pr-1 pl-2 text-caption",
         className,
       )}
     >
@@ -68,7 +68,7 @@ export function CallChip({
           happening now" rhythm. */}
       <span
         aria-hidden
-        className="nexis-blink size-1.5 shrink-0 rounded-full bg-emerald-500"
+        className="nexis-blink size-1.5 shrink-0 rounded-full bg-success"
       />
       <button
         type="button"

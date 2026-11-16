@@ -21,7 +21,7 @@ export const epochCapability: CapabilityDefinition = {
   toolWindows: [{
     id: "epoch",
     label: TOOL_NAMES.epoch,
-    title: `${TOOL_NAMES.epoch} — Nexis`,
+    title: `${TOOL_NAMES.epoch} · Nexis`,
     icon: "clock",
     pack: "ml-lab",
     // Epoch's Studio is five panels wide; it is laid out for a big window.

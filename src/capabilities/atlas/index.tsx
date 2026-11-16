@@ -15,7 +15,7 @@ export const atlasCapability: CapabilityDefinition = {
   id: "atlas.main",
   panels: [{ id: "atlas:main", legacyView: "atlas", title: "Atlas", location: "sidebar", icon: "map", group: "Navigation", pack: "dev-tools", lifecycle: "unmount", render: () => <AtlasCapabilityPanel /> }],
   toolWindows: [{
-    id: "atlas", label: "Atlas", title: "Atlas — Nexis", icon: "map",
+    id: "atlas", label: "Atlas", title: "Atlas · Nexis", icon: "map",
     width: 1440, height: 860, minWidth: 720, minHeight: 500, header: "featured",
     // The companion window has no tabs and no workspace of its own, so the
     // three actions that need them are forwarded to the main window instead
