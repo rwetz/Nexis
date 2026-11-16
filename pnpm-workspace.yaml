@@ -14,7 +14,11 @@ minimumReleaseAge: 1440
 # transitives have moved to provenance-attested releases.
 
 allowBuilds:
-  '@nexis-epoch/desktop@https://codeload.github.com/rwetz/nexis-epoch/tar.gz/e03b852ede4043b154735b05e3ea28b721b9042e#path:/apps/desktop': false
+  # Its only build script is a postinstall that copies @nexis/design cursor PNGs
+  # into the epoch package's own public/ inside node_modules. Nexis serves its own
+  # assets, so skip it. Keyed by name (not commit) so an epoch bump can't re-break
+  # `pnpm install` with ERR_PNPM_IGNORED_BUILDS, which failed nightly E2E.
+  '@nexis-epoch/desktop': false
   edgedriver: false
   esbuild: true
   geckodriver: false
