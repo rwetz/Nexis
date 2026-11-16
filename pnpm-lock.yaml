@@ -121,10 +121,10 @@ importers:
         version: 1.2.5
       '@nexis-epoch/desktop':
         specifier: github:rwetz/nexis-epoch#e03b852ede4043b154735b05e3ea28b721b9042e&path:/apps/desktop
-        version: https://codeload.github.com/rwetz/nexis-epoch/tar.gz/e03b852ede4043b154735b05e3ea28b721b9042e#path:/apps/desktop(6bdefc7bfbf634652078c908349cb89b)
+        version: https://codeload.github.com/rwetz/nexis-epoch/tar.gz/e03b852ede4043b154735b05e3ea28b721b9042e#path:/apps/desktop(a6e641a2687a186abc76b0489f53e536)
       '@nexis/design':
         specifier: github:rwetz/nexis-design#83dfc211b2f4372e640a8c72d7e996ad53041978
-        version: https://codeload.github.com/rwetz/nexis-design/tar.gz/83dfc211b2f4372e640a8c72d7e996ad53041978(@codemirror/view@6.43.13)(@fontsource-variable/geist-mono@5.3.0)(@fontsource-variable/inter@5.3.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/react-virtual@3.14.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tauri-apps/api@2.12.2)(@tauri-apps/plugin-os@2.4.0)(class-variance-authority@0.7.1)(clsx@2.1.1)(cmdk@1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(motion@13.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(ogl@1.0.11)(radix-ui@1.4.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react-resizable-panels@4.12.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(sonner@2.0.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(tailwind-merge@3.6.0)(tailwindcss@4.3.3)(tw-animate-css@1.4.0)
+        version: https://codeload.github.com/rwetz/nexis-design/tar.gz/83dfc211b2f4372e640a8c72d7e996ad53041978(@codemirror/view@6.43.13)(@fontsource-variable/geist-mono@5.3.0)(@fontsource-variable/inter@5.3.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/react-virtual@3.14.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tauri-apps/api@2.12.2)(@tauri-apps/plugin-os@2.4.0)(class-variance-authority@0.7.1)(clsx@2.1.1)(cmdk@1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(motion@13.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(ogl@1.0.11)(radix-ui@1.4.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react-resizable-panels@4.12.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(sonner@2.0.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(tailwind-merge@3.7.0)(tailwindcss@4.3.3)(tw-animate-css@1.4.0)
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -297,8 +297,8 @@ importers:
         specifier: ^2.5.0
         version: 2.5.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@8.1.1)
       tailwind-merge:
-        specifier: ^3.6.0
-        version: 3.6.0
+        specifier: ^3.7.0
+        version: 3.7.0
       tokenlens:
         specifier: ^1.3.1
         version: 1.3.1
@@ -7408,8 +7408,8 @@ packages:
     resolution: {integrity: sha512-yEFYrVhod+hdNyx7g5Bnkkb0G6si8HJurOoOEgC8B/O0uXLHlaey/65KRv6cuWBNhBgHKAROVpc7QyYqE5gFng==}
     engines: {node: '>=20'}
 
-  tailwind-merge@3.6.0:
-    resolution: {integrity: sha512-uxL7qAVQriqRQPAyK3pj66VqskWqoZ37PW94jwOTwNfq/z9oyu1V+eqrZqtR2+fCiXdYOZe/Modt8GtvqNzu+w==}
+  tailwind-merge@3.7.0:
+    resolution: {integrity: sha512-XPPUyAc+cvspz3lHTcR/QgPfW2A0lv/xQNIjX3HGhLR+Nq2lHaLq5MtTesHn8GUr3W3DguT2KT5x3NVgRtYwmA==}
 
   tailwindcss@4.2.3:
     resolution: {integrity: sha512-fA/NX5gMf0ooCLISgB0wScaWgaj6rjTN2SVAwleURjiya7ITNkV+VMmoHtKkldP6CIZoYCZyxb8zP/e2TWoEtQ==}
@@ -9331,7 +9331,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.3
     optional: true
 
-  '@nexis-epoch/desktop@https://codeload.github.com/rwetz/nexis-epoch/tar.gz/e03b852ede4043b154735b05e3ea28b721b9042e#path:/apps/desktop(6bdefc7bfbf634652078c908349cb89b)':
+  '@nexis-epoch/desktop@https://codeload.github.com/rwetz/nexis-epoch/tar.gz/e03b852ede4043b154735b05e3ea28b721b9042e#path:/apps/desktop(a6e641a2687a186abc76b0489f53e536)':
     dependencies:
       '@codemirror/autocomplete': 6.20.3
       '@codemirror/commands': 6.11.1
@@ -9346,7 +9346,7 @@ snapshots:
       '@fontsource-variable/geist-mono': 5.3.0
       '@fontsource-variable/space-grotesk': 5.3.0
       '@lezer/highlight': 1.2.5
-      '@nexis/design': https://codeload.github.com/rwetz/nexis-design/tar.gz/83dfc211b2f4372e640a8c72d7e996ad53041978(@codemirror/view@6.43.13)(@fontsource-variable/geist-mono@5.3.0)(@fontsource-variable/inter@5.3.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/react-virtual@3.14.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tauri-apps/api@2.12.2)(@tauri-apps/plugin-os@2.4.0)(class-variance-authority@0.7.1)(clsx@2.1.1)(cmdk@1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(motion@13.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(ogl@1.0.11)(radix-ui@1.4.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react-resizable-panels@4.12.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(sonner@2.0.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(tailwind-merge@3.6.0)(tailwindcss@4.3.3)(tw-animate-css@1.4.0)
+      '@nexis/design': https://codeload.github.com/rwetz/nexis-design/tar.gz/83dfc211b2f4372e640a8c72d7e996ad53041978(@codemirror/view@6.43.13)(@fontsource-variable/geist-mono@5.3.0)(@fontsource-variable/inter@5.3.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/react-virtual@3.14.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tauri-apps/api@2.12.2)(@tauri-apps/plugin-os@2.4.0)(class-variance-authority@0.7.1)(clsx@2.1.1)(cmdk@1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(motion@13.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(ogl@1.0.11)(radix-ui@1.4.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react-resizable-panels@4.12.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(sonner@2.0.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(tailwind-merge@3.7.0)(tailwindcss@4.3.3)(tw-animate-css@1.4.0)
       '@phosphor-icons/react': 2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-table': 8.21.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-virtual': 3.14.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -9364,7 +9364,7 @@ snapshots:
       react-dom: 19.3.0(react@19.3.0)
       react-resizable-panels: 4.12.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       sonner: 2.0.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      tailwind-merge: 3.6.0
+      tailwind-merge: 3.7.0
       tailwindcss: 4.3.3
       tw-animate-css: 1.4.0
       zustand: 5.0.15(@types/react@19.3.0)(immer@11.1.17)(react@19.3.0)(use-sync-external-store@1.6.0(react@19.3.0))
@@ -9374,7 +9374,7 @@ snapshots:
       - immer
       - use-sync-external-store
 
-  ? '@nexis/design@https://codeload.github.com/rwetz/nexis-design/tar.gz/83dfc211b2f4372e640a8c72d7e996ad53041978(@codemirror/view@6.43.13)(@fontsource-variable/geist-mono@5.3.0)(@fontsource-variable/inter@5.3.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/react-virtual@3.14.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tauri-apps/api@2.12.2)(@tauri-apps/plugin-os@2.4.0)(class-variance-authority@0.7.1)(clsx@2.1.1)(cmdk@1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(motion@13.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(ogl@1.0.11)(radix-ui@1.4.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react-resizable-panels@4.12.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(sonner@2.0.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(tailwind-merge@3.6.0)(tailwindcss@4.3.3)(tw-animate-css@1.4.0)'
+  ? '@nexis/design@https://codeload.github.com/rwetz/nexis-design/tar.gz/83dfc211b2f4372e640a8c72d7e996ad53041978(@codemirror/view@6.43.13)(@fontsource-variable/geist-mono@5.3.0)(@fontsource-variable/inter@5.3.0)(@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tanstack/react-virtual@3.14.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@tauri-apps/api@2.12.2)(@tauri-apps/plugin-os@2.4.0)(class-variance-authority@0.7.1)(clsx@2.1.1)(cmdk@1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(motion@13.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(ogl@1.0.11)(radix-ui@1.4.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react-resizable-panels@4.12.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)(sonner@2.0.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(tailwind-merge@3.7.0)(tailwindcss@4.3.3)(tw-animate-css@1.4.0)'
   : dependencies:
       '@fontsource-variable/geist-mono': 5.3.0
       '@fontsource-variable/inter': 5.3.0
@@ -9389,7 +9389,7 @@ snapshots:
       react-dom: 19.3.0(react@19.3.0)
       react-resizable-panels: 4.12.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       sonner: 2.0.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      tailwind-merge: 3.6.0
+      tailwind-merge: 3.7.0
       tailwindcss: 4.3.3
       tw-animate-css: 1.4.0
     optionalDependencies:
@@ -11623,7 +11623,7 @@ snapshots:
       expect-webdriverio: 5.6.7(@wdio/globals@9.27.2)(@wdio/logger@9.29.1)(webdriverio@9.32.0(supports-color@8.1.1))
       webdriverio: 9.32.0(supports-color@8.1.1)
 
-  '@wdio/globals@9.31.3(expect-webdriverio@6.1.0(@wdio/globals@9.27.2)(@wdio/logger@9.29.1)(webdriverio@9.32.0(supports-color@8.1.1)))(webdriverio@9.32.0(supports-color@8.1.1))':
+  '@wdio/globals@9.31.3(expect-webdriverio@6.1.0)(webdriverio@9.32.0(supports-color@8.1.1))':
     dependencies:
       expect-webdriverio: 6.1.0(@wdio/globals@9.27.2)(@wdio/logger@9.29.1)(webdriverio@9.32.0(supports-color@8.1.1))
       webdriverio: 9.32.0(supports-color@8.1.1)
@@ -11633,7 +11633,7 @@ snapshots:
       '@types/node': 20.19.43
       '@wdio/logger': 9.29.1
       '@wdio/repl': 9.16.2
-      '@wdio/runner': 9.32.0(expect-webdriverio@6.1.0(@wdio/globals@9.27.2)(@wdio/logger@9.29.1)(webdriverio@9.32.0(supports-color@8.1.1)))(supports-color@8.1.1)(webdriverio@9.32.0(supports-color@8.1.1))
+      '@wdio/runner': 9.32.0(expect-webdriverio@6.1.0)(supports-color@8.1.1)(webdriverio@9.32.0(supports-color@8.1.1))
       '@wdio/types': 9.32.0
       '@wdio/xvfb': 9.32.0
       exit-hook: 4.0.0
@@ -11696,12 +11696,12 @@ snapshots:
       diff: 8.0.4
       object-inspect: 1.13.4
 
-  '@wdio/runner@9.32.0(expect-webdriverio@6.1.0(@wdio/globals@9.27.2)(@wdio/logger@9.29.1)(webdriverio@9.32.0(supports-color@8.1.1)))(supports-color@8.1.1)(webdriverio@9.32.0(supports-color@8.1.1))':
+  '@wdio/runner@9.32.0(expect-webdriverio@6.1.0)(supports-color@8.1.1)(webdriverio@9.32.0(supports-color@8.1.1))':
     dependencies:
       '@types/node': 20.19.43
       '@wdio/config': 9.32.0(supports-color@8.1.1)
       '@wdio/dot-reporter': 9.32.0
-      '@wdio/globals': 9.31.3(expect-webdriverio@6.1.0(@wdio/globals@9.27.2)(@wdio/logger@9.29.1)(webdriverio@9.32.0(supports-color@8.1.1)))(webdriverio@9.32.0(supports-color@8.1.1))
+      '@wdio/globals': 9.31.3(expect-webdriverio@6.1.0)(webdriverio@9.32.0(supports-color@8.1.1))
       '@wdio/logger': 9.29.1
       '@wdio/types': 9.32.0
       '@wdio/utils': 9.32.0(supports-color@8.1.1)
@@ -15571,7 +15571,7 @@ snapshots:
       prompts: 2.4.2
       recast: 0.23.11
       stringify-object: 5.0.0
-      tailwind-merge: 3.6.0
+      tailwind-merge: 3.7.0
       ts-morph: 26.0.0
       tsconfig-paths: 4.2.0
       validate-npm-package-name: 7.0.2
@@ -15709,7 +15709,7 @@ snapshots:
       remark-parse: 11.0.0(supports-color@8.1.1)
       remark-rehype: 11.1.2
       remend: 1.3.0
-      tailwind-merge: 3.6.0
+      tailwind-merge: 3.7.0
       unified: 11.0.5
       unist-util-visit: 5.1.0
       unist-util-visit-parents: 6.0.2
@@ -15826,7 +15826,7 @@ snapshots:
 
   tagged-tag@1.0.0: {}
 
-  tailwind-merge@3.6.0: {}
+  tailwind-merge@3.7.0: {}
 
   tailwindcss@4.2.3: {}
 
