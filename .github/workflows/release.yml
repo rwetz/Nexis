@@ -111,7 +111,7 @@ jobs:
           echo "Found artifacts: $found"
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3
         with:
           name: "Nexis ${{ github.ref_name }}"
           generate_release_notes: true
@@ -212,7 +212,7 @@ jobs:
       # No size tripwire here — that ceiling is about the Windows exe; a Linux
       # AppImage bundles webkit2gtk and is expected to be much larger.
       - name: Create GitHub release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3
         with:
           name: "Nexis ${{ github.ref_name }}"
           files: |
@@ -341,7 +341,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3
         with:
           name: "Nexis ${{ github.ref_name }}"
           fail_on_unmatched_files: true
