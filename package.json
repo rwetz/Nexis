@@ -54,7 +54,7 @@
     "@iconify-json/catppuccin": "^1.2.17",
     "@lezer/highlight": "^1.2.4",
     "@nexis-epoch/desktop": "github:rwetz/nexis-epoch#e03b852ede4043b154735b05e3ea28b721b9042e&path:/apps/desktop",
-    "@nexis/design": "github:rwetz/nexis-design#83dfc211b2f4372e640a8c72d7e996ad53041978",
+    "@nexis/design": "github:rwetz/nexis-design#semver:^0.3.0",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-use-controllable-state": "^1.2.6",
     "@replit/codemirror-vim": "^6.3.0",
