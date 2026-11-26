@@ -25,11 +25,12 @@
 import { defineCommand } from "@/platform/ipc";
 import { hostIpc } from "@/platform/tauri";
 import { revealPathInHost } from "@/platform/opener";
-import type { AtlasResult, RepoCity, RepoDetail } from "./types";
+import type { AtlasResult, PrReport, RepoCity, RepoDetail } from "./types";
 
 const scan = defineCommand<Record<string, never>, AtlasResult>("atlas_scan_repos", "host");
 const detail = defineCommand<{ path: string }, RepoDetail>("atlas_repo_detail", "host");
 const city = defineCommand<{ path: string }, RepoCity>("atlas_repo_city", "host");
+const openPrs = defineCommand<{ slugs: string[] }, PrReport>("atlas_open_prs", "host");
 const config = defineCommand<Record<string, never>, string>("atlas_config_path", "host");
 
 /** One scan, both views: git state for the list, size and language mix for
@@ -47,6 +48,13 @@ export function fetchRepoDetail(path: string): Promise<RepoDetail> {
 /** The map view's drill-in: the full file tree for one repo. */
 export function fetchRepoCity(path: string): Promise<RepoCity> {
   return hostIpc.call(city, { path });
+}
+
+/** Open-PR counts for `owner/name` slugs, through the user's own `gh` login.
+ *  Never rejects for "no gh" or "offline": those come back as
+ *  `available: false` with a reason. Cached on the Rust side for ten minutes. */
+export function fetchOpenPrs(slugs: string[]): Promise<PrReport> {
+  return hostIpc.call(openPrs, { slugs });
 }
 
 /** Show a repo directory in the OS file manager. */

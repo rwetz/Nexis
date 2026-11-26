@@ -39,7 +39,7 @@ pub struct RepoCity {
     pub elapsed_ms: u64,
 }
 
-pub fn build(root: &Path, limit: usize) -> Result<RepoCity, String> {
+pub fn build(root: &Path, limit: usize, stale_days: u32) -> Result<RepoCity, String> {
     let started = Instant::now();
     // One pass: the summary, the file list and the open repo all come from the
     // same walk. Doing `summarize` and then walking again cost two full
@@ -48,7 +48,7 @@ pub fn build(root: &Path, limit: usize) -> Result<RepoCity, String> {
         summary,
         walked,
         repo,
-    } = scan::scan_repo(root, limit);
+    } = scan::scan_repo(root, limit, stale_days);
     // Per-file codes need the recursive-untracked variant, which is a
     // different query from the counts `summarize` already took.
     let statuses = repo.as_ref().map(scan::status_map).unwrap_or_default();
@@ -241,7 +241,7 @@ mod tests {
         git(&tmp, &["commit", "-m", "first"]);
         std::fs::write(tmp.join("README.md"), "# hi\n# again\n").unwrap();
 
-        let city = build(&tmp, 1000).expect("builds");
+        let city = build(&tmp, 1000, 30).expect("builds");
         assert_eq!(city.summary.branch, "main");
         assert_eq!(city.summary.unstaged, 1);
         assert!(city.root.is_dir);

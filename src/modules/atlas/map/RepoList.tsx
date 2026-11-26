@@ -2,7 +2,13 @@ import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAtlasStore } from "@/modules/atlas/repos/store";
-import { dirtyCount, formatCount, relativeTime, type RepoSummary } from "@/modules/atlas/repos/types";
+import {
+  dirtyCount,
+  formatCount,
+  hygieneCount,
+  relativeTime,
+  type RepoSummary,
+} from "@/modules/atlas/repos/types";
 
 /** The rail on the left: every repo the config found, and the way back out
  *  of a city. Deliberately text-only — the canvas is where the shapes live.
@@ -15,6 +21,7 @@ export function RepoList() {
   const activeRepo = useAtlasStore((s) => s.activeRepo);
   const selectedPath = useAtlasStore((s) => s.selectedPath);
   const enterRepo = useAtlasStore((s) => s.enterRepo);
+  const prs = useAtlasStore((s) => s.prs);
   const backToAtlas = useAtlasStore((s) => s.backToAtlas);
 
   // Inside a city the rail marks where you are; out in the atlas it marks
@@ -47,6 +54,7 @@ export function RepoList() {
             key={repo.path}
             repo={repo}
             active={repo.path === marked}
+            hygiene={hygieneCount(repo, prs)}
             onOpen={() => void enterRepo(repo.path)}
           />
         ))}
@@ -58,10 +66,12 @@ export function RepoList() {
 function RepoRow({
   repo,
   active,
+  hygiene,
   onOpen,
 }: {
   repo: RepoSummary;
   active: boolean;
+  hygiene: number;
   onOpen: () => void;
 }) {
   const dirty = dirtyCount(repo);
@@ -84,6 +94,13 @@ function RepoRow({
           <span
             className="size-1.5 shrink-0 rounded-full bg-[var(--brand)]"
             aria-label={`${dirty} uncommitted changes`}
+          />
+        )}
+        {hygiene > 0 && (
+          <span
+            className="size-1.5 shrink-0 rotate-45 rounded-[1px] bg-warning"
+            title={`${hygiene} to tidy: stale branches, worktrees, open PRs`}
+            aria-label={`${hygiene} cleanup items`}
           />
         )}
       </span>

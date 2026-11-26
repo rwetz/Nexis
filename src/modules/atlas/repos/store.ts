@@ -1,7 +1,15 @@
 import { toast } from "sonner";
 import { create } from "zustand";
-import { fetchRepoCity, fetchRepoDetail, scanRepos } from "./api";
-import { displayOrder, type RepoCity, type RepoDetail, type RepoSummary } from "./types";
+import { fetchOpenPrs, fetchRepoCity, fetchRepoDetail, scanRepos } from "./api";
+import {
+  displayOrder,
+  type ListSort,
+  type ListView,
+  type PrCounts,
+  type RepoCity,
+  type RepoDetail,
+  type RepoSummary,
+} from "./types";
 // Type-only: the store holds the canvas's current block but never imports the
 // renderer. `layout` depends on `./types`, not on this file, so there is no cycle.
 import type { Block } from "@/modules/atlas/map/layout";
@@ -29,7 +37,17 @@ type AtlasState = {
    *  the two apps are one app. */
   selectedPath: string | null;
 
+  // ── repo hygiene ─────────────────────────────────────────────────────────
+  /** Open PRs by `owner/name`, filled in after the scan by a separate,
+   *  optional `gh` call. Empty until (and unless) it answers. */
+  prs: Record<string, PrCounts>;
+  /** Why the PR counts are missing (no `gh`, offline, disabled), or null. */
+  prsUnavailable: string | null;
+
   // ── list view ────────────────────────────────────────────────────────────
+  listSort: ListSort;
+  /** Show only repos with something to tidy. */
+  attentionOnly: boolean;
   detailOpen: boolean;
   detail: RepoDetail | null;
   detailLoading: boolean;
@@ -51,6 +69,11 @@ type AtlasState = {
   fitNonce: number;
 
   refresh: () => Promise<void>;
+  loadPrs: () => Promise<void>;
+  setListSort: (sort: ListSort) => void;
+  toggleAttentionOnly: () => void;
+  /** The list's arrangement, for `displayOrder`. */
+  listView: () => ListView;
   /** Open one of the repositories already admitted by Atlas's scan. */
   showRepo: (path: string) => Promise<void>;
 
@@ -85,6 +108,11 @@ export const useAtlasStore = create<AtlasState>((set, get) => ({
   mode: "list",
   selectedPath: null,
 
+  prs: {},
+  prsUnavailable: null,
+  listSort: "name",
+  attentionOnly: false,
+
   detailOpen: false,
   detail: null,
   detailLoading: false,
@@ -118,10 +146,14 @@ export const useAtlasStore = create<AtlasState>((set, get) => ({
         // scan order, so the highlight lands where the eye already is.
         selectedPath: stillThere
           ? s.selectedPath
-          : (displayOrder(result.repos, s.mode)[0]?.path ?? null),
+          : (displayOrder(result.repos, s.mode, s.listView())[0]?.path ?? null),
         detailOpen: s.detailOpen && stillThere,
         detail: stillThere ? s.detail : null,
       }));
+
+      // Off the critical path: the list is already on screen, and a slow or
+      // missing `gh` must only ever delay a badge.
+      void get().loadPrs();
 
       // Both drill-ins are stale now; refresh whichever one is open.
       if (get().detailOpen) await get().openDetail();
@@ -141,6 +173,33 @@ export const useAtlasStore = create<AtlasState>((set, get) => ({
     } finally {
       set({ scanning: false });
     }
+  },
+
+  loadPrs: async () => {
+    const slugs = get()
+      .repos.map((r) => r.health.github)
+      .filter((s): s is string => s !== null);
+    if (slugs.length === 0) return;
+    try {
+      const report = await fetchOpenPrs(slugs);
+      set({
+        prs: report.counts,
+        prsUnavailable: report.available ? null : report.reason,
+      });
+    } catch (e) {
+      // Not a toast: PR counts are an extra, and an error here would repeat
+      // on every refresh for anyone without `gh`.
+      set({ prsUnavailable: String(e) });
+    }
+  },
+
+  setListSort: (sort) => set({ listSort: sort }),
+
+  toggleAttentionOnly: () => set((s) => ({ attentionOnly: !s.attentionOnly })),
+
+  listView: () => {
+    const { listSort, attentionOnly, prs } = get();
+    return { sort: listSort, attentionOnly, prs };
   },
 
   showRepo: async (path) => {
@@ -181,7 +240,7 @@ export const useAtlasStore = create<AtlasState>((set, get) => ({
   moveSelection: (delta) => {
     const { repos, selectedPath, mode } = get();
     if (repos.length === 0) return;
-    const ordered = displayOrder(repos, mode);
+    const ordered = displayOrder(repos, mode, get().listView());
     const idx = ordered.findIndex((r) => r.path === selectedPath);
     const next =
       idx === -1 ? 0 : Math.min(ordered.length - 1, Math.max(0, idx + delta));

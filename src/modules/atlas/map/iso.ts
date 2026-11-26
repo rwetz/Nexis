@@ -369,9 +369,15 @@ export type RenderOptions = {
   showLabels: boolean;
   /** 0 → 1 while a new city assembles; `1` is the steady scene. */
   reveal: number;
+  /** Atlas only: cleanup items per repo path (stale branches, worktrees,
+   *  open PRs). Passed as an option rather than baked into the layout, so the
+   *  PR counts arriving after the scan redraw the plots instead of rebuilding
+   *  (and re-revealing) the scene. */
+  hygiene?: ReadonlyMap<string, number> | null;
 };
 
 type Label = { sx: number; sy: number; text: string; size: number; alpha: number };
+type Beacon = { sx: number; sy: number; count: number; alpha: number };
 type Pin = { sx: number; sy: number; staged: boolean };
 
 /** Below this many pixels wide a building cannot show its coral outline, so it
@@ -398,6 +404,7 @@ export function renderScene(
 
   const labels: Label[] = [];
   const pins: Pin[] = [];
+  const beacons: Beacon[] = [];
   const shadowInk = css(p.shadow, p.isDark ? 0.36 : 0.22);
   const seam = css(p.background, p.isDark ? 0.5 : 0.35);
   const margin = 64;
@@ -541,6 +548,19 @@ export function renderScene(
       ctx.restore();
     }
 
+    if (opts.hygiene && b.ref.kind === "repo") {
+      const count = opts.hygiene.get(b.ref.repo.path) ?? 0;
+      if (count > 0) {
+        beacons.push({
+          sx: a.sx,
+          sy: a.sy,
+          count,
+          // An asleep repo's beacon sleeps with it, but never below legible.
+          alpha: Math.max(0.6, 1 - b.dim * 0.6) * opts.reveal,
+        });
+      }
+    }
+
     // Only the outer terraces get names; deeper ones would stack on top of
     // each other and of the buildings standing on them.
     if (opts.showLabels && b.terrace && b.depth <= 1 && wide > 70) {
@@ -566,6 +586,7 @@ export function renderScene(
 
   drawPins(ctx, pins, p);
   drawLabels(ctx, labels, p);
+  drawBeacons(ctx, beacons, p);
 
   ctx.fillStyle = paper.vignette;
   ctx.fillRect(0, 0, vp.w, vp.h);
@@ -672,6 +693,43 @@ function drawPins(ctx: CanvasRenderingContext2D, pins: Pin[], p: Palette): void 
     ctx.closePath();
     if (pin.staged) ctx.fill();
     else ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** A small flag on the far corner of a repo's plot carrying how many things
+ *  want tidying there. Drawn last so a tall tower can never hide it, which is
+ *  the point: the atlas should show where the cleanup is from the fitted view,
+ *  the same way coral shows where the uncommitted work is. */
+function drawBeacons(ctx: CanvasRenderingContext2D, beacons: Beacon[], p: Palette): void {
+  if (beacons.length === 0) return;
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "700 9px Inter, ui-sans-serif, system-ui, sans-serif";
+  for (const b of beacons) {
+    const text = b.count > 99 ? "99+" : String(b.count);
+    const w = Math.max(14, ctx.measureText(text).width + 8);
+    const h = 13;
+    const cx = b.sx;
+    const cy = b.sy - 12;
+    ctx.globalAlpha = b.alpha;
+    // Stem down to the plot corner, so the flag reads as planted there.
+    ctx.strokeStyle = css(p.warning, 0.9);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + h / 2);
+    ctx.lineTo(cx, b.sy);
+    ctx.stroke();
+    ctx.shadowColor = css(p.shadow, p.isDark ? 0.6 : 0.25);
+    ctx.shadowBlur = 4;
+    ctx.fillStyle = css(p.warning, 0.95);
+    ctx.beginPath();
+    ctx.roundRect(cx - w / 2, cy - h / 2, w, h, h / 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = css(p.background);
+    ctx.fillText(text, cx, cy + 0.5);
   }
   ctx.restore();
 }

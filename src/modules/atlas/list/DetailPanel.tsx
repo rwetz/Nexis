@@ -6,9 +6,12 @@ import { revealPath } from "@/modules/atlas/repos/api";
 import { useAtlasHost } from "@/modules/atlas/repos/host";
 import { useAtlasStore } from "@/modules/atlas/repos/store";
 import {
+  prsFor,
   repoState,
+  staleBranchCount,
   STATE_META,
   type FileChange,
+  type PrCounts,
   type RepoDetail,
   type RepoSummary,
 } from "@/modules/atlas/repos/types";
@@ -110,6 +113,8 @@ function DetailBody({
           )}
         </section>
 
+        <HealthSection summary={summary} />
+
         {summary.last_commit && (
           <section className="mt-4">
             <SectionTitle icon="git-commit">Last commit</SectionTitle>
@@ -201,6 +206,75 @@ function DetailBody({
         </div>
       </footer>
     </>
+  );
+}
+
+/** The cleanup list: every stale branch by name, grouped by why it is stale,
+ *  plus worktrees and open PRs. Branch names are what you would paste into
+ *  `git branch -d`, so they are shown whole rather than summarized. */
+function HealthSection({ summary }: { summary: RepoSummary }) {
+  const prsByRepo = useAtlasStore((s) => s.prs);
+  const prsUnavailable = useAtlasStore((s) => s.prsUnavailable);
+  const prs: PrCounts | null = prsFor(summary, prsByRepo);
+  const h = summary.health;
+  const stale = staleBranchCount(summary);
+  const base = h.default_branch ?? "the default branch";
+  const groups: { label: string; hint: string; names: string[] }[] = [
+    { label: "Merged", hint: `already in ${base}`, names: h.merged_branches },
+    { label: "Upstream gone", hint: "remote branch deleted", names: h.gone_branches },
+    { label: "Inactive", hint: "no recent commits", names: h.inactive_branches },
+  ].filter((g) => g.names.length > 0);
+
+  return (
+    <section className="mt-4">
+      <SectionTitle icon="wrench">Health</SectionTitle>
+      <div className="mt-1.5 space-y-2 rounded-xl border border-border/60 bg-background/60 p-3 text-ui">
+        {stale === 0 ? (
+          <p className="text-success/80">No stale branches</p>
+        ) : (
+          groups.map((g) => (
+            <div key={g.label}>
+              <p className="text-warning">
+                {g.label} ({g.names.length})
+                <span className="text-muted-foreground/70"> · {g.hint}</span>
+              </p>
+              <ul className="mt-0.5 space-y-0.5">
+                {g.names.map((name) => (
+                  <li key={name} className="truncate font-mono text-muted-foreground">
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        )}
+        <p className="text-muted-foreground">
+          {h.worktrees === 0
+            ? "No linked worktrees"
+            : `${h.worktrees} linked worktree${h.worktrees === 1 ? "" : "s"}`}
+        </p>
+        {h.github && (
+          <p className="text-muted-foreground">
+            {prs ? (
+              prs.total === 0 ? (
+                "No open pull requests"
+              ) : (
+                <>
+                  <span className="text-info">
+                    {prs.total} open PR{prs.total === 1 ? "" : "s"}
+                  </span>
+                  {` · ${prs.human} human, ${prs.dependabot} Dependabot`}
+                </>
+              )
+            ) : (
+              <span title={prsUnavailable ?? undefined}>
+                Pull requests unavailable{prsUnavailable ? ` (${prsUnavailable})` : ""}
+              </span>
+            )}
+          </p>
+        )}
+      </div>
+    </section>
   );
 }
 

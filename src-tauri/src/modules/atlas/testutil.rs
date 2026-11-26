@@ -32,3 +32,25 @@ pub fn git(dir: &Path, args: &[&str]) {
         String::from_utf8_lossy(&out.stderr)
     );
 }
+
+/// `git` with both author and committer dates pinned to `unix_seconds`, for
+/// tests that need a commit to look old.
+pub fn git_at(dir: &Path, args: &[&str], unix_seconds: i64) {
+    let date = format!("@{unix_seconds} +0000");
+    let out = new_command("git")
+        .args(args)
+        .current_dir(dir)
+        .env("GIT_AUTHOR_NAME", "t")
+        .env("GIT_AUTHOR_EMAIL", "t@t")
+        .env("GIT_COMMITTER_NAME", "t")
+        .env("GIT_COMMITTER_EMAIL", "t@t")
+        .env("GIT_AUTHOR_DATE", &date)
+        .env("GIT_COMMITTER_DATE", &date)
+        .output()
+        .expect("git runs");
+    assert!(
+        out.status.success(),
+        "git {args:?}: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+}

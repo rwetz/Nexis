@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { useGlidingRail } from "@/components/ui/use-gliding-rail";
 import { cn } from "@/lib/utils";
 import { m } from "motion/react";
+import { useMemo } from "react";
 import { useAtlasStore, type Mode } from "@/modules/atlas/repos/store";
+import { attentionItems } from "@/modules/atlas/repos/types";
 
 /** Controls shared by Atlas's panel toolbar and its dedicated window title bar. */
 export function AtlasWindowActions() {
@@ -16,6 +18,7 @@ export function AtlasWindowActions() {
   return (
     <div className="flex items-center gap-1">
       <AtlasModeSwitch />
+      {mode === "list" && <AttentionFilter />}
       {mode === "map" && (
         <Button
           variant="ghost"
@@ -101,5 +104,37 @@ export function AtlasModeSwitch() {
         </button>
       ))}
     </div>
+  );
+}
+
+/** "Needs attention" narrows the list to repos with something to tidy:
+ *  uncommitted files, stale branches, linked worktrees or open PRs. The
+ *  count is always shown, so it doubles as a machine-wide drift gauge. */
+function AttentionFilter() {
+  const repos = useAtlasStore((s) => s.repos);
+  const prs = useAtlasStore((s) => s.prs);
+  const attentionOnly = useAtlasStore((s) => s.attentionOnly);
+  const toggleAttentionOnly = useAtlasStore((s) => s.toggleAttentionOnly);
+  const count = useMemo(
+    () => repos.filter((r) => attentionItems(r, prs).length > 0).length,
+    [repos, prs],
+  );
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      aria-pressed={attentionOnly}
+      title="Show only repos that need attention"
+      onClick={toggleAttentionOnly}
+      className={cn(
+        "gap-1.5 text-ui",
+        attentionOnly ? "bg-warning/14 text-warning hover:bg-warning/22" : "text-muted-foreground",
+      )}
+    >
+      <Icon name="filter" size="sm" active={attentionOnly} />
+      Needs attention
+      <span className="tabular-nums">{count}</span>
+    </Button>
   );
 }
