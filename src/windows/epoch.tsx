@@ -24,6 +24,7 @@ import { desktopWindow } from "@/platform/desktop";
 import { listen } from "@/platform/events";
 import { TOOL_WINDOW_OPENED_EVENT, type ToolWindowOpened } from "@/modules/window/toolWindow";
 import { requestToolHostAction } from "@/modules/window/toolWindowHost";
+import { centreTrafficLights, TITLE_BAR_HEIGHT } from "@/modules/window/titleBar";
 
 const nexisHost: EpochHost = {
   kind: "nexis",
@@ -55,6 +56,8 @@ const nexisHost: EpochHost = {
 };
 
 mountEpoch(document.getElementById("root")!, nexisHost);
+// Epoch draws nexis-design's TitleBar (48pt); centre the traffic lights on it.
+centreTrafficLights(TITLE_BAR_HEIGHT.design);
 
 // Shown once React has painted, like the standalone app.
 const show = () => void desktopWindow().show().catch(() => {});

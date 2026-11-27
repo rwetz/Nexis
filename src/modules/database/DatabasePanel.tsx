@@ -291,7 +291,7 @@ function ResultTable({ columns, rows }: { columns: string[]; rows: string[][] })
       <thead className="sticky top-0 bg-card/80 backdrop-blur">
         <tr>
           {columns.map((col) => (
-            <th key={col} className="border-b border-border/40 px-3 py-1.5 text-left font-semibold text-muted-foreground/80">
+            <th key={col} className="border-b border-border/40 px-3 py-1.5 text-left font-semibold text-muted-foreground">
               {col}
             </th>
           ))}

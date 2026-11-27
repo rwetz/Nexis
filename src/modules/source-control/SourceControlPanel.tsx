@@ -1092,12 +1092,12 @@ function SectionHeader({
       <span
         className={cn(
           "text-micro font-semibold uppercase tracking-[0.18em]",
-          isStaged ? "text-success/80 dark:text-success/70" : "text-muted-foreground/75",
+          isStaged ? "text-success/80 dark:text-success/70" : "text-muted-foreground",
         )}
       >
         {row.label}
       </span>
-      <span className="inline-flex h-[14px] min-w-[14px] items-center justify-center rounded-full border border-border/55 px-1 text-micro font-semibold tabular-nums text-muted-foreground/80">
+      <span className="inline-flex h-[14px] min-w-[14px] items-center justify-center rounded-full border border-border/55 px-1 text-micro font-semibold tabular-nums text-muted-foreground">
         {row.count}
       </span>
     </div>
@@ -1186,7 +1186,7 @@ const EntryRow = memo(function EntryRow({
             {fileName}
           </span>
           {pathLabel ? (
-            <span className="min-w-0 flex-1 truncate text-caption leading-tight text-muted-foreground/75">
+            <span className="min-w-0 flex-1 truncate text-caption leading-tight text-muted-foreground">
               {pathLabel}
             </span>
           ) : null}

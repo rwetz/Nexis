@@ -22,7 +22,14 @@ import {
   setBackgroundOpacity,
   setRainbowAccent,
 } from "@/modules/settings/store";
-import type { AnimatedBgId, WelcomeBgId } from "@/modules/settings/store";
+import type { AnimatedBgId, BuiltinWelcomeBgId } from "@/modules/settings/store";
+import {
+  type InstalledSummary,
+  libraryPrefId,
+  listInstalled,
+  onBackgroundsChanged,
+} from "@/modules/welcome/backgroundLibrary";
+import { BackgroundLibraryDialog } from "../components/BackgroundLibraryDialog";
 import { useTheme } from "@/modules/theme/ThemeProvider";
 import {
   deleteBgImage,
@@ -44,7 +51,7 @@ import { desktopWindow } from "@/platform/desktop";
 import { openDirectory, saveFile } from "@/platform/dialogs";
 import { hostFilesystem } from "@/platform/filesystem";
 import { joinHostPath } from "@/platform/paths";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SectionHeader } from "../components/SectionHeader";
 import { SettingRow } from "../components/SettingRow";
 
@@ -123,6 +130,35 @@ export function ThemesSection() {
   const backgroundAnimatedId = usePreferencesStore((s) => s.backgroundAnimatedId);
   const backgroundOpacity = usePreferencesStore((s) => s.backgroundOpacity);
   const backgroundBlur = usePreferencesStore((s) => s.backgroundBlur);
+
+  // Downloaded welcome backgrounds. Re-read when this window installs or
+  // removes one, and when another window does (BACKGROUNDS_CHANGED_EVENT).
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [installedBgs, setInstalledBgs] = useState<InstalledSummary[]>([]);
+  const refreshInstalled = useCallback(() => {
+    listInstalled()
+      .then(setInstalledBgs)
+      .catch(() => setInstalledBgs([]));
+  }, []);
+  useEffect(() => {
+    refreshInstalled();
+    let un: (() => void) | null = null;
+    let live = true;
+    void onBackgroundsChanged(refreshInstalled).then((u) => {
+      if (live) un = u;
+      else u();
+    });
+    return () => {
+      live = false;
+      un?.();
+    };
+  }, [refreshInstalled]);
+  const posterUrls = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const b of installedBgs) if (b.poster) out[b.id] = URL.createObjectURL(b.poster);
+    return out;
+  }, [installedBgs]);
+  useEffect(() => () => Object.values(posterUrls).forEach((u) => URL.revokeObjectURL(u)), [posterUrls]);
 
   const handleThemeFiles = async (files: FileList | null) => {
     setImportError(null);
@@ -534,69 +570,108 @@ export function ThemesSection() {
         )}
       </div>
 
-      {/* The welcome-screen picker and its cycle toggle render only when
-        * there is more than one background to choose between. With a single
-        * option a picker is a control that cannot do anything and a rotation
-        * is a rotation of one — both come back on their own when a second
-        * background lands. */}
-      {WELCOME_BG_ORDER.length > 1 && (
-        <div className="flex flex-col gap-3">
-          <SectionHeader
-            title="Welcome screen"
-            description="Shown when no tab is open."
-          />
+      <div className="flex flex-col gap-3">
+        <SectionHeader
+          title="Welcome screen"
+          description="Shown when no tab is open."
+        />
 
-          <div className="grid grid-cols-2 gap-2">
-            {WELCOME_BG_ORDER.map((id) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => void setWelcomeBackgroundId(id)}
-                aria-pressed={welcomeBgId === id}
-                className={cn(
-                  "flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border p-2.5 text-left transition-all",
-                  welcomeBgId === id
-                    ? "border-foreground/60 ring-1 ring-foreground/20"
-                    : "border-border/60 hover:border-border hover:bg-muted/30",
-                )}
-              >
-                <div
-                  className="h-9 w-full rounded-md"
-                  style={{
-                    background: welcomeBgPreview(
-                      id,
-                      getThemePrimary(themeId, resolvedMode, customThemes),
-                    ),
-                  }}
-                />
-                <span className="w-full text-center text-ui font-medium">
-                  {WELCOME_BG_LABELS[id]}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-ui">Cycle backgrounds</span>
-              <span className="text-caption leading-tight text-muted-foreground">
-                Show the next background each time the welcome screen appears.
-              </span>
-            </div>
-            <Switch
-              checked={welcomeCycle}
-              onCheckedChange={(v) => void setWelcomeBackgroundCycle(v)}
+        <div className="grid grid-cols-2 gap-2">
+          {WELCOME_BG_ORDER.map((id) => (
+            <WelcomeBgTile
+              key={id}
+              label={WELCOME_BG_LABELS[id]}
+              selected={welcomeBgId === id}
+              onSelect={() => void setWelcomeBackgroundId(id)}
+              background={welcomeBgPreview(
+                id,
+                getThemePrimary(themeId, resolvedMode, customThemes),
+              )}
             />
-          </div>
+          ))}
+          {installedBgs.map((b) => (
+            <WelcomeBgTile
+              key={b.id}
+              label={b.name}
+              selected={welcomeBgId === libraryPrefId(b.id)}
+              onSelect={() => void setWelcomeBackgroundId(libraryPrefId(b.id))}
+              background={
+                posterUrls[b.id]
+                  ? `center / cover no-repeat url("${posterUrls[b.id]}")`
+                  : "var(--muted)"
+              }
+            />
+          ))}
         </div>
-      )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="self-start"
+          onClick={() => setLibraryOpen(true)}
+        >
+          <Icon name="download" size="sm" />
+          Browse more backgrounds
+        </Button>
+        <BackgroundLibraryDialog
+          open={libraryOpen}
+          onOpenChange={setLibraryOpen}
+          onChanged={refreshInstalled}
+        />
+
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-ui">Cycle backgrounds</span>
+            <span className="text-caption leading-tight text-muted-foreground">
+              Show the next background each time the welcome screen appears,
+              downloaded ones included.
+            </span>
+          </div>
+          <Switch
+            checked={welcomeCycle}
+            onCheckedChange={(v) => void setWelcomeBackgroundCycle(v)}
+          />
+        </div>
+      </div>
     </div>
   );
 }
 
+function WelcomeBgTile({
+  label,
+  selected,
+  onSelect,
+  background,
+}: {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+  background: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={cn(
+        "flex cursor-pointer flex-col items-center gap-1.5 rounded-lg border p-2.5 text-left transition-all",
+        selected
+          ? "border-foreground/60 ring-1 ring-foreground/20"
+          : "border-border/60 hover:border-border hover:bg-muted/30",
+      )}
+    >
+      <div className="h-9 w-full rounded-md" style={{ background }} />
+      <span className="w-full truncate text-center text-ui font-medium">{label}</span>
+    </button>
+  );
+}
+
 /** Swatch for one welcome background. */
-function welcomeBgPreview(id: WelcomeBgId, primary: string): string {
-  void id;
+function welcomeBgPreview(id: BuiltinWelcomeBgId, primary: string): string {
+  if (id === "ward") {
+    // Rings of glyphs round the mark: a ring of the accent on the field.
+    return `radial-gradient(circle at 50% 50%, transparent 0 34%, ${primary} 36% 40%, transparent 42%), repeating-linear-gradient(90deg, color-mix(in oklab, var(--muted-foreground) 30%, transparent) 0 1px, transparent 1px 5px), #0a0a1a`;
+  }
   return `linear-gradient(135deg, #0a0a1a 0%, ${primary} 55%, #0a0a1a 100%)`;
 }
 

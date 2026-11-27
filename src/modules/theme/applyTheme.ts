@@ -116,9 +116,9 @@ export function applyTheme(theme: Theme, mode: ThemeMode): void {
 /** The accent a theme's colours give, and the text that goes on it. When the
  * accent is the theme's `primary`, its `primaryForeground` was made for it;
  * when it is a different `ring` (Tokyo Night), the background is the safe
- * choice, since an accent has to read against it. `brandForeground` is left
- * out when the stylesheet's white reads better (a mid-tone accent on a light
- * community theme), so white stays. */
+ * choice, since an accent has to read against it. When white reads better
+ * (a mid-tone accent on a light community theme) it is white, said outright:
+ * the stylesheet's own default is dark text for the default coral. */
 export function brandOf(colors: ThemeColors): { brand?: string; brandForeground?: string } {
   const brand = colors.ring ?? colors.primary;
   if (!brand) return {};
@@ -130,7 +130,7 @@ export function brandOf(colors: ThemeColors): { brand?: string; brandForeground?
   if (lb === null || lo === null) return { brand, brandForeground: own };
   const ownRatio = (Math.max(lb, lo) + 0.05) / (Math.min(lb, lo) + 0.05);
   const whiteRatio = 1.05 / (lb + 0.05);
-  return whiteRatio > ownRatio ? { brand } : { brand, brandForeground: own };
+  return whiteRatio > ownRatio ? { brand, brandForeground: "#ffffff" } : { brand, brandForeground: own };
 }
 
 /** WCAG relative luminance of a `#rrggbb` colour; null for anything else. */

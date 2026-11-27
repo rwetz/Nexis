@@ -103,7 +103,7 @@ function DiffPatchView({ patch }: { patch: string }) {
   return (
     <pre className="min-h-full p-4 font-mono text-ui leading-relaxed">
       {lines.map((line, i) => {
-        let cls = "text-muted-foreground/75";
+        let cls = "text-muted-foreground";
         if (line.startsWith("+") && !line.startsWith("+++")) {
           cls = "text-success bg-success/[0.06] block";
         } else if (line.startsWith("-") && !line.startsWith("---")) {
@@ -121,7 +121,7 @@ function DiffPatchView({ patch }: { patch: string }) {
         ) {
           cls = "text-muted-foreground/50 block";
         } else {
-          cls = "text-muted-foreground/75 block";
+          cls = "text-muted-foreground block";
         }
         return (
           <span key={i} className={cls}>

@@ -120,7 +120,7 @@ function PreviewBlock({
     return (
       <div className="space-y-0.5 font-mono text-caption">
         <div className="text-muted-foreground">{String(input.path ?? "")}</div>
-        <div className="text-caption text-muted-foreground/80">
+        <div className="text-caption text-muted-foreground">
           {lines} line{lines === 1 ? "" : "s"} · review in the diff tab
         </div>
       </div>
@@ -137,7 +137,7 @@ function PreviewBlock({
           {String(input.path ?? "")}
           {input.replace_all ? " · replace all" : ""}
         </div>
-        <div className="text-caption text-muted-foreground/80">
+        <div className="text-caption text-muted-foreground">
           −{removed} / +{added} line{added === 1 && removed === 1 ? "" : "s"} ·
           review in the diff tab
         </div>
@@ -151,7 +151,7 @@ function PreviewBlock({
     return (
       <div className="space-y-0.5 font-mono text-caption">
         <div className="text-muted-foreground">{String(input.path ?? "")}</div>
-        <div className="text-caption text-muted-foreground/80">
+        <div className="text-caption text-muted-foreground">
           {edits.length} edit{edits.length === 1 ? "" : "s"} · review in the
           diff tab
         </div>

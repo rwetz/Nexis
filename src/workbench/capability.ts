@@ -54,4 +54,8 @@ export type ToolWindowContribution = {
    * ToolWindowShell: for a tool that brings its own UI stack, which Epoch
    * does (src/windows/epoch.tsx). `render` is never shown for such a tool. */
   page?: string;
+  /** Height in points of the header a `page` tool draws itself, so its
+   * macOS traffic lights centre on it (window/titleBar.ts). Defaults to
+   * nexis-design's TitleBar for a page, ToolWindowShell's header otherwise. */
+  titleBarHeight?: number;
 };

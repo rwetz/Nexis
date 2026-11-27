@@ -47,7 +47,7 @@ Tokens live in `:root` in `src/styles/globals.css`:
 
 Two utility classes replace the stock Tailwind animations on the app's most-seen moving parts:
 
-- `.nexis-loader-*` (the `Spinner`): a comet running along the {7/2} heptagram, the brand mark's star, while the star turns slowly the other way. Continuous at the display's refresh rate; the old stepped quarter-turn read as low-resolution beside everything else that moves. Under reduced motion the comet parks and breathes at caret cadence.
+- `.nexis-loader-*` (the `Spinner`): a comet sweeping round the {7/2} heptagram, the brand mark's star, while the star turns slowly the other way. Since nexis-design 0.4.0 it runs on the compositor: the star is a CSS mask and the comet a conic gradient turned with `transform`, so it keeps moving while the main thread is busy. **Never animate the stroke's dash offset again**: that is main-thread paint and it froze exactly while things loaded. Under reduced motion the sweep stops and the star breathes at caret cadence.
 - `.nexis-spin`: a smooth turn on `--loader-cadence`, for a refresh glyph that turns while work is in flight.
 - `.nexis-skeleton`: the `Skeleton` sheen, one gradient fixed to the viewport so every placeholder on screen shares one sweep instead of each pulsing on its own clock. `SkeletonText`/`SkeletonRow`/`SkeletonCard`/`SkeletonGroup` give the shapes.
 - `.nexis-icon-swap` (`<Icon swap>`): a glyph that a user action changes comes up out of a 2px blur on `--dur-panel` (nexis-design R8.4).

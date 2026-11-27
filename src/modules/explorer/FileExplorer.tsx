@@ -700,8 +700,11 @@ export const FileExplorer = forwardRef<FileExplorerHandle, FileExplorerProps>(
             dropTargetRow === rootPath && "bg-primary/10",
           )}
         >
+          {/* min-w-0 lets the name give way to the actions; the ellipsis has
+              to sit on a block of its own, since `truncate` on a flex row
+              cannot shorten the bare text inside it and just clips. */}
           <span
-            className="flex flex-1 items-center truncate text-ui font-medium text-foreground/80"
+            className="flex min-w-0 flex-1 items-center text-ui font-medium text-foreground/80"
             title={rootPath}
           >
             <FileTypeIcon
@@ -709,10 +712,10 @@ export const FileExplorer = forwardRef<FileExplorerHandle, FileExplorerProps>(
               kind="dir"
               className="mx-1.5 size-[15px] shrink-0"
             />
-            {basename(rootPath)}
+            <span className="min-w-0 truncate">{basename(rootPath)}</span>
           </span>
 
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-0.5">
             <Button
               variant="ghost"
               size="icon"

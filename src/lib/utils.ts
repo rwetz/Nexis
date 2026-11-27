@@ -11,7 +11,7 @@ import { extendTailwindMerge } from "tailwind-merge"
 // tailwind-merge reads `text-caption` as a colour and drops it whenever a
 // later `text-muted-foreground` lands in the same cn() call.
 const twMerge = extendTailwindMerge({
-  extend: { theme: { text: ["micro", "caption", "ui", "body"] } },
+  extend: { theme: { text: ["micro", "caption", "ui", "body", "display"] } },
 })
 
 export function cn(...inputs: ClassValue[]) {

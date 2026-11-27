@@ -21,7 +21,7 @@ pub mod bench_internals {
 use modules::{
     ai_audit, atlas, autosave, benchmark, crash, dap, diagnostics, fs, fswatch, git, http_share,
     ledger, links, lsp, ml, net, pty, python, recording, secrets, shell, snapshots, sysmon, tools,
-    winstate, workspace,
+    traffic_lights, winstate, workspace,
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -182,6 +182,8 @@ pub fn run() {
         .manage(benchmark::state::BenchState::default())
         .manage(LaunchDir(Mutex::new(parse_launch_dir())))
         .manage(links::PendingLinks::default())
+        .manage(traffic_lights::TrafficLights::default())
+        .on_window_event(traffic_lights::on_window_event)
         .setup(move |_app| {
             links::start_listener(_app.handle().clone());
             if let Some(url) = &launch_link {
@@ -205,6 +207,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            traffic_lights::window_traffic_lights,
             pty::pty_open,
             pty::pty_write,
             pty::pty_resize,

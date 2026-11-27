@@ -9,6 +9,12 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 const DarkVeilBackground = lazy(() =>
   import("@/components/ui/backgrounds/DarkVeil").then((m) => ({ default: m.DarkVeilBackground })),
 );
+const AsciiWardBackground = lazy(() =>
+  import("@/components/ui/backgrounds/AsciiWard").then((m) => ({ default: m.AsciiWardBackground })),
+);
+const LibraryVideoBackground = lazy(() =>
+  import("@/modules/welcome/LibraryVideoBackground").then((m) => ({ default: m.LibraryVideoBackground })),
+);
 import { Button } from "@/components/ui/button";
 import { ParticleText } from "@/components/ui/ParticleText";
 import { Icon } from "@/components/icon";
@@ -20,6 +26,7 @@ import {
   setWelcomeBackgroundId,
   type WelcomeBgId,
 } from "@/modules/settings/store";
+import { isLibraryPrefId, libraryPrefId, LIB_PREFIX, listInstalled } from "@/modules/welcome/backgroundLibrary";
 import { getFolderColor, useTheme } from "@/modules/theme";
 import { RAINBOW_STOP_OFFSETS, RAINBOW_VARIANTS } from "@/modules/theme/rainbowAccent";
 import { DEFAULT_THEME_ID } from "@/modules/theme/types";
@@ -75,7 +82,7 @@ const SHORTCUTS = [
 ] as const;
 
 export function WelcomeScreen({ onNewTerminal }: Props) {
-  const { themeId, resolvedMode } = useTheme();
+  const { themeId, resolvedMode, paletteEpoch } = useTheme();
   const rainbowPref = usePreferencesStore((s) => s.rainbowAccent);
   // The rainbow accent is the default theme's identity and no other theme's
   // — a named theme's accent hue is the whole point of picking it, so a
@@ -107,10 +114,20 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
     rotatedRef.current = true;
     if (!cycle) return;
     const current = usePreferencesStore.getState().welcomeBackgroundId;
-    const next = nextWelcomeBg(current);
     setShown(current);
-    rotatedTo.current = next;
-    void setWelcomeBackgroundId(next).catch(() => {});
+    // The rotation runs through the built-ins and then whatever the library
+    // has installed, which lives in IndexedDB, so the next id is known only
+    // once that read lands. This viewing already shows `current` meanwhile.
+    void listInstalled()
+      .catch(() => [])
+      .then((installed) => {
+        const next = nextWelcomeBg(
+          current,
+          installed.map((b) => libraryPrefId(b.id)),
+        );
+        rotatedTo.current = next;
+        void setWelcomeBackgroundId(next).catch(() => {});
+      });
     // Mount only: cycling advances once per viewing, not on every preference
     // change. The ref, not the dep list, is what enforces that — an effect
     // with no deps still re-runs if the component remounts under StrictMode.
@@ -125,10 +142,29 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
     setShown(storedBg);
   }, [storedBg]);
 
+  // A library background that is gone (removed in another window) or that
+  // this webview can't decode falls back to Ward for this viewing.
+  const [failed, setFailed] = useState<string | null>(null);
+  const effective: WelcomeBgId =
+    isLibraryPrefId(shown) && failed === shown ? "ward" : shown;
+
   return (
     <div className="relative flex h-full flex-col items-center justify-center gap-6 text-center select-none overflow-hidden">
       <Suspense fallback={null}>
-        {shown === "darkveil" && (
+        {effective === "ward" && (
+          <AsciiWardBackground
+            epoch={paletteEpoch}
+            className="welcome-bg pointer-events-none absolute inset-0 size-full opacity-70"
+          />
+        )}
+        {isLibraryPrefId(effective) && (
+          <LibraryVideoBackground
+            id={effective.slice(LIB_PREFIX.length)}
+            onMissing={() => setFailed(effective)}
+            className="welcome-bg welcome-bg-video pointer-events-none absolute inset-0 size-full object-cover opacity-80"
+          />
+        )}
+        {effective === "darkveil" && (
           <DarkVeilBackground
             // With the rainbow on, the veil sweeps the whole spectrum
             // instead of sitting on one hue. The warp stays modest: pushed
@@ -147,8 +183,11 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
         )}
       </Suspense>
 
+      {/* Rhythm, top to bottom: mark, 20; wordmark, 8; subtitle, 20;
+          actions, 20; divider, 20; shortcuts. One group, so the screen reads
+          as a single block instead of a mark floating above a form. */}
       <div
-        className="relative z-10 flex flex-col items-center gap-3"
+        className="relative z-10 flex flex-col items-center gap-5"
         style={{ animation: "welcome-fadein 0.55s cubic-bezier(0.16,1,0.3,1) both" }}
       >
         {/* The mark, unadorned. The radial glow behind it fought whichever
@@ -161,11 +200,26 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
           draggable={false}
         />
 
-        <div className="flex flex-col items-center gap-3">
+        {/* A soft pool of the page colour behind the copy, so the subtitle
+            and the shortcut grid stay readable over a busy diorama loop. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-x-24 -inset-y-16 -z-10"
+          style={{
+            background:
+              "radial-gradient(closest-side, color-mix(in oklab, var(--background) 72%, transparent), transparent)",
+          }}
+        />
+
+        <div className="flex flex-col items-center gap-2">
           {/* The wordmark, at display scale. Settings match the BG Studio
               pass; `highlight` is what the particles take as the pointer
               pushes through them, which is the whole reason it reacts. */}
-          <h1>
+          {/* The particle canvas pads the line by ~56px above and below the
+              letters so the entrance has room to fly in. That padding is not
+              layout: pulling it back in keeps the mark and the subtitle at
+              their intended distance from the glyphs. */}
+          <h1 className="-my-11">
             <ParticleText
               text="Welcome to Nexis"
               fontSize={72}
@@ -223,21 +277,32 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
           </Button>
         </div>
 
-        {/* Thin divider */}
-        <div aria-hidden className="h-px w-48 bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+        {/* The hairline between the actions and the shortcuts. It was
+            `via-border/50`, half of a 10% hairline, which vanished on a dark
+            background; a quarter of the foreground reads on every theme and
+            every background without becoming a rule across the screen. It
+            fades in oklch so the ends never pass through a third colour. */}
+        <div
+          aria-hidden
+          className="h-px w-64"
+          style={{
+            background:
+              "linear-gradient(to right in oklch, transparent, color-mix(in oklab, var(--foreground) 24%, transparent), transparent)",
+          }}
+        />
 
         {/* Shortcut grid */}
         <div className="mt-0 grid grid-cols-2 gap-x-6 gap-y-2">
           {SHORTCUTS.map(({ label, keys }) => (
             <div key={label} className="flex items-center justify-between gap-3 text-ui">
-              <span className="text-muted-foreground/70">{label}</span>
+              <span className="text-muted-foreground">{label}</span>
               <span className="flex items-center gap-0.5">
                 {keys.map((k, i) => (
                   <kbd
                     // react-doctor-disable-next-line react-doctor/no-array-index-as-key -- display-only list, never reordered or filtered while mounted
                     key={i}
                     className="rounded px-1 py-0.5 text-caption font-medium leading-none
-                               bg-white/5 text-muted-foreground/60 border border-white/10
+                               bg-background/60 text-muted-foreground border border-border
                                shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.15)]"
                   >
                     {k}
@@ -257,6 +322,19 @@ export function WelcomeScreen({ onNewTerminal }: Props) {
         @keyframes darkveil-fadein {
           from { opacity: 0; }
           to   { opacity: 1; }
+        }
+        /* Scenery, not content: the centre, where the mark, the wordmark and
+           the actions sit, is held back so they read over any background. */
+        .welcome-bg {
+          animation: darkveil-fadein 0.9s var(--ease-enter, ease-out) both;
+          -webkit-mask-image: radial-gradient(ellipse 46% 42% at 50% 48%, rgb(0 0 0 / 0.28), #000 100%);
+          mask-image: radial-gradient(ellipse 46% 42% at 50% 48%, rgb(0 0 0 / 0.28), #000 100%);
+        }
+        /* A video loop is denser and brighter than Ward's glyph field, so
+           its centre is held back further. */
+        .welcome-bg-video {
+          -webkit-mask-image: radial-gradient(ellipse 50% 46% at 50% 50%, rgb(0 0 0 / 0.14), #000 100%);
+          mask-image: radial-gradient(ellipse 50% 46% at 50% 50%, rgb(0 0 0 / 0.14), #000 100%);
         }
       `}</style>
     </div>

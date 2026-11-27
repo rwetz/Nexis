@@ -98,7 +98,7 @@ export function CheckpointSection({ repoRoot, onRestored }: Props) {
         <Icon name="magic" className="shrink-0" />
         <span>AI checkpoints</span>
         {checkpoints.length > 0 && (
-          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground/85">
+          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground">
             {checkpoints.length}
           </span>
         )}

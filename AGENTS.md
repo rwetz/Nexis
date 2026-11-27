@@ -372,6 +372,18 @@ This stayed hidden in WSL until shell integration actually installed into the di
 
 ---
 
+### 25. Tauri's `trafficLightPosition` traps a macOS window in fullscreen
+
+**Symptom:** In native fullscreen, moving the pointer to the top of the screen reveals no traffic lights, and double-clicking the header does nothing, so there is no visible way out (only ⌃⌘F / fn+F).
+
+**Root cause:** tao (0.37.1 and 0.37.2) re-applies `trafficLightPosition` on every `drawRect:`, including in fullscreen, and sets the button container's origin from the *window's* full height. In fullscreen the buttons live in the separate strip macOS reveals at the top of the screen, so that formula moves them out of it. tao has no way to clear a position once set.
+
+**Fix in place:** The traffic lights are placed natively in `src-tauri/src/modules/traffic_lights.rs`: each window calls `centreTrafficLights(height)` (`src/modules/window/titleBar.ts`) for its own header, the backend stores the position per label, re-applies it after resize, focus, theme and scale changes, measures against the container's own superview, and never touches the buttons while the window is fullscreen. Headers drop their 80pt inset in fullscreen (`useTrafficLightInset`) and leave fullscreen on a double-click of their empty area.
+
+**Future danger:** Never add `trafficLightPosition` to `tauri.conf.json`, the E2E overlay, or any `WebviewWindow` options. A new window with an overlay title bar calls `centreTrafficLights` with its header's height. Enforced by `titleBar.test.ts`.
+
+---
+
 ## Pre-push checklist
 First, **update `CHANGELOG.md`**: every user-facing change in this push must have an entry under `[Unreleased]` (see "CHANGELOG is the record" above), this is not optional.
 

@@ -100,7 +100,7 @@ export function SubmoduleSection({ repoRoot }: Props) {
         <Icon name="git-branch" className="shrink-0" />
         <span>Submodules</span>
         {submodules.length > 0 && (
-          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground/85">
+          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground">
             {submodules.length}
           </span>
         )}

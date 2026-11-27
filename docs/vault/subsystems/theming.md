@@ -27,14 +27,24 @@ Four are `ogl` fragment shaders on a full-screen triangle (Aurora, Particles, Th
 
 `AnimatedBgId` (Aurora / Particles / Threads) is the **app-wide** background: it sits behind every pane at low opacity via `SurfaceLayer`, and its job is to stay out of the way of work.
 
-`WelcomeBgId` (DarkVeil / Dither / Dot Grid) is the **welcome screen's own** set, owned by `WelcomeScreen`. That surface is the one place in Nexis allowed to be scenery, so its backgrounds are opaque, full-strength and `position: absolute` (they fill a pane, they are not a window overlay). `WELCOME_BG_ORDER` + `nextWelcomeBg` rotate it **once per viewing** when `welcomeBackgroundCycle` is on: the rotation writes the *next* id back to preferences, so the screen holds what it started with and the next viewing picks up the write.
+`WelcomeBgId` is the **welcome screen's own** set, owned by `WelcomeScreen`. That surface is the one place in Nexis allowed to be scenery, so its backgrounds are full-strength and `position: absolute` (they fill a pane, they are not a window overlay); a radial mask (`.welcome-bg`) holds the centre back so the mark and wordmark read over any of them. `WELCOME_BG_ORDER` + `nextWelcomeBg` rotate it **once per viewing** when `welcomeBackgroundCycle` is on: the rotation writes the *next* id back to preferences, so the screen holds what it started with and the next viewing picks up the write.
+
+Two are built in: **Ward** (`AsciiWard.tsx`, the default), the brand kit's `ascii` motion from occult-dioramas (`brandkit/motion.js`) ported to read the theme's `--brand`/`--foreground`/`--muted-foreground` and re-read them on `paletteEpoch`, and **Dark Veil**. Everything else is a **library background**, stored in the pref as `lib:<id>`:
+
+- The library is the public repo `rwetz/nexis-backgrounds`, read from `raw.githubusercontent.com/.../main/index.json` (the same shape as Press's `press-shaders`). Each entry is a versioned folder with `loop.mp4` (1600x1000 H.264, ~10 MB, a seamless loop rendered by occult-dioramas' `npm run loops`) and `poster.jpg`.
+- `src/modules/welcome/backgroundLibrary.ts` fetches the index, downloads a loop, checks byte count, the MP4 `ftyp` box and the index's SHA-256, and stores it as a Blob in IndexedDB (`nexis-welcome-backgrounds`), which every window shares. Installs and removals emit `nexis://welcome-backgrounds-changed` so the Settings picker in another window re-reads.
+- **Backgrounds are data only.** A library entry is a video played by a muted `<video>` from a `blob:` URL; nothing downloaded is executed. Keep it that way: the main webview holds PTY, fs and AI-tool IPC, so a "live" scene shipped as JavaScript would be code from a repo running with all of that. CSP allows `raw.githubusercontent.com` in `connect-src`/`img-src` and `blob:` in `media-src` for this and nothing else.
+- `LibraryVideoBackground` falls back to Ward when the background has been removed or the webview cannot decode H.264 (WebKitGTK without the GStreamer libav plugin).
+- Rotation includes installed library backgrounds after the built-ins; `nextWelcomeBg(current, installed)` restarts at the first when the current one was uninstalled.
+- To publish a new one: render the loop in occult-dioramas, then in nexis-backgrounds run `scripts/encode.sh` and `node scripts/build-index.mjs`, which fills `bytes` and `sha256` (see that repo's AGENTS.md). Pushing `main` publishes to every Nexis.
 
 Dither alone is not theme-tinted: it ships the grey-on-black BG Studio settings verbatim, and its swatch in Settings is drawn un-tinted to match rather than promising a colour it will not use.
 
 ## Key files
 
 - `src/modules/theme/SurfaceLayer.tsx`: background dispatch, theme-colour derivation, the image fast path
-- `src/components/ui/backgrounds/`: the five backgrounds plus the shared `rafLoop` visibility gate
+- `src/components/ui/backgrounds/`: the canvas and shader backgrounds (including `AsciiWard`) plus the shared `rafLoop` visibility gate
+- `src/modules/welcome/`: the welcome-background library client and the video background; `src/settings/components/BackgroundLibraryDialog.tsx` is **Browse more backgrounds**
 - `src/modules/theme/types.ts`: `Theme`, `ThemeColors`, `TerminalPalette`, `DEFAULT_THEME_ID`
 - `src/modules/theme/themes/index.ts`: the three lists, `getBuiltinTheme`, and `migrateThemeId` (retired ids → survivors)
 - `src/modules/theme/applyTheme.ts`: the only writer of theme CSS variables; derives `--brand` from `ring ?? primary` and `--brand-foreground` from the theme (`brandOf`). A theme's `primary` is its *accent*, so it never reaches `--primary`: that is set to the theme's foreground on its background, keeping `--primary` neutral on every theme (nexis-design R6.2). In dark mode a popover that equals the card is lifted a step (`POPOVER_LIFT`, R6.6). Code that wants "the theme's colour" uses `bg-brand`/`text-brand` (only for the primary action, focus or live progress), or reads `variant.colors.primary` from theme data as `SurfaceLayer` and the theme swatches do

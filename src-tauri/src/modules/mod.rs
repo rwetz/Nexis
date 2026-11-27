@@ -31,6 +31,7 @@ pub mod shell;
 pub mod snapshots;
 pub mod sysmon;
 pub mod tools;
+pub mod traffic_lights;
 pub mod winstate;
 pub mod workspace;
 
