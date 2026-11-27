@@ -696,7 +696,7 @@ const CommitRow = memo(function CommitRow({
           />
         ) : null}
       </div>
-      <span className="pl-px font-mono text-caption text-muted-foreground/80">
+      <span className="pl-px font-mono text-caption text-muted-foreground">
         {commit.shortSha}
       </span>
       <span
@@ -727,13 +727,13 @@ const CommitRow = memo(function CommitRow({
           {commit.author ? highlight(commit.author, query) : "Unknown"}
         </span>
       </span>
-      <span className="text-right text-caption tabular-nums text-muted-foreground/75">
+      <span className="text-right text-caption tabular-nums text-muted-foreground">
         {date}
       </span>
       <span className="flex min-w-0 items-center justify-end gap-1.5 text-micro tabular-nums">
         {commit.filesChanged > 0 ? (
           <span
-            className="inline-flex items-center gap-1 text-muted-foreground/75"
+            className="inline-flex items-center gap-1 text-muted-foreground"
             title={`${commit.filesChanged} ${commit.filesChanged === 1 ? "file" : "files"} changed`}
           >
             <Icon name="file" size={10.5} className="opacity-70" />
@@ -818,7 +818,7 @@ function CommitDetail({
           {commit.authorEmail ? (
             <>
               <span className="text-muted-foreground/45">·</span>
-              <span className="truncate text-muted-foreground/85">
+              <span className="truncate text-muted-foreground">
                 {commit.authorEmail}
               </span>
             </>
@@ -944,9 +944,9 @@ function CommitFiles({
   }
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center justify-between px-3 pb-1 pt-2 text-micro font-semibold uppercase tracking-[0.16em] text-muted-foreground/85">
+      <div className="flex shrink-0 items-center justify-between px-3 pb-1 pt-2 text-micro font-semibold uppercase tracking-[0.16em] text-muted-foreground">
         <span>Files</span>
-        <span className="rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground/85 normal-case tracking-normal">
+        <span className="rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground normal-case tracking-normal">
           {filesEntry.files.length}
         </span>
       </div>
@@ -987,7 +987,7 @@ const FileRow = memo(function FileRow({
           {fileName}
         </span>
         {dir ? (
-          <span className="min-w-0 flex-1 truncate text-micro leading-tight text-muted-foreground/80">
+          <span className="min-w-0 flex-1 truncate text-micro leading-tight text-muted-foreground">
             {dir}
           </span>
         ) : null}

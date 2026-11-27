@@ -43,6 +43,7 @@ import type { KeyBinding, ShortcutId } from "@/modules/shortcuts/shortcuts";
 import { emit, listen, type UnlistenFn } from "@/platform/events";
 import { openStore } from "@/platform/storage";
 import { createWriteQueue } from "@/platform/persistence";
+import { isLibraryPrefId } from "@/modules/welcome/backgroundLibrary";
 
 export type ThemePref = "system" | "light" | "dark";
 
@@ -67,23 +68,35 @@ export type AnimatedBgId = "aurora" | "particles" | "threads";
  * work, while the welcome screen is the one place Nexis is allowed to be
  * scenery.
  *
- * Only DarkVeil ships today. Dither was here and is withdrawn — see the
- * CHANGELOG; the union and the preference stay because the picker and the
- * per-viewing rotation come back for free the moment a second one lands.
+ * Two ship with the app (Ward, the brand's ASCII motion, and Dark Veil). The
+ * rest are downloaded from the background library (rwetz/nexis-backgrounds,
+ * `src/modules/welcome/backgroundLibrary.ts`) and named `lib:<id>`.
  */
-export type WelcomeBgId = "darkveil";
+export type BuiltinWelcomeBgId = "ward" | "darkveil";
+export type WelcomeBgId = BuiltinWelcomeBgId | `lib:${string}`;
 
-/** Rotation order, and the order the picker lists them in. */
-export const WELCOME_BG_ORDER: readonly WelcomeBgId[] = ["darkveil"];
+/** Built-ins, in rotation and picker order. Library ones follow them. */
+export const WELCOME_BG_ORDER: readonly BuiltinWelcomeBgId[] = ["ward", "darkveil"];
 
-export const WELCOME_BG_LABELS: Record<WelcomeBgId, string> = {
+export const WELCOME_BG_LABELS: Record<BuiltinWelcomeBgId, string> = {
+  ward: "Ward",
   darkveil: "Dark Veil",
 };
 
-/** Advance one step through {@link WELCOME_BG_ORDER}. */
-export function nextWelcomeBg(current: WelcomeBgId): WelcomeBgId {
-  const idx = WELCOME_BG_ORDER.indexOf(current);
-  return WELCOME_BG_ORDER[(idx + 1) % WELCOME_BG_ORDER.length];
+/** A value the preference may hold: a built-in, or a library background. */
+export function isWelcomeBgId(v: unknown): v is WelcomeBgId {
+  return WELCOME_BG_ORDER.includes(v as BuiltinWelcomeBgId) || isLibraryPrefId(v);
+}
+
+/**
+ * Advance one step through the built-ins and then the installed library
+ * backgrounds (`installed`, as `lib:<id>`). A current value that is no longer
+ * in the list (an uninstalled background) restarts at the first.
+ */
+export function nextWelcomeBg(current: WelcomeBgId, installed: readonly WelcomeBgId[] = []): WelcomeBgId {
+  const all: WelcomeBgId[] = [...WELCOME_BG_ORDER, ...installed];
+  const idx = all.indexOf(current);
+  return all[(idx + 1) % all.length];
 }
 
 export const EDITOR_THEMES = [
@@ -401,7 +414,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   backgroundKind: "none",
   backgroundImageId: null,
   backgroundAnimatedId: null,
-  welcomeBackgroundId: "darkveil",
+  welcomeBackgroundId: "ward",
   welcomeBackgroundCycle: true,
   backgroundOpacity: 0.5,
   backgroundBlur: 0,
@@ -528,9 +541,7 @@ export async function loadPreferences(): Promise<Preferences> {
     // A value stored by an earlier build may name a background that no
     // longer exists ("dotgrid"). Falling through to the default beats
     // rendering nothing at all.
-    welcomeBackgroundId: WELCOME_BG_ORDER.includes(
-      get<WelcomeBgId>(KEY_WELCOME_BG) as WelcomeBgId,
-    )
+    welcomeBackgroundId: isWelcomeBgId(get<WelcomeBgId>(KEY_WELCOME_BG))
       ? (get<WelcomeBgId>(KEY_WELCOME_BG) as WelcomeBgId)
       : DEFAULT_PREFERENCES.welcomeBackgroundId,
     welcomeBackgroundCycle:

@@ -8,6 +8,7 @@ import { currentWorkArea, openOrFocusWindow } from "@/platform/windows";
 import { emit } from "@/platform/events";
 import { IS_MAC } from "@/lib/platform";
 import type { ToolWindowContribution } from "@/workbench/capability";
+import { macTitleBarOptions, TITLE_BAR_HEIGHT } from "./titleBar";
 
 /**
  * Sent after every open, including a re-focus of a window that already
@@ -75,6 +76,18 @@ export function fitToWorkArea(
 }
 
 /**
+ * The height of the header a tool window draws, so its traffic lights can be
+ * centred on it. A tool with its own `page` draws its own chrome: today that
+ * is Epoch, whose embedded UI uses nexis-design's `TitleBar`. Everything else
+ * is `ToolWindowShell`'s header, standard or featured.
+ */
+export function toolTitleBarHeight(tool: Pick<ToolWindowContribution, "header" | "page" | "titleBarHeight">): number {
+  if (tool.titleBarHeight) return tool.titleBarHeight;
+  if (tool.page) return TITLE_BAR_HEIGHT.design;
+  return tool.header === "featured" ? TITLE_BAR_HEIGHT.featured : TITLE_BAR_HEIGHT.standard;
+}
+
+/**
  * Focus the existing tool window, or create it once. A tool is an app-level
  * destination, so repeated clicks should never create a pile of duplicates.
  * `params` ride on the URL for a new window and on the opened event for an
@@ -85,7 +98,7 @@ export async function openToolWindow(
   params: Record<string, string> = {},
 ): Promise<void> {
   const platformOptions = IS_MAC
-    ? { titleBarStyle: "overlay" as const, hiddenTitle: true }
+    ? macTitleBarOptions()
     : { decorations: false, transparent: true, shadow: false };
   const query = new URLSearchParams({ tool: tool.id, ...params });
 

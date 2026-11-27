@@ -37,6 +37,7 @@
      *   text-caption  11px  metadata, status bar, secondary rows
      *   text-ui       12px  panel rows, lists, menus — the default
      *   text-body     13px  prose the user reads: chat, dialogs, docs
+     *   text-display  32px  a hero's title, once per screen (R1.4)
      *
      * Above 13px, use Tailwind's own text-sm/lg/xl. The steps set no
      * line-height on purpose: rows keep inheriting theirs, so moving a call
@@ -47,6 +48,13 @@
     --text-caption: 11px;
     --text-ui: 12px;
     --text-body: 13px;
+    /* The one size above the UI scale: a hero's title, once per screen.
+     * 600, tight leading and a touch of negative tracking, since Inter at
+     * 32px opens up. Not for page titles (text-lg) or stats (2xl). */
+    --text-display: 32px;
+    --text-display--line-height: 1.15;
+    --text-display--letter-spacing: -0.015em;
+    --text-display--font-weight: 600;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -101,9 +109,10 @@
 :root {
     --background: oklch(1 0 0);
     /* Brand accent — coral/salmon used for primary CTAs, active/selected states,
-       and the AI agent indicator. Not for links or decorative elements. */
+       and the AI agent indicator. Not for links or decorative elements.
+       Its text is near-black: white on this coral is 2.6:1, under AA. */
     --brand: oklch(0.72 0.15 35);
-    --brand-foreground: oklch(1 0 0);
+    --brand-foreground: oklch(0.148 0.004 228.8);
     --foreground: oklch(0.148 0.004 228.8);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.148 0.004 228.8);
@@ -114,7 +123,7 @@
     --secondary: oklch(0.963 0.002 197.1);
     --secondary-foreground: oklch(0.218 0.008 223.9);
     --muted: oklch(0.963 0.002 197.1);
-    --muted-foreground: oklch(0.56 0.021 213.5);
+    --muted-foreground: oklch(0.53 0.021 213.5); /* 4.8:1 on the muted panels, 5.2:1 on white */
     --accent: oklch(0.963 0.002 197.1);
     --accent-foreground: oklch(0.218 0.008 223.9);
     --destructive: oklch(0.577 0.245 27.325);
@@ -140,7 +149,7 @@
 .dark {
     --background: oklch(0.148 0.004 228.8);
     --brand: oklch(0.72 0.15 35);
-    --brand-foreground: oklch(1 0 0);
+    --brand-foreground: oklch(0.148 0.004 228.8);
     --foreground: oklch(0.987 0.002 197.1);
     --card: oklch(0.218 0.008 223.9);
     --card-foreground: oklch(0.987 0.002 197.1);
@@ -477,31 +486,69 @@ html *::-webkit-scrollbar {
 }
 
 /* ── Loader ─────────────────────────────────────────────────────────────────
- * <Spinner>: a comet of light runs along the {7/2} heptagram (the brand
- * mark's star) while the star turns slowly the other way. Linear and
- * continuous, so it is fluid at the display's refresh rate; the old stepped
- * quarter-turn read as low-resolution next to everything else that moves.
- * The tail trails the head by sharing its leading edge: the tail's offset is
- * the head's plus the difference in their lengths (26 - 9 = 17).
+ * <Spinner>: a comet of light sweeps round the {7/2} heptagram (the brand
+ * mark's star) while the star turns slowly the other way.
+ *
+ * Only `transform` animates, on HTML boxes, so the compositor runs it: it
+ * keeps moving while the main thread is busy (a world building, a parse).
+ * The star is a mask (a thin track and a bolder line for the comet); the
+ * comet is a conic gradient behind the bold mask, turned once per
+ * --loader-cadence. Never animate the stroke's dash offset again: that is
+ * main-thread paint and it froze the loader exactly while things loaded.
  *
  * `.nexis-spin` is kept for an icon that turns while work is in flight (a
  * refresh glyph): a smooth turn on the loader's cadence. Never Tailwind's
  * `animate-spin`. */
-@keyframes nexis-loader-head {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: -100;
-  }
+.nexis-loader {
+  --nexis-star-thin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.3' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M12 2.5L21.26 14.11L7.88 20.56L4.57 6.08L19.43 6.08L16.12 20.56L2.74 14.11Z'/%3E%3C/svg%3E");
+  --nexis-star-bold: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M12 2.5L21.26 14.11L7.88 20.56L4.57 6.08L19.43 6.08L16.12 20.56L2.74 14.11Z'/%3E%3C/svg%3E");
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
 }
 
-@keyframes nexis-loader-tail {
-  from {
-    stroke-dashoffset: 17;
-  }
+.nexis-loader-turn,
+.nexis-loader-track,
+.nexis-loader-comet {
+  position: absolute;
+  inset: 0;
+}
+
+.nexis-loader-turn {
+  animation: nexis-loader-turn calc(var(--loader-cadence) * 7) linear infinite;
+  will-change: transform;
+}
+
+.nexis-loader-track {
+  background: currentColor;
+  opacity: 0.3;
+  mask: var(--nexis-star-thin) center / contain no-repeat;
+}
+
+.nexis-loader-comet {
+  overflow: hidden;
+  mask: var(--nexis-star-bold) center / contain no-repeat;
+}
+
+/* the comet: bright head, fading tail, a third of the way round */
+.nexis-loader-comet::before {
+  content: "";
+  position: absolute;
+  inset: -25%;
+  background: conic-gradient(
+    from 0deg in oklch,
+    transparent 0turn 0.62turn,
+    color-mix(in oklab, currentColor 45%, transparent) 0.86turn,
+    currentColor 0.99turn,
+    transparent 1turn
+  );
+  animation: nexis-loader-sweep var(--loader-cadence) linear infinite;
+  will-change: transform;
+}
+
+@keyframes nexis-loader-sweep {
   to {
-    stroke-dashoffset: -83;
+    transform: rotate(360deg);
   }
 }
 
@@ -509,22 +556,6 @@ html *::-webkit-scrollbar {
   to {
     transform: rotate(-360deg);
   }
-}
-
-.nexis-loader-head {
-  stroke-dasharray: 9 91;
-  animation: nexis-loader-head var(--loader-cadence) linear infinite;
-}
-
-.nexis-loader-tail {
-  stroke-dasharray: 26 74;
-  animation: nexis-loader-tail var(--loader-cadence) linear infinite;
-}
-
-.nexis-loader-turn {
-  transform-box: view-box;
-  transform-origin: center;
-  animation: nexis-loader-turn calc(var(--loader-cadence) * 7) linear infinite;
 }
 
 @keyframes nexis-spin-turn {
@@ -666,13 +697,13 @@ html *::-webkit-scrollbar {
   .nexis-skeleton,
   .nexis-spin,
   .nexis-loader-turn,
-  .nexis-loader-tail,
+  .nexis-loader-comet::before,
   .nexis-icon-swap {
     animation: none;
   }
-  /* The comet parks on one line and breathes at the caret cadence: busy,
-   * without travel. */
-  .nexis-loader-head {
+  /* The comet parks on one side and the star breathes at the caret
+   * cadence: busy, without travel. */
+  .nexis-loader-comet {
     animation: nexis-caret-blink var(--blink-cadence) linear infinite;
   }
   .nexis-blink {

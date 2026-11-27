@@ -36,8 +36,12 @@ listen/unlisten, store, opener, os, log, autostart. Nothing broader is available
 the webview.
 
 The webview also runs under a restrictive CSP (`tauri.conf.json`). Of note: `object-src 'none'`,
-`base-uri 'self'`, `form-action 'self'`, and a `connect-src` limited to IPC, `api.github.com`, and
-localhost: meaning injected script in the webview cannot exfiltrate to an arbitrary host. `script-src` is
+`base-uri 'self'`, `form-action 'self'`, and a `connect-src` limited to IPC, `api.github.com`,
+`raw.githubusercontent.com` and localhost: meaning injected script in the webview cannot exfiltrate to an
+arbitrary host. `raw.githubusercontent.com` (also in `img-src`) is there for the welcome-background library
+(`src/modules/welcome/backgroundLibrary.ts`): it only serves files out of GitHub repositories, so it is a
+read-only origin, not a place a request can deliver data to. What it serves is played as video (`media-src
+'self' blob:`) after a size, SHA-256 and MP4-magic check, never executed. `script-src` is
 `'self' 'wasm-unsafe-eval'`; there is no `unsafe-eval` and no CDN origin.
 
 ## Workspace authorization

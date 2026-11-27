@@ -138,7 +138,7 @@ export function StashSection({ repoRoot, onStashApplied }: Props) {
         <Icon name="archive" className="shrink-0" />
         <span>Stashes</span>
         {stashes.length > 0 && (
-          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground/85">
+          <span className="ml-auto rounded-sm bg-muted/55 px-1 py-px text-micro tabular-nums text-muted-foreground">
             {stashes.length}
           </span>
         )}

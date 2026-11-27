@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { WindowControls } from "@/components/WindowControls";
 import { IS_MAC, KEY_SEP, USE_CUSTOM_WINDOW_CONTROLS } from "@/lib/platform";
+import { leaveFullscreenOnDoubleClick, useTrafficLightInset } from "@/modules/window/useTrafficLightInset";
+import { centreTrafficLights, TITLE_BAR_HEIGHT } from "@/modules/window/titleBar";
 import { usePreferencesStore } from "@/modules/settings/preferences";
 import {
   getBindingTokens,
@@ -85,6 +87,9 @@ export function Header({
   onOpenSpotlight,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const lightsInset = useTrafficLightInset();
+  // Centre the macOS traffic lights on this 40pt header (h-10).
+  useEffect(() => centreTrafficLights(TITLE_BAR_HEIGHT.standard), []);
   const [compact, setCompact] = useState(false);
   const userShortcuts = usePreferencesStore((s) => s.shortcuts);
 
@@ -144,8 +149,9 @@ export function Header({
     <div
       ref={rootRef}
       data-tauri-drag-region
+      onDoubleClick={leaveFullscreenOnDoubleClick}
       className={`flex h-10 shrink-0 items-center gap-2 border-b border-border/60 bg-card select-none ${
-        IS_MAC ? "pr-2 pl-20" : "pr-0 pl-2"
+        IS_MAC ? `pr-2 ${lightsInset ? "pl-22" : "pl-2"}` : "pr-0 pl-2"
       }`}
     >
       <div className="flex shrink-0 items-center gap-0.5">

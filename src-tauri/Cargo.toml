@@ -151,6 +151,17 @@ ort = { version = "2.0.0-rc.12", default-features = false, features = [
 ] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
+# Already in the tree through tao, at these versions: used only to place the
+# traffic lights ourselves (src/modules/traffic_lights.rs).
+objc2-app-kit = { version = "0.3.2", default-features = false, features = [
+	"std",
+	"NSButton",
+	"NSControl",
+	"NSResponder",
+	"NSView",
+	"NSWindow",
+] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSGeometry"] }
 keyring = { version = "3.6", default-features = false, features = [
 	"apple-native",
 ] }

@@ -5,6 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 import { openOrFocusWindow } from "@/platform/windows";
+import { macTitleBarOptions } from "./titleBar";
 import { IS_MAC } from "@/lib/platform";
 
 /** Open a fresh Nexis window with no tab state restored. */
@@ -15,7 +16,7 @@ export async function openNewWindow(): Promise<void> {
   // Mac: overlay title bar with hidden title (native traffic lights).
   // Windows/Linux: fully custom controls — decorations off, transparent background.
   const platformOptions = IS_MAC
-    ? { titleBarStyle: "overlay" as const, hiddenTitle: true }
+    ? macTitleBarOptions()
     : { decorations: false, transparent: true, shadow: false };
 
   await openOrFocusWindow(label, {

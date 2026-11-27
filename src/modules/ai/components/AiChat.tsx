@@ -558,7 +558,7 @@ const ReadGroup = memo(function ReadGroup({ parts }: { parts: AnyPart[] }) {
           {count} file{count === 1 ? "" : "s"}
         </span>
         {paths.length > 0 ? (
-          <span className="min-w-0 flex-1 truncate font-mono text-caption text-muted-foreground/80 group-data-[state=open]/read:invisible">
+          <span className="min-w-0 flex-1 truncate font-mono text-caption text-muted-foreground group-data-[state=open]/read:invisible">
             · {preview}
           </span>
         ) : null}

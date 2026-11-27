@@ -1,6 +1,8 @@
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { currentMonitor } from "@tauri-apps/api/window";
+import { defineCommand } from "./ipc";
 import { Lifetime } from "./lifetime";
+import { hostIpc } from "./tauri";
 
 type WindowOptions = NonNullable<
   ConstructorParameters<typeof WebviewWindow>[1]
@@ -67,4 +69,23 @@ export async function currentWorkArea(): Promise<{ width: number; height: number
   } catch {
     return null;
   }
+}
+
+/** macOS overlay title bar: the native traffic lights float over our own
+ * header. Where they sit is set after creation with `placeTrafficLights`,
+ * not with Tauri's `trafficLightPosition` (see traffic_lights.rs). */
+export function macOverlayTitleBar() {
+  return { titleBarStyle: "overlay" as const, hiddenTitle: true };
+}
+
+const windowTrafficLights = defineCommand<{ x: number; y: number }, void>(
+  "window_traffic_lights",
+  "host",
+);
+
+/** Place the calling window's traffic lights at (`x`, `y`) points: `x` the
+ * close button's left edge, `y` the buttons' vertical centre. The backend
+ * keeps them there and leaves them alone in native fullscreen. */
+export function placeTrafficLights(x: number, y: number): Promise<void> {
+  return hostIpc.call(windowTrafficLights, { x, y });
 }
