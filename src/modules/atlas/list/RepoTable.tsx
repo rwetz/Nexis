@@ -12,6 +12,7 @@ import {
   STATE_META,
   type ListSort,
   type PrCounts,
+  type RepoHealth,
   type RepoSummary,
 } from "@/modules/atlas/repos/types";
 
@@ -253,52 +254,71 @@ function ChangesCell({ repo }: { repo: RepoSummary }) {
  *  column reads as clean at a glance. */
 function HealthCell({ repo, prs }: { repo: RepoSummary; prs: PrCounts | null }) {
   if (repo.error) return <span />;
-  const h = repo.health;
   const stale = staleBranchCount(repo);
-  const branchTitle = [
-    h.merged_branches.length > 0 && `${h.merged_branches.length} merged`,
-    h.gone_branches.length > 0 && `${h.gone_branches.length} upstream gone`,
-    h.inactive_branches.length > 0 && `${h.inactive_branches.length} inactive`,
-  ]
-    .filter(Boolean)
-    .join(", ");
-  const showPrs = prs !== null && prs.total > 0;
-  if (stale === 0 && h.worktrees === 0 && !showPrs) {
+  const worktrees = repo.health.worktrees;
+  const openPrs = prs !== null && prs.total > 0 ? prs : null;
+  if (stale === 0 && worktrees === 0 && !openPrs) {
     return <span className="text-ui text-muted-foreground/40">–</span>;
   }
   return (
     <span className="flex min-w-0 items-center gap-1 overflow-hidden">
-      {stale > 0 && (
-        <Badge variant="warning" title={`Stale branches: ${branchTitle}`}>
-          <Icon name="git-branch" size="xs" />
-          {stale}
-        </Badge>
-      )}
-      {h.worktrees > 0 && (
-        <Badge
-          variant="secondary"
-          title={`${h.worktrees} linked worktree${h.worktrees === 1 ? "" : "s"}`}
-        >
-          <Icon name="layers" size="xs" />
-          {h.worktrees}
-        </Badge>
-      )}
-      {showPrs && (
-        <Badge
-          variant="info"
-          title={`${prs.total} open PR${prs.total === 1 ? "" : "s"}: ${prs.human} human, ${prs.dependabot} Dependabot`}
-        >
-          <Icon name="git-pr" size="xs" />
-          {prs.human > 0 ? prs.human : null}
-          {prs.dependabot > 0 && (
-            <span className="flex items-center gap-0.5 opacity-70">
-              {prs.human > 0 && "+"}
-              <Icon name="agent" size="xs" />
-              {prs.dependabot}
-            </span>
-          )}
-        </Badge>
-      )}
+      {stale > 0 && <BranchBadge health={repo.health} count={stale} />}
+      {worktrees > 0 && <WorktreeBadge count={worktrees} />}
+      {openPrs && <PrBadge prs={openPrs} />}
+    </span>
+  );
+}
+
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
+function BranchBadge({ health, count }: { health: RepoHealth; count: number }) {
+  const breakdown = [
+    [health.merged_branches.length, "merged"],
+    [health.gone_branches.length, "upstream gone"],
+    [health.inactive_branches.length, "inactive"],
+  ] as const;
+  const title = breakdown
+    .filter(([n]) => n > 0)
+    .map(([n, label]) => `${n} ${label}`)
+    .join(", ");
+  return (
+    <Badge variant="warning" title={`Stale branches: ${title}`}>
+      <Icon name="git-branch" size="xs" />
+      {count}
+    </Badge>
+  );
+}
+
+function WorktreeBadge({ count }: { count: number }) {
+  return (
+    <Badge variant="secondary" title={plural(count, "linked worktree")}>
+      <Icon name="layers" size="xs" />
+      {count}
+    </Badge>
+  );
+}
+
+function PrBadge({ prs }: { prs: PrCounts }) {
+  return (
+    <Badge
+      variant="info"
+      title={`${plural(prs.total, "open PR")}: ${prs.human} human, ${prs.dependabot} Dependabot`}
+    >
+      <Icon name="git-pr" size="xs" />
+      {prs.human > 0 ? prs.human : null}
+      {prs.dependabot > 0 && <DependabotCount count={prs.dependabot} afterHuman={prs.human > 0} />}
+    </Badge>
+  );
+}
+
+function DependabotCount({ count, afterHuman }: { count: number; afterHuman: boolean }) {
+  return (
+    <span className="flex items-center gap-0.5 opacity-70">
+      {afterHuman && "+"}
+      <Icon name="agent" size="xs" />
+      {count}
     </span>
   );
 }
