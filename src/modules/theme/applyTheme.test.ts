@@ -60,7 +60,10 @@ describe("brandOf", () => {
     });
   });
 
-  it("keeps the stylesheet's white when white reads better", () => {
-    expect(brandOf({ primary: "#2050c0", primaryForeground: "#101418" })).toEqual({ brand: "#2050c0" });
+  it("names white outright when white reads better", () => {
+    expect(brandOf({ primary: "#2050c0", primaryForeground: "#101418" })).toEqual({
+      brand: "#2050c0",
+      brandForeground: "#ffffff",
+    });
   });
 });

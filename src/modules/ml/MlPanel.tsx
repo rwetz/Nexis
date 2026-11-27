@@ -1338,7 +1338,7 @@ export function CreateCard({
                       </span>
                     ) : null}
                   </span>
-                  <span className="mt-0.5 block truncate font-mono text-micro text-muted-foreground/80">{m.shape}</span>
+                  <span className="mt-0.5 block truncate font-mono text-micro text-muted-foreground">{m.shape}</span>
                   <span className="mt-0.5 block text-micro leading-snug text-muted-foreground">{m.blurb}</span>
                 </button>
               );

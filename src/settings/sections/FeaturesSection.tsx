@@ -95,7 +95,7 @@ export function FeaturesSection() {
                     />
                   )}
                 </span>
-                <span className="text-micro leading-snug text-muted-foreground/80">
+                <span className="text-micro leading-snug text-muted-foreground">
                   {PRESETS[id].blurb}
                 </span>
               </button>

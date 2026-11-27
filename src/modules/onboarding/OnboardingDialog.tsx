@@ -278,7 +278,7 @@ function StepCard({
               </span>
             )}
           </span>
-          <span className="text-caption leading-relaxed text-muted-foreground/80">
+          <span className="text-caption leading-relaxed text-muted-foreground">
             {step.why}
           </span>
         </button>

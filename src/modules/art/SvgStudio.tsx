@@ -79,7 +79,7 @@ export function SvgStudio({
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 tool === id
                   ? "text-primary"
-                  : "text-muted-foreground/80 hover:text-foreground",
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Icon name={icon} size="xs" active={tool === id} />

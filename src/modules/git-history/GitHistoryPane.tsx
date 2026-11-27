@@ -696,7 +696,7 @@ const CommitRow = memo(function CommitRow({
           />
         ) : null}
       </div>
-      <span className="pl-px font-mono text-caption text-muted-foreground/80">
+      <span className="pl-px font-mono text-caption text-muted-foreground">
         {commit.shortSha}
       </span>
       <span
@@ -987,7 +987,7 @@ const FileRow = memo(function FileRow({
           {fileName}
         </span>
         {dir ? (
-          <span className="min-w-0 flex-1 truncate text-micro leading-tight text-muted-foreground/80">
+          <span className="min-w-0 flex-1 truncate text-micro leading-tight text-muted-foreground">
             {dir}
           </span>
         ) : null}

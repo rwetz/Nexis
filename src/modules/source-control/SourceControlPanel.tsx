@@ -1097,7 +1097,7 @@ function SectionHeader({
       >
         {row.label}
       </span>
-      <span className="inline-flex h-[14px] min-w-[14px] items-center justify-center rounded-full border border-border/55 px-1 text-micro font-semibold tabular-nums text-muted-foreground/80">
+      <span className="inline-flex h-[14px] min-w-[14px] items-center justify-center rounded-full border border-border/55 px-1 text-micro font-semibold tabular-nums text-muted-foreground">
         {row.count}
       </span>
     </div>

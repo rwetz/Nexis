@@ -301,7 +301,7 @@ export function ModelsSection() {
           <div className="flex items-center gap-2">
             <Label>Providers</Label>
             {visibleProviders.length > 0 ? (
-              <span className="inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full border border-border/55 px-1 text-micro font-semibold tabular-nums text-muted-foreground/80">
+              <span className="inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full border border-border/55 px-1 text-micro font-semibold tabular-nums text-muted-foreground">
                 {visibleProviders.length}
               </span>
             ) : null}
