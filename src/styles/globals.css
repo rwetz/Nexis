@@ -101,9 +101,10 @@
 :root {
     --background: oklch(1 0 0);
     /* Brand accent — coral/salmon used for primary CTAs, active/selected states,
-       and the AI agent indicator. Not for links or decorative elements. */
+       and the AI agent indicator. Not for links or decorative elements.
+       Its text is near-black: white on this coral is 2.6:1, under AA. */
     --brand: oklch(0.72 0.15 35);
-    --brand-foreground: oklch(1 0 0);
+    --brand-foreground: oklch(0.148 0.004 228.8);
     --foreground: oklch(0.148 0.004 228.8);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.148 0.004 228.8);
@@ -114,7 +115,7 @@
     --secondary: oklch(0.963 0.002 197.1);
     --secondary-foreground: oklch(0.218 0.008 223.9);
     --muted: oklch(0.963 0.002 197.1);
-    --muted-foreground: oklch(0.56 0.021 213.5);
+    --muted-foreground: oklch(0.53 0.021 213.5); /* 4.8:1 on the muted panels, 5.2:1 on white */
     --accent: oklch(0.963 0.002 197.1);
     --accent-foreground: oklch(0.218 0.008 223.9);
     --destructive: oklch(0.577 0.245 27.325);
@@ -140,7 +141,7 @@
 .dark {
     --background: oklch(0.148 0.004 228.8);
     --brand: oklch(0.72 0.15 35);
-    --brand-foreground: oklch(1 0 0);
+    --brand-foreground: oklch(0.148 0.004 228.8);
     --foreground: oklch(0.987 0.002 197.1);
     --card: oklch(0.218 0.008 223.9);
     --card-foreground: oklch(0.987 0.002 197.1);

@@ -361,7 +361,7 @@ export function SettingsDialog() {
                   className={gi > 0 ? "mt-3 flex flex-col gap-0.5" : "flex flex-col gap-0.5"}
                 >
                   {group.label ? (
-                    <div className="relative z-10 px-2.5 pt-1 pb-1 text-caption font-medium tracking-wide text-muted-foreground/80 uppercase">
+                    <div className="relative z-10 px-2.5 pt-1 pb-1 text-caption font-medium tracking-wide text-muted-foreground uppercase">
                       {group.label}
                     </div>
                   ) : (

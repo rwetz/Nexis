@@ -85,7 +85,7 @@ export function WebWorkbench({
               className={cn(
                 "relative z-10 flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-caption font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                active === t.id ? "text-primary" : "text-muted-foreground/80 hover:text-foreground",
+                active === t.id ? "text-primary" : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Icon name={t.icon} size="xs" active={active === t.id} />
