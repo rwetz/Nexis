@@ -11,6 +11,9 @@
  * against the index's size and SHA-256 before it is kept (see
  * backgroundLibrary.ts). Installing one also selects it, since that is
  * nearly always why it was downloaded.
+ *
+ * Mount it only while it is open (`{open && <BackgroundLibraryDialog open />}`):
+ * it reads the library when it mounts.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -68,9 +71,11 @@ export function BackgroundLibraryDialog({ open, onOpenChange, onChanged }: Props
       .catch(() => setInstalled([]));
   }, []);
 
+  // The parent mounts this dialog only while it is open, so loading on mount
+  // is loading on open: a fresh index each time it is shown.
   useEffect(() => {
-    if (open) load();
-  }, [open, load]);
+    load();
+  }, [load]);
 
   const groups = useMemo(() => {
     const out = new Map<string, LibraryEntry[]>();

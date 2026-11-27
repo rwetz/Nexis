@@ -51,7 +51,7 @@ import { desktopWindow } from "@/platform/desktop";
 import { openDirectory, saveFile } from "@/platform/dialogs";
 import { hostFilesystem } from "@/platform/filesystem";
 import { joinHostPath } from "@/platform/paths";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SectionHeader } from "../components/SectionHeader";
 import { SettingRow } from "../components/SettingRow";
 
@@ -153,12 +153,15 @@ export function ThemesSection() {
       un?.();
     };
   }, [refreshInstalled]);
-  const posterUrls = useMemo(() => {
+  // Object URLs are a resource: made in an effect, revoked by its cleanup,
+  // never created during render.
+  const [posterUrls, setPosterUrls] = useState<Record<string, string>>({});
+  useEffect(() => {
     const out: Record<string, string> = {};
     for (const b of installedBgs) if (b.poster) out[b.id] = URL.createObjectURL(b.poster);
-    return out;
+    setPosterUrls(out);
+    return () => Object.values(out).forEach((u) => URL.revokeObjectURL(u));
   }, [installedBgs]);
-  useEffect(() => () => Object.values(posterUrls).forEach((u) => URL.revokeObjectURL(u)), [posterUrls]);
 
   const handleThemeFiles = async (files: FileList | null) => {
     setImportError(null);
@@ -613,11 +616,13 @@ export function ThemesSection() {
           <Icon name="download" size="sm" />
           Browse more backgrounds
         </Button>
-        <BackgroundLibraryDialog
-          open={libraryOpen}
-          onOpenChange={setLibraryOpen}
-          onChanged={refreshInstalled}
-        />
+        {libraryOpen && (
+          <BackgroundLibraryDialog
+            open
+            onOpenChange={setLibraryOpen}
+            onChanged={refreshInstalled}
+          />
+        )}
 
         <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
           <div className="flex flex-col gap-0.5">

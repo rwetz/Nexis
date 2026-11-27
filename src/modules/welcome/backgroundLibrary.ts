@@ -107,11 +107,16 @@ export function parseIndex(raw: unknown): LibraryEntry[] {
   if (r?.format !== FORMAT || !Array.isArray(r.backgrounds)) {
     throw new LibraryError(`The library uses index format ${String(r?.format)}; this Nexis reads ${FORMAT}.`);
   }
-  return r.backgrounds.filter(validEntry).map((e) => ({
-    ...e,
-    collection: typeof e.collection === "string" ? e.collection : "",
-    description: typeof e.description === "string" ? e.description : "",
-  }));
+  const out: LibraryEntry[] = [];
+  for (const e of r.backgrounds) {
+    if (!validEntry(e)) continue;
+    out.push({
+      ...e,
+      collection: typeof e.collection === "string" ? e.collection : "",
+      description: typeof e.description === "string" ? e.description : "",
+    });
+  }
+  return out;
 }
 
 async function get(url: string): Promise<Response> {
