@@ -32,6 +32,13 @@ pub struct Config {
     pub scan_depth: usize,
     #[serde(default = "default_max_files")]
     pub max_files: usize,
+    /// A local branch with no commit in this many days counts as stale.
+    #[serde(default = "default_stale_branch_days")]
+    pub stale_branch_days: u32,
+    /// Ask `gh` for open-PR counts on github.com repos. Off means Atlas never
+    /// runs `gh` at all.
+    #[serde(default = "default_github_prs")]
+    pub github_prs: bool,
 }
 
 impl Default for Config {
@@ -41,6 +48,8 @@ impl Default for Config {
             scan_root: None,
             scan_depth: default_scan_depth(),
             max_files: default_max_files(),
+            stale_branch_days: default_stale_branch_days(),
+            github_prs: default_github_prs(),
         }
     }
 }
@@ -51,6 +60,14 @@ fn default_scan_depth() -> usize {
 
 fn default_max_files() -> usize {
     20_000
+}
+
+fn default_stale_branch_days() -> u32 {
+    30
+}
+
+fn default_github_prs() -> bool {
+    true
 }
 
 pub fn config_path() -> PathBuf {
@@ -84,6 +101,14 @@ scan_depth = 3
 # Safety valve: stop materializing a repo's file tree past this many files.
 # Only the map view walks that deep; the list view never hits this.
 max_files = 20000
+
+# Branch hygiene: a local branch with no commit in this many days is flagged
+# as stale (merged and upstream-gone branches are flagged regardless).
+stale_branch_days = 30
+
+# Open-PR counts for github.com repos, read through your own `gh` login
+# (`gh auth login`). Cached for ten minutes; set false to never run `gh`.
+github_prs = true
 "#
     )
 }

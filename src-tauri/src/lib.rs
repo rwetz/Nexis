@@ -346,6 +346,7 @@ pub fn run() {
             atlas::atlas_repo_city,
             atlas::atlas_repo_detail,
             atlas::atlas_config_path,
+            atlas::atlas_open_prs,
             benchmark::commands::bench_list_backends,
             benchmark::commands::bench_scan_models,
             benchmark::commands::bench_run,

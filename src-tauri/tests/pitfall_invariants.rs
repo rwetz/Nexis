@@ -228,6 +228,7 @@ fn heavy_commands_stay_async() {
         "wsl_list_distros",
         "wsl_default_distro",
         "list_crash_reports",
+        "atlas_open_prs",
         // PTY spawn (ConPTY setup + shell process launch)
         "pty_open",
     ];

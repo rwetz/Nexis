@@ -24,6 +24,7 @@ import {
 } from "./iso";
 import { layoutAtlas, layoutCity, type Block, type Scene } from "./layout";
 import { readPalette } from "./palette";
+import { hygieneCount } from "@/modules/atlas/repos/types";
 import { useAtlasStore } from "@/modules/atlas/repos/store";
 
 const MIN_SCALE = 0.6;
@@ -48,11 +49,22 @@ export function CityCanvas() {
   const showLabels = useAtlasStore((s) => s.showLabels);
   const fitNonce = useAtlasStore((s) => s.fitNonce);
   const enterRepo = useAtlasStore((s) => s.enterRepo);
+  const prs = useAtlasStore((s) => s.prs);
   const { resolvedMode, themeId, paletteEpoch } = useTheme();
 
   const scene: Scene = useMemo(
     () => (view === "city" && city ? layoutCity(city.root) : layoutAtlas(repos)),
     [view, city, repos],
+  );
+
+  // Cleanup beacons for the atlas. A render option, not part of the layout:
+  // PR counts land after the scan and must not rebuild the scene.
+  const hygiene = useMemo(
+    () =>
+      view === "atlas"
+        ? new Map(repos.map((r) => [r.path, hygieneCount(r, prs)] as const))
+        : null,
+    [view, repos, prs],
   );
 
   const palette = useMemo(
@@ -95,8 +107,9 @@ export function CityCanvas() {
       selectedId: selected?.id ?? null,
       showLabels,
       reveal,
+      hygiene,
     });
-  }, [scene, palette, showLabels]);
+  }, [scene, palette, showLabels, hygiene]);
 
   const schedule = useCallback(() => {
     if (frame.current !== null) return;

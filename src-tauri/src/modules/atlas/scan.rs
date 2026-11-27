@@ -5,6 +5,7 @@
 //! single filesystem walk. Cheap enough to run for every repo on every
 //! refresh, with rayon fanning the repos out.
 
+use crate::modules::atlas::health::{self, RepoHealth};
 use crate::modules::atlas::walk::{self, WalkResult};
 use git2::{BranchType, ErrorCode, Repository, Status, StatusOptions};
 use serde::Serialize;
@@ -52,6 +53,9 @@ pub struct RepoSummary {
     pub langs: Vec<LangSlice>,
     pub truncated: bool,
     pub error: Option<String>,
+    /// Leftover branches, linked worktrees and the GitHub slug: what the
+    /// status pass above cannot see. See `health.rs`.
+    pub health: RepoHealth,
 }
 
 /// Everything one pass over a repo yields. The atlas only wants `summary` and
@@ -63,8 +67,11 @@ pub struct RepoScan {
     pub repo: Option<Repository>,
 }
 
-/// One walk, one `Repository::open`, one status pass.
-pub fn scan_repo(path: &Path, limit: usize) -> RepoScan {
+/// One walk, one `Repository::open`, one status pass, one pass over the refs.
+///
+/// `stale_days` is the inactivity cutoff for the branch hygiene check
+/// (`stale_branch_days` in `atlas.toml`).
+pub fn scan_repo(path: &Path, limit: usize, stale_days: u32) -> RepoScan {
     let mut sum = RepoSummary {
         path: path.display().to_string(),
         name: path
@@ -88,6 +95,7 @@ pub fn scan_repo(path: &Path, limit: usize) -> RepoScan {
         if let Err(e) = fill_git(repo, &mut sum) {
             sum.error = Some(e.message().to_string());
         }
+        sum.health = health::repo_health(repo, now_seconds(), stale_days);
     }
 
     let walked = walk::walk_repo(path, repo.as_ref(), limit);
@@ -100,8 +108,15 @@ pub fn scan_repo(path: &Path, limit: usize) -> RepoScan {
 }
 
 /// Aggregate stats alone — the atlas path, which never looks at the file list.
-pub fn summarize(path: &Path, limit: usize) -> RepoSummary {
-    scan_repo(path, limit).summary
+pub fn summarize(path: &Path, limit: usize, stale_days: u32) -> RepoSummary {
+    scan_repo(path, limit, stale_days).summary
+}
+
+fn now_seconds() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
 }
 
 fn fill_size(walked: &WalkResult, sum: &mut RepoSummary) {
@@ -298,7 +313,7 @@ mod tests {
         .unwrap();
         std::fs::write(tmp.join("b.txt"), "untracked").unwrap();
 
-        let sum = summarize(&tmp, 20_000);
+        let sum = summarize(&tmp, 20_000, 30);
         assert_eq!(sum.error, None);
 
         // git half — what the list column reads
@@ -335,14 +350,14 @@ mod tests {
         std::fs::write(tmp.join("a.txt"), "two").unwrap();
         git(&tmp, &["stash"]);
 
-        assert_eq!(summarize(&tmp, 20_000).stash_count, 1);
+        assert_eq!(summarize(&tmp, 20_000, 30).stash_count, 1);
         let _ = std::fs::remove_dir_all(&tmp);
     }
 
     #[test]
     fn reports_error_for_non_repo() {
         let tmp = temp_repo("scan-nonrepo");
-        let sum = summarize(&tmp, 20_000);
+        let sum = summarize(&tmp, 20_000, 30);
         assert!(sum.error.is_some());
         let _ = std::fs::remove_dir_all(&tmp);
     }

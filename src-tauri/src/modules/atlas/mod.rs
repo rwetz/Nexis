@@ -39,13 +39,12 @@
 
 pub mod config;
 pub mod detail;
+pub mod health;
 pub mod lang;
+pub mod prs;
 pub mod scan;
 pub mod tree;
 pub mod walk;
-
-#[cfg(test)]
-pub mod testutil;
 
 use rayon::prelude::*;
 use serde::Serialize;
@@ -73,7 +72,7 @@ pub async fn atlas_scan_repos() -> Result<AtlasResult, String> {
         let paths = config::resolve_repos(&cfg);
         let mut repos: Vec<scan::RepoSummary> = paths
             .par_iter()
-            .map(|p| scan::summarize(p, cfg.max_files))
+            .map(|p| scan::summarize(p, cfg.max_files, cfg.stale_branch_days))
             .collect();
         // Biggest first: the squarified treemap in `layoutAtlas` requires
         // descending weight, and a stable order keeps islands from hopping
@@ -97,10 +96,14 @@ pub async fn atlas_scan_repos() -> Result<AtlasResult, String> {
 #[tauri::command]
 pub async fn atlas_repo_city(path: String) -> Result<tree::RepoCity, String> {
     super::heavy(move || {
-        let limit = config::load_or_init()
-            .map(|(cfg, _)| cfg.max_files)
-            .unwrap_or(20_000);
-        tree::build(std::path::Path::new(&path), limit)
+        let cfg = config::load_or_init()
+            .map(|(cfg, _)| cfg)
+            .unwrap_or_default();
+        tree::build(
+            std::path::Path::new(&path),
+            cfg.max_files,
+            cfg.stale_branch_days,
+        )
     })
     .await
 }
@@ -112,6 +115,21 @@ pub async fn atlas_repo_detail(path: String) -> Result<detail::RepoDetail, Strin
     super::heavy(move || detail::repo_detail(std::path::Path::new(&path))).await
 }
 
+/// Open-PR counts for the given `owner/name` slugs (the `health.github` of
+/// each scanned repo), via the user's own `gh` login. Separate from the scan
+/// on purpose: it is the only network call Atlas makes, and a slow or absent
+/// `gh` must never hold up the list. Cached in memory; see `prs.rs`.
+#[tauri::command]
+pub async fn atlas_open_prs(slugs: Vec<String>) -> Result<prs::PrReport, String> {
+    super::heavy(move || {
+        let enabled = config::load_or_init()
+            .map(|(cfg, _)| cfg.github_prs)
+            .unwrap_or(true);
+        Ok(prs::open_prs(&slugs, enabled))
+    })
+    .await
+}
+
 /// Absolute path of `atlas.toml`, creating it with the commented default on
 /// first call. The panel opens it in a Nexis editor tab rather than handing it
 /// to the OS — the standalone app had nowhere better to send it, this one does.
@@ -119,3 +137,9 @@ pub async fn atlas_repo_detail(path: String) -> Result<detail::RepoDetail, Strin
 pub async fn atlas_config_path() -> Result<String, String> {
     super::heavy(|| config::load_or_init().map(|(_, path)| path.display().to_string())).await
 }
+
+// Kept last: `tests/pitfall_invariants.rs` treats everything after a file's
+// first `#[cfg(test)]` as test code, and the heavy-command audit must still
+// see the commands above.
+#[cfg(test)]
+pub mod testutil;

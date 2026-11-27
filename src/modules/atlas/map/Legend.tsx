@@ -66,6 +66,15 @@ export function Legend() {
           />
           <span className="text-muted-foreground">uncommitted</span>
         </li>
+        {view === "atlas" && (
+          <li className="flex items-center gap-2 text-caption leading-none">
+            <span
+              className="h-2.5 w-3.5 shrink-0 rounded-full"
+              style={{ backgroundColor: css(palette.warning) }}
+            />
+            <span className="text-muted-foreground">branches, worktrees, PRs to tidy</span>
+          </li>
+        )}
       </ul>
     </div>
   );

@@ -28,6 +28,9 @@ export type Palette = {
   foreground: Rgb;
   border: Rgb;
   brand: Rgb;
+  /** Repo-hygiene beacons (stale branches, worktrees, open PRs). Kept apart
+   *  from `brand`, which means uncommitted work and nothing else. */
+  warning: Rgb;
   /** The plate everything sits on. */
   ground: Rgb;
   /** Backdrop gradient stops, top to bottom. */
@@ -200,6 +203,7 @@ export function readPalette(isDark: boolean): Palette {
   const border = token("border");
   const card = token("card");
   const brand = token("brand");
+  const warning = token("warning");
 
   // Base lightness/chroma for the language ramp. Dark themes need lighter,
   // slightly less saturated faces to stay readable against the deep ground.
@@ -248,6 +252,7 @@ export function readPalette(isDark: boolean): Palette {
     foreground,
     border,
     brand,
+    warning,
     ground: groundColor,
     // A backdrop that lifts toward the top of the frame reads as sky without
     // ever being a colour of its own.

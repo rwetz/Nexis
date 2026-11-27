@@ -39,6 +39,33 @@ export type RepoSummary = {
   langs: LangSlice[];
   truncated: boolean;
   error: string | null;
+  health: RepoHealth;
+};
+
+/** Mirrors `health.rs`. Each local branch lands in at most one bucket:
+ *  merged, then gone, then inactive. */
+export type RepoHealth = {
+  default_branch: string | null;
+  merged_branches: string[];
+  gone_branches: string[];
+  inactive_branches: string[];
+  worktrees: number;
+  /** `owner/name` when the origin is on github.com. */
+  github: string | null;
+};
+
+/** Mirrors `prs.rs`. */
+export type PrCounts = {
+  total: number;
+  dependabot: number;
+  human: number;
+};
+
+export type PrReport = {
+  available: boolean;
+  reason: string | null;
+  counts: Record<string, PrCounts>;
+  fetched_at: number | null;
 };
 
 export type AtlasResult = {
@@ -182,6 +209,92 @@ export const STATE_META: Record<
   error:    { label: "error",    dot: "bg-destructive",  text: "text-destructive" },
 };
 
+// ── Repo hygiene: what "needs attention" means ─────────────────────────────
+
+export function staleBranchCount(r: RepoSummary): number {
+  const h = r.health;
+  return h.merged_branches.length + h.gone_branches.length + h.inactive_branches.length;
+}
+
+/** Open PRs for a repo, or null when it is not on GitHub or `gh` has not
+ *  answered (offline, not installed, still loading). */
+export function prsFor(
+  r: RepoSummary,
+  prs: Record<string, PrCounts>,
+): PrCounts | null {
+  return r.health.github ? (prs[r.health.github] ?? null) : null;
+}
+
+export type AttentionKind = "changes" | "branches" | "worktrees" | "prs";
+
+export type AttentionItem = { kind: AttentionKind; count: number; label: string };
+
+function plural(n: number, one: string, many = `${one}s`): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/** Every reason a repo wants tidying, in the order the list shows them.
+ *  Ahead/behind is deliberately not here: that is sync, and has its column. */
+export function attentionItems(
+  r: RepoSummary,
+  prs: Record<string, PrCounts>,
+): AttentionItem[] {
+  if (r.error) return [];
+  const out: AttentionItem[] = [];
+  const dirty = dirtyCount(r);
+  if (dirty > 0) {
+    out.push({ kind: "changes", count: dirty, label: plural(dirty, "uncommitted file") });
+  }
+  const stale = staleBranchCount(r);
+  if (stale > 0) {
+    out.push({ kind: "branches", count: stale, label: plural(stale, "stale branch", "stale branches") });
+  }
+  if (r.health.worktrees > 0) {
+    const n = r.health.worktrees;
+    out.push({ kind: "worktrees", count: n, label: plural(n, "linked worktree") });
+  }
+  const pr = prsFor(r, prs);
+  if (pr && pr.total > 0) {
+    const split = pr.dependabot > 0 ? ` (${pr.dependabot} Dependabot)` : "";
+    out.push({ kind: "prs", count: pr.total, label: `${plural(pr.total, "open PR")}${split}` });
+  }
+  return out;
+}
+
+/** The cleanup the map can't already show: everything but uncommitted
+ *  files, which have their own coral tint. Drives the map's beacon. */
+export function hygieneCount(r: RepoSummary, prs: Record<string, PrCounts>): number {
+  return attentionItems(r, prs)
+    .filter((i) => i.kind !== "changes")
+    .reduce((t, i) => t + i.count, 0);
+}
+
+/** Sort weight for "most in need of attention first". Files are cheap and
+ *  numerous, so they count for less than a branch or a waiting PR. */
+export function attentionScore(r: RepoSummary, prs: Record<string, PrCounts>): number {
+  let score = 0;
+  for (const i of attentionItems(r, prs)) {
+    score += i.kind === "changes" ? Math.min(i.count, 20) * 0.5 : i.count * 2;
+  }
+  return score;
+}
+
+export type ListSort = "name" | "changes" | "attention" | "recent";
+
+/** How the list is arranged. The map ignores all of it: its treemap needs
+ *  the scan's own order. */
+export type ListView = {
+  sort: ListSort;
+  attentionOnly: boolean;
+  prs: Record<string, PrCounts>;
+};
+
+export const DEFAULT_LIST_VIEW: ListView = {
+  sort: "name",
+  attentionOnly: false,
+  prs: {},
+};
+
 /** Which way the repos are ordered on screen, per view.
  *
  *  The backend returns them biggest-first because the map's squarified
@@ -192,11 +305,29 @@ export const STATE_META: Record<
 export function displayOrder(
   repos: RepoSummary[],
   mode: "list" | "map",
+  view: ListView = DEFAULT_LIST_VIEW,
 ): RepoSummary[] {
   if (mode === "map") return repos;
-  return [...repos].sort((a, b) =>
-    a.name.toLowerCase().localeCompare(b.name.toLowerCase()),
-  );
+  const { prs } = view;
+  const rows = view.attentionOnly
+    ? repos.filter((r) => attentionItems(r, prs).length > 0)
+    : [...repos];
+  const byName = (a: RepoSummary, b: RepoSummary) =>
+    a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+  // Every non-name sort is descending ("most first") with the name as the
+  // tiebreak, so equal rows stay in a stable, readable order.
+  const desc = (key: (r: RepoSummary) => number) => (a: RepoSummary, b: RepoSummary) =>
+    key(b) - key(a) || byName(a, b);
+  switch (view.sort) {
+    case "changes":
+      return rows.sort(desc(dirtyCount));
+    case "attention":
+      return rows.sort(desc((r) => attentionScore(r, prs)));
+    case "recent":
+      return rows.sort(desc((r) => r.last_commit?.time ?? -Infinity));
+    default:
+      return rows.sort(byName);
+  }
 }
 
 /** Find a repo by a path that came from somewhere else — a deep link, a config
