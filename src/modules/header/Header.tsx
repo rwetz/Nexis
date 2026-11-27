@@ -151,7 +151,7 @@ export function Header({
       data-tauri-drag-region
       onDoubleClick={leaveFullscreenOnDoubleClick}
       className={`flex h-10 shrink-0 items-center gap-2 border-b border-border/60 bg-card select-none ${
-        IS_MAC ? `pr-2 ${lightsInset ? "pl-20" : "pl-2"}` : "pr-0 pl-2"
+        IS_MAC ? `pr-2 ${lightsInset ? "pl-22" : "pl-2"}` : "pr-0 pl-2"
       }`}
     >
       <div className="flex shrink-0 items-center gap-0.5">

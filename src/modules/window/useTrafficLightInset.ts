@@ -5,7 +5,7 @@
 // ╚══════════════════════════════════════╝
 
 /**
- * Whether a header has to leave the left 80pt clear for the macOS traffic
+ * Whether a header has to leave the left 88pt clear for the macOS traffic
  * lights. In native fullscreen macOS hides them (they come back only in the
  * menu-bar reveal), so keeping the inset there leaves an empty strip at the
  * left of the header while the right side sits at its normal padding. Off

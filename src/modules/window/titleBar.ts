@@ -16,11 +16,12 @@
  * fullscreen, where it pushes the buttons out of the reveal strip and leaves
  * no visible way out of fullscreen.
  *
- * `y` is effectively the buttons' vertical centre (the button container
- * grows to `buttonHeight + y` and the buttons keep their offset from its
- * bottom, which is half a button), so `y` is half the bar height.
- * `x` is the close button's left edge; the three buttons then end about
- * 68pt in, inside the `pl-20` (80pt) every header leaves clear for them.
+ * `y` is the buttons' vertical centre, so it is half the bar height; the
+ * backend measures where AppKit put them and moves them onto it, since that
+ * offset differs between macOS versions. `x` is the close button's left
+ * edge; the three buttons then end about 76pt in (they are 16pt on current macOS, 14pt before), and every
+ * header leaves `pl-22` (88pt) clear for them: a 12pt gap to the first
+ * control. `pl-20` (80pt), the old figure, left 5pt.
  *
  * `titleBar.test.ts` holds these heights to the headers that draw them.
  */

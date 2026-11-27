@@ -150,10 +150,32 @@ fn place(ns: &objc2_app_kit::NSWindow, x: f64, y: f64) {
     rect.origin.y = parent.frame().size.height - height;
     container.setFrame(rect);
 
+    // Where AppKit leaves the buttons inside that container depends on the
+    // macOS version (14pt buttons sat 7pt above its bottom, 16pt ones sit
+    // 10pt above), so `y` alone does not land their centre on `y`. Measure
+    // the close button's centre in window coordinates and move every button
+    // vertically by the difference.
+    // Window base coordinates have their origin at the bottom left, always.
+    let window_height = ns.frame().size.height;
+    let dy = match unsafe { close.superview() } {
+        Some(row) => {
+            let r = row.convertRect_toView(close.frame(), None);
+            let centre_from_top = window_height - (r.origin.y + r.size.height / 2.0);
+            let off = centre_from_top - y;
+            if row.isFlipped() {
+                -off
+            } else {
+                off
+            }
+        }
+        None => 0.0,
+    };
+
     let space = mini.frame().origin.x - close_rect.origin.x;
     for (i, button) in [close, mini, zoom].iter().enumerate() {
         let mut origin = button.frame().origin;
         origin.x = x + i as f64 * space;
+        origin.y += dy;
         button.setFrameOrigin(origin);
     }
 }

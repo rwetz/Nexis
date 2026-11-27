@@ -60,7 +60,7 @@ export function ToolWindowShell({ tool }: { tool: ToolWindowContribution }) {
             onDoubleClick={leaveFullscreenOnDoubleClick}
             style={{ height: featured ? TITLE_BAR_HEIGHT.featured : TITLE_BAR_HEIGHT.standard }}
             className={`nexis-window-header flex shrink-0 items-center gap-2 border-b border-border/60 bg-card px-3 select-none ${
-              lightsInset ? "pl-20" : ""
+              lightsInset ? "pl-22" : ""
             }`}
           >
             <span className={featured ? "grid size-8 place-items-center rounded-lg bg-muted text-primary" : undefined}>

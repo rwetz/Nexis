@@ -18,7 +18,8 @@ describe("traffic light placement", () => {
     expect(trafficLightY(TITLE_BAR_HEIGHT.standard)).toBe(20);
     expect(trafficLightY(TITLE_BAR_HEIGHT.featured)).toBe(28);
     expect(trafficLightY(TITLE_BAR_HEIGHT.design)).toBe(24);
-    expect(TRAFFIC_LIGHT_X).toBeLessThan(80 - 54);
+    // Three 16pt buttons 23pt apart end at x + 62; every header leaves 88pt.
+    expect(TRAFFIC_LIGHT_X + 62).toBeLessThanOrEqual(88 - 12);
     expect(macTitleBarOptions()).toEqual({ titleBarStyle: "overlay", hiddenTitle: true });
   });
 
@@ -38,6 +39,10 @@ describe("traffic light placement", () => {
     const header = readFileSync(resolve(root, "src/modules/header/Header.tsx"), "utf8");
     expect(header).toMatch(/flex h-10 shrink-0 items-center/);
     expect(header).toMatch(/centreTrafficLights\(TITLE_BAR_HEIGHT\.standard\)/);
+    // The inset that clears the buttons, in both header kinds.
+    expect(header).toMatch(/lightsInset \? "pl-22"/);
+    const shell = readFileSync(resolve(root, "src/modules/window/ToolWindowShell.tsx"), "utf8");
+    expect(shell).toMatch(/lightsInset \? "pl-22"/);
   });
 
   it("knows the header height of every tool window", () => {
